@@ -28,8 +28,7 @@ export const AuthLayout = ({ children, title = '', color = true, sx }: Props) =>
                     ...sx
                 }}>
                 {title !== '' ? <Typography className="text-center" variant='h5' sx={{ mb: 1 }}>{title}</Typography> : ''}
-
-
+                
                 {children}
 
             </Grid>
