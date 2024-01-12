@@ -17,7 +17,7 @@ export const CustomModal = ({ open, closingFn, children, sx }: Props) => {
                 onClose={closingFn}
                 aria-labelledby="modal-modal-title"
                 aria-describedby="modal-modal-description"
-                sx={{ ...sx, zIndex: 2400 }}
+                sx={{ ...sx, zIndex: 2400, backgroundColor: '#0007' }}
             >
                 <Box
                     sx={{
