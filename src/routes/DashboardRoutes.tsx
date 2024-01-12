@@ -9,7 +9,6 @@ import { DashboardLayout } from '../common/layout';
 export const DashboardRoutes = () => {
     return (
         <>
-            {/* <Navbar /> */}
             <DashboardLayout>
                 <Routes>
                     <Route path='home' element={<Home />} />
