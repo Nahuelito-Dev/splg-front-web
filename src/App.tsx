@@ -4,7 +4,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
 import { DashboardRoutes } from "./routes/DashboardRoutes"
 import { AuthRoutes } from "./routes/AuthRoutes"
 import { Navbar } from "./common/components/Navbar"
-import { CustomAlert } from "./common/components"
+import { CustomAlert, SideMenu } from "./common/components"
 
 const queryClient = new QueryClient()
 
@@ -18,7 +18,6 @@ function App() {
       <ThemeProvider>
         <QueryClientProvider client={queryClient}>
           <BrowserRouter>
-            <Navbar />
             <Routes>
               {
                 status === 'authenticated'
