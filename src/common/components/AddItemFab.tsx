@@ -1,6 +1,7 @@
 import AddIcon from '@mui/icons-material/Add';
 import { Fab } from '@mui/material'
-import pallete from '../../theme/pallete'
+
+import palette from '../../theme/pallete';
 
 interface Props {
     onClick: () => void
@@ -8,7 +9,7 @@ interface Props {
 
 export const AddItemFab = ({ onClick }: Props) => {
     return (
-        <Fab aria-label="add" sx={{ backgroundColor: pallete.tertiary.main, color: pallete.secondary.main, position: 'fixed', bottom: 16, right: 16 }} onClick={onClick}>
+        <Fab aria-label="add" sx={{ backgroundColor: '#EB6123 !important', color: '#FFF', position: 'fixed', bottom: 40, right: 16 }} onClick={onClick}>
             <AddIcon />
         </Fab>
     )
