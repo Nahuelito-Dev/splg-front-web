@@ -43,7 +43,7 @@ export const Navbar = () => {
                         <MenuIcon sx={{ color: pallete.primary.lighter }} />
                     </IconButton>}
                     <Grid container direction='row' >
-                        <img src="/images/powerStaffingLogo.png" alt="logo company name" height='50px' />
+                        {/* <img src="/images/powerStaffingLogo.png" alt="logo company name" height='50px' /> */}
                     </Grid>
                 </Toolbar>
             </AppBar>
