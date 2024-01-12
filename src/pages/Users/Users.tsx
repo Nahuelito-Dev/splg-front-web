@@ -6,6 +6,7 @@ import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { useUsersStore } from '../../store/useUserStore';
 import { UserModal } from './components/UserModal';
 import { AddItemFab } from '../../common/components';
+import { Typography } from '@mui/material';
 
 
 // import { UserModal } from './components/UserModal';
@@ -47,18 +48,23 @@ export const Users = () => {
     })
 
     return (
-        <>
-            <CustomTable
-                title={'Users'}
-                columns={columns}
-                queryKey={'user'}
-                pluralQueryKey='Users'
-                queryFn={getAllUsers}
-                handleCellClick={handleCellClick}
-            />
-            {modalAction && <UserModal />}
-            <AddItemFab onClick={() => setModalAction('create')} />
-        </>
+        <div>
+            <Typography sx={{marginBottom: '20px'}} className="text-center" variant="h3" component={"h1"} fontSize={{ xs: "2rem", sm: "3rem", xl: "3.5rem" }} fontWeight={"bold"}>
+                Usuarios
+            </Typography>
+            <div style={{ backgroundColor: 'white', width: '75vw', borderRadius: '12px' }}>
+                <CustomTable
+                    title={'Users'}
+                    columns={columns}
+                    queryKey={'user'}
+                    pluralQueryKey='Users'
+                    queryFn={getAllUsers}
+                    handleCellClick={handleCellClick}
+                />
+                {modalAction && <UserModal />}
+                <AddItemFab onClick={() => setModalAction('create')} />
+            </div>
+        </div>
     )
 }
 

@@ -1,14 +1,14 @@
-import { useState } from 'react'
+import { useState } from 'react';
 
-import { Typography, Stack, TextField, Box, Button, Select, InputLabel, MenuItem, InputAdornment, IconButton, Autocomplete } from '@mui/material';
-import { Visibility, VisibilityOff } from '@mui/icons-material'
+import { Visibility, VisibilityOff } from '@mui/icons-material';
+import { Box, Button, IconButton, InputAdornment, InputLabel, MenuItem, Select, Stack, TextField, Typography } from '@mui/material';
 
-import { CustomModal } from "../../../common/components"
-import { useForm } from '../../../hooks/UseForm';
-import { useUsersStore } from '../../../store/useUserStore';
-import { createUser, updateUser } from '../../../services/api';
-import { User } from '../../../interfaces/';
+import { CustomModal } from "../../../common/components";
 import { useCRUDModal } from '../../../hooks';
+import { useForm } from '../../../hooks/UseForm';
+
+import { createUser, updateUser } from '../../../services/api';
+import { useUsersStore } from '../../../store/useUserStore';
 
 
 interface InitialForm {
@@ -126,7 +126,7 @@ export const UserModal = () => {
                             />
                         </Box>
                     }
-                    <Button fullWidth type='submit' variant='contained' color='secondary'>Submit</Button>
+                    <Button fullWidth type='submit' variant='contained' className='rounded-lg ' sx={{ color: '#FFF',backgroundColor: '#547D8F !important', '&:hover': {backgroundColor: '#6CA1B8 !important'} }}>Submit</Button>
                 </Stack>
             </Stack>
         </CustomModal>
