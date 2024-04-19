@@ -1,94 +1,108 @@
-import { useMemo, useRef } from 'react';
+import { useMemo, useState } from 'react';
 
-// import { startLoginWithEmailAndPassword } from '../../store/auth/thunks';
-// import { useAppDispatch, useAppSelector } from '../../hooks/reduxHooks';
+import { Navigate } from "react-router-dom";
 
-// import { useForm } from '../../hooks/UseForm'
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
+import {
+    Avatar,
+    Button,
+    IconButton,
+    InputAdornment,
+    Stack,
+    TextField,
+    Typography,
+} from "@mui/material";
 
-import { Alert, Button, Grid, TextField } from '@mui/material';
+import pallette from '../../theme/pallete';
+
 import { AuthLayout } from '../../common/layout';
-import pallete from '../../theme/pallete'
+import { useAppDispatch, useAppSelector, useForm } from '../../hooks';
+import { startLoginWithEmailAndPassword } from "../../store/auth/thunks";
 
-// import gsap from 'gsap';
-
-// const formData = {
-//     email: 'email1@email.com',
-//     password: '123456'
-// }
+const formData = {
+    email: 'asd@asd.com',
+    password: '123456'
+}
 
 export const LoginPage = () => {
-    const logoIcon = useRef(null)
-    // const dispatch = useAppDispatch()
-    // const { status, errorMessage } = useAppSelector(state => state.auth)
-    // const { formState, email, password, onInputChange }: any = useForm(formData)
-    const isAuthenticating = useMemo(() => status === 'checking', [status])
+    const dispatch = useAppDispatch();
+    const { status } = useAppSelector((state) => state.auth);
+    const { formState, onInputChange }: any = useForm(formData);
+    const isAuthenticating = useMemo(() => status === "checking", [status]);
+    const [showPassword, setShowPassword] = useState(false);
 
-    const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = (e: any) => {
         e.preventDefault()
-        // dispatch(startLoginWithEmailAndPassword(formState))
-        // gsap.to(logoIcon.current, { y: -10, duration: 0.2, ease: 'ease.out' }).then(() => {
-        //     gsap.to(logoIcon.current, { y: 0, duration: 0.6, ease: 'bounce.out' })
-        // })
+        dispatch(startLoginWithEmailAndPassword(formState))
     }
 
-    const handleAnimation = () => {
-        // gsap.to(logoIcon.current, { y: -10, duration: 0.2, ease: 'ease.out' }).then(() => {
-        //     gsap.to(logoIcon.current, { y: 0, duration: 0.6, ease: 'bounce.out' })
-        // })
-    }
-
-    // gsap.to(logoIcon.current, { y: -10, duration: 0.2, ease: 'ease.out' }).then(() => {
-    //     gsap.to(logoIcon.current, { y: 0, duration: 0.6, ease: 'bounce.out' })
-    // })
+    if (status === "authenticated") return <Navigate to="/home" />
 
     return (
         <AuthLayout>
-            <Grid container direction='column' justifyContent='center' alignItems='center' component={'form'} onSubmit={onSubmit} className='animate__animated animate__fadeIn animate__faster'>
-                <Grid container >
-                    <Grid container spacing={0} alignItems='center' justifyContent='center' my={2} >
-                        <img style={{ width: '100%' }} onMouseOver={handleAnimation} ref={logoIcon} src="../powerStaffingLogo.png" alt="logo power-staffing" />
-                    </Grid>
 
-                    <Grid item xs={12} sx={{ mt: 2 }}>
-                        <TextField
-                            label="E-Mail"
-                            type="email"
-                            placeholder='mail@google.com'
-                            fullWidth
-                            name='email'
-                            // value={email}
-                            // onChange={onInputChange}
-                        />
-                    </Grid>
+            <Stack
+                gap={2}
+                sx={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    flexDirection: "column",
+                }}
+            >
+                <TextField
+                    sx={{ width: "100%", }}
+                    name="email"
+                    value={formState.email}
+                    onChange={onInputChange}
+                    variant="standard"
+                    InputProps={{
+                        placeholder: "email@example.com",
+                        sx: { color: '#FFF !important' }
+                    }}
+                />
+                <TextField
+                    sx={{ width: "100%", color: '#FFF !important' }}
+                    name="password"
+                    value={formState.password}
+                    onChange={onInputChange}
+                    type={showPassword ? "text" : "password"}
+                    variant="standard"
+                    InputProps={{
+                        sx: { color: '#FFF !important' },
+                        placeholder: "Min. 8 caracteres",
+                        endAdornment: (
+                            <InputAdornment position="end">
+                                <IconButton
+                                    aria-label="toggle password visibility"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    edge="end"
+                                >
+                                    {showPassword ? <VisibilityIcon /> : <VisibilityOffIcon />}
+                                </IconButton>
+                            </InputAdornment>
+                        ),
+                    }}
+                />
 
-                    <Grid item xs={12} sx={{ mt: 2 }}>
-                        <TextField
-                            label="Password"
-                            type="password"
-                            placeholder='Password'
-                            fullWidth
-                            name='password'
-                            // value={password}
-                            // onChange={onInputChange}
-                        />
-                    </Grid>
+                <Button
+                    disabled={isAuthenticating}
+                    onClick={handleSubmit}
+                    sx={{
+                        borderRadius: '12px',
+                        width: '50%',
+                        marginTop: '20px',
+                        backgroundColor: pallette.secondary.light + '!important',
+                        '&:hover': { backgroundColor: pallette.secondary.lighter + '!important' }
+                    }}
+                >
+                    LOGIN
+                </Button>
+            </Stack>
 
-                    <Grid container spacing={2} sx={{ mt: 1 }}>
-                        <Grid item xs={12}
-                            // display={!!errorMessage ? '' : 'none'}
-                        >
-                            <Alert severity='error'>
-                                {/* {errorMessage} */}
-                            </Alert>
-                        </Grid>
-                        <Grid item xs={12} sm={12}>
-                            <Button variant='contained' type='submit' disabled={isAuthenticating} fullWidth sx={{ backgroundColor: pallete.secondary.main, color: pallete.secondary.contrastText, '&:hover': { backgroundColor: pallete.secondary.darker } }}>
-                                Log in
-                            </Button>
-                        </Grid>
-                    </Grid>
-                </Grid>
-            </Grid >
+
         </AuthLayout>
-    )
-}
+    );
+};

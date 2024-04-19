@@ -1,25 +1,27 @@
 import { useEffect, useState } from 'react';
 
 import { Typography, Box } from '@mui/material';
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridRowsProp } from '@mui/x-data-grid';
 
-import { TableLoadingOrNoData } from './components/TableLoadingOrNoData';
-import { EditAndDeleteFields } from './components/EditAndDeleteFields';
-import { useTable } from '../../../hooks';
+import { TableLoadingOrNoData } from './TableLoadingOrNoData';
+import { EditAndDeleteFields } from './EditAndDeleteFields';
 
 
-interface CustomTableProps {
+interface ICustomTableProps {
     title: string;
     columns: GridColDef[];
-    handleCellClick: React.Dispatch<React.SetStateAction<any>>;
-    queryKey: string;
-    pluralQueryKey?: string;
-    queryFn: (actualPage: number, rowsPerPage: number) => Promise<any>
+    rows: GridRowsProp;
+    actualPage?: number;
+    setActualPage: React.Dispatch<React.SetStateAction<number>>;
+    rowsPerPage?: number;
+    setRowsPerPage: React.Dispatch<React.SetStateAction<number>>;
+    maxRowsToShow: number;
+    setActive?: React.Dispatch<React.SetStateAction<any>>;
+    isLoading: boolean;
+    isMutating: boolean;
 }
 
-export const CustomTable = ({ title, columns, handleCellClick, queryFn, queryKey, pluralQueryKey }: CustomTableProps) => {
-    const { actualPage, setActualPage, data, isLoading, isFetching, isMutating, maxRowsToShow, setRowsPerPage, rowsPerPage } = useTable({ queryKey, pluralQueryKey, queryFn })
-
+export const CustomTable = ({ title, columns, rows = [], actualPage = 0, rowsPerPage = 5, maxRowsToShow, setActualPage, setRowsPerPage, isLoading, isMutating, setActive }: ICustomTableProps) => {
     const [paginationModel, setPaginationModel] = useState({
         pageSize: rowsPerPage,
         page: actualPage
@@ -30,47 +32,53 @@ export const CustomTable = ({ title, columns, handleCellClick, queryFn, queryKey
         setRowsPerPage(paginationModel.pageSize);
     }, [paginationModel, setActualPage, setRowsPerPage])
 
-    const handleRowClick = (e: any) => {
-        // prevent misclicks
+    const handleCellClick = (e: any) => {
         if (isLoading || isMutating) return
-        handleCellClick(e)
+        setActive!(e)
     }
 
     return (
-        <div className='flex items-center justify-center '>
-            <Box
-                sx={{
-                    width: "90%",
-                    minHeight: "80vh",
-                    backgroundColor: "white",
-                    borderRadius: 2,
-                    display: "flex",
-                    flexDirection: "column",
-                }}
-
+        <Box
+            sx={{
+                width: "80%",
+                // height: "70vh",
+                minHeight: "460px",
+                backgroundColor: "white",
+                borderRadius: 2,
+                padding: 1,
+                display: "flex",
+                flexDirection: "column",
+            }}
+        >
+            <Typography
+                className="text-center"
+                variant="h3"
+                component={"h1"}
+                fontSize={{ xs: "2rem", sm: "3rem", xl: "3.5rem" }}
+                fontWeight={"bold"}
+                my={1}
             >
-                {isLoading || data?.users.length === 0 ? (
-                    <TableLoadingOrNoData status={isLoading ? "loading" : "noData"} />
-                ) : (
-                    <DataGrid
-                        loading={isMutating || isFetching}
-                        paginationModel={paginationModel}
-                        onPaginationModelChange={(e) => setPaginationModel(e)}
+                {title}
+            </Typography>
+            {isLoading || rows.length === 0 ? (
+                <TableLoadingOrNoData status={isLoading ? "loading" : "noData"} />
+            ) : (
+                <DataGrid
+                    paginationModel={paginationModel}
+                    onPaginationModelChange={setPaginationModel}
                         rowCount={maxRowsToShow ?? 5}
-                        rows={data['users']}
-                        onCellClick={handleRowClick}
+                    rows={rows}
+                    onCellClick={handleCellClick}
                         columns={[...columns, ...EditAndDeleteFields(isMutating)]}
-                        pageSizeOptions={[5, 10, 25]}
-                        disableRowSelectionOnClick
-                        paginationMode="server"
-                        sx={{
-                            backgroundColor: "white",
-                            flex: 1,
-                            border: 'none'
-                        }}
-                    />
-                )}
-            </Box>
-        </div>
+                    pageSizeOptions={[5, 10, 25]}
+                    disableRowSelectionOnClick
+                    paginationMode="server"
+                    sx={{
+                        backgroundColor: "white",
+                        flex: 1,
+                    }}
+                />
+            )}
+        </Box>
     );
 }
