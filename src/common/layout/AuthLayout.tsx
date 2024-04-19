@@ -1,5 +1,6 @@
-import { Grid, Typography } from '@mui/material';
+import { Grid, Stack, Typography } from '@mui/material';
 import pallette from '../../theme/pallete';
+import { MainMindLogo } from '../../assets/images/MainMindLogo';
 
 interface Props {
     children: JSX.Element | JSX.Element[];
@@ -18,17 +19,17 @@ export const AuthLayout = ({ children, title = '', color = true, sx }: Props) =>
             justifyContent="center"
             sx={{ minHeight: '100vh', backgroundColor: color ? pallette.secondary.blackLike : '', padding: 4, }}
         >
+            <Stack sx={{ marginBottom: '40px' }}>
+                <MainMindLogo />
+            </Stack>
             <Grid item
                 xs={3}
                 sx={{
-                    width: { sm: 450 },
-                    backgroundColor: 'white',
-                    padding: 3,
-                    borderRadius: 2,
+                    width: { sm: 500 },
                     ...sx
                 }}>
-                {title !== '' ? <Typography className="text-center" variant='h5' sx={{ mb: 1 }}>{title}</Typography> : ''}
-                
+                {title !== '' ? <Typography className="text-center" variant='h4' sx={{ mb: 1 }}>{title}</Typography> : ''}
+
                 {children}
 
             </Grid>

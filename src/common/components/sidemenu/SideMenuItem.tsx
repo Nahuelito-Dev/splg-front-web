@@ -22,8 +22,8 @@ export const SideMenuItem = ({ href, Icon, title, subTitle }: Props) => {
         <Icon />
       </div>
       <div className="flex flex-col">
-        <span style={{color: pallete.secondary.contrastText}} className="text-lg font-bold leading-5">{ title }</span>
-        <span style={{color: pallete.secondary.contrastText}} className="text-sm text-black/50 hidden md:block">{ subTitle }</span>
+        <span style={{color: 'white'}} className="text-lg font-bold leading-5">{ title }</span>
+        <span style={{color: pallete.secondary.light}} className="text-sm text-black/50 hidden md:block">{ subTitle }</span>
       </div>
     </NavLink>
   );

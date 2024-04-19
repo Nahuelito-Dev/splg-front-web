@@ -1,23 +1,24 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { ThemeProvider } from "./theme"
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
-import { DashboardRoutes } from "./routes/DashboardRoutes"
+
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+
+import { CustomAlert } from "./common/components"
 import { AuthRoutes } from "./routes/AuthRoutes"
-import { Navbar } from "./common/components/Navbar"
-import { CustomAlert, SideMenu } from "./common/components"
+import { DashboardRoutes } from "./routes/DashboardRoutes"
+import { ThemeProvider } from "./theme"
+
+import { useAppSelector } from "./hooks/reduxHooks"
+import { Navigation } from "./router/Navigation"
 
 const queryClient = new QueryClient()
 
-function App() {
-
-  const status = 'authenticated' // TODO connect to Global state
-
-
+export const App = () => {
+  const { isOpen } = useAppSelector((state) => state.ui)
   return (
-    <>
       <ThemeProvider>
         <QueryClientProvider client={queryClient}>
-          <BrowserRouter>
+          <Navigation />
+          {/* <BrowserRouter>
             <Routes>
               {
                 status === 'authenticated'
@@ -25,13 +26,10 @@ function App() {
                   : <Route path="/auth/*" element={<AuthRoutes />} />
               }
               <Route path="/*" element={<Navigate to={'/auth/login'} />} />
-            </Routes>
-            <CustomAlert />
-          </BrowserRouter>
+            </Routes> */}
+          <CustomAlert isOpen={isOpen} />
+          {/* </BrowserRouter> */}
         </QueryClientProvider>
       </ThemeProvider>
-    </>
   )
 }
-
-export default App

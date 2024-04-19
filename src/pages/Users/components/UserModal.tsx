@@ -1,57 +1,50 @@
-import { useState } from 'react';
-
-import { Visibility, VisibilityOff } from '@mui/icons-material';
-import { Box, Button, IconButton, InputAdornment, InputLabel, MenuItem, Select, Stack, TextField, Typography } from '@mui/material';
-
-import { CustomModal } from "../../../common/components";
-import { useCRUDModal } from '../../../hooks';
-import { useForm } from '../../../hooks/UseForm';
-
+import { useState } from 'react'
+import { Visibility, VisibilityOff } from '@mui/icons-material'
+import { Typography, Stack, TextField, Box, Button, Select, InputLabel, MenuItem, InputAdornment, IconButton, Autocomplete } from '@mui/material';
+import { useForm, useCRUDModal } from '../../../hooks'
+import { CustomModal } from '../../../common/components'
+import { User } from '../../../interfaces'
 import { createUser, updateUser } from '../../../services/api';
-import { useUsersStore } from '../../../store/useUserStore';
 
-
-interface InitialForm {
-    email: string,
-    full_name: string,
-    role: "admin" | "accountant" | "superAdmin",
-    password: string,
+interface Props {
+    user?: User
+    open: boolean
+    setOpen: React.Dispatch<React.SetStateAction<boolean>>
 }
 
 const initialForm = {
     email: '',
     full_name: '',
-    role: "admin",
+    role: 'admin',
     password: '',
 }
 
-export const UserModal = () => {
-    const { activeUser, modalAction, removeActiveUser } = useUsersStore((state) => state)
-    const { email, full_name, role, password, onInputChange } = useForm(initialForm ?? activeUser)
+export const UserModal = ({ user, open, setOpen }: Props) => {
+    const { email, full_name, role, password, onInputChange }: any = useForm(user ?? initialForm)
 
     const [showPassword, setShowPassword] = useState(false);
 
     const { createMutation, updateMutation } = useCRUDModal({ createFn: createUser, updateFn: updateUser, queryKey: 'user' })
 
+    // This could be integrated into the useCrudModal hook as well as the useForm, but maybe it shouldn't. Its up to you bread.
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
-        if (modalAction === 'create') {
-            // @ts-expect-error
+        if (!user) {
             createMutation.mutate({ email, full_name, role, password })
         } else {
-            const updatedUser: any = { ...activeUser, role }
+            const updatedUser: any = { ...user, role }
             updateMutation.mutate(updatedUser)
         }
-        removeActiveUser()
+        setOpen(false)
     }
     return (
-        <CustomModal open={true} closingFn={removeActiveUser} sx={{ overflowY: 'auto' }}>
-            <Typography variant="h4">{modalAction!.slice(0, 1).toUpperCase() + modalAction?.slice(1)} user</Typography>
+        <CustomModal openModal={open} setOpenModal={() => setOpen(false)} sx={{ overflowY: 'auto' }}>
+            <Typography variant="h4">{user ? "Edit" : "Create"} user</Typography>
             <Stack spacing={2} direction="column" sx={{ padding: { sm: "1rem" } }}>
                 <Stack spacing={2} component={'form'} onSubmit={(e) => handleSubmit(e)}>
                     <Box>
                         <Typography variant='body1'>Email:</Typography>
-                        {!activeUser ?
+                        {!user ?
                             <TextField
                                 placeholder="JhonDoe@email.com"
                                 type='text'
@@ -61,13 +54,13 @@ export const UserModal = () => {
                                 fullWidth
                             />
                             :
-                            <Typography variant='h6'>{activeUser.email}</Typography>
+                            <Typography variant='h6'>{user.email}</Typography>
                         }
 
                     </Box>
                     <Box>
                         <Typography variant='body1'>Full name:</Typography>
-                        {!activeUser ?
+                        {!user ?
                             <TextField
                                 type='text'
                                 fullWidth
@@ -77,7 +70,7 @@ export const UserModal = () => {
                                 value={full_name}
                                 onChange={onInputChange}
                             />
-                            : <Typography variant='h6'>{activeUser.full_name}</Typography>
+                            : <Typography variant='h6'>{user.full_name}</Typography>
                         }
                     </Box>
 
@@ -98,7 +91,7 @@ export const UserModal = () => {
                     </Box>
 
 
-                    {!activeUser &&
+                    {!user &&
                         <Box>
                             <Typography variant='body1'>Password:</Typography>
                             <TextField
@@ -109,7 +102,7 @@ export const UserModal = () => {
                                 name='password'
                                 value={password}
                                 onChange={onInputChange}
-                                inputProps={{ "minLength": 6 }}
+                                inputProps={{ "minlength": 6 }}
                                 InputProps={{
                                     autoComplete: 'off',
                                     endAdornment: (
@@ -126,7 +119,7 @@ export const UserModal = () => {
                             />
                         </Box>
                     }
-                    <Button fullWidth type='submit' variant='contained' className='rounded-lg ' sx={{ color: '#FFF',backgroundColor: '#547D8F !important', '&:hover': {backgroundColor: '#6CA1B8 !important'} }}>Submit</Button>
+                    <Button fullWidth type='submit' variant='contained' color='secondary'>Submit</Button>
                 </Stack>
             </Stack>
         </CustomModal>
