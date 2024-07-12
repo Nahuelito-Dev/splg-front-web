@@ -1,4 +1,4 @@
-import { AppBar, Box, Grid, IconButton, Theme, Toolbar, useTheme } from "@mui/material"
+ import { AppBar, Box, Grid, IconButton, Theme, Toolbar, useTheme } from "@mui/material"
 import pallete from "../../../theme/pallete"
 import MenuIcon from "@mui/icons-material/Menu";
 import { useLocation } from "react-router-dom"
