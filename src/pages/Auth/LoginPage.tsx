@@ -22,7 +22,7 @@ import { useAppDispatch, useAppSelector, useForm } from '../../hooks';
 import { startLoginWithEmailAndPassword } from "../../store/auth/thunks";
 
 const formData = {
-    email: 'asd@asd.com',
+    email: 'nahuel@email.com',
     password: '123456'
 }
 

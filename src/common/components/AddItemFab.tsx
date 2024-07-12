@@ -9,8 +9,19 @@ interface Props {
 
 export const AddItemFab = ({ onClick }: Props) => {
     return (
-        <Fab aria-label="add" sx={{ backgroundColor: '#EB6123 !important', color: '#FFF', position: 'fixed', bottom: 40, right: 16 }} onClick={onClick}>
-            <AddIcon />
-        </Fab>
-    )
+      <Fab
+        aria-label='add'
+        sx={{
+          backgroundColor: '#EB6123 !important',
+          color: '#FFF',
+          position: 'fixed',
+          bottom: 40,
+          right: 16,
+        }}
+        onClick={onClick}
+        title='Add Membership'
+      >
+        <AddIcon />
+      </Fab>
+    );
 }

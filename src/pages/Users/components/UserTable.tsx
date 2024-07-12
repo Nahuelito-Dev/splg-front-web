@@ -54,7 +54,7 @@ const columns: GridColDef[] = [
 
 export const UserTable = ({ user, setUser }: Props) => {
     const tableProps = useTable({ queryKey: 'users', queryFn: getAllUsers })
-
+    
     return (
         <CustomTable
             title={'Users'}
