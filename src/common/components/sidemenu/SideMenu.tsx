@@ -22,8 +22,7 @@ interface MenuItem {
 
 const menuItems: MenuItem[] = [
   { title: 'Home', subTitle: 'Visualizar data', href: '/home', Icon: IoHome },
-  { title: 'Usuarios', subTitle: 'Gestionar usuarios', href: '/users', Icon: IoAccessibility },
-  { title: 'Membresias', subTitle: 'Gestionar membresias', href: '/memberships', Icon: IoConstruct },
+  { title: 'Leads', subTitle: 'Gestionar leads', href: '/users', Icon: IoAccessibility },
 ];
 
 
@@ -37,30 +36,43 @@ export const SideMenu = () => {
     dispatch(startLogOut());
   };
   return (
-    <div id="menu" style={{ backgroundColor: palette.secondary.blackLike }} className="min-h-screen z-10 text-slate-300 w-80 left-0 overflow-y-hidden">
+    <div
+      id="menu"
+      style={{ backgroundColor: palette.secondary.blackLike }}
+      className="min-h-screen z-10 text-slate-300 w-80 left-0 overflow-y-hidden"
+    >
       <div id="logo" className="my-4 px-20">
         {/* Title */}
         <MainMindLogo />
       </div>
 
       {/*  Profile */}
-      <div id="profile" className="px-6 py-10">
-        <p className="text-slate-500" style={{ color: 'white' }}>Bienvenido,</p>
-        {/* <a href="#" className="inline-flex space-x-2 items-center"> */}
-          <span style={{ color: pallete.secondary.light }} className="text-sm md:text-base font-bold">
-            {fullName}
-          </span>
-        {/* </a> */}
+      <div
+        id="profile"
+        className="px-6 py-10"
+        style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+      >
+        <p className="text-slate-500" style={{ color: 'white', margin: 0 }}>
+          Bienvenido: 
+        </p>
+        <span
+          style={{ color: pallete.secondary.light }}
+          className="text-sm md:text-base font-bold"
+        >
+          {fullName}
+        </span>
       </div>
 
       {/* Menu Items */}
-      <nav id="nav" className="w-full px-6 flex flex-col justify-between " style={{ height: 'calc(100% - 310px)' }}>
+      <nav
+        id="nav"
+        className="w-full px-6 flex flex-col justify-between "
+        style={{ height: 'calc(100% - 310px)' }}
+      >
         <div>
-          {
-            menuItems.map(item => (
-              <SideMenuItem key={item.href} {...item} />
-            ))
-          }
+          {menuItems.map((item) => (
+            <SideMenuItem key={item.href} {...item} />
+          ))}
         </div>
 
         {/* Logout */}
@@ -69,11 +81,20 @@ export const SideMenu = () => {
             <IoLogOutOutline />
           </div>
           <div onClick={handleLogout} className="flex flex-col ">
-            <span style={{ color: pallete.secondary.contrastText }} className="text-lg font-bold leading-5">Logout</span>
-            <span style={{ color: pallete.secondary.contrastText }} className="text-sm hidden md:block">Cerrar sesión</span>
+            <span
+              style={{ color: pallete.secondary.contrastText }}
+              className="text-lg font-bold leading-5"
+            >
+              Logout
+            </span>
+            <span
+              style={{ color: pallete.secondary.contrastText }}
+              className="text-sm hidden md:block"
+            >
+              Cerrar sesión
+            </span>
           </div>
         </NavLink>
-
       </nav>
     </div>
   );

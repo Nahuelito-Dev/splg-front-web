@@ -1,4 +1,4 @@
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 
 import { useAppDispatch } from "../hooks";
 import { logOut } from "../store/auth";
@@ -24,6 +24,7 @@ export const DashboardRoutes = () => {
           <Route path="home" element={<Home />} />
           <Route path="users" element={<Users />} />
           <Route path="memberships" element={<Memberships />} />
+          <Route path="/*" element={<Navigate to="/home" />} />
         </Routes>
       </DashboardLayout>
     </>
