@@ -22,14 +22,14 @@ import { useAppDispatch, useAppSelector, useForm } from '../../hooks';
 import { startLoginWithEmailAndPassword } from "../../store/auth/thunks";
 
 const formData = {
-    email: 'nahuel@email.com',
-    password: '123456'
+    email: '',
+    password: ''
 }
 
 export const LoginPage = () => {
     const dispatch = useAppDispatch();
     const { status } = useAppSelector((state) => state.auth);
-    const { formState, onInputChange }: any = useForm(formData);
+    const { formState, onInputChange } = useForm(formData);
     const isAuthenticating = useMemo(() => status === "checking", [status]);
     const [showPassword, setShowPassword] = useState(false);
 
@@ -41,68 +41,69 @@ export const LoginPage = () => {
     if (status === "authenticated") return <Navigate to="/home" />
 
     return (
-        <AuthLayout>
+      <AuthLayout>
+        <Stack
+          gap={2}
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            flexDirection: 'column',
+          }}
+        >
+          <TextField
+            sx={{ width: '100%' }}
+            value={formState.email}
+            onChange={onInputChange}
+            id="email"
+            type="email"
+            name="email"
+            variant="standard"
+            InputProps={{
+              placeholder: 'email@example.com',
+              sx: { color: '#FFF !important' },
+            }}
+          />
+          <TextField
+            sx={{ width: '100%', color: '#FFF !important' }}
+            name="password"
+            value={formState.password}
+            onChange={onInputChange}
+            type={showPassword ? 'text' : 'password'}
+            variant="standard"
+            InputProps={{
+              sx: { color: '#FFF !important' },
+              placeholder: 'Min. 8 caracteres',
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    aria-label="toggle password visibility"
+                    onClick={() => setShowPassword(!showPassword)}
+                    edge="end"
+                  >
+                    {showPassword ? <VisibilityIcon /> : <VisibilityOffIcon />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+          />
 
-            <Stack
-                gap={2}
-                sx={{
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    flexDirection: "column",
-                }}
-            >
-                <TextField
-                    sx={{ width: "100%", }}
-                    name="email"
-                    value={formState.email}
-                    onChange={onInputChange}
-                    variant="standard"
-                    InputProps={{
-                        placeholder: "email@example.com",
-                        sx: { color: '#FFF !important' }
-                    }}
-                />
-                <TextField
-                    sx={{ width: "100%", color: '#FFF !important' }}
-                    name="password"
-                    value={formState.password}
-                    onChange={onInputChange}
-                    type={showPassword ? "text" : "password"}
-                    variant="standard"
-                    InputProps={{
-                        sx: { color: '#FFF !important' },
-                        placeholder: "Min. 8 caracteres",
-                        endAdornment: (
-                            <InputAdornment position="end">
-                                <IconButton
-                                    aria-label="toggle password visibility"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    edge="end"
-                                >
-                                    {showPassword ? <VisibilityIcon /> : <VisibilityOffIcon />}
-                                </IconButton>
-                            </InputAdornment>
-                        ),
-                    }}
-                />
-
-                <Button
-                    disabled={isAuthenticating}
-                    onClick={handleSubmit}
-                    sx={{
-                        borderRadius: '12px',
-                        width: '50%',
-                        marginTop: '20px',
-                        backgroundColor: pallette.secondary.light + '!important',
-                        '&:hover': { backgroundColor: pallette.secondary.lighter + '!important' }
-                    }}
-                >
-                    LOGIN
-                </Button>
-            </Stack>
-
-
-        </AuthLayout>
+          <Button
+            disabled={isAuthenticating}
+            onClick={handleSubmit}
+            sx={{
+              borderRadius: '12px',
+              width: '50%',
+              marginTop: '20px',
+              backgroundColor: pallette.secondary.light + '!important',
+              '&:hover': {
+                backgroundColor: pallette.secondary.lighter + '!important',
+              },
+            }}
+          >
+            LOGIN
+          </Button>
+        </Stack>
+      </AuthLayout>
     );
 };
