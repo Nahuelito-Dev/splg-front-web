@@ -22,7 +22,18 @@ interface MenuItem {
 
 const menuItems: MenuItem[] = [
   { title: 'Home', subTitle: 'Visualizar data', href: '/home', Icon: IoHome },
-  { title: 'Leads', subTitle: 'Gestionar leads', href: '/users', Icon: IoAccessibility },
+  {
+    title: 'Leads',
+    subTitle: 'Gestionar leads',
+    href: '/leads',
+    Icon: IoConstruct,
+  },
+  {
+    title: 'Users',
+    subTitle: 'Gestionar usuarios',
+    href: '/users',
+    Icon: IoAccessibility,
+  },
 ];
 
 
