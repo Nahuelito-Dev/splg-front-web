@@ -3,7 +3,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { useAppDispatch } from "../hooks";
 import { logOut } from "../store/auth";
 
-import { Home, Users, Memberships } from "../pages";
+import { Home, Users, Leads } from "../pages";
 import { DashboardLayout } from "../common/layout";
 
 export const DashboardRoutes = () => {
@@ -23,7 +23,8 @@ export const DashboardRoutes = () => {
         <Routes>
           <Route path="home" element={<Home />} />
           <Route path="users" element={<Users />} />
-          <Route path="memberships" element={<Memberships />} />
+          <Route path="leads" element={<Leads />} />
+
           <Route path="/*" element={<Navigate to="/home" />} />
         </Routes>
       </DashboardLayout>
