@@ -3,8 +3,9 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { useAppDispatch } from "../hooks";
 import { logOut } from "../store/auth";
 
-import { Home, Users, Leads } from "../pages";
+import { Home, Leads } from "../pages";
 import { DashboardLayout } from "../common/layout";
+import { LeadsDetailsView } from '../pages/Leads/components/LeadsDetailsView';
 
 export const DashboardRoutes = () => {
   const expireTimestampString = localStorage.getItem("expireTimestamp");
@@ -22,9 +23,11 @@ export const DashboardRoutes = () => {
       <DashboardLayout>
         <Routes>
           <Route path="home" element={<Home />} />
-          <Route path="users" element={<Users />} />
           <Route path="leads" element={<Leads />} />
-
+          <Route
+            path="leads/details/:leadId"
+            element={<LeadsDetailsView />}
+          />
           <Route path="/*" element={<Navigate to="/home" />} />
         </Routes>
       </DashboardLayout>
