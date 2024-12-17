@@ -9,7 +9,6 @@ interface NotificationDropDownProps {
 
 export const NotificationDropDown: React.FC<NotificationDropDownProps> = ({
   isOpen,
-  onClose,
   dropdownRef,
   notifications,
 }) => {

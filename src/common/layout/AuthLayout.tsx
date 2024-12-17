@@ -1,6 +1,5 @@
-import { Avatar, Box, Grid, Stack, Typography } from '@mui/material';
+import { Box, Grid, Typography } from '@mui/material';
 import pallette from '../../theme/pallete';
-import { MainMindLogo } from '../../assets/images/MainMindLogo';
 
 interface Props {
     children: JSX.Element | JSX.Element[];

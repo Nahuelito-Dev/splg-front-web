@@ -1,14 +1,13 @@
 import { LeadsTable } from './components/LeadsTable';
 
 import { Lead } from '../../interfaces';
-import { AddItemFab } from '../../common/components/AddItemFab';
+//import { AddItemFab } from '../../common/components/AddItemFab';
 import { deleteUser } from '../../services/api/users';
 import { useCRUDModal } from '../../hooks';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 export const Leads = () => {
   const [lead, setLead] = useState<Lead>();
-  const [open, setOpen] = useState(false);
   const { deleteMutation } = useCRUDModal({
     deleteFn: deleteUser,
     queryKey: 'user',
@@ -41,9 +40,9 @@ export const Leads = () => {
     setUser(undefined);
   };*/
 
-  useEffect(() => {
+  /*useEffect(() => {
     if (lead) setOpen(true);
-  }, [lead]);
+  }, [lead]);*/
 
   return (
     <>
