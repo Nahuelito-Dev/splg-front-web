@@ -55,7 +55,7 @@ const columns: GridColDef[] = [
   // },
 ];
 
-export const MembershipsTable = ({ user, setUser }: Props) => {
+export const MembershipsTable = ({ setUser }: Props) => {
   const tableProps = useTable({ queryKey: "users", queryFn: getAllUsers });
 
   return (

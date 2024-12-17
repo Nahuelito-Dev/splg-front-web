@@ -1,17 +1,10 @@
-import { useState } from 'react';
-import { Visibility, VisibilityOff } from '@mui/icons-material';
 import {
   Typography,
   Stack,
   TextField,
   Box,
   Button,
-  Select,
-  InputLabel,
-  MenuItem,
-  InputAdornment,
   IconButton,
-  Autocomplete,
 } from '@mui/material';
 import { useForm, useCRUDModal } from '../../../hooks';
 import { CustomModal } from '../../../common/components';
@@ -43,7 +36,6 @@ export const CreateMembershipModal = ({
     user ?? initialForm
   );
 
-  const [showPassword, setShowPassword] = useState(false);
 
   const { createMutation, updateMutation } = useCRUDModal({
     createFn: createUser,

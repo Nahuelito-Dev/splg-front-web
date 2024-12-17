@@ -1,7 +1,6 @@
 import { Grid } from '@mui/material';
 import Box from '@mui/material/Box';
 import CircularProgress, {
-    circularProgressClasses
 } from '@mui/material/CircularProgress';
 import palette from '../../theme/pallete';
 

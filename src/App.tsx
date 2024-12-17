@@ -1,10 +1,10 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
+//import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 import { CustomAlert } from "./common/components"
-import { AuthRoutes } from "./routes/AuthRoutes"
-import { DashboardRoutes } from "./routes/DashboardRoutes"
+//import { AuthRoutes } from "./routes/AuthRoutes"
+//import { DashboardRoutes } from "./routes/DashboardRoutes"
 import { ThemeProvider } from "./theme"
 
 import { useAppSelector } from "./hooks/reduxHooks"
