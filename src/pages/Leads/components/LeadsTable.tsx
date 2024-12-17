@@ -28,13 +28,13 @@ const iconButtonStyle = {
   marginRight: 1,
 };
 
-export const LeadsTable = ({ lead, setLead }: Props) => {
+export const LeadsTable = ({ setLead }: Props) => {
   const tableProps = useTable({ queryKey: 'leads', queryFn: getAllLeads });
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredLeads, setFilteredLeads] = useState<Lead[]>(
     tableProps.data?.leads || []
   );
-  const [open, setOpen] = React.useState(false);
+ // const [open, setOpen] = React.useState(false);
 
   const renderButons = (row: Lead) => (
     <div style={{ display: 'flex', alignItems: 'center' }}>

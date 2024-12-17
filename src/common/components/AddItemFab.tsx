@@ -1,7 +1,7 @@
 import AddIcon from '@mui/icons-material/Add';
 import { Fab } from '@mui/material'
 
-import palette from '../../theme/pallete';
+//import palette from '../../theme/pallete';
 
 interface Props {
     onClick: () => void
