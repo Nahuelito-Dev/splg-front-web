@@ -32,9 +32,9 @@ export const Memberships = () => {
     }
   };
 
-  const handleAddUser = () => {
+ /* const handleAddUser = () => {
     setOpen(true);
-  };
+  };*/
 
   const setModalOpen = () => {
     setOpen(true);
