@@ -4,10 +4,8 @@ import { NavLink } from 'react-router-dom';
 
 import type { IconType } from 'react-icons';
 import {
-  IoConstruct,
   IoHome,
   IoLogOutOutline,
-  IoAccessibility,
 } from 'react-icons/io5';
 
 import pallete from '../../../theme/pallete';

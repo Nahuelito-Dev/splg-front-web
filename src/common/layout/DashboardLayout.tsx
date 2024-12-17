@@ -1,4 +1,3 @@
-import { Outlet } from 'react-router-dom';
 import { Navbar, SideMenu } from '../components';
 
 interface Props {
