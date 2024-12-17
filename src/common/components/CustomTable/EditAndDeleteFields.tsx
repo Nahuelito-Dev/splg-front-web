@@ -1,9 +1,9 @@
-import { IconButton } from "@mui/material";
+//import { IconButton } from "@mui/material";
 import { GridColDef } from "@mui/x-data-grid";
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+//import EditIcon from '@mui/icons-material/Edit';
+//import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 
-export const EditAndDeleteFields: (disabled: boolean) => GridColDef[] = (disabled: boolean) => [
+export const EditAndDeleteFields: (disabled: boolean) => GridColDef[] = () => [
     {
         field: 'edit',
         headerName: 'Edit',
@@ -12,7 +12,7 @@ export const EditAndDeleteFields: (disabled: boolean) => GridColDef[] = (disable
         maxWidth: 65,
         disableColumnMenu: true,
         hideSortIcons: true,
-        renderCell: (row) => <IconButton disabled={disabled}><EditIcon color={disabled ? "disabled" : "warning"} /></IconButton>
+        //renderCell: (row) => <IconButton disabled={disabled}><EditIcon color={disabled ? "disabled" : "warning"} /></IconButton>
     },
     {
         field: 'delete',
@@ -22,6 +22,6 @@ export const EditAndDeleteFields: (disabled: boolean) => GridColDef[] = (disable
         maxWidth: 65,
         disableColumnMenu: true,
         hideSortIcons: true,
-        renderCell: (row) => <IconButton disabled={disabled}><DeleteForeverIcon color={disabled ? "disabled" : "error"} /></IconButton>
+        //renderCell: (row) => <IconButton disabled={disabled}><DeleteForeverIcon color={disabled ? "disabled" : "error"} /></IconButton>
     },
 ]

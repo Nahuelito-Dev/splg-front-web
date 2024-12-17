@@ -1,53 +1,97 @@
- import { AppBar, Box, Grid, IconButton, Theme, Toolbar, useTheme } from "@mui/material"
-import pallete from "../../../theme/pallete"
-import MenuIcon from "@mui/icons-material/Menu";
-import { useLocation } from "react-router-dom"
-import { useMemo, useState } from "react";
-import { SideDrawer, drawerWidth } from './components/SideDrawer';
-
-const getAppBarSX = (theme: Theme, open: boolean) => ({
-    zIndex: theme.zIndex.drawer + 1111,
-    color: "white",
-    boxShadow: "none",
-    backgroundColor: pallete.secondary.dark,
-    marginLeft: open ? drawerWidth : 0,
-    width: `calc(100% - ${open ? drawerWidth : 0}px)`,
-    transition: theme.transitions.create(["width", "margin"], {
-        easing: theme.transitions.easing.sharp,
-        duration: open ? theme.transitions.duration.enteringScreen : theme.transitions.duration.leavingScreen,
-    }),
-})
-
+import { useState, useEffect, useRef } from 'react';
+import { BellIcon } from '@heroicons/react/24/outline';
+import Tooltip from '@mui/material/Tooltip';
+import palette from '../../../theme/pallete';
+import { NotificationDropDown } from './components/NotificationDropdown';
+import { io, Socket } from 'socket.io-client';
 
 export const Navbar = () => {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]); // Almacena notificaciones
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
 
-    const theme = useTheme()
-    const [open, setOpen] = useState(false);
+  // Referencia para el sonido
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-    const location = useLocation()
-    const isInDashboard = useMemo(() => location.pathname.includes('/auth') ? false : true, [location])
+  // Toggle para abrir o cerrar el dropdown
+  const toggleDropdown = () => {
+    setIsDropdownOpen((prev) => !prev);
+  };
 
-    return (
-        <Box display='flex'>
-            <AppBar sx={getAppBarSX(theme, open)} position='fixed'>
-                <Toolbar>
-                    {isInDashboard && <IconButton
-                        color='inherit'
-                        aria-label='open drawer'
-                        onClick={() => setOpen(true)}
-                        edge='start'
-                        sx={{
-                            marginRight: 5, display: open ? "none" : "block"
-                        }}
-                    >
-                        <MenuIcon sx={{ color: pallete.primary.lighter }} />
-                    </IconButton>}
-                    <Grid container direction='row' >
-                        {/* <img src="/images/powerStaffingLogo.png" alt="logo company name" height='50px' /> */}
-                    </Grid>
-                </Toolbar>
-            </AppBar>
-            {isInDashboard && <SideDrawer open={open} setOpen={setOpen} />}
-        </Box>
-    )
-}
+  // Conexión a WebSocket para recibir notificaciones en tiempo real
+  useEffect(() => {
+    const socket: Socket = io('http://localhost:3000'); // URL del servidor WebSocket
+
+    // Escucha el evento 'new-notification' y actualiza las notificaciones
+    socket.on('new-notification', (notification) => {
+      setNotifications((prev) => [notification, ...prev]); // Agrega nuevas notificaciones al inicio
+
+      // Reproducir el sonido cuando llega una nueva notificación
+      if (audioRef.current) {
+        audioRef.current.play(); // Reproduce el sonido
+      }
+    });
+
+    // Desconecta el socket al desmontar el componente
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
+
+  // Cierra el dropdown si se hace clic fuera de él
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  return (
+    <div className="min-h-full">
+      <nav
+        style={{ backgroundColor: palette.secondary.blackLike }}
+        className="relative"
+      >
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 items-center justify-between">
+            <div className="flex items-center ml-auto space-x-6">
+              <Tooltip title="Notificaciones" arrow>
+                <button
+                  type="button"
+                  className="relative flex items-center justify-center rounded-full p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none transition-all duration-300"
+                  onClick={toggleDropdown}
+                >
+                  {notifications.length > 0 && ( // Mostrar badge solo si hay notificaciones
+                    <span className="absolute top-0 right-0 inline-block w-2.5 h-2.5 rounded-full bg-red-500" />
+                  )}
+                  <BellIcon aria-hidden="true" className="h-6 w-6" />
+                </button>
+              </Tooltip>
+            </div>
+          </div>
+        </div>
+
+        {/* Componente NotificationDropdown */}
+        <NotificationDropDown
+          isOpen={isDropdownOpen}
+          onClose={toggleDropdown}
+          dropdownRef={dropdownRef}
+          notifications={notifications} // Pasamos las notificaciones dinámicas
+        />
+      </nav>
+
+      {/* Audio para la notificación */}
+      <audio ref={audioRef} src="/public/nexus_5_notificacion.mp3" preload="auto" />
+    </div>
+  );
+};

@@ -25,7 +25,7 @@ interface IProps {
 }
 
 
-export const DrawerNestItem = ({ open, setOpen, icon, title, adminPriv, children, handleDrawerClose }: IProps) => {
+export const DrawerNestItem = ({ open, setOpen, icon, title, children, handleDrawerClose }: IProps) => {
     // const { role } = useAppSelector((state) => state.auth);
     // const role = 'user'
     const [openSubmenu, setOpenSubmenu] = useState(false);

@@ -3,7 +3,10 @@ import { SideMenuItem } from './SideMenuItem';
 import { NavLink } from 'react-router-dom';
 
 import type { IconType } from 'react-icons';
-import { IoConstruct, IoHome, IoLogOutOutline, IoAccessibility } from 'react-icons/io5';
+import {
+  IoHome,
+  IoLogOutOutline,
+} from 'react-icons/io5';
 
 import pallete from '../../../theme/pallete';
 import './SideMenu.css';
@@ -11,7 +14,6 @@ import palette from '../../../theme/pallete';
 import { MainMindLogo } from '../../../assets/images/MainMindLogo';
 import { useAppDispatch, useAppSelector } from '../../../hooks';
 import { startLogOut } from '../../../store/auth/thunks';
-
 
 interface MenuItem {
   title: string;
@@ -21,27 +23,12 @@ interface MenuItem {
 }
 
 const menuItems: MenuItem[] = [
-  { title: 'Home', subTitle: 'Visualizar data', href: '/home', Icon: IoHome },
-  {
-    title: 'Leads',
-    subTitle: 'Gestionar leads',
-    href: '/leads',
-    Icon: IoConstruct,
-  },
-  {
-    title: 'Users',
-    subTitle: 'Gestionar usuarios',
-    href: '/users',
-    Icon: IoAccessibility,
-  },
+  { title: 'Home', subTitle: 'Leads', href: '/home', Icon: IoHome },
 ];
-
-
-
 
 export const SideMenu = () => {
   const dispatch = useAppDispatch();
-  const { fullName } = useAppSelector(state => state.auth)
+  const { fullName } = useAppSelector((state) => state.auth);
   const handleLogout = () => {
     localStorage.clear();
     dispatch(startLogOut());
@@ -52,6 +39,7 @@ export const SideMenu = () => {
       style={{ backgroundColor: palette.secondary.blackLike }}
       className="min-h-screen z-10 text-slate-300 w-80 left-0 overflow-y-hidden"
     >
+      {/* <Navbar />*/}
       <div id="logo" className="my-4 px-20">
         {/* Title */}
         <MainMindLogo />
@@ -64,7 +52,7 @@ export const SideMenu = () => {
         style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
       >
         <p className="text-slate-500" style={{ color: 'white', margin: 0 }}>
-          Bienvenido: 
+          Bienvenido:
         </p>
         <span
           style={{ color: pallete.secondary.light }}

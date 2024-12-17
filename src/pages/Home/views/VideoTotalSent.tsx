@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
-import { Stack, Box, Typography } from "@mui/material";
-import { getAllUsers } from "../../../services/api/users";
-import { User } from "../../../interfaces";
+//import React, { useEffect, useState } from "react";
+import { Box } from "@mui/material";
+//import { getAllUsers } from "../../../services/api/users";
+//import { User } from "../../../interfaces";
 
 
 
@@ -88,7 +88,7 @@ export const VideoTotalSent = ({ title, subtitle, large }: VideoTotalSentProps) 
     </Box>
   );
 };
-
+/*
 const boxCardStyle = {
   width: 400,
   height: 130,
@@ -100,4 +100,4 @@ const boxCardStyle = {
   flexWrap: "wrap",
   flexDirection: "column",
   justifyContent: "space-evenly",
-};
+};*/
