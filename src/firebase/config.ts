@@ -2,13 +2,13 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBMiee50UnqaLK2jG7Gej6vLjQYlEJv2Zo",
-  authDomain: "gearth-back.firebaseapp.com",
-  projectId: "gearth-back",
-  storageBucket: "gearth-back.firebasestorage.app",
-  messagingSenderId: "223685557402",
-  appId: "1:223685557402:web:719275bdb7fd4fff5db323",
-  measurementId: "G-RL8LCQK2JB"
+  apiKey: 'AIzaSyDm6G6Fx3qXaIbxrjrsTrOmfcd0pULWX_E',
+  authDomain: 'jennigas-55f69.firebaseapp.com',
+  projectId: 'jennigas-55f69',
+  storageBucket: 'jennigas-55f69.firebasestorage.app',
+  messagingSenderId: '175861123393',
+  appId: '1:175861123393:web:2cfa9183151df4f60ef9c0',
+  measurementId: 'G-49Z1M57P9B',
 };
 
 const FirebaseApp = initializeApp(firebaseConfig);

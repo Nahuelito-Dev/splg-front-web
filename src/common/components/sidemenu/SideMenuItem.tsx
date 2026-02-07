@@ -1,30 +1,30 @@
-
-import type { IconType } from 'react-icons';
 import { NavLink } from 'react-router-dom';
-import pallete from '../../../theme/pallete';
+import type { IconType } from 'react-icons';
 
 interface Props {
   href: string;
   Icon: IconType;
   title: string;
-  subTitle: string
 }
 
-
-export const SideMenuItem = ({ href, Icon, title, subTitle }: Props) => {
+export const SideMenuItem = ({ href, Icon, title }: Props) => {
   return (
     <NavLink
-      key={ href }
-      to={ href }
-      end
+      to={href}
+      className={({ isActive }) => `
+        flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group
+        ${
+          isActive
+            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50'
+            : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+        }
+      `}
     >
-      <div>
-        <Icon />
-      </div>
-      <div className="flex flex-col">
-        <span style={{color: 'white'}} className="text-lg font-bold leading-5">{ title }</span>
-        <span style={{color: pallete.secondary.light}} className="text-sm text-black/50 hidden md:block">{ subTitle }</span>
-      </div>
+      {/* Icono */}
+      <Icon className="text-2xl" />
+
+      {/* Texto */}
+      <span className="font-medium text-base tracking-wide">{title}</span>
     </NavLink>
   );
-}
+};
