@@ -1,31 +1,25 @@
-import { Grid } from '@mui/material';
-import Box from '@mui/material/Box';
-import CircularProgress, {
-} from '@mui/material/CircularProgress';
-import palette from '../../theme/pallete';
+import { YennigasLogo } from '../../common/components/YennigasLogo';
 
-export const CheckingAuth = (props: any) => {
-    return (
-        <Grid
-            container
-            spacing={0}
-            direction="column"
-            alignItems="center"
-            justifyContent="center"
-            sx={{ minHeight: '100vh', backgroundColor: palette.secondary.blackLike, padding: 4 }}
-        >
-            <Box sx={{ position: 'relative' }}>
-                <CircularProgress
-                    sx={{
-                        color: "#E2E1CD",
-                    }}
-                    size={40}
-                    thickness={4}
-                    {...props}
-                    value={100}
-                />
-            </Box>
-        </Grid>
-    );
-}
+export const CheckingAuth = () => {
+  return (
+    <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#0f1014] gap-8">
+      {/* Logo con animación de pulso suave */}
+      <div className="animate-pulse">
+        <YennigasLogo textSize="text-6xl" />
+      </div>
 
+      {/* Spinner personalizado con los colores de la marca */}
+      <div className="relative w-16 h-16">
+        {/* Círculo base (fondo grisáceo) */}
+        <div className="absolute inset-0 border-4 border-slate-800 rounded-full"></div>
+
+        {/* Círculo giratorio (color principal rosa) */}
+        <div className="absolute inset-0 border-4 border-[#f43f5e] rounded-full border-t-transparent animate-spin"></div>
+      </div>
+
+      <p className="text-slate-500 text-sm font-medium tracking-widest uppercase animate-pulse">
+        Cargando Sistema...
+      </p>
+    </div>
+  );
+};

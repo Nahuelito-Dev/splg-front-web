@@ -1,0 +1,51 @@
+# Configuración global de Compilación
+[build]
+  # Directorio base (raíz del proyecto)
+  base = "/"
+  # Directorio donde Vite genera los archivos estáticos
+  publish = "dist"
+  # Comando para construir la aplicación
+  command = "npm run build"
+
+# ------------------------------------------------------------------------------
+# REDIRECCIONES (CRÍTICO PARA REACT ROUTER)
+# ------------------------------------------------------------------------------
+# Esto evita el error 404 al recargar páginas internas (ej: /users/123)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# ------------------------------------------------------------------------------
+# CABECERAS DE SEGURIDAD Y CACHÉ
+# ------------------------------------------------------------------------------
+
+# 1. Seguridad Global para todas las rutas
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Evita que tu sitio sea incrustado en iframes de otros sitios (Clickjacking protection)
+    X-Frame-Options = "DENY"
+    # Protección contra XSS en navegadores antiguos
+    X-XSS-Protection = "1; mode=block"
+    # Evita que el navegador "adivine" el tipo de archivo (MIME sniffing)
+    X-Content-Type-Options = "nosniff"
+    # Controla cuánta información de referencia se envía al navegar fuera
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    # Fuerza HTTPS (Opcional, Netlify ya lo hace, pero es buena práctica)
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+    # Bloquea el uso de características sensibles del navegador (Cámara, Micrófono, Geolo. si no se usan)
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+# 2. Caché Agresivo para Assets Estáticos (JS, CSS, Imágenes)
+# Vite genera nombres de archivo con hash (ej: index.a3b4c.js), así que son inmutables.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# 3. Caché para el Service Worker (si lo usaras en el futuro, no debe cachearse)
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "max-age=0, no-cache, no-store, must-revalidate"

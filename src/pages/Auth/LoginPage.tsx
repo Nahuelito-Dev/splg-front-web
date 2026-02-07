@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector, useForm } from '../../hooks';
 import { startLoginWithEmailAndPassword } from '../../store/auth/thunks';
-import pallete from '../../theme/pallete';
+import { YennigasLogo } from '../../common/components/YennigasLogo'; // Ajusta la ruta
 
 const formData = {
   email: '',
@@ -24,34 +24,29 @@ export const LoginPage = () => {
   if (status === 'authenticated') return <Navigate to="/home" />;
 
   return (
-    <div
-      className="font-sans min-h-screen flex items-center justify-center"
-      style={{ backgroundColor: pallete.secondary.blackLike }}
-    >
-      <div
-        className="rounded-lg p-6 shadow-xl max-w-md w-full"
-        style={{
-          backgroundColor: `${pallete.secondary.blackLike}EE`,
-          boxShadow: '0 8px 16px rgba(0, 0, 0, 0.5)',
-        }}
-      >
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <div className="mb-8 text-center">
-            <img
-              src="../gearth.png"
-              alt="logo"
-              className="w-40 mb-8 mx-auto block"
-            />
-            <h3 className="text-white text-3xl font-extrabold">Sign in</h3>
-            <p className="text-gray-400 text-sm mt-4 leading-relaxed">
-              Sign in to your account and explore a world of possibilities. Your
-              journey begins here.
+    <div className="min-h-screen flex items-center justify-center bg-[#0f1014]">
+      {/* Fondo con un degradado sutil para darle profundidad como en la app */}
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 to-black z-0"></div>
+
+      <div className="relative z-10 rounded-2xl p-8 shadow-2xl max-w-md w-full bg-[#1A1D23] border border-slate-800">
+        <form className="space-y-6" onSubmit={handleSubmit}>
+          {/* Logo Section */}
+          <div className="mb-10 text-center">
+            <div className="mb-6 flex justify-center">
+              <YennigasLogo textSize="text-6xl" />
+            </div>
+            <h3 className="text-white text-2xl font-bold tracking-tight">
+              Bienvenido
+            </h3>
+            <p className="text-slate-400 text-sm mt-2">
+              Ingresa a tu cuenta para gestionar pedidos.
             </p>
           </div>
 
-          <div>
-            <label className="text-gray-200 text-sm mb-2 block">
-              User name
+          {/* User Input */}
+          <div className="space-y-1">
+            <label className="text-slate-300 text-xs font-bold uppercase ml-1">
+              Email
             </label>
             <div className="relative flex items-center">
               <input
@@ -60,13 +55,17 @@ export const LoginPage = () => {
                 required
                 value={formState.email}
                 onChange={onInputChange}
-                className="w-full text-sm text-gray-800 border border-gray-700 bg-gray-50 px-4 py-3 rounded-lg outline-blue-600"
-                placeholder="Enter user name"
+                className="w-full text-sm text-white bg-[#0f1014] border border-slate-700 px-4 py-3.5 rounded-xl focus:outline-none focus:border-[#f43f5e] focus:ring-1 focus:ring-[#f43f5e] transition-all placeholder-slate-600"
+                placeholder="usuario@yennigas.com"
               />
             </div>
           </div>
-          <div>
-            <label className="text-gray-200 text-sm mb-2 block">Password</label>
+
+          {/* Password Input */}
+          <div className="space-y-1">
+            <label className="text-slate-300 text-xs font-bold uppercase ml-1">
+              Contraseña
+            </label>
             <div className="relative flex items-center">
               <input
                 name="password"
@@ -74,12 +73,12 @@ export const LoginPage = () => {
                 required
                 value={formState.password}
                 onChange={onInputChange}
-                className="w-full text-sm text-gray-800 border border-gray-700 bg-gray-50 px-4 py-3 rounded-lg outline-blue-600"
+                className="w-full text-sm text-white bg-[#0f1014] border border-slate-700 px-4 py-3.5 rounded-xl focus:outline-none focus:border-[#f43f5e] focus:ring-1 focus:ring-[#f43f5e] transition-all placeholder-slate-600"
                 placeholder="••••••"
               />
               <span
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 cursor-pointer"
+                className="absolute right-4 cursor-pointer text-slate-500 hover:text-white transition-colors"
               >
                 {showPassword ? (
                   <svg
@@ -126,13 +125,13 @@ export const LoginPage = () => {
             </div>
           </div>
 
-          <div className="flex justify-center mt-8">
+          <div className="pt-4">
             <button
               type="submit"
-              className="w-1/2 shadow-xl py-2 px-3 text-sm tracking-wide rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
+              className="w-full shadow-lg shadow-pink-500/30 py-3.5 px-4 text-sm font-bold tracking-wide rounded-xl text-white bg-[#f43f5e] hover:bg-pink-600 focus:outline-none transition-transform active:scale-95"
               disabled={isAuthenticating}
             >
-              Log in
+              {isAuthenticating ? 'Ingresando...' : 'INICIAR SESIÓN'}
             </button>
           </div>
         </form>

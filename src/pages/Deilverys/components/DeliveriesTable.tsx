@@ -1,0 +1,150 @@
+import { GridColDef } from '@mui/x-data-grid';
+import { Link } from 'react-router-dom';
+import { useTable } from '../../../hooks';
+import { getAllDeliveries } from '../../../services/api/deliveries';
+import { CustomTable } from '../../../common/components';
+
+// Iconos
+import TwoWheelerIcon from '@mui/icons-material/TwoWheeler'; // Icono Moto
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import StarIcon from '@mui/icons-material/Star';
+import CircleIcon from '@mui/icons-material/Circle';
+import { IconButton, Tooltip } from '@mui/material';
+
+interface Props {
+  setAction: (event: any) => void;
+}
+
+export const DeliveriesTable = ({ setAction }: Props) => {
+  //const [searchTerm, setSearchTerm] = useState('');
+
+  const tableProps = useTable({
+    queryKey: 'deliveries',
+    queryFn: (page, limit) => getAllDeliveries(page, limit),
+    dependencies: [],
+  });
+
+  const rows = tableProps.data?.rows || [];
+
+  const renderActions = (row: any) => (
+    <div className="flex items-center justify-center gap-2">
+      <Tooltip title="Ver Detalle y Vehículos">
+        <Link to={`/deliveries/details/${row.delivery_id}`}>
+          <IconButton className="bg-slate-50 border border-slate-200 rounded-xl hover:bg-indigo-50 hover:border-indigo-200 transition-colors w-8 h-8">
+            <VisibilityIcon className="text-slate-600 hover:text-indigo-600 scale-75" />
+          </IconButton>
+        </Link>
+      </Tooltip>
+
+      <Tooltip title="Editar Datos">
+        <IconButton
+          onClick={() => setAction({ row, field: 'edit' })}
+          className="bg-slate-50 border border-slate-200 rounded-xl hover:bg-blue-50 hover:border-blue-200 transition-colors w-8 h-8"
+        >
+          <EditIcon className="text-slate-600 hover:text-blue-600 scale-75" />
+        </IconButton>
+      </Tooltip>
+
+      <Tooltip title="Eliminar">
+        <IconButton
+          onClick={() => setAction({ row, field: 'delete' })}
+          className="bg-slate-50 border border-slate-200 rounded-xl hover:bg-rose-50 hover:border-rose-200 transition-colors w-8 h-8"
+        >
+          <DeleteOutlineIcon className="text-slate-600 hover:text-rose-600 scale-75" />
+        </IconButton>
+      </Tooltip>
+    </div>
+  );
+
+  const columns: GridColDef[] = [
+    {
+      field: 'full_name',
+      headerName: 'REPARTIDOR',
+      flex: 1.5,
+      minWidth: 200,
+      renderCell: ({ row }) => (
+        <div className="flex items-center gap-3 py-1">
+          <div className="p-2 bg-indigo-50 rounded-lg border border-indigo-100">
+            <TwoWheelerIcon className="text-indigo-500" fontSize="small" />
+          </div>
+          <div className="flex flex-col">
+            <span className="font-bold text-slate-800 text-sm">
+              {row.user?.full_name || 'Sin Nombre'}
+            </span>
+            <span className="text-[10px] text-slate-400">
+              {row.user?.email}
+            </span>
+          </div>
+        </div>
+      ),
+    },
+    {
+      field: 'phone',
+      headerName: 'TELÉFONO',
+      width: 140,
+      renderCell: ({ row }) => (
+        <span className="text-sm text-slate-600">{row.user?.phone_number}</span>
+      ),
+    },
+    {
+      field: 'balance',
+      headerName: 'BALANCE',
+      width: 120,
+      renderCell: ({ value }) => (
+        <span
+          className={`font-bold ${value < 0 ? 'text-rose-600' : 'text-emerald-600'}`}
+        >
+          $ {Number(value || 0).toLocaleString()}
+        </span>
+      ),
+    },
+    {
+      field: 'calification',
+      headerName: 'CALIF.',
+      width: 100,
+      renderCell: ({ value }) => (
+        <div className="flex items-center gap-1 text-amber-500 font-bold">
+          <StarIcon fontSize="small" /> {Number(value || 5).toFixed(1)}
+        </div>
+      ),
+    },
+    {
+      field: 'isActive',
+      headerName: 'ESTADO',
+      width: 120,
+      align: 'center',
+      renderCell: ({ value }) => (
+        <div
+          className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold ${
+            value
+              ? 'bg-emerald-100 text-emerald-700'
+              : 'bg-slate-100 text-slate-500'
+          }`}
+        >
+          <CircleIcon sx={{ fontSize: 8 }} />
+          {value ? 'ACTIVO' : 'INACTIVO'}
+        </div>
+      ),
+    },
+    {
+      field: 'actions',
+      headerName: 'ACCIONES',
+      width: 160,
+      align: 'center',
+      renderCell: ({ row }) => renderActions(row),
+    },
+  ];
+
+  return (
+    <CustomTable
+      title={'Flota de Repartidores'}
+      columns={columns}
+      rows={rows}
+      getRowId={(row: any) => row.delivery_id}
+      setActive={setAction}
+      {...tableProps}
+    />
+  );
+};

@@ -1,24 +1,21 @@
-import { Navbar, SideMenu } from '../components';
+import { SideMenu } from '../components';
 
 interface Props {
-  children: JSX.Element | JSX.Element[];
+  children: React.ReactNode;
 }
 
 export const DashboardLayout = ({ children }: Props) => {
   return (
-    <div
-      style={{ backgroundColor: '#E2E1CD' }}
-      className="overflow-y-hidden w-screen h-screen antialiased text-slate-900 selection:bg-blue-900 selection:text-white"
-    >
-      <div className="relative z-20">
-        <Navbar />
-      </div>
-      <div className="flex w-screen h-full relative">
-        <div className="z-10">
-          <SideMenu />
-        </div>
-        <div className="w-full p-4 flex flex-col">{children}</div>
-      </div>
+    <div className="min-h-screen bg-slate-100 text-slate-900 selection:bg-indigo-500 selection:text-white">
+      {/* Menú Lateral (Fixed) */}
+      <SideMenu />
+
+      {/* Contenedor Principal */}
+      {/* ml-72: Crea el margen izquierdo exacto del ancho del menú (w-72) */}
+      <main className="ml-72 min-h-screen transition-all duration-300">
+        {/* Wrapper del contenido con padding interno */}
+        <div className="w-full">{children}</div>
+      </main>
     </div>
   );
 };

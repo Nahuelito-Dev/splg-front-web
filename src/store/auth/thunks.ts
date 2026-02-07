@@ -48,7 +48,7 @@ export const startLoginWithEmailAndPassword = ({ email, password }: ICredentials
         dispatch(checkingCredentials());
         console.log("checking credentials")
         const { ok, uid, photoURL, displayName, token } = await loginWithEmailAndPassword({ email, password });
-        const { fullName, role } = await getAdmin(email)
+        const { fullName, role} = await getAdmin(email)
         if (!ok || !role) {
             localStorage.clear()
             dispatch(logOut({ errorMessage: 'User not found' }));
