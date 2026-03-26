@@ -70,24 +70,24 @@ export const LeadsTable = ({ setLead }: Props) => {
     { flex: 1, field: 'full_name', headerName: 'NOMBRE', minWidth: 150 },
     { flex: 1, field: 'phone_number', headerName: 'TELÉFONO', minWidth: 130 },
     {
-      field: 'contacted',
+      field: 'blocked',
       headerName: 'ESTADO',
-      width: 120,
+      width: 130,
       align: 'center',
       renderCell: ({ row }: GridRenderCellParams) => (
         <div
           className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border ${
-            row.contacted
+            !row.blocked
               ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
               : 'bg-rose-50 text-rose-700 border-rose-100'
           }`}
         >
-          {row.contacted ? (
+          {!row.blocked ? (
             <CheckCircleIcon sx={{ fontSize: 14 }} />
           ) : (
             <CloseIcon sx={{ fontSize: 14 }} />
           )}
-          {row.contacted ? 'Listo' : 'Pendiente'}
+          {!row.blocked ? 'Activo' : 'Bloqueado'}
         </div>
       ),
     },
@@ -113,12 +113,13 @@ export const LeadsTable = ({ setLead }: Props) => {
     >
       {/* Buscador Integrado Estilo Tailwind */}
       <div className="relative group w-full sm:w-72">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
           <SearchIcon className="h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
         </div>
         <input
           type="text"
-          className="block w-full pl-10 pr-3 py-2 border border-slate-200 rounded-lg leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all shadow-sm"
+          style={{ paddingLeft: '42px' }}
+          className="block w-full pr-3 py-2 border border-slate-200 rounded-lg leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all shadow-sm"
           placeholder="Buscar por email, nombre..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}

@@ -17,7 +17,17 @@ export const Cars = () => {
     onSuccess: () => {
       queryClient.invalidateQueries(['allCars']);
       setIsModalOpen(false);
-      Swal.fire('Actualizado', 'Datos del vehículo actualizados', 'success');
+      Swal.fire({
+        title: 'Actualizado',
+        text: 'Datos del vehículo actualizados',
+        icon: 'success',
+        confirmButtonText: 'OK',
+        customClass: {
+          popup: 'rounded-2xl shadow-xl',
+          confirmButton: 'bg-indigo-600 text-white px-5 py-2 rounded-lg'
+        },
+        buttonsStyling: false
+      });
     },
   });
 
@@ -25,7 +35,16 @@ export const Cars = () => {
     mutationFn: deleteCar,
     onSuccess: () => {
       queryClient.invalidateQueries(['allCars']);
-      Swal.fire('Eliminado', 'Vehículo eliminado correctamente', 'success');
+      Swal.fire({
+        title: 'Eliminado',
+        text: 'Vehículo eliminado correctamente',
+        icon: 'success',
+        confirmButtonText: 'OK',
+        customClass: {
+          confirmButton: 'bg-indigo-600 text-white font-bold px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors'
+        },
+        buttonsStyling: false
+      });
     },
   });
 
@@ -44,7 +63,15 @@ export const Cars = () => {
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#f43f5e',
+        cancelButtonColor: '#cbd5e1',
         confirmButtonText: 'Eliminar',
+        cancelButtonText: 'Cancelar',
+        customClass: {
+          popup: 'rounded-2xl shadow-xl',
+          confirmButton: 'bg-rose-500 text-white px-5 py-2 rounded-lg',
+          cancelButton: 'bg-slate-200 text-slate-600 px-5 py-2 rounded-lg'
+        },
+        buttonsStyling: false
       });
       if (res.isConfirmed) {
         deleteMutation.mutate(row.car_id);

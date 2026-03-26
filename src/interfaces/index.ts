@@ -7,6 +7,7 @@ export interface User {
   role: 'admin' | 'accountant' | 'superAdmin';
   full_name: string;
   phone_number: string;
+  blocked?: boolean;
   addresses?: UserAddress[];
 }
 
