@@ -2,17 +2,23 @@ import { privateAxiosInstance } from './axiosConfig';
 import { Delivery } from '../../interfaces';
 
 // GET ALL
-// 👇 Se eliminó "term?: string" de los argumentos
 export const getAllDeliveries = async (page = 0, limit = 10) => {
   const offset = limit * page;
   let url = `/delivery?limit=${limit}&offset=${offset}`;
 
   try {
     const { data } = await privateAxiosInstance.get(url);
-    // Asumimos que data es un array directo como en customers
+    
+    if (data && !Array.isArray(data) && data.rows !== undefined) {
+      return {
+        rows: data.rows,
+        total: data.total || 0,
+      };
+    }
+
     return {
       rows: Array.isArray(data) ? data : [],
-      total: 100,
+      total: Array.isArray(data) ? data.length : 100,
     };
   } catch (error) {
     console.error('❌ [GET DELIVERIES]', error);

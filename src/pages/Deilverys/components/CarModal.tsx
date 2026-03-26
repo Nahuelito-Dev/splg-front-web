@@ -130,7 +130,7 @@ export const CarModal = ({ car, isOpen, onClose, onSave, isSaving }: Props) => {
               </label>
               <input
                 type="number"
-                {...register('car_year')}
+                {...register('car_year', { valueAsNumber: true })}
                 placeholder="2023"
                 className="w-full p-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
               />
@@ -151,7 +151,7 @@ export const CarModal = ({ car, isOpen, onClose, onSave, isSaving }: Props) => {
               </label>
               <input
                 type="number"
-                {...register('car_capacity')}
+                {...register('car_capacity', { valueAsNumber: true })}
                 placeholder="500"
                 className="w-full p-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
               />

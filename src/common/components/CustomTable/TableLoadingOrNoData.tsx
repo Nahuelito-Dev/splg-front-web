@@ -25,7 +25,9 @@ export const TableLoadingOrNoData = ({ status }: Props) => {
                         value={100}
                     />
                     :
-                    <Typography>There isn't any data to show</Typography>
+                    <Typography sx={{ color: 'text.secondary', fontWeight: 500, fontSize: '0.95rem' }}>
+                        No hay datos para mostrar.
+                    </Typography>
             }
 
         </Box>

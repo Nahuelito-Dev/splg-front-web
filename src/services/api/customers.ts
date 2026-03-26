@@ -14,14 +14,17 @@ export const getAllCustomers = async (page = 0, limit = 10, term?: string) => {
 
   try {
     const { data } = await privateAxiosInstance.get(url);
-    // El backend devuelve un array directo [Customer, Customer...], no { users: [], total: 0 }
-    // A menos que cambies el backend, asumimos que devuelve un array.
-    // Si necesitas paginación real server-side, el backend debe devolver [data, count].
-    // Por ahora, adaptamos la respuesta asumiendo que data es el array.
+    
+    if (data && !Array.isArray(data) && data.rows !== undefined) {
+      return {
+        rows: data.rows,
+        total: data.total || 0,
+      };
+    }
 
     return {
       rows: Array.isArray(data) ? data : [],
-      total: 100, // Hardcodeado temporalmente si el back no devuelve el total
+      total: Array.isArray(data) ? data.length : 100,
     };
   } catch (error: any) {
     console.error('❌ [GET CUSTOMERS] Error:', error);
