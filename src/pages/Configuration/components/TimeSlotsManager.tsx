@@ -40,14 +40,23 @@ export const TimeSlotsManager = () => {
         text: 'El horario ya está disponible para los clientes.',
         timer: 2000,
         showConfirmButton: false,
+        customClass: {
+          popup: 'rounded-2xl shadow-xl'
+        }
       });
     },
     onError: () => {
-      Swal.fire(
-        'Error',
-        'No se pudo crear la franja. Revisa los datos.',
-        'error',
-      );
+      Swal.fire({
+        title: 'Error',
+        text: 'No se pudo crear la franja. Revisa los datos.',
+        icon: 'error',
+        confirmButtonText: 'OK',
+        customClass: {
+          popup: 'rounded-2xl shadow-xl',
+          confirmButton: 'bg-indigo-600 text-white px-5 py-2 rounded-lg'
+        },
+        buttonsStyling: false
+      });
     },
   });
 
@@ -56,11 +65,17 @@ export const TimeSlotsManager = () => {
     mutationFn: deleteTimeSlot,
     onSuccess: () => {
       queryClient.invalidateQueries(['timeslots']);
-      Swal.fire(
-        'Desactivado',
-        'La franja ha sido retirada del listado.',
-        'success',
-      );
+      Swal.fire({
+        title: 'Desactivado',
+        text: 'La franja ha sido retirada del listado.',
+        icon: 'success',
+        confirmButtonText: 'OK',
+        customClass: {
+          popup: 'rounded-2xl shadow-xl',
+          confirmButton: 'bg-indigo-600 text-white px-5 py-2 rounded-lg'
+        },
+        buttonsStyling: false
+      });
     },
   });
 
@@ -75,10 +90,16 @@ export const TimeSlotsManager = () => {
       text: 'Los clientes ya no podrán elegir esta franja.',
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
+      confirmButtonColor: '#f43f5e',
+      cancelButtonColor: '#cbd5e1',
       confirmButtonText: 'Sí, desactivar',
       cancelButtonText: 'Cancelar',
+      customClass: {
+        popup: 'rounded-2xl shadow-xl',
+        confirmButton: 'bg-rose-500 text-white px-5 py-2 rounded-lg',
+        cancelButton: 'bg-slate-200 text-slate-600 px-5 py-2 rounded-lg'
+      },
+      buttonsStyling: false
     });
 
     if (res.isConfirmed) {

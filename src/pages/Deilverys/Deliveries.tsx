@@ -40,14 +40,40 @@ export const Deliveries = () => {
     onSuccess: () => {
       queryClient.invalidateQueries(['deliveries']);
       setIsModalOpen(false);
-      Swal.fire('Éxito', 'Repartidor guardado correctamente', 'success');
+      Swal.fire({
+        title: 'Éxito',
+        text: 'Repartidor guardado correctamente',
+        icon: 'success',
+        confirmButtonText: 'OK',
+        customClass: {
+          popup: 'rounded-2xl shadow-xl',
+          confirmButton: 'bg-indigo-600 text-white px-5 py-2 rounded-lg'
+        },
+        buttonsStyling: false
+      });
     },
     onError: (err: any) => {
-      Swal.fire(
-        'Error',
-        err.response?.data?.message || 'Error al guardar',
-        'error',
-      );
+      let errorMessage = err.response?.data?.message || 'Error al guardar';
+      
+      if (typeof errorMessage === 'string') {
+        if (errorMessage.includes('Invalid phone number format')) {
+          errorMessage = 'Formato de teléfono inválido. Ej: +54 9 11 4333444 o +54 343 4333444';
+        }else if (errorMessage.includes('User with this email already exists')) {
+          errorMessage = 'El correo electrónico ya está registrado.';
+        }
+      }
+
+      Swal.fire({
+        title: 'Error',
+        text: errorMessage,
+        icon: 'error',
+        confirmButtonText: 'OK',
+        customClass: {
+          popup: 'rounded-2xl shadow-xl',
+          confirmButton: 'bg-indigo-600 text-white px-5 py-2 rounded-lg'
+        },
+        buttonsStyling: false
+      });
     },
   });
 
@@ -60,8 +86,16 @@ export const Deliveries = () => {
         text: 'Se eliminará el acceso y el perfil operativo.',
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#d33',
+        confirmButtonColor: '#f43f5e',
+        cancelButtonColor: '#cbd5e1',
         confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+        customClass: {
+          popup: 'rounded-2xl shadow-xl',
+          confirmButton: 'bg-rose-500 text-white px-5 py-2 rounded-lg',
+          cancelButton: 'bg-slate-200 text-slate-600 px-5 py-2 rounded-lg'
+        },
+        buttonsStyling: false
       });
       if (result.isConfirmed) await deleteMutation.mutateAsync(row.delivery_id);
     }

@@ -18,18 +18,44 @@ export const Customers = () => {
         text: `Se eliminará al cliente "${row.user?.full_name || 'Desconocido'}" y sus datos asociados.`,
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
+        confirmButtonColor: '#f43f5e',
+        cancelButtonColor: '#cbd5e1',
         confirmButtonText: 'Sí, eliminar',
         cancelButtonText: 'Cancelar',
+        customClass: {
+          popup: 'rounded-2xl shadow-xl',
+          confirmButton: 'bg-rose-500 text-white px-5 py-2 rounded-lg',
+          cancelButton: 'bg-slate-200 text-slate-600 px-5 py-2 rounded-lg'
+        },
+        buttonsStyling: false
       });
 
       if (result.isConfirmed) {
         try {
           await deleteMutation.mutateAsync(row.customer_id);
-          Swal.fire('Eliminado', 'El cliente ha sido eliminado.', 'success');
+          Swal.fire({
+            title: 'Eliminado',
+            text: 'El cliente ha sido eliminado.',
+            icon: 'success',
+            confirmButtonText: 'OK',
+            customClass: {
+              popup: 'rounded-2xl shadow-xl',
+              confirmButton: 'bg-indigo-600 text-white px-5 py-2 rounded-lg'
+            },
+            buttonsStyling: false
+          });
         } catch (error) {
-          Swal.fire('Error', 'No se pudo eliminar al cliente.', 'error');
+          Swal.fire({
+            title: 'Error',
+            text: 'No se pudo eliminar al cliente.',
+            icon: 'error',
+            confirmButtonText: 'OK',
+            customClass: {
+              popup: 'rounded-2xl shadow-xl',
+              confirmButton: 'bg-indigo-600 text-white px-5 py-2 rounded-lg'
+            },
+            buttonsStyling: false
+          });
         }
       }
     }

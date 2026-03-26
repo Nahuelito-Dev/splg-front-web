@@ -94,7 +94,17 @@ export const CarsManager = ({ userId }: Props) => {
       fetchCars();
     } catch (e: any) {
       const msg = e.response?.data?.message || 'Error al guardar';
-      Swal.fire('Error', msg, 'error');
+      Swal.fire({
+        title: 'Error',
+        text: msg,
+        icon: 'error',
+        confirmButtonText: 'OK',
+        customClass: {
+          popup: 'rounded-2xl shadow-xl',
+          confirmButton: 'bg-indigo-600 text-white px-5 py-2 rounded-lg'
+        },
+        buttonsStyling: false
+      });
     } finally {
       setIsSaving(false);
     }
@@ -107,16 +117,44 @@ export const CarsManager = ({ userId }: Props) => {
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#f43f5e',
+      cancelButtonColor: '#cbd5e1',
       confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      customClass: {
+        popup: 'rounded-2xl shadow-xl',
+        confirmButton: 'bg-rose-500 text-white px-5 py-2 rounded-lg',
+        cancelButton: 'bg-slate-200 text-slate-600 px-5 py-2 rounded-lg'
+      },
+      buttonsStyling: false
     });
 
     if (result.isConfirmed) {
       try {
         await deleteCar(carId);
-        Swal.fire('Eliminado', '', 'success');
+        Swal.fire({
+          title: 'Eliminado',
+          text: '',
+          icon: 'success',
+          confirmButtonText: 'OK',
+          customClass: {
+            popup: 'rounded-2xl shadow-xl',
+            confirmButton: 'bg-indigo-600 text-white px-5 py-2 rounded-lg'
+          },
+          buttonsStyling: false
+        });
         fetchCars();
       } catch (e) {
-        Swal.fire('Error', 'No se pudo eliminar', 'error');
+        Swal.fire({
+          title: 'Error',
+          text: 'No se pudo eliminar',
+          icon: 'error',
+          confirmButtonText: 'OK',
+          customClass: {
+            popup: 'rounded-2xl shadow-xl',
+            confirmButton: 'bg-indigo-600 text-white px-5 py-2 rounded-lg'
+          },
+          buttonsStyling: false
+        });
       }
     }
   };

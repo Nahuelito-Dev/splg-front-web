@@ -16,14 +16,14 @@ export const useCRUDModal = <Entity, NewEntity>({ createFn, updateFn, deleteFn, 
         queryClient.invalidateQueries([queryKey])
         store.dispatch(setSuccessMessage({
             message: `${queryKey[0].toUpperCase() +
-                queryKey.slice(1)} ${actionMade} successfully`
+                queryKey.slice(1)} ${actionMade} correctamente`
         }))
     }
 
     const notifyError = (actionMade: string) => {
         queryClient.invalidateQueries([queryKey])
         store.dispatch(setErrorMessage({
-            message: `Couldn't ${actionMade} ${queryKey[0].toUpperCase() +
+            message: `No se pudo ${actionMade} ${queryKey[0].toUpperCase() +
                 queryKey.slice(1)}`
         }))
     }
@@ -33,9 +33,9 @@ export const useCRUDModal = <Entity, NewEntity>({ createFn, updateFn, deleteFn, 
         mutationFn:
             createFn,
         onSuccess:
-            () => notifySuccess('created'),
+            () => notifySuccess('creado'),
         onError:
-            () => notifyError('create'),
+            () => notifyError('crear'),
     })
 
     const updateMutation = useMutation({
@@ -43,9 +43,9 @@ export const useCRUDModal = <Entity, NewEntity>({ createFn, updateFn, deleteFn, 
         mutationFn:
             updateFn,
         onSuccess:
-            () => notifySuccess('updated'),
+            () => notifySuccess('actualizado'),
         onError:
-            () => notifyError('update')
+            () => notifyError('actualizar')
     })
 
     const deleteMutation = useMutation({
@@ -53,9 +53,9 @@ export const useCRUDModal = <Entity, NewEntity>({ createFn, updateFn, deleteFn, 
         mutationFn:
             deleteFn,
         onSuccess:
-            () => notifySuccess('deleted'),
+            () => notifySuccess('eliminado'),
         onError:
-            () => notifyError('delete')
+            () => notifyError('eliminar')
     })
     return {
         createMutation,
