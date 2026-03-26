@@ -21,6 +21,7 @@ export const getAdmin = async (email: string) => {
     return {
       fullName: data.full_name,
       role: roleType,
+      blocked: data.blocked || false,
     };
   } catch (error: any) {
     console.error('❌ Error validando admin:', error);

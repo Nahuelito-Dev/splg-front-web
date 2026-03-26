@@ -1,15 +1,72 @@
-// Eliminé 'useState' y 'Lead' de los imports porque no se usan por ahora
 import { LeadsTable } from './components/LeadsTable';
-import { deleteUser } from '../../services/api/users';
+import { deleteUser, createUser, updateUser } from '../../services/api/users';
 import { useCRUDModal } from '../../hooks';
 import Swal from 'sweetalert2';
+import { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { UserModal } from './components/UserModal';
 
 export const Leads = () => {
-  // ❌ Eliminado: const [lead, setLead] = useState<Lead | undefined>();
+  const [selectedUser, setSelectedUser] = useState<any | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   const { deleteMutation } = useCRUDModal({
     deleteFn: deleteUser,
     queryKey: 'users',
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: async (data: any) => {
+      if (selectedUser) {
+        // UPDATE
+        return await updateUser(selectedUser.user_id, {
+          full_name: data.full_name,
+          phone_number: data.phone_number,
+          blocked: data.blocked,
+        });
+      }
+      // CREATE
+      return await createUser(data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['users']);
+      setIsModalOpen(false);
+      Swal.fire({
+        title: 'Éxito',
+        text: 'Usuario guardado correctamente',
+        icon: 'success',
+        confirmButtonText: 'OK',
+        customClass: {
+          popup: 'rounded-2xl shadow-xl',
+          confirmButton: 'bg-indigo-600 text-white px-5 py-2 rounded-lg'
+        },
+        buttonsStyling: false
+      });
+    },
+    onError: (err: any) => {
+      let errorMessage = err.response?.data?.message || 'Error al guardar';
+      
+      if (typeof errorMessage === 'string') {
+        if (errorMessage.includes('Invalid phone number format')) {
+          errorMessage = 'Formato de teléfono inválido. Ej: +54 9 11 4333444 o +54 343 4333444';
+        } else if (errorMessage.toLowerCase().includes('duplicate') || errorMessage.includes('already exists')) {
+          errorMessage = 'El correo electrónico o teléfono ya está registrado.';
+        }
+      }
+
+      Swal.fire({
+        title: 'Error',
+        text: errorMessage,
+        icon: 'error',
+        confirmButtonText: 'OK',
+        customClass: {
+          popup: 'rounded-2xl shadow-xl',
+          confirmButton: 'bg-indigo-600 text-white px-5 py-2 rounded-lg'
+        },
+        buttonsStyling: false
+      });
+    },
   });
 
   const handleCellClick = async (event: any) => {
@@ -21,11 +78,17 @@ export const Leads = () => {
         text: `Se borrará a "${row.full_name}" de la Base de Datos y de Firebase. ¡Esta acción es irreversible!`,
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
+        confirmButtonColor: '#f43f5e',
+        cancelButtonColor: '#cbd5e1',
         confirmButtonText: 'Sí, destruir usuario',
         cancelButtonText: 'Cancelar',
         reverseButtons: true,
+        customClass: {
+          popup: 'rounded-2xl shadow-xl',
+          confirmButton: 'bg-rose-500 text-white px-5 py-2 mx-1 rounded-lg',
+          cancelButton: 'bg-slate-200 text-slate-600 px-5 py-2 mx-1 rounded-lg'
+        },
+        buttonsStyling: false
       });
 
       if (result.isConfirmed) {
@@ -36,31 +99,50 @@ export const Leads = () => {
           didOpen: () => {
             Swal.showLoading();
           },
+          customClass: {
+            popup: 'rounded-2xl shadow-xl'
+          }
         });
 
         try {
           await deleteMutation.mutateAsync(row.user_id);
-          Swal.fire(
-            '¡Eliminado!',
-            'El usuario ha sido purgado del sistema correctamente.',
-            'success',
-          );
+          Swal.fire({
+            title: '¡Eliminado!',
+            text: 'El usuario ha sido purgado del sistema correctamente.',
+            icon: 'success',
+            confirmButtonText: 'OK',
+            customClass: {
+              popup: 'rounded-2xl shadow-xl',
+              confirmButton: 'bg-indigo-600 text-white px-5 py-2 rounded-lg'
+            },
+            buttonsStyling: false
+          });
         } catch (error: any) {
           console.error(error);
-          Swal.fire(
-            'Error',
-            error.response?.data?.message || 'No se pudo eliminar el usuario.',
-            'error',
-          );
+          Swal.fire({
+            title: 'Error',
+            text: error.response?.data?.message || 'No se pudo eliminar el usuario.',
+            icon: 'error',
+            confirmButtonText: 'OK',
+            customClass: {
+              popup: 'rounded-2xl shadow-xl',
+              confirmButton: 'bg-indigo-600 text-white px-5 py-2 rounded-lg'
+            },
+            buttonsStyling: false
+          });
         }
       }
     }
 
     if (field === 'edit') {
-      // ❌ Eliminado: setLead(row);
-      // ✅ Agregado: Log temporal para saber que funciona el click
-      console.log('Editar usuario (Próximamente):', row);
+      setSelectedUser(row);
+      setIsModalOpen(true);
     }
+  };
+
+  const openCreateModal = () => {
+    setSelectedUser(null);
+    setIsModalOpen(true);
   };
 
   return (
@@ -77,7 +159,10 @@ export const Leads = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            <button className="bg-indigo-600 text-white px-5 py-2 rounded-lg font-semibold shadow-md shadow-indigo-200 hover:bg-indigo-700 transition-all active:scale-95">
+            <button
+              onClick={openCreateModal}
+              className="bg-indigo-600 text-white px-5 py-2 rounded-lg font-semibold shadow-md shadow-indigo-200 hover:bg-indigo-700 transition-all active:scale-95"
+            >
               + Nuevo Usuario
             </button>
           </div>
@@ -86,6 +171,14 @@ export const Leads = () => {
         <section className="bg-white rounded-2xl shadow-sm border border-slate-200">
           <LeadsTable setLead={handleCellClick} />
         </section>
+
+        <UserModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          user={selectedUser}
+          onSave={(data) => saveMutation.mutate(data)}
+          isSaving={saveMutation.isLoading}
+        />
       </div>
     </div>
   );
