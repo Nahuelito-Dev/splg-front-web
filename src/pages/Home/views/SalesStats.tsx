@@ -19,11 +19,16 @@ export const SalesStats = () => {
     );
   }
 
-  const stats = data || {
+  const stats: any = data || {
     sales: { today: 0, month: 0 },
-    ordersSummary: { deliveredToday: 0, pending: 0 },
+    ordersSummary: { deliveredToday: 0, pending: 0, accepted: 0, onTheWay: 0 },
     performance: { avgOrderValue: 0 },
   };
+
+  const activeOrders =
+    (stats.ordersSummary.pending || 0) +
+    (stats.ordersSummary.accepted || 0) +
+    (stats.ordersSummary.onTheWay || 0);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -43,8 +48,8 @@ export const SalesStats = () => {
         value={stats.ordersSummary.deliveredToday}
         icon={<ShoppingBagIcon fontSize="large" />}
         color="blue"
-        change={`${stats.ordersSummary.pending} pendientes`}
-        isPositive={stats.ordersSummary.pending === 0}
+        change={`${activeOrders} en curso`}
+        isPositive={activeOrders === 0}
       />
 
       {/* 3. Ticket Promedio */}

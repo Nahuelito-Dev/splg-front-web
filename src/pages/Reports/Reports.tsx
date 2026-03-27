@@ -82,10 +82,10 @@ export const Reports = () => {
           </div>
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
             <p className="text-slate-500 text-xs font-bold uppercase mb-2">
-              Pedidos Totales
+              Pedidos Totales Entregados
             </p>
             <h3 className="text-3xl font-black text-slate-800">
-              {stats?.sales?.total || 0}
+              {stats?.ordersSummary?.totalDelivered || 0}
             </h3>
             <p className="text-xs text-slate-400 mt-2">Histórico acumulado</p>
           </div>
@@ -99,7 +99,7 @@ export const Reports = () => {
                 stats?.performance?.avgOrderValue || 0,
               ).toLocaleString()}
             </h3>
-            <p className="text-xs text-slate-400 mt-2">Por pedido entregado</p>
+            <p className="text-emerald-500 text-xs font-bold bg-emerald-50 px-2 py-1 rounded mt-2 inline-block">Por pedido entregado en el mes</p>
           </div>
         </div>
 

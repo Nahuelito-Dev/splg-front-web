@@ -12,21 +12,45 @@ import PhoneIcon from '@mui/icons-material/Phone';
 import EmailIcon from '@mui/icons-material/Email';
 import VerifiedIcon from '@mui/icons-material/Verified';
 import MapIcon from '@mui/icons-material/Map';
+import CircleIcon from '@mui/icons-material/Circle';
 
 // Helper para badges de estado de orden
 const getStatusBadge = (status: string) => {
-  const styles: any = {
-    pending: 'bg-orange-100 text-orange-700',
-    accepted: 'bg-blue-100 text-blue-700',
-    on_the_way: 'bg-indigo-100 text-indigo-700',
-    delivered: 'bg-emerald-100 text-emerald-700',
-    cancelled: 'bg-rose-100 text-rose-700',
+  let colorClass = 'text-slate-600 bg-slate-50 border-slate-100';
+  switch (status) {
+    case 'pending':
+      colorClass = 'text-orange-600 bg-orange-50 border-orange-100';
+      break;
+    case 'accepted':
+      colorClass = 'text-blue-600 bg-blue-50 border-blue-100';
+      break;
+    case 'on_the_way':
+    case 'out_for_delivery':
+      colorClass = 'text-indigo-600 bg-indigo-50 border-indigo-100';
+      break;
+    case 'delivered':
+      colorClass = 'text-emerald-600 bg-emerald-50 border-emerald-100';
+      break;
+    case 'cancelled':
+      colorClass = 'text-rose-600 bg-rose-50 border-rose-100';
+      break;
+  }
+
+  const labels: any = {
+    pending: 'Pendiente',
+    accepted: 'Aceptado',
+    on_the_way: 'En Camino',
+    out_for_delivery: 'En Camino',
+    delivered: 'Entregado',
+    cancelled: 'Cancelado',
   };
+
   return (
     <span
-      className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${styles[status] || 'bg-gray-100'}`}
+      className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold border uppercase ${colorClass}`}
     >
-      {status.replace(/_/g, ' ')}
+      <CircleIcon sx={{ fontSize: 6 }} color="inherit" />
+      {labels[status] || status.replace(/_/g, ' ')}
     </span>
   );
 };
@@ -43,8 +67,11 @@ export const CustomerDetails = () => {
 
   // 2. Query Historial de Pedidos
   const { data: ordersData, isLoading: loadingOrders } = useQuery(
-    ['customerOrders', id],
-    () => getOrdersByCustomer(id!, 0, 20), // Traemos los últimos 20
+    ['customerOrders', customer?.user_id],
+    () => getOrdersByCustomer(customer!.user_id, 0, 20), // Historial real usando user_id
+    {
+      enabled: !!customer?.user_id, // Solo ejecutar cuando ya tenemos el user_id
+    }
   );
 
   if (loadingCustomer)
@@ -212,18 +239,18 @@ export const CustomerDetails = () => {
                           #{order.order_id.slice(-6).toUpperCase()}
                         </td>
                         <td className="px-6 py-4 text-slate-600">
-                          {new Date(order.createdAt).toLocaleDateString()}
+                          {new Date(order.created_at).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4 text-slate-700">
-                          {order.items
+                          {order.order_items
                             ?.map(
                               (i: any) =>
-                                `${i.quantity}x ${i.gasCylinder?.type}`,
+                                `${i.quantity}x ${i.gas_cylinder?.type}`,
                             )
                             .join(', ')}
                         </td>
                         <td className="px-6 py-4 font-bold text-slate-800">
-                          $ {Number(order.totalAmount).toLocaleString()}
+                          $ {Number(order.total_amount).toLocaleString()}
                         </td>
                         <td className="px-6 py-4 text-center">
                           {getStatusBadge(order.status)}

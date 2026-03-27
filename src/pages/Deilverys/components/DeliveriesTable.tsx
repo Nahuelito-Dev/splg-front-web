@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { GridColDef } from '@mui/x-data-grid';
 import { Link } from 'react-router-dom';
 import { useTable } from '../../../hooks';
@@ -11,6 +12,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import StarIcon from '@mui/icons-material/Star';
 import CircleIcon from '@mui/icons-material/Circle';
+import SearchIcon from '@mui/icons-material/Search';
 import { IconButton, Tooltip } from '@mui/material';
 
 interface Props {
@@ -18,12 +20,19 @@ interface Props {
 }
 
 export const DeliveriesTable = ({ setAction }: Props) => {
-  //const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState(searchTerm);
+
+  // Efecto para el buscador con retardo (debounce)
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   const tableProps = useTable({
     queryKey: 'deliveries',
-    queryFn: (page, limit) => getAllDeliveries(page, limit),
-    dependencies: [],
+    queryFn: (page, limit) => getAllDeliveries(page, limit, debouncedSearch),
+    dependencies: [debouncedSearch],
   });
 
   const rows = tableProps.data?.rows || [];
@@ -145,6 +154,20 @@ export const DeliveriesTable = ({ setAction }: Props) => {
       getRowId={(row: any) => row.delivery_id}
       setActive={setAction}
       {...tableProps}
-    />
+    >
+      <div className="relative group w-full sm:w-72">
+        <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
+          <SearchIcon className="h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+        </div>
+        <input
+          type="text"
+          style={{ paddingLeft: '42px' }}
+          className="block w-full pr-3 py-2 border border-slate-200 rounded-lg leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all shadow-sm"
+          placeholder="Buscar repartidor por nombre o email..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
+    </CustomTable>
   );
 };

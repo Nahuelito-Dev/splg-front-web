@@ -84,7 +84,7 @@ export const CustomersTable = ({ setAction }: Props) => {
       renderCell: ({ row }) => (
         <div className="flex items-center h-full">
           <span className="px-2 py-1 rounded-md text-xs font-bold uppercase bg-slate-100 text-slate-600 border border-slate-200 tracking-wider">
-            {row.user?.role?.type || 'N/A'}
+            {row.user?.role?.type === 'customer' ? 'Cliente' : row.user?.role?.type || 'N/A'}
           </span>
         </div>
       ),
