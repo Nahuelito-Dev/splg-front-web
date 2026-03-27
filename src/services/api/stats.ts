@@ -6,6 +6,7 @@ export interface DashboardStats {
     accepted: number;
     onTheWay: number;
     deliveredToday: number;
+    totalDelivered: number;
   };
   sales: {
     today: number;

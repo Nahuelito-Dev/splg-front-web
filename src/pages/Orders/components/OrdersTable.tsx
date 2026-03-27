@@ -9,6 +9,7 @@ import AssignmentIndIcon from '@mui/icons-material/AssignmentInd';
 import CancelIcon from '@mui/icons-material/Cancel';
 import RemoveRedEyeIcon from '@mui/icons-material/RemoveRedEye';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+import CircleIcon from '@mui/icons-material/Circle';
 
 interface Props {
   onAssign: (order: Order) => void;
@@ -19,18 +20,31 @@ interface Props {
 const getStatusColor = (status: string) => {
   switch (status) {
     case 'pending':
-      return { bg: '#fff7ed', color: '#c2410c', label: 'Pendiente' };
+      return 'text-orange-600 bg-orange-50 border-orange-100';
     case 'accepted':
-      return { bg: '#eff6ff', color: '#1d4ed8', label: 'Aceptado' };
+      return 'text-blue-600 bg-blue-50 border-blue-100';
     case 'on_the_way':
-      return { bg: '#f0fdf4', color: '#15803d', label: 'En Camino' };
+    case 'out_for_delivery':
+      return 'text-indigo-600 bg-indigo-50 border-indigo-100';
     case 'delivered':
-      return { bg: '#ecfdf5', color: '#047857', label: 'Entregado' };
+      return 'text-emerald-600 bg-emerald-50 border-emerald-100';
     case 'cancelled':
-      return { bg: '#fef2f2', color: '#be123c', label: 'Cancelado' };
+      return 'text-rose-600 bg-rose-50 border-rose-100';
     default:
-      return { bg: '#f1f5f9', color: '#64748b', label: status };
+      return 'text-slate-600 bg-slate-50 border-slate-100';
   }
+};
+
+const getStatusLabel = (status: string) => {
+  const labels: any = {
+    pending: 'Pendiente',
+    accepted: 'Aceptado',
+    on_the_way: 'En Camino',
+    out_for_delivery: 'En Camino',
+    delivered: 'Entregado',
+    cancelled: 'Cancelado',
+  };
+  return labels[status] || status.replace(/_/g, ' ');
 };
 
 export const OrdersTable = ({ onAssign, onCancel, onView }: Props) => {
@@ -90,7 +104,7 @@ export const OrdersTable = ({ onAssign, onCancel, onView }: Props) => {
       width: 90,
       renderCell: ({ row }) => (
         <span className="text-xs font-mono text-slate-400">
-          ...{(row.order_id || row.id).slice(-6)}
+          ...{((row as any).order_id || row.id).slice(-6)}
         </span>
       ),
     },
@@ -99,30 +113,34 @@ export const OrdersTable = ({ onAssign, onCancel, onView }: Props) => {
       headerName: 'CLIENTE',
       flex: 1,
       minWidth: 180,
-      renderCell: ({ row }: GridRenderCellParams<Order>) => (
-        <div className="flex flex-col py-1">
-          <span className="font-bold text-slate-700 text-sm">
-            {row.customer?.full_name || 'Anónimo'}
-          </span>
-          <span className="text-[10px] text-slate-400">
-            {row.address?.street || 'Sin dirección'}
-          </span>
-        </div>
-      ),
+      renderCell: ({ row }: GridRenderCellParams<Order>) => {
+        const r = row as any;
+        return (
+          <div className="flex flex-col py-1">
+            <span className="font-bold text-slate-700 text-sm">
+              {r.customer_name || 'Anónimo'}
+            </span>
+            <span className="text-[10px] text-slate-400">
+              {r.delivery_address?.street || 'Sin dirección'}
+            </span>
+          </div>
+        );
+      },
     },
     {
       field: 'status',
       headerName: 'ESTADO',
-      width: 130,
+      width: 140,
       align: 'center',
       renderCell: ({ value }) => {
-        const style = getStatusColor(value);
         return (
           <span
-            className="px-2 py-1 rounded-md text-xs font-bold uppercase tracking-wide"
-            style={{ backgroundColor: style.bg, color: style.color }}
+            className={`inline-flex items-center justify-center w-full gap-1 px-2 py-1 rounded-full text-[10px] font-bold border uppercase tracking-wide ${getStatusColor(
+              value,
+            )}`}
           >
-            {style.label}
+            <CircleIcon sx={{ fontSize: 6 }} color="inherit" />
+            {getStatusLabel(value)}
           </span>
         );
       },
@@ -131,22 +149,22 @@ export const OrdersTable = ({ onAssign, onCancel, onView }: Props) => {
       field: 'delivery',
       headerName: 'REPARTIDOR',
       flex: 1,
-      renderCell: ({ row }: GridRenderCellParams<Order>) =>
-        row.delivery ? (
-          <div className="flex items-center gap-2 text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg border border-indigo-100">
+      renderCell: ({ row }: GridRenderCellParams<Order>) => {
+        const r = row as any;
+        return r.delivery_name ? (
+          <div className="flex w-max items-center gap-2 text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg border border-indigo-100">
             <LocalShippingIcon fontSize="small" />
-            <span className="text-xs font-bold">
-              {row.delivery.user?.full_name}
-            </span>
+            <span className="text-xs font-bold">{r.delivery_name}</span>
           </div>
         ) : (
           <span className="text-xs text-slate-400 italic pl-2">
             -- Buscando --
           </span>
-        ),
+        );
+      },
     },
     {
-      field: 'totalAmount',
+      field: 'total_amount',
       headerName: 'TOTAL',
       width: 120,
       renderCell: ({ value }) => (
