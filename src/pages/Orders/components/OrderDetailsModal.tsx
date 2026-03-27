@@ -17,14 +17,14 @@ const getStatusBadge = (status: string) => {
   const styles: any = {
     pending: 'bg-orange-100 text-orange-700',
     accepted: 'bg-blue-100 text-blue-700',
-    on_the_way: 'bg-indigo-100 text-indigo-700',
+    out_for_delivery: 'bg-indigo-100 text-indigo-700',
     delivered: 'bg-emerald-100 text-emerald-700',
     cancelled: 'bg-rose-100 text-rose-700',
   };
   const labels: any = {
     pending: 'PENDIENTE',
     accepted: 'ACEPTADO',
-    on_the_way: 'EN CAMINO',
+    out_for_delivery: 'EN CAMINO',
     delivered: 'ENTREGADO',
     cancelled: 'CANCELADO',
   };
@@ -51,11 +51,11 @@ export const OrderDetailsModal = ({ isOpen, onClose, order }: Props) => {
             </div>
             <div>
               <h3 className="text-lg font-bold text-slate-800">
-                Pedido #{order.order_id.slice(-6).toUpperCase()}
+                Pedido #{((order as any).order_id || '000000').slice(-6).toUpperCase()}
               </h3>
               <p className="text-xs text-slate-500 flex items-center gap-1">
                 <AccessTimeIcon fontSize="inherit" />{' '}
-                {new Date(order.createdAt).toLocaleString()}
+                {new Date((order as any).created_at).toLocaleString()}
               </p>
             </div>
           </div>
@@ -70,7 +70,7 @@ export const OrderDetailsModal = ({ isOpen, onClose, order }: Props) => {
           </div>
         </div>
 
-        {/* BODY (Scrollable) */}
+      {/* BODY (Scrollable) */}
         <div className="p-6 overflow-y-auto bg-slate-50/50 space-y-6">
           {/* 1. INFO CLIENTE Y ENTREGA */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -81,12 +81,12 @@ export const OrderDetailsModal = ({ isOpen, onClose, order }: Props) => {
               </h4>
               <div className="space-y-2">
                 <p className="font-bold text-slate-800 text-lg">
-                  {order.customer.full_name}
+                  {(order as any).customer_name || 'Consumidor Final'}
                 </p>
                 <p className="text-sm text-slate-600">
-                  {order.customer.phone_number}
+                  {(order as any).customer_phone || '-'}
                 </p>
-                <p className="text-sm text-slate-500">{order.customer.email}</p>
+                <p className="text-sm text-slate-500">{(order as any).customer_email || '-'}</p>
               </div>
             </div>
 
@@ -97,15 +97,15 @@ export const OrderDetailsModal = ({ isOpen, onClose, order }: Props) => {
               </h4>
               <div className="space-y-2">
                 <p className="font-medium text-slate-800">
-                  {order.address?.street}
+                  {(order as any).delivery_address?.street || 'Sin Dirección'}
                 </p>
                 <p className="text-xs text-slate-500 bg-slate-100 p-2 rounded border border-slate-200">
-                  {order.address?.formattedAddress ||
+                  {(order as any).delivery_address?.formatted_address ||
                     'Sin dirección formateada'}
                 </p>
                 {/* Aquí podrías poner un link a Google Maps */}
                 <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.address?.formattedAddress || '')}`}
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((order as any).delivery_address?.formatted_address || (order as any).delivery_address?.street || '')}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-xs text-indigo-600 hover:underline font-bold block mt-1"
@@ -117,7 +117,7 @@ export const OrderDetailsModal = ({ isOpen, onClose, order }: Props) => {
           </div>
 
           {/* 2. REPARTIDOR ASIGNADO */}
-          {order.delivery && (
+          {(order as any).delivery_name && (
             <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100 flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-white text-indigo-600 rounded-full shadow-sm">
@@ -128,10 +128,10 @@ export const OrderDetailsModal = ({ isOpen, onClose, order }: Props) => {
                     Repartidor Asignado
                   </p>
                   <p className="font-bold text-slate-800">
-                    {order.delivery.user.full_name}
+                    {(order as any).delivery_name}
                   </p>
                   <p className="text-xs text-indigo-600 font-medium">
-                    {order.delivery.user.phone_number}
+                    {(order as any).delivery_phone || '-'}
                   </p>
                 </div>
               </div>
@@ -151,21 +151,21 @@ export const OrderDetailsModal = ({ isOpen, onClose, order }: Props) => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {order.items.map((item, idx) => (
+                {((order as any).order_items || []).map((item: any, idx: number) => (
                   <tr key={idx}>
                     <td className="px-4 py-3 font-medium text-slate-700">
-                      {item.cylinder.type}
+                      {item.gas_cylinder?.type || 'Producto Desconocido'}
                     </td>
                     <td className="px-4 py-3 text-center text-slate-600">
                       {item.quantity}
                     </td>
                     <td className="px-4 py-3 text-right text-slate-600">
-                      $ {Number(item.cylinder.price).toLocaleString()}
+                      $ {Number(item.gas_cylinder?.price || 0).toLocaleString()}
                     </td>
                     <td className="px-4 py-3 text-right font-bold text-slate-800">
                       ${' '}
                       {(
-                        Number(item.cylinder.price) * item.quantity
+                        Number(item.gas_cylinder?.price || 0) * item.quantity
                       ).toLocaleString()}
                     </td>
                   </tr>
@@ -184,7 +184,7 @@ export const OrderDetailsModal = ({ isOpen, onClose, order }: Props) => {
                       fontSize="small"
                       className="text-emerald-500"
                     />
-                    {Number(order.totalAmount).toLocaleString()}
+                    {Number((order as any).total_amount).toLocaleString()}
                   </td>
                 </tr>
                 <tr>
@@ -193,7 +193,7 @@ export const OrderDetailsModal = ({ isOpen, onClose, order }: Props) => {
                     className="px-4 pb-3 text-right text-xs text-slate-400 uppercase font-bold"
                   >
                     Método:{' '}
-                    {order.paymentMethod === 'cash'
+                    {(order as any).payment_method === 'cash'
                       ? 'Efectivo'
                       : 'MercadoPago'}
                   </td>

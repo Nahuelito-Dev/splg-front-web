@@ -2,9 +2,13 @@ import { privateAxiosInstance } from './axiosConfig';
 import { Delivery } from '../../interfaces';
 
 // GET ALL
-export const getAllDeliveries = async (page = 0, limit = 10) => {
+export const getAllDeliveries = async (page = 0, limit = 10, term?: string) => {
   const offset = limit * page;
   let url = `/delivery?limit=${limit}&offset=${offset}`;
+
+  if (term) {
+    url += `&term=${term}`;
+  }
 
   try {
     const { data } = await privateAxiosInstance.get(url);
