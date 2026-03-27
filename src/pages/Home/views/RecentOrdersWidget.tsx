@@ -12,6 +12,7 @@ const getStatusColor = (status: string) => {
     case 'accepted':
       return 'text-blue-600 bg-blue-50 border-blue-100';
     case 'on_the_way':
+    case 'out_for_delivery':
       return 'text-indigo-600 bg-indigo-50 border-indigo-100';
     case 'delivered':
       return 'text-emerald-600 bg-emerald-50 border-emerald-100';
@@ -27,6 +28,7 @@ const getStatusLabel = (status: string) => {
     pending: 'Pendiente',
     accepted: 'Aceptado',
     on_the_way: 'En Camino',
+    out_for_delivery: 'En Camino',
     delivered: 'Entregado',
     cancelled: 'Cancelado',
   };
@@ -89,14 +91,14 @@ export const RecentOrdersWidget = () => {
                   </td>
                   <td className="px-5 py-3">
                     <p className="font-bold text-slate-700 text-xs truncate max-w-[120px]">
-                      {order.customer?.full_name}
+                      {order.customer_name || 'Sin nombre'}
                     </p>
                     <p className="text-[10px] text-slate-400 truncate max-w-[120px]">
-                      {order.address?.street}
+                      {order.delivery_address?.street || '-'}
                     </p>
                   </td>
                   <td className="px-5 py-3 font-bold text-slate-700">
-                    $ {Math.round(order.totalAmount).toLocaleString()}
+                    $ {Math.round(order.total_amount).toLocaleString()}
                   </td>
                   <td className="px-5 py-3 text-right">
                     <span
