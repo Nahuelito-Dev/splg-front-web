@@ -60,3 +60,11 @@ export const validateCustomer = async (id: string) => {
   );
   return data;
 };
+// CREATE (Endpoint especial en UsersController que maneja Firebase + DB)
+export const createCustomer = async (payload: any) => {
+  const { data } = await privateAxiosInstance.post(
+    '/users/customer-registration-admin',
+    payload,
+  );
+  return data;
+};

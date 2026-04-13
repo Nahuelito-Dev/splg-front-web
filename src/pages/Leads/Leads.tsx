@@ -75,7 +75,7 @@ export const Leads = () => {
     if (field === 'delete') {
       const result = await Swal.fire({
         title: '¿Eliminar permanentemente?',
-        text: `Se borrará a "${row.full_name}" de la Base de Datos y de Firebase. ¡Esta acción es irreversible!`,
+        text: `Se borrará a "${row.full_name}" de la Base de Datos. ¡Esta acción es irreversible!`,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#f43f5e',

@@ -37,6 +37,21 @@ const getStatusBadge = (status: string) => {
   );
 };
 
+const formatDateTime = (date?: string | Date | null) => {
+  if (!date) return '-- --';
+  const d = typeof date === 'string' ? new Date(date) : date;
+  if (Number.isNaN(d.getTime())) return '-- --';
+  return d.toLocaleString(undefined, {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true,
+  });
+};
+
 export const OrderDetailsModal = ({ isOpen, onClose, order }: Props) => {
   if (!isOpen || !order) return null;
 
@@ -55,7 +70,7 @@ export const OrderDetailsModal = ({ isOpen, onClose, order }: Props) => {
               </h3>
               <p className="text-xs text-slate-500 flex items-center gap-1">
                 <AccessTimeIcon fontSize="inherit" />{' '}
-                {new Date((order as any).created_at).toLocaleString()}
+                {formatDateTime((order as any).createdAt || (order as any).created_at)}
               </p>
             </div>
           </div>
@@ -114,6 +129,56 @@ export const OrderDetailsModal = ({ isOpen, onClose, order }: Props) => {
                 </a>
               </div>
             </div>
+          </div>
+
+          {/* 2. TIMINGS DEL PEDIDO */}
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+            <h4 className="text-xs font-bold text-slate-400 uppercase mb-3">
+              Tiempos del pedido
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-700">
+              <div>
+                <p className="text-xs text-slate-400">Aceptado</p>
+                <p className="font-semibold">
+                  {formatDateTime((order as any).acceptedAt || (order as any).accepted_at)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">Comienzo del viaje</p>
+                <p className="font-semibold">
+                  {formatDateTime(
+                    (order as any).onTheWayAt || (order as any).on_the_way_at,
+                  )}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">Entregado</p>
+                <p className="font-semibold">
+                  {formatDateTime(
+                    (order as any).actualDeliveryDate ||
+                      (order as any).actual_delivery_date ||
+                      (order as any).deliveredAt ||
+                      (order as any).delivered_at,
+                  )}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">Última actualización</p>
+                <p className="font-semibold">
+                  {formatDateTime((order as any).updatedAt || (order as any).updated_at)}
+                </p>
+              </div>
+            </div>
+            {order.status === 'cancelled' && (
+              <div className="mt-4 p-3 bg-rose-50 border border-rose-100 rounded-lg">
+                <p className="text-xs text-rose-500 font-semibold uppercase">
+                  Motivo de cancelación
+                </p>
+                <p className="text-sm text-rose-700">
+                  {(order as any).cancellationReason || (order as any).cancellation_reason || 'No informado'}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* 2. REPARTIDOR ASIGNADO */}
