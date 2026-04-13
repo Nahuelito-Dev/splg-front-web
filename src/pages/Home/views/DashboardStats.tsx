@@ -3,9 +3,10 @@ import { StatCard } from './StatCard';
 import { getAllCustomers } from '../../../services/api/customers';
 import { getAllCylinders } from '../../../services/api/cylinders';
 import { getDashboardStats } from '../../../services/api/stats';
+import { getAllClaims } from '../../../services/api/claims';
 
 // Icons
-import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
+import ReportProblemIcon from '@mui/icons-material/ReportProblem';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import PropaneIcon from '@mui/icons-material/Propane';
 import GroupIcon from '@mui/icons-material/Group';
@@ -30,8 +31,15 @@ export const DashboardStats = () => {
     () => getAllCylinders(0, 100),
   );
 
+  // Reclamos pendientes
+  const { data: claimsData, isLoading: isClaimsLoading } = useQuery(
+    ['dashboardClaims'],
+    getAllClaims,
+    { refetchInterval: 30000 },
+  );
+
   // Derivar valores de los queries
-  const todaySales = dashboardData?.sales?.today ?? 0;
+  const pendingClaims = claimsData?.filter((c) => c.status === 'pending')?.length ?? 0;
 
   const activeOrders =
     (dashboardData?.ordersSummary?.pending ?? 0) +
@@ -49,15 +57,15 @@ export const DashboardStats = () => {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      {/* 1. VENTAS DEL DÍA (Data Real) */}
+      {/* 1. RECLAMOS PENDIENTES (Data Real) */}
       <StatCard
-        title="Ventas del Día"
-        value={`$ ${Number(todaySales).toLocaleString()}`}
-        change="Ingresos del día"
-        isPositive={todaySales > 0}
-        color="emerald"
-        icon={<AttachMoneyIcon fontSize="large" />}
-        isLoading={isStatsLoading}
+        title="Reclamos Pendientes"
+        value={pendingClaims}
+        change={pendingClaims === 0 ? 'Sin reclamos' : 'Requieren atención'}
+        isPositive={pendingClaims === 0}
+        color={pendingClaims > 0 ? 'rose' : 'emerald'}
+        icon={<ReportProblemIcon fontSize="large" />}
+        isLoading={isClaimsLoading}
       />
 
       {/* 2. PEDIDOS ACTIVOS (Data Real) */}

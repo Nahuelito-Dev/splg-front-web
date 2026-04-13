@@ -55,6 +55,14 @@ export const updateUser = async (
   );
   return data;
 };
+
+// RESET PASSWORD (Usa el mismo PATCH /users/:id, Firebase se encarga del hash)
+export const resetUserPassword = async (userId: string, password: string) => {
+  const { data } = await privateAxiosInstance.patch(`/users/${userId}`, {
+    password,
+  });
+  return data;
+};
 // Añade esta función para obtener usuario por email (reemplaza getAdmin)
 export const getUserByEmail = async (email: string) => {
   try {

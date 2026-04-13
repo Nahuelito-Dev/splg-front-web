@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getDashboardStats, getSalesChart } from '../../services/api/stats';
 import {
@@ -15,20 +16,38 @@ import {
 } from 'recharts';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import DownloadIcon from '@mui/icons-material/Download';
+import { useEffect } from 'react';
 
 const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444'];
 
 export const Reports = () => {
+  const [viewType, setViewType] = useState<'day' | 'month'>('day');
+  
+  const [tempStartDate, setTempStartDate] = useState<string>('');
+  const [tempEndDate, setTempEndDate] = useState<string>('');
+  
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setStartDate(tempStartDate);
+      setEndDate(tempEndDate);
+    }, 1000);
+
+    return () => clearTimeout(handler);
+  }, [tempStartDate, tempEndDate]);
+
   // 1. Cargar Métricas Generales
   const { data: stats, isLoading: loadingStats } = useQuery(
-    ['reportsStats'],
-    getDashboardStats,
+    ['reportsStats', startDate, endDate],
+    () => getDashboardStats(startDate, endDate),
   );
 
   // 2. Cargar Datos del Gráfico (Real)
   const { data: salesData, isLoading: loadingChart } = useQuery(
-    ['salesChart'],
-    getSalesChart,
+    ['salesChart', viewType, startDate, endDate],
+    () => getSalesChart(viewType, startDate, endDate),
   );
 
   if (loadingStats || loadingChart) {
@@ -59,12 +78,36 @@ export const Reports = () => {
               Reportes Operativos
             </h1>
             <p className="text-slate-500 mt-1 ml-11">
-              Análisis de rendimiento y ventas de la última semana.
+              {startDate && endDate 
+                ? `Análisis del periodo: ${new Date(startDate).toLocaleDateString()} al ${new Date(endDate).toLocaleDateString()}`
+                : 'Análisis de rendimiento y ventas de la última semana.'}
             </p>
           </div>
-          <button className="flex items-center gap-2 bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-lg hover:bg-slate-50 transition-colors font-bold text-sm shadow-sm">
-            <DownloadIcon fontSize="small" /> Exportar Data
-          </button>
+          <div className="flex flex-col md:flex-row items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <label className="flex items-center gap-2 text-sm text-slate-600 font-medium">
+                Desde:
+                <input
+                  type="date"
+                  className="border border-slate-200 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 bg-slate-50 focus:bg-white transition-colors outline-none"
+                  value={tempStartDate}
+                  onChange={(e) => setTempStartDate(e.target.value)}
+                />
+              </label>
+              <label className="flex items-center gap-2 text-sm text-slate-600 font-medium">
+                Hasta:
+                <input
+                  type="date"
+                  className="border border-slate-200 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 bg-slate-50 focus:bg-white transition-colors outline-none"
+                  value={tempEndDate}
+                  onChange={(e) => setTempEndDate(e.target.value)}
+                />
+              </label>
+            </div>
+            <button className="flex items-center gap-2 bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-lg hover:bg-slate-50 transition-colors font-bold text-sm shadow-sm">
+              <DownloadIcon fontSize="small" /> Exportar Data
+            </button>
+          </div>
         </div>
 
         {/* Tarjetas de KPIs */}
@@ -77,7 +120,7 @@ export const Reports = () => {
               $ {Number(stats?.sales?.month || 0).toLocaleString()}
             </h3>
             <span className="text-emerald-500 text-xs font-bold bg-emerald-50 px-2 py-1 rounded mt-2 inline-block">
-              Mes en curso
+              {startDate && endDate ? 'Rango Filtrado' : 'Mes en curso'}
             </span>
           </div>
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
@@ -99,7 +142,9 @@ export const Reports = () => {
                 stats?.performance?.avgOrderValue || 0,
               ).toLocaleString()}
             </h3>
-            <p className="text-emerald-500 text-xs font-bold bg-emerald-50 px-2 py-1 rounded mt-2 inline-block">Por pedido entregado en el mes</p>
+            <p className="text-emerald-500 text-xs font-bold bg-emerald-50 px-2 py-1 rounded mt-2 inline-block">
+              {startDate && endDate ? 'Promedio en el rango' : 'Por pedido entregado en el mes'}
+            </p>
           </div>
         </div>
 
@@ -107,9 +152,33 @@ export const Reports = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* 1. Evolución de Ventas (Barras) */}
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 h-[400px] flex flex-col">
-            <h3 className="font-bold text-slate-800 mb-6">
-              Ventas Diarias (Últimos 7 días)
-            </h3>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-bold text-slate-800">
+                {viewType === 'day' ? 'Ventas Diarias (Últimos 7 días)' : 'Ventas Mensuales (Último Año)'}
+              </h3>
+              <div className="flex bg-slate-100 p-1 rounded-lg">
+                <button
+                  onClick={() => setViewType('day')}
+                  className={`px-4 py-1.5 text-xs font-bold rounded-lg border transition-all ${
+                    viewType === 'day'
+                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-100'
+                      : 'bg-white text-slate-500 border-slate-200 hover:border-indigo-200 hover:text-indigo-500'
+                  }`}
+                >
+                  Diario
+                </button>
+                <button
+                  onClick={() => setViewType('month')}
+                  className={`px-4 py-1.5 text-xs font-bold rounded-lg border transition-all ${
+                    viewType === 'month'
+                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-100'
+                      : 'bg-white text-slate-500 border-slate-200 hover:border-indigo-200 hover:text-indigo-500'
+                  }`}
+                >
+                  Mensual
+                </button>
+              </div>
+            </div>
             <div className="flex-1 w-full min-h-0">
               {salesData && salesData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
