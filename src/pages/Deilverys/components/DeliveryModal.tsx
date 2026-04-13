@@ -1,7 +1,12 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Delivery } from '../../../interfaces';
 import CloseIcon from '@mui/icons-material/Close';
+import LockResetIcon from '@mui/icons-material/LockReset';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 
 interface Props {
   delivery?: Delivery | null;
@@ -22,31 +27,41 @@ export const DeliveryModal = ({
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
   } = useForm();
 
-  // Detectamos si estamos editando
   const isEditing = !!delivery;
+
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showCreatePassword, setShowCreatePassword] = useState(false);
+
+  const newPassword = watch('newPassword');
 
   useEffect(() => {
     if (isOpen) {
+      setShowPasswordReset(false);
+      setShowNewPassword(false);
+      setShowConfirmPassword(false);
+      setShowCreatePassword(false);
       if (delivery) {
-        // Modo Edición: Cargamos datos
         reset({
           full_name: delivery.user?.full_name,
           phone_number: delivery.user?.phone_number,
           email: delivery.user?.email,
           isActive: delivery.isActive,
           validated: delivery.validated,
-          // No cargamos password en edición
+          newPassword: '',
+          confirmPassword: '',
         });
       } else {
-        // Modo Creación: Reset limpio
         reset({
           full_name: '',
           phone_number: '',
           email: '',
-          password: '', // Solo requerido al crear
+          password: '',
           isActive: true,
           validated: true,
         });
@@ -55,7 +70,14 @@ export const DeliveryModal = ({
   }, [delivery, isOpen, reset]);
 
   const onSubmit = (data: any) => {
-    onSave(data);
+    const payload: any = { ...data };
+
+    if (isEditing && data.newPassword) {
+      payload.newPassword = data.newPassword;
+    }
+
+    delete payload.confirmPassword;
+    onSave(payload);
   };
 
   if (!isOpen) return null;
@@ -81,7 +103,7 @@ export const DeliveryModal = ({
               </label>
               <input
                 {...register('full_name', { required: 'Requerido' })}
-                disabled={isEditing} // Bloqueamos nombre en edición por ahora (requiere otro endpoint)
+                disabled={isEditing}
                 className="w-full mt-1 p-2 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-slate-100"
               />
               {errors.full_name && (
@@ -107,7 +129,7 @@ export const DeliveryModal = ({
             <input
               type="email"
               {...register('email', { required: 'Requerido' })}
-              disabled={isEditing} // El email no se edita fácil (es ID de Firebase)
+              disabled={isEditing}
               className="w-full mt-1 p-2 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-slate-100"
             />
           </div>
@@ -118,15 +140,28 @@ export const DeliveryModal = ({
               <label className="text-xs font-bold text-slate-500 uppercase">
                 Contraseña
               </label>
-              <input
-                type="password"
-                {...register('password', {
-                  required: 'Requerido',
-                  minLength: 6,
-                })}
-                className="w-full mt-1 p-2 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="Mínimo 6 caracteres"
-              />
+              <div className="relative">
+                <input
+                  type={showCreatePassword ? 'text' : 'password'}
+                  {...register('password', {
+                    required: 'Requerido',
+                    minLength: 6,
+                  })}
+                  className="w-full mt-1 p-2 pr-10 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="Mínimo 6 caracteres"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCreatePassword(!showCreatePassword)}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+                >
+                  {showCreatePassword ? (
+                    <VisibilityOffIcon fontSize="small" />
+                  ) : (
+                    <VisibilityIcon fontSize="small" />
+                  )}
+                </button>
+              </div>
               {errors.password && (
                 <span className="text-xs text-red-500">
                   Mínimo 6 caracteres
@@ -156,6 +191,105 @@ export const DeliveryModal = ({
               </span>
             </div>
           </div>
+
+          {/* Restaurar Contraseña - Solo en modo EDICIÓN - Al final */}
+          {isEditing && (
+            <div className="border border-amber-200 rounded-lg overflow-hidden bg-amber-50/30">
+              <button
+                type="button"
+                onClick={() => setShowPasswordReset(!showPasswordReset)}
+                className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-amber-700 hover:bg-amber-50 transition-colors"
+              >
+                <span className="flex items-center gap-2">
+                  <LockResetIcon fontSize="small" />
+                  Restaurar Contraseña
+                </span>
+                {showPasswordReset ? (
+                  <KeyboardArrowUpIcon fontSize="small" />
+                ) : (
+                  <KeyboardArrowDownIcon fontSize="small" />
+                )}
+              </button>
+
+              <div
+                className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                  showPasswordReset ? 'max-h-60 opacity-100' : 'max-h-0 opacity-0'
+                }`}
+              >
+                <div className="px-4 pb-4 space-y-3 border-t border-amber-200">
+                  <div className="mt-3">
+                    <label className="text-xs font-bold text-slate-500 uppercase">
+                      Nueva Contraseña
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showNewPassword ? 'text' : 'password'}
+                        {...register('newPassword', {
+                          minLength: {
+                            value: 6,
+                            message: 'Mínimo 6 caracteres',
+                          },
+                        })}
+                        className="w-full mt-1 p-2 pr-10 border rounded-lg outline-none focus:ring-2 focus:ring-amber-500"
+                        placeholder="Mínimo 6 caracteres"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        className="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+                      >
+                        {showNewPassword ? (
+                          <VisibilityOffIcon fontSize="small" />
+                        ) : (
+                          <VisibilityIcon fontSize="small" />
+                        )}
+                      </button>
+                    </div>
+                    {errors.newPassword && (
+                      <span className="text-xs text-red-500">
+                        {(errors.newPassword as any)?.message}
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-500 uppercase">
+                      Confirmar Contraseña
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        {...register('confirmPassword', {
+                          validate: (value: string) => {
+                            if (newPassword && !value) return 'Confirma la contraseña';
+                            if (value !== newPassword) return 'Las contraseñas no coinciden';
+                            return true;
+                          },
+                        })}
+                        className="w-full mt-1 p-2 pr-10 border rounded-lg outline-none focus:ring-2 focus:ring-amber-500"
+                        placeholder="Repite la contraseña"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+                      >
+                        {showConfirmPassword ? (
+                          <VisibilityOffIcon fontSize="small" />
+                        ) : (
+                          <VisibilityIcon fontSize="small" />
+                        )}
+                      </button>
+                    </div>
+                    {errors.confirmPassword && (
+                      <span className="text-xs text-red-500">
+                        {(errors.confirmPassword as any)?.message}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-50 mt-2">
             <button

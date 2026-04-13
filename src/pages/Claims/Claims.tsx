@@ -26,9 +26,28 @@ export const Claims = () => {
     onSuccess: () => {
       queryClient.invalidateQueries(['claims']);
       setIsModalOpen(false);
-      Swal.fire('Guardado', 'El reclamo ha sido actualizado.', 'success');
+      Swal.fire({
+        title: 'Guardado',
+        text: 'El reclamo ha sido actualizado.',
+        icon: 'success',
+        customClass: {
+          confirmButton:
+            'bg-indigo-600 text-white font-bold px-6 py-2 rounded-md hover:bg-indigo-700 transition-colors',
+        },
+        buttonsStyling: false,
+      });
     },
-    onError: () => Swal.fire('Error', 'No se pudo actualizar.', 'error'),
+    onError: () =>
+      Swal.fire({
+        title: 'Error',
+        text: 'No se pudo actualizar.',
+        icon: 'error',
+        customClass: {
+          confirmButton:
+            'bg-rose-600 text-white font-bold px-6 py-2 rounded-md hover:bg-rose-700 transition-colors',
+        },
+        buttonsStyling: false,
+      }),
   });
 
   const handleOpenResolve = (claim: Claim) => {
@@ -149,7 +168,7 @@ export const Claims = () => {
                     <td className="px-6 py-4 text-center">
                       <button
                         onClick={() => handleOpenResolve(claim)}
-                        className="text-indigo-600 font-bold hover:bg-indigo-50 px-3 py-1 rounded transition-colors text-xs border border-indigo-200"
+                        className="bg-indigo-600 text-white font-bold hover:bg-indigo-700 px-3 py-1 rounded transition-colors text-xs border border-indigo-600"
                       >
                         Gestionar
                       </button>

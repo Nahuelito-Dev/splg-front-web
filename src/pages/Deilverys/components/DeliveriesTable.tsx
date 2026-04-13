@@ -120,22 +120,32 @@ export const DeliveriesTable = ({ setAction }: Props) => {
       ),
     },
     {
-      field: 'isActive',
+      field: 'currentStatus',
       headerName: 'ESTADO',
-      width: 120,
+      width: 140,
       align: 'center',
-      renderCell: ({ value }) => (
-        <div
-          className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold ${
-            value
-              ? 'bg-emerald-100 text-emerald-700'
-              : 'bg-slate-100 text-slate-500'
-          }`}
-        >
-          <CircleIcon sx={{ fontSize: 8 }} />
-          {value ? 'ACTIVO' : 'INACTIVO'}
-        </div>
-      ),
+      renderCell: ({ row }) => {
+        const statusStr = row.currentStatus || (row.isActive ? 'ACTIVE' : 'INACTIVE');
+        let bgClass = 'bg-slate-100 text-slate-500';
+        let label = 'INACTIVO';
+
+        if (statusStr === 'BUSY') {
+          bgClass = 'bg-orange-100 text-orange-700';
+          label = 'EN ENTREGA';
+        } else if (statusStr === 'ACTIVE') {
+          bgClass = 'bg-emerald-100 text-emerald-700';
+          label = 'ACTIVO';
+        }
+
+        return (
+          <div
+            className={`flex items-center justify-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide w-full ${bgClass}`}
+          >
+            <CircleIcon sx={{ fontSize: 8 }} />
+            {label}
+          </div>
+        );
+      },
     },
     {
       field: 'actions',

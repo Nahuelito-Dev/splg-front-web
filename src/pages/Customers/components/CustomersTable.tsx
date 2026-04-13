@@ -8,6 +8,7 @@ import { CustomTable } from '../../../common/components';
 // Iconos
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import { IconButton, Tooltip } from '@mui/material';
 import VerifiedIcon from '@mui/icons-material/Verified';
 import NewReleasesIcon from '@mui/icons-material/NewReleases';
@@ -45,6 +46,15 @@ export const CustomersTable = ({ setAction }: Props) => {
             <InfoOutlinedIcon className="text-slate-600 hover:text-indigo-600 scale-75" />
           </IconButton>
         </Link>
+      </Tooltip>
+
+      <Tooltip title="Editar Cliente">
+        <IconButton
+          onClick={() => setAction({ row, field: 'edit' })}
+          className="bg-slate-50 border border-slate-200 rounded-xl hover:bg-indigo-50 hover:border-indigo-200 transition-colors w-9 h-9"
+        >
+          <EditOutlinedIcon className="text-slate-600 hover:text-indigo-600 scale-75" />
+        </IconButton>
       </Tooltip>
 
       <Tooltip title="Eliminar Cliente">

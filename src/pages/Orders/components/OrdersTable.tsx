@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { useTable } from '../../../hooks';
 import { getAllOrders, Order } from '../../../services/api/orders';
@@ -10,6 +11,7 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import RemoveRedEyeIcon from '@mui/icons-material/RemoveRedEye';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import CircleIcon from '@mui/icons-material/Circle';
+import SearchIcon from '@mui/icons-material/Search';
 
 interface Props {
   onAssign: (order: Order) => void;
@@ -48,15 +50,24 @@ const getStatusLabel = (status: string) => {
 };
 
 export const OrdersTable = ({ onAssign, onCancel, onView }: Props) => {
-  // <--- FALTABA RECIBIR onView
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState(searchTerm);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   const tableProps = useTable({
     queryKey: 'orders',
     queryFn: async (page, limit) => {
-      const data = await getAllOrders(page, limit);
+      const data = await getAllOrders(page, limit, debouncedSearch, startDate, endDate);
       // Adaptamos la respuesta si el backend devuelve { orders: [], total: N }
       return { rows: data.orders, total: data.total };
     },
-    dependencies: [],
+    dependencies: [debouncedSearch, startDate, endDate],
   });
 
   const renderActions = (row: Order) => (
@@ -97,6 +108,7 @@ export const OrdersTable = ({ onAssign, onCancel, onView }: Props) => {
     </div>
   );
 
+
   const columns: GridColDef[] = [
     {
       field: 'id',
@@ -128,10 +140,33 @@ export const OrdersTable = ({ onAssign, onCancel, onView }: Props) => {
       },
     },
     {
+      field: 'date',
+      headerName: 'FECHA',
+      width: 130,
+      headerAlign: 'center',
+      align: 'center',
+      valueGetter: ({ row }) => {
+        const r = row as Order;
+        const raw = row as any;
+        const dateVal = r.createdAt || raw.created_at || raw.createdAt;
+        return dateVal ? new Date(dateVal).getTime() : 0;
+      },
+      renderCell: ({ value }) => {
+        if (!value) return '-- --';
+        const date = new Date(value);
+        return (
+          <span className="text-xs font-medium text-slate-500 italic">
+            {date.toLocaleString()}
+          </span>
+        );
+      },
+    },
+    {
       field: 'status',
       headerName: 'ESTADO',
       width: 140,
       align: 'center',
+      headerAlign: 'center',
       renderCell: ({ value }) => {
         return (
           <span
@@ -190,6 +225,40 @@ export const OrdersTable = ({ onAssign, onCancel, onView }: Props) => {
       getRowId={(row: any) => row.order_id || row.id}
       setActive={() => {}}
       {...tableProps}
-    />
+    >
+      <div className="flex flex-col sm:flex-row gap-4 w-full justify-end items-center">
+        <label className="flex items-center gap-2 text-sm text-slate-600 font-medium">
+          Desde:
+          <input
+            type="date"
+            className="border border-slate-200 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 bg-slate-50 focus:bg-white transition-colors"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+          />
+        </label>
+        <label className="flex items-center gap-2 text-sm text-slate-600 font-medium">
+          Hasta:
+          <input
+            type="date"
+            className="border border-slate-200 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 bg-slate-50 focus:bg-white transition-colors"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+          />
+        </label>
+        <div className="relative group w-full sm:w-72">
+          <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
+            <SearchIcon className="h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+          </div>
+          <input
+            type="text"
+            style={{ paddingLeft: '42px' }}
+            className="block w-full pr-3 py-2 border border-slate-200 rounded-lg leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all shadow-sm"
+            placeholder="Buscar por cliente o repartidor..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+      </div>
+    </CustomTable>
   );
 };

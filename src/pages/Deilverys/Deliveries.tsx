@@ -6,6 +6,7 @@ import {
   updateDelivery,
   deleteDelivery,
 } from '../../services/api/deliveries';
+import { resetUserPassword } from '../../services/api/users';
 import { useCRUDModal } from '../../hooks';
 import Swal from 'sweetalert2';
 import { Delivery } from '../../interfaces';
@@ -28,11 +29,17 @@ export const Deliveries = () => {
     mutationFn: async (data: any) => {
       if (selectedDelivery) {
         // UPDATE (Solo enviamos lo editable del Delivery entity)
-        return await updateDelivery(selectedDelivery.delivery_id, {
+        const result = await updateDelivery(selectedDelivery.delivery_id, {
           isActive: data.isActive,
           validated: data.validated,
-          // Si necesitas editar user, harías otra llamada aquí a users.update
         });
+
+        // Si se incluyó nueva contraseña, actualizarla via Firebase
+        if (data.newPassword && selectedDelivery.user_id) {
+          await resetUserPassword(selectedDelivery.user_id, data.newPassword);
+        }
+
+        return result;
       }
       // CREATE (Llama al endpoint complex de Users)
       return await createDelivery(data);

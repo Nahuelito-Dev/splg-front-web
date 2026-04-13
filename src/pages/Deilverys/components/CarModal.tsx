@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { useQuery } from '@tanstack/react-query';
 import { Car } from '../../../interfaces';
+import { getAllDeliveries } from '../../../services/api/deliveries';
 import CloseIcon from '@mui/icons-material/Close';
 
 interface Props {
@@ -32,6 +34,7 @@ export const CarModal = ({ car, isOpen, onClose, onSave, isSaving }: Props) => {
           car_year: car.car_year,
           car_color: car.car_color,
           car_capacity: car.car_capacity,
+          user_id: car.user_id,
         });
       } else {
         // Limpiar para crear
@@ -43,10 +46,13 @@ export const CarModal = ({ car, isOpen, onClose, onSave, isSaving }: Props) => {
           car_year: new Date().getFullYear(),
           car_color: '',
           car_capacity: '',
+          user_id: '',
         });
       }
     }
   }, [isOpen, car, reset]);
+
+  const { data: deliveries } = useQuery(['deliveriesForCarAssign'], () => getAllDeliveries(0, 100));
 
   if (!isOpen) return null;
 
@@ -155,6 +161,25 @@ export const CarModal = ({ car, isOpen, onClose, onSave, isSaving }: Props) => {
                 placeholder="500"
                 className="w-full p-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
               />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4">
+            <div>
+              <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">
+                Asignado a: (Chofer)
+              </label>
+              <select
+                {...register('user_id', { required: true })}
+                className="w-full p-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+              >
+                <option value="">Seleccione un repartidor</option>
+                {deliveries?.rows?.map((dev: any) => (
+                  <option key={dev.user_id} value={dev.user_id}>
+                    {dev.user?.full_name || 'Sin Nombre'} ({dev.user?.email})
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 

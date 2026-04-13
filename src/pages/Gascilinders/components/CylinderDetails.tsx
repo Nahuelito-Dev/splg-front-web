@@ -34,7 +34,17 @@ export const CylinderDetails = () => {
       setCylinder(data);
     } catch (error) {
       console.error(error);
-      Swal.fire('Error', 'No se pudo cargar el producto', 'error');
+      Swal.fire({
+        title: 'Error',
+        text: 'No se pudo cargar el producto',
+        icon: 'error',
+        confirmButtonText: 'Entendido',
+        customClass: {
+          confirmButton: 'bg-rose-500 text-white px-5 py-2 rounded-lg',
+          popup: 'rounded-2xl shadow-xl',
+        },
+        buttonsStyling: false,
+      });
       navigate('/cylinders');
     } finally {
       setLoading(false);
@@ -50,13 +60,28 @@ export const CylinderDetails = () => {
       await updateCylinder(id!, data);
       await fetchCylinder(); // Recargar datos en tiempo real
       setIsModalOpen(false);
-      Swal.fire(
-        'Actualizado',
-        'La información se actualizó correctamente',
-        'success',
-      );
+      Swal.fire({
+        title: 'Actualizado',
+        text: 'La información se actualizó correctamente',
+        icon: 'success',
+        timer: 1500,
+        showConfirmButton: false,
+        customClass: {
+          popup: 'rounded-2xl shadow-xl',
+        },
+      });
     } catch (error) {
-      Swal.fire('Error', 'No se pudo actualizar', 'error');
+      Swal.fire({
+        title: 'Error',
+        text: 'No se pudo actualizar',
+        icon: 'error',
+        confirmButtonText: 'Entendido',
+        customClass: {
+          confirmButton: 'bg-rose-500 text-white px-5 py-2 rounded-lg',
+          popup: 'rounded-2xl shadow-xl',
+        },
+        buttonsStyling: false,
+      });
     }
   };
 
