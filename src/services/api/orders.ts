@@ -31,16 +31,37 @@ export interface Order {
     street: string;
   };
   createdAt: string;
+  acceptedAt?: string | null;
+  onTheWayAt?: string | null;
+  actualDeliveryDate?: string | null;
+  deliveredAt?: string | null;
+  updatedAt?: string;
+  cancellationReason?: string | null;
   items: OrderItem[];
 }
 
 // 1. Obtener todas (Paginadas)
-export const getAllOrders = async (page = 0, limit = 10) => {
+export const getAllOrders = async (
+  page = 0,
+  limit = 10,
+  term?: string,
+  startDate?: string,
+  endDate?: string,
+) => {
   const offset = limit * page;
-  const { data } = await privateAxiosInstance.get(
-    `/orders?limit=${limit}&offset=${offset}`,
-  );
-  // Tu controller devuelve { orders: [], total: N, ... }
+  let url = `/orders?limit=${limit}&offset=${offset}`;
+
+  if (term) {
+    url += `&term=${term}`;
+  }
+  if (startDate) {
+    url += `&startDate=${startDate}`;
+  }
+  if (endDate) {
+    url += `&endDate=${endDate}`;
+  }
+
+  const { data } = await privateAxiosInstance.get(url);
   return data;
 };
 

@@ -25,10 +25,6 @@ export const SalesStats = () => {
     performance: { avgOrderValue: 0 },
   };
 
-  const activeOrders =
-    (stats.ordersSummary.pending || 0) +
-    (stats.ordersSummary.accepted || 0) +
-    (stats.ordersSummary.onTheWay || 0);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -48,8 +44,8 @@ export const SalesStats = () => {
         value={stats.ordersSummary.deliveredToday}
         icon={<ShoppingBagIcon fontSize="large" />}
         color="blue"
-        change={`${activeOrders} en curso`}
-        isPositive={activeOrders === 0}
+        change={`${stats.ordersSummary.pending || 0} pendientes`}
+        isPositive={(stats.ordersSummary.pending || 0) === 0}
       />
 
       {/* 3. Ticket Promedio */}
@@ -58,7 +54,7 @@ export const SalesStats = () => {
         value={`$ ${Math.round(stats.performance.avgOrderValue).toLocaleString()}`}
         icon={<TrendingUpIcon fontSize="large" />}
         color="indigo"
-        change="Valor medio por pedido"
+        change="Valor medio por pedidos de hoy"
         isPositive={true}
       />
 

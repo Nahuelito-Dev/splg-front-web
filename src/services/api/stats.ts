@@ -33,17 +33,20 @@ export interface ChartData {
 }
 
 // Métricas Generales
-export const getDashboardStats = async () => {
+export const getDashboardStats = async (from?: string, to?: string) => {
+  const queryParams = from && to ? `?from=${from}&to=${to}` : '';
   const { data } = await privateAxiosInstance.get<DashboardStats>(
-    '/orders/stats/summary',
+    `/orders/stats/summary${queryParams}`,
   );
   return data;
 };
 
-// Datos del Gráfico (Últimos 7 días)
-export const getSalesChart = async () => {
-  const { data } = await privateAxiosInstance.get<ChartData[]>(
-    '/orders/stats/chart',
-  );
+// Datos del Gráfico (Últimos 7 días o 12 meses)
+export const getSalesChart = async (aggregation: 'day' | 'month' = 'day', from?: string, to?: string) => {
+  let url = `/orders/stats/chart?aggregation=${aggregation}`;
+  if (from && to) {
+    url += `&from=${from}&to=${to}`;
+  }
+  const { data } = await privateAxiosInstance.get<ChartData[]>(url);
   return data;
 };

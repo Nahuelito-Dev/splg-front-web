@@ -1,12 +1,73 @@
-import { CustomersTable } from './components/CustomersTable';
-import { deleteCustomer } from '../../services/api/customers';
+import { useState } from 'react';
+import { CustomersTable, CustomerModal } from './components';
+import { 
+  createCustomer, 
+  updateCustomer, 
+  deleteCustomer 
+} from '../../services/api/customers';
+import { resetUserPassword } from '../../services/api/users';
 import { useCRUDModal } from '../../hooks';
 import Swal from 'sweetalert2';
+import { Customer } from '../../interfaces';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
 
 export const Customers = () => {
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const queryClient = useQueryClient();
+
   const { deleteMutation } = useCRUDModal({
     deleteFn: deleteCustomer,
     queryKey: 'customers',
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: async (data: any) => {
+      if (selectedCustomer) {
+        // Update datos del customer
+        const result = await updateCustomer(selectedCustomer.customer_id, {
+          validated: data.validated,
+        });
+
+        // Si se incluyó nueva contraseña, actualizarla via Firebase
+        if (data.newPassword && selectedCustomer.user_id) {
+          await resetUserPassword(selectedCustomer.user_id, data.newPassword);
+        }
+
+        return result;
+      }
+      return await createCustomer(data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['customers']);
+      setIsModalOpen(false);
+      Swal.fire({
+        title: 'Éxito',
+        text: 'Cliente guardado correctamente',
+        icon: 'success',
+        confirmButtonText: 'OK',
+        customClass: {
+          popup: 'rounded-2xl shadow-xl',
+          confirmButton: 'bg-indigo-600 text-white px-5 py-2 rounded-lg'
+        },
+        buttonsStyling: false
+      });
+    },
+    onError: (err: any) => {
+      const errorMessage = err.response?.data?.message || 'Error al guardar el cliente';
+      Swal.fire({
+        title: 'Error',
+        text: typeof errorMessage === 'string' ? errorMessage : 'Error interno del servidor',
+        icon: 'error',
+        confirmButtonText: 'OK',
+        customClass: {
+          popup: 'rounded-2xl shadow-xl',
+          confirmButton: 'bg-indigo-600 text-white px-5 py-2 rounded-lg'
+        },
+        buttonsStyling: false
+      });
+    },
   });
 
   const handleAction = async (event: any) => {
@@ -61,10 +122,14 @@ export const Customers = () => {
     }
 
     if (field === 'edit') {
-      // Aquí podrías abrir un modal para editar datos específicos del cliente (no del usuario)
-      // Como validar manualmente, cambiar lat/lng, etc.
-      console.log('Editar cliente:', row);
+      setSelectedCustomer(row);
+      setIsModalOpen(true);
     }
+  };
+
+  const openCreateModal = () => {
+    setSelectedCustomer(null);
+    setIsModalOpen(true);
   };
 
   return (
@@ -80,12 +145,25 @@ export const Customers = () => {
             </p>
           </div>
 
-          {/* Botón eliminado intencionalmente */}
+          <button
+            onClick={openCreateModal}
+            className="bg-indigo-600 text-white px-5 py-3 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition-all flex items-center gap-2"
+          >
+            <PersonAddIcon fontSize="small" /> Nuevo Cliente
+          </button>
         </header>
 
         <section className="bg-white rounded-2xl shadow-sm border border-slate-200">
           <CustomersTable setAction={handleAction} />
         </section>
+
+        <CustomerModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          customer={selectedCustomer}
+          onSave={(data) => saveMutation.mutate(data)}
+          isSaving={saveMutation.isLoading}
+        />
       </div>
     </div>
   );

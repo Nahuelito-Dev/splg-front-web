@@ -108,14 +108,14 @@ export const AssignDriverModal = ({
         <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm text-slate-600 hover:bg-white rounded-lg"
+            className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-200 bg-white border border-slate-200 rounded-lg font-medium transition-colors"
           >
             Cancelar
           </button>
           <button
             onClick={handleConfirm}
             disabled={isAssigning || !selectedDriver}
-            className="px-4 py-2 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-md disabled:opacity-70"
+            className="px-6 py-2 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-md shadow-indigo-200 disabled:opacity-70 transition-all"
           >
             {isAssigning ? 'Asignando...' : 'Confirmar'}
           </button>

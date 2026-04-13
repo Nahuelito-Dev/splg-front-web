@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Claim } from '../../../services/api/claims';
 import CloseIcon from '@mui/icons-material/Close';
@@ -23,8 +24,18 @@ export const ResolveClaimModal = ({
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm();
+
+  useEffect(() => {
+    if (isOpen && claim) {
+      reset({
+        resolution: claim.resolutionNote || '',
+        status: claim.status || 'pending',
+      });
+    }
+  }, [isOpen, claim, reset]);
 
   if (!isOpen || !claim) return null;
 
@@ -145,7 +156,7 @@ export const ResolveClaimModal = ({
         <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm text-slate-600 hover:bg-white rounded-lg transition-colors"
+            className="px-4 py-2 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
           >
             Cancelar
           </button>

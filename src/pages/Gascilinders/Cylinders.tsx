@@ -56,6 +56,12 @@ export const Cylinders = () => {
         text: Array.isArray(msg)
           ? msg[0]
           : msg || 'No se pudo guardar el producto.',
+        confirmButtonText: 'OK',
+        customClass: {
+          confirmButton: 'bg-rose-500 text-white px-5 py-2 rounded-lg',
+          popup: 'rounded-2xl shadow-xl',
+        },
+        buttonsStyling: false,
       });
     },
   });
@@ -89,13 +95,26 @@ export const Cylinders = () => {
           await deleteMutation.mutateAsync(row.gas_cylinder_id);
           Swal.fire({
             icon: 'success',
-            title: 'Desactivado',
+            title: 'Eliminado',
             text: 'El producto ha sido desactivado.',
-            timer: 1500,
+            timer: 2000,
             showConfirmButton: false,
+            customClass: {
+              popup: 'rounded-2xl shadow-xl',
+            },
           });
         } catch (e) {
-          Swal.fire('Error', 'No se pudo desactivar.', 'error');
+          Swal.fire({
+            title: 'Error',
+            text: 'No se pudo desactivar.',
+            icon: 'error',
+            confirmButtonText: 'OK',
+            customClass: {
+              confirmButton: 'bg-rose-500 text-white px-5 py-2 rounded-lg',
+              popup: 'rounded-2xl shadow-xl',
+            },
+            buttonsStyling: false,
+          });
         }
       }
     }
@@ -159,7 +178,17 @@ export const Cylinders = () => {
           });
         } catch (e: any) {
           console.error(e);
-          Swal.fire('Error', 'No se pudo actualizar el stock.', 'error');
+          Swal.fire({
+            title: 'Error',
+            text: 'No se pudo actualizar el stock.',
+            icon: 'error',
+            confirmButtonText: 'OK',
+            customClass: {
+              confirmButton: 'bg-rose-500 text-white px-5 py-2 rounded-lg',
+              popup: 'rounded-2xl shadow-xl',
+            },
+            buttonsStyling: false,
+          });
         }
       }
     }

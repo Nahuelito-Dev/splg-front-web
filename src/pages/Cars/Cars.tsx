@@ -1,25 +1,35 @@
 import { useState } from 'react';
 import { CarsTable } from './components/CarsTable';
-import { CarModal } from '../Deilverys/components/CarModal'; // Reutilizamos el modal
-import { updateCar, deleteCar } from '../../services/api/cars';
+import { CarModal } from '../Deilverys/components/CarModal';
+import { createCar, updateCar, deleteCar } from '../../services/api/cars';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Swal from 'sweetalert2';
 import { Car } from '../../interfaces';
+import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 
 export const Cars = () => {
   const [selectedCar, setSelectedCar] = useState<Car | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const queryClient = useQueryClient();
 
-  // Mutation para Editar/Borrar
-  const updateMutation = useMutation({
-    mutationFn: (data: any) => updateCar(selectedCar!.car_id, data),
+  const saveMutation = useMutation({
+    mutationFn: (data: any) => {
+      const payload = { ...data };
+      if (!payload.user_id || payload.user_id === '') {
+        delete payload.user_id;
+      }
+      
+      if (selectedCar) {
+        return updateCar(selectedCar.car_id, payload);
+      }
+      return createCar(payload);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['allCars']);
       setIsModalOpen(false);
       Swal.fire({
-        title: 'Actualizado',
-        text: 'Datos del vehículo actualizados',
+        title: selectedCar ? 'Actualizado' : 'Creado',
+        text: selectedCar ? 'Datos del vehículo actualizados' : 'Vehículo registrado correctamente',
         icon: 'success',
         confirmButtonText: 'OK',
         customClass: {
@@ -82,26 +92,37 @@ export const Cars = () => {
   return (
     <div className="p-4 md:p-8 bg-slate-50 min-h-screen">
       <div className="max-w-[1600px] mx-auto">
-        <header className="mb-8">
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-            Flota de Vehículos
-          </h1>
-          <p className="text-slate-500 mt-1">
-            Vista global de todos los vehículos registrados en el sistema.
-          </p>
+        <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+              Flota de Vehículos
+            </h1>
+            <p className="text-slate-500 mt-1">
+              Vista global de todos los vehículos registrados en el sistema.
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              setSelectedCar(null);
+              setIsModalOpen(true);
+            }}
+            className="bg-indigo-600 text-white px-5 py-3 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition-all flex items-center gap-2"
+          >
+            <DirectionsCarIcon />
+            Nuevo Vehículo
+          </button>
         </header>
 
         <section className="bg-white rounded-2xl shadow-sm border border-slate-200">
           <CarsTable setAction={handleAction} />
         </section>
 
-        {/* Solo permitimos edición aquí. La creación se hace desde el perfil del chofer */}
         <CarModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           car={selectedCar}
-          onSave={(data) => updateMutation.mutate(data)}
-          isSaving={updateMutation.isLoading}
+          onSave={(data) => saveMutation.mutate(data)}
+          isSaving={saveMutation.isLoading}
         />
       </div>
     </div>

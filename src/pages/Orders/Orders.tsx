@@ -31,10 +31,28 @@ export const Orders = () => {
     onSuccess: () => {
       queryClient.invalidateQueries(['orders']);
       setIsAssignModalOpen(false);
-      Swal.fire('Asignado', 'El pedido fue asignado manualmente.', 'success');
+      Swal.fire({
+        title: 'Asignado',
+        text: 'El pedido fue asignado manualmente.',
+        icon: 'success',
+        customClass: {
+          popup: 'rounded-2xl shadow-xl',
+          confirmButton: 'bg-indigo-600 text-white px-5 py-2 rounded-lg',
+        },
+        buttonsStyling: false,
+      });
     },
     onError: (err: any) =>
-      Swal.fire('Error', err.response?.data?.message || 'Error', 'error'),
+      Swal.fire({
+        title: 'Error',
+        text: err.response?.data?.message || 'Error',
+        icon: 'error',
+        customClass: {
+          popup: 'rounded-2xl shadow-xl',
+          confirmButton: 'bg-indigo-600 text-white px-5 py-2 rounded-lg',
+        },
+        buttonsStyling: false,
+      }),
   });
 
   const cancelMutation = useMutation({
@@ -42,7 +60,16 @@ export const Orders = () => {
       cancelOrder(orderId, reason),
     onSuccess: () => {
       queryClient.invalidateQueries(['orders']);
-      Swal.fire('Cancelado', 'El pedido ha sido cancelado.', 'success');
+      Swal.fire({
+        title: 'Cancelado',
+        text: 'El pedido ha sido cancelado.',
+        icon: 'success',
+        customClass: {
+          popup: 'rounded-2xl shadow-xl',
+          confirmButton: 'bg-indigo-600 text-white px-5 py-2 rounded-lg',
+        },
+        buttonsStyling: false,
+      });
     },
   });
 
@@ -67,8 +94,17 @@ export const Orders = () => {
       inputPlaceholder: 'Motivo...',
       showCancelButton: true,
       confirmButtonText: 'Sí, cancelar',
+      cancelButtonText: 'Cerrar',
       confirmButtonColor: '#f43f5e',
+      customClass: {
+        popup: 'rounded-2xl shadow-xl',
+        confirmButton: 'bg-rose-500 text-white px-5 py-3 rounded-xl font-bold',
+        cancelButton: 'bg-slate-200 text-slate-600 px-5 py-3 rounded-xl font-bold',
+        input: 'rounded-xl border-slate-200 focus:ring-indigo-500 focus:border-indigo-500',
+      },
+      buttonsStyling: false,
     });
+
 
     if (reason) cancelMutation.mutate({ orderId: id!, reason });
   };
