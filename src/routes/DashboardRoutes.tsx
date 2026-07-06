@@ -18,6 +18,7 @@ import { Orders } from '../pages/Orders';
 import { CustomerDetails } from '../pages/Customers/components/CustomerDetails';
 import { Claims } from '../pages/Claims';
 import { Reports } from '../pages/Reports/Reports';
+import { Tracking } from '../pages/Tracking';
 
 export const DashboardRoutes = () => {
   const dispatch = useAppDispatch();
@@ -61,6 +62,9 @@ export const DashboardRoutes = () => {
 
         {/* 7. Ordenes (Pendiente) */}
         <Route path="ordenes" element={<Orders />} />
+
+        {/* 8. Tracking en vivo de choferes */}
+        <Route path="tracking" element={<Tracking />} />
 
         <Route path="claims" element={<Claims />} />
         <Route path="reports" element={<Reports />} />
