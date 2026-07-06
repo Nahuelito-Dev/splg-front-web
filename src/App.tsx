@@ -9,6 +9,7 @@ import { ThemeProvider } from "./theme"
 
 import { useAppSelector } from "./hooks/reduxHooks"
 import { Navigation } from "./router/Navigation"
+import { SocketProvider } from "./context/SocketContext"
 
 const queryClient = new QueryClient()
 
@@ -17,18 +18,20 @@ export const App = () => {
   return (
       <ThemeProvider>
         <QueryClientProvider client={queryClient}>
-          <Navigation />
-          {/* <BrowserRouter>
-            <Routes>
-              {
-                status === 'authenticated'
-                  ? <Route path="/*" element={<DashboardRoutes />} />
-                  : <Route path="/auth/*" element={<AuthRoutes />} />
-              }
-              <Route path="/*" element={<Navigate to={'/auth/login'} />} />
-            </Routes> */}
-          <CustomAlert isOpen={isOpen} />
-          {/* </BrowserRouter> */}
+          <SocketProvider>
+            <Navigation />
+            {/* <BrowserRouter>
+              <Routes>
+                {
+                  status === 'authenticated'
+                    ? <Route path="/*" element={<DashboardRoutes />} />
+                    : <Route path="/auth/*" element={<AuthRoutes />} />
+                }
+                <Route path="/*" element={<Navigate to={'/auth/login'} />} />
+              </Routes> */}
+            <CustomAlert isOpen={isOpen} />
+            {/* </BrowserRouter> */}
+          </SocketProvider>
         </QueryClientProvider>
       </ThemeProvider>
   )

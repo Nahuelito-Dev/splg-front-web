@@ -1,4 +1,4 @@
-import { SideMenu } from '../components';
+import { Navbar, SideMenu } from '../components';
 
 interface Props {
   children: React.ReactNode;
@@ -13,6 +13,9 @@ export const DashboardLayout = ({ children }: Props) => {
       {/* Contenedor Principal */}
       {/* ml-72: Crea el margen izquierdo exacto del ancho del menú (w-72) */}
       <main className="ml-72 min-h-screen transition-all duration-300">
+        {/* Barra superior (campana de notificaciones en tiempo real) */}
+        <Navbar />
+
         {/* Wrapper del contenido con padding interno */}
         <div className="w-full">{children}</div>
       </main>

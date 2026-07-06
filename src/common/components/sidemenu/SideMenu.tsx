@@ -16,6 +16,7 @@ import {
   IoSettingsOutline, // <--- Para Configuración
   IoAlertCircleOutline, // <--- Para Reclamos
   IoBarChartOutline, // <--- Para Reportes
+  IoLocateOutline, // <--- Para Tracking en vivo
 } from 'react-icons/io5';
 
 interface MenuItem {
@@ -31,6 +32,7 @@ const menuItems: MenuItem[] = [
   { title: 'Deliveries', href: '/deliveries', Icon: IoBicycleOutline },
   { title: 'Vehículos', href: '/cars', Icon: IoCarOutline },
   { title: 'Ordenes', href: '/ordenes', Icon: IoReceiptOutline }, // Corregí el href a /orders para coincidir con tus rutas
+  { title: 'Tracking en vivo', href: '/tracking', Icon: IoLocateOutline },
   { title: 'Configuracion', href: '/configuracion', Icon: IoSettingsOutline }, // Corregí el href a /configuration
   { title: 'Reclamos', href: '/claims', Icon: IoAlertCircleOutline },
   { title: 'Reportes', href: '/reports', Icon: IoBarChartOutline },
