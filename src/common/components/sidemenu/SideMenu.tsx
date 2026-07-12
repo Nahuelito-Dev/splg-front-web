@@ -17,16 +17,25 @@ import {
   IoAlertCircleOutline, // <--- Para Reclamos
   IoBarChartOutline, // <--- Para Reportes
   IoLocateOutline, // <--- Para Tracking en vivo
+  IoBusinessOutline, // <--- Para Distribuidoras (super_admin)
 } from 'react-icons/io5';
 
 interface MenuItem {
   title: string;
   href: string;
   Icon: any;
+  /** Si es true, solo lo ve el super_admin (operador de plataforma). */
+  superAdminOnly?: boolean;
 }
 
 const menuItems: MenuItem[] = [
   { title: 'Dashboard', href: '/home', Icon: IoHomeOutline },
+  {
+    title: 'Distribuidoras',
+    href: '/distributors',
+    Icon: IoBusinessOutline,
+    superAdminOnly: true,
+  },
   { title: 'Garrafas', href: '/cylinders', Icon: IoFlameOutline },
   { title: 'Clientes', href: '/customers', Icon: IoPeopleOutline },
   { title: 'Deliveries', href: '/deliveries', Icon: IoBicycleOutline },
@@ -41,7 +50,12 @@ const menuItems: MenuItem[] = [
 
 export const SideMenu = () => {
   const dispatch = useAppDispatch();
-  const { fullName } = useAppSelector((state) => state.auth);
+  const { fullName, role } = useAppSelector((state) => state.auth);
+  const isSuperAdmin = role === 'super_admin';
+  const activeDistributor = localStorage.getItem('selectedDistributor');
+  const visibleItems = menuItems.filter(
+    (item) => !item.superAdminOnly || isSuperAdmin,
+  );
 
   const handleLogout = () => {
     localStorage.clear();
@@ -76,9 +90,19 @@ export const SideMenu = () => {
         </div>
       </div>
 
+      {/* Empresa activa (super_admin viendo una distribuidora puntual) */}
+      {isSuperAdmin && activeDistributor && (
+        <div className="mx-4 mb-2 px-3 py-2 rounded-lg bg-rose-500/10 border border-rose-500/30">
+          <span className="text-[10px] text-slate-400 block">Viendo empresa</span>
+          <span className="text-xs font-bold text-rose-400">
+            {activeDistributor}
+          </span>
+        </div>
+      )}
+
       {/* Navigation Items */}
       <nav className="flex-1 px-4 space-y-2 overflow-y-auto py-2 custom-scrollbar">
-        {menuItems.map((item) => (
+        {visibleItems.map((item) => (
           <NavLink
             key={item.href}
             to={item.href}

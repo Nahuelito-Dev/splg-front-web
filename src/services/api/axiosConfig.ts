@@ -32,6 +32,14 @@ privateAxiosInstance.interceptors.request.use(
       config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${token}`;
       config.headers['X-Client-Source'] = RequestSource.ADMIN_PANEL;
+
+      // Multi-empresa: el super_admin (operador de plataforma) elige qué
+      // distribuidora ver; se envía como header X-Distributor (slug). Un admin
+      // de distribuidora NO necesita esto: el backend lo scopea por su token.
+      const distributor = localStorage.getItem('selectedDistributor');
+      if (distributor) {
+        config.headers['X-Distributor'] = distributor;
+      }
     }
     return config;
   },
