@@ -19,6 +19,7 @@ import { CustomerDetails } from '../pages/Customers/components/CustomerDetails';
 import { Claims } from '../pages/Claims';
 import { Reports } from '../pages/Reports/Reports';
 import { Tracking } from '../pages/Tracking';
+import { Distributors } from '../pages/Distributors';
 
 export const DashboardRoutes = () => {
   const dispatch = useAppDispatch();
@@ -68,6 +69,9 @@ export const DashboardRoutes = () => {
 
         <Route path="claims" element={<Claims />} />
         <Route path="reports" element={<Reports />} />
+
+        {/* Gestión de empresas (multi-distribuidora) — super_admin */}
+        <Route path="distributors" element={<Distributors />} />
 
         {/* Ruta por defecto */}
         <Route path="/*" element={<Navigate to="/home" />} />
