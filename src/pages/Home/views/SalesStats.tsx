@@ -9,9 +9,13 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 
 export const SalesStats = () => {
-  const { data, isLoading } = useQuery(['dashboardStats'], getDashboardStats, {
-    refetchInterval: 30000, // Refrescar cada 30 seg para ver ventas en vivo
-  });
+  const { data, isLoading } = useQuery(
+    ['dashboardStats'],
+    () => getDashboardStats(),
+    {
+      refetchInterval: 30000, // Refrescar cada 30 seg para ver ventas en vivo
+    },
+  );
 
   if (isLoading) {
     return (
