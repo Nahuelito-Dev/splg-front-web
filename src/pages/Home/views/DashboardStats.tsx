@@ -15,7 +15,7 @@ export const DashboardStats = () => {
   // Ventas y pedidos desde /orders/stats/summary
   const { data: dashboardData, isLoading: isStatsLoading } = useQuery(
     ['dashboardStatsCards'],
-    getDashboardStats,
+    () => getDashboardStats(),
     { refetchInterval: 30000 },
   );
 
