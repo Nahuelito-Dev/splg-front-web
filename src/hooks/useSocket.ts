@@ -80,11 +80,19 @@ export const useSocket = (namespace = '/') => {
   );
 
   // Al desmontar el hook (se usa una sola vez, desde SocketProvider) cerramos
-  // la conexión para no dejar sockets colgados.
+  // la conexión para no dejar sockets colgados. Antes se llamaba `.off()` sin
+  // argumentos, que borra TODOS los listeners del socket —incluidos los
+  // internos connect/disconnect/connect_error de arriba—; si el socket se
+  // reusaba, la campana quedaba sin actualizar `isOnline`. Ahora limpiamos los
+  // listeners de ESTE socket, lo desconectamos y nulamos la ref para que un
+  // remount cree un socket nuevo con sus handlers.
   useEffect(() => {
     return () => {
-      socketRef.current?.disconnect();
-      socketRef.current?.off();
+      const socket = socketRef.current;
+      if (!socket) return;
+      socket.removeAllListeners();
+      socket.disconnect();
+      socketRef.current = null;
     };
   }, []);
 
