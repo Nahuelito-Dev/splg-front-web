@@ -7,6 +7,8 @@ import { CustomTable } from '../../../common/components';
 // Iconos Material UI
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import BlockIcon from '@mui/icons-material/Block';
+import LockOpenIcon from '@mui/icons-material/LockOpen';
 import { IconButton, Tooltip } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -42,6 +44,23 @@ export const LeadsTable = ({ setLead }: Props) => {
           className="bg-slate-50 border border-slate-200 rounded-xl hover:bg-indigo-50 hover:border-indigo-200 transition-colors w-9 h-9"
         >
           <InfoOutlinedIcon className="text-slate-600 hover:text-indigo-600 scale-75" />
+        </IconButton>
+      </Tooltip>
+
+      <Tooltip title={row.blocked ? 'DESBLOQUEAR' : 'BLOQUEAR'}>
+        <IconButton
+          onClick={() => setLead({ row, field: 'block' })}
+          className={`bg-slate-50 border border-slate-200 rounded-xl transition-colors w-9 h-9 ${
+            row.blocked
+              ? 'hover:bg-emerald-50 hover:border-emerald-200'
+              : 'hover:bg-amber-50 hover:border-amber-200'
+          }`}
+        >
+          {row.blocked ? (
+            <LockOpenIcon className="text-slate-600 hover:text-emerald-600 scale-75" />
+          ) : (
+            <BlockIcon className="text-slate-600 hover:text-amber-600 scale-75" />
+          )}
         </IconButton>
       </Tooltip>
 

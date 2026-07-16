@@ -1,5 +1,5 @@
 import { LeadsTable } from './components/LeadsTable';
-import { deleteUser, createUser, updateUser } from '../../services/api/users';
+import { deleteUser, createUser, updateUser, blockUser } from '../../services/api/users';
 import { useCRUDModal } from '../../hooks';
 import Swal from 'sweetalert2';
 import { useState } from 'react';
@@ -69,8 +69,70 @@ export const Leads = () => {
     },
   });
 
+  const blockMutation = useMutation({
+    mutationFn: ({ userId, block }: { userId: string; block: boolean }) =>
+      blockUser(userId, block),
+    onSuccess: () => queryClient.invalidateQueries(['users']),
+  });
+
   const handleCellClick = async (event: any) => {
     const { row, field } = event;
+
+    if (field === 'block') {
+      const willBlock = !row.blocked;
+      const result = await Swal.fire({
+        title: willBlock ? '¿Bloquear usuario?' : '¿Desbloquear usuario?',
+        text: willBlock
+          ? `"${row.full_name}" no va a poder operar hasta desbloquearlo.`
+          : `"${row.full_name}" vuelve a poder operar.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: willBlock ? 'Sí, bloquear' : 'Sí, desbloquear',
+        cancelButtonText: 'Cancelar',
+        reverseButtons: true,
+        customClass: {
+          popup: 'rounded-2xl shadow-xl',
+          confirmButton: `${willBlock ? 'bg-amber-500' : 'bg-emerald-600'} text-white px-5 py-2 mx-1 rounded-lg`,
+          cancelButton: 'bg-slate-200 text-slate-600 px-5 py-2 mx-1 rounded-lg',
+        },
+        buttonsStyling: false,
+      });
+
+      if (result.isConfirmed) {
+        try {
+          await blockMutation.mutateAsync({
+            userId: row.user_id,
+            block: willBlock,
+          });
+          Swal.fire({
+            title: willBlock ? 'Bloqueado' : 'Desbloqueado',
+            text: `El usuario fue ${willBlock ? 'bloqueado' : 'desbloqueado'} correctamente.`,
+            icon: 'success',
+            confirmButtonText: 'OK',
+            customClass: {
+              popup: 'rounded-2xl shadow-xl',
+              confirmButton: 'bg-indigo-600 text-white px-5 py-2 rounded-lg',
+            },
+            buttonsStyling: false,
+          });
+        } catch (error: any) {
+          Swal.fire({
+            title: 'Error',
+            text:
+              error.response?.data?.message ||
+              'No se pudo cambiar el estado del usuario.',
+            icon: 'error',
+            confirmButtonText: 'OK',
+            customClass: {
+              popup: 'rounded-2xl shadow-xl',
+              confirmButton: 'bg-indigo-600 text-white px-5 py-2 rounded-lg',
+            },
+            buttonsStyling: false,
+          });
+        }
+      }
+      return;
+    }
 
     if (field === 'delete') {
       const result = await Swal.fire({
