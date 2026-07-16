@@ -12,8 +12,11 @@ import Swal from 'sweetalert2';
 import { Delivery } from '../../interfaces';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import { useAppSelector } from '../../hooks';
 
 export const Deliveries = () => {
+  const { role } = useAppSelector((state) => state.auth);
+  const isSuperAdmin = role === 'super_admin';
   const [selectedDelivery, setSelectedDelivery] = useState<Delivery | null>(
     null,
   );
@@ -148,6 +151,7 @@ export const Deliveries = () => {
           delivery={selectedDelivery}
           onSave={(data) => saveMutation.mutate(data)}
           isSaving={saveMutation.isLoading}
+          isSuperAdmin={isSuperAdmin}
         />
       </div>
     </div>
