@@ -20,6 +20,7 @@ import { Claims } from '../pages/Claims';
 import { Incidents } from '../pages/Incidents';
 import { CoverageZones } from '../pages/CoverageZones';
 import { Reservations } from '../pages/Reservations';
+import { Envases } from '../pages/Envases';
 import { Reports } from '../pages/Reports/Reports';
 import { Tracking } from '../pages/Tracking';
 import { Distributors } from '../pages/Distributors';
@@ -52,9 +53,12 @@ export const DashboardRoutes = () => {
         <Route path="customers" element={<Customers />} />
         <Route path="customers/details/:id" element={<CustomerDetails />} />
 
-        {/* 4. Garrafas / Productos */}
+        {/* 4. Garrafas / Productos (catálogo) */}
         <Route path="cylinders" element={<Cylinders />} />
         <Route path="cylinders/details/:id" element={<CylinderDetails />} />
+
+        {/* 4b. Envases físicos (garrafas serializadas, ciclo de canje) */}
+        <Route path="envases" element={<Envases />} />
 
         {/* 5. Repartidores (Deliveries) */}
         <Route path="deliveries" element={<Deliveries />} />
