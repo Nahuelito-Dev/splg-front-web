@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { useQuery } from '@tanstack/react-query';
 import { Delivery } from '../../../interfaces';
+import { getAllDistributors } from '../../../services/api/distributors';
 import CloseIcon from '@mui/icons-material/Close';
 import LockResetIcon from '@mui/icons-material/LockReset';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
@@ -14,6 +16,8 @@ interface Props {
   onClose: () => void;
   onSave: (data: any) => void;
   isSaving: boolean;
+  /** super_admin puede elegir a qué empresa asignar el chofer. */
+  isSuperAdmin?: boolean;
 }
 
 export const DeliveryModal = ({
@@ -22,7 +26,13 @@ export const DeliveryModal = ({
   onClose,
   onSave,
   isSaving,
+  isSuperAdmin = false,
 }: Props) => {
+  const { data: distributors } = useQuery(
+    ['distributors'],
+    getAllDistributors,
+    { enabled: isOpen && isSuperAdmin && !delivery },
+  );
   const {
     register,
     handleSubmit,
@@ -75,6 +85,9 @@ export const DeliveryModal = ({
     if (isEditing && data.newPassword) {
       payload.newPassword = data.newPassword;
     }
+
+    // distributorId vacío rompe el @IsUUID del backend → mandarlo solo si hay valor.
+    if (!payload.distributorId) delete payload.distributorId;
 
     delete payload.confirmPassword;
     onSave(payload);
@@ -167,6 +180,28 @@ export const DeliveryModal = ({
                   Mínimo 6 caracteres
                 </span>
               )}
+            </div>
+          )}
+
+          {!isEditing && isSuperAdmin && (
+            <div>
+              <label className="text-xs font-bold text-slate-500 uppercase">
+                Empresa (distribuidora)
+              </label>
+              <select
+                {...register('distributorId')}
+                className="w-full mt-1 p-2 border rounded-lg bg-white outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="">— Usar la empresa activa —</option>
+                {(distributors ?? []).map((d: any) => (
+                  <option key={d.distributor_id} value={d.distributor_id}>
+                    {d.name}
+                  </option>
+                ))}
+              </select>
+              <span className="text-[11px] text-slate-400">
+                Si no elegís, se usa la empresa que estés viendo ("Ver como").
+              </span>
             </div>
           )}
 
