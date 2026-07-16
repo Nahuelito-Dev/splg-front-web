@@ -63,6 +63,14 @@ export const resetUserPassword = async (userId: string, password: string) => {
   });
   return data;
 };
+
+// BLOCK / UNBLOCK (CU-050) — PATCH /users/:id/block { block: boolean }.
+export const blockUser = async (userId: string, block: boolean) => {
+  const { data } = await privateAxiosInstance.patch(`/users/${userId}/block`, {
+    block,
+  });
+  return data;
+};
 // Añade esta función para obtener usuario por email (reemplaza getAdmin)
 export const getUserByEmail = async (email: string) => {
   try {
