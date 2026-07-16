@@ -23,6 +23,7 @@ import {
   IoBusinessOutline, // <--- Para Distribuidoras (super_admin)
   IoCubeOutline, // <--- Para Envases físicos (ciclo de canje)
   IoStarOutline, // <--- Para Calificaciones
+  IoShieldCheckmarkOutline, // <--- Para Administradores (super_admin)
 } from 'react-icons/io5';
 
 interface MenuItem {
@@ -39,6 +40,12 @@ const menuItems: MenuItem[] = [
     title: 'Distribuidoras',
     href: '/distributors',
     Icon: IoBusinessOutline,
+    superAdminOnly: true,
+  },
+  {
+    title: 'Administradores',
+    href: '/admins',
+    Icon: IoShieldCheckmarkOutline,
     superAdminOnly: true,
   },
   { title: 'Garrafas', href: '/cylinders', Icon: IoFlameOutline },
