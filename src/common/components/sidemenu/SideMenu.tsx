@@ -22,6 +22,7 @@ import {
   IoLocateOutline, // <--- Para Tracking en vivo
   IoBusinessOutline, // <--- Para Distribuidoras (super_admin)
   IoCubeOutline, // <--- Para Envases físicos (ciclo de canje)
+  IoStarOutline, // <--- Para Calificaciones
 } from 'react-icons/io5';
 
 interface MenuItem {
@@ -52,6 +53,7 @@ const menuItems: MenuItem[] = [
   { title: 'Incidencias', href: '/incidents', Icon: IoWarningOutline },
   { title: 'Zonas de cobertura', href: '/coverage-zones', Icon: IoMapOutline },
   { title: 'Reservas', href: '/reservations', Icon: IoCalendarNumberOutline },
+  { title: 'Calificaciones', href: '/ratings', Icon: IoStarOutline },
   { title: 'Reportes', href: '/reports', Icon: IoBarChartOutline },
   { title: 'Usuarios', href: '/users', Icon: IoPersonOutline },
 ];

@@ -24,6 +24,7 @@ import { Envases } from '../pages/Envases';
 import { Reports } from '../pages/Reports/Reports';
 import { Tracking } from '../pages/Tracking';
 import { Distributors } from '../pages/Distributors';
+import { Ratings } from '../pages/Ratings';
 
 export const DashboardRoutes = () => {
   const dispatch = useAppDispatch();
@@ -79,6 +80,7 @@ export const DashboardRoutes = () => {
         <Route path="coverage-zones" element={<CoverageZones />} />
         <Route path="reservations" element={<Reservations />} />
         <Route path="reports" element={<Reports />} />
+        <Route path="ratings" element={<Ratings />} />
 
         {/* Gestión de empresas (multi-distribuidora) — super_admin */}
         <Route path="distributors" element={<Distributors />} />
