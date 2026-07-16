@@ -17,6 +17,7 @@ import {
   IoAlertCircleOutline, // <--- Para Reclamos
   IoWarningOutline, // <--- Para Incidencias
   IoMapOutline, // <--- Para Zonas de cobertura
+  IoCalendarNumberOutline, // <--- Para Reservas
   IoBarChartOutline, // <--- Para Reportes
   IoLocateOutline, // <--- Para Tracking en vivo
   IoBusinessOutline, // <--- Para Distribuidoras (super_admin)
@@ -48,6 +49,7 @@ const menuItems: MenuItem[] = [
   { title: 'Reclamos', href: '/claims', Icon: IoAlertCircleOutline },
   { title: 'Incidencias', href: '/incidents', Icon: IoWarningOutline },
   { title: 'Zonas de cobertura', href: '/coverage-zones', Icon: IoMapOutline },
+  { title: 'Reservas', href: '/reservations', Icon: IoCalendarNumberOutline },
   { title: 'Reportes', href: '/reports', Icon: IoBarChartOutline },
   { title: 'Usuarios', href: '/users', Icon: IoPersonOutline },
 ];
