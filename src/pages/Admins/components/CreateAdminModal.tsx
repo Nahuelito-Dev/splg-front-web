@@ -10,6 +10,8 @@ interface Props {
   onClose: () => void;
   onCreate: (payload: RegisterAdminPayload) => void;
   isSaving: boolean;
+  /** super_admin puede elegir empresa y crear cualquier rol; el admin de empresa no. */
+  isSuperAdmin: boolean;
 }
 
 export const CreateAdminModal = ({
@@ -17,6 +19,7 @@ export const CreateAdminModal = ({
   onClose,
   onCreate,
   isSaving,
+  isSuperAdmin,
 }: Props) => {
   const {
     register,
@@ -29,7 +32,12 @@ export const CreateAdminModal = ({
   const { data: distributors } = useQuery(
     ['distributors'],
     getAllDistributors,
-    { enabled: isOpen },
+    { enabled: isOpen && isSuperAdmin },
+  );
+
+  // Un admin de empresa no puede crear super_admins.
+  const availableRoles = (roles ?? []).filter(
+    (r) => isSuperAdmin || r.type !== 'super_admin',
   );
 
   useEffect(() => {
@@ -140,9 +148,9 @@ export const CreateAdminModal = ({
               className={`${inputCls} bg-white`}
             >
               <option value="">— Elegir rol —</option>
-              {(roles ?? []).map((r) => (
+              {availableRoles.map((r) => (
                 <option key={r.role_id} value={r.role_id}>
-                  {r.name}
+                  {r.type}
                 </option>
               ))}
             </select>
@@ -153,25 +161,31 @@ export const CreateAdminModal = ({
             )}
           </div>
 
-          <div>
-            <label className="block text-sm font-bold text-slate-700 mb-1">
-              Empresa (distribuidora)
-            </label>
-            <select
-              {...register('distributorId')}
-              className={`${inputCls} bg-white`}
-            >
-              <option value="">— Sin empresa (cross-tenant) —</option>
-              {(distributors ?? []).map((d: any) => (
-                <option key={d.distributor_id} value={d.distributor_id}>
-                  {d.name}
-                </option>
-              ))}
-            </select>
-            <p className="text-[11px] text-slate-400 mt-1">
-              Dejar vacío solo para admins de plataforma (super_admin).
+          {isSuperAdmin ? (
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-1">
+                Empresa (distribuidora)
+              </label>
+              <select
+                {...register('distributorId')}
+                className={`${inputCls} bg-white`}
+              >
+                <option value="">— Sin empresa (cross-tenant) —</option>
+                {(distributors ?? []).map((d: any) => (
+                  <option key={d.distributor_id} value={d.distributor_id}>
+                    {d.name}
+                  </option>
+                ))}
+              </select>
+              <p className="text-[11px] text-slate-400 mt-1">
+                Dejar vacío solo para admins de plataforma (super_admin).
+              </p>
+            </div>
+          ) : (
+            <p className="text-[11px] text-slate-400">
+              El admin se crea en tu misma empresa.
             </p>
-          </div>
+          )}
 
           <div className="flex justify-end gap-3 pt-2">
             <button

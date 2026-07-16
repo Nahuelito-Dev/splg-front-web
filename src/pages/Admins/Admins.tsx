@@ -5,9 +5,12 @@ import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import AddIcon from '@mui/icons-material/Add';
 import { getAdmins, registerAdmin } from '../../services/api/admins';
 import { CreateAdminModal } from './components/CreateAdminModal';
+import { useAppSelector } from '../../hooks';
 
 export const Admins = () => {
   const queryClient = useQueryClient();
+  const { role } = useAppSelector((state) => state.auth);
+  const isSuperAdmin = role === 'super_admin';
   const [createOpen, setCreateOpen] = useState(false);
 
   const { data: admins = [], isLoading } = useQuery(['admins'], getAdmins);
@@ -114,7 +117,7 @@ export const Admins = () => {
                       </td>
                       <td className="px-6 py-3">
                         <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-bold border uppercase text-indigo-600 bg-indigo-50 border-indigo-100">
-                          {a.role?.name ?? '—'}
+                          {a.role?.type ?? '—'}
                         </span>
                       </td>
                       <td className="px-6 py-3 text-slate-600">
@@ -138,6 +141,7 @@ export const Admins = () => {
         onClose={() => setCreateOpen(false)}
         onCreate={(payload) => createMutation.mutate(payload)}
         isSaving={createMutation.isLoading}
+        isSuperAdmin={isSuperAdmin}
       />
     </div>
   );

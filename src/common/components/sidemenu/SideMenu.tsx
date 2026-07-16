@@ -46,7 +46,6 @@ const menuItems: MenuItem[] = [
     title: 'Administradores',
     href: '/admins',
     Icon: IoShieldCheckmarkOutline,
-    superAdminOnly: true,
   },
   { title: 'Garrafas', href: '/cylinders', Icon: IoFlameOutline },
   { title: 'Envases', href: '/envases', Icon: IoCubeOutline },

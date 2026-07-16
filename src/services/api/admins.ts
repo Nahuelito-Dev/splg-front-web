@@ -2,7 +2,8 @@ import { privateAxiosInstance } from './axiosConfig';
 
 export interface AdminRole {
   role_id: string;
-  name: string;
+  /** Identificador del rol (columna `type` del backend): 'admin' | 'super_admin' | ... */
+  type: string;
 }
 
 export interface AdminUser {
