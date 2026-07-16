@@ -21,6 +21,7 @@ import {
   IoBarChartOutline, // <--- Para Reportes
   IoLocateOutline, // <--- Para Tracking en vivo
   IoBusinessOutline, // <--- Para Distribuidoras (super_admin)
+  IoCubeOutline, // <--- Para Envases físicos (ciclo de canje)
 } from 'react-icons/io5';
 
 interface MenuItem {
@@ -40,6 +41,7 @@ const menuItems: MenuItem[] = [
     superAdminOnly: true,
   },
   { title: 'Garrafas', href: '/cylinders', Icon: IoFlameOutline },
+  { title: 'Envases', href: '/envases', Icon: IoCubeOutline },
   { title: 'Clientes', href: '/customers', Icon: IoPeopleOutline },
   { title: 'Deliveries', href: '/deliveries', Icon: IoBicycleOutline },
   { title: 'Vehículos', href: '/cars', Icon: IoCarOutline },
