@@ -19,6 +19,7 @@ import { CustomerDetails } from '../pages/Customers/components/CustomerDetails';
 import { Claims } from '../pages/Claims';
 import { Incidents } from '../pages/Incidents';
 import { CoverageZones } from '../pages/CoverageZones';
+import { Reservations } from '../pages/Reservations';
 import { Reports } from '../pages/Reports/Reports';
 import { Tracking } from '../pages/Tracking';
 import { Distributors } from '../pages/Distributors';
@@ -72,6 +73,7 @@ export const DashboardRoutes = () => {
         <Route path="claims" element={<Claims />} />
         <Route path="incidents" element={<Incidents />} />
         <Route path="coverage-zones" element={<CoverageZones />} />
+        <Route path="reservations" element={<Reservations />} />
         <Route path="reports" element={<Reports />} />
 
         {/* Gestión de empresas (multi-distribuidora) — super_admin */}
