@@ -88,10 +88,10 @@ export const Ratings = () => {
     return Math.round((total / history.length) * 100) / 100;
   }, [history]);
 
-  const displayAverage =
-    selected?.type === 'delivery' && summary ? summary.average : computedAverage;
-  const displayCount =
-    selected?.type === 'delivery' && summary ? summary.count : history.length;
+  // El backend ya devuelve el summary simétrico (chofer o cliente); usamos el
+  // computed solo como fallback mientras el summary carga.
+  const displayAverage = summary ? summary.average : computedAverage;
+  const displayCount = summary ? summary.count : history.length;
 
   const handleTabChange = (newTab: ProfileType) => {
     setTab(newTab);
@@ -277,10 +277,18 @@ export const Ratings = () => {
                           <div className="flex items-center justify-between gap-4 flex-wrap">
                             <div className="flex items-center gap-2">
                               <Stars value={rating.stars} size="small" />
-                              <span className="text-xs font-bold text-slate-500 uppercase bg-slate-100 px-2 py-0.5 rounded">
-                                {rating.from_role === 'customer'
-                                  ? 'De un cliente'
-                                  : 'De un chofer'}
+                              <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                                {rating.fromUser?.full_name
+                                  ? rating.fromUser.full_name
+                                  : rating.from_role === 'customer'
+                                    ? 'Un cliente'
+                                    : 'Un chofer'}
+                                <span className="text-slate-400 font-normal">
+                                  {' · '}
+                                  {rating.from_role === 'customer'
+                                    ? 'cliente'
+                                    : 'chofer'}
+                                </span>
                               </span>
                             </div>
                             <span className="text-xs text-slate-400">

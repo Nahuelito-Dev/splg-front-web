@@ -4,6 +4,7 @@ import {
   getSalesByDriver,
   getSalesByProduct,
   getSalesByPayment,
+  getSalesEvolution,
 } from '../../services/api/reports';
 import { rowsToCsv, downloadCsv } from '../../utils/csv';
 import {
@@ -18,6 +19,8 @@ import {
   Pie,
   Cell,
   Legend,
+  LineChart,
+  Line,
 } from 'recharts';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import DownloadIcon from '@mui/icons-material/Download';
@@ -61,6 +64,32 @@ export const Reports = () => {
     ['reportsSalesByPayment', startDate, endDate],
     () => getSalesByPayment(startDate || undefined, endDate || undefined),
   );
+
+  const [granularity, setGranularity] = useState<'day' | 'month'>('day');
+  const { data: evolution = [] } = useQuery(
+    ['reportsSalesEvolution', startDate, endDate, granularity],
+    () =>
+      getSalesEvolution(
+        startDate || undefined,
+        endDate || undefined,
+        granularity,
+      ),
+  );
+
+  const evolutionData = evolution.map((p) => ({
+    period:
+      granularity === 'month'
+        ? new Date(p.period).toLocaleDateString('es-AR', {
+            month: 'short',
+            year: '2-digit',
+          })
+        : new Date(p.period).toLocaleDateString('es-AR', {
+            day: '2-digit',
+            month: '2-digit',
+          }),
+    totalSales: p.totalSales,
+    totalOrders: p.totalOrders,
+  }));
 
   const isLoading = loadingDriver || loadingProduct || loadingPayment;
 
@@ -196,6 +225,57 @@ export const Reports = () => {
               Promedio por pedido entregado
             </p>
           </div>
+        </div>
+
+        {/* Evolución temporal de ventas */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 h-[380px] flex flex-col mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="font-bold text-slate-800">Evolución de ventas</h3>
+            <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
+              {(['day', 'month'] as const).map((g) => (
+                <button
+                  key={g}
+                  onClick={() => setGranularity(g)}
+                  className={`px-3 py-1 rounded-md text-xs font-bold transition-colors ${
+                    granularity === g
+                      ? 'bg-white text-indigo-600 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  {g === 'day' ? 'Diario' : 'Mensual'}
+                </button>
+              ))}
+            </div>
+          </div>
+          {evolutionData.length === 0 ? (
+            <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">
+              Sin ventas en el período.
+            </div>
+          ) : (
+            <div className="flex-1">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={evolutionData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="period" tick={{ fontSize: 12, fill: '#64748b' }} />
+                  <YAxis tick={{ fontSize: 12, fill: '#64748b' }} />
+                  <RechartsTooltip
+                    formatter={(value) => [
+                      `$${Number(value).toLocaleString('es-AR')}`,
+                      'Facturación',
+                    ]}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="totalSales"
+                    stroke="#6366f1"
+                    strokeWidth={2}
+                    dot={{ r: 3 }}
+                    name="totalSales"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
 
         {/* Gráficos */}

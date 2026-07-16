@@ -51,3 +51,25 @@ export const getSalesByPayment = async (from?: string, to?: string) => {
   );
   return data;
 };
+
+export interface SalesEvolutionPoint {
+  period: string;
+  totalOrders: number;
+  totalSales: number;
+}
+
+// GET /reports/sales-evolution — ventas entregadas agrupadas por período (día/mes).
+export const getSalesEvolution = async (
+  from?: string,
+  to?: string,
+  granularity: 'day' | 'month' = 'day',
+) => {
+  const params = new URLSearchParams();
+  if (from) params.set('from', from);
+  if (to) params.set('to', to);
+  params.set('granularity', granularity);
+  const { data } = await privateAxiosInstance.get<SalesEvolutionPoint[]>(
+    `/reports/sales-evolution?${params.toString()}`,
+  );
+  return data;
+};
