@@ -140,7 +140,7 @@ export const Reports = () => {
     ];
 
     const content = ['Ventas por chofer', ...sections].join('\n');
-    downloadCsv(`reporte-jennygas-${rangeLabel}.csv`, content);
+    downloadCsv(`reporte-splg-${rangeLabel}.csv`, content);
   };
 
   const hasAnyData = byDriver.length > 0 || byProduct.length > 0 || byPayment.length > 0;
