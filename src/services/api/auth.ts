@@ -1,5 +1,5 @@
 // services/api/auth.ts
-import { publicAxiosInstance } from './axiosConfig';
+import { privateAxiosInstance, publicAxiosInstance } from './axiosConfig';
 
 export const checkToken = async () => {
   const response = await publicAxiosInstance.post('/users/validate');
@@ -8,8 +8,7 @@ export const checkToken = async () => {
 
 export const getAdmin = async (email: string) => {
   try {
-    // CAMBIO: La ruta correcta según tu Controller es /users/email/
-    const { data } = await publicAxiosInstance.get(`/users/email/${email}`);
+    const { data } = await privateAxiosInstance.get(`/users/email/${email}`);
 
     // En tu backend, la relación se llama 'role' y el campo es 'type'
     const roleType = data.role?.type;

@@ -58,6 +58,11 @@ export const startLoginWithEmailAndPassword = ({ email, password }: ICredentials
             return;
         }
 
+        // El token va a localStorage ANTES de preguntar por el admin: ese
+        // endpoint dejo de ser publico y privateAxiosInstance lo lee de ahi.
+        // Si la validacion falla, el catch limpia todo.
+        localStorage.setItem('token', token!);
+
         try {
             const { fullName, role, blocked } = await getAdmin(email);
             
@@ -77,7 +82,6 @@ export const startLoginWithEmailAndPassword = ({ email, password }: ICredentials
             } else {
                 const expirationDate = new Date();
                 expirationDate.setTime(expirationDate.getTime() + 60 * 60 * 1000);
-                localStorage.setItem('token', token!);
                 localStorage.setItem('expireTimestamp', JSON.stringify(expirationDate.getTime()));
                 dispatch(finishCheckingCredentials());
                 dispatch(login({ fullName, uid, displayName, photoURL, email, role }));
