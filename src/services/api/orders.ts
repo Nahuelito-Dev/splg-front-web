@@ -79,14 +79,12 @@ export const assignDriverToOrder = async (
 
 // 3. Cancelar (Admin Force)
 export const cancelOrder = async (orderId: string, reason: string) => {
-  // Usamos el endpoint específico que creaste con body
+  // El backend toma el actor (id y rol) del token, nunca del cuerpo: mandarle
+  // userId y role hacia que el ValidationPipe rechazara la peticion con un 400
+  // ("property userId should not exist"), asi que la cancelacion no funcionaba.
   const { data } = await privateAxiosInstance.patch(
     `/orders/${orderId}/cancel`,
-    {
-      userId: 'ADMIN_PANEL', // Identificador de auditoría
-      role: 'admin',
-      reason,
-    },
+    { reason },
   );
   return data;
 };
