@@ -1,11 +1,11 @@
-import { YennigasLogo } from '../../common/components/YennigasLogo';
+import { LogoSplg } from '../../common/components/LogoSplg';
 
 export const CheckingAuth = () => {
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#0f1014] gap-8">
       {/* Logo con animación de pulso suave */}
       <div className="animate-pulse">
-        <YennigasLogo textSize="text-6xl" />
+        <LogoSplg textSize="text-6xl" />
       </div>
 
       {/* Spinner personalizado con los colores de la marca */}

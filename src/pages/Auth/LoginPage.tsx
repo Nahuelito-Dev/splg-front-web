@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector, useForm } from '../../hooks';
 import { startLoginWithEmailAndPassword } from '../../store/auth/thunks';
-import { YennigasLogo } from '../../common/components/YennigasLogo'; // Ajusta la ruta
+import { LogoSplg } from '../../common/components/LogoSplg';
 
 const formData = {
   email: '',
@@ -33,7 +33,7 @@ export const LoginPage = () => {
           {/* Logo Section */}
           <div className="mb-10 text-center">
             <div className="mb-6 flex justify-center">
-              <YennigasLogo textSize="text-6xl" />
+              <LogoSplg textSize="text-6xl" />
             </div>
             <h3 className="text-white text-2xl font-bold tracking-tight">
               Bienvenido
@@ -56,7 +56,7 @@ export const LoginPage = () => {
                 value={formState.email}
                 onChange={onInputChange}
                 className="w-full text-sm text-white bg-[#0f1014] border border-slate-700 px-4 py-3.5 rounded-xl focus:outline-none focus:border-[#f43f5e] focus:ring-1 focus:ring-[#f43f5e] transition-all placeholder-slate-600"
-                placeholder="usuario@yennigas.com"
+                placeholder="usuario@splg.com"
               />
             </div>
           </div>
