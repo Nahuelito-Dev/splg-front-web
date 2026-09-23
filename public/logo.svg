@@ -3,31 +3,16 @@
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Pacifico&amp;display=swap');
       .text { font-family: 'Pacifico', cursive; font-size: 60px; user-select: none; }
-      .gas-bg { fill: #f43f5e; }
-      .gas-text { fill: white; font-size: 60px; font-family: 'Pacifico', cursive; }
     </style>
-    <filter id="shadow">
-      <feDropShadow dx="3" dy="3" stdDeviation="0" flood-color="#000"/>
-      <feDropShadow dx="-1" dy="-1" stdDeviation="0" flood-color="#fff"/>
-      <feDropShadow dx="1" dy="-1" stdDeviation="0" flood-color="#fff"/>
-      <feDropShadow dx="-1" dy="1" stdDeviation="0" flood-color="#fff"/>
-      <feDropShadow dx="1" dy="1" stdDeviation="0" flood-color="#fff"/>
-    </filter>
   </defs>
 
   <g transform="translate(20, 70)">
-    <text x="0" y="0" class="text" fill="black" transform="translate(3,3)">Yenni</text>
-    <text x="0" y="0" class="text" fill="white" transform="translate(-1,-1)">Yenni</text>
-    <text x="0" y="0" class="text" fill="white" transform="translate(1,-1)">Yenni</text>
-    <text x="0" y="0" class="text" fill="white" transform="translate(-1,1)">Yenni</text>
-    <text x="0" y="0" class="text" fill="white" transform="translate(1,1)">Yenni</text>
-    
-    <text x="0" y="0" class="text" fill="#22d3ee">Yenni</text>
+    <text x="0" y="0" class="text" fill="black" transform="translate(3,3)">SPLG</text>
+    <text x="0" y="0" class="text" fill="white" transform="translate(-1,-1)">SPLG</text>
+    <text x="0" y="0" class="text" fill="white" transform="translate(1,-1)">SPLG</text>
+    <text x="0" y="0" class="text" fill="white" transform="translate(-1,1)">SPLG</text>
+    <text x="0" y="0" class="text" fill="white" transform="translate(1,1)">SPLG</text>
 
-    <g transform="translate(160, -10)">
-       <rect x="0" y="-45" width="110" height="70" class="gas-bg" rx="8" transform="skewX(-12)" stroke="white" stroke-width="2" />
-       
-       <text x="15" y="10" class="gas-text" style="text-shadow: 2px 2px 0px rgba(0,0,0,0.3)">gas</text>
-    </g>
+    <text x="0" y="0" class="text" fill="#22d3ee">SPLG</text>
   </g>
 </svg>

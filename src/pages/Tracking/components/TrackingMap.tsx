@@ -5,7 +5,7 @@ import '../leafletIconFix';
 import { MapAutoCenter } from './MapAutoCenter';
 import { TrackedOrder } from '../types';
 
-// Centro por defecto: Tucumán (zona de operación de Jeny Gas) hasta que
+// Centro por defecto: Tucumán (zona de operación de la distribuidora) hasta que
 // llegue la primera posición real de un chofer.
 const DEFAULT_CENTER: LatLngExpression = [-26.82, -65.22];
 const DEFAULT_ZOOM = 12;

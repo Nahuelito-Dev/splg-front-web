@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../../hooks';
 import { startLogOut } from '../../../store/auth/thunks';
-import { YennigasLogo } from '../../components/YennigasLogo';
+import { LogoSplg } from '../../components/LogoSplg';
 
 // Iconos
 import {
@@ -84,7 +84,7 @@ export const SideMenu = () => {
       {/* Logo Area */}
       <div className="h-28 flex items-center justify-center border-b border-slate-800/50">
         <div className="scale-75">
-          <YennigasLogo textSize="text-4xl" />
+          <LogoSplg textSize="text-4xl" />
         </div>
       </div>
 
