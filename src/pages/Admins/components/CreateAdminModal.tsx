@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useQuery } from '@tanstack/react-query';
 import CloseIcon from '@mui/icons-material/Close';
-import { getRoles, RegisterAdminPayload } from '../../../services/api/admins';
+import { RegisterAdminPayload } from '../../../services/api/admins';
 import { getAllDistributors } from '../../../services/api/distributors';
 
 interface Props {
@@ -28,17 +28,17 @@ export const CreateAdminModal = ({
     formState: { errors },
   } = useForm<RegisterAdminPayload>();
 
-  const { data: roles } = useQuery(['roles'], getRoles, { enabled: isOpen });
   const { data: distributors } = useQuery(
     ['distributors'],
     getAllDistributors,
     { enabled: isOpen && isSuperAdmin },
   );
 
-  // Un admin de empresa no puede crear super_admins.
-  const availableRoles = (roles ?? []).filter(
-    (r) => isSuperAdmin || r.type !== 'super_admin',
-  );
+  // Un admin sólo puede ser admin o super admin, y un admin de empresa no
+  // puede crear super admins (el backend lo rechaza igual).
+  const availableRoles: RegisterAdminPayload['rol'][] = isSuperAdmin
+    ? ['admin', 'super_admin']
+    : ['admin'];
 
   useEffect(() => {
     if (isOpen) reset({});
@@ -144,19 +144,19 @@ export const CreateAdminModal = ({
               Rol <span className="text-rose-500">*</span>
             </label>
             <select
-              {...register('role_id', { required: 'Requerido' })}
+              {...register('rol', { required: 'Requerido' })}
               className={`${inputCls} bg-white`}
             >
               <option value="">— Elegir rol —</option>
-              {availableRoles.map((r) => (
-                <option key={r.role_id} value={r.role_id}>
-                  {r.type}
+              {availableRoles.map((rol) => (
+                <option key={rol} value={rol}>
+                  {rol}
                 </option>
               ))}
             </select>
-            {errors.role_id && (
+            {errors.rol && (
               <p className="text-xs text-rose-600 mt-1">
-                {errors.role_id.message}
+                {errors.rol.message}
               </p>
             )}
           </div>

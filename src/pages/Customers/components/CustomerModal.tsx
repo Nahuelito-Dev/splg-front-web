@@ -14,6 +14,8 @@ interface Props {
   onClose: () => void;
   onSave: (data: any) => void;
   isSaving: boolean;
+  /** Restaurar la contraseña es de la cuenta: sólo el administrador general. */
+  puedeCambiarContrasena: boolean;
 }
 
 export const CustomerModal = ({
@@ -22,6 +24,7 @@ export const CustomerModal = ({
   onClose,
   onSave,
   isSaving,
+  puedeCambiarContrasena,
 }: Props) => {
   const {
     register,
@@ -51,7 +54,6 @@ export const CustomerModal = ({
           full_name: customer.user?.full_name,
           phone_number: customer.user?.phone_number,
           email: customer.user?.email,
-          validated: customer.validated === 'true',
           newPassword: '',
           confirmPassword: '',
         });
@@ -61,17 +63,13 @@ export const CustomerModal = ({
           phone_number: '',
           email: '',
           password: '',
-          validated: false,
         });
       }
     }
   }, [customer, isOpen, reset]);
 
   const onSubmit = (data: any) => {
-    const payload: any = {
-      ...data,
-      validated: data.validated ? 'true' : 'false',
-    };
+    const payload: any = { ...data };
 
     if (isEditing && data.newPassword) {
       payload.newPassword = data.newPassword;
@@ -170,18 +168,7 @@ export const CustomerModal = ({
             </div>
           )}
 
-          <div className="pt-2">
-            <div className="flex items-center gap-2 border p-3 rounded-lg w-fit">
-              <input
-                type="checkbox"
-                {...register('validated')}
-                className="w-4 h-4 text-indigo-600 rounded"
-              />
-              <span className="text-sm text-slate-700 font-medium">Validado (Documentación)</span>
-            </div>
-          </div>
-
-          {isEditing && (
+          {isEditing && puedeCambiarContrasena && (
             <div className="border border-amber-200 rounded-lg overflow-hidden bg-amber-50/30">
               <button
                 type="button"

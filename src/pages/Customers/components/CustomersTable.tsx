@@ -10,15 +10,15 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import { IconButton, Tooltip } from '@mui/material';
-import VerifiedIcon from '@mui/icons-material/Verified';
-import NewReleasesIcon from '@mui/icons-material/NewReleases';
 import SearchIcon from '@mui/icons-material/Search';
 
 interface Props {
   setAction: (event: any) => void;
+  /** Sólo el administrador general da de baja clientes. */
+  puedeEliminar: boolean;
 }
 
-export const CustomersTable = ({ setAction }: Props) => {
+export const CustomersTable = ({ setAction, puedeEliminar }: Props) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState(searchTerm);
 
@@ -38,9 +38,7 @@ export const CustomersTable = ({ setAction }: Props) => {
 
   const renderActions = (row: any) => (
     <div className="flex items-center justify-center gap-2">
-      {/* --- BOTÓN VER DETALLE (CORREGIDO) --- */}
       <Tooltip title="Ver Perfil y Direcciones">
-        {/* Ahora apunta a la ruta de Cliente, usando customer_id */}
         <Link to={`/customers/details/${row.customer_id}`}>
           <IconButton className="bg-slate-50 border border-slate-200 rounded-xl hover:bg-indigo-50 hover:border-indigo-200 transition-colors w-9 h-9">
             <InfoOutlinedIcon className="text-slate-600 hover:text-indigo-600 scale-75" />
@@ -57,14 +55,16 @@ export const CustomersTable = ({ setAction }: Props) => {
         </IconButton>
       </Tooltip>
 
-      <Tooltip title="Eliminar Cliente">
-        <IconButton
-          onClick={() => setAction({ row, field: 'delete' })}
-          className="bg-slate-50 border border-slate-200 rounded-xl hover:bg-rose-50 hover:border-rose-200 transition-colors w-9 h-9"
-        >
-          <DeleteOutlineIcon className="text-slate-600 hover:text-rose-600 scale-75" />
-        </IconButton>
-      </Tooltip>
+      {puedeEliminar && (
+        <Tooltip title="Eliminar Cliente">
+          <IconButton
+            onClick={() => setAction({ row, field: 'delete' })}
+            className="bg-slate-50 border border-slate-200 rounded-xl hover:bg-rose-50 hover:border-rose-200 transition-colors w-9 h-9"
+          >
+            <DeleteOutlineIcon className="text-slate-600 hover:text-rose-600 scale-75" />
+          </IconButton>
+        </Tooltip>
+      )}
     </div>
   );
 
@@ -105,31 +105,6 @@ export const CustomersTable = ({ setAction }: Props) => {
       headerName: 'TELÉFONO',
       minWidth: 130,
       renderCell: ({ row }) => <span>{row.user?.phone_number || 'S/D'}</span>,
-    },
-    {
-      field: 'validated',
-      headerName: 'VALIDADO',
-      width: 130,
-      align: 'center',
-      renderCell: ({ row }: GridRenderCellParams) => (
-        <div
-          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border ${
-            row.validated === 'true'
-              ? 'bg-blue-50 text-blue-700 border-blue-100'
-              : 'bg-amber-50 text-amber-700 border-amber-100'
-          }`}
-        >
-          {row.validated === 'true' ? (
-            <>
-              <VerifiedIcon sx={{ fontSize: 14 }} /> Verificado
-            </>
-          ) : (
-            <>
-              <NewReleasesIcon sx={{ fontSize: 14 }} /> Pendiente
-            </>
-          )}
-        </div>
-      ),
     },
     {
       field: 'actions',

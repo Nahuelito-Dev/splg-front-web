@@ -117,7 +117,7 @@ export const Admins = () => {
                       </td>
                       <td className="px-6 py-3">
                         <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-bold border uppercase text-indigo-600 bg-indigo-50 border-indigo-100">
-                          {a.role?.type ?? '—'}
+                          {a.role?.type ?? a.user?.role?.type ?? '—'}
                         </span>
                       </td>
                       <td className="px-6 py-3 text-slate-600">

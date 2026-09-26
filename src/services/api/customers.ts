@@ -1,5 +1,25 @@
 import { privateAxiosInstance } from './axiosConfig';
 import { Customer } from '../../interfaces'; // Asegúrate de tener o crear esta interfaz
+import { AltaDeUsuario, registrarUsuario } from './registro';
+
+const parDeCoordenadasValido = (valor: string) => {
+  const partes = valor.split(',').map((parte) => Number(parte.trim()));
+  if (partes.length !== 2) return false;
+  const [latitud, longitud] = partes;
+  return (
+    Number.isFinite(latitud) &&
+    Number.isFinite(longitud) &&
+    Math.abs(latitud) <= 90 &&
+    Math.abs(longitud) <= 180
+  );
+};
+
+const validarLatLang = (valor?: string | null) => {
+  if (valor === undefined || valor === null || valor === '') return;
+  if (!parDeCoordenadasValido(valor)) {
+    throw new Error('lat_lang debe tener el formato "latitud,longitud"');
+  }
+};
 
 // GET ALL (Con soporte para paginación y búsqueda si el back lo agrega después)
 export const getAllCustomers = async (page = 0, limit = 10, term?: string) => {
@@ -40,6 +60,7 @@ export const getCustomerById = async (id: string) => {
 
 // UPDATE
 export const updateCustomer = async (id: string, data: Partial<Customer>) => {
+  validarLatLang(data.lat_lang);
   const { data: response } = await privateAxiosInstance.patch(
     `/customers/${id}`,
     data,
@@ -53,18 +74,11 @@ export const deleteCustomer = async (id: string) => {
   return data;
 };
 
-// VALIDATE (Endpoint específico de tu controller)
-export const validateCustomer = async (id: string) => {
-  const { data } = await privateAxiosInstance.patch(
-    `/customers/${id}/validate`,
-  );
-  return data;
-};
-// CREATE (Endpoint especial en UsersController que maneja Firebase + DB)
-export const createCustomer = async (payload: any) => {
-  const { data } = await privateAxiosInstance.post(
-    '/users/customer-registration-admin',
-    payload,
-  );
-  return data;
-};
+// CREATE: alta de un cliente desde el panel (POST /users con rol customer).
+export const createCustomer = (
+  payload: Omit<AltaDeUsuario, 'rol' | 'validated'>,
+) =>
+  registrarUsuario({
+    ...payload,
+    rol: 'customer',
+  });

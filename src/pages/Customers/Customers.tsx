@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { CustomersTable, CustomerModal } from './components';
 import { 
   createCustomer, 
-  updateCustomer, 
   deleteCustomer 
 } from '../../services/api/customers';
 import { resetUserPassword } from '../../services/api/users';
@@ -11,8 +10,11 @@ import Swal from 'sweetalert2';
 import { Customer } from '../../interfaces';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import { usePermisos } from '../../hooks';
+import { avisarAccionNoPermitida, mensajeDeError } from '../../utils/avisos';
 
 export const Customers = () => {
+  const { puedeAdministrarCuentasDeClientes } = usePermisos();
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -25,17 +27,19 @@ export const Customers = () => {
   const saveMutation = useMutation({
     mutationFn: async (data: any) => {
       if (selectedCustomer) {
-        // Update datos del customer
-        const result = await updateCustomer(selectedCustomer.customer_id, {
-          validated: data.validated,
-        });
+        // Del perfil del cliente no se edita nada desde el panel: los clientes
+        // ya no se validan (26/09). Sólo queda la contraseña de la cuenta.
 
-        // Si se incluyó nueva contraseña, actualizarla via Firebase
-        if (data.newPassword && selectedCustomer.user_id) {
+        // La contraseña es de la cuenta: sólo el administrador general.
+        if (
+          puedeAdministrarCuentasDeClientes &&
+          data.newPassword &&
+          selectedCustomer.user_id
+        ) {
           await resetUserPassword(selectedCustomer.user_id, data.newPassword);
         }
 
-        return result;
+        return selectedCustomer;
       }
       return await createCustomer(data);
     },
@@ -55,7 +59,7 @@ export const Customers = () => {
       });
     },
     onError: (err: any) => {
-      const errorMessage = err.response?.data?.message || 'Error al guardar el cliente';
+      const errorMessage = mensajeDeError(err, 'Error al guardar el cliente');
       Swal.fire({
         title: 'Error',
         text: typeof errorMessage === 'string' ? errorMessage : 'Error interno del servidor',
@@ -74,6 +78,11 @@ export const Customers = () => {
     const { row, field } = event;
 
     if (field === 'delete') {
+      if (!puedeAdministrarCuentasDeClientes) {
+        avisarAccionNoPermitida();
+        return;
+      }
+
       const result = await Swal.fire({
         title: '¿Eliminar Cliente?',
         text: `Se eliminará al cliente "${row.user?.full_name || 'Desconocido'}" y sus datos asociados.`,
@@ -106,9 +115,10 @@ export const Customers = () => {
             buttonsStyling: false
           });
         } catch (error) {
+          const msg = mensajeDeError(error, 'No se pudo eliminar al cliente.');
           Swal.fire({
             title: 'Error',
-            text: 'No se pudo eliminar al cliente.',
+            text: msg,
             icon: 'error',
             confirmButtonText: 'OK',
             customClass: {
@@ -122,6 +132,7 @@ export const Customers = () => {
     }
 
     if (field === 'edit') {
+
       setSelectedCustomer(row);
       setIsModalOpen(true);
     }
@@ -154,7 +165,10 @@ export const Customers = () => {
         </header>
 
         <section className="bg-white rounded-2xl shadow-sm border border-slate-200">
-          <CustomersTable setAction={handleAction} />
+          <CustomersTable
+            setAction={handleAction}
+            puedeEliminar={puedeAdministrarCuentasDeClientes}
+          />
         </section>
 
         <CustomerModal
@@ -163,6 +177,7 @@ export const Customers = () => {
           customer={selectedCustomer}
           onSave={(data) => saveMutation.mutate(data)}
           isSaving={saveMutation.isLoading}
+          puedeCambiarContrasena={puedeAdministrarCuentasDeClientes}
         />
       </div>
     </div>

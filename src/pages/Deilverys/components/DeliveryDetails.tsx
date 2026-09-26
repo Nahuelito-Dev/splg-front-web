@@ -31,8 +31,8 @@ export const DeliveryDetails = () => {
       setDelivery(data);
     } catch (error) {
       console.error(error);
-      Swal.fire('Error', 'No se pudo cargar el repartidor', 'error');
-      navigate('/deliveries'); // Redirigir si falla
+      Swal.fire('Error', 'Repartidor no encontrado', 'error');
+      navigate('/deliveries');
     } finally {
       setLoading(false);
     }
@@ -198,7 +198,7 @@ export const DeliveryDetails = () => {
               </div>
             </div>
 
-            {/* Estado Viaje (Placeholder) */}
+            {/* Estado operativo */}
             <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex items-center gap-4">
               <div className="p-3 bg-white rounded-full shadow-sm text-blue-500">
                 <TwoWheelerIcon fontSize="large" />
@@ -208,8 +208,7 @@ export const DeliveryDetails = () => {
                   Estado Actual
                 </p>
                 <p className="text-lg font-bold text-slate-700">
-                  {/* Aquí podrías conectar 'isTraveling' del backend */}
-                  Disponible
+                  {delivery.isActive ? 'Disponible' : 'Inactivo'}
                 </p>
               </div>
             </div>

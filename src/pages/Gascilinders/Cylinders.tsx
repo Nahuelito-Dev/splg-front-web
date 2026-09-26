@@ -31,7 +31,9 @@ export const Cylinders = () => {
     mutationFn: async (data: any) => {
       // Si hay un cilindro seleccionado, es EDITAR (PATCH)
       if (selectedCylinder) {
-        return await updateCylinder(selectedCylinder.gas_cylinder_id, data);
+        const payload = { ...data };
+        if (payload.type === selectedCylinder.type) delete payload.type;
+        return await updateCylinder(selectedCylinder.gas_cylinder_id, payload);
       }
       // Si no, es CREAR (POST)
       return await createCylinder(data);

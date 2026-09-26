@@ -16,9 +16,10 @@ import SearchIcon from '@mui/icons-material/Search';
 
 interface Props {
   setLead: (event: any) => void;
+  puedeAdministrarClientes: boolean;
 }
 
-export const LeadsTable = ({ setLead }: Props) => {
+export const LeadsTable = ({ setLead, puedeAdministrarClientes }: Props) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState(searchTerm);
 
@@ -36,44 +37,55 @@ export const LeadsTable = ({ setLead }: Props) => {
   });
 
   // Renderizado de Botones de Acción
-  const renderActions = (row: any) => (
-    <div className="flex items-center justify-center gap-2">
-      <Tooltip title="Ver detalles / Editar">
-        <IconButton
-          onClick={() => setLead({ row, field: 'edit' })}
-          className="bg-slate-50 border border-slate-200 rounded-xl hover:bg-indigo-50 hover:border-indigo-200 transition-colors w-9 h-9"
-        >
-          <InfoOutlinedIcon className="text-slate-600 hover:text-indigo-600 scale-75" />
-        </IconButton>
-      </Tooltip>
+  const renderActions = (row: any) => {
+    const esCliente = row.role?.type === 'customer' || !!row.customer;
+    const puedeOperarFila = puedeAdministrarClientes || !esCliente;
 
-      <Tooltip title={row.blocked ? 'DESBLOQUEAR' : 'BLOQUEAR'}>
-        <IconButton
-          onClick={() => setLead({ row, field: 'block' })}
-          className={`bg-slate-50 border border-slate-200 rounded-xl transition-colors w-9 h-9 ${
-            row.blocked
-              ? 'hover:bg-emerald-50 hover:border-emerald-200'
-              : 'hover:bg-amber-50 hover:border-amber-200'
-          }`}
-        >
-          {row.blocked ? (
-            <LockOpenIcon className="text-slate-600 hover:text-emerald-600 scale-75" />
-          ) : (
-            <BlockIcon className="text-slate-600 hover:text-amber-600 scale-75" />
-          )}
-        </IconButton>
-      </Tooltip>
+    return (
+      <div className="flex items-center justify-center gap-2">
+        {puedeOperarFila && (
+          <Tooltip title="Ver detalles / Editar">
+            <IconButton
+              onClick={() => setLead({ row, field: 'edit' })}
+              className="bg-slate-50 border border-slate-200 rounded-xl hover:bg-indigo-50 hover:border-indigo-200 transition-colors w-9 h-9"
+            >
+              <InfoOutlinedIcon className="text-slate-600 hover:text-indigo-600 scale-75" />
+            </IconButton>
+          </Tooltip>
+        )}
 
-      <Tooltip title="ELIMINAR PERMANENTE">
-        <IconButton
-          onClick={() => setLead({ row, field: 'delete' })}
-          className="bg-slate-50 border border-slate-200 rounded-xl hover:bg-rose-50 hover:border-rose-200 transition-colors w-9 h-9"
-        >
-          <DeleteOutlineIcon className="text-slate-600 hover:text-rose-600 scale-75" />
-        </IconButton>
-      </Tooltip>
-    </div>
-  );
+        {puedeOperarFila && (
+          <Tooltip title={row.blocked ? 'DESBLOQUEAR' : 'BLOQUEAR'}>
+            <IconButton
+              onClick={() => setLead({ row, field: 'block' })}
+              className={`bg-slate-50 border border-slate-200 rounded-xl transition-colors w-9 h-9 ${
+                row.blocked
+                  ? 'hover:bg-emerald-50 hover:border-emerald-200'
+                  : 'hover:bg-amber-50 hover:border-amber-200'
+              }`}
+            >
+              {row.blocked ? (
+                <LockOpenIcon className="text-slate-600 hover:text-emerald-600 scale-75" />
+              ) : (
+                <BlockIcon className="text-slate-600 hover:text-amber-600 scale-75" />
+              )}
+            </IconButton>
+          </Tooltip>
+        )}
+
+        {puedeOperarFila && (
+          <Tooltip title="ELIMINAR PERMANENTE">
+            <IconButton
+              onClick={() => setLead({ row, field: 'delete' })}
+              className="bg-slate-50 border border-slate-200 rounded-xl hover:bg-rose-50 hover:border-rose-200 transition-colors w-9 h-9"
+            >
+              <DeleteOutlineIcon className="text-slate-600 hover:text-rose-600 scale-75" />
+            </IconButton>
+          </Tooltip>
+        )}
+      </div>
+    );
+  };
 
   // Definición de Columnas
   const columns: GridColDef[] = [

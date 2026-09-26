@@ -13,6 +13,7 @@ import BlockIcon from '@mui/icons-material/Block';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import TwoWheelerIcon from '@mui/icons-material/TwoWheeler';
 import HomeIcon from '@mui/icons-material/Home';
+import { usePermisos } from '../../../hooks';
 
 // Interfaz
 interface UserDetail {
@@ -23,7 +24,7 @@ interface UserDetail {
   role: { type: string };
   blocked: boolean;
   email_verified: boolean;
-  customer?: { customer_id: string; validated: string; lat_lang: string };
+  customer?: { customer_id: string; lat_lang: string | null };
   delivery?: {
     calification: number;
     isActive: boolean;
@@ -35,6 +36,7 @@ interface UserDetail {
 export const LeadsDetailsView = () => {
   const { leadId } = useParams<{ leadId: string }>();
   const navigate = useNavigate();
+  const { puedeAdministrarCuentasDeClientes } = usePermisos();
 
   const [user, setUser] = useState<UserDetail | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -47,7 +49,7 @@ export const LeadsDetailsView = () => {
         const data = await getUserById(leadId);
         setUser(data);
       } catch (err: any) {
-        Swal.fire('Error', 'No se pudo cargar el usuario', 'error');
+        Swal.fire('Error', 'Usuario no encontrado', 'error');
         navigate('/users');
       } finally {
         setLoading(false);
@@ -91,23 +93,25 @@ export const LeadsDetailsView = () => {
           <ArrowBackIcon fontSize="small" /> Volver al listado
         </button>
 
-        <div className="flex gap-3">
-          <button
-            onClick={handleToggleBlock}
-            className={`px-4 py-2 rounded-lg font-bold text-sm shadow-sm transition-all flex items-center gap-2 ${
-              user.blocked
-                ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-                : 'bg-rose-100 text-rose-700 hover:bg-rose-200'
-            }`}
-          >
-            {user.blocked ? (
-              <CheckCircleIcon fontSize="small" />
-            ) : (
-              <BlockIcon fontSize="small" />
-            )}
-            {user.blocked ? 'Desbloquear Cuenta' : 'Bloquear Cuenta'}
-          </button>
-        </div>
+        {(!user.customer || puedeAdministrarCuentasDeClientes) && (
+          <div className="flex gap-3">
+            <button
+              onClick={handleToggleBlock}
+              className={`px-4 py-2 rounded-lg font-bold text-sm shadow-sm transition-all flex items-center gap-2 ${
+                user.blocked
+                  ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                  : 'bg-rose-100 text-rose-700 hover:bg-rose-200'
+              }`}
+            >
+              {user.blocked ? (
+                <CheckCircleIcon fontSize="small" />
+              ) : (
+                <BlockIcon fontSize="small" />
+              )}
+              {user.blocked ? 'Desbloquear Cuenta' : 'Bloquear Cuenta'}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Tarjeta Principal de Perfil */}
@@ -248,13 +252,9 @@ export const LeadsDetailsView = () => {
                       </p>
                     </div>
                     <div>
-                      <p className="text-indigo-400 text-xs">
-                        Estado Validación
-                      </p>
+                      <p className="text-indigo-400 text-xs">Ubicación</p>
                       <p className="font-bold text-slate-700">
-                        {user.customer.validated === 'true'
-                          ? 'Validado'
-                          : 'Pendiente'}
+                        {user.customer.lat_lang ?? 'S/D'}
                       </p>
                     </div>
                   </div>

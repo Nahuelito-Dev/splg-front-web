@@ -5,7 +5,6 @@ import Swal from 'sweetalert2';
 
 // Iconos
 import TwoWheelerIcon from '@mui/icons-material/TwoWheeler';
-import CircleIcon from '@mui/icons-material/Circle';
 
 interface Props {
   isOpen: boolean;
@@ -77,19 +76,9 @@ export const AssignDriverModal = ({
                       <p className="font-bold text-sm text-slate-700">
                         {driver.user?.full_name}
                       </p>
-                      <div className="flex items-center gap-1">
-                        <CircleIcon
-                          sx={{ fontSize: 8 }}
-                          className={
-                            driver.isTraveling
-                              ? 'text-amber-500'
-                              : 'text-emerald-500'
-                          }
-                        />
-                        <span className="text-xs text-slate-500">
-                          {driver.isTraveling ? 'En viaje' : 'Libre'}
-                        </span>
-                      </div>
+                      <span className="text-xs text-slate-500">
+                        Disponible
+                      </span>
                     </div>
                   </div>
                   <input
