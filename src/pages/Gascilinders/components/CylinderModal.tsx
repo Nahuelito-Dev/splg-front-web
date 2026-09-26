@@ -36,6 +36,7 @@ export const CylinderModal = ({
     handleSubmit,
     reset,
     control,
+    setError,
     formState: { errors },
   } = useForm<FormInputs>({
     defaultValues: { promotions: [] },
@@ -68,16 +69,43 @@ export const CylinderModal = ({
   }, [cylinder, reset, isOpen]);
 
   const handleFormSubmit = (data: FormInputs) => {
+    const promotions =
+      data.promotions?.map((p) => ({
+        quantity: Number(p.quantity),
+        discountPercentage: Number(p.discountPercentage),
+      })) || [];
+
+    const cantidades = new Set<number>();
+    for (const promo of promotions) {
+      if (
+        !Number.isInteger(promo.quantity) ||
+        promo.quantity < 2 ||
+        promo.discountPercentage <= 0 ||
+        promo.discountPercentage > 100
+      ) {
+        setError('promotions', {
+          type: 'manual',
+          message:
+            'Cada promoción debe tener cantidad entera desde 2 y descuento mayor a 0 hasta 100.',
+        });
+        return;
+      }
+      if (cantidades.has(promo.quantity)) {
+        setError('promotions', {
+          type: 'manual',
+          message: 'No puede haber dos promociones con la misma cantidad.',
+        });
+        return;
+      }
+      cantidades.add(promo.quantity);
+    }
+
     onSave({
       ...data,
       weight: Number(data.weight),
       price: Number(data.price),
       stock: Number(data.stock),
-      promotions:
-        data.promotions?.map((p) => ({
-          quantity: Number(p.quantity),
-          discountPercentage: Number(p.discountPercentage),
-        })) || [],
+      promotions,
     });
   };
 
@@ -179,6 +207,11 @@ export const CylinderModal = ({
               register={register}
               currentPrice={Number(currentPrice)}
             />
+            {errors.promotions?.message && (
+              <p className="text-xs text-rose-600">
+                {errors.promotions.message}
+              </p>
+            )}
           </form>
         </div>
 

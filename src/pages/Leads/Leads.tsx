@@ -5,8 +5,11 @@ import Swal from 'sweetalert2';
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { UserModal } from './components/UserModal';
+import { usePermisos } from '../../hooks';
+import { avisarAccionNoPermitida } from '../../utils/avisos';
 
 export const Leads = () => {
+  const { puedeAdministrarCuentasDeClientes } = usePermisos();
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -77,6 +80,15 @@ export const Leads = () => {
 
   const handleCellClick = async (event: any) => {
     const { row, field } = event;
+    const esCliente = row.role?.type === 'customer' || !!row.customer;
+    if (
+      !puedeAdministrarCuentasDeClientes &&
+      esCliente &&
+      ['edit', 'block', 'delete'].includes(field)
+    ) {
+      avisarAccionNoPermitida();
+      return;
+    }
 
     if (field === 'block') {
       const willBlock = !row.blocked;
@@ -231,7 +243,10 @@ export const Leads = () => {
         </header>
 
         <section className="bg-white rounded-2xl shadow-sm border border-slate-200">
-          <LeadsTable setLead={handleCellClick} />
+          <LeadsTable
+            setLead={handleCellClick}
+            puedeAdministrarClientes={puedeAdministrarCuentasDeClientes}
+          />
         </section>
 
         <UserModal

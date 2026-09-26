@@ -1,6 +1,7 @@
 // services/api/users.ts
 import { privateAxiosInstance } from './axiosConfig';
 import { User } from '../../interfaces';
+import { AltaDeUsuario, registrarUsuario } from './registro';
 
 export const getAllUsers = async (page = 0, limit = 10, term?: string) => {
   const offset = limit * page;
@@ -28,14 +29,9 @@ export const getAllUsers = async (page = 0, limit = 10, term?: string) => {
   }
 };
 
-interface UserWithPassword extends Partial<User> {
-  password: string;
-}
-
-export const createUser = async (newUser: UserWithPassword) => {
-  const { data } = await privateAxiosInstance.post<User>('/users', newUser);
-  return data;
-};
+// CREATE: el alta desde el listado general da de alta un cliente.
+export const createUser = (nuevo: Omit<AltaDeUsuario, 'rol'>) =>
+  registrarUsuario({ ...nuevo, rol: 'customer' });
 
 // DELETE Físico
 export const deleteUser = async (user_id: string) => {

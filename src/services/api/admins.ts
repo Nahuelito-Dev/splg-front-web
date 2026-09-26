@@ -1,4 +1,5 @@
 import { privateAxiosInstance } from './axiosConfig';
+import { registrarUsuario } from './registro';
 
 export interface AdminRole {
   role_id: string;
@@ -11,12 +12,14 @@ export interface AdminUser {
   full_name?: string;
   email?: string;
   phone_number?: string;
+  role_id?: string | null;
+  role?: AdminRole;
 }
 
 export interface Admin {
   admin_id: string;
   user_id: string;
-  role_id: string;
+  role_id: string | null;
   distributor_id?: string | null;
   user?: AdminUser;
   role?: AdminRole;
@@ -28,7 +31,7 @@ export interface RegisterAdminPayload {
   password: string;
   full_name: string;
   phone_number: string;
-  role_id: string;
+  rol: 'admin' | 'super_admin';
   distributorId?: string;
 }
 
@@ -38,15 +41,7 @@ export const getAdmins = async () => {
   return data;
 };
 
-// POST /admin/register — alta de admin (super_admin). El backend crea el user
-// en Firebase + DB y la entidad Admin, asociándolo a la distribuidora.
-export const registerAdmin = async (payload: RegisterAdminPayload) => {
-  const { data } = await privateAxiosInstance.post('/admin/register', payload);
-  return data;
-};
-
-// GET /role — roles disponibles para asignar al admin.
-export const getRoles = async () => {
-  const { data } = await privateAxiosInstance.get<AdminRole[]>('/role');
-  return data;
-};
+// Alta de un admin: POST /users con rol admin o super_admin. Un admin de
+// empresa sólo crea admins de su distribuidora; el backend lo controla.
+export const registerAdmin = (payload: RegisterAdminPayload) =>
+  registrarUsuario(payload);

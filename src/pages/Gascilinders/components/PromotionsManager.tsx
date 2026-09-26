@@ -88,7 +88,7 @@ export const PromotionsManager = ({
                     placeholder="3"
                     {...register(`promotions.${index}.quantity` as const, {
                       required: true,
-                      min: 1,
+                      min: 2,
                     })}
                     className="w-full pl-3 pr-8 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-pink-500 outline-none transition-all"
                   />
@@ -109,7 +109,7 @@ export const PromotionsManager = ({
                     placeholder="10"
                     {...register(
                       `promotions.${index}.discountPercentage` as const,
-                      { required: true, min: 1, max: 100 },
+                      { required: true, min: 0.01, max: 100 },
                     )}
                     className="w-full pl-3 pr-8 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-pink-500 outline-none transition-all"
                   />

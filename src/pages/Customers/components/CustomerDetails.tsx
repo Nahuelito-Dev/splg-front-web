@@ -10,7 +10,6 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import HistoryIcon from '@mui/icons-material/History';
 import PhoneIcon from '@mui/icons-material/Phone';
 import EmailIcon from '@mui/icons-material/Email';
-import VerifiedIcon from '@mui/icons-material/Verified';
 import MapIcon from '@mui/icons-material/Map';
 import CircleIcon from '@mui/icons-material/Circle';
 
@@ -60,7 +59,7 @@ export const CustomerDetails = () => {
   const navigate = useNavigate();
 
   // 1. Query Cliente (Incluye Usuario y Direcciones)
-  const { data: customer, isLoading: loadingCustomer } = useQuery(
+  const { data: customer, isLoading: loadingCustomer, isError: errorCustomer } = useQuery(
     ['customer', id],
     () => getCustomerById(id!),
   );
@@ -78,7 +77,7 @@ export const CustomerDetails = () => {
     return (
       <div className="p-10 text-center text-slate-400">Cargando perfil...</div>
     );
-  if (!customer)
+  if (errorCustomer || !customer)
     return (
       <div className="p-10 text-center text-rose-500">
         Cliente no encontrado
@@ -126,9 +125,6 @@ export const CustomerDetails = () => {
               <div className="mt-12">
                 <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
                   {user?.full_name}
-                  {customer.validated === 'true' && (
-                    <VerifiedIcon className="text-blue-500" fontSize="small" />
-                  )}
                 </h2>
                 <div className="mt-4 space-y-3">
                   <div className="flex items-center gap-3 text-sm text-slate-600">
@@ -170,6 +166,13 @@ export const CustomerDetails = () => {
                       {addr.street}
                     </p>
                     <p className="text-xs text-slate-500">{addr.city}</p>
+                    {(addr.floor || addr.apartment) && (
+                      <p className="text-xs text-slate-500 mt-1">
+                        {[addr.floor ? `Piso ${addr.floor}` : null, addr.apartment ? `Depto ${addr.apartment}` : null]
+                          .filter(Boolean)
+                          .join(' - ')}
+                      </p>
+                    )}
                     {addr.additionalInstructions && (
                       <p className="text-xs text-slate-400 mt-1 italic">
                         "{addr.additionalInstructions}"

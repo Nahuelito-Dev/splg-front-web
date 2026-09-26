@@ -1,5 +1,6 @@
 import { privateAxiosInstance } from './axiosConfig';
 import { Delivery } from '../../interfaces';
+import { AltaDeUsuario, registrarUsuario } from './registro';
 
 // GET ALL
 export const getAllDeliveries = async (page = 0, limit = 10, term?: string) => {
@@ -36,21 +37,21 @@ export const getDeliveryById = async (id: string) => {
   return data;
 };
 
-// CREATE (Endpoint especial en UsersController)
-export const createDelivery = async (payload: any) => {
-  const { data } = await privateAxiosInstance.post(
-    '/users/delivery-registration',
-    payload,
-  );
-  return data;
-};
+// CREATE: alta de un chofer (POST /users con rol delivery).
+export const createDelivery = (
+  payload: Omit<AltaDeUsuario, 'rol'>,
+) => registrarUsuario({ ...payload, rol: 'delivery' });
 
 // UPDATE (Datos operativos del delivery)
 export const updateDelivery = async (
   id: string,
-  payload: Partial<Delivery>,
+  payload: Pick<Partial<Delivery>, 'validated' | 'isActive'>,
 ) => {
-  const { data } = await privateAxiosInstance.patch(`/delivery/${id}`, payload);
+  const cuerpo = {
+    ...(payload.validated !== undefined && { validated: payload.validated }),
+    ...(payload.isActive !== undefined && { isActive: payload.isActive }),
+  };
+  const { data } = await privateAxiosInstance.patch(`/delivery/${id}`, cuerpo);
   return data;
 };
 
