@@ -1,29 +1,19 @@
-// services/api/auth.ts
-import { privateAxiosInstance, publicAxiosInstance } from './axiosConfig';
+import { ApiError } from './errors';
+import { http } from './httpClient';
+import type { User } from './types';
 
-export const checkToken = async () => {
-  const response = await publicAxiosInstance.post('/users/validate');
-  return response.status;
-};
+export interface AdminInfo {
+  fullName: string | null;
+  role: 'admin' | 'super_admin';
+  blocked: boolean;
+}
 
-export const getAdmin = async (email: string) => {
-  try {
-    const { data } = await privateAxiosInstance.get(`/users/email/${email}`);
-
-    // En tu backend, la relación se llama 'role' y el campo es 'type'
-    const roleType = data.role?.type;
-
-    if (roleType !== 'admin' && roleType !== 'super_admin') {
-      throw new Error('No tienes permisos de administrador');
-    }
-
-    return {
-      fullName: data.full_name,
-      role: roleType,
-      blocked: data.blocked || false,
-    };
-  } catch (error: any) {
-    console.error('❌ Error validando admin:', error);
-    throw error;
+/** GET /users/email/:email. Sólo admin y super_admin pueden entrar al panel. */
+export const getAdmin = async (email: string): Promise<AdminInfo> => {
+  const { data } = await http.get<User>(`/users/email/${email}`);
+  const roleType = data.role?.type;
+  if (roleType !== 'admin' && roleType !== 'super_admin') {
+    throw new ApiError(403, ['No tenés permisos de administrador']);
   }
+  return { fullName: data.full_name, role: roleType, blocked: data.blocked };
 };

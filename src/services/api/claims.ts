@@ -1,39 +1,23 @@
-import { privateAxiosInstance } from './axiosConfig';
+import { http } from './httpClient';
+import type { Claim, CreateClaimBody, ResolveClaimBody } from './types';
 
-export interface Claim {
-  claim_id: string;
-  order: {
-    order_id: string;
-    totalAmount: number;
-  };
-  customer: {
-    full_name: string;
-    email: string;
-    phone_number: string;
-  };
-  reason: string;
-  description: string;
-  photoUrl?: string; // URL de la foto del problema
-  status: 'pending' | 'in_process' | 'resolved' | 'rejected';
-  resolutionNote?: string;
-  createdAt: string;
-}
-
-// GET ALL
-export const getAllClaims = async () => {
-  const { data } = await privateAxiosInstance.get<Claim[]>('/claims');
+/** GET /claims: todos los reclamos, acotados a la distribuidora del token. */
+export const listClaims = async (): Promise<Claim[]> => {
+  const { data } = await http.get<Claim[]>('/claims');
   return data;
 };
 
-// RESOLVE CLAIM
-export const resolveClaim = async (
-  id: string,
-  resolution: string,
-  status: string,
-) => {
-  const { data } = await privateAxiosInstance.patch(`/claims/${id}/resolve`, {
-    resolution,
-    status,
-  });
+/**
+ * POST /claims: un admin lo carga a nombre de un cliente (soporte). El
+ * `customerId` tiene que ser el dueño de `orderId` o la API contesta 400.
+ */
+export const createClaim = async (body: CreateClaimBody): Promise<Claim> => {
+  const { data } = await http.post<Claim>('/claims', body);
+  return data;
+};
+
+/** PATCH /claims/:id/resolve: nota de resolución y nuevo estado. */
+export const resolveClaim = async (id: string, body: ResolveClaimBody): Promise<Claim> => {
+  const { data } = await http.patch<Claim>(`/claims/${id}/resolve`, body);
   return data;
 };

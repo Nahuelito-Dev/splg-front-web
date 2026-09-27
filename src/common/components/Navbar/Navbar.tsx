@@ -1,21 +1,22 @@
-import palette from '../../../theme/pallete';
+import { Menu } from 'lucide-react';
 import { NotificationBell } from './components/NotificationBell';
 
-export const Navbar = () => {
-  return (
-    <div className="min-h-full">
-      <nav
-        style={{ backgroundColor: palette.secondary.blackLike }}
-        className="relative"
-      >
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between">
-            <div className="flex items-center ml-auto space-x-6">
-              <NotificationBell />
-            </div>
-          </div>
-        </div>
-      </nav>
-    </div>
-  );
-};
+interface Props {
+  /** Sólo se usa en móvil: abre el menú lateral como drawer. */
+  onOpenMenu: () => void;
+}
+
+export const Navbar = ({ onOpenMenu }: Props) => (
+  <header className="sticky top-0 z-20 flex h-[60px] items-center gap-4 border-b border-outline bg-surface/85 px-4 backdrop-blur sm:px-6 lg:px-7">
+    <button
+      type="button"
+      onClick={onOpenMenu}
+      aria-label="Abrir menú"
+      className="-ml-1 grid h-9 w-9 place-items-center rounded-[10px] border border-outline text-ink-2 transition-colors hover:bg-tinta-50 lg:hidden"
+    >
+      <Menu aria-hidden="true" className="h-[18px] w-[18px]" />
+    </button>
+    <div className="flex-1" />
+    <NotificationBell />
+  </header>
+);

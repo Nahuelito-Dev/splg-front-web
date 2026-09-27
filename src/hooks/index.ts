@@ -1,6 +1,5 @@
-export * from './UseForm';
 export * from './useCheckAuth';
-export * from './useCRUDModal';
 export * from './reduxHooks';
-export * from './useTable';
-export * from './useSocket';export * from './usePermisos';
+export * from './useSocket';
+export * from './usePermissions';
+export * from './useDebounce';

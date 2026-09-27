@@ -1,130 +1,89 @@
 import { useState } from 'react';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import { Button, Card, PageHeader } from '../../common/components/ui';
+import { usePermissions } from '../../hooks';
+import type { Car } from '../../services/api/types';
+import { useDeliveryOptions } from '../../services/queries/deliveries';
+import { useCars, useDeleteCar } from '../../services/queries/cars';
+import { confirm, notify } from '../../utils/notifications';
+import { CarFormModal } from './components/CarFormModal';
+import { CarDetailModal } from './components/CarDetailModal';
 import { CarsTable } from './components/CarsTable';
-import { CarModal } from '../Deilverys/components/CarModal';
-import { createCar, updateCar, deleteCar } from '../../services/api/cars';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import Swal from 'sweetalert2';
-import { Car } from '../../interfaces';
-import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
+
+type FormState = { open: false } | { open: true; car: Car | null };
 
 export const Cars = () => {
-  const [selectedCar, setSelectedCar] = useState<Car | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const queryClient = useQueryClient();
+  const [form, setForm] = useState<FormState>({ open: false });
+  const [detail, setDetail] = useState<Car | null>(null);
+  const { data: cars = [], isFetching } = useCars();
+  const { data: driverPage } = useDeliveryOptions();
+  const drivers = driverPage?.rows ?? [];
+  const deleteCar = useDeleteCar();
+  const { canWrite, writeHint } = usePermissions();
 
-  const saveMutation = useMutation({
-    mutationFn: (data: any) => {
-      const payload = { ...data };
-      if (!payload.user_id || payload.user_id === '') {
-        delete payload.user_id;
-      }
-      
-      if (selectedCar) {
-        return updateCar(selectedCar.car_id, payload);
-      }
-      return createCar(payload);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['allCars']);
-      setIsModalOpen(false);
-      Swal.fire({
-        title: selectedCar ? 'Actualizado' : 'Creado',
-        text: selectedCar ? 'Datos del vehículo actualizados' : 'Vehículo registrado correctamente',
-        icon: 'success',
-        confirmButtonText: 'OK',
-        customClass: {
-          popup: 'rounded-2xl shadow-xl',
-          confirmButton: 'bg-indigo-600 text-white px-5 py-2 rounded-lg'
-        },
-        buttonsStyling: false
-      });
-    },
-  });
+  const driverOptions = drivers.map((delivery) => ({
+    value: delivery.user_id,
+    label: delivery.user?.full_name
+      ? `${delivery.user.full_name} (${delivery.user.email ?? 'sin email'})`
+      : delivery.user_id,
+  }));
+  // La API pagina /delivery: si hay más choferes de los que entran acá, el
+  // combo no los muestra a todos (no hay buscador en este select).
+  const driverOptionsTruncated = (driverPage?.total ?? 0) > drivers.length;
 
-  const deleteMutation = useMutation({
-    mutationFn: deleteCar,
-    onSuccess: () => {
-      queryClient.invalidateQueries(['allCars']);
-      Swal.fire({
-        title: 'Eliminado',
-        text: 'Vehículo eliminado correctamente',
-        icon: 'success',
-        confirmButtonText: 'OK',
-        customClass: {
-          confirmButton: 'bg-indigo-600 text-white font-bold px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors'
-        },
-        buttonsStyling: false
-      });
-    },
-  });
-
-  const handleAction = async (event: any) => {
-    const { row, field } = event;
-
-    if (field === 'edit') {
-      setSelectedCar(row);
-      setIsModalOpen(true);
-    }
-
-    if (field === 'delete') {
-      const res = await Swal.fire({
-        title: '¿Eliminar Vehículo?',
-        text: `Se eliminará el ${row.car_brand} ${row.car_model} (${row.car_patent})`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#f43f5e',
-        cancelButtonColor: '#cbd5e1',
-        confirmButtonText: 'Eliminar',
-        cancelButtonText: 'Cancelar',
-        customClass: {
-          popup: 'rounded-2xl shadow-xl',
-          confirmButton: 'bg-rose-500 text-white px-5 py-2 rounded-lg',
-          cancelButton: 'bg-slate-200 text-slate-600 px-5 py-2 rounded-lg'
-        },
-        buttonsStyling: false
-      });
-      if (res.isConfirmed) {
-        deleteMutation.mutate(row.car_id);
-      }
-    }
+  const handleDelete = async (car: Car) => {
+    const confirmed = await confirm({
+      title: '¿Eliminar el vehículo?',
+      text: `Se elimina ${car.car_brand ?? ''} ${car.car_model ?? ''} (${car.car_patent ?? 'sin patente'}).`,
+      confirmText: 'Eliminar',
+      danger: true,
+    });
+    if (!confirmed) return;
+    deleteCar.mutate(car.car_id, {
+      onSuccess: () => notify.success('Vehículo eliminado'),
+      onError: notify.error,
+    });
   };
 
   return (
-    <div className="p-4 md:p-8 bg-slate-50 min-h-screen">
-      <div className="max-w-[1600px] mx-auto">
-        <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-              Flota de Vehículos
-            </h1>
-            <p className="text-slate-500 mt-1">
-              Vista global de todos los vehículos registrados en el sistema.
-            </p>
-          </div>
-          <button
-            onClick={() => {
-              setSelectedCar(null);
-              setIsModalOpen(true);
-            }}
-            className="bg-indigo-600 text-white px-5 py-3 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition-all flex items-center gap-2"
+    <div className="mx-auto max-w-7xl p-4 md:p-8">
+      <PageHeader
+        title="Vehículos"
+        description="La flota de la distribuidora."
+        actions={
+          <Button
+            icon={<AddCircleOutlineIcon />}
+            disabled={!canWrite}
+            title={writeHint}
+            onClick={() => setForm({ open: true, car: null })}
           >
-            <DirectionsCarIcon />
-            Nuevo Vehículo
-          </button>
-        </header>
+            Nuevo vehículo
+          </Button>
+        }
+      />
 
-        <section className="bg-white rounded-2xl shadow-sm border border-slate-200">
-          <CarsTable setAction={handleAction} />
-        </section>
-
-        <CarModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          car={selectedCar}
-          onSave={(data) => saveMutation.mutate(data)}
-          isSaving={saveMutation.isLoading}
+      <Card>
+        <CarsTable
+          onView={setDetail}
+          rows={cars}
+          loading={isFetching}
+          onEdit={canWrite ? (car) => setForm({ open: true, car }) : undefined}
+          onDelete={canWrite ? (car) => void handleDelete(car) : undefined}
         />
-      </div>
+      </Card>
+
+      <CarDetailModal car={detail} onClose={() => setDetail(null)} />
+      <CarFormModal
+        open={form.open}
+        onClose={() => setForm({ open: false })}
+        car={form.open ? form.car : null}
+        driverOptions={driverOptions}
+        driverOptionsHint={
+          driverOptionsTruncated
+            ? `Se muestran ${drivers.length} de ${driverPage?.total ?? 0} choferes. Si no aparece el que buscás, editá el vehículo desde la ficha de ese chofer.`
+            : undefined
+        }
+      />
     </div>
   );
 };

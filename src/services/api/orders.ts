@@ -1,104 +1,96 @@
-import { privateAxiosInstance } from './axiosConfig';
+import { http, toQuery, type PageParams } from './httpClient';
+import type {
+  CancelOrderBody,
+  CodigoDeEntrega,
+  ConfirmDeliveryBody,
+  Incident,
+  Message,
+  Order,
+  PaginatedOrders,
+  UpdateOrderStatusBody,
+} from './types';
 
-// Interfaces basadas en tu OrderResponseDto
-export interface OrderItem {
-  quantity: number;
-  cylinder: {
-    type: string;
-    price: number;
-  };
+/** Filtros de GET /orders. Fechas en YYYY-MM-DD; `to` es inclusivo. */
+export interface OrderFilters {
+  /** Nombre, email o teléfono del cliente, o parte del id del pedido. */
+  search?: string;
+  status?: Order['status'];
+  from?: string;
+  to?: string;
 }
 
-export interface Order {
-  order_id: string; // Ojo: Tu DTO dice 'id' pero tu entidad 'order_id'. Ajusta según lo que llegue.
-  id?: string; // Por si el mapper devuelve 'id'
-  customer: {
-    full_name: string;
-    phone_number: string;
-    email: string;
-  };
-  delivery?: {
-    user: {
-      full_name: string;
-      phone_number: string;
-    };
-  };
-  status: 'pending' | 'accepted' | 'on_the_way' | 'delivered' | 'cancelled';
-  totalAmount: number;
-  paymentMethod: string;
-  address: {
-    formattedAddress: string;
-    street: string;
-  };
-  createdAt: string;
-  acceptedAt?: string | null;
-  onTheWayAt?: string | null;
-  actualDeliveryDate?: string | null;
-  deliveredAt?: string | null;
-  updatedAt?: string;
-  cancellationReason?: string | null;
-  items: OrderItem[];
-}
-
-// 1. Obtener todas (Paginadas)
-export const getAllOrders = async (
-  page = 0,
-  limit = 10,
-  term?: string,
-  startDate?: string,
-  endDate?: string,
-) => {
-  const offset = limit * page;
-  let url = `/orders?limit=${limit}&offset=${offset}`;
-
-  if (term) {
-    url += `&term=${term}`;
-  }
-  if (startDate) {
-    url += `&startDate=${startDate}`;
-  }
-  if (endDate) {
-    url += `&endDate=${endDate}`;
-  }
-
-  const { data } = await privateAxiosInstance.get(url);
+/** GET /orders: pedidos de la distribuidora, paginados y filtrados en la API. */
+export const listOrders = async (params: PageParams, filters: OrderFilters = {}): Promise<PaginatedOrders> => {
+  const { search, status, from, to } = filters;
+  const { data } = await http.get<PaginatedOrders>('/orders', {
+    params: { ...toQuery(params), term: search || undefined, status, from: from || undefined, to: to || undefined },
+  });
   return data;
 };
 
-// 2. Asignación Manual (Admin Override)
-export const assignDriverToOrder = async (
-  orderId: string,
-  deliveryId: string,
-) => {
-  // Endpoint: @Patch(':id/assign/:deliveryId')
-  const { data } = await privateAxiosInstance.patch(
-    `/orders/${orderId}/assign/${deliveryId}`,
-  );
+/** GET /orders/:id: la ficha completa de un pedido. */
+export const getOrder = async (id: string): Promise<Order> => {
+  const { data } = await http.get<Order>(`/orders/${id}`);
   return data;
 };
 
-// 3. Cancelar (Admin Force)
-export const cancelOrder = async (orderId: string, reason: string) => {
-  // El backend toma el actor (id y rol) del token, nunca del cuerpo: mandarle
-  // userId y role hacia que el ValidationPipe rechazara la peticion con un 400
-  // ("property userId should not exist"), asi que la cancelacion no funcionaba.
-  const { data } = await privateAxiosInstance.patch(
-    `/orders/${orderId}/cancel`,
-    { reason },
-  );
+/**
+ * PATCH /orders/:id/cancel: cancela el pedido (o lo libera a pendiente si lo
+ * pide un chofer). El actor sale del token; acá sólo viaja el motivo,
+ * opcional. Restituye stock. Idempotente vía `Idempotency-Key`.
+ */
+export const cancelOrder = async (id: string, body: CancelOrderBody): Promise<Order> => {
+  const { data } = await http.patch<Order>(`/orders/${id}/cancel`, body);
   return data;
 };
 
+/** PATCH /orders/:id/assign/:deliveryId: asignación manual, pisa la automática. */
+export const assignOrderDelivery = async (id: string, deliveryId: string): Promise<Order> => {
+  const { data } = await http.patch<Order>(`/orders/${id}/assign/${deliveryId}`);
+  return data;
+};
 
-export const getOrdersByCustomer = async (
-  customerId: string,
-  page = 0,
-  limit = 10,
-) => {
-  const offset = limit * page;
-  // Endpoint del backend: @Get('customer/:customerId')
-  const { data } = await privateAxiosInstance.get(
-    `/orders/customer/${customerId}?limit=${limit}&offset=${offset}`,
-  );
-  return data; // Devuelve { orders: [], total: N }
+/**
+ * PATCH /orders/:id/status: mueve el pedido a otro estado de la máquina del
+ * back (`on_the_way`, no `out_for_delivery`: ver `orderStatus.ts`). El panel
+ * sólo la usa para las transiciones que no necesitan asignar chofer ni
+ * restituir stock (eso lo hacen `assignOrderDelivery` y `cancelOrder`).
+ */
+export const updateOrderStatus = async (id: string, body: UpdateOrderStatusBody): Promise<Order> => {
+  const { data } = await http.patch<Order>(`/orders/${id}/status`, body);
+  return data;
+};
+
+/**
+ * GET /orders/:id/delivery-code: el código secreto de la prueba de entrega
+ * con QR. Sólo existe si el pedido ya fue aceptado; sensible, se pide bajo
+ * demanda (nunca se precarga con el resto de la ficha).
+ */
+export const getOrderDeliveryCode = async (id: string): Promise<CodigoDeEntrega> => {
+  const { data } = await http.get<CodigoDeEntrega>(`/orders/${id}/delivery-code`);
+  return data;
+};
+
+/** POST /orders/:id/confirm-delivery: confirma la entrega con el código leído del QR del chofer. */
+export const confirmOrderDelivery = async (id: string, body: ConfirmDeliveryBody): Promise<Order> => {
+  const { data } = await http.post<Order>(`/orders/${id}/confirm-delivery`, body);
+  return data;
+};
+
+/** PATCH /orders/:id/arrived: avisa al cliente que el chofer llegó. No cambia el estado del pedido. */
+export const notifyOrderArrival = async (id: string): Promise<Message> => {
+  const { data } = await http.patch<Message>(`/orders/${id}/arrived`);
+  return data;
+};
+
+/** GET /incidents/order/:orderId: incidencias reportadas para un pedido puntual. */
+export const listOrderIncidents = async (orderId: string): Promise<Incident[]> => {
+  const { data } = await http.get<Incident[]>(`/incidents/order/${orderId}`);
+  return data;
+};
+
+/** GET /orders/customer/:userId — el historial de un cliente (por su user_id). Lo usa Clientes. */
+export const listCustomerOrders = async (userId: string, params: PageParams): Promise<PaginatedOrders> => {
+  const { data } = await http.get<PaginatedOrders>(`/orders/customer/${userId}`, { params: toQuery(params) });
+  return data;
 };

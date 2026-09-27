@@ -1,70 +1,52 @@
-import { privateAxiosInstance } from './axiosConfig';
-import { Delivery } from '../../interfaces';
-import { AltaDeUsuario, registrarUsuario } from './registro';
+import { http, toPage, toQuery, type Page, type PageParams } from './httpClient';
+import { registerUser, type AccountFields } from './registration';
+import type { Delivery, Message, UpdateDeliveryBody } from './types';
 
-// GET ALL
-export const getAllDeliveries = async (page = 0, limit = 10, term?: string) => {
-  const offset = limit * page;
-  let url = `/delivery?limit=${limit}&offset=${offset}`;
+/** Los datos de cuenta más lo operativo que se puede fijar al dar de alta un chofer. */
+export interface NewDeliveryAccount extends AccountFields {
+  /** Sólo lo usa el administrador general: en qué distribuidora queda el chofer. */
+  distributorId?: string;
+  /** Chofer ya aprobado por la distribuidora. */
+  validated?: boolean;
+  /** Habilitado por el admin (la API lo guarda como `isEnabled`; el chofer arranca desconectado). */
+  isActive?: boolean;
+}
 
-  if (term) {
-    url += `&term=${term}`;
-  }
+/** GET /delivery: la flota de choferes, paginada y con búsqueda. */
+export const listDeliveries = async (params: PageParams, search?: string): Promise<Page<Delivery>> =>
+  toPage(await http.get<Delivery[]>('/delivery', { params: { ...toQuery(params), term: search || undefined } }));
 
-  try {
-    const { data } = await privateAxiosInstance.get(url);
-    
-    if (data && !Array.isArray(data) && data.rows !== undefined) {
-      return {
-        rows: data.rows,
-        total: data.total || 0,
-      };
-    }
+/** GET /delivery/active: los choferes en línea y listos (habilitados, validados y conectados en su app). */
+export const listActiveDeliveries = async (params: PageParams, search?: string): Promise<Page<Delivery>> =>
+  toPage(await http.get<Delivery[]>('/delivery/active', { params: { ...toQuery(params), term: search || undefined } }));
 
-    return {
-      rows: Array.isArray(data) ? data : [],
-      total: Array.isArray(data) ? data.length : 100,
-    };
-  } catch (error) {
-    console.error('❌ [GET DELIVERIES]', error);
-    throw error;
-  }
-};
-
-// GET ONE
-export const getDeliveryById = async (id: string) => {
-  const { data } = await privateAxiosInstance.get<Delivery>(`/delivery/${id}`);
+/** GET /delivery/:id */
+export const getDelivery = async (id: string): Promise<Delivery> => {
+  const { data } = await http.get<Delivery>(`/delivery/${id}`);
   return data;
 };
 
-// CREATE: alta de un chofer (POST /users con rol delivery).
-export const createDelivery = (
-  payload: Omit<AltaDeUsuario, 'rol'>,
-) => registrarUsuario({ ...payload, rol: 'delivery' });
+/** Alta desde el panel: POST /users con rol delivery. */
+export const createDelivery = ({ distributorId, validated, isActive, ...account }: NewDeliveryAccount) =>
+  registerUser('delivery', { ...account, distributorId, validated, isActive });
 
-// UPDATE (Datos operativos del delivery)
-export const updateDelivery = async (
-  id: string,
-  payload: Pick<Partial<Delivery>, 'validated' | 'isActive'>,
-) => {
-  const cuerpo = {
-    ...(payload.validated !== undefined && { validated: payload.validated }),
-    ...(payload.isActive !== undefined && { isActive: payload.isActive }),
-  };
-  const { data } = await privateAxiosInstance.patch(`/delivery/${id}`, cuerpo);
+/** PATCH /delivery/:id: hoy sólo acepta `validated`. */
+export const updateDeliveryStatus = async (id: string, changes: UpdateDeliveryBody): Promise<Delivery> => {
+  const { data } = await http.patch<Delivery>(`/delivery/${id}`, changes);
   return data;
 };
 
-// DELETE
-export const deleteDelivery = async (id: string) => {
-  const { data } = await privateAxiosInstance.delete(`/delivery/${id}`);
+/**
+ * PATCH /delivery/:id/status: habilita o deshabilita al chofer. Al
+ * deshabilitarlo la API también lo desconecta y lo saca del radar de despacho.
+ */
+export const setDeliveryEnabled = async (id: string, isEnabled: boolean): Promise<Delivery> => {
+  const { data } = await http.patch<Delivery>(`/delivery/${id}/status`, { isEnabled });
   return data;
 };
 
-// TOGGLE STATUS
-export const toggleDeliveryStatus = async (id: string, isActive: boolean) => {
-  const { data } = await privateAxiosInstance.patch(`/delivery/${id}/status`, {
-    isActive,
-  });
+/** Baja lógica de un chofer. */
+export const deleteDelivery = async (id: string): Promise<Message> => {
+  const { data } = await http.delete<Message>(`/delivery/${id}`);
   return data;
 };

@@ -1,115 +1,104 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { getAllDeliveries } from '../../../services/api/deliveries';
-import Swal from 'sweetalert2';
-
-// Iconos
+import { useEffect, useState } from 'react';
 import TwoWheelerIcon from '@mui/icons-material/TwoWheeler';
+import { Button, cx, EmptyState, LoadingState, Modal, SearchInput } from '../../../common/components/ui';
+import { useDebounce } from '../../../hooks';
+import { useActiveDeliveries } from '../../../services/queries/orders';
 
 interface Props {
-  isOpen: boolean;
+  open: boolean;
   onClose: () => void;
   onConfirm: (deliveryId: string) => void;
-  isAssigning: boolean;
+  assigning: boolean;
 }
 
-export const AssignDriverModal = ({
-  isOpen,
-  onClose,
-  onConfirm,
-  isAssigning,
-}: Props) => {
-  const [selectedDriver, setSelectedDriver] = useState('');
+/** Sobreescribe a mano la asignación automática de un pedido. */
+export const AssignDriverModal = ({ open, onClose, onConfirm, assigning }: Props) => {
+  const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search.trim());
+  const { data: drivers, isPending } = useActiveDeliveries(debouncedSearch);
+  const [selected, setSelected] = useState('');
 
-  // Traer choferes (Solo activos)
-  // Nota: Podrías usar el endpoint /delivery/active si lo tienes, sino filtramos aquí
-  const { data, isLoading } = useQuery(['activeDrivers'], () =>
-    getAllDeliveries(0, 100),
-  );
-
-  // Filtramos visualmente para el admin
-  const drivers = data?.rows?.filter((d: any) => d.isActive) || [];
-
-  const handleConfirm = () => {
-    if (!selectedDriver)
-      return Swal.fire('Atención', 'Selecciona un chofer', 'warning');
-    onConfirm(selectedDriver);
-  };
-
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (open) {
+      setSelected('');
+      setSearch('');
+    }
+  }, [open]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden animate-fadeIn">
-        <div className="bg-slate-50 px-6 py-4 border-b border-slate-100">
-          <h3 className="text-lg font-bold text-slate-800">
-            Asignación Manual
-          </h3>
-          <p className="text-xs text-slate-500">
-            Sobreescribir asignación automática
-          </p>
-        </div>
-
-        <div className="p-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
-          {isLoading ? (
-            <p className="text-center text-slate-400 py-4">Buscando flota...</p>
-          ) : drivers.length === 0 ? (
-            <p className="text-center text-rose-500 py-4">
-              No hay choferes activos disponibles.
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {drivers.map((driver: any) => (
-                <label
-                  key={driver.delivery_id}
-                  className={`flex items-center justify-between p-3 border rounded-xl cursor-pointer transition-all ${
-                    selectedDriver === driver.delivery_id
-                      ? 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500'
-                      : 'border-slate-200 hover:border-indigo-200'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-white rounded-full text-indigo-500 shadow-sm">
-                      <TwoWheelerIcon fontSize="small" />
-                    </div>
-                    <div>
-                      <p className="font-bold text-sm text-slate-700">
-                        {driver.user?.full_name}
-                      </p>
-                      <span className="text-xs text-slate-500">
-                        Disponible
-                      </span>
-                    </div>
-                  </div>
-                  <input
-                    type="radio"
-                    name="driver_select"
-                    value={driver.delivery_id}
-                    onChange={(e) => setSelectedDriver(e.target.value)}
-                    className="w-4 h-4 accent-indigo-600"
-                  />
-                </label>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-200 bg-white border border-slate-200 rounded-lg font-medium transition-colors"
-          >
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Asignación manual"
+      description="Sobreescribe la asignación automática del pedido."
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
             Cancelar
-          </button>
-          <button
-            onClick={handleConfirm}
-            disabled={isAssigning || !selectedDriver}
-            className="px-6 py-2 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-md shadow-indigo-200 disabled:opacity-70 transition-all"
-          >
-            {isAssigning ? 'Asignando...' : 'Confirmar'}
-          </button>
+          </Button>
+          <Button onClick={() => onConfirm(selected)} loading={assigning} disabled={!selected}>
+            Confirmar
+          </Button>
+        </>
+      }
+    >
+      <SearchInput
+        label="Buscar chofer"
+        placeholder="Nombre, teléfono o patente"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="mb-3"
+      />
+      {isPending ? (
+        <LoadingState label="Buscando choferes disponibles…" />
+      ) : !drivers || drivers.rows.length === 0 ? (
+        <EmptyState
+          title="No hay choferes activos"
+          description={
+            debouncedSearch
+              ? 'Ningún chofer activo coincide con la búsqueda.'
+              : 'Activá algún chofer para poder asignarlo a mano.'
+          }
+        />
+      ) : (
+        <div className="space-y-2">
+          {drivers.total > drivers.rows.length && (
+            <p className="text-xs text-muted">
+              Mostrando {drivers.rows.length} de {drivers.total} choferes activos. Buscá por nombre, teléfono o patente
+              para encontrar al resto.
+            </p>
+          )}
+          {drivers.rows.map((driver) => (
+            <label
+              key={driver.delivery_id}
+              className={cx(
+                'flex cursor-pointer items-center justify-between gap-3 rounded-xl border p-3 transition-colors',
+                selected === driver.delivery_id
+                  ? 'border-primary bg-primary-soft'
+                  : 'border-outline hover:border-primary/50',
+              )}
+            >
+              <span className="flex items-center gap-3">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-surface text-primary-strong shadow-sm">
+                  <TwoWheelerIcon fontSize="small" />
+                </span>
+                <span>
+                  <span className="block text-sm font-semibold text-ink">{driver.user?.full_name ?? 'Sin nombre'}</span>
+                  <span className="block text-xs text-muted">{driver.user?.phone_number ?? '—'}</span>
+                </span>
+              </span>
+              <input
+                type="radio"
+                name="delivery"
+                value={driver.delivery_id}
+                checked={selected === driver.delivery_id}
+                onChange={() => setSelected(driver.delivery_id)}
+                className="h-4 w-4 accent-[theme(colors.primary.DEFAULT)]"
+              />
+            </label>
+          ))}
         </div>
-      </div>
-    </div>
+      )}
+    </Modal>
   );
 };

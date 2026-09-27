@@ -1,2 +1,2 @@
-export * from './pallete'
-export * from './ThemeProvider'
+export * from './muiTheme';
+export * from './ThemeProvider';

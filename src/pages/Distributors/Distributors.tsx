@@ -1,196 +1,141 @@
 import { useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  Distributor,
-  createDistributor,
-  getAllDistributors,
-  updateDistributor,
-} from '../../services/api/distributors';
+import AddBusinessIcon from '@mui/icons-material/AddBusiness';
+import { Button, Card, ErrorState, LoadingState, PageHeader } from '../../common/components/ui';
+import { activeDistributor } from '../../services/api/activeDistributor';
+import type { Distributor } from '../../services/api/types';
+import { useDeleteDistributor, useDistributors, useUpdateDistributor } from '../../services/queries/distributors';
+import { confirm, notify } from '../../utils/notifications';
+import { DistributorDetailModal } from './components/DistributorDetailModal';
+import { DistributorFormModal } from './components/DistributorFormModal';
+import { DistributorsTable } from './components/DistributorsTable';
 
-/** Empresa que el super_admin está viendo ahora (slug guardado en localStorage). */
-const currentSelected = () => localStorage.getItem('selectedDistributor') || '';
+type FormState = { open: false } | { open: true; distributor: Distributor | null };
 
 /**
- * Gestión de distribuidoras (empresas) — solo super_admin. Permite crear
- * empresas nuevas y elegir "ver como" una de ellas: al seleccionarla se setea
- * el header X-Distributor (localStorage) y se recargan los datos, así el panel
- * muestra SOLO esa empresa. "Ver todas" vuelve a la vista global.
+ * Gestión de distribuidoras (empresas), sólo para el administrador general.
+ * "Ver como" setea el header X-Distributor (localStorage) y recarga: así el
+ * panel muestra sólo los datos de esa empresa. "Ver todas" vuelve a la vista global.
  */
 export const Distributors = () => {
-  const queryClient = useQueryClient();
-  const [selected, setSelected] = useState(currentSelected());
-  const [form, setForm] = useState({
-    name: '',
-    slug: '',
-    legal_name: '',
-    tax_id: '',
-    email: '',
-    phone: '',
-  });
+  const [viewingSlug, setViewingSlug] = useState(() => activeDistributor.get() ?? '');
+  const [form, setForm] = useState<FormState>({ open: false });
+  const [detail, setDetail] = useState<Distributor | null>(null);
+  const { data: distributors, isLoading, isFetching, error, refetch } = useDistributors();
+  const updateDistributor = useUpdateDistributor();
+  const deleteDistributor = useDeleteDistributor();
 
-  const { data: distributors = [], isLoading } = useQuery({
-    queryKey: ['distributors'],
-    queryFn: getAllDistributors,
-  });
-
-  const createMut = useMutation({
-    mutationFn: () => createDistributor(form),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['distributors'] });
-      setForm({ name: '', slug: '', legal_name: '', tax_id: '', email: '', phone: '' });
-    },
-  });
-
-  const toggleStatusMut = useMutation({
-    mutationFn: (d: Distributor) =>
-      updateDistributor(d.distributor_id, {
-        status: d.status === 'active' ? 'suspended' : 'active',
-      }),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ['distributors'] }),
-  });
-
-  // Al elegir "ver como", seteamos el header y recargamos: todas las queries
-  // (pedidos, garrafas, reportes...) se re-piden scopeadas a esa empresa.
   const viewAs = (slug: string) => {
-    if (slug) localStorage.setItem('selectedDistributor', slug);
-    else localStorage.removeItem('selectedDistributor');
-    setSelected(slug);
+    activeDistributor.set(slug || null);
+    setViewingSlug(slug);
     window.location.reload();
   };
 
-  const canSubmit = form.name.trim() && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(form.slug);
+  const handleToggleStatus = async (distributor: Distributor) => {
+    const suspending = distributor.status === 'active';
+    if (suspending) {
+      const confirmed = await confirm({
+        title: '¿Suspender la empresa?',
+        text: `"${distributor.name}" no va a poder operar hasta reactivarla.`,
+        confirmText: 'Suspender',
+        danger: true,
+      });
+      if (!confirmed) return;
+    }
+    updateDistributor.mutate(
+      { id: distributor.distributor_id, changes: { status: suspending ? 'suspended' : 'active' } },
+      {
+        onSuccess: () => notify.success(suspending ? 'Empresa suspendida' : 'Empresa activada'),
+        onError: notify.error,
+      },
+    );
+  };
+
+  const handleDelete = async (distributor: Distributor) => {
+    const confirmed = await confirm({
+      title: `¿Dar de baja "${distributor.name}"?`,
+      text:
+        'Es una baja lógica: sus choferes, administradores, clientes y pedidos quedan intactos en la base, ' +
+        'pero la empresa deja de listarse y de poder resolverse (nuevos pedidos de sus clientes van a fallar). ' +
+        'No hay forma de deshacerlo desde el panel.',
+      confirmText: 'Dar de baja',
+      danger: true,
+    });
+    if (!confirmed) return;
+
+    // Si es la que se está "viendo como", el header X-Distributor se saca ANTES
+    // de borrar (no después del éxito): la invalidación de la lista dispara un
+    // refetch de inmediato, y si todavía manda ese header la API ya no puede
+    // resolverlo → 401 → la sesión se cierra sola antes de poder avisar nada.
+    // DELETE /distributor/:id no necesita el header (es una acción de
+    // plataforma), así que sacarlo antes no afecta el borrado en sí.
+    const wasViewingThis = activeDistributor.get() === distributor.slug;
+    if (wasViewingThis) activeDistributor.set(null);
+
+    deleteDistributor.mutate(distributor.distributor_id, {
+      onSuccess: () => {
+        notify.success('Empresa dada de baja');
+        if (wasViewingThis) {
+          // Mismo criterio que "Ver todas": recarga para que todo el panel
+          // (permisos, tenant en memoria) arranque limpio sin esa empresa.
+          setViewingSlug('');
+          window.location.reload();
+        }
+      },
+      onError: (err) => {
+        if (wasViewingThis) activeDistributor.set(distributor.slug);
+        notify.error(err);
+      },
+    });
+  };
 
   return (
-    <div className="p-6 text-slate-800">
-      <h1 className="text-2xl font-bold mb-1">Distribuidoras (Empresas)</h1>
-      <p className="text-slate-500 text-sm mb-6">
-        Cada empresa opera aislada: sus choferes, clientes, pedidos y catálogo.
-      </p>
+    <div className="mx-auto max-w-7xl p-4 md:p-8">
+      <PageHeader
+        title="Distribuidoras"
+        description="Cada empresa opera aislada: sus choferes, clientes, pedidos y catálogo."
+        actions={
+          <Button icon={<AddBusinessIcon />} onClick={() => setForm({ open: true, distributor: null })}>
+            Nueva empresa
+          </Button>
+        }
+      />
 
-      {/* Banner de empresa activa */}
-      <div className="mb-6 rounded-xl bg-slate-800 text-slate-100 border border-slate-700 px-5 py-3 flex items-center justify-between">
-        <span className="text-sm">
-          Viendo:{' '}
-          <b className="text-rose-400">
-            {selected ? selected : 'TODAS las empresas'}
-          </b>
-        </span>
-        {selected && (
-          <button
-            onClick={() => viewAs('')}
-            className="text-xs px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600"
-          >
+      <Card className="mb-6 flex flex-wrap items-center justify-between gap-3 p-4">
+        <p className="text-sm text-ink">
+          Viendo: <span className="font-semibold text-primary-strong">{viewingSlug || 'todas las empresas'}</span>
+        </p>
+        {viewingSlug && (
+          <Button variant="secondary" size="sm" onClick={() => viewAs('')}>
             Ver todas
-          </button>
+          </Button>
         )}
-      </div>
+      </Card>
 
-      {/* Alta de empresa */}
-      <div className="mb-8 rounded-xl bg-slate-900 text-slate-100 border border-slate-800 p-5">
-        <h2 className="font-semibold mb-3">Nueva empresa</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <input
-            className="bg-slate-800 rounded-lg px-3 py-2 text-sm"
-            placeholder="Nombre (ej: Wagner Gas)"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
+      <Card>
+        {isLoading ? (
+          <LoadingState />
+        ) : error ? (
+          <ErrorState error={error} resource="Las empresas" onRetry={() => void refetch()} />
+        ) : (
+          <DistributorsTable
+            rows={distributors ?? []}
+            loading={isFetching}
+            viewingSlug={viewingSlug}
+            onViewAs={(distributor) => viewAs(distributor.slug)}
+            onView={setDetail}
+            onEdit={(distributor) => setForm({ open: true, distributor })}
+            onToggleStatus={(distributor) => void handleToggleStatus(distributor)}
+            onDelete={(distributor) => void handleDelete(distributor)}
           />
-          <input
-            className="bg-slate-800 rounded-lg px-3 py-2 text-sm"
-            placeholder="slug (ej: wagner-gas)"
-            value={form.slug}
-            onChange={(e) => setForm({ ...form, slug: e.target.value })}
-          />
-          <input
-            className="bg-slate-800 rounded-lg px-3 py-2 text-sm"
-            placeholder="Razón social"
-            value={form.legal_name}
-            onChange={(e) => setForm({ ...form, legal_name: e.target.value })}
-          />
-          <input
-            className="bg-slate-800 rounded-lg px-3 py-2 text-sm"
-            placeholder="CUIT"
-            value={form.tax_id}
-            onChange={(e) => setForm({ ...form, tax_id: e.target.value })}
-          />
-          <input
-            className="bg-slate-800 rounded-lg px-3 py-2 text-sm"
-            placeholder="Email"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-          />
-          <input
-            className="bg-slate-800 rounded-lg px-3 py-2 text-sm"
-            placeholder="Teléfono"
-            value={form.phone}
-            onChange={(e) => setForm({ ...form, phone: e.target.value })}
-          />
-        </div>
-        <button
-          disabled={!canSubmit || createMut.isLoading}
-          onClick={() => createMut.mutate()}
-          className="mt-4 px-5 py-2 rounded-lg bg-rose-500 hover:bg-rose-600 disabled:opacity-40 text-sm font-semibold"
-        >
-          {createMut.isLoading ? 'Creando...' : 'Crear empresa'}
-        </button>
-        {createMut.isError && (
-          <p className="text-rose-400 text-xs mt-2">
-            No se pudo crear (¿slug duplicado o inválido?).
-          </p>
         )}
-      </div>
+      </Card>
 
-      {/* Listado */}
-      {isLoading ? (
-        <p className="text-slate-400">Cargando...</p>
-      ) : (
-        <div className="rounded-xl overflow-hidden border border-slate-200 bg-white">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-800 text-slate-100">
-              <tr>
-                <th className="text-left px-4 py-3">Empresa</th>
-                <th className="text-left px-4 py-3">slug</th>
-                <th className="text-left px-4 py-3">Estado</th>
-                <th className="text-right px-4 py-3">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {distributors.map((d) => (
-                <tr key={d.distributor_id} className="border-t border-slate-200">
-                  <td className="px-4 py-3 font-semibold text-slate-800">{d.name}</td>
-                  <td className="px-4 py-3 text-slate-500">{d.slug}</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-xs ${
-                        d.status === 'active'
-                          ? 'bg-emerald-500/15 text-emerald-400'
-                          : 'bg-amber-500/15 text-amber-400'
-                      }`}
-                    >
-                      {d.status === 'active' ? 'activa' : 'suspendida'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right space-x-2">
-                    <button
-                      onClick={() => viewAs(d.slug)}
-                      className="px-3 py-1.5 rounded-lg bg-rose-500/90 hover:bg-rose-600 text-xs"
-                    >
-                      Ver como
-                    </button>
-                    <button
-                      onClick={() => toggleStatusMut.mutate(d)}
-                      className="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-xs"
-                    >
-                      {d.status === 'active' ? 'Suspender' : 'Activar'}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <DistributorDetailModal distributor={detail} onClose={() => setDetail(null)} />
+      <DistributorFormModal
+        open={form.open}
+        onClose={() => setForm({ open: false })}
+        distributor={form.open ? form.distributor : null}
+      />
     </div>
   );
 };

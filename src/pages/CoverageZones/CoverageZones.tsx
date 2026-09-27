@@ -1,340 +1,165 @@
-import { useMemo, useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  MapContainer,
-  TileLayer,
-  Polygon,
-  CircleMarker,
-  useMapEvents,
-} from 'react-leaflet';
-import type { LatLngExpression } from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import Swal from 'sweetalert2';
-
-import {
-  getCoverageZones,
-  createCoverageZone,
-  deleteCoverageZone,
-  CoverageZone,
-} from '../../services/api/coverageZones';
-
-import MapIcon from '@mui/icons-material/Map';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-
-// Centro por defecto: misma zona de operación que usa el Tracking.
-const DEFAULT_CENTER: LatLngExpression = [-26.82, -65.22];
-const DEFAULT_ZOOM = 12;
-
-const ZONE_COLORS = [
-  '#4f46e5',
-  '#059669',
-  '#d97706',
-  '#dc2626',
-  '#7c3aed',
-  '#0891b2',
-];
-
-// Convierte el anillo GeoJSON [lng,lat][] de una zona a posiciones Leaflet
-// [lat,lng][] para renderizar el <Polygon>.
-const toLatLng = (ring: number[][]): [number, number][] =>
-  ring.map(([lng, lat]) => [lat, lng]);
-
-// Captura clics en el mapa para ir agregando vértices mientras se dibuja.
-const DrawCatcher = ({
-  active,
-  onAddPoint,
-}: {
-  active: boolean;
-  onAddPoint: (point: [number, number]) => void;
-}) => {
-  useMapEvents({
-    click(e) {
-      if (active) onAddPoint([e.latlng.lat, e.latlng.lng]);
-    },
-  });
-  return null;
-};
+import { useState } from 'react';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import { Button, Card, ErrorState, LoadingState, PageHeader } from '../../common/components/ui';
+import { usePermissions } from '../../hooks';
+import type { CoverageZone } from '../../services/api/types';
+import { useCoverageZones, useDeleteCoverageZone, useUpdateCoverageZone } from '../../services/queries/coverageZones';
+import { confirm, notify } from '../../utils/notifications';
+import { CoverageCheckPanel } from './components/CoverageCheckPanel';
+import { ZoneFormPanel } from './components/ZoneFormPanel';
+import { ZoneList } from './components/ZoneList';
+import { ZoneMap, type MapMode } from './components/ZoneMap';
 
 export const CoverageZones = () => {
-  const queryClient = useQueryClient();
+  const { canWrite, writeHint } = usePermissions();
+  const { data, isPending, isError, error, refetch } = useCoverageZones();
+  const zones = data?.rows ?? [];
+  const updateZone = useUpdateCoverageZone();
+  const deleteZone = useDeleteCoverageZone();
 
-  const { data: zones = [], isLoading } = useQuery(
-    ['coverageZones'],
-    getCoverageZones,
-  );
+  const [mode, setMode] = useState<MapMode>('idle');
+  const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
+  const [polygon, setPolygon] = useState<number[][] | null>(null);
+  const [formSession, setFormSession] = useState(0);
+  const [pickedPoint, setPickedPoint] = useState<{ lat: number; lng: number } | null>(null);
 
-  // Estado del editor
-  const [drawing, setDrawing] = useState(false);
-  const [points, setPoints] = useState<[number, number][]>([]);
-  const [name, setName] = useState('');
-  const [surcharge, setSurcharge] = useState('0');
+  const editingZone = mode === 'edit' ? (zones.find((zone) => zone.coverage_zone_id === selectedZoneId) ?? null) : null;
 
-  const createMutation = useMutation({
-    mutationFn: createCoverageZone,
-    onSuccess: () => {
-      queryClient.invalidateQueries(['coverageZones']);
-      resetEditor();
-      Swal.fire({
-        title: 'Zona creada',
-        icon: 'success',
-        customClass: {
-          confirmButton:
-            'bg-indigo-600 text-white font-bold px-6 py-2 rounded-md hover:bg-indigo-700 transition-colors',
-        },
-        buttonsStyling: false,
-      });
-    },
-    onError: () =>
-      Swal.fire({
-        title: 'Error',
-        text: 'No se pudo crear la zona.',
-        icon: 'error',
-        customClass: {
-          confirmButton:
-            'bg-rose-600 text-white font-bold px-6 py-2 rounded-md hover:bg-rose-700 transition-colors',
-        },
-        buttonsStyling: false,
-      }),
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: deleteCoverageZone,
-    onSuccess: () => queryClient.invalidateQueries(['coverageZones']),
-    onError: () =>
-      Swal.fire({ title: 'Error', text: 'No se pudo eliminar.', icon: 'error' }),
-  });
-
-  const resetEditor = () => {
-    setDrawing(false);
-    setPoints([]);
-    setName('');
-    setSurcharge('0');
+  const resetForm = () => {
+    setMode('idle');
+    setSelectedZoneId(null);
+    setPolygon(null);
   };
 
-  const handleSave = () => {
-    if (points.length < 3) return;
-    // Leaflet usa [lat,lng]; el backend espera el anillo GeoJSON [lng,lat].
-    const polygon = points.map(([lat, lng]) => [lng, lat]);
-    createMutation.mutate({
-      name: name.trim() || 'Zona sin nombre',
-      polygon,
-      surcharge: Number(surcharge) || 0,
-    });
+  const startCreate = () => {
+    setMode('draw');
+    setSelectedZoneId(null);
+    setPolygon(null);
+    setFormSession((session) => session + 1);
+  };
+
+  const startEdit = (zone: CoverageZone) => {
+    setMode('edit');
+    setSelectedZoneId(zone.coverage_zone_id);
+    setPolygon(zone.area.coordinates[0]);
+  };
+
+  const handleSelectRow = (zone: CoverageZone) => {
+    if (mode !== 'idle') return;
+    setSelectedZoneId((current) => (current === zone.coverage_zone_id ? null : zone.coverage_zone_id));
+  };
+
+  const handleToggleActive = (zone: CoverageZone) => {
+    updateZone.mutate(
+      { id: zone.coverage_zone_id, changes: { isActive: !zone.isActive } },
+      {
+        onSuccess: () => notify.success(zone.isActive ? 'Zona desactivada' : 'Zona activada'),
+        onError: notify.error,
+      },
+    );
   };
 
   const handleDelete = async (zone: CoverageZone) => {
-    const res = await Swal.fire({
-      title: 'Eliminar zona',
-      text: `¿Eliminar "${zone.name}"?`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Eliminar',
-      cancelButtonText: 'Cancelar',
-      customClass: {
-        confirmButton:
-          'bg-rose-600 text-white font-bold px-6 py-2 rounded-md hover:bg-rose-700 transition-colors mr-2',
-        cancelButton:
-          'bg-slate-200 text-slate-700 font-bold px-6 py-2 rounded-md hover:bg-slate-300 transition-colors',
-      },
-      buttonsStyling: false,
+    const confirmed = await confirm({
+      title: '¿Eliminar la zona?',
+      text: `"${zone.name}" deja de aplicar cobertura y recargo a los pedidos nuevos.`,
+      confirmText: 'Eliminar',
+      danger: true,
     });
-    if (res.isConfirmed) deleteMutation.mutate(zone.coverage_zone_id);
+    if (!confirmed) return;
+    deleteZone.mutate(zone.coverage_zone_id, {
+      onSuccess: () => {
+        notify.success('Zona eliminada');
+        if (zone.coverage_zone_id === selectedZoneId) resetForm();
+      },
+      onError: notify.error,
+    });
   };
 
-  const existingPolygons = useMemo(
-    () =>
-      zones
-        .filter((z) => z.area?.coordinates?.[0]?.length)
-        .map((z, i) => ({
-          zone: z,
-          positions: toLatLng(z.area.coordinates[0]),
-          color: ZONE_COLORS[i % ZONE_COLORS.length],
-        })),
-    [zones],
-  );
+  if (isError) {
+    return (
+      <div className="mx-auto max-w-[1600px] p-4 md:p-8">
+        <PageHeader
+          title="Zonas de cobertura"
+          description="Las áreas donde la distribuidora entrega, con su recargo."
+        />
+        <Card>
+          <ErrorState error={error} resource="Las zonas de cobertura" onRetry={() => void refetch()} />
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-4 md:p-8 bg-slate-50 min-h-screen">
-      <div className="max-w-[1600px] mx-auto">
-        <header className="mb-6">
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3">
-            <MapIcon fontSize="large" className="text-slate-400" /> Zonas de
-            cobertura
-          </h1>
-          <p className="text-slate-500 mt-1 ml-11">
-            Definí las áreas donde la distribuidora entrega, con su recargo.
-          </p>
-        </header>
+    <div className="mx-auto max-w-[1600px] p-4 md:p-8">
+      <PageHeader
+        title="Zonas de cobertura"
+        description="Las áreas donde la distribuidora entrega, con su recargo."
+        actions={
+          <Button
+            icon={<AddCircleOutlineIcon />}
+            disabled={!canWrite || mode !== 'idle'}
+            title={!canWrite ? writeHint : undefined}
+            onClick={startCreate}
+          >
+            Nueva zona
+          </Button>
+        }
+      />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Mapa */}
-          <section className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-            <div className="h-[520px] w-full relative">
-              <MapContainer
-                center={DEFAULT_CENTER}
-                zoom={DEFAULT_ZOOM}
-                scrollWheelZoom
-                style={{ height: '100%', width: '100%' }}
-              >
-                <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
-                <DrawCatcher
-                  active={drawing}
-                  onAddPoint={(p) => setPoints((prev) => [...prev, p])}
-                />
+      <Card className="mb-6 p-0">
+        <ZoneList
+          rows={zones}
+          loading={isPending}
+          selectedZoneId={selectedZoneId}
+          onSelectRow={handleSelectRow}
+          onToggleActive={handleToggleActive}
+          onEdit={canWrite ? startEdit : undefined}
+          onDelete={canWrite ? (zone) => void handleDelete(zone) : undefined}
+        />
+      </Card>
 
-                {/* Zonas existentes */}
-                {existingPolygons.map(({ zone, positions, color }) => (
-                  <Polygon
-                    key={zone.coverage_zone_id}
-                    positions={positions}
-                    pathOptions={{ color, fillOpacity: 0.15 }}
-                  />
-                ))}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <Card className="overflow-hidden lg:col-span-2">
+          {isPending ? (
+            <LoadingState />
+          ) : (
+            <ZoneMap
+              zones={zones}
+              selectedZoneId={selectedZoneId}
+              mode={mode}
+              onSelectZone={handleSelectRow}
+              onPolygonChange={setPolygon}
+              onPickPoint={setPickedPoint}
+              pickedPoint={pickedPoint}
+            />
+          )}
+        </Card>
 
-                {/* Dibujo en curso */}
-                {points.length >= 2 && (
-                  <Polygon
-                    positions={points}
-                    pathOptions={{
-                      color: '#f43f5e',
-                      dashArray: '6',
-                      fillOpacity: 0.1,
-                    }}
-                  />
-                )}
-                {points.map((p, i) => (
-                  <CircleMarker
-                    key={i}
-                    center={p}
-                    radius={5}
-                    pathOptions={{ color: '#f43f5e', fillOpacity: 1 }}
-                  />
-                ))}
-              </MapContainer>
-
-              {drawing && (
-                <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] bg-slate-900/80 text-white text-xs px-3 py-1.5 rounded-full">
-                  Hacé clic en el mapa para marcar los vértices ·{' '}
-                  {points.length} punto(s)
-                </div>
-              )}
-            </div>
-          </section>
-
-          {/* Panel lateral */}
-          <section className="space-y-6">
-            {/* Editor */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
-              <h3 className="font-bold text-slate-800 mb-3">Nueva zona</h3>
-
-              {!drawing ? (
-                <button
-                  onClick={() => setDrawing(true)}
-                  className="w-full bg-indigo-600 text-white font-bold py-2 rounded-md hover:bg-indigo-700 transition-colors"
-                >
-                  Dibujar en el mapa
-                </button>
-              ) : (
-                <div className="space-y-3">
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Nombre de la zona"
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                  <div>
-                    <label className="block text-xs font-medium text-slate-500 mb-1">
-                      Recargo ($)
-                    </label>
-                    <input
-                      type="number"
-                      min={0}
-                      value={surcharge}
-                      onChange={(e) => setSurcharge(e.target.value)}
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-                  <p className="text-xs text-slate-500">
-                    {points.length < 3
-                      ? `Marcá al menos 3 puntos (${points.length}/3).`
-                      : `${points.length} vértices. Listo para guardar.`}
-                  </p>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setPoints((p) => p.slice(0, -1))}
-                      disabled={points.length === 0}
-                      className="flex-1 bg-slate-100 text-slate-700 font-medium py-2 rounded-md hover:bg-slate-200 transition-colors disabled:opacity-50 text-sm"
-                    >
-                      Deshacer punto
-                    </button>
-                    <button
-                      onClick={resetEditor}
-                      className="flex-1 bg-slate-100 text-slate-700 font-medium py-2 rounded-md hover:bg-slate-200 transition-colors text-sm"
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                  <button
-                    onClick={handleSave}
-                    disabled={points.length < 3 || createMutation.isLoading}
-                    className="w-full bg-emerald-600 text-white font-bold py-2 rounded-md hover:bg-emerald-700 transition-colors disabled:opacity-50"
-                  >
-                    {createMutation.isLoading ? 'Guardando...' : 'Guardar zona'}
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Lista de zonas */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
-              <h3 className="font-bold text-slate-800 mb-3">
-                Zonas activas ({zones.length})
+        <div className="space-y-6">
+          {(mode === 'draw' || mode === 'edit') && (
+            <Card className="p-5">
+              <h3 className="mb-3 font-semibold text-ink">
+                {editingZone ? `Editar "${editingZone.name}"` : 'Nueva zona'}
               </h3>
-              {isLoading ? (
-                <p className="text-sm text-slate-400">Cargando...</p>
-              ) : zones.length === 0 ? (
-                <p className="text-sm text-slate-500">
-                  Todavía no hay zonas. Si no cargás ninguna, se entrega a todos
-                  lados con recargo 0.
-                </p>
-              ) : (
-                <ul className="space-y-2">
-                  {existingPolygons.map(({ zone, color }) => (
-                    <li
-                      key={zone.coverage_zone_id}
-                      className="flex items-center justify-between gap-2 p-2 rounded-lg hover:bg-slate-50"
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span
-                          className="w-3 h-3 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: color }}
-                        />
-                        <div className="min-w-0">
-                          <p className="font-medium text-slate-800 truncate">
-                            {zone.name}
-                          </p>
-                          <p className="text-xs text-slate-500">
-                            Recargo: ${Number(zone.surcharge).toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleDelete(zone)}
-                        className="text-rose-500 hover:text-rose-700 p-1 flex-shrink-0"
-                        title="Eliminar zona"
-                      >
-                        <DeleteOutlineIcon fontSize="small" />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </section>
+              <ZoneFormPanel
+                key={editingZone?.coverage_zone_id ?? `new-${formSession}`}
+                zone={editingZone}
+                polygon={polygon}
+                onSaved={resetForm}
+                onCancel={resetForm}
+              />
+            </Card>
+          )}
+
+          <Card className="p-5">
+            <CoverageCheckPanel
+              pickedPoint={pickedPoint}
+              isPicking={mode === 'pick'}
+              onStartPicking={() => setMode('pick')}
+              onStopPicking={() => setMode((current) => (current === 'pick' ? 'idle' : current))}
+            />
+          </Card>
         </div>
       </div>
     </div>
