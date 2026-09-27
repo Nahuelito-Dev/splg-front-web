@@ -1,32 +1,32 @@
-import { privateAxiosInstance } from './axiosConfig';
-import { Car } from '../../interfaces';
+import { http } from './httpClient';
+import type { Car, CarBorrado, CreateCarBody, UpdateCarBody } from './types';
 
-// GET ALL (Vista Global de Flota)
-export const getAllCars = async () => {
-  const { data } = await privateAxiosInstance.get<Car[]>('/car');
+/** GET /car: la flota completa de vehículos (sin paginar: la API no la pagina). */
+export const listCars = async (): Promise<Car[]> => {
+  const { data } = await http.get<Car[]>('/car');
   return data;
 };
 
-// GET BY USER
-export const getCarsByUserId = async (userId: string) => {
-  const { data } = await privateAxiosInstance.get<Car[]>(`/car/user/${userId}`);
+/** GET /car/user/:userId: los vehículos de un chofer. */
+export const listCarsByUser = async (userId: string): Promise<Car[]> => {
+  const { data } = await http.get<Car[]>(`/car/user/${userId}`);
   return data;
 };
 
-// CREATE
-export const createCar = async (carData: Partial<Car>) => {
-  const { data } = await privateAxiosInstance.post('/car', carData);
+/** POST /car */
+export const createCar = async (body: CreateCarBody): Promise<Car> => {
+  const { data } = await http.post<Car>('/car', body);
   return data;
 };
 
-// UPDATE
-export const updateCar = async (id: string, carData: Partial<Car>) => {
-  const { data } = await privateAxiosInstance.patch(`/car/${id}`, carData);
+/** PATCH /car/:id */
+export const updateCar = async (id: string, body: UpdateCarBody): Promise<Car> => {
+  const { data } = await http.patch<Car>(`/car/${id}`, body);
   return data;
 };
 
-// DELETE
-export const deleteCar = async (id: string) => {
-  const { data } = await privateAxiosInstance.delete(`/car/${id}`);
+/** DELETE /car/:id */
+export const deleteCar = async (id: string): Promise<CarBorrado> => {
+  const { data } = await http.delete<CarBorrado>(`/car/${id}`);
   return data;
 };

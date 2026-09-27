@@ -7,8 +7,7 @@ import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 // la URL de los PNG con rutas relativas que el bundler no resuelve, así que
 // el marker termina invisible/roto. Se arregla pisando el prototype una sola
 // vez con las URLs ya resueltas por Vite (import de assets).
-delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })
-  ._getIconUrl;
+delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl;
 
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: markerIcon2x,

@@ -1,44 +1,44 @@
 import { onAuthStateChanged } from 'firebase/auth';
 import { useEffect } from 'react';
-import { useDispatch } from 'react-redux';
 import { FirebaseAuth } from '../firebase/config';
+import { errorMessage } from '../services/api/errors';
 import { getAdmin } from '../services/api/auth';
-import { logOut, login } from '../store/auth/authSlice';
-import { useAppSelector } from './reduxHooks';
+import { login, logOut, type LoginPayload } from '../store/auth/authSlice';
+import { useAppDispatch, useAppSelector } from './reduxHooks';
 
+/**
+ * Sincroniza la sesión con Firebase: si hay usuario, valida contra la API que
+ * tenga rol de administrador antes de dejarlo entrar al panel.
+ */
 export const useCheckAuth = () => {
   const { status } = useAppSelector((state) => state.auth);
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
 
   useEffect(() => {
-    onAuthStateChanged(FirebaseAuth, async (user) => {
-      if (!user) return dispatch(logOut({}));
-
-      try {
-        // 1. EXTRAER EL TOKEN ACTUALIZADO DE FIREBASE
-        const token = await user.getIdToken();
-        localStorage.setItem('token', token); // ESTO ES VITAL para el interceptor
-
-        const { uid, email, displayName } = user;
-
-        // 2. BUSCAR PERMISOS EN NESTJS
-        const userInfo = await getAdmin(email!);
-
-        // 3. LOGUEAR EN REDUX
-        dispatch(
-          login({
-            uid,
-            email,
-            displayName,
-            role: userInfo.role,
-            fullName: userInfo.fullName,
-          }),
-        );
-      } catch (error) {
-        console.error('Error validando admin:', error);
-        dispatch(logOut({ errorMessage: 'No autorizado' }));
+    const unsubscribe = onAuthStateChanged(FirebaseAuth, (user) => {
+      if (!user) {
+        dispatch(logOut({}));
+        return;
       }
+
+      void (async () => {
+        try {
+          const token = await user.getIdToken();
+          // Vital para el interceptor: sin esto, la llamada a getAdmin se rechaza.
+          localStorage.setItem('token', token);
+
+          const { uid, email, displayName } = user;
+          const { fullName, role } = await getAdmin(email ?? '');
+
+          const payload: LoginPayload = { uid, email, displayName, fullName, role };
+          dispatch(login(payload));
+        } catch (error) {
+          dispatch(logOut({ errorMessage: errorMessage(error) }));
+        }
+      })();
     });
+
+    return unsubscribe;
   }, [dispatch]);
 
   return { status };

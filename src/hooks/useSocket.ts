@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { io, type Socket } from 'socket.io-client';
+import { env } from '../config/env';
 
-// URL del gateway de sockets del backend. Si no se define VITE_APP_SOCKET_URL
-// caemos a la misma base que la API REST, sacándole el sufijo /api.
-const SOCKET_URL: string =
-  import.meta.env.VITE_APP_SOCKET_URL ??
-  (import.meta.env.VITE_APP_API_URL as string)?.replace(/\/api\/?$/, '');
+// URL del gateway de sockets: ver config/entorno.
+const SOCKET_URL = env.socketUrl;
 
 export type SocketAuthPayload = Record<string, unknown>;
 
@@ -19,8 +17,23 @@ export const ORDER_SOCKET_EVENTS = {
   CANCELLED: 'order:cancelled',
 } as const;
 
-export type OrderSocketEventName =
-  (typeof ORDER_SOCKET_EVENTS)[keyof typeof ORDER_SOCKET_EVENTS];
+export type OrderSocketEventName = (typeof ORDER_SOCKET_EVENTS)[keyof typeof ORDER_SOCKET_EVENTS];
+
+/**
+ * Evento que emite el AdminGateway por cada pedido en curso cuyo chofer manda
+ * su GPS. Se centraliza acá junto a ORDER_SOCKET_EVENTS (Tracking es hoy su
+ * único consumidor).
+ */
+export const DRIVER_LOCATION_EVENT = 'order:driver-location';
+
+/** Payload de DRIVER_LOCATION_EVENT: última posición conocida de un chofer. */
+export interface DriverLocationPayload {
+  orderId: string;
+  driverId: string;
+  lat: number;
+  lng: number;
+  at: string; // ISO date
+}
 
 /**
  * Hook de bajo nivel para manejar una única conexión de socket.io.
@@ -55,8 +68,8 @@ export const useSocket = (namespace = '/') => {
     const socket = socketRef.current;
     if (!socket || socket.connected) return;
 
-    // TODO(backend): reemplazar por el handshake real (JWT/rol) cuando el
-    // gateway lo valide. Hoy `auth` viaja como contexto informativo nomás.
+    // `auth.token` es el handshake real: el AdminGateway lo valida (decodeToken)
+    // y desconecta al cliente si falta o es inválido (ver socket-data.ts en el back).
     socket.auth = auth ?? {};
     socket.connect();
   }, []);
@@ -66,18 +79,15 @@ export const useSocket = (namespace = '/') => {
     setIsOnline(false);
   }, []);
 
-  const subscribe = useCallback(
-    <T = unknown>(event: string, handler: (payload: T) => void) => {
-      const socket = socketRef.current;
-      if (!socket) return () => {};
+  const subscribe = useCallback(<T = unknown>(event: string, handler: (payload: T) => void) => {
+    const socket = socketRef.current;
+    if (!socket) return () => {};
 
-      socket.on(event, handler);
-      return () => {
-        socket.off(event, handler);
-      };
-    },
-    [],
-  );
+    socket.on(event, handler);
+    return () => {
+      socket.off(event, handler);
+    };
+  }, []);
 
   // Al desmontar el hook (se usa una sola vez, desde SocketProvider) cerramos
   // la conexión para no dejar sockets colgados. Antes se llamaba `.off()` sin

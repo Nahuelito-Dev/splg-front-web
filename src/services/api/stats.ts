@@ -1,52 +1,14 @@
-import { privateAxiosInstance } from './axiosConfig';
+import { http } from './httpClient';
+import type { OrderStats, SalesChartPoint } from './types';
 
-export interface DashboardStats {
-  ordersSummary: {
-    pending: number;
-    accepted: number;
-    onTheWay: number;
-    deliveredToday: number;
-    totalDelivered: number;
-  };
-  sales: {
-    today: number;
-    week: number;
-    month: number;
-    total: number;
-  };
-  performance: {
-    activeDeliveries: number;
-    avgOrderValue: number;
-    ordersPerDay: number;
-  };
-  paymentMethods: {
-    cash: number;
-    mercadopago: number;
-  };
-}
-
-// Nueva interfaz para el gráfico
-export interface ChartData {
-  name: string; // "Lun", "Mar"
-  date: string; // "2023-10-25"
-  sales: number;
-}
-
-// Métricas Generales
-export const getDashboardStats = async (from?: string, to?: string) => {
-  const queryParams = from && to ? `?from=${from}&to=${to}` : '';
-  const { data } = await privateAxiosInstance.get<DashboardStats>(
-    `/orders/stats/summary${queryParams}`,
-  );
+/** GET /orders/stats/summary: pedidos, ventas, rendimiento y medios de pago (scopeado por distribuidora). */
+export const getOrderStats = async (): Promise<OrderStats> => {
+  const { data } = await http.get<OrderStats>('/orders/stats/summary');
   return data;
 };
 
-// Datos del Gráfico (Últimos 7 días o 12 meses)
-export const getSalesChart = async (aggregation: 'day' | 'month' = 'day', from?: string, to?: string) => {
-  let url = `/orders/stats/chart?aggregation=${aggregation}`;
-  if (from && to) {
-    url += `&from=${from}&to=${to}`;
-  }
-  const { data } = await privateAxiosInstance.get<ChartData[]>(url);
+/** GET /orders/stats/chart: ventas de los últimos 7 días, para el gráfico del tablero. */
+export const getSalesChart = async (): Promise<SalesChartPoint[]> => {
+  const { data } = await http.get<SalesChartPoint[]>('/orders/stats/chart');
   return data;
 };

@@ -1,0 +1,118 @@
+import type { GridColDef, GridPaginationModel } from '@mui/x-data-grid';
+import { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Lock, LockOpen, Pencil, UserX } from 'lucide-react';
+import { Badge, DataTable, EmptyState, IdentityCell, RowActions } from '../../../common/components/ui';
+import type { User } from '../../../services/api/types';
+import { roleLabel } from '../roleLabel';
+
+interface Props {
+  rows: User[];
+  total: number;
+  loading: boolean;
+  pagination: GridPaginationModel;
+  onPaginationChange: (model: GridPaginationModel) => void;
+  /** La cuenta de un cliente la administra sólo el administrador general. */
+  canManageCustomerAccounts: boolean;
+  onEdit: (user: User) => void;
+  onToggleBlock: (user: User) => void;
+  onDelete: (user: User) => void;
+}
+
+export const UsersTable = ({
+  rows,
+  total,
+  loading,
+  pagination,
+  onPaginationChange,
+  canManageCustomerAccounts,
+  onEdit,
+  onToggleBlock,
+  onDelete,
+}: Props) => {
+  const navigate = useNavigate();
+  const columns = useMemo<GridColDef<User>[]>(
+    () => [
+      {
+        field: 'name',
+        headerName: 'Usuario',
+        flex: 1.4,
+        minWidth: 220,
+        valueGetter: ({ row }) => row.full_name ?? '',
+        renderCell: ({ row }) => (
+          <IdentityCell
+            title={row.full_name ?? 'Sin nombre'}
+            subtitle={row.email ?? undefined}
+            avatarName={row.full_name ?? '?'}
+          />
+        ),
+      },
+      {
+        field: 'phone_number',
+        headerName: 'Teléfono',
+        flex: 1,
+        minWidth: 150,
+        valueGetter: ({ row }) => row.phone_number ?? '—',
+      },
+      {
+        field: 'role',
+        headerName: 'Rol',
+        width: 180,
+        valueGetter: ({ row }) => row.role?.type ?? '',
+        renderCell: ({ row }) => <Badge label={roleLabel(row.role?.type)} />,
+      },
+      {
+        field: 'blocked',
+        headerName: 'Estado',
+        width: 130,
+        renderCell: ({ row }) => (
+          <Badge label={row.blocked ? { text: 'Bloqueado', tone: 'danger' } : { text: 'Activo', tone: 'success' }} />
+        ),
+      },
+      {
+        field: 'actions',
+        headerName: '',
+        width: 96,
+        sortable: false,
+        align: 'right',
+        renderCell: ({ row }) => {
+          // La cuenta de un cliente sólo la administra el administrador general.
+          const canManage = canManageCustomerAccounts || !row.customer;
+          return (
+            <RowActions
+              rowLabel={row.full_name ?? 'usuario'}
+              onView={() => navigate(`/users/details/${row.user_id}`)}
+              actions={
+                canManage
+                  ? [
+                      { label: 'Editar cuenta', icon: Pencil, onClick: () => onEdit(row) },
+                      {
+                        label: row.blocked ? 'Desbloquear' : 'Bloquear',
+                        icon: row.blocked ? LockOpen : Lock,
+                        tone: row.blocked ? 'neutral' : 'danger',
+                        onClick: () => onToggleBlock(row),
+                      },
+                      { label: 'Dar de baja', icon: UserX, tone: 'danger', onClick: () => onDelete(row) },
+                    ]
+                  : []
+              }
+            />
+          );
+        },
+      },
+    ],
+    [navigate, canManageCustomerAccounts, onEdit, onToggleBlock, onDelete],
+  );
+
+  return (
+    <DataTable
+      rows={rows}
+      columns={columns}
+      getRowId={(row) => row.user_id}
+      loading={loading}
+      pagination={{ model: pagination, onChange: onPaginationChange, total }}
+      onRowClick={(row) => navigate(`/users/details/${row.user_id}`)}
+      empty={<EmptyState title="No hay usuarios" description="Todavía no hay usuarios registrados." />}
+    />
+  );
+};

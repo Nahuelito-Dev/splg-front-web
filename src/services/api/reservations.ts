@@ -1,35 +1,14 @@
-import { privateAxiosInstance } from './axiosConfig';
+import { http } from './httpClient';
+import type { Order, Reserva } from './types';
 
-export interface ReservationItem {
-  quantity: number;
-  type: string | null;
-}
-
-export interface Reservation {
-  id: string;
-  customerName: string | null;
-  customerPhone: string | null;
-  scheduledDate: string | null;
-  paymentMethod: string; // 'cash' | 'mercadopago' | ...
-  total: number;
-  depositAmount: number;
-  depositPaid: boolean;
-  remainingBalance: number;
-  createdAt: string;
-  items: ReservationItem[];
-}
-
-// Reservas pendientes (pedidos RESERVED) de la distribuidora.
-export const getReservations = async () => {
-  const { data } =
-    await privateAxiosInstance.get<Reservation[]>('/orders/reservations');
+/** GET /orders/reservations: pedidos reservados (RESERVED) de la distribuidora. */
+export const listReservations = async (): Promise<Reserva[]> => {
+  const { data } = await http.get<Reserva[]>('/orders/reservations');
   return data;
 };
 
-// Confirma la seña cobrada en efectivo -> habilita la activación automática.
-export const confirmDeposit = async (orderId: string) => {
-  const { data } = await privateAxiosInstance.patch(
-    `/orders/${orderId}/confirm-deposit`,
-  );
+/** PATCH /orders/:id/confirm-deposit: confirma la seña cobrada en efectivo, habilita la activación automática. */
+export const confirmReservationDeposit = async (orderId: string): Promise<Order> => {
+  const { data } = await http.patch<Order>(`/orders/${orderId}/confirm-deposit`);
   return data;
 };

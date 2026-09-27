@@ -1,99 +1,39 @@
-// services/api/users.ts
-import { privateAxiosInstance } from './axiosConfig';
-import { User } from '../../interfaces';
-import { AltaDeUsuario, registrarUsuario } from './registro';
+import { http, toQuery, type Page, type PageParams } from './httpClient';
+import type { BloqueoDeUsuario, ListadoDeUsuarios, Message, UpdateUserBody, User } from './types';
 
-export const getAllUsers = async (page = 0, limit = 10, term?: string) => {
-  const offset = limit * page;
-
-  // Si mandas 'term', lo metemos en la URL.
-  // Si el Backend deployado es viejo, simplemente va a ignorar este parámetro extra y no pasa nada.
-  let url = `/users?limit=${limit}&offset=${offset}`;
-
-  if (term) {
-    url += `&term=${term}`;
-  }
-
-  console.log('📡 Fetching:', url);
-
-  try {
-    const { data } = await privateAxiosInstance.get(url);
-
-    return {
-      users: data.users || [],
-      maxUsers: data.maxUsers || 0,
-    };
-  } catch (error: any) {
-    console.error('❌ [GET ALL USERS] Error:', error);
-    throw error;
-  }
-};
-
-// CREATE: el alta desde el listado general da de alta un cliente.
-export const createUser = (nuevo: Omit<AltaDeUsuario, 'rol'>) =>
-  registrarUsuario({ ...nuevo, rol: 'customer' });
-
-// DELETE Físico
-export const deleteUser = async (user_id: string) => {
-  // Pasamos el ID directamente
-  const { data } = await privateAxiosInstance.delete(`/users/${user_id}`);
-  return data;
-};
-
-// UPDATE
-export const updateUser = async (
-  user_id: string,
-  updateData: Partial<User>,
-) => {
-  const { data } = await privateAxiosInstance.patch<User>(
-    `/users/${user_id}`,
-    updateData,
-  );
-  return data;
-};
-
-// RESET PASSWORD (Usa el mismo PATCH /users/:id, Firebase se encarga del hash)
-export const resetUserPassword = async (userId: string, password: string) => {
-  const { data } = await privateAxiosInstance.patch(`/users/${userId}`, {
-    password,
+/** GET /users: todos los roles, paginados y con búsqueda por término. */
+export const listUsers = async (params: PageParams, search?: string): Promise<Page<User>> => {
+  const { data } = await http.get<ListadoDeUsuarios>('/users', {
+    params: { ...toQuery(params), term: search || undefined },
   });
+  return { rows: data.users, total: data.maxUsers };
+};
+
+/** GET /users/:id: la ficha de un usuario, con su rol (cliente, chofer o admin). */
+export const getUser = async (id: string): Promise<User> => {
+  const { data } = await http.get<User>(`/users/${id}`);
   return data;
 };
 
-// BLOCK / UNBLOCK (CU-050) — PATCH /users/:id/block { block: boolean }.
-export const blockUser = async (userId: string, block: boolean) => {
-  const { data } = await privateAxiosInstance.patch(`/users/${userId}/block`, {
-    block,
-  });
+/**
+ * PATCH /users/:id con sólo los campos que acepta la API (nombre, teléfono,
+ * foto, bloqueo y contraseña nueva). Lo de la cuenta de un cliente es sólo del
+ * administrador general: la API responde 403 a un admin de empresa. La usa
+ * también la página de Clientes: no cambiar la firma.
+ */
+export const updateUserAccount = async (userId: string, changes: UpdateUserBody): Promise<User> => {
+  const { data } = await http.patch<User>(`/users/${userId}`, changes);
   return data;
 };
-// Añade esta función para obtener usuario por email (reemplaza getAdmin)
-export const getUserByEmail = async (email: string) => {
-  try {
-    console.log(`🔍 [GET USER BY EMAIL] Buscando: ${email}`);
-    const { data } = await privateAxiosInstance.get(`/users/email/${email}`);
-    console.log('✅ [GET USER BY EMAIL] Response:', data);
-    return data;
-  } catch (error: any) {
-    console.error('❌ [GET USER BY EMAIL] Error:', error);
-    if (error.response?.status === 404) {
-      return null;
-    }
-    throw error;
-  }
+
+/** PATCH /users/:id/block: bloquea o habilita la cuenta. */
+export const blockUser = async (userId: string, block: boolean): Promise<BloqueoDeUsuario> => {
+  const { data } = await http.patch<BloqueoDeUsuario>(`/users/${userId}/block`, { block });
+  return data;
 };
-// services/api/users.ts - agregar esta función
-export const getUserById = async (userId: string) => {
-  try {
-    console.log(`🔍 [GET USER BY ID] Buscando: ${userId}`);
-    const { data } = await privateAxiosInstance.get(`/users/${userId}`);
-    console.log('✅ [GET USER BY ID] Response:', data);
-    return data;
-  } catch (error: any) {
-    console.error('❌ [GET USER BY ID] Error:', error);
-    if (error.response?.status === 404) {
-      throw new Error('Usuario no encontrado');
-    }
-    throw error;
-  }
+
+/** DELETE /users/:id: baja lógica de la cuenta. */
+export const deleteUser = async (id: string): Promise<Message> => {
+  const { data } = await http.delete<Message>(`/users/${id}`);
+  return data;
 };

@@ -1,0 +1,79 @@
+import type { GridColDef } from '@mui/x-data-grid';
+import { useMemo } from 'react';
+import { Badge, DataTable, EmptyState, IdentityCell, RowActions } from '../../../common/components/ui';
+import type { Claim } from '../../../services/api/types';
+import { formatDateTime, formatShortId } from '../../../utils/format';
+import { CLAIM_STATUS, labelOf } from '../../../utils/statusLabels';
+
+interface Props {
+  rows: Claim[];
+  loading: boolean;
+  onManage: (claim: Claim) => void;
+}
+
+export const ClaimsTable = ({ rows, loading, onManage }: Props) => {
+  const columns = useMemo<GridColDef<Claim>[]>(
+    () => [
+      {
+        field: 'customer',
+        headerName: 'Cliente',
+        flex: 1.3,
+        minWidth: 200,
+        valueGetter: ({ row }) => row.customer?.full_name ?? '',
+        renderCell: ({ row }) => (
+          <IdentityCell
+            title={row.customer?.full_name ?? 'Cliente sin nombre'}
+            subtitle={`Pedido ${formatShortId(row.order_id)}`}
+            avatarName={row.customer?.full_name ?? '?'}
+          />
+        ),
+      },
+      {
+        field: 'reason',
+        headerName: 'Motivo',
+        flex: 1.4,
+        minWidth: 220,
+        renderCell: ({ row }) => (
+          <div className="min-w-0">
+            <p className="truncate font-medium text-ink">{row.reason}</p>
+            <p className="truncate text-xs text-muted">{row.description}</p>
+          </div>
+        ),
+      },
+      {
+        field: 'createdAt',
+        headerName: 'Fecha',
+        width: 170,
+        valueFormatter: ({ value }: { value: string }) => formatDateTime(value),
+      },
+      {
+        field: 'status',
+        headerName: 'Estado',
+        width: 130,
+        renderCell: ({ row }) => <Badge label={labelOf(CLAIM_STATUS, row.status)} />,
+      },
+      {
+        field: 'actions',
+        headerName: '',
+        width: 64,
+        sortable: false,
+        align: 'right',
+        renderCell: ({ row }) => (
+          <RowActions rowLabel={`reclamo de ${row.customer?.full_name ?? 'cliente'}`} onView={() => onManage(row)} />
+        ),
+      },
+    ],
+    [onManage],
+  );
+
+  return (
+    <DataTable
+      rows={rows}
+      columns={columns}
+      getRowId={(row) => row.claim_id}
+      loading={loading}
+      onRowClick={onManage}
+      empty={<EmptyState title="¡Todo en orden!" description="No hay reclamos pendientes de atención." />}
+    />
+  );
+};

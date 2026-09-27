@@ -1,75 +1,43 @@
-import { privateAxiosInstance } from './axiosConfig';
+import { http } from './httpClient';
+import type { EvolucionDeVentas, VentasPorChofer, VentasPorMedioDePago, VentasPorProducto } from './types';
 
-export interface SalesByDriver {
-  driverId: string;
-  driverName: string;
-  totalOrders: number;
-  totalSales: number;
+export interface ReportsDateRange {
+  /** YYYY-MM-DD. Sin rango, el back usa "hoy 00:00 hasta ahora". */
+  from?: string;
+  to?: string;
 }
 
-export interface SalesByProduct {
-  productType: string;
-  description: string;
-  totalQuantity: number;
-  totalSales: number;
+export interface SalesEvolutionParams extends ReportsDateRange {
+  granularity: 'day' | 'week' | 'month';
 }
 
-export interface SalesByPayment {
-  method: string;
-  totalOrders: number;
-  totalSales: number;
-}
+const dateQuery = ({ from, to }: ReportsDateRange) => ({ from: from || undefined, to: to || undefined });
 
-const buildQuery = (from?: string, to?: string) => {
-  const params = new URLSearchParams();
-  if (from) params.set('from', from);
-  if (to) params.set('to', to);
-  const qs = params.toString();
-  return qs ? `?${qs}` : '';
-};
-
-// GET /reports/sales-by-driver — ventas entregadas agrupadas por repartidor.
-export const getSalesByDriver = async (from?: string, to?: string) => {
-  const { data } = await privateAxiosInstance.get<SalesByDriver[]>(
-    `/reports/sales-by-driver${buildQuery(from, to)}`,
-  );
+/** GET /reports/sales-by-driver: ventas entregadas agrupadas por repartidor. */
+export const getSalesByDriver = async (range: ReportsDateRange): Promise<VentasPorChofer[]> => {
+  const { data } = await http.get<VentasPorChofer[]>('/reports/sales-by-driver', { params: dateQuery(range) });
   return data;
 };
 
-// GET /reports/sales-by-product — ventas entregadas agrupadas por producto.
-export const getSalesByProduct = async (from?: string, to?: string) => {
-  const { data } = await privateAxiosInstance.get<SalesByProduct[]>(
-    `/reports/sales-by-product${buildQuery(from, to)}`,
-  );
+/** GET /reports/sales-by-product: ventas entregadas agrupadas por producto. */
+export const getSalesByProduct = async (range: ReportsDateRange): Promise<VentasPorProducto[]> => {
+  const { data } = await http.get<VentasPorProducto[]>('/reports/sales-by-product', { params: dateQuery(range) });
   return data;
 };
 
-// GET /reports/sales-by-payment — ventas entregadas agrupadas por método de pago.
-export const getSalesByPayment = async (from?: string, to?: string) => {
-  const { data } = await privateAxiosInstance.get<SalesByPayment[]>(
-    `/reports/sales-by-payment${buildQuery(from, to)}`,
-  );
+/** GET /reports/sales-by-payment: ventas entregadas agrupadas por método de pago. */
+export const getSalesByPayment = async (range: ReportsDateRange): Promise<VentasPorMedioDePago[]> => {
+  const { data } = await http.get<VentasPorMedioDePago[]>('/reports/sales-by-payment', { params: dateQuery(range) });
   return data;
 };
 
-export interface SalesEvolutionPoint {
-  period: string;
-  totalOrders: number;
-  totalSales: number;
-}
-
-// GET /reports/sales-evolution — ventas entregadas agrupadas por período (día/mes).
-export const getSalesEvolution = async (
-  from?: string,
-  to?: string,
-  granularity: 'day' | 'month' = 'day',
-) => {
-  const params = new URLSearchParams();
-  if (from) params.set('from', from);
-  if (to) params.set('to', to);
-  params.set('granularity', granularity);
-  const { data } = await privateAxiosInstance.get<SalesEvolutionPoint[]>(
-    `/reports/sales-evolution?${params.toString()}`,
-  );
+/** GET /reports/sales-evolution: ventas entregadas agrupadas por período (día/semana/mes). */
+export const getSalesEvolution = async ({
+  granularity,
+  ...range
+}: SalesEvolutionParams): Promise<EvolucionDeVentas[]> => {
+  const { data } = await http.get<EvolucionDeVentas[]>('/reports/sales-evolution', {
+    params: { ...dateQuery(range), granularity },
+  });
   return data;
 };

@@ -1,42 +1,40 @@
-import { privateAxiosInstance } from './axiosConfig';
+import { http } from './httpClient';
+import type { CreateDistributorBody, Distributor, UpdateDistributorBody } from './types';
 
-export interface Distributor {
-  distributor_id: string;
-  name: string;
-  slug: string;
-  legal_name?: string;
-  tax_id?: string;
-  email?: string;
-  phone?: string;
-  logo_url?: string;
-  status: 'active' | 'suspended';
-  plan?: string;
-  createdAt?: string;
-}
-
-// LISTAR todas las distribuidoras (solo super_admin)
-export const getAllDistributors = async () => {
-  const { data } = await privateAxiosInstance.get<Distributor[]>('/distributor');
+/** GET /distributor: todas las empresas. Sólo el administrador general. */
+export const listDistributors = async (): Promise<Distributor[]> => {
+  const { data } = await http.get<Distributor[]>('/distributor');
   return data;
 };
 
-// CREAR una distribuidora
-export const createDistributor = async (payload: Partial<Distributor>) => {
-  const { data } = await privateAxiosInstance.post('/distributor', payload);
+/** POST /distributor: alta de una empresa (tenant). */
+export const createDistributor = async (body: CreateDistributorBody): Promise<Distributor> => {
+  const { data } = await http.post<Distributor>('/distributor', body);
   return data;
 };
 
-// ACTUALIZAR
-export const updateDistributor = async (
-  id: string,
-  payload: Partial<Distributor>,
-) => {
-  const { data } = await privateAxiosInstance.patch(`/distributor/${id}`, payload);
+/** PATCH /distributor/:id: datos de la empresa o su estado (active/suspended). */
+export const updateDistributor = async (id: string, body: UpdateDistributorBody): Promise<Distributor> => {
+  const { data } = await http.patch<Distributor>(`/distributor/${id}`, body);
   return data;
 };
 
-// ELIMINAR (soft)
-export const deleteDistributor = async (id: string) => {
-  const { data } = await privateAxiosInstance.delete(`/distributor/${id}`);
+/**
+ * GET /distributor/current: la empresa de la sesión (la del admin, o la que
+ * eligió el administrador general con "Ver como"). 404 si no hay una.
+ */
+export const getCurrentDistributor = async (): Promise<Distributor> => {
+  const { data } = await http.get<Distributor>('/distributor/current');
   return data;
+};
+
+/**
+ * DELETE /distributor/:id: baja lógica (soft delete). La fila queda en la
+ * base con `deletedAt`, pero el back la excluye de `findAll`/`findOne` y de
+ * la resolución por header `X-Distributor`: sus choferes, admins y pedidos
+ * NO se tocan (siguen con su `distributor_id`), pero la empresa deja de
+ * poder resolverse. Sin cuerpo de respuesta.
+ */
+export const deleteDistributor = async (id: string): Promise<void> => {
+  await http.delete(`/distributor/${id}`);
 };

@@ -1,157 +1,113 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { OrdersTable } from './components/OrdersTable';
+import type { GridPaginationModel } from '@mui/x-data-grid';
+import { useNavigate } from 'react-router-dom';
+import { Card, PageHeader } from '../../common/components/ui';
+import { useDebounce } from '../../hooks';
+import type { Order } from '../../services/api/types';
+import { useAssignOrderDelivery, useCancelOrder, useOrders } from '../../services/queries/orders';
+import { notify } from '../../utils/notifications';
 import { AssignDriverModal } from './components/AssignDriverModal';
-import { OrderDetailsModal } from './components/OrderDetailsModal'; // <--- IMPORTAR
-import {
-  assignDriverToOrder,
-  cancelOrder,
-  Order,
-} from '../../services/api/orders';
-import Swal from 'sweetalert2';
-import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
+import { CancelOrderModal } from './components/CancelOrderModal';
+import { OrdersFilters } from './components/OrdersFilters';
+import { EMPTY_FILTERS, type OrdersFilterValues } from './components/ordersFilterValues';
+import { OrdersTable } from './components/OrdersTable';
+
+// Ver el detalle de un pedido navega a su ficha (`/orders/:id`); acá sólo
+// quedan las acciones rápidas de la tabla (asignar y cancelar).
+type ModalState = { kind: 'closed' } | { kind: 'assign'; order: Order } | { kind: 'cancel'; order: Order };
 
 export const Orders = () => {
-  const queryClient = useQueryClient();
-
-  // Estados
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false); // <--- NUEVO ESTADO
-
-  // --- MUTATIONS (Igual que antes) ---
-  const assignMutation = useMutation({
-    mutationFn: ({
-      orderId,
-      deliveryId,
-    }: {
-      orderId: string;
-      deliveryId: string;
-    }) => assignDriverToOrder(orderId, deliveryId),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['orders']);
-      setIsAssignModalOpen(false);
-      Swal.fire({
-        title: 'Asignado',
-        text: 'El pedido fue asignado manualmente.',
-        icon: 'success',
-        customClass: {
-          popup: 'rounded-2xl shadow-xl',
-          confirmButton: 'bg-indigo-600 text-white px-5 py-2 rounded-lg',
-        },
-        buttonsStyling: false,
-      });
-    },
-    onError: (err: any) =>
-      Swal.fire({
-        title: 'Error',
-        text: err.response?.data?.message || 'Error',
-        icon: 'error',
-        customClass: {
-          popup: 'rounded-2xl shadow-xl',
-          confirmButton: 'bg-indigo-600 text-white px-5 py-2 rounded-lg',
-        },
-        buttonsStyling: false,
-      }),
+  const navigate = useNavigate();
+  const [filters, setFilters] = useState<OrdersFilterValues>(EMPTY_FILTERS);
+  const debouncedSearch = useDebounce(filters.search.trim());
+  const [pagination, setPagination] = useState<GridPaginationModel>({
+    page: 0,
+    pageSize: 10,
   });
+  const [modal, setModal] = useState<ModalState>({ kind: 'closed' });
 
-  const cancelMutation = useMutation({
-    mutationFn: ({ orderId, reason }: { orderId: string; reason: string }) =>
-      cancelOrder(orderId, reason),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['orders']);
-      Swal.fire({
-        title: 'Cancelado',
-        text: 'El pedido ha sido cancelado.',
-        icon: 'success',
-        customClass: {
-          popup: 'rounded-2xl shadow-xl',
-          confirmButton: 'bg-indigo-600 text-white px-5 py-2 rounded-lg',
-        },
-        buttonsStyling: false,
-      });
-    },
+  const { data, isFetching } = useOrders(pagination, {
+    search: debouncedSearch,
+    status: filters.status || undefined,
+    from: filters.from,
+    to: filters.to,
   });
+  const assignDelivery = useAssignOrderDelivery();
+  const cancelOrderMutation = useCancelOrder();
 
-  // --- HANDLERS ---
-
-  const handleOpenAssign = (order: Order) => {
-    setSelectedOrder(order);
-    setIsAssignModalOpen(true);
+  const handleFilters = (values: OrdersFilterValues) => {
+    setFilters(values);
+    setPagination((p) => ({ ...p, page: 0 }));
   };
 
-  // NUEVO: Ver Detalles
-  const handleViewDetails = (order: Order) => {
-    setSelectedOrder(order);
-    setIsDetailsModalOpen(true);
-  };
+  const closeModal = () => setModal({ kind: 'closed' });
 
-  const handleCancel = async (order: Order) => {
-    const id = order.order_id || order.id;
-    const { value: reason } = await Swal.fire({
-      title: '¿Cancelar Pedido?',
-      input: 'text',
-      inputPlaceholder: 'Motivo...',
-      showCancelButton: true,
-      confirmButtonText: 'Sí, cancelar',
-      cancelButtonText: 'Cerrar',
-      confirmButtonColor: '#f43f5e',
-      customClass: {
-        popup: 'rounded-2xl shadow-xl',
-        confirmButton: 'bg-rose-500 text-white px-5 py-3 rounded-xl font-bold',
-        cancelButton: 'bg-slate-200 text-slate-600 px-5 py-3 rounded-xl font-bold',
-        input: 'rounded-xl border-slate-200 focus:ring-indigo-500 focus:border-indigo-500',
+  const handleAssign = (deliveryId: string) => {
+    if (modal.kind !== 'assign') return;
+    assignDelivery.mutate(
+      { id: modal.order.order_id, deliveryId },
+      {
+        onSuccess: () => {
+          notify.success('Pedido asignado');
+          closeModal();
+        },
+        onError: notify.error,
       },
-      buttonsStyling: false,
-    });
-
-
-    if (reason) cancelMutation.mutate({ orderId: id!, reason });
+    );
   };
 
-  const onConfirmAssignment = (deliveryId: string) => {
-    if (selectedOrder) {
-      const id = selectedOrder.order_id || selectedOrder.id;
-      assignMutation.mutate({ orderId: id!, deliveryId });
-    }
+  const handleCancel = (reason: string) => {
+    if (modal.kind !== 'cancel') return;
+    cancelOrderMutation.mutate(
+      { id: modal.order.order_id, body: { reason: reason || undefined } },
+      {
+        onSuccess: () => {
+          notify.success('Pedido cancelado');
+          closeModal();
+        },
+        onError: notify.error,
+      },
+    );
   };
 
   return (
-    <div className="p-4 md:p-8 bg-slate-50 min-h-screen">
-      <div className="max-w-[1600px] mx-auto">
-        <header className="mb-8">
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3">
-            <ReceiptLongIcon fontSize="large" className="text-slate-400" />{' '}
-            Pedidos en Curso
-          </h1>
-          <p className="text-slate-500 mt-1 ml-11">
-            Monitoreo en tiempo real. Asignación automática activa.
+    <div className="mx-auto max-w-7xl p-4 md:p-8">
+      <PageHeader
+        title="Pedidos"
+        description="Pedidos en curso y su historial. La asignación de chofer es automática; acá se puede forzar o cancelar."
+      />
+
+      <Card>
+        <div className="flex flex-col gap-3 border-b border-outline p-4 xl:flex-row xl:items-end xl:justify-between">
+          <OrdersFilters values={filters} onChange={handleFilters} />
+          <p className="shrink-0 text-sm text-muted xl:pb-2.5" aria-live="polite">
+            {data ? `${data.total} ${data.total === 1 ? 'pedido' : 'pedidos'}` : ''}
           </p>
-        </header>
-
-        <section className="bg-white rounded-2xl shadow-sm border border-slate-200">
-          <OrdersTable
-            onAssign={handleOpenAssign}
-            onCancel={handleCancel}
-            onView={handleViewDetails} // <--- Pasamos la función
-          />
-        </section>
-
-        {/* Modal de Asignación */}
-        <AssignDriverModal
-          isOpen={isAssignModalOpen}
-          onClose={() => setIsAssignModalOpen(false)}
-          onConfirm={onConfirmAssignment}
-          isAssigning={assignMutation.isLoading}
+        </div>
+        <OrdersTable
+          rows={data?.orders ?? []}
+          total={data?.total ?? 0}
+          loading={isFetching}
+          pagination={pagination}
+          onPaginationChange={setPagination}
+          onView={(order) => navigate(`/orders/${order.order_id}`)}
+          onAssign={(order) => setModal({ kind: 'assign', order })}
+          onCancel={(order) => setModal({ kind: 'cancel', order })}
         />
+      </Card>
 
-        {/* Modal de Detalles (NUEVO) */}
-        <OrderDetailsModal
-          isOpen={isDetailsModalOpen}
-          onClose={() => setIsDetailsModalOpen(false)}
-          order={selectedOrder}
-        />
-      </div>
+      <AssignDriverModal
+        open={modal.kind === 'assign'}
+        onClose={closeModal}
+        onConfirm={handleAssign}
+        assigning={assignDelivery.isPending}
+      />
+      <CancelOrderModal
+        open={modal.kind === 'cancel'}
+        onClose={closeModal}
+        onConfirm={handleCancel}
+        cancelling={cancelOrderMutation.isPending}
+      />
     </div>
   );
 };
