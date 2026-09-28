@@ -1,0 +1,28 @@
+name: Checks
+
+# Corre el mismo gate que se usa en local (npm run verify) en cada PR a develop o main
+# y en cada push a develop. Si no pasa, no se integra.
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop]
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      # El build y los tests validan que exista; en CI no se llama a ninguna API.
+      VITE_APP_API_URL: http://localhost:3000/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run verify
