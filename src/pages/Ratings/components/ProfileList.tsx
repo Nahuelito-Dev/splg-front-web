@@ -33,11 +33,11 @@ export const ProfileList = ({ icon, items, loading, selectedId, onSelect }: Prop
               type="button"
               onClick={() => onSelect(item)}
               aria-current={selected || undefined}
-              className={`flex w-full items-center gap-3 px-4 py-3 text-left transition-colors ${selected ? 'bg-primary-soft' : 'hover:bg-tinta-50'}`}
+              className={`flex w-full items-center gap-3 px-4 py-3 text-left transition-colors ${selected ? 'bg-primary-soft' : 'hover:bg-surface-hover'}`}
             >
               <span
                 aria-hidden="true"
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-tinta-100 text-muted"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-muted text-muted"
               >
                 <Icon className="!h-5 !w-5" />
               </span>

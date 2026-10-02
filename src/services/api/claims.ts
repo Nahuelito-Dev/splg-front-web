@@ -1,5 +1,5 @@
 import { http } from './httpClient';
-import type { Claim, CreateClaimBody, ResolveClaimBody } from './types';
+import type { Claim, CreateClaimBody, ReopenClaimBody, ResolveClaimBody } from './types';
 
 /** GET /claims: todos los reclamos, acotados a la distribuidora del token. */
 export const listClaims = async (): Promise<Claim[]> => {
@@ -16,8 +16,20 @@ export const createClaim = async (body: CreateClaimBody): Promise<Claim> => {
   return data;
 };
 
-/** PATCH /claims/:id/resolve: nota de resolución y nuevo estado. */
+/** PATCH /claims/:id/resolve: nota de resolución y nuevo estado (sólo resolved/rejected desde acá: ver `ClaimDetailModal`). */
 export const resolveClaim = async (id: string, body: ResolveClaimBody): Promise<Claim> => {
   const { data } = await http.patch<Claim>(`/claims/${id}/resolve`, body);
+  return data;
+};
+
+/** PATCH /claims/:id/take: PENDING → IN_PROCESS, sin nota (sólo marca que un admin ya lo está mirando). */
+export const takeClaim = async (id: string): Promise<Claim> => {
+  const { data } = await http.patch<Claim>(`/claims/${id}/take`, {});
+  return data;
+};
+
+/** PATCH /claims/:id/reopen: RESOLVED/REJECTED → IN_PROCESS, con motivo obligatorio. */
+export const reopenClaim = async (id: string, body: ReopenClaimBody): Promise<Claim> => {
+  const { data } = await http.patch<Claim>(`/claims/${id}/reopen`, body);
   return data;
 };

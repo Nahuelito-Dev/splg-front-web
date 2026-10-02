@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { SelectOption } from '../../common/components/ui';
+import { normalizePatent } from '../../utils/patent';
 
 /** Reglas del vehículo. Las comparte el alta desde la flota global y desde la ficha de un chofer. */
 export const CAR_TYPE_OPTIONS: SelectOption[] = [
@@ -21,7 +22,13 @@ export const carSchema = z.object({
     .string()
     .trim()
     .min(1, 'Ingresá la patente')
-    .transform((value) => value.toUpperCase()),
+    .transform(normalizePatent)
+    .pipe(
+      z
+        .string()
+        .min(1, 'Ingresá la patente')
+        .regex(/^[A-Z0-9]{4,20}$/, 'La patente tiene entre 4 y 20 letras o números'),
+    ),
   car_brand: z.string().trim().min(1, 'Ingresá la marca'),
   car_model: z.string().trim().min(1, 'Ingresá el modelo'),
   car_color: z.string().trim().optional(),

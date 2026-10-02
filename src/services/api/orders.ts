@@ -3,6 +3,7 @@ import type {
   CancelOrderBody,
   CodigoDeEntrega,
   ConfirmDeliveryBody,
+  CreateOrderBody,
   Incident,
   Message,
   Order,
@@ -92,5 +93,33 @@ export const listOrderIncidents = async (orderId: string): Promise<Incident[]> =
 /** GET /orders/customer/:userId — el historial de un cliente (por su user_id). Lo usa Clientes. */
 export const listCustomerOrders = async (userId: string, params: PageParams): Promise<PaginatedOrders> => {
   const { data } = await http.get<PaginatedOrders>(`/orders/customer/${userId}`, { params: toQuery(params) });
+  return data;
+};
+
+/**
+ * GET /orders/available (CU-080): el pool de pedidos `pending` sin chofer
+ * asignado, acotado a la distribuidora activa. Es lo mismo que ve la app del
+ * chofer; el panel lo muestra en Seguimiento para poder asignar a mano.
+ */
+export const listAvailableOrders = async (params: PageParams, search = ''): Promise<PaginatedOrders> => {
+  const { data } = await http.get<PaginatedOrders>('/orders/available', {
+    params: { ...toQuery(params), term: search || undefined },
+  });
+  return data;
+};
+
+/**
+ * POST /orders (CU-072): alta telefónica. El panel la usa cuando el cliente
+ * llama en vez de pedir desde la app; el actor sigue siendo el `customerId`
+ * (su `user_id`), no el admin que lo tipea.
+ */
+export const createOrder = async (body: CreateOrderBody): Promise<Order> => {
+  const { data } = await http.post<Order>('/orders', body);
+  return data;
+};
+
+/** GET /orders/delivery/:deliveryId — el historial de pedidos de un chofer (CU-081). Lo usa Choferes. */
+export const listDeliveryOrders = async (deliveryId: string, params: PageParams): Promise<PaginatedOrders> => {
+  const { data } = await http.get<PaginatedOrders>(`/orders/delivery/${deliveryId}`, { params: toQuery(params) });
   return data;
 };

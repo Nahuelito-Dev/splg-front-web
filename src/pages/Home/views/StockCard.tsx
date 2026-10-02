@@ -30,7 +30,7 @@ export const StockCard = () => {
         {units !== null && <span className="font-mono text-sm font-semibold text-ink">{formatNumber(units)} u.</span>}
       </div>
       {isLoading ? (
-        <div className="m-[18px] h-40 animate-pulse rounded-lg bg-tinta-50" />
+        <div className="m-[18px] h-40 animate-pulse rounded-lg bg-surface-hover" />
       ) : products.length === 0 ? (
         <EmptyState title="Sin productos" description="Cargá el catálogo en Garrafas." />
       ) : (
@@ -52,7 +52,7 @@ export const StockCard = () => {
                 >
                   {product.stock === 0 ? 'Sin stock' : `${formatNumber(product.stock)} u.`}
                 </b>
-                <span className="mt-1 block h-[5px] w-20 overflow-hidden rounded-full bg-tinta-100">
+                <span className="mt-1 block h-[5px] w-20 overflow-hidden rounded-full bg-surface-muted">
                   <span
                     className="block h-full rounded-full bg-gradient-to-r from-llama-300 to-llama-500"
                     style={{ width: `${(product.stock / max) * 100}%` }}

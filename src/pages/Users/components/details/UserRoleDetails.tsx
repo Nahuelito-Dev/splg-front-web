@@ -16,22 +16,30 @@ const Stat = ({ label, children }: { label: string; children: ReactNode }) => (
 );
 
 const DeliveryDetails = ({ user }: { user: User }) => {
+  const navigate = useNavigate();
   const delivery = user.delivery;
   if (!delivery) return null;
   return (
-    <div className="grid grid-cols-2 gap-4">
-      <Stat label="Calificación">
-        <span className="inline-flex items-center gap-1">
-          {delivery.calification?.toFixed(1) ?? '—'} <StarIcon className="!h-4 !w-4 text-warn" />
-        </span>
-      </Stat>
-      <Stat label="Saldo en cuenta">{formatCurrency(delivery.balance)}</Stat>
-      <Stat label="Validado">{delivery.validated ? 'Sí' : 'Pendiente'}</Stat>
-      <Stat label="Disponibilidad">
-        <Badge
-          label={delivery.isActive ? { text: 'Conectado', tone: 'success' } : { text: 'Desconectado', tone: 'neutral' }}
-        />
-      </Stat>
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <Stat label="Calificación">
+          <span className="inline-flex items-center gap-1">
+            {delivery.calification?.toFixed(1) ?? '—'} <StarIcon className="!h-4 !w-4 text-warn" />
+          </span>
+        </Stat>
+        <Stat label="Saldo en cuenta">{formatCurrency(delivery.balance)}</Stat>
+        <Stat label="Validado">{delivery.validated ? 'Sí' : 'Pendiente'}</Stat>
+        <Stat label="Disponibilidad">
+          <Badge
+            label={
+              delivery.isActive ? { text: 'Conectado', tone: 'success' } : { text: 'Desconectado', tone: 'neutral' }
+            }
+          />
+        </Stat>
+      </div>
+      <Button variant="secondary" size="sm" onClick={() => navigate(`/deliveries/details/${delivery.delivery_id}`)}>
+        Ver ficha de chofer
+      </Button>
     </div>
   );
 };

@@ -24,7 +24,7 @@ const UserPicker = ({ selected, onSelect }: { selected: User | null; onSelect: (
 
   if (selected) {
     return (
-      <div className="flex items-center justify-between gap-3 rounded-xl border border-outline bg-tinta-50 p-3">
+      <div className="flex items-center justify-between gap-3 rounded-xl border border-outline bg-surface-hover p-3">
         <IdentityCell
           title={selected.full_name ?? 'Sin nombre'}
           subtitle={selected.email ?? selected.phone_number ?? selected.user_id}
@@ -52,7 +52,7 @@ const UserPicker = ({ selected, onSelect }: { selected: User | null; onSelect: (
               key={user.user_id}
               type="button"
               onClick={() => onSelect(user)}
-              className="flex w-full items-center rounded-lg px-2 py-1.5 text-left hover:bg-tinta-50"
+              className="flex w-full items-center rounded-lg px-2 py-1.5 text-left hover:bg-surface-hover"
             >
               <IdentityCell
                 title={user.full_name ?? 'Sin nombre'}
@@ -130,7 +130,7 @@ export const NotificationTestCard = () => {
               className={`truncate rounded-full border px-2.5 py-1 font-mono text-[11px] ${
                 currentToken === token
                   ? 'border-primary bg-primary-soft text-primary-strong'
-                  : 'border-outline bg-surface text-muted hover:bg-tinta-50'
+                  : 'border-outline bg-surface text-muted hover:bg-surface-hover'
               }`}
               title={token}
             >
@@ -157,7 +157,7 @@ export const NotificationTestCard = () => {
       </form>
 
       {result && (
-        <div className="space-y-1 rounded-xl border border-outline bg-tinta-50 p-3.5">
+        <div className="space-y-1 rounded-xl border border-outline bg-surface-hover p-3.5">
           <Badge label={resultLabel(result)} />
           {result.messageId && <p className="text-xs text-muted">Id del mensaje en FCM: {result.messageId}</p>}
           {result.error && <p className="text-xs text-muted">{result.error}</p>}

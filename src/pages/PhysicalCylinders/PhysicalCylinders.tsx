@@ -1,26 +1,28 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AddIcon from '@mui/icons-material/Add';
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import { Button, Card, PageHeader } from '../../common/components/ui';
-import { usePermissions } from '../../hooks';
+import { FROM_LIST_STATE, usePermissions, useUrlParam } from '../../hooks';
 import type { Cylinder } from '../../services/api/types';
 import { useCylinders } from '../../services/queries/physicalCylinders';
 import { AssignCylindersModal } from './components/AssignCylindersModal';
 import { CreateCylinderModal } from './components/CreateCylinderModal';
-import { CylinderDetailModal } from './components/CylinderDetailModal';
 import { PhysicalCylindersTable } from './components/PhysicalCylindersTable';
+import { ALL_STATES } from './cylinderTransitions';
 import { StateFilter } from './components/StateFilter';
 import { TransitionModal } from './components/TransitionModal';
 
 type StateOrAll = Cylinder['state'] | 'all';
 
 export const PhysicalCylinders = () => {
-  const [stateFilter, setStateFilter] = useState<StateOrAll>('all');
+  const [stateParam, setStateFilter] = useUrlParam('state', 'all');
+  const stateFilter: StateOrAll = ALL_STATES.find((state) => state === stateParam) ?? 'all';
   const [createOpen, setCreateOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
   const [transitionTarget, setTransitionTarget] = useState<Cylinder | null>(null);
-  const [historyTarget, setHistoryTarget] = useState<Cylinder | null>(null);
 
+  const navigate = useNavigate();
   const { canWrite, writeHint } = usePermissions();
   const { data: cylinders, isPending } = useCylinders(stateFilter === 'all' ? undefined : stateFilter);
 
@@ -56,7 +58,7 @@ export const PhysicalCylinders = () => {
           rows={cylinders ?? []}
           loading={isPending}
           onTransition={canWrite ? setTransitionTarget : undefined}
-          onHistory={setHistoryTarget}
+          onView={(cylinder) => navigate(`/physical-cylinders/${cylinder.cylinder_id}`, { state: FROM_LIST_STATE })}
         />
       </Card>
 
@@ -66,11 +68,6 @@ export const PhysicalCylinders = () => {
         open={Boolean(transitionTarget)}
         onClose={() => setTransitionTarget(null)}
         cylinder={transitionTarget}
-      />
-      <CylinderDetailModal
-        open={Boolean(historyTarget)}
-        onClose={() => setHistoryTarget(null)}
-        cylinder={historyTarget}
       />
     </div>
   );

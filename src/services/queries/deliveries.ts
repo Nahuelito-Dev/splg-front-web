@@ -3,24 +3,36 @@ import {
   createDelivery,
   deleteDelivery,
   getDelivery,
+  getDeliveryByUserId,
+  invalidateDelivery,
   listActiveDeliveries,
   listDeliveries,
   setDeliveryEnabled,
+  toggleDeliveryAvailability,
+  updateDeliveryBalance,
+  validateDelivery,
+  type DeliveryStatusFilter,
   type NewDeliveryAccount,
-  updateDeliveryStatus,
 } from '../api/deliveries';
 import { listDistributors } from '../api/distributors';
 import type { PageParams } from '../api/httpClient';
+import { listDeliveryOrders } from '../api/orders';
 import { updateUserAccount } from '../api/users';
-import type { UpdateDeliveryBody, UpdateUserBody } from '../api/types';
+import type { UpdateUserBody } from '../api/types';
 import { queryKeys } from './queryKeys';
 
 const keys = queryKeys.deliveries;
 
-export const useDeliveries = (params: PageParams, search: string, onlyActive: boolean) =>
+/** Los grupos del listado: los cuatro administrativos de la API más "todos" y "en línea" (endpoint dedicado). */
+export type DeliveriesStatusTab = 'all' | 'online' | DeliveryStatusFilter;
+
+export const useDeliveries = (params: PageParams, search: string, statusTab: DeliveriesStatusTab) =>
   useQuery({
-    queryKey: keys.list({ ...params, search, onlyActive }),
-    queryFn: () => (onlyActive ? listActiveDeliveries(params, search) : listDeliveries(params, search)),
+    queryKey: keys.list({ ...params, search, statusTab }),
+    queryFn: () =>
+      statusTab === 'online'
+        ? listActiveDeliveries(params, search)
+        : listDeliveries(params, search, statusTab === 'all' ? undefined : statusTab),
     placeholderData: keepPreviousData,
   });
 
@@ -51,6 +63,15 @@ export const useDistributorOptions = (enabled: boolean) =>
     enabled,
   });
 
+/** El historial de pedidos de un chofer (CU-081). */
+export const useDeliveryOrders = (deliveryId: string | undefined, params: PageParams) =>
+  useQuery({
+    queryKey: [...queryKeys.orders.lists(), { delivery: deliveryId, ...params }],
+    queryFn: () => listDeliveryOrders(deliveryId ?? '', params),
+    enabled: Boolean(deliveryId),
+    placeholderData: keepPreviousData,
+  });
+
 export const useCreateDelivery = () => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -69,11 +90,20 @@ export const useUpdateDeliveryAccount = () => {
   });
 };
 
-/** Lo operativo del chofer: validado y activo (PATCH /delivery/:id). */
-export const useUpdateDeliveryStatus = () => {
+/** CU-032: marca al chofer como validado por la distribuidora. */
+export const useValidateDelivery = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, changes }: { id: string; changes: UpdateDeliveryBody }) => updateDeliveryStatus(id, changes),
+    mutationFn: (id: string) => validateDelivery(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
+  });
+};
+
+/** CU-032: le retira la marca de validado. */
+export const useInvalidateDelivery = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => invalidateDelivery(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
   });
 };
@@ -86,6 +116,25 @@ export const useSetDeliveryEnabled = () => {
   });
 };
 
+/** Fuerza la disponibilidad del chofer (en línea/desconectado) desde el panel. */
+export const useToggleDeliveryAvailability = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId, available }: { userId: string; available: boolean }) =>
+      toggleDeliveryAvailability(userId, available),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
+  });
+};
+
+/** CU-049: ajuste manual del saldo (positivo acredita, negativo descuenta). */
+export const useUpdateDeliveryBalance = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, amount }: { id: string; amount: number }) => updateDeliveryBalance(id, amount),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
+  });
+};
+
 export const useDeleteDelivery = () => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -93,3 +142,10 @@ export const useDeleteDelivery = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
   });
 };
+
+/**
+ * CU-110: resuelve el chofer a partir de un `user_id` (búsqueda rápida del
+ * listado). Se dispara a demanda, no como una query que corre sola.
+ */
+export const useFindDeliveryByUserId = () =>
+  useMutation({ mutationFn: (userId: string) => getDeliveryByUserId(userId) });

@@ -1,18 +1,19 @@
 import { useState } from 'react';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import { Button, Card, ErrorState, LoadingState, PageHeader } from '../../common/components/ui';
+import { Button, Card, EmptyState, ErrorState, LoadingState, PageHeader } from '../../common/components/ui';
 import { usePermissions } from '../../hooks';
 import type { CoverageZone } from '../../services/api/types';
 import { useCoverageZones, useDeleteCoverageZone, useUpdateCoverageZone } from '../../services/queries/coverageZones';
 import { confirm, notify } from '../../utils/notifications';
 import { CoverageCheckPanel } from './components/CoverageCheckPanel';
+import { ZoneDetailPanel } from './components/ZoneDetailPanel';
 import { ZoneFormPanel } from './components/ZoneFormPanel';
 import { ZoneList } from './components/ZoneList';
 import { ZoneMap, type MapMode } from './components/ZoneMap';
 
 export const CoverageZones = () => {
-  const { canWrite, writeHint } = usePermissions();
-  const { data, isPending, isError, error, refetch } = useCoverageZones();
+  const { canWrite, writeHint, needsDistributor } = usePermissions();
+  const { data, isPending, isError, error, refetch } = useCoverageZones({ enabled: !needsDistributor });
   const zones = data?.rows ?? [];
   const updateZone = useUpdateCoverageZone();
   const deleteZone = useDeleteCoverageZone();
@@ -67,14 +68,34 @@ export const CoverageZones = () => {
       danger: true,
     });
     if (!confirmed) return;
+    // El detalle se cierra antes de borrar: si no, la recarga que sigue al borrado lo pediría de nuevo y mostraría un 404.
+    const wasSelected = zone.coverage_zone_id === selectedZoneId;
+    if (wasSelected) resetForm();
     deleteZone.mutate(zone.coverage_zone_id, {
-      onSuccess: () => {
-        notify.success('Zona eliminada');
-        if (zone.coverage_zone_id === selectedZoneId) resetForm();
+      onSuccess: () => notify.success('Zona eliminada'),
+      onError: (error) => {
+        if (wasSelected) setSelectedZoneId(zone.coverage_zone_id);
+        notify.error(error);
       },
-      onError: notify.error,
     });
   };
+
+  if (needsDistributor) {
+    return (
+      <div className="mx-auto max-w-[1600px] p-4 md:p-8">
+        <PageHeader
+          title="Zonas de cobertura"
+          description="Las áreas donde la distribuidora entrega, con su recargo."
+        />
+        <Card className="p-6">
+          <EmptyState
+            title="Elegí una distribuidora"
+            description="Como administrador general, elegí una con «Ver como» para ver sus zonas."
+          />
+        </Card>
+      </div>
+    );
+  }
 
   if (isError) {
     return (
@@ -150,6 +171,16 @@ export const CoverageZones = () => {
                 onCancel={resetForm}
               />
             </Card>
+          )}
+
+          {mode === 'idle' && selectedZoneId && (
+            <ZoneDetailPanel
+              key={selectedZoneId}
+              zoneId={selectedZoneId}
+              onClose={() => setSelectedZoneId(null)}
+              onEdit={canWrite ? startEdit : undefined}
+              onDelete={canWrite ? (zone) => void handleDelete(zone) : undefined}
+            />
           )}
 
           <Card className="p-5">

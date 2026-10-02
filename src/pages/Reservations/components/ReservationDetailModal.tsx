@@ -62,7 +62,7 @@ export const ReservationDetailModal = ({ reservation, onClose, onConfirmDeposit,
               </li>
             ))}
           </ul>
-          <dl className="grid grid-cols-3 gap-2 border-t border-outline bg-tinta-25 px-4 py-3 text-[13px]">
+          <dl className="grid grid-cols-3 gap-2 border-t border-outline bg-surface-sunken px-4 py-3 text-[13px]">
             <div>
               <dt className="text-xs text-muted">Total</dt>
               <dd className="font-mono font-semibold text-ink">{formatCurrency(reservation.total)}</dd>

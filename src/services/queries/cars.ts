@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createCar, deleteCar, listCars, listCarsByUser, updateCar } from '../api/cars';
+import { createCar, deleteCar, getCar, getCarByPatent, listCars, listCarsByUser, updateCar } from '../api/cars';
 import type { CreateCarBody, UpdateCarBody } from '../api/types';
 import { queryKeys } from './queryKeys';
 
@@ -18,6 +18,23 @@ export const useCarsByUser = (userId: string | undefined) =>
     queryKey: keys.list({ userId }),
     queryFn: () => listCarsByUser(userId ?? ''),
     enabled: Boolean(userId),
+  });
+
+/** La ficha de un vehículo puntual: la usa su página de detalle. */
+export const useCar = (id: string | undefined) =>
+  useQuery({
+    queryKey: keys.detail(id ?? ''),
+    queryFn: () => getCar(id ?? ''),
+    enabled: Boolean(id),
+  });
+
+/** El vehículo con esa patente (`null` si no hay ninguno). La usa el buscador de la flota. */
+export const useCarByPatent = (patent: string | undefined) =>
+  useQuery({
+    queryKey: keys.detail(`patent:${patent}`),
+    queryFn: () => getCarByPatent(patent ?? ''),
+    enabled: Boolean(patent),
+    retry: false,
   });
 
 export const useCreateCar = () => {

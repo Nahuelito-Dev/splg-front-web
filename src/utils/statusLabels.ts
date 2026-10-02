@@ -4,6 +4,9 @@ import type {
   Cylinder,
   Delivery,
   Distributor,
+  FleetExpirationEntry,
+  FleetPlan,
+  FleetTask,
   Incident,
   Order,
   OrderRecord,
@@ -32,6 +35,16 @@ export const ORDER_STATUS: LabelMap<Order['status'] | OrderRecord['status']> = {
   delivered: { text: 'Entregado', tone: 'success' },
   cancelled: { text: 'Cancelado', tone: 'danger' },
 };
+
+/** Los seis estados de un pedido, en el orden del flujo. */
+export const ORDER_FLOW: Order['status'][] = [
+  'reserved',
+  'pending',
+  'accepted',
+  'out_for_delivery',
+  'delivered',
+  'cancelled',
+];
 
 export const PAYMENT_TYPE: LabelMap<Order['payment_method']> = {
   cash: { text: 'Efectivo', tone: 'neutral' },
@@ -81,6 +94,42 @@ export const AUDIT_RESULT: LabelMap<AsientoDeAuditoria['result']> = {
   failure: { text: 'Fallida', tone: 'danger' },
 };
 
+/** Estado de una tarea de la flota (plan de seguro/VTV/licencia/service contra un vehículo o chofer). */
+export const FLEET_TASK_STATUS: LabelMap<FleetTask['status']> = {
+  forecast: { text: 'Prevista', tone: 'neutral' },
+  scheduled: { text: 'Programada', tone: 'info' },
+  in_progress: { text: 'En proceso', tone: 'info' },
+  done: { text: 'Hecha', tone: 'success' },
+  overdue: { text: 'Vencida', tone: 'danger' },
+  cancelled: { text: 'Cancelada', tone: 'neutral' },
+};
+
+/** Vigencia de una tarea según su vencimiento (null si no tiene fecha límite o ya está cerrada/cancelada). */
+export const FLEET_EXPIRATION_STATUS: LabelMap<NonNullable<FleetTask['expirationStatus']>> = {
+  current: { text: 'Vigente', tone: 'success' },
+  due_soon: { text: 'Por vencer', tone: 'warn' },
+  expired: { text: 'Vencido', tone: 'danger' },
+};
+
+/** Si la falta de esta tarea inhabilita o no al vehículo/chofer (CU-136/137/138). */
+export const FLEET_TASK_CRITICALITY: LabelMap<FleetExpirationEntry['criticality']> = {
+  blocking: { text: 'Bloqueante', tone: 'danger' },
+  non_blocking: { text: 'No bloqueante', tone: 'neutral' },
+};
+
+/** A qué aplica un plan de mantenimiento/habilitación. */
+export const FLEET_PLAN_SUBJECT: LabelMap<FleetPlan['subject']> = {
+  vehicle: { text: 'Vehículo', tone: 'info' },
+  driver: { text: 'Chofer', tone: 'accent' },
+};
+
+/** Qué dispara el vencimiento de un plan. */
+export const FLEET_PLAN_TRIGGER: LabelMap<FleetPlan['trigger']> = {
+  by_km: { text: 'Por kilometraje', tone: 'neutral' },
+  by_time: { text: 'Por tiempo', tone: 'neutral' },
+  by_fixed_date: { text: 'Fecha fija', tone: 'neutral' },
+};
+
 /** Estado de una dependencia en /health y /health/ready (Terminus: 'up' | 'down'). */
 export const HEALTH_STATUS: LabelMap<'up' | 'down'> = {
   up: { text: 'Operativo', tone: 'success' },
@@ -102,3 +151,7 @@ export const driverStatus = (driver: Pick<Delivery, 'validated' | 'isEnabled' | 
   if (!driver.isAvailable) return { text: 'Desconectado', tone: 'neutral' };
   return { text: 'En línea', tone: 'success' };
 };
+
+/** Si una fila de `vehicle-history`/`assignments` es la asignación abierta o ya se liberó. */
+export const vehicleAssignmentStatus = (releasedAt: string | null): Label =>
+  releasedAt ? { text: 'Liberado', tone: 'neutral' } : { text: 'En uso', tone: 'success' };

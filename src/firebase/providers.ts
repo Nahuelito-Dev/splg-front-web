@@ -1,5 +1,5 @@
 import { FirebaseError } from 'firebase/app';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { EmailAuthProvider, reauthenticateWithCredential, signInWithEmailAndPassword } from 'firebase/auth';
 import { FirebaseAuth } from './config';
 
 export interface ICredentials {
@@ -37,4 +37,25 @@ export const loginWithEmailAndPassword = async ({ email, password }: ICredential
 
 export const logOutFirebase = async (): Promise<void> => {
   await FirebaseAuth.signOut();
+};
+
+/** ID token vigente de la sesión (`force` lo renueva contra Firebase). Null si no hay sesión. */
+export const getCurrentIdToken = async (force = false): Promise<string | null> => {
+  const user = FirebaseAuth.currentUser;
+  return user ? user.getIdToken(force) : null;
+};
+
+/** Vuelve a validar la contraseña actual para refrescar la sesión. Devuelve el mensaje de error o null si salió bien. */
+export const reauthenticateWithPassword = async (password: string): Promise<string | null> => {
+  const user = FirebaseAuth.currentUser;
+  if (!user?.email) return 'No hay una sesión activa';
+  try {
+    await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, password));
+    return null;
+  } catch (error) {
+    if (error instanceof FirebaseError && ['auth/wrong-password', 'auth/invalid-credential'].includes(error.code)) {
+      return 'La contraseña actual no es correcta';
+    }
+    return 'No se pudo verificar tu contraseña';
+  }
 };

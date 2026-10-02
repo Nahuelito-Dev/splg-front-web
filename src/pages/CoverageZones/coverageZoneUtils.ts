@@ -38,3 +38,12 @@ export const hasEnoughVertices = (ring: number[][] | null | undefined): boolean 
 
 /** El `YYYY-MM-DD` de un `<input type="date">` a partir de un date-time ISO de la API (o vacío sin fecha). */
 export const toDateInputValue = (iso: string | null): string => (iso ? iso.slice(0, 10) : '');
+
+/** Cantidad de vértices de un anillo GeoJSON: el último punto repite al primero para cerrarlo y no cuenta. */
+export const countVertices = (ring: number[][] | undefined): number => {
+  if (!ring || ring.length === 0) return 0;
+  const first = ring[0];
+  const last = ring[ring.length - 1];
+  const closed = ring.length > 1 && first[0] === last[0] && first[1] === last[1];
+  return closed ? ring.length - 1 : ring.length;
+};

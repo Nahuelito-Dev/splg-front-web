@@ -34,10 +34,15 @@ export const formatDateTime = (value: DateInput): string => {
   return date ? dateTime.format(date) : '—';
 };
 
-/** Una fecha YYYY-MM-DD (sin zona horaria) tal cual, sin correrse un día. */
+/**
+ * Una fecha de calendario (sin zona horaria) tal cual, sin correrse un día.
+ * Acepta `YYYY-MM-DD` o un date-time ISO completo (`2026-12-01T00:00:00.000Z`,
+ * como lo devuelve la API para los vencimientos de la flota): sólo mira los
+ * primeros 10 caracteres, nunca los pasa por `Date` con zona horaria.
+ */
 export const formatDay = (value: string | null | undefined): string => {
   if (!value) return '—';
-  const [y, m, d] = value.split('-').map(Number);
+  const [y, m, d] = value.slice(0, 10).split('-').map(Number);
   return y && m && d ? dateOnly.format(new Date(y, m - 1, d)) : value;
 };
 

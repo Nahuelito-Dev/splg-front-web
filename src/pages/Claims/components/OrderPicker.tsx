@@ -26,7 +26,7 @@ export const OrderPicker = ({ selected, onSelect }: Props) => {
 
   if (selected) {
     return (
-      <div className="flex items-center justify-between gap-3 rounded-xl border border-outline bg-tinta-50 p-3">
+      <div className="flex items-center justify-between gap-3 rounded-xl border border-outline bg-surface-hover p-3">
         <IdentityCell
           title={selected.customer?.full_name ?? 'Cliente sin nombre'}
           subtitle={`Pedido ${formatShortId(selected.order_id)} · ${formatCurrency(selected.total_amount)}`}
@@ -61,7 +61,7 @@ export const OrderPicker = ({ selected, onSelect }: Props) => {
               key={order.order_id}
               type="button"
               onClick={() => onSelect(order)}
-              className="flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-tinta-50"
+              className="flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-surface-hover"
             >
               <IdentityCell
                 title={order.customer?.full_name ?? 'Cliente sin nombre'}

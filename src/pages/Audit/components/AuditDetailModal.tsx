@@ -37,7 +37,7 @@ export const AuditDetailModal = ({ entry, onClose }: Props) => (
 
         <div>
           <p className="mb-1 text-xs font-semibold uppercase text-muted">Operación</p>
-          <p className="rounded-lg bg-tinta-50 px-3 py-2 font-mono text-sm text-ink">
+          <p className="rounded-lg bg-surface-hover px-3 py-2 font-mono text-sm text-ink">
             {entry.httpMethod} {entry.path}
           </p>
         </div>
@@ -51,7 +51,7 @@ export const AuditDetailModal = ({ entry, onClose }: Props) => (
 
         <div>
           <p className="mb-1 text-xs font-semibold uppercase text-muted">Cambios</p>
-          <pre className="max-h-64 overflow-auto rounded-lg bg-tinta-50 px-3 py-2 text-xs text-ink">
+          <pre className="max-h-64 overflow-auto rounded-lg bg-surface-hover px-3 py-2 text-xs text-ink">
             {entry.changes ? JSON.stringify(entry.changes, null, 2) : 'Sin datos'}
           </pre>
         </div>

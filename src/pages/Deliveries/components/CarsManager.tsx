@@ -56,11 +56,11 @@ export const CarsManager = ({ userId }: { userId: string }) => {
       ) : cars.length === 0 ? (
         <EmptyState title="Sin vehículos" description="Agregá uno para que este chofer pueda empezar a operar." />
       ) : (
-        <ul className="grid gap-3 sm:grid-cols-2">
+        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {cars.map((car) => (
             <li
               key={car.car_id}
-              className="flex items-center justify-between gap-3 rounded-xl border border-outline p-3"
+              className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-outline p-3"
             >
               <div className="flex min-w-0 items-center gap-3">
                 <span

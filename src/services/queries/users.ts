@@ -1,5 +1,13 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { blockUser, deleteUser, getUser, listUsers, updateUserAccount } from '../api/users';
+import {
+  blockUser,
+  deleteUser,
+  getUser,
+  getUserByEmail,
+  getUserByPhone,
+  listUsers,
+  updateUserAccount,
+} from '../api/users';
 import type { PageParams } from '../api/httpClient';
 import type { UpdateUserBody } from '../api/types';
 import { queryKeys } from './queryKeys';
@@ -46,3 +54,14 @@ export const useDeleteUser = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
   });
 };
+
+/** Búsqueda puntual por teléfono (soporte: ubicar una cuenta sin saber el nombre). Resuelve `null` si nadie lo tiene. */
+export const useFindUserByPhone = () => useMutation({ mutationFn: getUserByPhone });
+
+/** La cuenta del admin logueado, para "Mi cuenta". */
+export const useMyAccount = (email: string | null) =>
+  useQuery({
+    queryKey: [...keys.all, 'me', email],
+    queryFn: () => getUserByEmail(email ?? ''),
+    enabled: Boolean(email),
+  });

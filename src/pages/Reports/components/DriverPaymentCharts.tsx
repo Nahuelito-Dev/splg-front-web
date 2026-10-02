@@ -14,16 +14,18 @@ import {
 import { Card } from '../../../common/components/ui';
 import type { VentasPorChofer, VentasPorMedioDePago } from '../../../services/api/types';
 import brand from '../../../theme/brand.json';
+import { useChartPalette } from '../../../theme/useChartPalette';
 import { formatCurrency } from '../../../utils/format';
 import { PAYMENT_LABELS } from './paymentLabels';
 
-const CHART_COLORS = [
+/** Colores de la torta de pagos: con buen contraste contra la tarjeta, en los dos temas. */
+const chartColorsFor = (isDark: boolean) => [
   brand.llama['500'],
   brand.gas['500'],
-  brand.tinta['400'],
-  brand.status.info,
-  brand.status.success,
-  brand.status.warn,
+  isDark ? brand.dark.muted : brand.tinta['400'],
+  isDark ? brand.dark.status.info : brand.status.info,
+  isDark ? brand.dark.status.success : brand.status.success,
+  isDark ? brand.dark.status.warn : brand.status.warn,
 ];
 
 interface Props {
@@ -32,6 +34,15 @@ interface Props {
 }
 
 export const DriverPaymentCharts = ({ byDriver, byPayment }: Props) => {
+  const palette = useChartPalette();
+  const CHART_COLORS = chartColorsFor(palette.isDark);
+  const tooltipStyle = {
+    borderRadius: 10,
+    border: `1px solid ${palette.tooltipBorder}`,
+    backgroundColor: palette.tooltipBg,
+    color: palette.isDark ? brand.dark.ink : brand.tinta['900'],
+    fontSize: 12,
+  };
   const driverData = [...byDriver]
     .map((d) => ({ name: d.driverName ?? 'Sin nombre', sales: Number(d.totalSales) }))
     .sort((a, b) => b.sales - a.sales);
@@ -52,21 +63,24 @@ export const DriverPaymentCharts = ({ byDriver, byPayment }: Props) => {
           ) : (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={driverData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={brand.tinta['100']} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={palette.grid} />
                 <XAxis
                   dataKey="name"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: brand.tinta['400'], fontSize: 12 }}
+                  tick={{ fill: palette.axis, fontSize: 12 }}
                   dy={10}
                 />
                 <YAxis
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: brand.tinta['400'], fontSize: 12 }}
+                  tick={{ fill: palette.axis, fontSize: 12 }}
                   tickFormatter={(v: number) => formatCurrency(v)}
                 />
-                <RechartsTooltip<number, string> formatter={(value) => formatCurrency(value)} />
+                <RechartsTooltip<number, string>
+                  formatter={(value) => formatCurrency(value)}
+                  contentStyle={tooltipStyle}
+                />
                 <Bar dataKey="sales" fill={brand.llama['500']} radius={[6, 6, 0, 0]} barSize={40} />
               </BarChart>
             </ResponsiveContainer>
@@ -93,8 +107,11 @@ export const DriverPaymentCharts = ({ byDriver, byPayment }: Props) => {
                     <Cell key={entry.name} fill={CHART_COLORS[index % CHART_COLORS.length]} />
                   ))}
                 </Pie>
-                <RechartsTooltip<number, string> formatter={(value) => formatCurrency(value)} />
-                <Legend verticalAlign="bottom" height={36} />
+                <RechartsTooltip<number, string>
+                  formatter={(value) => formatCurrency(value)}
+                  contentStyle={tooltipStyle}
+                />
+                <Legend verticalAlign="bottom" height={36} wrapperStyle={{ color: palette.axisStrong }} />
               </PieChart>
             </ResponsiveContainer>
           ) : (

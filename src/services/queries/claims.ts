@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createClaim, listClaims, resolveClaim } from '../api/claims';
-import type { CreateClaimBody, ResolveClaimBody } from '../api/types';
+import { createClaim, listClaims, reopenClaim, resolveClaim, takeClaim } from '../api/claims';
+import type { CreateClaimBody, ReopenClaimBody, ResolveClaimBody } from '../api/types';
 import { queryKeys } from './queryKeys';
 
 const keys = queryKeys.claims;
@@ -20,6 +20,24 @@ export const useResolveClaim = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, body }: { id: string; body: ResolveClaimBody }) => resolveClaim(id, body),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
+  });
+};
+
+/** PENDING → IN_PROCESS: un admin toma el reclamo para revisarlo. */
+export const useTakeClaim = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => takeClaim(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
+  });
+};
+
+/** RESOLVED/REJECTED → IN_PROCESS, con motivo. */
+export const useReopenClaim = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: ReopenClaimBody }) => reopenClaim(id, body),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
   });
 };

@@ -1,27 +1,34 @@
-import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined';
-import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
-import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined';
-import StarIcon from '@mui/icons-material/Star';
-import type { ReactNode } from 'react';
-import { Badge, Button, Card } from '../../../common/components/ui';
+import { useState } from 'react';
+import { CheckCircle2, PencilLine, PiggyBank, Power, PowerOff, ShieldCheck, ShieldX, Trash2 } from 'lucide-react';
+import { Avatar, Badge, Button, Card } from '../../../common/components/ui';
 import type { Delivery } from '../../../services/api/types';
-import { useSetDeliveryEnabled, useUpdateDeliveryStatus } from '../../../services/queries/deliveries';
+import {
+  useDeleteDelivery,
+  useInvalidateDelivery,
+  useSetDeliveryEnabled,
+  useToggleDeliveryAvailability,
+  useValidateDelivery,
+} from '../../../services/queries/deliveries';
 import { driverStatus } from '../../../utils/statusLabels';
-import { formatCurrency, formatDate } from '../../../utils/format';
 import { confirm, notify } from '../../../utils/notifications';
+import { BalanceAdjustModal } from './BalanceAdjustModal';
+import { DeliveryFormModal } from './DeliveryFormModal';
 
-const Row = ({ icon, children }: { icon: ReactNode; children: ReactNode }) => (
-  <li className="flex items-center gap-3 text-sm text-ink [&_svg]:h-5 [&_svg]:w-5 [&_svg]:text-muted">
-    {icon}
-    <span className="min-w-0 truncate">{children}</span>
-  </li>
-);
+interface Props {
+  delivery: Delivery;
+  onDeleted: () => void;
+}
 
-export const DeliveryProfileCard = ({ delivery }: { delivery: Delivery }) => {
+/** La cabecera de la ficha del chofer: identidad, estado y las acciones de CU-032/CU-033. */
+export const DeliveryProfileCard = ({ delivery, onDeleted }: Props) => {
   const user = delivery.user;
-  const initial = user?.full_name?.trim().charAt(0).toUpperCase() ?? '?';
   const setEnabled = useSetDeliveryEnabled();
-  const updateValidation = useUpdateDeliveryStatus();
+  const validateDelivery = useValidateDelivery();
+  const invalidateDelivery = useInvalidateDelivery();
+  const toggleAvailability = useToggleDeliveryAvailability();
+  const deleteDelivery = useDeleteDelivery();
+  const [adjustingBalance, setAdjustingBalance] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   const handleToggleEnabled = async () => {
     const disabling = delivery.isEnabled;
@@ -43,69 +50,108 @@ export const DeliveryProfileCard = ({ delivery }: { delivery: Delivery }) => {
     );
   };
 
+  /** CU-032: operaciones dedicadas, no condicionan lo que el chofer puede hacer. */
   const handleToggleValidated = () => {
-    updateValidation.mutate(
-      { id: delivery.delivery_id, changes: { validated: !delivery.validated } },
+    const mutation = delivery.validated ? invalidateDelivery : validateDelivery;
+    mutation.mutate(delivery.delivery_id, {
+      onSuccess: () => notify.success(delivery.validated ? 'Validación retirada' : 'Chofer validado'),
+      onError: notify.error,
+    });
+  };
+
+  /** Fuerza la disponibilidad: desconectar siempre se permite; conectar exige habilitado y validado. */
+  const handleToggleAvailability = async () => {
+    const connecting = !delivery.isAvailable;
+    if (!connecting) {
+      const confirmed = await confirm({
+        title: '¿Desconectar al chofer?',
+        text: 'Sale del radar de despacho hasta que vuelva a conectarse desde su app o lo reconectes desde acá.',
+        confirmText: 'Desconectar',
+      });
+      if (!confirmed) return;
+    }
+    toggleAvailability.mutate(
+      { userId: delivery.user_id, available: connecting },
       {
-        onSuccess: () => notify.success(delivery.validated ? 'Validación retirada' : 'Chofer validado'),
+        onSuccess: () => notify.success(connecting ? 'Chofer conectado' : 'Chofer desconectado'),
         onError: notify.error,
       },
     );
+  };
+
+  const handleDelete = async () => {
+    const confirmed = await confirm({
+      title: '¿Dar de baja al chofer?',
+      text: `${user?.full_name ?? 'El chofer'} no va a poder volver a entrar. Su historial se conserva.`,
+      confirmText: 'Dar de baja',
+      danger: true,
+    });
+    if (!confirmed) return;
+    deleteDelivery.mutate(delivery.delivery_id, {
+      onSuccess: () => {
+        notify.success('Chofer dado de baja');
+        onDeleted();
+      },
+      onError: notify.error,
+    });
   };
 
   return (
     <Card className="p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-center gap-4">
-          <span
-            aria-hidden="true"
-            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary-soft font-display text-xl font-bold text-primary-strong"
-          >
-            {initial}
-          </span>
+          <Avatar name={user?.full_name ?? '?'} size="lg" />
           <div className="min-w-0">
             <h2 className="truncate text-lg font-semibold text-ink">{user?.full_name ?? 'Sin nombre'}</h2>
-            <div className="mt-1 flex flex-wrap gap-1.5">
+            <p className="truncate text-sm text-muted">{user?.email ?? '—'}</p>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
               <Badge label={driverStatus(delivery)} />
+              {delivery.validated && <Badge label={{ text: 'Validado', tone: 'success' }} />}
             </div>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" size="sm" loading={updateValidation.isPending} onClick={handleToggleValidated}>
+          <Button variant="secondary" size="sm" icon={<PencilLine />} onClick={() => setEditing(true)}>
+            Editar
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={delivery.validated ? <ShieldX /> : <ShieldCheck />}
+            loading={validateDelivery.isPending || invalidateDelivery.isPending}
+            onClick={handleToggleValidated}
+          >
             {delivery.validated ? 'Quitar validación' : 'Validar'}
           </Button>
           <Button
             variant={delivery.isEnabled ? 'danger' : 'secondary'}
             size="sm"
+            icon={delivery.isEnabled ? undefined : <CheckCircle2 />}
             loading={setEnabled.isPending}
             onClick={() => void handleToggleEnabled()}
           >
             {delivery.isEnabled ? 'Deshabilitar' : 'Habilitar'}
           </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={delivery.isAvailable ? <PowerOff /> : <Power />}
+            loading={toggleAvailability.isPending}
+            onClick={() => void handleToggleAvailability()}
+          >
+            {delivery.isAvailable ? 'Desconectar' : 'Conectar'}
+          </Button>
+          <Button variant="secondary" size="sm" icon={<PiggyBank />} onClick={() => setAdjustingBalance(true)}>
+            Ajustar saldo
+          </Button>
+          <Button variant="danger" size="sm" icon={<Trash2 />} onClick={() => void handleDelete()}>
+            Dar de baja
+          </Button>
         </div>
       </div>
 
-      <ul className="mt-5 space-y-3">
-        <Row icon={<EmailOutlinedIcon />}>{user?.email ?? '—'}</Row>
-        <Row icon={<PhoneOutlinedIcon />}>{user?.phone_number ?? '—'}</Row>
-        <Row icon={<CalendarTodayOutlinedIcon />}>Chofer desde {formatDate(delivery.createdAt)}</Row>
-      </ul>
-
-      <div className="mt-5 grid grid-cols-2 gap-3 border-t border-outline pt-5">
-        <div className="rounded-xl bg-tinta-50 p-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted">Balance</p>
-          <p className={`text-lg font-bold ${delivery.balance < 0 ? 'text-danger' : 'text-ink'}`}>
-            {formatCurrency(delivery.balance)}
-          </p>
-        </div>
-        <div className="rounded-xl bg-tinta-50 p-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted">Calificación</p>
-          <p className="flex items-center gap-1 text-lg font-bold text-ink">
-            <StarIcon aria-hidden="true" className="!h-5 !w-5 text-accent" />
-            {delivery.calification === null ? '—' : delivery.calification.toFixed(1)}
-          </p>
-        </div>
-      </div>
+      <BalanceAdjustModal open={adjustingBalance} onClose={() => setAdjustingBalance(false)} delivery={delivery} />
+      <DeliveryFormModal open={editing} onClose={() => setEditing(false)} delivery={delivery} />
     </Card>
   );
 };

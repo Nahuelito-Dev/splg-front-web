@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import type { GridPaginationModel } from '@mui/x-data-grid';
 import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
+import { SearchCheck } from 'lucide-react';
 import { Button, Card, PageHeader, SearchInput } from '../../common/components/ui';
 import { useDebounce, usePermissions } from '../../hooks';
 import type { Customer } from '../../services/api/types';
@@ -8,25 +10,39 @@ import { useCustomers, useDeleteCustomer } from '../../services/queries/customer
 import { confirm, notify } from '../../utils/notifications';
 import { CustomerFormModal } from './components/CustomerFormModal';
 import { CustomersTable } from './components/CustomersTable';
+import { FindCustomerByUserModal } from './components/FindCustomerByUserModal';
 
 type FormState = { open: false } | { open: true; customer: Customer | null };
 
 export const Customers = () => {
   const { canManageCustomerAccounts } = usePermissions();
-  const [search, setSearch] = useState('');
+  // La búsqueda y la página viven en la URL (un solo `setParams` para que no se pisen): al volver de una ficha se conservan.
+  const [params, setParams] = useSearchParams();
+  const search = params.get('q') ?? '';
+  const pageParam = params.get('page') ?? '1';
+  const updateParams = (q: string, page: number) =>
+    setParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        if (q) next.set('q', q);
+        else next.delete('q');
+        if (page > 0) next.set('page', String(page + 1));
+        else next.delete('page');
+        return next;
+      },
+      { replace: true },
+    );
   const debouncedSearch = useDebounce(search.trim());
-  const [pagination, setPagination] = useState<GridPaginationModel>({
-    page: 0,
-    pageSize: 10,
-  });
+  const pagination: GridPaginationModel = { page: Math.max(0, Number(pageParam) - 1 || 0), pageSize: 10 };
+  const setPagination = (model: GridPaginationModel) => updateParams(search, model.page);
   const [form, setForm] = useState<FormState>({ open: false });
+  const [findingByUser, setFindingByUser] = useState(false);
 
   const { data, isFetching } = useCustomers(pagination, debouncedSearch);
   const deleteCustomer = useDeleteCustomer();
 
   const handleSearch = (value: string) => {
-    setSearch(value);
-    setPagination((p) => ({ ...p, page: 0 }));
+    updateParams(value, 0);
   };
 
   const handleDelete = async (customer: Customer) => {
@@ -49,9 +65,14 @@ export const Customers = () => {
         title="Clientes"
         description="Los clientes que le compraron a la distribuidora."
         actions={
-          <Button icon={<PersonAddAlt1Icon />} onClick={() => setForm({ open: true, customer: null })}>
-            Nuevo cliente
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" icon={<SearchCheck />} onClick={() => setFindingByUser(true)}>
+              Buscar por usuario
+            </Button>
+            <Button icon={<PersonAddAlt1Icon />} onClick={() => setForm({ open: true, customer: null })}>
+              Nuevo cliente
+            </Button>
+          </div>
         }
       />
 
@@ -83,6 +104,7 @@ export const Customers = () => {
         onClose={() => setForm({ open: false })}
         customer={form.open ? form.customer : null}
       />
+      <FindCustomerByUserModal open={findingByUser} onClose={() => setFindingByUser(false)} />
     </div>
   );
 };

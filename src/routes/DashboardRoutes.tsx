@@ -8,6 +8,7 @@ import { lazyPage } from './lazyPage';
 
 // Cada página se carga recién al entrar (un chunk por ruta).
 const Home = lazyPage(() => import('../pages/Home/Home'), 'Home');
+const Account = lazyPage(() => import('../pages/Account/Account'), 'Account');
 const Users = lazyPage(() => import('../pages/Users/Users'), 'Users');
 const UserDetails = lazyPage(() => import('../pages/Users/UserDetails'), 'UserDetails');
 const Customers = lazyPage(() => import('../pages/Customers/Customers'), 'Customers');
@@ -15,12 +16,20 @@ const CustomerDetails = lazyPage(() => import('../pages/Customers/CustomerDetail
 const GasCylinders = lazyPage(() => import('../pages/GasCylinders/GasCylinders'), 'GasCylinders');
 const GasCylinderDetails = lazyPage(() => import('../pages/GasCylinders/GasCylinderDetails'), 'GasCylinderDetails');
 const PhysicalCylinders = lazyPage(() => import('../pages/PhysicalCylinders/PhysicalCylinders'), 'PhysicalCylinders');
+const CylinderDetails = lazyPage(() => import('../pages/PhysicalCylinders/CylinderDetails'), 'CylinderDetails');
 const Deliveries = lazyPage(() => import('../pages/Deliveries/Deliveries'), 'Deliveries');
 const DeliveryDetails = lazyPage(() => import('../pages/Deliveries/DeliveryDetails'), 'DeliveryDetails');
 const Cars = lazyPage(() => import('../pages/Cars/Cars'), 'Cars');
+const CarDetails = lazyPage(() => import('../pages/Cars/CarDetails'), 'CarDetails');
+const FleetExpirations = lazyPage(() => import('../pages/Fleet/FleetExpirations'), 'FleetExpirations');
+const FleetPlans = lazyPage(() => import('../pages/Fleet/FleetPlans'), 'FleetPlans');
+const FleetPlanDetails = lazyPage(() => import('../pages/Fleet/FleetPlanDetails'), 'FleetPlanDetails');
+const FleetTasks = lazyPage(() => import('../pages/Fleet/FleetTasks'), 'FleetTasks');
+const FleetTaskDetail = lazyPage(() => import('../pages/Fleet/FleetTaskDetail'), 'FleetTaskDetail');
 const Configuration = lazyPage(() => import('../pages/Configuration/Configuration'), 'Configuration');
 const Orders = lazyPage(() => import('../pages/Orders/Orders'), 'Orders');
 const OrderDetails = lazyPage(() => import('../pages/Orders/OrderDetails'), 'OrderDetails');
+const NewOrder = lazyPage(() => import('../pages/Orders/NewOrder'), 'NewOrder');
 const Claims = lazyPage(() => import('../pages/Claims/Claims'), 'Claims');
 const Incidents = lazyPage(() => import('../pages/Incidents/Incidents'), 'Incidents');
 const CoverageZones = lazyPage(() => import('../pages/CoverageZones/CoverageZones'), 'CoverageZones');
@@ -28,6 +37,7 @@ const Reservations = lazyPage(() => import('../pages/Reservations/Reservations')
 const Reports = lazyPage(() => import('../pages/Reports/Reports'), 'Reports');
 const Tracking = lazyPage(() => import('../pages/Tracking/Tracking'), 'Tracking');
 const Distributors = lazyPage(() => import('../pages/Distributors/Distributors'), 'Distributors');
+const DistributorDetails = lazyPage(() => import('../pages/Distributors/DistributorDetails'), 'DistributorDetails');
 const Admins = lazyPage(() => import('../pages/Admins/Admins'), 'Admins');
 const Ratings = lazyPage(() => import('../pages/Ratings/Ratings'), 'Ratings');
 const Audit = lazyPage(() => import('../pages/Audit/Audit'), 'Audit');
@@ -54,6 +64,9 @@ export const DashboardRoutes = () => {
           {/* 1. Dashboard General */}
           <Route path="home" element={<Home />} />
 
+          {/* Mi cuenta: perfil, correo y contraseña del admin logueado */}
+          <Route path="account" element={<Account />} />
+
           {/* 2. Usuarios del Sistema */}
           <Route path="users" element={<Users />} />
           <Route path="users/details/:leadId" element={<UserDetails />} />
@@ -68,6 +81,7 @@ export const DashboardRoutes = () => {
 
           {/* 4b. Envases físicos (garrafas serializadas, ciclo de canje) */}
           <Route path="physical-cylinders" element={<PhysicalCylinders />} />
+          <Route path="physical-cylinders/:id" element={<CylinderDetails />} />
 
           {/* 5. Repartidores (Deliveries) */}
           <Route path="deliveries" element={<Deliveries />} />
@@ -75,10 +89,19 @@ export const DashboardRoutes = () => {
 
           {/* 6. Vehículos (Cars) - NUEVA RUTA */}
           <Route path="cars" element={<Cars />} />
+          <Route path="cars/details/:id" element={<CarDetails />} />
           <Route path="settings" element={<Configuration />} />
 
-          {/* 7. Ordenes (Pendiente) */}
+          {/* Documentación de la flota: vencimientos (CU-139), planes (CU-105/140) y tareas */}
+          <Route path="fleet/expirations" element={<FleetExpirations />} />
+          <Route path="fleet/plans" element={<FleetPlans />} />
+          <Route path="fleet/plans/:id" element={<FleetPlanDetails />} />
+          <Route path="fleet/tasks" element={<FleetTasks />} />
+          <Route path="fleet/tasks/:id" element={<FleetTaskDetail />} />
+
+          {/* 7. Ordenes */}
           <Route path="orders" element={<Orders />} />
+          <Route path="orders/new" element={<NewOrder />} />
           <Route path="orders/:id" element={<OrderDetails />} />
 
           {/* 8. Tracking en vivo de choferes */}
@@ -93,6 +116,7 @@ export const DashboardRoutes = () => {
 
           {/* Gestión de empresas (multi-distribuidora) — super_admin */}
           <Route path="distributors" element={<Distributors />} />
+          <Route path="distributors/:id" element={<DistributorDetails />} />
           {/* Gestión de admins por empresa — super_admin */}
           <Route path="admins" element={<Admins />} />
 

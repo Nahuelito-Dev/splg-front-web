@@ -1,7 +1,7 @@
 import type { GridColDef, GridPaginationModel } from '@mui/x-data-grid';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Pencil, Star, UserX } from 'lucide-react';
+import { Pencil, ShieldCheck, ShieldX, Star, UserX } from 'lucide-react';
 import { Badge, DataTable, EmptyState, IdentityCell, RowActions } from '../../../common/components/ui';
 import type { Delivery } from '../../../services/api/types';
 import { driverStatus } from '../../../utils/statusLabels';
@@ -15,10 +15,21 @@ interface Props {
   /** Sin él no se ofrece (p. ej. superadmin sin distribuidora elegida). */
   onEdit?: (delivery: Delivery) => void;
   onDelete?: (delivery: Delivery) => void;
+  /** CU-032, directo desde el listado. */
+  onToggleValidated?: (delivery: Delivery) => void;
 }
 
 /** Choferes: lo justo para ubicarlos; saldo, vehículos y pedidos van en la ficha. */
-export const DeliveriesTable = ({ rows, total, loading, pagination, onPaginationChange, onEdit, onDelete }: Props) => {
+export const DeliveriesTable = ({
+  rows,
+  total,
+  loading,
+  pagination,
+  onPaginationChange,
+  onEdit,
+  onDelete,
+  onToggleValidated,
+}: Props) => {
   const navigate = useNavigate();
   const columns = useMemo<GridColDef<Delivery>[]>(
     () => [
@@ -75,6 +86,18 @@ export const DeliveriesTable = ({ rows, total, loading, pagination, onPagination
             rowLabel={row.user?.full_name ?? 'chofer'}
             onView={() => navigate(`/deliveries/details/${row.delivery_id}`)}
             actions={[
+              ...(onToggleValidated
+                ? [
+                    row.validated
+                      ? {
+                          label: 'Invalidar',
+                          icon: ShieldX,
+                          tone: 'danger' as const,
+                          onClick: () => onToggleValidated(row),
+                        }
+                      : { label: 'Validar', icon: ShieldCheck, onClick: () => onToggleValidated(row) },
+                  ]
+                : []),
               ...(onEdit ? [{ label: 'Editar', icon: Pencil, onClick: () => onEdit(row) }] : []),
               ...(onDelete
                 ? [{ label: 'Dar de baja', icon: UserX, tone: 'danger' as const, onClick: () => onDelete(row) }]
@@ -84,7 +107,7 @@ export const DeliveriesTable = ({ rows, total, loading, pagination, onPagination
         ),
       },
     ],
-    [navigate, onEdit, onDelete],
+    [navigate, onEdit, onDelete, onToggleValidated],
   );
 
   return (

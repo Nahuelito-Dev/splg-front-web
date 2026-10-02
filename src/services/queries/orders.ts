@@ -1,19 +1,22 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { listActiveDeliveries } from '../api/deliveries';
 import type { PageParams } from '../api/httpClient';
 import {
   assignOrderDelivery,
   cancelOrder,
   confirmOrderDelivery,
+  createOrder,
   getOrder,
   getOrderDeliveryCode,
+  listAvailableOrders,
   listOrderIncidents,
   listOrders,
   notifyOrderArrival,
   updateOrderStatus,
   type OrderFilters,
 } from '../api/orders';
-import type { CancelOrderBody, ConfirmDeliveryBody, UpdateOrderStatusBody } from '../api/types';
+import type { CancelOrderBody, ConfirmDeliveryBody, CreateOrderBody, Order, UpdateOrderStatusBody } from '../api/types';
+import { ORDER_FLOW } from '../../utils/statusLabels';
 import { queryKeys } from './queryKeys';
 
 const keys = queryKeys.orders;
@@ -37,6 +40,30 @@ export const useOrders = (
     refetchInterval,
     enabled,
   });
+
+/**
+ * Cuántos pedidos hay en cada estado, para las pestañas de Pedidos. No hay un
+ * endpoint de resumen por estado: se pide una página mínima de GET /orders
+ * por cada uno y se lee `total` del cuerpo de la respuesta. Un estado sin dato
+ * (cargando o con error) queda en `null`, nunca en 0, y `total` es `null` si falta alguno.
+ */
+export const useOrderStatusCounts = () => {
+  const results = useQueries({
+    queries: ORDER_FLOW.map((status) => ({
+      queryKey: keys.list({ page: 0, pageSize: 1, status }),
+      queryFn: () => listOrders({ page: 0, pageSize: 1 }, { status }),
+      staleTime: 30_000,
+    })),
+  });
+
+  const counts = Object.fromEntries(
+    ORDER_FLOW.map((status, index) => [status, results[index].data?.total ?? null]),
+  ) as Record<Order['status'], number | null>;
+  const values = Object.values(counts);
+  const total = values.some((count) => count === null) ? null : values.reduce<number>((acc, c) => acc + (c ?? 0), 0);
+
+  return { counts, total, isError: results.some((result) => result.isError) };
+};
 
 /**
  * La ficha de un pedido (GET /orders/:id). `refetchInterval` es el respaldo
@@ -115,3 +142,26 @@ export const useConfirmOrderDelivery = () => {
 
 /** PATCH /orders/:id/arrived: no cambia el pedido, así que no invalida nada. */
 export const useNotifyOrderArrival = () => useMutation({ mutationFn: (id: string) => notifyOrderArrival(id) });
+
+/**
+ * El pool de pedidos disponibles (CU-080), con refresco periódico salvo que
+ * el socket esté online (igual criterio que `useOrders` del tablero): el
+ * pool cambia apenas un chofer acepta uno, y el socket no avisa de esto en
+ * particular.
+ */
+export const useAvailableOrders = (params: PageParams, search = '', { refetchInterval }: LiveOptions = {}) =>
+  useQuery({
+    queryKey: [...keys.lists(), 'available', { ...params, search }],
+    queryFn: () => listAvailableOrders(params, search),
+    placeholderData: keepPreviousData,
+    refetchInterval,
+  });
+
+/** POST /orders (CU-072): alta telefónica, con los mismos efectos que el alta desde la app. */
+export const useCreateOrder = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: CreateOrderBody) => createOrder(body),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
+  });
+};

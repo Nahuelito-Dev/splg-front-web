@@ -22,7 +22,7 @@ interface ErrorStateProps {
 /** Error de una consulta: 404 como "no existe", el resto con el mensaje de la API. */
 export const ErrorState = ({ error, resource = 'El recurso', onRetry }: ErrorStateProps) => {
   const apiError = toApiError(error);
-  if (apiError.notFound) {
+  if (apiError.notFound || apiError.invalidId) {
     return (
       <EmptyState
         title={`${resource} no existe`}

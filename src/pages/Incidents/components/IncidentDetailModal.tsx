@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { usePermissions } from '../../../hooks';
 import { Badge, Button, DetailList, Modal, TextArea } from '../../../common/components/ui';
 import type { Incident } from '../../../services/api/types';
 import { useResolveIncident } from '../../../services/queries/incidents';
@@ -27,6 +28,7 @@ interface Props {
  * se resolvió, se ve cómo y cuándo.
  */
 export const IncidentDetailModal = ({ open, onClose, incident }: Props) => {
+  const { canOperate, operateHint } = usePermissions();
   const resolveIncident = useResolveIncident();
   // `IncidentResponseDto.reported_by` es sólo un uuid: la API no lo trae resuelto
   // (a diferencia de `order.customer`), así que se busca aparte con GET
@@ -71,10 +73,17 @@ export const IncidentDetailModal = ({ open, onClose, incident }: Props) => {
       footer={
         isOpen ? (
           <>
+            {operateHint && <p className="mr-auto self-center text-sm text-muted">{operateHint}</p>}
             <Button variant="secondary" onClick={onClose}>
               Cancelar
             </Button>
-            <Button type="submit" form="incident-resolve" loading={resolveIncident.isPending}>
+            <Button
+              type="submit"
+              form="incident-resolve"
+              disabled={!canOperate}
+              title={operateHint}
+              loading={resolveIncident.isPending}
+            >
               Marcar como resuelta
             </Button>
           </>
@@ -83,19 +92,19 @@ export const IncidentDetailModal = ({ open, onClose, incident }: Props) => {
     >
       <div className="space-y-5">
         <div className="grid gap-4 sm:grid-cols-2">
-          <div className="rounded-xl border border-outline bg-tinta-50 p-3">
+          <div className="rounded-xl border border-outline bg-surface-hover p-3">
             <h3 className="text-xs font-semibold uppercase text-muted">Cliente</h3>
             <p className="font-medium text-ink">{incident.order?.customer?.full_name ?? '—'}</p>
             <p className="text-sm text-muted">{incident.order?.customer?.phone_number ?? '—'}</p>
           </div>
-          <div className="rounded-xl border border-outline bg-tinta-50 p-3">
+          <div className="rounded-xl border border-outline bg-surface-hover p-3">
             <h3 className="mb-1 text-xs font-semibold uppercase text-muted">Problema</h3>
             <Badge label={labelOf(INCIDENT_TYPE, incident.type)} />
             <p className="mt-1 text-sm text-muted">{incident.description}</p>
           </div>
         </div>
 
-        <div className="rounded-xl border border-outline bg-tinta-50 p-3">
+        <div className="rounded-xl border border-outline bg-surface-hover p-3">
           <h3 className="text-xs font-semibold uppercase text-muted">Reportada por</h3>
           <p className="font-medium text-ink">
             {reporter.isLoading ? 'Buscando…' : (reporter.data?.full_name ?? 'Usuario no encontrado')}

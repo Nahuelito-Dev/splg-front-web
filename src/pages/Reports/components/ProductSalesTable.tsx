@@ -18,7 +18,7 @@ export const ProductSalesTable = ({ rows }: Props) => (
       />
     ) : (
       <table className="w-full text-left text-sm">
-        <thead className="border-b border-outline bg-tinta-50 font-medium text-muted">
+        <thead className="border-b border-outline bg-surface-hover font-medium text-muted">
           <tr>
             <th className="px-6 py-3">Tipo</th>
             <th className="px-6 py-3">Descripción</th>
@@ -28,7 +28,7 @@ export const ProductSalesTable = ({ rows }: Props) => (
         </thead>
         <tbody className="divide-y divide-outline">
           {rows.map((row, index) => (
-            <tr key={`${row.productType}-${index}`} className="hover:bg-tinta-50/60">
+            <tr key={`${row.productType}-${index}`} className="hover:bg-surface-hover/60">
               <td className="px-6 py-3 font-semibold text-ink">{row.productType}</td>
               <td className="px-6 py-3 text-muted">{row.description ?? '—'}</td>
               <td className="px-6 py-3 text-right text-ink">{formatNumber(row.totalQuantity)}</td>

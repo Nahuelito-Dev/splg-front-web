@@ -3,6 +3,7 @@ import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis
 import { Card } from '../../../common/components/ui';
 import { useSalesChart } from '../../../services/queries/stats';
 import brand from '../../../theme/brand.json';
+import { useChartPalette } from '../../../theme/useChartPalette';
 import { formatCurrency } from '../../../utils/format';
 
 const compact = new Intl.NumberFormat('es-AR', { notation: 'compact', maximumFractionDigits: 1 });
@@ -11,6 +12,7 @@ const compact = new Intl.NumberFormat('es-AR', { notation: 'compact', maximumFra
 export const WeeklySalesChart = () => {
   const gradientId = useId();
   const { data: chart = [], isLoading } = useSalesChart();
+  const palette = useChartPalette();
   const lastIndex = chart.length - 1;
 
   return (
@@ -21,7 +23,7 @@ export const WeeklySalesChart = () => {
       </div>
       <div className="h-60 px-3 pb-2 pt-4">
         {isLoading ? (
-          <div className="h-full animate-pulse rounded-lg bg-tinta-50" />
+          <div className="h-full animate-pulse rounded-lg bg-surface-hover" />
         ) : chart.every((point) => point.sales === 0) ? (
           <div className="grid h-full place-items-center text-sm text-muted">Sin ventas en la última semana.</div>
         ) : (
@@ -33,26 +35,28 @@ export const WeeklySalesChart = () => {
                   <stop offset="1" stopColor={brand.llama['700']} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 4" stroke={brand.tinta['100']} vertical={false} />
+              <CartesianGrid strokeDasharray="3 4" stroke={palette.grid} vertical={false} />
               <XAxis
                 dataKey="name"
-                tick={{ fontSize: 11, fill: brand.tinta['500'] }}
+                tick={{ fontSize: 11, fill: palette.axisStrong }}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis
                 width={52}
-                tick={{ fontSize: 10.5, fill: brand.tinta['400'], fontFamily: 'Geist Mono, monospace' }}
+                tick={{ fontSize: 10.5, fill: palette.axis, fontFamily: 'Geist Mono, monospace' }}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={(value: number) => `$${compact.format(value)}`}
               />
               <Tooltip<number, string>
-                cursor={{ fill: brand.tinta['50'] }}
+                cursor={{ fill: palette.cursor }}
                 formatter={(value) => [formatCurrency(value), 'Ventas']}
                 contentStyle={{
                   borderRadius: 10,
-                  border: `1px solid ${brand.tinta['200']}`,
+                  border: `1px solid ${palette.tooltipBorder}`,
+                  backgroundColor: palette.tooltipBg,
+                  color: palette.isDark ? brand.dark.ink : brand.tinta['900'],
                   fontSize: 12,
                   boxShadow: '0 8px 24px -8px rgba(16,24,40,.18)',
                 }}

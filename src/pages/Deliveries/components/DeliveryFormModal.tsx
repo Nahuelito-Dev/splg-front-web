@@ -1,17 +1,19 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { accountFields, newPassword } from '../../../common/forms/accountSchema';
+import { checkAccountFree } from '../../../common/forms/checkAccountFree';
 import { Button, Checkbox, Input, Modal, Select } from '../../../common/components/ui';
 import type { Delivery } from '../../../services/api/types';
 import { usePermissions } from '../../../hooks';
 import {
   useCreateDelivery,
   useDistributorOptions,
+  useInvalidateDelivery,
   useUpdateDeliveryAccount,
   useSetDeliveryEnabled,
-  useUpdateDeliveryStatus,
+  useValidateDelivery,
 } from '../../../services/queries/deliveries';
 import { notify } from '../../../utils/notifications';
 
@@ -69,15 +71,21 @@ const CreateDeliveryForm = ({ open, onClose }: Omit<Props, 'delivery'>) => {
     register,
     handleSubmit,
     reset,
-    formState: { errors },
+    setError,
+    formState: { errors, isSubmitting },
   } = useForm<CreateValues>({ resolver: zodResolver(createSchema) });
+
+  // El modal puede cerrarse mientras corre check-exists: en ese caso no se da de alta nada.
+  const openRef = useRef(open);
+  openRef.current = open;
 
   useEffect(() => {
     if (open)
       reset({ full_name: '', phone_number: '', email: '', password: '', confirmPassword: '', distributorId: '' });
   }, [open, reset]);
 
-  const onSubmit = handleSubmit(({ confirmPassword: _, distributorId, ...account }) =>
+  const onSubmit = handleSubmit(async ({ confirmPassword: _, distributorId, ...account }) => {
+    if (!(await checkAccountFree(account, setError)) || !openRef.current) return;
     createDelivery.mutate(
       { ...account, distributorId: distributorId || undefined, validated: false, isActive: true },
       {
@@ -87,8 +95,8 @@ const CreateDeliveryForm = ({ open, onClose }: Omit<Props, 'delivery'>) => {
         },
         onError: notify.error,
       },
-    ),
-  );
+    );
+  });
 
   return (
     <Modal
@@ -101,7 +109,7 @@ const CreateDeliveryForm = ({ open, onClose }: Omit<Props, 'delivery'>) => {
           <Button variant="secondary" onClick={onClose}>
             Cancelar
           </Button>
-          <Button type="submit" form="delivery-create" loading={createDelivery.isPending}>
+          <Button type="submit" form="delivery-create" loading={isSubmitting || createDelivery.isPending}>
             Crear chofer
           </Button>
         </>
@@ -169,9 +177,11 @@ const CreateDeliveryForm = ({ open, onClose }: Omit<Props, 'delivery'>) => {
 
 const EditDeliveryForm = ({ open, onClose, delivery }: Omit<Props, 'delivery'> & { delivery: Delivery }) => {
   const updateAccount = useUpdateDeliveryAccount();
-  const updateStatus = useUpdateDeliveryStatus();
+  const validateDelivery = useValidateDelivery();
+  const invalidateDelivery = useInvalidateDelivery();
   const setEnabled = useSetDeliveryEnabled();
-  const saving = updateAccount.isPending || updateStatus.isPending || setEnabled.isPending;
+  const saving =
+    updateAccount.isPending || validateDelivery.isPending || invalidateDelivery.isPending || setEnabled.isPending;
   const {
     register,
     handleSubmit,
@@ -203,7 +213,8 @@ const EditDeliveryForm = ({ open, onClose, delivery }: Omit<Props, 'delivery'> &
       );
     }
     if (dirtyFields.validated) {
-      tasks.push(updateStatus.mutateAsync({ id: delivery.delivery_id, changes: { validated } }));
+      const mutate = validated ? validateDelivery : invalidateDelivery;
+      tasks.push(mutate.mutateAsync(delivery.delivery_id));
     }
     // La habilitación va por su propio endpoint: al deshabilitar, la API también lo desconecta.
     if (dirtyFields.isActive) {

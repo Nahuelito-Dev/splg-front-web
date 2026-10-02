@@ -61,7 +61,7 @@ export interface paths {
         post?: never;
         /**
          * Dar de baja un usuario (baja lógica)
-         * @description El usuario y sus perfiles quedan dados de baja y dejan de aparecer; sus pedidos y registros se conservan. La cuenta de Firebase se deshabilita, no se borra (H-74).
+         * @description El usuario y sus perfiles quedan dados de baja y dejan de aparecer; sus pedidos y registros se conservan. La cuenta de Firebase se deshabilita, no se borra (H-74). Un chofer con pedidos en curso no se puede dar de baja (409).
          */
         delete: operations["UsersController_remove"];
         options?: never;
@@ -128,7 +128,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get all admins (scopeado por distribuidora) */
+        /**
+         * Get all admins (scopeado por distribuidora)
+         * @description Un admin de empresa ve los de la suya. El super admin ve los de la distribuidora que elija con `?distributorId=` (aunque esté "viendo como" otra), o los de la distribuidora en contexto, o todos si no hay.
+         */
         get: operations["AdminController_findAll"];
         put?: never;
         /** Create admin (basic) */
@@ -786,7 +789,11 @@ export interface paths {
         get: operations["OrderController_findOne"];
         put?: never;
         post?: never;
-        /** Cancel order (Admin Force) */
+        /**
+         * Cancel order (Admin Force)
+         * @deprecated
+         * @description Duplica `PATCH /orders/:id/cancel` (delega en la MISMA cancelación, mismo stock, mismos avisos). Se mantiene sólo por compatibilidad con clientes existentes: usar `/cancel` en código nuevo.
+         */
         delete: operations["OrderController_cancelOrder"];
         options?: never;
         head?: never;
@@ -809,6 +816,11 @@ export interface paths {
         /**
          * Update order status
          * @description Idempotente vía header `Idempotency-Key`. Evita doble aceptación/entrega por reintento de red. Solo chofer/admin.
+         *
+         *     - `status: cancelled` tiene EXACTAMENTE el mismo efecto que `PATCH /:id/cancel` (mismo código, mismo stock, mismos avisos): cancela con devolución de stock si lo pide un admin, o LIBERA el pedido a `pending` (sin devolver stock, sin motivo de cancelación) si lo pide el chofer — no cancela de verdad.
+         *     - `status: pending` sobre un pedido ACCEPTED/ON_THE_WAY libera al chofer asignado (mismo camino que el punto anterior): limpia el chofer, corta su tracking, cierra cualquier oferta que hubiera quedado y avisa al chofer anterior, al cliente y al panel. `POST /:id/reject` sobre una asignación manual NO usa este camino: no libera, sólo avisa al panel (ver `/reject`).
+         *     - `status: pending` sobre una RESERVA (pedido `reserved`) la ACTIVA a mano, con las mismas condiciones que el cron (seña paga y día agendado cumplido) — sólo admin/super_admin, 400 claro si no las cumple.
+         *     - `status: accepted` sobre un pedido YA `accepted` con el MISMO chofer es idempotente: no regenera `acceptedAt` ni el código de entrega (pasa cuando el chofer "acepta" el aviso de una asignación manual).
          */
         patch: operations["OrderController_updateStatus"];
         trace?: never;
@@ -823,8 +835,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Chofer rechaza/ignora una oferta de pedido (CU-016)
-         * @description Cierra la oferta activa del chofer como REJECTED y re-ofrece el pedido al siguiente chofer más cercano de inmediato (sin esperar el timeout).
+         * Chofer rechaza/ignora una oferta de pedido (CU-016) o una asignación manual (H-55)
+         * @description Oferta real del despacho automático: cierra la oferta activa del chofer como REJECTED y re-ofrece el pedido al siguiente chofer más cercano de inmediato (sin esperar el timeout).
+         *
+         *     Asignación MANUAL del admin (el chofer la recibe con el mismo evento de socket que una oferta, pero nunca hubo una fila `OFFERED` que cerrar): el pedido NO cambia. La app manda este mismo endpoint tanto si el chofer lo rechaza a propósito como si deja vencer el aviso sin tocarlo, así que "rechazarla" no puede deshacer sola una asignación que un admin decidió a mano — se avisa al panel (`order:assignment-declined`) para que decida un humano (reasignar, insistir, etc.); el pedido sigue asignado a este chofer.
          */
         post: operations["OrderController_rejectOffer"];
         delete?: never;
@@ -888,7 +902,7 @@ export interface paths {
         head?: never;
         /**
          * Assign order to delivery
-         * @description Asignación manual del admin: exige que el chofer esté habilitado y validado. NO exige que esté en línea (a diferencia del despacho automático).
+         * @description Asignación manual del admin: exige que el chofer esté habilitado y validado, y que ni su licencia ni el vehículo que maneja tengan un documento bloqueante vencido (seguro, VTV, licencia — CU-136 a CU-138). NO exige que esté en línea (a diferencia del despacho automático).
          */
         patch: operations["OrderController_assignDelivery"];
         trace?: never;
@@ -1014,7 +1028,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get all gas cylinders with pagination */
+        /**
+         * Get all gas cylinders with pagination
+         * @description Público. Con sesión iniciada se acota a la distribuidora del usuario (la del admin, o el header `X-Distributor` del super admin y del cliente); sin sesión, a `?distributor=` o a la distribuidora por defecto.
+         */
         get: operations["GasCylinderController_findAll"];
         put?: never;
         /** Create a new gas cylinder type */
@@ -1068,7 +1085,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get all available gas cylinders */
+        /**
+         * Get all available gas cylinders
+         * @description Público. Con sesión iniciada se acota a la distribuidora del usuario; sin sesión, a `?distributor=` o a la distribuidora por defecto.
+         */
         get: operations["GasCylinderController_getAvailableCylinders"];
         put?: never;
         post?: never;
@@ -1456,6 +1476,291 @@ export interface paths {
         patch: operations["CoverageZoneController_update"];
         trace?: never;
     };
+    "/api/fleet/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Listar los planes de la distribuidora */
+        get: operations["FleetPlanController_findAll"];
+        put?: never;
+        /** Crear un plan de mantenimiento/habilitación */
+        post: operations["FleetPlanController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fleet/plans/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ver un plan */
+        get: operations["FleetPlanController_findOne"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Editar un plan (o desactivarlo con isActive: false) */
+        patch: operations["FleetPlanController_update"];
+        trace?: never;
+    };
+    "/api/fleet/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Listar tareas, con filtros */
+        get: operations["FleetTaskController_findAll"];
+        put?: never;
+        /** Crear una tarea contra un plan */
+        post: operations["FleetTaskController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fleet/tasks/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ver una tarea, con sus adjuntos */
+        get: operations["FleetTaskController_findOne"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Editar una tarea abierta */
+        patch: operations["FleetTaskController_update"];
+        trace?: never;
+    };
+    "/api/fleet/tasks/{id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** CU-141: registrar que el mantenimiento/habilitación se hizo */
+        patch: operations["FleetTaskController_close"];
+        trace?: never;
+    };
+    "/api/fleet/tasks/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Cancelar una tarea abierta */
+        patch: operations["FleetTaskController_cancel"];
+        trace?: never;
+    };
+    "/api/fleet/tasks/{id}/attachments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Listar los adjuntos de una tarea */
+        get: operations["FleetTaskController_listAttachments"];
+        put?: never;
+        /** Subir un adjunto (póliza, VTV, licencia, comprobante) */
+        post: operations["FleetTaskController_uploadAttachment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fleet/tasks/{id}/attachments/{attachmentId}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Descargar un adjunto: redirige a una URL firmada (S3) o sirve el archivo (local) */
+        get: operations["FleetTaskController_downloadAttachment"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fleet/tasks/{id}/attachments/{attachmentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Borrar un adjunto */
+        delete: operations["FleetTaskController_removeAttachment"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fleet/expirations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * CU-139: vencimientos de la flota en una pantalla
+         * @description Lo vencido y lo que vence dentro de `withinDays`, agrupado por vehículo y por chofer, con si están inhabilitados.
+         */
+        get: operations["FleetExpirationsController_find"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cars/{carId}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Documentación de un vehículo (seguro, VTV, services) y si está inhabilitado */
+        get: operations["CarDocumentsController_findAll"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/delivery/{id}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Documentación de un chofer (licencia) y si está inhabilitado */
+        get: operations["DeliveryDocumentsController_findAll"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/delivery/me/vehicle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** El vehículo en uso del chofer autenticado */
+        get: operations["DeliveryVehicleController_miVehiculo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/delivery/{id}/vehicle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Vehículo en uso de un chofer */
+        get: operations["DeliveryVehicleController_vehiculoDelChofer"];
+        /**
+         * Poner en uso un vehículo para un chofer
+         * @description La flota es de la distribuidora: cualquier chofer puede usar cualquiera de sus vehículos. Cierra la asignación abierta anterior del chofer (si tenía otro vehículo) y la del vehículo (si lo tenía otro chofer). Rechaza un vehículo inhabilitado por documentación vencida (CU-136/137).
+         */
+        put: operations["DeliveryVehicleController_ponerEnUso"];
+        post?: never;
+        /** Liberar el vehículo en uso de un chofer */
+        delete: operations["DeliveryVehicleController_liberar"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/delivery/{id}/vehicle-history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Historial de vehículos de un chofer */
+        get: operations["DeliveryVehicleController_historial"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/car/{id}/assignments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Historial de choferes que usaron un vehículo */
+        get: operations["CarAssignmentsController_historial"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/email/password-reset": {
         parameters: {
             query?: never;
@@ -1538,8 +1843,51 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Admin resuelve un reclamo */
+        /**
+         * Admin resuelve un reclamo
+         * @description Deja el reclamo en RESOLVED o REJECTED, con nota obligatoria (CU-025). La transición se valida contra la máquina de estados: un reclamo RESOLVED o REJECTED no se vuelve a resolver sin reabrirlo antes (`PATCH /claims/:id/reopen`). Pasar a IN_PROCESS es `PATCH /claims/:id/take`.
+         */
         patch: operations["ClaimsController_resolve"];
+        trace?: never;
+    };
+    "/api/claims/{id}/take": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Admin toma un reclamo pendiente para revisarlo
+         * @description PENDING → IN_PROCESS. Sin nota: sólo marca que un admin ya está mirando el reclamo (distinto de `resolve`, que exige nota de resolución).
+         */
+        patch: operations["ClaimsController_take"];
+        trace?: never;
+    };
+    "/api/claims/{id}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Admin reabre un reclamo resuelto o rechazado
+         * @description RESOLVED/REJECTED → IN_PROCESS, con motivo obligatorio. Nunca vuelve a PENDING: alguien ya lo había tomado.
+         */
+        patch: operations["ClaimsController_reopen"];
         trace?: never;
     };
     "/api/reports/sales-by-driver": {
@@ -1600,7 +1948,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Evolución de ventas por período (día/mes) */
+        /** Evolución de ventas por período (día/semana/mes) */
         get: operations["ReportsController_getSalesEvolution"];
         put?: never;
         post?: never;
@@ -2187,8 +2535,8 @@ export interface components {
             type_car?: string;
             /** @description Car capacity in kg */
             car_capacity?: number;
-            /** @description Car patent number */
-            car_patent?: string;
+            /** @description Patente. Se guarda en mayúsculas, sin espacios ni guiones, y tiene que quedar con al menos 4 letras o números. `null` (al editar) la borra. */
+            car_patent?: string | null;
             /** @description Car brand */
             car_brand?: string;
             /** @description Car model */
@@ -2231,8 +2579,8 @@ export interface components {
             type_car?: string;
             /** @description Car capacity in kg */
             car_capacity?: number;
-            /** @description Car patent number */
-            car_patent?: string;
+            /** @description Patente. Se guarda en mayúsculas, sin espacios ni guiones, y tiene que quedar con al menos 4 letras o números. `null` (al editar) la borra. */
+            car_patent?: string | null;
             /** @description Car brand */
             car_brand?: string;
             /** @description Car model */
@@ -2339,6 +2687,14 @@ export interface components {
              */
             amount: number;
         };
+        VehicleDeOrderDto: {
+            /** Format: uuid */
+            car_id: string;
+            /** @example AB123CD */
+            patent: string | null;
+            brand: string | null;
+            model: string | null;
+        };
         OrderResponseDto: {
             /** Format: uuid */
             order_id: string;
@@ -2386,6 +2742,7 @@ export interface components {
             zone_surcharge: components["schemas"]["ZoneSurchargeDto"] | null;
             /** @example 20000 */
             subtotal_items: number;
+            vehicle: components["schemas"]["VehicleDeOrderDto"] | null;
         };
         PaginatedOrdersResponseDto: {
             orders: components["schemas"]["OrderResponseDto"][];
@@ -2831,7 +3188,8 @@ export interface components {
              */
             endTime: string;
             /**
-             * @description Capacidad máxima de pedidos
+             * @description Capacidad máxima de pedidos (columna con default en la base)
+             * @default 50
              * @example 50
              */
             capacity: number;
@@ -3158,18 +3516,345 @@ export interface components {
              * @default 0
              */
             priority: number;
-            /**
-             * Format: date-time
-             * @description Desde cuándo rige la zona. Sin valor: rige desde siempre.
-             */
-            validFrom?: string;
-            /**
-             * Format: date-time
-             * @description Hasta cuándo rige la zona. Sin valor: no vence.
-             */
-            validUntil?: string;
             /** @default true */
             isActive: boolean;
+            /**
+             * Format: date-time
+             * @description Desde cuándo rige la zona. `null` quita el límite (rige desde siempre).
+             */
+            validFrom?: string | null;
+            /**
+             * Format: date-time
+             * @description Hasta cuándo rige la zona. `null` quita el vencimiento.
+             */
+            validUntil?: string | null;
+        };
+        CreateFleetPlanDto: {
+            /** @example Seguro del vehículo */
+            name: string;
+            /**
+             * @description A qué aplica: al vehículo o al chofer
+             * @enum {string}
+             */
+            subject: "vehicle" | "driver";
+            /**
+             * @description Qué dispara el vencimiento: una fecha fija, un intervalo de km o de tiempo
+             * @enum {string}
+             */
+            trigger: "by_km" | "by_time" | "by_fixed_date";
+            /** @description Obligatorio si trigger=by_km (p. ej. cada 10000 km) */
+            intervalKm?: number;
+            /** @description Obligatorio si trigger=by_time (p. ej. cada 6 meses) */
+            intervalMonths?: number;
+            /**
+             * @description Con cuántos días de anticipación avisa antes del vencimiento
+             * @example 30
+             */
+            leadTimeDays: number;
+            /**
+             * @description blocking: sin esto vigente, el vehículo/chofer no puede salir (CU-136/137/138)
+             * @enum {string}
+             */
+            criticality: "blocking" | "non_blocking";
+            /** @description Tipo de vehículo al que aplica (null = todos) */
+            carType?: string;
+            /** @default true */
+            isActive: boolean;
+        };
+        FleetPlanResponseDto: {
+            /** Format: uuid */
+            planId: string;
+            /** Format: uuid */
+            distributorId: string;
+            name: string;
+            /** @enum {string} */
+            subject: "vehicle" | "driver";
+            /** @enum {string} */
+            trigger: "by_km" | "by_time" | "by_fixed_date";
+            intervalKm: number | null;
+            intervalMonths: number | null;
+            leadTimeDays: number;
+            /** @enum {string} */
+            criticality: "blocking" | "non_blocking";
+            carType: string | null;
+            isActive: boolean;
+        };
+        UpdateFleetPlanDto: {
+            /** @example Seguro del vehículo */
+            name?: string;
+            /**
+             * @description A qué aplica: al vehículo o al chofer
+             * @enum {string}
+             */
+            subject?: "vehicle" | "driver";
+            /**
+             * @description Qué dispara el vencimiento: una fecha fija, un intervalo de km o de tiempo
+             * @enum {string}
+             */
+            trigger?: "by_km" | "by_time" | "by_fixed_date";
+            /** @description Obligatorio si trigger=by_km (p. ej. cada 10000 km) */
+            intervalKm?: number;
+            /** @description Obligatorio si trigger=by_time (p. ej. cada 6 meses) */
+            intervalMonths?: number;
+            /**
+             * @description Con cuántos días de anticipación avisa antes del vencimiento
+             * @example 30
+             */
+            leadTimeDays?: number;
+            /**
+             * @description blocking: sin esto vigente, el vehículo/chofer no puede salir (CU-136/137/138)
+             * @enum {string}
+             */
+            criticality?: "blocking" | "non_blocking";
+            /** @description Tipo de vehículo al que aplica (null = todos) */
+            carType?: string;
+            /** @default true */
+            isActive: boolean;
+        };
+        CreateFleetTaskDto: {
+            /** Format: uuid */
+            planId: string;
+            /**
+             * Format: uuid
+             * @description Obligatorio si el plan es de vehículo (subject: vehicle)
+             */
+            carId?: string;
+            /**
+             * Format: uuid
+             * @description Obligatorio si el plan es de chofer (subject: driver)
+             */
+            deliveryId?: string;
+            /**
+             * Format: date-time
+             * @description Fecha límite (vencimiento de la póliza, la VTV, la licencia)
+             * @example 2026-12-31T00:00:00.000Z
+             */
+            dueAt?: string;
+            /** @description Km al que corresponde el próximo service */
+            dueKm?: number;
+            /**
+             * @description Aseguradora, taller o gestoría
+             * @example La Segunda Seguros
+             */
+            provider?: string;
+            /**
+             * @description Número de póliza, de licencia, u otra referencia del proveedor
+             * @example 123456789
+             */
+            referenceNumber?: string;
+            /**
+             * @description Categoría de la licencia de conducir, si aplica
+             * @example B1
+             */
+            category?: string;
+            notes?: string;
+            /**
+             * Format: date-time
+             * @description Cuándo está agendado el turno/trámite, si ya se sabe
+             */
+            scheduledAt?: string;
+        };
+        FleetTaskAttachmentResponseDto: {
+            /** Format: uuid */
+            attachmentId: string;
+            /** Format: uuid */
+            taskId: string;
+            /** @example poliza-2026.pdf */
+            originalName: string;
+            /** @example application/pdf */
+            mimeType: string;
+            /** @example 245678 */
+            sizeBytes: number;
+            /** Format: uuid */
+            uploadedByUserId: string;
+            /** Format: date-time */
+            uploadedAt: string;
+        };
+        FleetTaskResponseDto: {
+            /** Format: uuid */
+            taskId: string;
+            /** Format: uuid */
+            planId: string;
+            plan?: components["schemas"]["FleetPlanResponseDto"];
+            /** Format: uuid */
+            distributorId: string;
+            /** Format: uuid */
+            carId: string | null;
+            /** Format: uuid */
+            deliveryId: string | null;
+            /** @enum {string} */
+            status: "forecast" | "scheduled" | "in_progress" | "done" | "overdue" | "cancelled";
+            /** Format: date-time */
+            dueAt: string | null;
+            dueKm: number | null;
+            /** Format: date-time */
+            scheduledAt: string | null;
+            /** Format: date-time */
+            performedAt: string | null;
+            odometerKm: number | null;
+            cost: number | null;
+            provider: string | null;
+            referenceNumber: string | null;
+            category: string | null;
+            notes: string | null;
+            /**
+             * @description null si no tiene fecha límite (p. ej. un service todavía sin fecha estimada) o si ya está cerrada/cancelada
+             * @enum {string|null}
+             */
+            expirationStatus: "current" | "due_soon" | "expired" | null;
+            /** @description Días hasta el vencimiento (negativo si ya venció) */
+            daysUntilDue: number | null;
+            /** @description Si esta tarea, vencida, inhabilita al vehículo/chofer */
+            blocks: boolean;
+            attachments?: components["schemas"]["FleetTaskAttachmentResponseDto"][];
+        };
+        UpdateFleetTaskDto: {
+            /**
+             * Format: date-time
+             * @description Fecha límite (vencimiento de la póliza, la VTV, la licencia)
+             * @example 2026-12-31T00:00:00.000Z
+             */
+            dueAt?: string;
+            /** @description Km al que corresponde el próximo service */
+            dueKm?: number;
+            /**
+             * @description Aseguradora, taller o gestoría
+             * @example La Segunda Seguros
+             */
+            provider?: string;
+            /**
+             * @description Número de póliza, de licencia, u otra referencia del proveedor
+             * @example 123456789
+             */
+            referenceNumber?: string;
+            /**
+             * @description Categoría de la licencia de conducir, si aplica
+             * @example B1
+             */
+            category?: string;
+            notes?: string;
+            /**
+             * Format: date-time
+             * @description Cuándo está agendado el turno/trámite, si ya se sabe
+             */
+            scheduledAt?: string;
+        };
+        CloseFleetTaskDto: {
+            /**
+             * Format: date-time
+             * @description Cuándo se hizo (o se renovó)
+             * @example 2026-09-26T13:00:00.000Z
+             */
+            performedAt: string;
+            /** @description Kilometraje del vehículo al hacerlo */
+            odometerKm?: number;
+            /** @example 45000.5 */
+            cost?: number;
+            /** @description Si cambió respecto al de la tarea */
+            provider?: string;
+            notes?: string;
+        };
+        CancelFleetTaskDto: {
+            /** @description Por qué se cancela */
+            notes?: string;
+        };
+        FleetExpirationEntryDto: {
+            /** Format: uuid */
+            taskId: string;
+            /** Format: uuid */
+            planId: string;
+            /** @example VTV */
+            planName: string;
+            /** @enum {string} */
+            criticality: "blocking" | "non_blocking";
+            /** Format: date-time */
+            dueAt: string | null;
+            /** @enum {string} */
+            expirationStatus: "current" | "due_soon" | "expired";
+            daysUntilDue: number | null;
+        };
+        FleetVehicleExpirationsDto: {
+            /** Format: uuid */
+            carId: string;
+            /** @example AB123CD */
+            carPatent: string | null;
+            carBrand: string | null;
+            carModel: string | null;
+            /** @description Tiene una habilitación bloqueante vencida (CU-136/137) */
+            isLocked: boolean;
+            items: components["schemas"]["FleetExpirationEntryDto"][];
+        };
+        FleetDriverExpirationsDto: {
+            /** Format: uuid */
+            deliveryId: string;
+            /** Format: uuid */
+            userId: string;
+            fullName: string | null;
+            /** @description Tiene una habilitación bloqueante vencida (CU-138) */
+            isLocked: boolean;
+            items: components["schemas"]["FleetExpirationEntryDto"][];
+        };
+        FleetExpirationsResponseDto: {
+            withinDays: number;
+            vehicles: components["schemas"]["FleetVehicleExpirationsDto"][];
+            drivers: components["schemas"]["FleetDriverExpirationsDto"][];
+        };
+        FleetVehicleDocumentsResponseDto: {
+            /** Format: uuid */
+            carId: string;
+            /** @description Tiene una habilitación bloqueante vencida: no puede salir */
+            isLocked: boolean;
+            tasks: components["schemas"]["FleetTaskResponseDto"][];
+        };
+        FleetDriverDocumentsResponseDto: {
+            /** Format: uuid */
+            deliveryId: string;
+            /** @description Tiene una habilitación bloqueante vencida: no puede salir. Considera tanto la documentación propia del chofer (licencia) como la del vehículo que maneja (seguro, VTV) — el mismo criterio que aplica el despacho. */
+            isLocked: boolean;
+            tasks: components["schemas"]["FleetTaskResponseDto"][];
+        };
+        VehicleInUseResponseDto: {
+            /** Format: uuid */
+            deliveryId: string;
+            /** Format: uuid */
+            carId: string;
+            /** @example AB123CD */
+            carPatent: string | null;
+            carBrand: string | null;
+            carModel: string | null;
+            /** @example Moto */
+            carTypeCar: string | null;
+            /** @description Si el vehículo está inhabilitado por documentación vencida (CU-136/137) */
+            isLocked: boolean;
+            /** Format: date-time */
+            assignedAt: string;
+            note: string | null;
+        };
+        AssignVehicleDto: {
+            /**
+             * Format: uuid
+             * @description Vehículo a poner en uso
+             */
+            carId: string;
+            /** @description Motivo u observación de la asignación */
+            note?: string;
+        };
+        VehicleAssignmentHistoryResponseDto: {
+            /** Format: uuid */
+            assignmentId: string;
+            /** Format: uuid */
+            carId: string;
+            carPatent: string | null;
+            carBrand: string | null;
+            carModel: string | null;
+            /** Format: uuid */
+            deliveryId: string;
+            driverName: string | null;
+            /** Format: date-time */
+            assignedAt: string;
+            /** Format: date-time */
+            releasedAt: string | null;
+            note: string | null;
         };
         SendPasswordResetDto: {
             /** @example user@example.com */
@@ -3280,11 +3965,15 @@ export interface components {
             /** @description Texto de resolución del reclamo */
             resolution: string;
             /**
-             * @description Nuevo estado del reclamo
+             * @description Estado final del reclamo. Pasarlo a "en proceso" es `PATCH /claims/:id/take`.
              * @example resolved
              * @enum {string}
              */
-            status: "pending" | "in_process" | "resolved" | "rejected";
+            status: "resolved" | "rejected";
+        };
+        ReopenClaimDto: {
+            /** @description Motivo por el que se reabre el reclamo */
+            reason: string;
         };
         VentasPorChoferDto: {
             /**
@@ -3660,6 +4349,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Es un chofer con pedidos aceptados o en camino: hay que cancelarlos o reasignarlos antes */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     UsersController_update: {
@@ -3859,7 +4555,10 @@ export interface operations {
     };
     AdminController_findAll: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Sólo para el super admin: lista los admins de esta distribuidora, aunque esté "viendo como" otra. Un admin de empresa sólo puede pedir la suya; otra es 403. */
+                distributorId?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -3873,6 +4572,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["AdminResponseDto"][];
                 };
+            };
+            /** @description distributorId no es un UUID */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Sin token o token inválido */
             401: {
@@ -4763,6 +5469,13 @@ export interface operations {
             };
             /** @description Delivery not found (o de otra distribuidora) */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tiene pedidos aceptados o en camino: hay que cancelarlos o reasignarlos antes */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6199,7 +6912,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Estado actualizado */
+            /** @description Estado actualizado, o devuelto a pendiente si lo libera el chofer */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -6208,7 +6921,7 @@ export interface operations {
                     "application/json": components["schemas"]["OrderResponseDto"];
                 };
             };
-            /** @description Transición de pedido inválida: cancelled → accepted · status debe ser uno de: reserved, pending, accepted, on_the_way, delivered, cancelled */
+            /** @description Transición de pedido inválida: cancelled → accepted · status debe ser uno de: reserved, pending, accepted, on_the_way, delivered, cancelled · la reserva no tiene la seña paga o todavía no llegó su fecha agendada · al aceptar (status=accepted), el repartidor está deshabilitado, no está validado, o tiene un documento de flota vencido que lo inhabilita (seguro, VTV o licencia) */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -6402,7 +7115,7 @@ export interface operations {
                     "application/json": components["schemas"]["OrderResponseDto"];
                 };
             };
-            /** @description El repartidor está deshabilitado, o el repartidor no está validado */
+            /** @description El repartidor está deshabilitado, no está validado, o tiene un documento de flota vencido que lo inhabilita (seguro, VTV o licencia) */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -8242,6 +8955,1101 @@ export interface operations {
             };
         };
     };
+    FleetPlanController_findAll: {
+        parameters: {
+            query?: {
+                subject?: "vehicle" | "driver";
+                /** @description Sin este filtro trae activos e inactivos */
+                isActive?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FleetPlanResponseDto"][];
+                };
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FleetPlanController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateFleetPlanDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FleetPlanResponseDto"];
+                };
+            };
+            /** @description Falta la distribuidora, o el intervalo no es coherente con el trigger */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FleetPlanController_findOne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Plan UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FleetPlanResponseDto"];
+                };
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Plan no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FleetPlanController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Plan UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateFleetPlanDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FleetPlanResponseDto"];
+                };
+            };
+            /** @description El intervalo no es coherente con el trigger */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Plan no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FleetTaskController_findAll: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+                /** @description Filtra por tipo de rol */
+                role?: string;
+                page?: number;
+                /** @description Texto a buscar */
+                term?: string;
+                carId?: string;
+                deliveryId?: string;
+                /** @description Sólo las tareas de este plan */
+                planId?: string;
+                status?: "forecast" | "scheduled" | "in_progress" | "done" | "overdue" | "cancelled";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FleetTaskResponseDto"][];
+                };
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FleetTaskController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateFleetTaskDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FleetTaskResponseDto"];
+                };
+            };
+            /** @description El vehículo/chofer no coincide con el subject del plan */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Plan, vehículo o chofer no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FleetTaskController_findOne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Task UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FleetTaskResponseDto"];
+                };
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tarea no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FleetTaskController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Task UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateFleetTaskDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FleetTaskResponseDto"];
+                };
+            };
+            /** @description La tarea ya está hecha o cancelada */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tarea no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FleetTaskController_close: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Task UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CloseFleetTaskDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FleetTaskResponseDto"];
+                };
+            };
+            /** @description La tarea ya está hecha o cancelada */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tarea no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FleetTaskController_cancel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Task UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelFleetTaskDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FleetTaskResponseDto"];
+                };
+            };
+            /** @description La tarea ya está hecha o cancelada */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tarea no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FleetTaskController_listAttachments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Task UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FleetTaskAttachmentResponseDto"][];
+                };
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tarea no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FleetTaskController_uploadAttachment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Task UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FleetTaskAttachmentResponseDto"];
+                };
+            };
+            /** @description Falta el archivo */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tarea no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description El archivo supera el máximo permitido */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tipo de archivo no permitido (sólo PDF, JPG, PNG, WEBP) */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FleetTaskController_downloadAttachment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Task UUID */
+                id: string;
+                /** @description Attachment UUID */
+                attachmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El archivo, con su content-type original */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tarea o adjunto no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FleetTaskController_removeAttachment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Task UUID */
+                id: string;
+                /** @description Attachment UUID */
+                attachmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Borrado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tarea o adjunto no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FleetExpirationsController_find: {
+        parameters: {
+            query?: {
+                /** @description Ventana en días: trae lo vencido y lo que vence dentro de esta cantidad de días */
+                withinDays?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FleetExpirationsResponseDto"];
+                };
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CarDocumentsController_findAll: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Car UUID */
+                carId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FleetVehicleDocumentsResponseDto"];
+                };
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Vehículo no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DeliveryDocumentsController_findAll: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Delivery UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FleetDriverDocumentsResponseDto"];
+                };
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Chofer no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DeliveryVehicleController_miVehiculo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sin cuerpo si no tiene ningún vehículo en uso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VehicleInUseResponseDto"];
+                };
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: delivery */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DeliveryVehicleController_vehiculoDelChofer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Delivery UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sin cuerpo si no tiene ningún vehículo en uso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VehicleInUseResponseDto"];
+                };
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Chofer no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DeliveryVehicleController_ponerEnUso: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Delivery UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignVehicleDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VehicleInUseResponseDto"];
+                };
+            };
+            /** @description El vehículo está inhabilitado por documentación vencida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Chofer o vehículo no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description El chofer (o a quien se le "roba" el vehículo) tiene un pedido en curso */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DeliveryVehicleController_liberar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Delivery UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponseDto"];
+                };
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Chofer no encontrado, o no tiene un vehículo en uso */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description El chofer tiene un pedido en curso (aceptado o en camino) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DeliveryVehicleController_historial: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+                /** @description Filtra por tipo de rol */
+                role?: string;
+                page?: number;
+                /** @description Texto a buscar */
+                term?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Delivery UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VehicleAssignmentHistoryResponseDto"][];
+                };
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Chofer no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CarAssignmentsController_historial: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+                /** @description Filtra por tipo de rol */
+                role?: string;
+                page?: number;
+                /** @description Texto a buscar */
+                term?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Car UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VehicleAssignmentHistoryResponseDto"][];
+                };
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Vehículo no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     EmailController_sendPasswordReset: {
         parameters: {
             query?: never;
@@ -8443,6 +10251,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Claim UUID */
                 id: string;
             };
             cookie?: never;
@@ -8461,7 +10270,111 @@ export interface operations {
                     "application/json": components["schemas"]["ClaimResponseDto"];
                 };
             };
-            /** @description Datos inválidos (p. ej.: resolution should not be empty; status debe ser uno de: pending, in_process, resolved, rejected) */
+            /** @description Falta la distribuidora (header X-Distributor, sólo super admin) o datos inválidos (p. ej.: resolution should not be empty; status debe ser uno de: resolved, rejected) o transición de reclamo inválida (p. ej.: resolved → rejected sin reabrir antes) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description El reclamo no existe o es de otra distribuidora */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ClaimsController_take: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Claim UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimResponseDto"];
+                };
+            };
+            /** @description Falta la distribuidora (header X-Distributor, sólo super admin) o el reclamo no está pendiente (ya fue tomado, resuelto o rechazado) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description El reclamo no existe o es de otra distribuidora */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ClaimsController_reopen: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Claim UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReopenClaimDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimResponseDto"];
+                };
+            };
+            /** @description Falta la distribuidora (header X-Distributor, sólo super admin), datos inválidos (reason should not be empty) o el reclamo no está resuelto ni rechazado */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -9207,7 +11120,7 @@ export interface operations {
                     "application/json": components["schemas"]["IncidentResponseDto"];
                 };
             };
-            /** @description Datos inválidos (p. ej.: resolutionNote must be a string) */
+            /** @description Falta la distribuidora (header X-Distributor, sólo super admin) o datos inválidos (p. ej.: resolutionNote must be a string) */
             400: {
                 headers: {
                     [name: string]: unknown;

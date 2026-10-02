@@ -109,7 +109,7 @@ export const ZoneFormPanel = ({ zone, polygon, onSaved, onCancel }: Props) => {
                     onClick={() => field.onChange(option.value)}
                     className={cx(
                       'flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-                      field.value === option.value ? 'bg-primary text-on-primary' : 'text-ink-2 hover:bg-tinta-50',
+                      field.value === option.value ? 'bg-primary text-on-primary' : 'text-ink-2 hover:bg-surface-hover',
                     )}
                   >
                     {option.label}

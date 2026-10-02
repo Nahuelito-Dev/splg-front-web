@@ -3,6 +3,7 @@ import type {
   BajaDeProducto,
   Catalogo,
   CreateGasCylinderBody,
+  Disponibles,
   GasCylinder,
   UpdateGasCylinderBody,
   UpdateStockBody,
@@ -28,6 +29,18 @@ export const listGasCylinders = async (params: PageParams, search?: string): Pro
 /** GET /gascylinder/:id */
 export const getGasCylinder = async (id: string): Promise<GasCylinder> => {
   const { data } = await http.get<GasCylinder>(`/gascylinder/${id}`);
+  return data;
+};
+
+/** GET /gascylinder/type/:type: el producto activo de ese tipo exacto (404 si no hay ninguno). */
+export const getGasCylinderByType = async (type: string): Promise<GasCylinder> => {
+  const { data } = await http.get<GasCylinder>(`/gascylinder/type/${encodeURIComponent(type)}`);
+  return data;
+};
+
+/** GET /gascylinder/available/list: lo que la app del cliente puede pedir ahora (activo y con stock). */
+export const getAvailableGasCylinders = async (): Promise<Disponibles> => {
+  const { data } = await http.get<Disponibles>('/gascylinder/available/list');
   return data;
 };
 

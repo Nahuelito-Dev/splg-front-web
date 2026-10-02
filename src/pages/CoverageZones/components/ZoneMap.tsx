@@ -82,7 +82,9 @@ export const ZoneMap = ({
     </MapContainer>
 
     {mode !== 'idle' && (
-      <div className="absolute left-1/2 top-3 z-[1000] -translate-x-1/2 rounded-full bg-ink/90 px-3 py-1.5 text-xs text-surface">
+      /* bg-side (no bg-ink): flota sobre las teselas del mapa, siempre claras, así que el
+         aviso se queda siempre oscuro sin importar el tema del panel. */
+      <div className="absolute left-1/2 top-3 z-[1000] -translate-x-1/2 rounded-full bg-side/90 px-3 py-1.5 text-xs text-white">
         {HINTS[mode]}
       </div>
     )}

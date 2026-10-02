@@ -43,7 +43,11 @@ export const ActiveOrdersCard = () => {
           <h2 className="text-[14.5px] font-semibold tracking-[-0.01em] text-ink">Pedidos</h2>
           <p className="text-xs text-muted">Se asignan solos al chofer libre más cercano.</p>
         </div>
-        <div role="tablist" aria-label="Filtrar pedidos" className="flex gap-0.5 rounded-[9px] bg-bg p-[3px]">
+        <div
+          role="tablist"
+          aria-label="Filtrar pedidos"
+          className="flex max-w-full gap-0.5 overflow-x-auto rounded-[9px] bg-bg p-[3px]"
+        >
           {tabs.map((t) => (
             <button
               key={t.id}
@@ -52,7 +56,7 @@ export const ActiveOrdersCard = () => {
               aria-selected={tab === t.id}
               onClick={() => setTab(t.id)}
               className={cx(
-                'rounded-[7px] px-2.5 py-1 text-xs font-medium transition-colors',
+                'shrink-0 whitespace-nowrap rounded-[7px] px-2.5 py-1 text-xs font-medium transition-colors',
                 tab === t.id ? 'bg-surface text-ink shadow-control' : 'text-muted hover:text-ink',
               )}
             >
@@ -71,7 +75,7 @@ export const ActiveOrdersCard = () => {
           />
         ) : (
           <table className="w-full min-w-[600px] table-fixed text-[13px]">
-            <thead className="bg-tinta-25 text-left text-[11.5px] text-muted">
+            <thead className="bg-surface-sunken text-left text-[11.5px] text-muted">
               <tr>
                 <th className="w-[30%] px-[18px] py-2.5 font-medium">Cliente</th>
                 <th className="w-[26%] px-3 py-2.5 font-medium">Entrega</th>
@@ -93,7 +97,7 @@ export const ActiveOrdersCard = () => {
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') navigate(`/orders/${order.order_id}`);
                     }}
-                    className="cursor-pointer transition-colors hover:bg-tinta-25"
+                    className="cursor-pointer transition-colors hover:bg-surface-sunken"
                   >
                     <td className="px-[18px] py-3">
                       <div className="flex items-center gap-2.5">

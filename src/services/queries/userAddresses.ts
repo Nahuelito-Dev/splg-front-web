@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createUserAddress,
   deleteUserAddress,
+  getDefaultUserAddress,
+  getUserAddress,
   listUserAddresses,
   setDefaultUserAddress,
   updateUserAddress,
@@ -16,6 +18,27 @@ export const useUserAddresses = (userId: string | undefined) =>
     queryKey: keys.list({ userId }),
     queryFn: () => listUserAddresses(userId ?? ''),
     enabled: Boolean(userId),
+  });
+
+/** La dirección principal sola, para el resumen de la ficha. */
+export const useDefaultUserAddress = (userId: string | undefined) =>
+  useQuery({
+    queryKey: [...keys.detail(userId ?? ''), 'default'],
+    queryFn: () => getDefaultUserAddress(userId ?? ''),
+    enabled: Boolean(userId),
+  });
+
+/**
+ * La dirección puntual, siempre recién pedida: se usa para editar y no conviene partir de la copia de la lista.
+ * No se vuelve a pedir al volver a la ventana (pisaría lo que la persona ya tipeó).
+ */
+export const useUserAddress = (addressId: string | undefined, enabled: boolean) =>
+  useQuery({
+    queryKey: keys.detail(addressId ?? ''),
+    queryFn: () => getUserAddress(addressId ?? ''),
+    enabled: Boolean(addressId) && enabled,
+    staleTime: 0,
+    gcTime: 0,
   });
 
 /**

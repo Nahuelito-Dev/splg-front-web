@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Button, Input, Modal } from '../../../common/components/ui';
 import type { CreateDistributorBody, Distributor, UpdateDistributorBody } from '../../../services/api/types';
+import { activeDistributor } from '../../../services/api/activeDistributor';
 import { useCreateDistributor, useUpdateDistributor } from '../../../services/queries/distributors';
 import { notify } from '../../../utils/notifications';
 
@@ -148,7 +149,11 @@ const EditDistributorForm = ({
     updateDistributor.mutate(
       { id: distributor.distributor_id, changes },
       {
-        onSuccess: () => {
+        onSuccess: (updated) => {
+          // Si es la empresa que se está viendo "como", el header X-Distributor tiene que seguir su slug.
+          if (activeDistributor.get() === distributor.slug && updated.slug !== distributor.slug) {
+            activeDistributor.set(updated.slug);
+          }
           notify.success('Empresa actualizada');
           onClose();
         },

@@ -2,7 +2,9 @@ import { LogoSplg } from '../../common/components/LogoSplg';
 
 export const CheckingAuth = () => {
   return (
-    <div className="flex min-h-screen w-full flex-col items-center justify-center gap-8 bg-ink">
+    // bg-side (no bg-ink): la pantalla de carga es parte de la marca, siempre oscura,
+    // sin importar el tema elegido (ink cambia de claro a oscuro según el modo).
+    <div className="flex min-h-screen w-full flex-col items-center justify-center gap-8 bg-side">
       <div className="animate-pulse">
         <LogoSplg size="lg" />
       </div>

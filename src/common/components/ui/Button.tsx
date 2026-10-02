@@ -15,8 +15,8 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
 const VARIANTS: Record<Variant, string> = {
   primary:
     'border border-primary-edge bg-gradient-to-b from-primary-from to-primary-to text-on-primary shadow-primary hover:brightness-110',
-  secondary: 'border border-outline bg-surface text-ink shadow-control hover:bg-tinta-50',
-  ghost: 'text-ink-2 hover:bg-tinta-100 hover:text-ink',
+  secondary: 'border border-outline bg-surface text-ink shadow-control hover:bg-surface-hover',
+  ghost: 'text-ink-2 hover:bg-surface-muted hover:text-ink',
   danger: 'border border-danger bg-danger text-white shadow-control hover:brightness-110',
 };
 

@@ -1,4 +1,5 @@
 import { createRequire } from 'node:module';
+import plugin from 'tailwindcss/plugin.js';
 
 /**
  * Sistema visual «Brasa» (splg-docs/material-de-trabajo/MARCA.md). Los valores
@@ -6,13 +7,92 @@ import { createRequire } from 'node:module';
  * Los componentes usan roles (primary, ink, muted, outline…); las escalas
  * llama, gas y tinta quedan para matices. `npm run colors` impide las paletas
  * sueltas de Tailwind (indigo, rose, slate…).
+ *
+ * Modo oscuro: los roles que dependen del fondo (ink, muted, outline, bg,
+ * surface, los "soft" de estado…) viven en variables CSS (`:root` / `.dark`,
+ * inyectadas más abajo) para poder cambiar de valor sin cambiar de clase.
+ * Las escalas (`llama`, `gas`, `tinta`) y el menú lateral (`side`) quedan
+ * fijos: el menú ya es oscuro en los dos temas.
  */
 const brand = createRequire(import.meta.url)('./src/theme/brand.json');
-const { llama, gas, tinta, canvas, sidebar, status, statusSoft, primaryGradient } = brand;
-const state = (name) => ({ DEFAULT: status[name], soft: statusSoft[name] });
+const { llama, gas, tinta, canvas, sidebar, status, statusSoft, primaryGradient, dark } = brand;
+
+/** '#RRGGBB' → '12 15 22' (canal R G B), para rgb(var(--x) / <alpha-value>). */
+const channels = (hex) => {
+  const n = hex.replace('#', '');
+  const full = n.length === 3 ? n.split('').map((c) => c + c).join('') : n;
+  const int = parseInt(full, 16);
+  return `${(int >> 16) & 255} ${(int >> 8) & 255} ${int & 255}`;
+};
+
+/** Variable CSS reactiva al tema: valor claro en :root, oscuro en .dark. */
+const themed = (name) => `rgb(var(--c-${name}) / <alpha-value>)`;
+
+const LIGHT_VARS = {
+  bg: canvas,
+  surface: '#FFFFFF',
+  'surface-hover': tinta['50'],
+  'surface-sunken': tinta['25'],
+  'surface-muted': tinta['100'],
+  ink: tinta['900'],
+  'ink-2': tinta['700'],
+  muted: tinta['500'],
+  faint: tinta['400'],
+  outline: tinta['200'],
+  'outline-soft': tinta['100'],
+  'primary-soft': llama['50'],
+  'primary-strong': llama['700'],
+  'accent-soft': gas['50'],
+  'on-accent': tinta['900'],
+  success: status.success,
+  'success-soft': statusSoft.success,
+  danger: status.danger,
+  'danger-soft': statusSoft.danger,
+  warn: status.warn,
+  'warn-soft': statusSoft.warn,
+  info: status.info,
+  'info-soft': statusSoft.info,
+};
+
+const DARK_VARS = {
+  bg: dark.canvas,
+  surface: dark.surface,
+  'surface-hover': dark.surfaceHover,
+  'surface-sunken': dark.surfaceSunken,
+  'surface-muted': dark.surfaceMuted,
+  ink: dark.ink,
+  'ink-2': dark.ink2,
+  muted: dark.muted,
+  faint: dark.faint,
+  outline: dark.outline,
+  'outline-soft': dark.outlineSoft,
+  'primary-soft': dark.primarySoft,
+  'primary-strong': dark.primaryStrong,
+  'accent-soft': dark.accentSoft,
+  'on-accent': dark.onAccent,
+  success: dark.status.success,
+  'success-soft': dark.statusSoft.success,
+  danger: dark.status.danger,
+  'danger-soft': dark.statusSoft.danger,
+  warn: dark.status.warn,
+  'warn-soft': dark.statusSoft.warn,
+  info: dark.status.info,
+  'info-soft': dark.statusSoft.info,
+};
+
+const asCssVars = (vars) =>
+  Object.fromEntries(Object.entries(vars).map(([key, hex]) => [`--c-${key}`, channels(hex)]));
+
+const brandVariables = plugin(({ addBase }) => {
+  addBase({
+    ':root': asCssVars(LIGHT_VARS),
+    '.dark': asCssVars(DARK_VARS),
+  });
+});
 
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
@@ -23,28 +103,31 @@ export default {
         primary: {
           DEFAULT: llama[600],
           hover: llama[700],
-          strong: llama[700],
-          soft: llama[50],
+          strong: themed('primary-strong'),
+          soft: themed('primary-soft'),
           from: primaryGradient.from,
           to: primaryGradient.to,
           edge: primaryGradient.border,
         },
         'on-primary': '#FFFFFF',
-        accent: { DEFAULT: gas[400], soft: gas[50] },
-        'on-accent': tinta[900],
-        ink: tinta[900],
-        'ink-2': tinta[700],
-        muted: tinta[500],
-        faint: tinta[400],
-        outline: tinta[200],
-        'outline-soft': tinta[100],
-        bg: canvas,
-        surface: '#FFFFFF',
+        accent: { DEFAULT: gas[400], soft: themed('accent-soft') },
+        'on-accent': themed('on-accent'),
+        ink: themed('ink'),
+        'ink-2': themed('ink-2'),
+        muted: themed('muted'),
+        faint: themed('faint'),
+        outline: themed('outline'),
+        'outline-soft': themed('outline-soft'),
+        bg: themed('bg'),
+        surface: themed('surface'),
+        'surface-hover': themed('surface-hover'),
+        'surface-sunken': themed('surface-sunken'),
+        'surface-muted': themed('surface-muted'),
         side: { DEFAULT: sidebar.bg, raised: sidebar.raised, line: sidebar.line, text: sidebar.text },
-        success: state('success'),
-        danger: state('danger'),
-        warn: state('warn'),
-        info: state('info'),
+        success: { DEFAULT: themed('success'), soft: themed('success-soft') },
+        danger: { DEFAULT: themed('danger'), soft: themed('danger-soft') },
+        warn: { DEFAULT: themed('warn'), soft: themed('warn-soft') },
+        info: { DEFAULT: themed('info'), soft: themed('info-soft') },
       },
       fontFamily: {
         sans: ['Geist', 'Helvetica Neue', 'Arial', 'sans-serif'],
@@ -63,5 +146,5 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [brandVariables],
 };
