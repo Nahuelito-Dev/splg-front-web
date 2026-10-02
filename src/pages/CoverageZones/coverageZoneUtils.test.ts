@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  countVertices,
   formatSurcharge,
   formatValidity,
   geoJsonRingToLatLngs,
@@ -92,5 +93,30 @@ describe('toDateInputValue', () => {
 
   it('sin fecha, cadena vacía', () => {
     expect(toDateInputValue(null)).toBe('');
+  });
+});
+
+describe('countVertices', () => {
+  it('no cuenta el punto de cierre del anillo', () => {
+    expect(
+      countVertices([
+        [0, 0],
+        [1, 0],
+        [0, 1],
+        [0, 0],
+      ]),
+    ).toBe(3);
+  });
+
+  it('un anillo sin cerrar cuenta todos sus puntos y uno vacío, cero', () => {
+    expect(
+      countVertices([
+        [0, 0],
+        [1, 0],
+        [0, 1],
+      ]),
+    ).toBe(3);
+    expect(countVertices([])).toBe(0);
+    expect(countVertices(undefined)).toBe(0);
   });
 });

@@ -20,6 +20,12 @@ export const listCylinders = async (state?: Cylinder['state']): Promise<Cylinder
   return data;
 };
 
+/** GET /cylinders/:id: un envase puntual (404 si no existe o es de otra distribuidora). */
+export const getCylinder = async (id: string): Promise<Cylinder> => {
+  const { data } = await http.get<Cylinder>(`/cylinders/${id}`);
+  return data;
+};
+
 /** POST /cylinders: alta de un envase, nace en `in_depot`. El serial es único por distribuidora (409 si se repite). */
 export const createCylinder = async (body: CreateCylinderBody): Promise<Cylinder> => {
   const { data } = await http.post<Cylinder>('/cylinders', body);

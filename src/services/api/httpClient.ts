@@ -1,9 +1,29 @@
-import axios, { type AxiosResponse } from 'axios';
+import axios, { type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
 import { env } from '../../config/env';
 import { store } from '../../store/store';
 import { logOut } from '../../store/auth';
 import { startLogOut } from '../../store/auth/thunks';
 import { activeDistributor } from './activeDistributor';
+
+// Axios no trae estas opciones: las agregan `skipDistributor` y `public` (ver `attachAuthHeaders`).
+declare module 'axios' {
+  export interface AxiosRequestConfig {
+    /**
+     * Las llamadas de identidad (¿quién es este token?, antes de que haya sesión elegida)
+     * no van con `X-Distributor`: si quedó un slug viejo en localStorage (de una
+     * distribuidora ya borrada, o de una sesión anterior), la API la rechaza con 401 y
+     * tira abajo el login entero. Ver `getAdmin`.
+     */
+    skipDistributor?: boolean;
+    /**
+     * Endpoint público (p. ej. `/email/password-reset` desde el login, CU-047):
+     * no exige que haya una sesión iniciada. Si hay un token guardado igual se
+     * manda (no hace daño), pero sin token la llamada sale igual en vez de
+     * rechazarse antes de salir.
+     */
+    public?: boolean;
+  }
+}
 
 /** Origen que la API espera del panel: el guard lo compara con el rol del token. */
 const CLIENT_SOURCE = 'panel-app';
@@ -19,14 +39,22 @@ const clearLocalSession = () => {
   localStorage.removeItem('expireTimestamp');
 };
 
-http.interceptors.request.use((config) => {
+/** Token y `X-Distributor` de cada pedido. Aparte para poder probarlo sin armar un axios entero. */
+export const attachAuthHeaders = (config: InternalAxiosRequestConfig) => {
   const token = localStorage.getItem('token');
-  if (!token) return Promise.reject(new Error('No hay sesión iniciada'));
+  if (!token) {
+    if (config.public) return config;
+    return Promise.reject(new Error('No hay sesión iniciada'));
+  }
   config.headers.Authorization = `Bearer ${token}`;
-  const distributor = activeDistributor.get();
-  if (distributor) config.headers['X-Distributor'] = distributor;
+  if (!config.skipDistributor) {
+    const distributor = activeDistributor.get();
+    if (distributor) config.headers['X-Distributor'] = distributor;
+  }
   return config;
-});
+};
+
+http.interceptors.request.use(attachAuthHeaders);
 
 interface BodyWithCode {
   code?: string;

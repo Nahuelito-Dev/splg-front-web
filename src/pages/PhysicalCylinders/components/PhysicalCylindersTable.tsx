@@ -11,10 +11,10 @@ interface Props {
   loading: boolean;
   /** Sin él no se muestra el botón (p. ej. superadmin sin distribuidora elegida). */
   onTransition?: (cylinder: Cylinder) => void;
-  onHistory: (cylinder: Cylinder) => void;
+  onView: (cylinder: Cylinder) => void;
 }
 
-export const PhysicalCylindersTable = ({ rows, loading, onTransition, onHistory }: Props) => {
+export const PhysicalCylindersTable = ({ rows, loading, onTransition, onView }: Props) => {
   const columns = useMemo<GridColDef<Cylinder>[]>(
     () => [
       {
@@ -72,7 +72,7 @@ export const PhysicalCylindersTable = ({ rows, loading, onTransition, onHistory 
         renderCell: ({ row }) => (
           <RowActions
             rowLabel={`envase ${row.serial}`}
-            onView={() => onHistory(row)}
+            onView={() => onView(row)}
             actions={
               onTransition ? [{ label: 'Mover de estado', icon: ArrowRightLeft, onClick: () => onTransition(row) }] : []
             }
@@ -80,7 +80,7 @@ export const PhysicalCylindersTable = ({ rows, loading, onTransition, onHistory 
         ),
       },
     ],
-    [onTransition, onHistory],
+    [onTransition, onView],
   );
 
   return (
@@ -89,7 +89,7 @@ export const PhysicalCylindersTable = ({ rows, loading, onTransition, onHistory 
       columns={columns}
       getRowId={(row) => row.cylinder_id}
       loading={loading}
-      onRowClick={onHistory}
+      onRowClick={onView}
       empty={
         <EmptyState
           title="No hay envases"

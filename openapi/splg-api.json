@@ -290,7 +290,7 @@
                 ]
             },
             "delete": {
-                "description": "El usuario y sus perfiles quedan dados de baja y dejan de aparecer; sus pedidos y registros se conservan. La cuenta de Firebase se deshabilita, no se borra (H-74).",
+                "description": "El usuario y sus perfiles quedan dados de baja y dejan de aparecer; sus pedidos y registros se conservan. La cuenta de Firebase se deshabilita, no se borra (H-74). Un chofer con pedidos en curso no se puede dar de baja (409).",
                 "operationId": "UsersController_remove",
                 "parameters": [
                     {
@@ -322,6 +322,9 @@
                     },
                     "404": {
                         "description": "No existe o es de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "Es un chofer con pedidos aceptados o en camino: hay que cancelarlos o reasignarlos antes"
                     }
                 },
                 "security": [
@@ -541,8 +544,20 @@
                 ]
             },
             "get": {
+                "description": "Un admin de empresa ve los de la suya. El super admin ve los de la distribuidora que elija con `?distributorId=` (aunque esté \"viendo como\" otra), o los de la distribuidora en contexto, o todos si no hay.",
                 "operationId": "AdminController_findAll",
-                "parameters": [],
+                "parameters": [
+                    {
+                        "name": "distributorId",
+                        "required": false,
+                        "in": "query",
+                        "description": "Sólo para el super admin: lista los admins de esta distribuidora, aunque esté \"viendo como\" otra. Un admin de empresa sólo puede pedir la suya; otra es 403.",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "",
@@ -556,6 +571,9 @@
                                 }
                             }
                         }
+                    },
+                    "400": {
+                        "description": "distributorId no es un UUID"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -1661,6 +1679,9 @@
                     },
                     "404": {
                         "description": "Delivery not found (o de otra distribuidora)"
+                    },
+                    "409": {
+                        "description": "Tiene pedidos aceptados o en camino: hay que cancelarlos o reasignarlos antes"
                     }
                 },
                 "security": [
@@ -3322,6 +3343,8 @@
                 ]
             },
             "delete": {
+                "deprecated": true,
+                "description": "Duplica `PATCH /orders/:id/cancel` (delega en la MISMA cancelación, mismo stock, mismos avisos). Se mantiene sólo por compatibilidad con clientes existentes: usar `/cancel` en código nuevo.",
                 "operationId": "OrderController_cancelOrder",
                 "parameters": [
                     {
@@ -3374,7 +3397,7 @@
         },
         "/api/orders/{id}/status": {
             "patch": {
-                "description": "Idempotente vía header `Idempotency-Key`. Evita doble aceptación/entrega por reintento de red. Solo chofer/admin.",
+                "description": "Idempotente vía header `Idempotency-Key`. Evita doble aceptación/entrega por reintento de red. Solo chofer/admin.\n\n- `status: cancelled` tiene EXACTAMENTE el mismo efecto que `PATCH /:id/cancel` (mismo código, mismo stock, mismos avisos): cancela con devolución de stock si lo pide un admin, o LIBERA el pedido a `pending` (sin devolver stock, sin motivo de cancelación) si lo pide el chofer — no cancela de verdad.\n- `status: pending` sobre un pedido ACCEPTED/ON_THE_WAY libera al chofer asignado (mismo camino que el punto anterior): limpia el chofer, corta su tracking, cierra cualquier oferta que hubiera quedado y avisa al chofer anterior, al cliente y al panel. `POST /:id/reject` sobre una asignación manual NO usa este camino: no libera, sólo avisa al panel (ver `/reject`).\n- `status: pending` sobre una RESERVA (pedido `reserved`) la ACTIVA a mano, con las mismas condiciones que el cron (seña paga y día agendado cumplido) — sólo admin/super_admin, 400 claro si no las cumple.\n- `status: accepted` sobre un pedido YA `accepted` con el MISMO chofer es idempotente: no regenera `acceptedAt` ni el código de entrega (pasa cuando el chofer \"acepta\" el aviso de una asignación manual).",
                 "operationId": "OrderController_updateStatus",
                 "parameters": [
                     {
@@ -3399,7 +3422,7 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Estado actualizado",
+                        "description": "Estado actualizado, o devuelto a pendiente si lo libera el chofer",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -3409,7 +3432,7 @@
                         }
                     },
                     "400": {
-                        "description": "Transición de pedido inválida: cancelled → accepted · status debe ser uno de: reserved, pending, accepted, on_the_way, delivered, cancelled"
+                        "description": "Transición de pedido inválida: cancelled → accepted · status debe ser uno de: reserved, pending, accepted, on_the_way, delivered, cancelled · la reserva no tiene la seña paga o todavía no llegó su fecha agendada · al aceptar (status=accepted), el repartidor está deshabilitado, no está validado, o tiene un documento de flota vencido que lo inhabilita (seguro, VTV o licencia)"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -3437,7 +3460,7 @@
         },
         "/api/orders/{id}/reject": {
             "post": {
-                "description": "Cierra la oferta activa del chofer como REJECTED y re-ofrece el pedido al siguiente chofer más cercano de inmediato (sin esperar el timeout).",
+                "description": "Oferta real del despacho automático: cierra la oferta activa del chofer como REJECTED y re-ofrece el pedido al siguiente chofer más cercano de inmediato (sin esperar el timeout).\n\nAsignación MANUAL del admin (el chofer la recibe con el mismo evento de socket que una oferta, pero nunca hubo una fila `OFFERED` que cerrar): el pedido NO cambia. La app manda este mismo endpoint tanto si el chofer lo rechaza a propósito como si deja vencer el aviso sin tocarlo, así que \"rechazarla\" no puede deshacer sola una asignación que un admin decidió a mano — se avisa al panel (`order:assignment-declined`) para que decida un humano (reasignar, insistir, etc.); el pedido sigue asignado a este chofer.",
                 "operationId": "OrderController_rejectOffer",
                 "parameters": [
                     {
@@ -3476,7 +3499,7 @@
                         "bearer": []
                     }
                 ],
-                "summary": "Chofer rechaza/ignora una oferta de pedido (CU-016)",
+                "summary": "Chofer rechaza/ignora una oferta de pedido (CU-016) o una asignación manual (H-55)",
                 "tags": [
                     "Orders"
                 ]
@@ -3600,7 +3623,7 @@
         },
         "/api/orders/{id}/assign/{deliveryId}": {
             "patch": {
-                "description": "Asignación manual del admin: exige que el chofer esté habilitado y validado. NO exige que esté en línea (a diferencia del despacho automático).",
+                "description": "Asignación manual del admin: exige que el chofer esté habilitado y validado, y que ni su licencia ni el vehículo que maneja tengan un documento bloqueante vencido (seguro, VTV, licencia — CU-136 a CU-138). NO exige que esté en línea (a diferencia del despacho automático).",
                 "operationId": "OrderController_assignDelivery",
                 "parameters": [
                     {
@@ -3634,7 +3657,7 @@
                         }
                     },
                     "400": {
-                        "description": "El repartidor está deshabilitado, o el repartidor no está validado"
+                        "description": "El repartidor está deshabilitado, no está validado, o tiene un documento de flota vencido que lo inhabilita (seguro, VTV o licencia)"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -4009,6 +4032,7 @@
                 ]
             },
             "get": {
+                "description": "Público. Con sesión iniciada se acota a la distribuidora del usuario (la del admin, o el header `X-Distributor` del super admin y del cliente); sin sesión, a `?distributor=` o a la distribuidora por defecto.",
                 "operationId": "GasCylinderController_findAll",
                 "parameters": [
                     {
@@ -4286,6 +4310,7 @@
         },
         "/api/gascylinder/available/list": {
             "get": {
+                "description": "Público. Con sesión iniciada se acota a la distribuidora del usuario; sin sesión, a `?distributor=` o a la distribuidora por defecto.",
                 "operationId": "GasCylinderController_getAvailableCylinders",
                 "parameters": [
                     {
@@ -5857,6 +5882,1339 @@
                 ]
             }
         },
+        "/api/fleet/plans": {
+            "post": {
+                "operationId": "FleetPlanController_create",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateFleetPlanDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FleetPlanResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta la distribuidora, o el intervalo no es coherente con el trigger"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Crear un plan de mantenimiento/habilitación",
+                "tags": [
+                    "Fleet · Plans"
+                ]
+            },
+            "get": {
+                "operationId": "FleetPlanController_findAll",
+                "parameters": [
+                    {
+                        "name": "subject",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "vehicle",
+                                "driver"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "isActive",
+                        "required": false,
+                        "in": "query",
+                        "description": "Sin este filtro trae activos e inactivos",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/FleetPlanResponseDto"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Listar los planes de la distribuidora",
+                "tags": [
+                    "Fleet · Plans"
+                ]
+            }
+        },
+        "/api/fleet/plans/{id}": {
+            "get": {
+                "operationId": "FleetPlanController_findOne",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Plan UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FleetPlanResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Plan no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ver un plan",
+                "tags": [
+                    "Fleet · Plans"
+                ]
+            },
+            "patch": {
+                "operationId": "FleetPlanController_update",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Plan UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateFleetPlanDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FleetPlanResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "El intervalo no es coherente con el trigger"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Plan no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Editar un plan (o desactivarlo con isActive: false)",
+                "tags": [
+                    "Fleet · Plans"
+                ]
+            }
+        },
+        "/api/fleet/tasks": {
+            "post": {
+                "operationId": "FleetTaskController_create",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateFleetTaskDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FleetTaskResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "El vehículo/chofer no coincide con el subject del plan"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Plan, vehículo o chofer no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Crear una tarea contra un plan",
+                "tags": [
+                    "Fleet · Tasks"
+                ]
+            },
+            "get": {
+                "operationId": "FleetTaskController_findAll",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "maximum": 100,
+                            "default": 10,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 0,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "role",
+                        "required": false,
+                        "in": "query",
+                        "description": "Filtra por tipo de rol",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 1,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "term",
+                        "required": false,
+                        "in": "query",
+                        "description": "Texto a buscar",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "carId",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "deliveryId",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "planId",
+                        "required": false,
+                        "in": "query",
+                        "description": "Sólo las tareas de este plan",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "forecast",
+                                "scheduled",
+                                "in_progress",
+                                "done",
+                                "overdue",
+                                "cancelled"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/FleetTaskResponseDto"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Listar tareas, con filtros",
+                "tags": [
+                    "Fleet · Tasks"
+                ]
+            }
+        },
+        "/api/fleet/tasks/{id}": {
+            "get": {
+                "operationId": "FleetTaskController_findOne",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Task UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FleetTaskResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Tarea no encontrada"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ver una tarea, con sus adjuntos",
+                "tags": [
+                    "Fleet · Tasks"
+                ]
+            },
+            "patch": {
+                "operationId": "FleetTaskController_update",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Task UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateFleetTaskDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FleetTaskResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "La tarea ya está hecha o cancelada"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Tarea no encontrada"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Editar una tarea abierta",
+                "tags": [
+                    "Fleet · Tasks"
+                ]
+            }
+        },
+        "/api/fleet/tasks/{id}/close": {
+            "patch": {
+                "operationId": "FleetTaskController_close",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Task UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CloseFleetTaskDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FleetTaskResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "La tarea ya está hecha o cancelada"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Tarea no encontrada"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "CU-141: registrar que el mantenimiento/habilitación se hizo",
+                "tags": [
+                    "Fleet · Tasks"
+                ]
+            }
+        },
+        "/api/fleet/tasks/{id}/cancel": {
+            "patch": {
+                "operationId": "FleetTaskController_cancel",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Task UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CancelFleetTaskDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FleetTaskResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "La tarea ya está hecha o cancelada"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Tarea no encontrada"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Cancelar una tarea abierta",
+                "tags": [
+                    "Fleet · Tasks"
+                ]
+            }
+        },
+        "/api/fleet/tasks/{id}/attachments": {
+            "post": {
+                "operationId": "FleetTaskController_uploadAttachment",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Task UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "required": [
+                                    "file"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FleetTaskAttachmentResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta el archivo"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Tarea no encontrada"
+                    },
+                    "413": {
+                        "description": "El archivo supera el máximo permitido"
+                    },
+                    "415": {
+                        "description": "Tipo de archivo no permitido (sólo PDF, JPG, PNG, WEBP)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Subir un adjunto (póliza, VTV, licencia, comprobante)",
+                "tags": [
+                    "Fleet · Tasks"
+                ]
+            },
+            "get": {
+                "operationId": "FleetTaskController_listAttachments",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Task UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/FleetTaskAttachmentResponseDto"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Tarea no encontrada"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Listar los adjuntos de una tarea",
+                "tags": [
+                    "Fleet · Tasks"
+                ]
+            }
+        },
+        "/api/fleet/tasks/{id}/attachments/{attachmentId}/download": {
+            "get": {
+                "operationId": "FleetTaskController_downloadAttachment",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Task UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "attachmentId",
+                        "required": true,
+                        "in": "path",
+                        "description": "Attachment UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "El archivo, con su content-type original"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Tarea o adjunto no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Descargar un adjunto: redirige a una URL firmada (S3) o sirve el archivo (local)",
+                "tags": [
+                    "Fleet · Tasks"
+                ]
+            }
+        },
+        "/api/fleet/tasks/{id}/attachments/{attachmentId}": {
+            "delete": {
+                "operationId": "FleetTaskController_removeAttachment",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Task UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "attachmentId",
+                        "required": true,
+                        "in": "path",
+                        "description": "Attachment UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Borrado"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Tarea o adjunto no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Borrar un adjunto",
+                "tags": [
+                    "Fleet · Tasks"
+                ]
+            }
+        },
+        "/api/fleet/expirations": {
+            "get": {
+                "description": "Lo vencido y lo que vence dentro de `withinDays`, agrupado por vehículo y por chofer, con si están inhabilitados.",
+                "operationId": "FleetExpirationsController_find",
+                "parameters": [
+                    {
+                        "name": "withinDays",
+                        "required": false,
+                        "in": "query",
+                        "description": "Ventana en días: trae lo vencido y lo que vence dentro de esta cantidad de días",
+                        "schema": {
+                            "minimum": 0,
+                            "maximum": 365,
+                            "default": 30,
+                            "type": "number"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FleetExpirationsResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "CU-139: vencimientos de la flota en una pantalla",
+                "tags": [
+                    "Fleet · Expirations"
+                ]
+            }
+        },
+        "/api/cars/{carId}/documents": {
+            "get": {
+                "operationId": "CarDocumentsController_findAll",
+                "parameters": [
+                    {
+                        "name": "carId",
+                        "required": true,
+                        "in": "path",
+                        "description": "Car UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FleetVehicleDocumentsResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Vehículo no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Documentación de un vehículo (seguro, VTV, services) y si está inhabilitado",
+                "tags": [
+                    "Fleet · Vehicle documents"
+                ]
+            }
+        },
+        "/api/delivery/{id}/documents": {
+            "get": {
+                "operationId": "DeliveryDocumentsController_findAll",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Delivery UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FleetDriverDocumentsResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Chofer no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Documentación de un chofer (licencia) y si está inhabilitado",
+                "tags": [
+                    "Fleet · Driver documents"
+                ]
+            }
+        },
+        "/api/delivery/me/vehicle": {
+            "get": {
+                "operationId": "DeliveryVehicleController_miVehiculo",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Sin cuerpo si no tiene ningún vehículo en uso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VehicleInUseResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: delivery"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "El vehículo en uso del chofer autenticado",
+                "tags": [
+                    "Fleet · Vehicle in use"
+                ]
+            }
+        },
+        "/api/delivery/{id}/vehicle": {
+            "get": {
+                "operationId": "DeliveryVehicleController_vehiculoDelChofer",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Delivery UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sin cuerpo si no tiene ningún vehículo en uso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VehicleInUseResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Chofer no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Vehículo en uso de un chofer",
+                "tags": [
+                    "Fleet · Vehicle in use"
+                ]
+            },
+            "put": {
+                "description": "La flota es de la distribuidora: cualquier chofer puede usar cualquiera de sus vehículos. Cierra la asignación abierta anterior del chofer (si tenía otro vehículo) y la del vehículo (si lo tenía otro chofer). Rechaza un vehículo inhabilitado por documentación vencida (CU-136/137).",
+                "operationId": "DeliveryVehicleController_ponerEnUso",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Delivery UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AssignVehicleDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VehicleInUseResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "El vehículo está inhabilitado por documentación vencida"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Chofer o vehículo no encontrado"
+                    },
+                    "409": {
+                        "description": "El chofer (o a quien se le \"roba\" el vehículo) tiene un pedido en curso"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Poner en uso un vehículo para un chofer",
+                "tags": [
+                    "Fleet · Vehicle in use"
+                ]
+            },
+            "delete": {
+                "operationId": "DeliveryVehicleController_liberar",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Delivery UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MessageResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Chofer no encontrado, o no tiene un vehículo en uso"
+                    },
+                    "409": {
+                        "description": "El chofer tiene un pedido en curso (aceptado o en camino)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Liberar el vehículo en uso de un chofer",
+                "tags": [
+                    "Fleet · Vehicle in use"
+                ]
+            }
+        },
+        "/api/delivery/{id}/vehicle-history": {
+            "get": {
+                "operationId": "DeliveryVehicleController_historial",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Delivery UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "maximum": 100,
+                            "default": 10,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 0,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "role",
+                        "required": false,
+                        "in": "query",
+                        "description": "Filtra por tipo de rol",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 1,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "term",
+                        "required": false,
+                        "in": "query",
+                        "description": "Texto a buscar",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/VehicleAssignmentHistoryResponseDto"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Chofer no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Historial de vehículos de un chofer",
+                "tags": [
+                    "Fleet · Vehicle in use"
+                ]
+            }
+        },
+        "/api/car/{id}/assignments": {
+            "get": {
+                "operationId": "CarAssignmentsController_historial",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Car UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "maximum": 100,
+                            "default": 10,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 0,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "role",
+                        "required": false,
+                        "in": "query",
+                        "description": "Filtra por tipo de rol",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 1,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "term",
+                        "required": false,
+                        "in": "query",
+                        "description": "Texto a buscar",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/VehicleAssignmentHistoryResponseDto"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Vehículo no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Historial de choferes que usaron un vehículo",
+                "tags": [
+                    "Fleet · Vehicle in use"
+                ]
+            }
+        },
         "/api/email/password-reset": {
             "post": {
                 "operationId": "EmailController_sendPasswordReset",
@@ -6072,12 +7430,14 @@
         },
         "/api/claims/{id}/resolve": {
             "patch": {
+                "description": "Deja el reclamo en RESOLVED o REJECTED, con nota obligatoria (CU-025). La transición se valida contra la máquina de estados: un reclamo RESOLVED o REJECTED no se vuelve a resolver sin reabrirlo antes (`PATCH /claims/:id/reopen`). Pasar a IN_PROCESS es `PATCH /claims/:id/take`.",
                 "operationId": "ClaimsController_resolve",
                 "parameters": [
                     {
                         "name": "id",
                         "required": true,
                         "in": "path",
+                        "description": "Claim UUID",
                         "schema": {
                             "type": "string"
                         }
@@ -6105,7 +7465,7 @@
                         }
                     },
                     "400": {
-                        "description": "Datos inválidos (p. ej.: resolution should not be empty; status debe ser uno de: pending, in_process, resolved, rejected)"
+                        "description": "Falta la distribuidora (header X-Distributor, sólo super admin) o datos inválidos (p. ej.: resolution should not be empty; status debe ser uno de: resolved, rejected) o transición de reclamo inválida (p. ej.: resolved → rejected sin reabrir antes)"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -6126,6 +7486,122 @@
                     }
                 ],
                 "summary": "Admin resuelve un reclamo",
+                "tags": [
+                    "Claims"
+                ]
+            }
+        },
+        "/api/claims/{id}/take": {
+            "patch": {
+                "description": "PENDING → IN_PROCESS. Sin nota: sólo marca que un admin ya está mirando el reclamo (distinto de `resolve`, que exige nota de resolución).",
+                "operationId": "ClaimsController_take",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Claim UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ClaimResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta la distribuidora (header X-Distributor, sólo super admin) o el reclamo no está pendiente (ya fue tomado, resuelto o rechazado)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "El reclamo no existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Admin toma un reclamo pendiente para revisarlo",
+                "tags": [
+                    "Claims"
+                ]
+            }
+        },
+        "/api/claims/{id}/reopen": {
+            "patch": {
+                "description": "RESOLVED/REJECTED → IN_PROCESS, con motivo obligatorio. Nunca vuelve a PENDING: alguien ya lo había tomado.",
+                "operationId": "ClaimsController_reopen",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Claim UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ReopenClaimDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ClaimResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta la distribuidora (header X-Distributor, sólo super admin), datos inválidos (reason should not be empty) o el reclamo no está resuelto ni rechazado"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "El reclamo no existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Admin reabre un reclamo resuelto o rechazado",
                 "tags": [
                     "Claims"
                 ]
@@ -6392,7 +7868,7 @@
                         "bearer": []
                     }
                 ],
-                "summary": "Evolución de ventas por período (día/mes)",
+                "summary": "Evolución de ventas por período (día/semana/mes)",
                 "tags": [
                     "Reports"
                 ]
@@ -7093,7 +8569,7 @@
                         }
                     },
                     "400": {
-                        "description": "Datos inválidos (p. ej.: resolutionNote must be a string)"
+                        "description": "Falta la distribuidora (header X-Distributor, sólo super admin) o datos inválidos (p. ej.: resolutionNote must be a string)"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -8341,7 +9817,8 @@
                     },
                     "car_patent": {
                         "type": "string",
-                        "description": "Car patent number"
+                        "description": "Patente. Se guarda en mayúsculas, sin espacios ni guiones, y tiene que quedar con al menos 4 letras o números. `null` (al editar) la borra.",
+                        "nullable": true
                     },
                     "car_brand": {
                         "type": "string",
@@ -8455,7 +9932,8 @@
                     },
                     "car_patent": {
                         "type": "string",
-                        "description": "Car patent number"
+                        "description": "Patente. Se guarda en mayúsculas, sin espacios ni guiones, y tiene que quedar con al menos 4 letras o números. `null` (al editar) la borra.",
+                        "nullable": true
                     },
                     "car_brand": {
                         "type": "string",
@@ -8739,6 +10217,34 @@
                     "amount"
                 ]
             },
+            "VehicleDeOrderDto": {
+                "type": "object",
+                "properties": {
+                    "car_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "patent": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "AB123CD"
+                    },
+                    "brand": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "model": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "car_id",
+                    "patent",
+                    "brand",
+                    "model"
+                ]
+            },
             "OrderResponseDto": {
                 "type": "object",
                 "properties": {
@@ -8875,6 +10381,14 @@
                     "subtotal_items": {
                         "type": "number",
                         "example": 20000
+                    },
+                    "vehicle": {
+                        "nullable": true,
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/VehicleDeOrderDto"
+                            }
+                        ]
                     }
                 },
                 "required": [
@@ -8898,7 +10412,8 @@
                     "accepted_at",
                     "on_the_way_at",
                     "zone_surcharge",
-                    "subtotal_items"
+                    "subtotal_items",
+                    "vehicle"
                 ]
             },
             "PaginatedOrdersResponseDto": {
@@ -9917,14 +11432,14 @@
                     "capacity": {
                         "type": "number",
                         "example": 50,
-                        "description": "Capacidad máxima de pedidos"
+                        "default": 50,
+                        "description": "Capacidad máxima de pedidos (columna con default en la base)"
                     }
                 },
                 "required": [
                     "name",
                     "startTime",
-                    "endTime",
-                    "capacity"
+                    "endTime"
                 ]
             },
             "TimeSlotResponseDto": {
@@ -10648,21 +12163,842 @@
                         "default": 0,
                         "description": "Desempate entre zonas superpuestas: gana la de mayor prioridad (y, a igual prioridad, la de menor área)."
                     },
+                    "isActive": {
+                        "type": "boolean",
+                        "default": true
+                    },
                     "validFrom": {
                         "type": "string",
                         "format": "date-time",
-                        "description": "Desde cuándo rige la zona. Sin valor: rige desde siempre."
+                        "nullable": true,
+                        "description": "Desde cuándo rige la zona. `null` quita el límite (rige desde siempre)."
                     },
                     "validUntil": {
                         "type": "string",
                         "format": "date-time",
-                        "description": "Hasta cuándo rige la zona. Sin valor: no vence."
+                        "nullable": true,
+                        "description": "Hasta cuándo rige la zona. `null` quita el vencimiento."
+                    }
+                }
+            },
+            "CreateFleetPlanDto": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "example": "Seguro del vehículo",
+                        "minLength": 3,
+                        "maxLength": 120
+                    },
+                    "subject": {
+                        "type": "string",
+                        "enum": [
+                            "vehicle",
+                            "driver"
+                        ],
+                        "description": "A qué aplica: al vehículo o al chofer"
+                    },
+                    "trigger": {
+                        "type": "string",
+                        "enum": [
+                            "by_km",
+                            "by_time",
+                            "by_fixed_date"
+                        ],
+                        "description": "Qué dispara el vencimiento: una fecha fija, un intervalo de km o de tiempo"
+                    },
+                    "intervalKm": {
+                        "type": "number",
+                        "description": "Obligatorio si trigger=by_km (p. ej. cada 10000 km)"
+                    },
+                    "intervalMonths": {
+                        "type": "number",
+                        "description": "Obligatorio si trigger=by_time (p. ej. cada 6 meses)"
+                    },
+                    "leadTimeDays": {
+                        "type": "number",
+                        "example": 30,
+                        "description": "Con cuántos días de anticipación avisa antes del vencimiento"
+                    },
+                    "criticality": {
+                        "type": "string",
+                        "enum": [
+                            "blocking",
+                            "non_blocking"
+                        ],
+                        "description": "blocking: sin esto vigente, el vehículo/chofer no puede salir (CU-136/137/138)"
+                    },
+                    "carType": {
+                        "type": "string",
+                        "description": "Tipo de vehículo al que aplica (null = todos)"
+                    },
+                    "isActive": {
+                        "type": "boolean",
+                        "default": true
+                    }
+                },
+                "required": [
+                    "name",
+                    "subject",
+                    "trigger",
+                    "leadTimeDays",
+                    "criticality"
+                ]
+            },
+            "FleetPlanResponseDto": {
+                "type": "object",
+                "properties": {
+                    "planId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "distributorId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "subject": {
+                        "type": "string",
+                        "enum": [
+                            "vehicle",
+                            "driver"
+                        ]
+                    },
+                    "trigger": {
+                        "type": "string",
+                        "enum": [
+                            "by_km",
+                            "by_time",
+                            "by_fixed_date"
+                        ]
+                    },
+                    "intervalKm": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "intervalMonths": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "leadTimeDays": {
+                        "type": "number"
+                    },
+                    "criticality": {
+                        "type": "string",
+                        "enum": [
+                            "blocking",
+                            "non_blocking"
+                        ]
+                    },
+                    "carType": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "isActive": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "planId",
+                    "distributorId",
+                    "name",
+                    "subject",
+                    "trigger",
+                    "intervalKm",
+                    "intervalMonths",
+                    "leadTimeDays",
+                    "criticality",
+                    "carType",
+                    "isActive"
+                ]
+            },
+            "UpdateFleetPlanDto": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "example": "Seguro del vehículo",
+                        "minLength": 3,
+                        "maxLength": 120
+                    },
+                    "subject": {
+                        "type": "string",
+                        "enum": [
+                            "vehicle",
+                            "driver"
+                        ],
+                        "description": "A qué aplica: al vehículo o al chofer"
+                    },
+                    "trigger": {
+                        "type": "string",
+                        "enum": [
+                            "by_km",
+                            "by_time",
+                            "by_fixed_date"
+                        ],
+                        "description": "Qué dispara el vencimiento: una fecha fija, un intervalo de km o de tiempo"
+                    },
+                    "intervalKm": {
+                        "type": "number",
+                        "description": "Obligatorio si trigger=by_km (p. ej. cada 10000 km)"
+                    },
+                    "intervalMonths": {
+                        "type": "number",
+                        "description": "Obligatorio si trigger=by_time (p. ej. cada 6 meses)"
+                    },
+                    "leadTimeDays": {
+                        "type": "number",
+                        "example": 30,
+                        "description": "Con cuántos días de anticipación avisa antes del vencimiento"
+                    },
+                    "criticality": {
+                        "type": "string",
+                        "enum": [
+                            "blocking",
+                            "non_blocking"
+                        ],
+                        "description": "blocking: sin esto vigente, el vehículo/chofer no puede salir (CU-136/137/138)"
+                    },
+                    "carType": {
+                        "type": "string",
+                        "description": "Tipo de vehículo al que aplica (null = todos)"
                     },
                     "isActive": {
                         "type": "boolean",
                         "default": true
                     }
                 }
+            },
+            "CreateFleetTaskDto": {
+                "type": "object",
+                "properties": {
+                    "planId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "carId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Obligatorio si el plan es de vehículo (subject: vehicle)"
+                    },
+                    "deliveryId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Obligatorio si el plan es de chofer (subject: driver)"
+                    },
+                    "dueAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2026-12-31T00:00:00.000Z",
+                        "description": "Fecha límite (vencimiento de la póliza, la VTV, la licencia)"
+                    },
+                    "dueKm": {
+                        "type": "number",
+                        "description": "Km al que corresponde el próximo service"
+                    },
+                    "provider": {
+                        "type": "string",
+                        "example": "La Segunda Seguros",
+                        "description": "Aseguradora, taller o gestoría"
+                    },
+                    "referenceNumber": {
+                        "type": "string",
+                        "example": "123456789",
+                        "description": "Número de póliza, de licencia, u otra referencia del proveedor"
+                    },
+                    "category": {
+                        "type": "string",
+                        "example": "B1",
+                        "description": "Categoría de la licencia de conducir, si aplica"
+                    },
+                    "notes": {
+                        "type": "string"
+                    },
+                    "scheduledAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Cuándo está agendado el turno/trámite, si ya se sabe"
+                    }
+                },
+                "required": [
+                    "planId"
+                ]
+            },
+            "FleetTaskAttachmentResponseDto": {
+                "type": "object",
+                "properties": {
+                    "attachmentId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "taskId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "originalName": {
+                        "type": "string",
+                        "example": "poliza-2026.pdf"
+                    },
+                    "mimeType": {
+                        "type": "string",
+                        "example": "application/pdf"
+                    },
+                    "sizeBytes": {
+                        "type": "number",
+                        "example": 245678
+                    },
+                    "uploadedByUserId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "uploadedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "attachmentId",
+                    "taskId",
+                    "originalName",
+                    "mimeType",
+                    "sizeBytes",
+                    "uploadedByUserId",
+                    "uploadedAt"
+                ]
+            },
+            "FleetTaskResponseDto": {
+                "type": "object",
+                "properties": {
+                    "taskId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "planId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "plan": {
+                        "$ref": "#/components/schemas/FleetPlanResponseDto"
+                    },
+                    "distributorId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "carId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "deliveryId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "forecast",
+                            "scheduled",
+                            "in_progress",
+                            "done",
+                            "overdue",
+                            "cancelled"
+                        ]
+                    },
+                    "dueAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "dueKm": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "scheduledAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "performedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "odometerKm": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "cost": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "provider": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "referenceNumber": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "category": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "notes": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "expirationStatus": {
+                        "type": "string",
+                        "enum": [
+                            "current",
+                            "due_soon",
+                            "expired"
+                        ],
+                        "nullable": true,
+                        "description": "null si no tiene fecha límite (p. ej. un service todavía sin fecha estimada) o si ya está cerrada/cancelada"
+                    },
+                    "daysUntilDue": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Días hasta el vencimiento (negativo si ya venció)"
+                    },
+                    "blocks": {
+                        "type": "boolean",
+                        "description": "Si esta tarea, vencida, inhabilita al vehículo/chofer"
+                    },
+                    "attachments": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/FleetTaskAttachmentResponseDto"
+                        }
+                    }
+                },
+                "required": [
+                    "taskId",
+                    "planId",
+                    "distributorId",
+                    "carId",
+                    "deliveryId",
+                    "status",
+                    "dueAt",
+                    "dueKm",
+                    "scheduledAt",
+                    "performedAt",
+                    "odometerKm",
+                    "cost",
+                    "provider",
+                    "referenceNumber",
+                    "category",
+                    "notes",
+                    "expirationStatus",
+                    "daysUntilDue",
+                    "blocks"
+                ]
+            },
+            "UpdateFleetTaskDto": {
+                "type": "object",
+                "properties": {
+                    "dueAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2026-12-31T00:00:00.000Z",
+                        "description": "Fecha límite (vencimiento de la póliza, la VTV, la licencia)"
+                    },
+                    "dueKm": {
+                        "type": "number",
+                        "description": "Km al que corresponde el próximo service"
+                    },
+                    "provider": {
+                        "type": "string",
+                        "example": "La Segunda Seguros",
+                        "description": "Aseguradora, taller o gestoría"
+                    },
+                    "referenceNumber": {
+                        "type": "string",
+                        "example": "123456789",
+                        "description": "Número de póliza, de licencia, u otra referencia del proveedor"
+                    },
+                    "category": {
+                        "type": "string",
+                        "example": "B1",
+                        "description": "Categoría de la licencia de conducir, si aplica"
+                    },
+                    "notes": {
+                        "type": "string"
+                    },
+                    "scheduledAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Cuándo está agendado el turno/trámite, si ya se sabe"
+                    }
+                }
+            },
+            "CloseFleetTaskDto": {
+                "type": "object",
+                "properties": {
+                    "performedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2026-09-26T13:00:00.000Z",
+                        "description": "Cuándo se hizo (o se renovó)"
+                    },
+                    "odometerKm": {
+                        "type": "number",
+                        "description": "Kilometraje del vehículo al hacerlo"
+                    },
+                    "cost": {
+                        "type": "number",
+                        "example": 45000.5
+                    },
+                    "provider": {
+                        "type": "string",
+                        "description": "Si cambió respecto al de la tarea"
+                    },
+                    "notes": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "performedAt"
+                ]
+            },
+            "CancelFleetTaskDto": {
+                "type": "object",
+                "properties": {
+                    "notes": {
+                        "type": "string",
+                        "description": "Por qué se cancela"
+                    }
+                }
+            },
+            "FleetExpirationEntryDto": {
+                "type": "object",
+                "properties": {
+                    "taskId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "planId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "planName": {
+                        "type": "string",
+                        "example": "VTV"
+                    },
+                    "criticality": {
+                        "type": "string",
+                        "enum": [
+                            "blocking",
+                            "non_blocking"
+                        ]
+                    },
+                    "dueAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "expirationStatus": {
+                        "type": "string",
+                        "enum": [
+                            "current",
+                            "due_soon",
+                            "expired"
+                        ]
+                    },
+                    "daysUntilDue": {
+                        "type": "number",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "taskId",
+                    "planId",
+                    "planName",
+                    "criticality",
+                    "dueAt",
+                    "expirationStatus",
+                    "daysUntilDue"
+                ]
+            },
+            "FleetVehicleExpirationsDto": {
+                "type": "object",
+                "properties": {
+                    "carId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "carPatent": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "AB123CD"
+                    },
+                    "carBrand": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "carModel": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "isLocked": {
+                        "type": "boolean",
+                        "description": "Tiene una habilitación bloqueante vencida (CU-136/137)"
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/FleetExpirationEntryDto"
+                        }
+                    }
+                },
+                "required": [
+                    "carId",
+                    "carPatent",
+                    "carBrand",
+                    "carModel",
+                    "isLocked",
+                    "items"
+                ]
+            },
+            "FleetDriverExpirationsDto": {
+                "type": "object",
+                "properties": {
+                    "deliveryId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "userId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "fullName": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "isLocked": {
+                        "type": "boolean",
+                        "description": "Tiene una habilitación bloqueante vencida (CU-138)"
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/FleetExpirationEntryDto"
+                        }
+                    }
+                },
+                "required": [
+                    "deliveryId",
+                    "userId",
+                    "fullName",
+                    "isLocked",
+                    "items"
+                ]
+            },
+            "FleetExpirationsResponseDto": {
+                "type": "object",
+                "properties": {
+                    "withinDays": {
+                        "type": "number"
+                    },
+                    "vehicles": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/FleetVehicleExpirationsDto"
+                        }
+                    },
+                    "drivers": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/FleetDriverExpirationsDto"
+                        }
+                    }
+                },
+                "required": [
+                    "withinDays",
+                    "vehicles",
+                    "drivers"
+                ]
+            },
+            "FleetVehicleDocumentsResponseDto": {
+                "type": "object",
+                "properties": {
+                    "carId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "isLocked": {
+                        "type": "boolean",
+                        "description": "Tiene una habilitación bloqueante vencida: no puede salir"
+                    },
+                    "tasks": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/FleetTaskResponseDto"
+                        }
+                    }
+                },
+                "required": [
+                    "carId",
+                    "isLocked",
+                    "tasks"
+                ]
+            },
+            "FleetDriverDocumentsResponseDto": {
+                "type": "object",
+                "properties": {
+                    "deliveryId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "isLocked": {
+                        "type": "boolean",
+                        "description": "Tiene una habilitación bloqueante vencida: no puede salir. Considera tanto la documentación propia del chofer (licencia) como la del vehículo que maneja (seguro, VTV) — el mismo criterio que aplica el despacho."
+                    },
+                    "tasks": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/FleetTaskResponseDto"
+                        }
+                    }
+                },
+                "required": [
+                    "deliveryId",
+                    "isLocked",
+                    "tasks"
+                ]
+            },
+            "VehicleInUseResponseDto": {
+                "type": "object",
+                "properties": {
+                    "deliveryId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "carId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "carPatent": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "AB123CD"
+                    },
+                    "carBrand": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "carModel": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "carTypeCar": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "Moto"
+                    },
+                    "isLocked": {
+                        "type": "boolean",
+                        "description": "Si el vehículo está inhabilitado por documentación vencida (CU-136/137)"
+                    },
+                    "assignedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "note": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "deliveryId",
+                    "carId",
+                    "carPatent",
+                    "carBrand",
+                    "carModel",
+                    "carTypeCar",
+                    "isLocked",
+                    "assignedAt",
+                    "note"
+                ]
+            },
+            "AssignVehicleDto": {
+                "type": "object",
+                "properties": {
+                    "carId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Vehículo a poner en uso"
+                    },
+                    "note": {
+                        "type": "string",
+                        "description": "Motivo u observación de la asignación"
+                    }
+                },
+                "required": [
+                    "carId"
+                ]
+            },
+            "VehicleAssignmentHistoryResponseDto": {
+                "type": "object",
+                "properties": {
+                    "assignmentId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "carId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "carPatent": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "carBrand": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "carModel": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "deliveryId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "driverName": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "assignedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "releasedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "note": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "assignmentId",
+                    "carId",
+                    "carPatent",
+                    "carBrand",
+                    "carModel",
+                    "deliveryId",
+                    "driverName",
+                    "assignedAt",
+                    "releasedAt",
+                    "note"
+                ]
             },
             "SendPasswordResetDto": {
                 "type": "object",
@@ -11024,10 +13360,8 @@
                     },
                     "status": {
                         "type": "string",
-                        "description": "Nuevo estado del reclamo",
+                        "description": "Estado final del reclamo. Pasarlo a \"en proceso\" es `PATCH /claims/:id/take`.",
                         "enum": [
-                            "pending",
-                            "in_process",
                             "resolved",
                             "rejected"
                         ],
@@ -11037,6 +13371,18 @@
                 "required": [
                     "resolution",
                     "status"
+                ]
+            },
+            "ReopenClaimDto": {
+                "type": "object",
+                "properties": {
+                    "reason": {
+                        "type": "string",
+                        "description": "Motivo por el que se reabre el reclamo"
+                    }
+                },
+                "required": [
+                    "reason"
                 ]
             },
             "VentasPorChoferDto": {

@@ -20,7 +20,7 @@ export const Ratings = () => {
   const debouncedSearch = useDebounce(search.trim());
   const [selected, setSelected] = useState<RatingProfile | null>(null);
 
-  const { data: deliveries, isFetching: loadingDeliveries } = useDeliveries(LIST_PAGE, debouncedSearch, false);
+  const { data: deliveries, isFetching: loadingDeliveries } = useDeliveries(LIST_PAGE, debouncedSearch, 'all');
   const { data: customers, isFetching: loadingCustomers } = useCustomers(LIST_PAGE, debouncedSearch);
 
   const items: RatingProfile[] = tab === 'delivery' ? (deliveries?.rows ?? []) : (customers?.rows ?? []);

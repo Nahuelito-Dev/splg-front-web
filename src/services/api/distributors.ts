@@ -7,6 +7,12 @@ export const listDistributors = async (): Promise<Distributor[]> => {
   return data;
 };
 
+/** GET /distributor/:id: una empresa puntual. Sólo el administrador general (404 si no existe o está dada de baja). */
+export const getDistributor = async (id: string): Promise<Distributor> => {
+  const { data } = await http.get<Distributor>(`/distributor/${id}`);
+  return data;
+};
+
 /** POST /distributor: alta de una empresa (tenant). */
 export const createDistributor = async (body: CreateDistributorBody): Promise<Distributor> => {
   const { data } = await http.post<Distributor>('/distributor', body);

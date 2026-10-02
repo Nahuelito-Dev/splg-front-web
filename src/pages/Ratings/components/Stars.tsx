@@ -11,10 +11,7 @@ export const Stars = ({ value, size = 'sm' }: Props) => {
   return (
     <span aria-hidden="true" className="inline-flex">
       {[1, 2, 3, 4, 5].map((star) => (
-        <StarIcon
-          key={star}
-          className={`${dimension} ${star <= Math.round(value) ? 'text-accent' : 'text-tinta-200'}`}
-        />
+        <StarIcon key={star} className={`${dimension} ${star <= Math.round(value) ? 'text-accent' : 'text-outline'}`} />
       ))}
     </span>
   );

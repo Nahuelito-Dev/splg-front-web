@@ -1,6 +1,13 @@
 import { keepPreviousData } from '@tanstack/react-query';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createCustomer, deleteCustomer, getCustomer, listCustomers } from '../api/customers';
+import {
+  createCustomer,
+  deleteCustomer,
+  getCustomer,
+  getCustomerByUserId,
+  listCustomers,
+  updateCustomerLocation,
+} from '../api/customers';
 import type { AccountFields } from '../api/registration';
 import type { PageParams } from '../api/httpClient';
 import { listCustomerOrders } from '../api/orders';
@@ -58,3 +65,19 @@ export const useDeleteCustomer = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
   });
 };
+
+/** CU-094: corrige la última ubicación conocida del cliente. */
+export const useUpdateCustomerLocation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, latLng }: { id: string; latLng: string }) => updateCustomerLocation(id, latLng),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
+  });
+};
+
+/**
+ * CU-130: resuelve el cliente a partir de un `user_id` (búsqueda rápida del
+ * listado). Se dispara a demanda, no como una query que corre sola.
+ */
+export const useFindCustomerByUserId = () =>
+  useMutation({ mutationFn: (userId: string) => getCustomerByUserId(userId) });

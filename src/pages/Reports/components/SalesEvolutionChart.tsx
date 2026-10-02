@@ -11,6 +11,7 @@ import {
 import { Card } from '../../../common/components/ui';
 import { useSalesEvolution } from '../../../services/queries/reports';
 import brand from '../../../theme/brand.json';
+import { useChartPalette } from '../../../theme/useChartPalette';
 import { formatCurrency } from '../../../utils/format';
 import type { ReportsDateRange } from '../../../services/api/reports';
 
@@ -31,14 +32,15 @@ interface Props {
 export const SalesEvolutionChart = ({ range }: Props) => {
   const [granularity, setGranularity] = useState<Granularity>('day');
   const { data: evolution = [] } = useSalesEvolution({ ...range, granularity });
+  const palette = useChartPalette();
 
   const points = evolution.map((p) => ({ period: formatPeriod(p.period, granularity), totalSales: p.totalSales }));
 
   return (
     <Card className="flex h-[380px] flex-col p-6">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h3 className="font-display text-base font-semibold text-ink">Evolución de ventas</h3>
-        <div className="flex gap-1 rounded-lg bg-tinta-100 p-1">
+        <div className="flex gap-1 rounded-lg bg-surface-muted p-1">
           {(Object.keys(GRANULARITY_LABEL) as Granularity[]).map((g) => (
             <button
               key={g}
@@ -59,14 +61,23 @@ export const SalesEvolutionChart = ({ range }: Props) => {
         <div className="flex-1">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={points}>
-              <CartesianGrid strokeDasharray="3 3" stroke={brand.tinta['100']} />
-              <XAxis dataKey="period" tick={{ fontSize: 12, fill: brand.tinta['500'] }} />
+              <CartesianGrid strokeDasharray="3 3" stroke={palette.grid} />
+              <XAxis dataKey="period" tick={{ fontSize: 12, fill: palette.axisStrong }} />
               <YAxis
-                tick={{ fontSize: 12, fill: brand.tinta['500'] }}
+                tick={{ fontSize: 12, fill: palette.axisStrong }}
                 tickFormatter={(value: number) => formatCurrency(value)}
                 width={90}
               />
-              <RechartsTooltip<number, string> formatter={(value) => formatCurrency(value)} />
+              <RechartsTooltip<number, string>
+                formatter={(value) => formatCurrency(value)}
+                contentStyle={{
+                  borderRadius: 10,
+                  border: `1px solid ${palette.tooltipBorder}`,
+                  backgroundColor: palette.tooltipBg,
+                  color: palette.isDark ? brand.dark.ink : brand.tinta['900'],
+                  fontSize: 12,
+                }}
+              />
               <Line
                 type="monotone"
                 dataKey="totalSales"

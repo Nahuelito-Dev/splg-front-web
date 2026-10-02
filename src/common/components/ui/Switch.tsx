@@ -24,7 +24,7 @@ export const Switch = ({ checked, onChange, label, disabled, title }: Props) => 
       'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors',
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
       'disabled:cursor-not-allowed disabled:opacity-50',
-      checked ? 'border-primary-edge bg-primary' : 'border-outline bg-tinta-200',
+      checked ? 'border-primary-edge bg-primary' : 'border-outline bg-outline',
     )}
   >
     <span

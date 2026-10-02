@@ -2,6 +2,7 @@ import type { GridColDef, GridPaginationModel } from '@mui/x-data-grid';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Pencil, UserX } from 'lucide-react';
+import { FROM_LIST_STATE } from '../../../hooks';
 import { DataTable, EmptyState, IdentityCell, RowActions } from '../../../common/components/ui';
 import type { Customer } from '../../../services/api/types';
 import { formatDate } from '../../../utils/format';
@@ -64,7 +65,7 @@ export const CustomersTable = ({ rows, total, loading, pagination, onPaginationC
         renderCell: ({ row }) => (
           <RowActions
             rowLabel={row.user?.full_name ?? 'cliente'}
-            onView={() => navigate(`/customers/details/${row.customer_id}`)}
+            onView={() => navigate(`/customers/details/${row.customer_id}`, { state: FROM_LIST_STATE })}
             actions={[
               ...(onEdit ? [{ label: 'Editar cuenta', icon: Pencil, onClick: () => onEdit(row) }] : []),
               ...(onDelete
@@ -85,7 +86,7 @@ export const CustomersTable = ({ rows, total, loading, pagination, onPaginationC
       getRowId={(row) => row.customer_id}
       loading={loading}
       pagination={{ model: pagination, onChange: onPaginationChange, total }}
-      onRowClick={(row) => navigate(`/customers/details/${row.customer_id}`)}
+      onRowClick={(row) => navigate(`/customers/details/${row.customer_id}`, { state: FROM_LIST_STATE })}
       empty={
         <EmptyState
           title="No hay clientes"

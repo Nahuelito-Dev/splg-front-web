@@ -9,6 +9,7 @@ import { LogoSplg } from '../../common/components/LogoSplg';
 import { Button, Card, IconButton, Input } from '../../common/components/ui';
 import { useAppDispatch, useAppSelector } from '../../hooks';
 import { startLoginWithEmailAndPassword } from '../../store/auth/thunks';
+import { ForgotPasswordModal } from './components/ForgotPasswordModal';
 
 const loginSchema = z.object({
   email: z.string().trim().min(1, 'Ingresá tu email').email('Email inválido'),
@@ -22,6 +23,7 @@ export const LoginPage = () => {
   const { status, errorMessage } = useAppSelector((state) => state.auth);
   const isAuthenticating = status === 'checking';
   const [showPassword, setShowPassword] = useState(false);
+  const [recovering, setRecovering] = useState(false);
 
   const {
     register,
@@ -84,8 +86,17 @@ export const LoginPage = () => {
           <Button type="submit" className="w-full" loading={isAuthenticating}>
             Iniciar sesión
           </Button>
+
+          <button
+            type="button"
+            onClick={() => setRecovering(true)}
+            className="w-full text-center text-sm font-medium text-primary-strong hover:underline"
+          >
+            ¿Olvidaste tu contraseña?
+          </button>
         </form>
       </Card>
+      <ForgotPasswordModal open={recovering} onClose={() => setRecovering(false)} />
     </div>
   );
 };

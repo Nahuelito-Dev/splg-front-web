@@ -1,15 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Badge, Card, PageHeader } from '../../common/components/ui';
+import { Badge, Card, PageHeader, Tabs, tabPanelProps } from '../../common/components/ui';
 import { useSocketContext } from '../../context/useSocketContext';
 import { DRIVER_LOCATION_EVENT } from '../../hooks/useSocket';
+import { AvailableOrdersPool } from './components/AvailableOrdersPool';
 import { TrackingList } from './components/TrackingList';
 import { TrackingMap } from './components/TrackingMap';
+import { useAvailablePool } from './useAvailablePool';
 import type { DriverLocationPayload, TrackedOrder } from './types';
+
+type PanelTab = 'live' | 'pool';
+const TABS_ID = 'tracking';
 
 export const Tracking = () => {
   const { isOnline, subscribe } = useSocketContext();
   const [trackedOrders, setTrackedOrders] = useState<Map<string, TrackedOrder>>(new Map());
   const [focusPoint, setFocusPoint] = useState<{ lat: number; lng: number } | null>(null);
+  const [tab, setTab] = useState<PanelTab>('live');
   const hasFocusedRef = useRef(false);
 
   const handleLocation = useCallback((payload: DriverLocationPayload) => {
@@ -28,6 +34,10 @@ export const Tracking = () => {
   }, []);
 
   useEffect(() => subscribe<DriverLocationPayload>(DRIVER_LOCATION_EVENT, handleLocation), [subscribe, handleLocation]);
+
+  const pool = useAvailablePool(isOnline);
+  // El contador sale de la misma consulta que la lista; sin datos todavía, un guion y no un 0.
+  const poolCount = pool.isLoading || pool.isError ? null : pool.total;
 
   const trackedOrdersList = Array.from(trackedOrders.values()).sort(
     (a, b) => new Date(b.at).getTime() - new Date(a.at).getTime(),
@@ -54,8 +64,20 @@ export const Tracking = () => {
           <TrackingMap trackedOrders={trackedOrdersList} focusPoint={focusPoint} />
         </Card>
 
-        <Card className="w-full lg:w-1/3" style={{ height: '70vh' }}>
-          <TrackingList trackedOrders={trackedOrdersList} />
+        <Card className="flex w-full flex-col overflow-hidden lg:w-1/3" style={{ height: '70vh' }}>
+          <Tabs
+            items={[
+              { id: 'live', label: 'En curso', count: trackedOrdersList.length },
+              { id: 'pool', label: 'Disponibles', count: poolCount },
+            ]}
+            value={tab}
+            onChange={(id) => setTab(id as PanelTab)}
+            label="Pedidos del seguimiento"
+            idPrefix={TABS_ID}
+          />
+          <div className="min-h-0 flex-1" {...tabPanelProps(TABS_ID, tab)}>
+            {tab === 'live' ? <TrackingList trackedOrders={trackedOrdersList} /> : <AvailableOrdersPool pool={pool} />}
+          </div>
         </Card>
       </section>
     </div>

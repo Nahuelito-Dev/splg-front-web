@@ -1,6 +1,7 @@
-import { useId, type ReactNode } from 'react';
+import { useId, useSyncExternalStore, type ReactNode } from 'react';
 import { Dialog } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import { isConfirmOpen, subscribeConfirmOpen } from '../../../utils/notifications';
 import { IconButton } from './IconButton';
 
 interface Props {
@@ -20,11 +21,14 @@ interface Props {
  */
 export const Modal = ({ open, onClose, title, description, children, footer, size = 'sm' }: Props) => {
   const titleId = useId();
+  // La confirmación (SweetAlert) vive fuera del Dialog: mientras está abierta, el Dialog no le roba el foco.
+  const confirming = useSyncExternalStore(subscribeConfirmOpen, isConfirmOpen);
   return (
     <Dialog
       open={open}
       onClose={onClose}
       fullWidth
+      disableEnforceFocus={confirming}
       maxWidth={size}
       aria-labelledby={titleId}
       PaperProps={{ className: '!rounded-card !shadow-2xl' }}
@@ -39,7 +43,9 @@ export const Modal = ({ open, onClose, title, description, children, footer, siz
         <IconButton label="Cerrar" icon={<CloseIcon />} onClick={onClose} />
       </div>
       <div className="max-h-[70vh] overflow-y-auto px-6 py-5">{children}</div>
-      {footer && <div className="flex justify-end gap-2 border-t border-outline bg-tinta-50 px-6 py-4">{footer}</div>}
+      {footer && (
+        <div className="flex justify-end gap-2 border-t border-outline bg-surface-hover px-6 py-4">{footer}</div>
+      )}
     </Dialog>
   );
 };

@@ -1,25 +1,46 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import { Button, Card, PageHeader } from '../../common/components/ui';
-import { usePermissions } from '../../hooks';
+import { Button, Card, PageHeader, SearchInput } from '../../common/components/ui';
+import { useDebounce, usePermissions } from '../../hooks';
 import type { Car } from '../../services/api/types';
 import { useDeliveryOptions } from '../../services/queries/deliveries';
-import { useCars, useDeleteCar } from '../../services/queries/cars';
+import { useCarByPatent, useCars, useDeleteCar } from '../../services/queries/cars';
 import { confirm, notify } from '../../utils/notifications';
+import { normalizePatent } from '../../utils/patent';
 import { CarFormModal } from './components/CarFormModal';
-import { CarDetailModal } from './components/CarDetailModal';
 import { CarsTable } from './components/CarsTable';
 
 type FormState = { open: false } | { open: true; car: Car | null };
 
 export const Cars = () => {
+  const navigate = useNavigate();
   const [form, setForm] = useState<FormState>({ open: false });
-  const [detail, setDetail] = useState<Car | null>(null);
+  const [patentSearch, setPatentSearch] = useState('');
+  const typedPatent = normalizePatent(patentSearch);
+  const debouncedPatent = useDebounce(typedPatent);
+  const searchingPatent = typedPatent.length > 0;
+  // Mientras corre el debounce el resultado que hay es de otra patente: no se muestra.
+  const patentSettling = searchingPatent && debouncedPatent !== typedPatent;
+
   const { data: cars = [], isFetching } = useCars();
+  const patentMatch = useCarByPatent(searchingPatent && !patentSettling ? debouncedPatent : undefined);
   const { data: driverPage } = useDeliveryOptions();
   const drivers = driverPage?.rows ?? [];
   const deleteCar = useDeleteCar();
   const { canWrite, writeHint } = usePermissions();
+
+  const patentFound = !patentSettling && !patentMatch.isError && patentMatch.data ? [patentMatch.data] : [];
+  const rows = searchingPatent ? patentFound : cars;
+  const loading = searchingPatent ? patentSettling || patentMatch.isFetching : isFetching;
+  const patentStatus =
+    patentSettling || patentMatch.isFetching
+      ? 'Buscando…'
+      : patentMatch.isError
+        ? 'No se pudo buscar la patente. Probá de nuevo.'
+        : patentFound.length > 0
+          ? 'Vehículo encontrado'
+          : 'Sin coincidencias';
 
   const driverOptions = drivers.map((delivery) => ({
     value: delivery.user_id,
@@ -63,16 +84,41 @@ export const Cars = () => {
       />
 
       <Card>
+        <div className="flex flex-col gap-3 border-b border-outline p-4 sm:flex-row sm:items-center sm:justify-between">
+          <SearchInput
+            label="Buscar por patente"
+            placeholder="Patente (ej. AB104EJ)"
+            value={patentSearch}
+            onChange={(e) => setPatentSearch(e.target.value)}
+          />
+          {searchingPatent && (
+            <p
+              className={patentMatch.isError && !patentSettling ? 'text-sm text-danger' : 'text-sm text-muted'}
+              role={patentMatch.isError && !patentSettling ? 'alert' : undefined}
+              aria-live="polite"
+            >
+              {patentStatus}
+              {patentMatch.isError && !patentSettling && (
+                <button
+                  type="button"
+                  className="ml-2 font-semibold underline"
+                  onClick={() => void patentMatch.refetch()}
+                >
+                  Reintentar
+                </button>
+              )}
+            </p>
+          )}
+        </div>
         <CarsTable
-          onView={setDetail}
-          rows={cars}
-          loading={isFetching}
+          onView={(car) => navigate(`/cars/details/${car.car_id}`)}
+          rows={rows}
+          loading={loading}
           onEdit={canWrite ? (car) => setForm({ open: true, car }) : undefined}
           onDelete={canWrite ? (car) => void handleDelete(car) : undefined}
         />
       </Card>
 
-      <CarDetailModal car={detail} onClose={() => setDetail(null)} />
       <CarFormModal
         open={form.open}
         onClose={() => setForm({ open: false })}

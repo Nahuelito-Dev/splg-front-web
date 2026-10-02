@@ -1,5 +1,7 @@
 import { Menu } from 'lucide-react';
+import { AccountMenu } from './components/AccountMenu';
 import { NotificationBell } from './components/NotificationBell';
+import { ThemeModeToggle } from './components/ThemeModeToggle';
 
 interface Props {
   /** Sólo se usa en móvil: abre el menú lateral como drawer. */
@@ -12,11 +14,15 @@ export const Navbar = ({ onOpenMenu }: Props) => (
       type="button"
       onClick={onOpenMenu}
       aria-label="Abrir menú"
-      className="-ml-1 grid h-9 w-9 place-items-center rounded-[10px] border border-outline text-ink-2 transition-colors hover:bg-tinta-50 lg:hidden"
+      className="-ml-1 grid h-9 w-9 place-items-center rounded-[10px] border border-outline text-ink-2 transition-colors hover:bg-surface-hover lg:hidden"
     >
       <Menu aria-hidden="true" className="h-[18px] w-[18px]" />
     </button>
     <div className="flex-1" />
-    <NotificationBell />
+    <div className="flex items-center gap-2.5">
+      <ThemeModeToggle />
+      <NotificationBell />
+      <AccountMenu />
+    </div>
   </header>
 );

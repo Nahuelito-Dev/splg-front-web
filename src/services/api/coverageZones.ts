@@ -45,6 +45,12 @@ export const listCoverageZones = async (includeInactive = true): Promise<Page<Co
   return toPage(response);
 };
 
+/** GET /coverage-zones/:id: una zona puntual (404 si no existe o es de otra distribuidora). */
+export const getCoverageZone = async (id: string): Promise<CoverageZone> => {
+  const { data } = await http.get<CoverageZone>(`/coverage-zones/${id}`);
+  return data;
+};
+
 /** POST /coverage-zones */
 export const createCoverageZone = async (body: CreateCoverageZonePayload): Promise<CoverageZone> => {
   const { data } = await http.post<CoverageZone>('/coverage-zones', body);

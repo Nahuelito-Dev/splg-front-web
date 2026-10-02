@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createTimeSlot, deleteTimeSlot, getTimeSlotAvailability, listTimeSlots } from '../api/timeSlots';
+import { createTimeSlot, deleteTimeSlot, getTimeSlot, getTimeSlotAvailability, listTimeSlots } from '../api/timeSlots';
 import type { CreateTimeSlotBody } from '../api/types';
 import { queryKeys } from './queryKeys';
 
@@ -9,6 +9,13 @@ export const useTimeSlots = () =>
   useQuery({
     queryKey: keys.list(),
     queryFn: listTimeSlots,
+  });
+
+export const useTimeSlot = (id: string | undefined) =>
+  useQuery({
+    queryKey: keys.detail(id ?? ''),
+    queryFn: () => getTimeSlot(id ?? ''),
+    enabled: Boolean(id),
   });
 
 export const useTimeSlotAvailability = (date: string) =>

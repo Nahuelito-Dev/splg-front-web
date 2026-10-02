@@ -1,11 +1,11 @@
 import { Banknote, CalendarRange, PackageCheck, Timer } from 'lucide-react';
+import { KpiCard, type KpiTrend } from '../../../common/components/ui';
 import { useOrderStats, useSalesChart } from '../../../services/queries/stats';
 import brand from '../../../theme/brand.json';
 import { formatCurrency, formatNumber, percentChange } from '../../../utils/format';
-import { KpiCard, type Trend } from './KpiCard';
 import { Sparkline } from './Sparkline';
 
-const trendOf = (change: number): Trend => (change >= 0 ? 'up' : 'down');
+const trendOf = (change: number): KpiTrend => (change >= 0 ? 'up' : 'down');
 
 /**
  * Los cuatro indicadores de arriba. Todos salen de GET /orders/stats/summary y

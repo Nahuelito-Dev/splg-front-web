@@ -1,6 +1,7 @@
 import { Drawer } from '@mui/material';
 import { useAppDispatch, useAppSelector, usePermissions } from '../../../hooks';
 import { startLogOut } from '../../../store/auth/thunks';
+import { THEME_MODE_KEY } from '../../../theme/themeMode';
 import { SideMenuContent } from './SideMenuContent';
 
 interface Props {
@@ -15,7 +16,11 @@ export const SideMenu = ({ mobileOpen, onCloseMobile }: Props) => {
   const { isSuperAdmin } = usePermissions();
 
   const handleLogout = () => {
+    // El tema (claro/oscuro/sistema) es una preferencia del dispositivo, no de la
+    // sesión: se guarda antes de limpiar y se vuelve a poner después.
+    const themeMode = localStorage.getItem(THEME_MODE_KEY);
     localStorage.clear();
+    if (themeMode) localStorage.setItem(THEME_MODE_KEY, themeMode);
     void dispatch(startLogOut());
   };
 

@@ -19,6 +19,7 @@ export const queryKeys = {
   cylinders: resource('cylinders'),
   deliveries: resource('deliveries'),
   distributors: resource('distributors'),
+  fleet: resource('fleet'),
   gasCylinders: resource('gasCylinders'),
   health: resource('health'),
   incidents: resource('incidents'),

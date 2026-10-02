@@ -1,12 +1,12 @@
 import type { GridPaginationModel } from '@mui/x-data-grid';
 import { useState } from 'react';
-import { Card, EmptyState, PageHeader } from '../../common/components/ui';
+import { Card, EmptyState, FilterChips, PageHeader } from '../../common/components/ui';
 import { useDebounce, usePermissions } from '../../hooks';
 import { useAudit } from '../../services/queries/audit';
 import type { AsientoDeAuditoria } from '../../services/api/types';
 import { AuditDetailModal } from './components/AuditDetailModal';
 import { AuditFilters } from './components/AuditFilters';
-import { EMPTY_AUDIT_FILTERS, type AuditFiltersState } from './components/auditFiltersState';
+import { auditFilterChips, EMPTY_AUDIT_FILTERS, type AuditFiltersState } from './components/auditFiltersState';
 import { AuditTable } from './components/AuditTable';
 
 /** CU-152: quién hizo cada operación que modificó datos, sobre qué y con qué resultado. */
@@ -46,6 +46,14 @@ export const Audit = () => {
       />
 
       <AuditFilters value={filters} onChange={handleFiltersChange} />
+
+      <FilterChips
+        items={auditFilterChips(filters)}
+        onRemove={(key) =>
+          handleFiltersChange({ ...filters, [key]: EMPTY_AUDIT_FILTERS[key as keyof AuditFiltersState] })
+        }
+        onClearAll={() => handleFiltersChange(EMPTY_AUDIT_FILTERS)}
+      />
 
       <Card>
         <AuditTable

@@ -12,9 +12,15 @@ const toneFor = (name: string) => {
 
 interface Props {
   name: string;
-  size?: 'sm' | 'md';
+  size?: 'sm' | 'md' | 'lg';
   className?: string;
 }
+
+const SIZES: Record<NonNullable<Props['size']>, string> = {
+  lg: 'h-14 w-14 text-xl',
+  md: 'h-[30px] w-[30px] text-[11px]',
+  sm: 'h-6 w-6 text-[10px]',
+};
 
 /** Iniciales sobre un color estable. Decorativo: el nombre siempre está escrito al lado. */
 export const Avatar = ({ name, size = 'md', className }: Props) => (
@@ -22,7 +28,7 @@ export const Avatar = ({ name, size = 'md', className }: Props) => (
     aria-hidden="true"
     className={cx(
       'grid shrink-0 place-items-center rounded-full font-semibold text-white',
-      size === 'md' ? 'h-[30px] w-[30px] text-[11px]' : 'h-6 w-6 text-[10px]',
+      SIZES[size],
       toneFor(name),
       className,
     )}

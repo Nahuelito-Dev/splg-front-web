@@ -7,7 +7,7 @@ import {
 } from '@mui/x-data-grid';
 import type { ReactNode } from 'react';
 import { EmptyState } from './EmptyState';
-import brand from '../../../theme/brand.json';
+import { TableSkeleton } from './Skeleton';
 
 interface ServerPagination {
   model: GridPaginationModel;
@@ -63,23 +63,29 @@ export function DataTable<T extends GridValidRowModel>({
             rowCount: pagination.total,
           }
         : { initialState: { pagination: { paginationModel: { pageSize: 10, page: 0 } } } })}
-      slots={{ noRowsOverlay: () => empty ?? <EmptyState title="No hay datos para mostrar" /> }}
-      sx={{
+      slots={{
+        noRowsOverlay: () => empty ?? <EmptyState title="No hay datos para mostrar" />,
+        loadingOverlay: () => <TableSkeleton columns={columns.length} />,
+      }}
+      sx={(theme) => ({
         border: 0,
         fontSize: 13,
-        color: brand.tinta['900'],
-        '--DataGrid-rowBorderColor': brand.tinta['100'],
-        '& .MuiDataGrid-columnHeaders': { backgroundColor: brand.tinta['25'], borderBottomColor: brand.tinta['100'] },
-        '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 500, fontSize: 12, color: brand.tinta['500'] },
-        '& .MuiDataGrid-row:hover': { backgroundColor: brand.tinta['25'] },
+        color: theme.palette.text.primary,
+        '--DataGrid-rowBorderColor': theme.palette.divider,
+        '& .MuiDataGrid-columnHeaders': {
+          backgroundColor: theme.palette.mode === 'dark' ? theme.palette.action.hover : theme.palette.grey[50],
+          borderBottomColor: theme.palette.divider,
+        },
+        '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 500, fontSize: 12, color: theme.palette.text.secondary },
+        '& .MuiDataGrid-row:hover': { backgroundColor: theme.palette.action.hover },
         '& .MuiDataGrid-row': { cursor: onRowClick ? 'pointer' : 'default' },
         '& .MuiDataGrid-columnHeader:first-of-type, & .MuiDataGrid-cell:first-of-type': { paddingLeft: '18px' },
-        '& .MuiDataGrid-cell': { borderColor: brand.tinta['100'], display: 'flex', alignItems: 'center' },
-        '& .MuiDataGrid-footerContainer': { borderTopColor: brand.tinta['100'] },
+        '& .MuiDataGrid-cell': { borderColor: theme.palette.divider, display: 'flex', alignItems: 'center' },
+        '& .MuiDataGrid-footerContainer': { borderTopColor: theme.palette.divider },
         '& .MuiDataGrid-cell:focus, & .MuiDataGrid-columnHeader:focus, & .MuiDataGrid-cell:focus-within': {
           outline: 'none',
         },
-      }}
+      })}
     />
   );
 }

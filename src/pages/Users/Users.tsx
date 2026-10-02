@@ -1,19 +1,24 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { GridPaginationModel } from '@mui/x-data-grid';
-import { Card, ErrorState, LoadingState, PageHeader, SearchInput } from '../../common/components/ui';
+import { SearchCheck } from 'lucide-react';
+import { Button, Card, ErrorState, LoadingState, PageHeader, SearchInput } from '../../common/components/ui';
 import { useDebounce, usePermissions } from '../../hooks';
 import type { User } from '../../services/api/types';
 import { useBlockUser, useDeleteUser, useUsers } from '../../services/queries/users';
 import { confirm, notify } from '../../utils/notifications';
+import { FindUserByPhoneModal } from './components/FindUserByPhoneModal';
 import { UserEditModal } from './components/UserEditModal';
 import { UsersTable } from './components/UsersTable';
 
 export const Users = () => {
+  const navigate = useNavigate();
   const { canManageCustomerAccounts } = usePermissions();
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search.trim());
   const [pagination, setPagination] = useState<GridPaginationModel>({ page: 0, pageSize: 10 });
   const [editing, setEditing] = useState<User | null>(null);
+  const [findingByPhone, setFindingByPhone] = useState(false);
 
   const { data, isLoading, isFetching, error, refetch } = useUsers(pagination, debouncedSearch);
   const blockUser = useBlockUser();
@@ -60,6 +65,11 @@ export const Users = () => {
       <PageHeader
         title="Usuarios"
         description="Todos los usuarios de la plataforma: clientes, choferes y administradores."
+        actions={
+          <Button variant="secondary" icon={<SearchCheck />} onClick={() => setFindingByPhone(true)}>
+            Buscar por teléfono
+          </Button>
+        }
       />
 
       <Card>
@@ -94,6 +104,11 @@ export const Users = () => {
       </Card>
 
       <UserEditModal open={editing !== null} onClose={() => setEditing(null)} user={editing} />
+      <FindUserByPhoneModal
+        open={findingByPhone}
+        onClose={() => setFindingByPhone(false)}
+        onFound={(user) => navigate(`/users/details/${user.user_id}`)}
+      />
     </div>
   );
 };

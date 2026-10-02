@@ -66,7 +66,7 @@ export const EmailTestCard = () => {
       </form>
 
       {result && (
-        <div className="space-y-1.5 rounded-xl border border-outline bg-tinta-50 p-3.5">
+        <div className="space-y-1.5 rounded-xl border border-outline bg-surface-hover p-3.5">
           <div className="flex items-center gap-2">
             <Badge label={resultLabel(result)} />
             <p className="text-[13px] text-ink">{result.message}</p>

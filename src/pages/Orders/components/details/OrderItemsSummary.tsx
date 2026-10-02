@@ -10,7 +10,7 @@ export const OrderItemsSummary = ({ order }: { order: Order }) => {
   return (
     <Card className="overflow-hidden p-0">
       <table className="w-full text-left text-sm">
-        <thead className="bg-tinta-50 text-xs uppercase text-muted">
+        <thead className="bg-surface-hover text-xs uppercase text-muted">
           <tr>
             <th className="px-4 py-3 font-medium">Producto</th>
             <th className="px-4 py-3 text-center font-medium">Cant.</th>
@@ -30,7 +30,7 @@ export const OrderItemsSummary = ({ order }: { order: Order }) => {
             </tr>
           ))}
         </tbody>
-        <tfoot className="border-t border-outline bg-tinta-50">
+        <tfoot className="border-t border-outline bg-surface-hover">
           <tr>
             <td colSpan={3} className="px-4 py-2 text-right text-muted">
               Subtotal garrafas

@@ -1,8 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { accountFields, newPassword } from '../../../common/forms/accountSchema';
+import { checkAccountFree } from '../../../common/forms/checkAccountFree';
 import { Button, Input, Modal, Select } from '../../../common/components/ui';
 import type { AdminRole } from '../../../services/api/admins';
 import { useCreateAdmin } from '../../../services/queries/admins';
@@ -53,7 +54,7 @@ interface Props {
 
 export const CreateAdminModal = ({ open, onClose, isSuperAdmin }: Props) => {
   const createAdmin = useCreateAdmin();
-  const { data: distributors } = useDistributors();
+  const { data: distributors } = useDistributors(open && isSuperAdmin);
   const availableRoles = useMemo<AdminRole[]>(
     () => (isSuperAdmin ? ['admin', 'super_admin'] : ['admin']),
     [isSuperAdmin],
@@ -64,13 +65,18 @@ export const CreateAdminModal = ({ open, onClose, isSuperAdmin }: Props) => {
     handleSubmit,
     reset,
     watch,
-    formState: { errors },
+    setError,
+    formState: { errors, isSubmitting },
   } = useForm<AdminFormValues>({
     resolver: zodResolver(adminSchema(isSuperAdmin)),
     defaultValues: { role: 'admin' },
   });
 
   const role = watch('role');
+
+  // El modal puede cerrarse mientras corre check-exists: en ese caso no se da de alta nada.
+  const openRef = useRef(open);
+  openRef.current = open;
 
   useEffect(() => {
     if (open)
@@ -85,7 +91,8 @@ export const CreateAdminModal = ({ open, onClose, isSuperAdmin }: Props) => {
       });
   }, [open, reset]);
 
-  const onSubmit = handleSubmit(({ confirmPassword: _confirmPassword, role, distributorId, ...account }) =>
+  const onSubmit = handleSubmit(async ({ confirmPassword: _confirmPassword, role, distributorId, ...account }) => {
+    if (!(await checkAccountFree(account, setError)) || !openRef.current) return;
     createAdmin.mutate(
       { role, account: { ...account, distributorId: role === 'admin' && distributorId ? distributorId : undefined } },
       {
@@ -95,8 +102,8 @@ export const CreateAdminModal = ({ open, onClose, isSuperAdmin }: Props) => {
         },
         onError: notify.error,
       },
-    ),
-  );
+    );
+  });
 
   return (
     <Modal
@@ -109,7 +116,7 @@ export const CreateAdminModal = ({ open, onClose, isSuperAdmin }: Props) => {
           <Button variant="secondary" onClick={onClose}>
             Cancelar
           </Button>
-          <Button type="submit" form="admin-create" loading={createAdmin.isPending}>
+          <Button type="submit" form="admin-create" loading={isSubmitting || createAdmin.isPending}>
             Crear admin
           </Button>
         </>

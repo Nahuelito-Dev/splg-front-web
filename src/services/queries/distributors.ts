@@ -3,6 +3,7 @@ import {
   createDistributor,
   deleteDistributor,
   getCurrentDistributor,
+  getDistributor,
   listDistributors,
   updateDistributor,
 } from '../api/distributors';
@@ -11,7 +12,16 @@ import { queryKeys } from './queryKeys';
 
 const keys = queryKeys.distributors;
 
-export const useDistributors = () => useQuery({ queryKey: keys.all, queryFn: listDistributors });
+/** GET /distributor es sólo del administrador general: el resto no la pide (`enabled`). */
+export const useDistributors = (enabled = true) => useQuery({ queryKey: keys.all, queryFn: listDistributors, enabled });
+
+/** La ficha de una empresa (`GET /distributor/:id`); `enabled` en `false` la apaga para quien no es administrador general. */
+export const useDistributor = (id: string | undefined, enabled = true) =>
+  useQuery({
+    queryKey: keys.detail(id ?? ''),
+    queryFn: () => getDistributor(id ?? ''),
+    enabled: Boolean(id) && enabled,
+  });
 
 /**
  * La empresa de la sesión. Sin "Ver como", el administrador general no tiene

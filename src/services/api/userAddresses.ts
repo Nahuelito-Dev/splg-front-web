@@ -1,3 +1,4 @@
+import { toApiError } from './errors';
 import { http } from './httpClient';
 import type { CreateUserAddressBody, DireccionBorrada, UpdateUserAddressBody, UserAddressConUsuario } from './types';
 
@@ -10,6 +11,26 @@ import type { CreateUserAddressBody, DireccionBorrada, UpdateUserAddressBody, Us
  */
 export const listUserAddresses = async (userId: string): Promise<UserAddressConUsuario[]> => {
   const { data } = await http.get<UserAddressConUsuario[]>(`/user-address/user/${userId}`);
+  return data;
+};
+
+/**
+ * GET /user-address/user/:userId/default: sólo la dirección principal, para
+ * destacarla en el resumen de la ficha sin traer el listado completo.
+ */
+export const getDefaultUserAddress = async (userId: string): Promise<UserAddressConUsuario | null> => {
+  try {
+    const { data } = await http.get<UserAddressConUsuario>(`/user-address/user/${userId}/default`);
+    return data;
+  } catch (error) {
+    if (toApiError(error).notFound) return null;
+    throw error;
+  }
+};
+
+/** GET /user-address/:id: una dirección puntual, para editarla con el dato fresco. */
+export const getUserAddress = async (addressId: string): Promise<UserAddressConUsuario> => {
+  const { data } = await http.get<UserAddressConUsuario>(`/user-address/${addressId}`);
   return data;
 };
 

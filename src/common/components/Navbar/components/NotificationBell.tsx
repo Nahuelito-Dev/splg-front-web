@@ -1,10 +1,11 @@
-import { type MouseEvent, useCallback, useEffect, useState } from 'react';
-import { Box, Divider, List, ListItemButton, ListItemText, Popover, Tooltip, Typography } from '@mui/material';
-import { Bell } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { Box, Tooltip } from '@mui/material';
+import { Bell, BellOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSocketContext } from '../../../../context/useSocketContext';
 import { ORDER_SOCKET_EVENTS, type OrderSocketEventName } from '../../../../hooks/useSocket';
 import { formatCurrency, formatShortId } from '../../../../utils/format';
+import { NotificationsDrawer } from '../../ui/NotificationsDrawer';
 
 /**
  * Payload real de los eventos `order:*` que emite `AdminGateway.notifyAdmins`
@@ -16,10 +17,12 @@ interface OrderSocketPayload {
   orderId?: string;
   totalAmount?: number;
   reason?: string | null;
+  /** Sólo en `order:assignment-declined`: el chofer que no confirmó. */
+  driverName?: string;
   [key: string]: unknown;
 }
 
-interface OrderNotification {
+export interface OrderNotification {
   id: string;
   message: string;
   createdAt: string;
@@ -34,6 +37,8 @@ const EVENT_LABELS: Record<OrderSocketEventName, string> = {
   [ORDER_SOCKET_EVENTS.ON_THE_WAY]: 'Pedido en camino',
   [ORDER_SOCKET_EVENTS.DELIVERED]: 'Pedido entregado',
   [ORDER_SOCKET_EVENTS.CANCELLED]: 'Pedido cancelado',
+  [ORDER_SOCKET_EVENTS.RELEASED]: 'Pedido liberado, vuelve a buscar chofer',
+  [ORDER_SOCKET_EVENTS.ASSIGNMENT_DECLINED]: 'El chofer no confirmó la asignación',
 };
 
 const MAX_NOTIFICATIONS = 50;
@@ -43,16 +48,18 @@ const buildMessage = (event: OrderSocketEventName, payload: OrderSocketPayload) 
   const detail =
     event === ORDER_SOCKET_EVENTS.CANCELLED && payload.reason
       ? ` (${payload.reason})`
-      : typeof payload.totalAmount === 'number'
-        ? ` — ${formatCurrency(payload.totalAmount)}`
-        : '';
+      : event === ORDER_SOCKET_EVENTS.ASSIGNMENT_DECLINED && payload.driverName
+        ? ` (${payload.driverName})`
+        : typeof payload.totalAmount === 'number'
+          ? ` — ${formatCurrency(payload.totalAmount)}`
+          : '';
   return `${EVENT_LABELS[event]}${orderRef}${detail}`.trim();
 };
 
 export const NotificationBell = () => {
   const { isOnline, subscribe } = useSocketContext();
   const navigate = useNavigate();
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<OrderNotification[]>([]);
 
   const pushNotification = useCallback((event: OrderSocketEventName, payload: OrderSocketPayload = {}) => {
@@ -75,23 +82,21 @@ export const NotificationBell = () => {
     return () => unsubscribers.forEach((unsubscribe) => unsubscribe());
   }, [subscribe, pushNotification]);
 
-  const handleOpen = (event: MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => setAnchorEl(null);
-
   const handleMarkAsRead = (id: string) => {
     setNotifications((prev) =>
       prev.map((notification) => (notification.id === id ? { ...notification, read: true } : notification)),
     );
   };
 
+  const handleMarkAllAsRead = () => {
+    setNotifications((prev) => prev.map((notification) => ({ ...notification, read: true })));
+  };
+
   /** Marca la notificación como leída y, si trajo `orderId`, abre la ficha de ese pedido. */
   const handleNotificationClick = (notification: OrderNotification) => {
     handleMarkAsRead(notification.id);
     if (notification.orderId) {
-      handleClose();
+      setOpen(false);
       navigate(`/orders/${notification.orderId}`);
     }
   };
@@ -103,11 +108,15 @@ export const NotificationBell = () => {
       <Tooltip title={isOnline ? 'Notificaciones' : 'Notificaciones (sin conexión en tiempo real)'} arrow>
         <button
           type="button"
-          onClick={handleOpen}
+          onClick={() => setOpen(true)}
           aria-label={unreadCount ? `Notificaciones, ${unreadCount} sin leer` : 'Notificaciones'}
-          className="relative grid h-9 w-9 place-items-center rounded-[10px] border border-outline bg-surface text-ink-2 shadow-control transition-colors hover:bg-tinta-50"
+          className="relative grid h-9 w-9 place-items-center rounded-[10px] border border-outline bg-surface text-ink-2 shadow-control transition-colors hover:bg-surface-hover"
         >
-          <Bell aria-hidden="true" className="h-[18px] w-[18px]" strokeWidth={1.8} />
+          {isOnline ? (
+            <Bell aria-hidden="true" className="h-[18px] w-[18px]" strokeWidth={1.8} />
+          ) : (
+            <BellOff aria-hidden="true" className="h-[18px] w-[18px]" strokeWidth={1.8} />
+          )}
           {unreadCount > 0 && (
             <span
               aria-hidden="true"
@@ -117,53 +126,13 @@ export const NotificationBell = () => {
         </button>
       </Tooltip>
 
-      <Popover
-        open={Boolean(anchorEl)}
-        anchorEl={anchorEl}
-        onClose={handleClose}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-        sx={{ mt: 1 }}
-      >
-        <Box sx={{ width: 340 }}>
-          <Box sx={{ py: 2, px: 2.5 }}>
-            <Typography variant="subtitle1">Notificaciones</Typography>
-            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-              {unreadCount > 0 ? `Tenés ${unreadCount} notificaciones sin leer` : 'No hay notificaciones nuevas'}
-            </Typography>
-          </Box>
-
-          <Divider sx={{ borderStyle: 'dashed' }} />
-
-          <List disablePadding sx={{ maxHeight: 320, overflowY: 'auto' }}>
-            {notifications.length === 0 ? (
-              <Typography sx={{ p: 2, textAlign: 'center' }} variant="body2">
-                Todavía no llegaron pedidos por acá.
-              </Typography>
-            ) : (
-              notifications.map((notification) => (
-                <ListItemButton
-                  key={notification.id}
-                  onClick={() => handleNotificationClick(notification)}
-                  sx={{
-                    py: 1,
-                    px: 2,
-                    ...(notification.read ? {} : { bgcolor: 'action.selected' }),
-                  }}
-                >
-                  <ListItemText
-                    primary={notification.message}
-                    secondary={new Date(notification.createdAt).toLocaleTimeString('es-AR', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  />
-                </ListItemButton>
-              ))
-            )}
-          </List>
-        </Box>
-      </Popover>
+      <NotificationsDrawer
+        open={open}
+        onClose={() => setOpen(false)}
+        notifications={notifications}
+        onNotificationClick={handleNotificationClick}
+        onMarkAllAsRead={unreadCount > 0 ? handleMarkAllAsRead : undefined}
+      />
     </Box>
   );
 };

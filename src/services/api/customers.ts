@@ -12,6 +12,30 @@ export const getCustomer = async (id: string): Promise<Customer> => {
   return data;
 };
 
+/**
+ * GET /customers/user/:userId: resuelve la ficha de cliente a partir de la
+ * cuenta de usuario (CU-130). Lo usa la búsqueda rápida del listado y las
+ * pantallas que llegan con un `user_id` desde otra parte del panel.
+ */
+export const getCustomerByUserId = async (userId: string): Promise<Customer> => {
+  const { data } = await http.get<Customer>(`/customers/user/${userId}`);
+  return data;
+};
+
+/**
+ * PATCH /customers/:id/location (CU-094): la única escritura real de
+ * `PATCH /customers/:id` (CU-131) que tiene sentido desde el panel es esta
+ * misma coordenada, con la validación dedicada del formato "lat,lng"; el
+ * resto del DTO (`notification_token`) es un dato interno del dispositivo.
+ * A diferencia de la cuenta y las direcciones, la API no la restringe al
+ * administrador general: la escribe cualquier admin con rol ADMIN o
+ * SUPER_ADMIN (confirmado contra `customer.controller.spec.ts`).
+ */
+export const updateCustomerLocation = async (id: string, latLng: string): Promise<Customer> => {
+  const { data } = await http.patch<Customer>(`/customers/${id}/location`, { latLng });
+  return data;
+};
+
 /** Baja lógica de un cliente. Sólo el administrador general. */
 export const deleteCustomer = async (id: string): Promise<Message> => {
   const { data } = await http.delete<Message>(`/customers/${id}`);

@@ -7,14 +7,18 @@ const SOCKET_URL = env.socketUrl;
 
 export type SocketAuthPayload = Record<string, unknown>;
 
-// TODO(backend): centralizar acá todos los eventos que el gateway de Nest
-// vaya emitiendo. Por ahora cubrimos el ciclo de vida de un pedido de garrafas.
+// Los eventos del ciclo de vida de un pedido que el AdminGateway emite a la
+// sala de la distribuidora. "En camino" se escucha con su nombre canónico: el
+// back sigue emitiendo también `order:on_the_way` por compatibilidad, y escuchar
+// los dos duplicaría cada aviso.
 export const ORDER_SOCKET_EVENTS = {
   CREATED: 'order:created',
   ACCEPTED: 'order:accepted',
-  ON_THE_WAY: 'order:on_the_way',
+  ON_THE_WAY: 'order:on-the-way',
   DELIVERED: 'order:delivered',
   CANCELLED: 'order:cancelled',
+  RELEASED: 'order:pending',
+  ASSIGNMENT_DECLINED: 'order:assignment-declined',
 } as const;
 
 export type OrderSocketEventName = (typeof ORDER_SOCKET_EVENTS)[keyof typeof ORDER_SOCKET_EVENTS];

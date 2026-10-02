@@ -9,6 +9,12 @@ export const listTimeSlots = async (): Promise<TimeSlot[]> => {
   return data;
 };
 
+/** GET /time-slot/:id: una franja puntual (404 si no existe o es de otra distribuidora). */
+export const getTimeSlot = async (id: string): Promise<TimeSlot> => {
+  const { data } = await http.get<TimeSlot>(`/time-slot/${id}`);
+  return data;
+};
+
 /** POST /time-slot */
 export const createTimeSlot = async (body: CreateTimeSlotBody): Promise<TimeSlot> => {
   const { data } = await http.post<TimeSlot>('/time-slot', body);

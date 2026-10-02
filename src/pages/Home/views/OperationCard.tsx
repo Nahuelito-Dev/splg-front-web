@@ -22,7 +22,7 @@ interface RowProps {
 const Row = ({ icon: Icon, label, detail, value, to, alert = false }: RowProps) => (
   <Link
     to={to}
-    className="grid grid-cols-[auto_1fr_auto] items-center gap-3 px-[18px] py-3 transition-colors hover:bg-tinta-25"
+    className="grid grid-cols-[auto_1fr_auto] items-center gap-3 px-[18px] py-3 transition-colors hover:bg-surface-sunken"
   >
     <span className="grid h-8 w-8 place-items-center rounded-lg border border-outline-soft bg-bg text-ink-2">
       <Icon aria-hidden="true" className="h-4 w-4" strokeWidth={1.8} />
@@ -40,8 +40,8 @@ const Row = ({ icon: Icon, label, detail, value, to, alert = false }: RowProps) 
  * el admin, validado y conectado en su app, o sea, listo para recibir pedidos.
  */
 export const OperationCard = () => {
-  const { data: allDrivers } = useDeliveries(ONE_ROW, '', false);
-  const { data: onlineDrivers } = useDeliveries(ONE_ROW, '', true);
+  const { data: allDrivers } = useDeliveries(ONE_ROW, '', 'all');
+  const { data: onlineDrivers } = useDeliveries(ONE_ROW, '', 'online');
   const { data: cars = [] } = useCars();
   const { data: claims = [] } = useClaims({ refetchInterval: 30_000 });
   const pendingClaims = claims.filter((claim) => claim.status === 'pending').length;

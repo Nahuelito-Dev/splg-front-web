@@ -19,6 +19,13 @@ describe('format', () => {
     expect(formatDay('2026-09-26')).toMatch(/26/);
     expect(formatDay(null)).toBe('—');
   });
+
+  it('un date-time ISO completo (medianoche UTC) no se corre un día: sólo importa el día de calendario', () => {
+    // Un dueAt "2026-09-26" vuelve de la API como "2026-09-26T00:00:00.000Z"; en una
+    // zona horaria negativa (Argentina, UTC-3) pasarlo por Date lo corría al 25.
+    expect(formatDay('2026-09-26T00:00:00.000Z')).toMatch(/26/);
+    expect(formatDay('2026-09-26T00:00:00.000Z')).not.toMatch(/25/);
+  });
 });
 
 describe('formatShortId y formatElapsed', () => {

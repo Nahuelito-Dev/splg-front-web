@@ -2,7 +2,9 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import {
   createGasCylinder,
   deleteGasCylinder,
+  getAvailableGasCylinders,
   getGasCylinder,
+  getGasCylinderByType,
   listGasCylinders,
   updateGasCylinder,
   updateGasCylinderStock,
@@ -20,11 +22,34 @@ export const useGasCylinders = (params: PageParams, search = '') =>
     placeholderData: keepPreviousData,
   });
 
+/** Todos los tipos del catálogo (con o sin stock) para el combo de filtro: una página grande, sin buscador. */
+export const useGasCylinderTypes = () =>
+  useQuery({
+    queryKey: [...keys.all, 'types'],
+    queryFn: () => listGasCylinders({ page: 0, pageSize: 100 }, ''),
+  });
+
 export const useGasCylinder = (id: string | undefined) =>
   useQuery({
     queryKey: keys.detail(id ?? ''),
     queryFn: () => getGasCylinder(id ?? ''),
     enabled: Boolean(id),
+  });
+
+/** El producto activo de un tipo exacto (10kg, 15kg…). 404 si no hay ninguno: no reintenta. */
+export const useGasCylinderByType = (type: string | undefined) =>
+  useQuery({
+    queryKey: keys.detail(`type:${type}`),
+    queryFn: () => getGasCylinderByType(type ?? ''),
+    enabled: Boolean(type),
+    retry: false,
+  });
+
+/** Lo que la app del cliente puede pedir ahora: activo y con stock. Alimenta el filtro "Sólo disponibles". */
+export const useAvailableGasCylinders = () =>
+  useQuery({
+    queryKey: [...keys.all, 'available'],
+    queryFn: getAvailableGasCylinders,
   });
 
 export const useCreateGasCylinder = () => {

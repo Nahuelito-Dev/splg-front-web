@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import type { GridPaginationModel } from '@mui/x-data-grid';
+import { CirclePlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Card, PageHeader } from '../../common/components/ui';
+import { Button, Card, FilterChips, PageHeader, tabPanelProps, type FilterChip } from '../../common/components/ui';
 import { useDebounce } from '../../hooks';
 import type { Order } from '../../services/api/types';
-import { useAssignOrderDelivery, useCancelOrder, useOrders } from '../../services/queries/orders';
+import { useAssignOrderDelivery, useCancelOrder, useOrderStatusCounts, useOrders } from '../../services/queries/orders';
 import { notify } from '../../utils/notifications';
 import { AssignDriverModal } from './components/AssignDriverModal';
 import { CancelOrderModal } from './components/CancelOrderModal';
+import { EMPTY_TOOLBAR_FILTERS, type OrdersToolbarFilters } from './components/ordersFilterValues';
+import { ORDER_TABS_ID, OrderStatusTabs } from './components/OrderStatusTabs';
 import { OrdersFilters } from './components/OrdersFilters';
-import { EMPTY_FILTERS, type OrdersFilterValues } from './components/ordersFilterValues';
 import { OrdersTable } from './components/OrdersTable';
 
 // Ver el detalle de un pedido navega a su ficha (`/orders/:id`); acá sólo
@@ -18,26 +20,44 @@ type ModalState = { kind: 'closed' } | { kind: 'assign'; order: Order } | { kind
 
 export const Orders = () => {
   const navigate = useNavigate();
-  const [filters, setFilters] = useState<OrdersFilterValues>(EMPTY_FILTERS);
-  const debouncedSearch = useDebounce(filters.search.trim());
+  const [status, setStatus] = useState<Order['status'] | ''>('');
+  const [toolbar, setToolbar] = useState<OrdersToolbarFilters>(EMPTY_TOOLBAR_FILTERS);
+  const debouncedSearch = useDebounce(toolbar.search.trim());
   const [pagination, setPagination] = useState<GridPaginationModel>({
     page: 0,
     pageSize: 10,
   });
   const [modal, setModal] = useState<ModalState>({ kind: 'closed' });
 
+  const { counts, total: totalAll } = useOrderStatusCounts();
   const { data, isFetching } = useOrders(pagination, {
     search: debouncedSearch,
-    status: filters.status || undefined,
-    from: filters.from,
-    to: filters.to,
+    status: status || undefined,
+    from: toolbar.from,
+    to: toolbar.to,
   });
   const assignDelivery = useAssignOrderDelivery();
   const cancelOrderMutation = useCancelOrder();
 
-  const handleFilters = (values: OrdersFilterValues) => {
-    setFilters(values);
+  const handleStatus = (value: Order['status'] | '') => {
+    setStatus(value);
     setPagination((p) => ({ ...p, page: 0 }));
+  };
+
+  const handleToolbar = (values: OrdersToolbarFilters) => {
+    setToolbar(values);
+    setPagination((p) => ({ ...p, page: 0 }));
+  };
+
+  const chips: FilterChip[] = [];
+  if (toolbar.search) chips.push({ key: 'search', label: `"${toolbar.search}"` });
+  if (toolbar.from) chips.push({ key: 'from', label: `Desde ${toolbar.from}` });
+  if (toolbar.to) chips.push({ key: 'to', label: `Hasta ${toolbar.to}` });
+
+  const removeChip = (key: string) => {
+    if (key === 'search') handleToolbar({ ...toolbar, search: '' });
+    else if (key === 'from') handleToolbar({ ...toolbar, from: '' });
+    else if (key === 'to') handleToolbar({ ...toolbar, to: '' });
   };
 
   const closeModal = () => setModal({ kind: 'closed' });
@@ -75,25 +95,45 @@ export const Orders = () => {
       <PageHeader
         title="Pedidos"
         description="Pedidos en curso y su historial. La asignación de chofer es automática; acá se puede forzar o cancelar."
+        actions={
+          <Button icon={<CirclePlus />} onClick={() => navigate('/orders/new')}>
+            Pedido telefónico
+          </Button>
+        }
       />
 
       <Card>
-        <div className="flex flex-col gap-3 border-b border-outline p-4 xl:flex-row xl:items-end xl:justify-between">
-          <OrdersFilters values={filters} onChange={handleFilters} />
-          <p className="shrink-0 text-sm text-muted xl:pb-2.5" aria-live="polite">
-            {data ? `${data.total} ${data.total === 1 ? 'pedido' : 'pedidos'}` : ''}
-          </p>
+        <OrderStatusTabs value={status} counts={counts} total={totalAll} onChange={handleStatus} />
+
+        <div {...tabPanelProps(ORDER_TABS_ID, status || 'all')}>
+          <div className="border-b border-outline p-4">
+            <OrdersFilters values={toolbar} onChange={handleToolbar} />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 px-4 py-3">
+            <p className="text-sm text-muted" aria-live="polite">
+              {data ? (
+                <>
+                  <b className="font-semibold text-ink">{data.total}</b> {data.total === 1 ? 'pedido' : 'pedidos'}
+                </>
+              ) : (
+                <span>Cargando pedidos…</span>
+              )}
+            </p>
+            <FilterChips items={chips} onRemove={removeChip} onClearAll={() => handleToolbar(EMPTY_TOOLBAR_FILTERS)} />
+          </div>
+
+          <OrdersTable
+            rows={data?.orders ?? []}
+            total={data?.total ?? 0}
+            loading={isFetching}
+            pagination={pagination}
+            onPaginationChange={setPagination}
+            onView={(order) => navigate(`/orders/${order.order_id}`)}
+            onAssign={(order) => setModal({ kind: 'assign', order })}
+            onCancel={(order) => setModal({ kind: 'cancel', order })}
+          />
         </div>
-        <OrdersTable
-          rows={data?.orders ?? []}
-          total={data?.total ?? 0}
-          loading={isFetching}
-          pagination={pagination}
-          onPaginationChange={setPagination}
-          onView={(order) => navigate(`/orders/${order.order_id}`)}
-          onAssign={(order) => setModal({ kind: 'assign', order })}
-          onCancel={(order) => setModal({ kind: 'cancel', order })}
-        />
       </Card>
 
       <AssignDriverModal

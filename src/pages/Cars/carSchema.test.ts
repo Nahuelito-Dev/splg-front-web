@@ -19,6 +19,23 @@ describe('carSchema', () => {
     if (result.success) expect(result.data.car_patent).toBe('AB104EJ');
   });
 
+  it('normaliza la patente: sin espacios ni guiones', () => {
+    const result = carSchema.safeParse({ ...valid, car_patent: ' ab 104-ej ' });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.car_patent).toBe('AB104EJ');
+  });
+
+  it('la patente tiene entre 4 y 20 letras o números, como pide el back', () => {
+    expect(carSchema.safeParse({ ...valid, car_patent: 'ab1' }).success).toBe(false);
+    expect(carSchema.safeParse({ ...valid, car_patent: 'a'.repeat(21) }).success).toBe(false);
+    expect(carSchema.safeParse({ ...valid, car_patent: 'ab#104' }).success).toBe(false);
+    expect(carSchema.safeParse({ ...valid, car_patent: 'ab12' }).success).toBe(true);
+  });
+
+  it('una patente de sólo guiones o espacios se rechaza', () => {
+    expect(carSchema.safeParse({ ...valid, car_patent: ' - ' }).success).toBe(false);
+  });
+
   it('los campos numéricos son opcionales: vacíos no rompen', () => {
     const result = carSchema.safeParse({ ...valid, car_year: '', car_capacity: '' });
     expect(result.success).toBe(true);

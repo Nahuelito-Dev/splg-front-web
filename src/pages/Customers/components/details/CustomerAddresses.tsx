@@ -116,7 +116,7 @@ export const CustomerAddresses = ({ userId }: { userId: string }) => {
       ) : (
         <ul className="space-y-3">
           {addresses.map((address) => (
-            <li key={address.address_id} className="rounded-xl border border-outline bg-tinta-50 p-3">
+            <li key={address.address_id} className="rounded-xl border border-outline bg-surface-hover p-3">
               <div className="flex items-start justify-between gap-2">
                 <p className="text-sm font-medium text-ink">{address.street}</p>
                 <div className="flex items-center gap-1.5">
