@@ -6,6 +6,8 @@ import { env } from '../config/env';
 const SOCKET_URL = env.socketUrl;
 
 export type SocketAuthPayload = Record<string, unknown>;
+/** Handshake que se arma en cada (re)conexión, para mandar siempre un token vigente. */
+export type SocketAuthProvider = () => Promise<SocketAuthPayload>;
 
 // Los eventos del ciclo de vida de un pedido que el AdminGateway emite a la
 // sala de la distribuidora. "En camino" se escucha con su nombre canónico: el
@@ -68,13 +70,19 @@ export const useSocket = (namespace = '/') => {
     });
   }
 
-  const connect = useCallback((auth?: SocketAuthPayload) => {
+  const connect = useCallback((auth?: SocketAuthPayload | SocketAuthProvider) => {
     const socket = socketRef.current;
     if (!socket || socket.connected) return;
 
     // `auth.token` es el handshake real: el AdminGateway lo valida (decodeToken)
     // y desconecta al cliente si falta o es inválido (ver socket-data.ts en el back).
-    socket.auth = auth ?? {};
+    // Con una función, socket.io la vuelve a llamar en cada reconexión.
+    socket.auth =
+      typeof auth === 'function'
+        ? (cb: (data: object) => void) => {
+            void auth().then(cb, () => cb({}));
+          }
+        : (auth ?? {});
     socket.connect();
   }, []);
 

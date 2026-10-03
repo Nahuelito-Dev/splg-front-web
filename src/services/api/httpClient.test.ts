@@ -3,8 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../store/store', () => ({ store: { dispatch: vi.fn() } }));
 vi.mock('../../store/auth/thunks', () => ({ startLogOut: vi.fn() }));
+const getCurrentIdToken = vi.fn<[boolean | undefined], Promise<string | null>>();
+vi.mock('../../firebase/providers', () => ({ getCurrentIdToken: (force?: boolean) => getCurrentIdToken(force) }));
 
-const { attachAuthHeaders, toPage, toQuery } = await import('./httpClient');
+const { attachAuthHeaders, http, toPage, toQuery } = await import('./httpClient');
 
 const response = (data: number[], headers: Record<string, string> = {}) =>
   ({ data, headers }) as unknown as AxiosResponse<number[]>;
@@ -29,6 +31,15 @@ const config = (skipDistributor?: boolean, isPublic?: boolean): InternalAxiosReq
 describe('attachAuthHeaders', () => {
   beforeEach(() => {
     localStorage.clear();
+    getCurrentIdToken.mockReset().mockResolvedValue(null);
+  });
+
+  it('con sesión de Firebase, manda el token vigente del SDK y lo guarda', async () => {
+    localStorage.setItem('token', 'token-vencido');
+    getCurrentIdToken.mockResolvedValue('token-renovado');
+    const result = await attachAuthHeaders(config());
+    expect(result.headers.Authorization).toBe('Bearer token-renovado');
+    expect(localStorage.getItem('token')).toBe('token-renovado');
   });
 
   it('sin token, rechaza: no hay sesión iniciada', async () => {
@@ -80,5 +91,53 @@ describe('attachAuthHeaders', () => {
     localStorage.setItem('token', 'el-token');
     const result = await attachAuthHeaders(config(undefined, true));
     expect(result.headers.Authorization).toBe('Bearer el-token');
+  });
+});
+
+describe('401 por token vencido', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    getCurrentIdToken.mockReset();
+  });
+
+  it('renueva el token y reintenta una vez antes de cerrar la sesión', async () => {
+    localStorage.setItem('token', 'token-vencido');
+    getCurrentIdToken.mockImplementation((force?: boolean) =>
+      Promise.resolve(force ? 'token-renovado' : 'token-vencido'),
+    );
+    const auths: string[] = [];
+    const adapter = vi.fn((cfg: InternalAxiosRequestConfig) => {
+      auths.push(String(cfg.headers.Authorization));
+      if (cfg.headers.Authorization === 'Bearer token-vencido') {
+        const err = Object.assign(new Error('401'), {
+          isAxiosError: true,
+          config: cfg,
+          response: { status: 401, data: { code: 'auth/id-token-expired' }, headers: {}, config: cfg },
+        });
+        return Promise.reject(err);
+      }
+      return Promise.resolve({ data: { ok: true }, status: 200, statusText: 'OK', headers: {}, config: cfg });
+    });
+    const res = await http.get('/orders', { adapter });
+    expect(res.data).toEqual({ ok: true });
+    expect(auths).toEqual(['Bearer token-vencido', 'Bearer token-renovado']);
+    expect(localStorage.getItem('token')).toBe('token-renovado');
+  });
+
+  it('si Firebase no puede renovar, cierra la sesión', async () => {
+    localStorage.setItem('token', 'token-vencido');
+    getCurrentIdToken.mockResolvedValue(null);
+    const adapter = vi.fn((cfg: InternalAxiosRequestConfig) =>
+      Promise.reject(
+        Object.assign(new Error('401'), {
+          isAxiosError: true,
+          config: cfg,
+          response: { status: 401, data: {}, headers: {}, config: cfg },
+        }),
+      ),
+    );
+    await expect(http.get('/orders', { adapter })).rejects.toThrow('401');
+    expect(adapter).toHaveBeenCalledTimes(1);
+    expect(localStorage.getItem('token')).toBeNull();
   });
 });

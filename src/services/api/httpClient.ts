@@ -4,10 +4,13 @@ import { store } from '../../store/store';
 import { logOut } from '../../store/auth';
 import { startLogOut } from '../../store/auth/thunks';
 import { activeDistributor } from './activeDistributor';
+import { getCurrentIdToken } from '../../firebase/providers';
 
 // Axios no trae estas opciones: las agregan `skipDistributor` y `public` (ver `attachAuthHeaders`).
 declare module 'axios' {
   export interface AxiosRequestConfig {
+    /** Marca interna: el pedido ya se reintentó con un token renovado tras un 401. */
+    reintentoConTokenNuevo?: boolean;
     /**
      * Las llamadas de identidad (¿quién es este token?, antes de que haya sesión elegida)
      * no van con `X-Distributor`: si quedó un slug viejo en localStorage (de una
@@ -40,8 +43,25 @@ const clearLocalSession = () => {
 };
 
 /** Token y `X-Distributor` de cada pedido. Aparte para poder probarlo sin armar un axios entero. */
-export const attachAuthHeaders = (config: InternalAxiosRequestConfig) => {
-  const token = localStorage.getItem('token');
+/**
+ * El ID token de Firebase dura una hora: se pide al SDK en cada llamada (lo renueva solo
+ * cuando está por vencer) y se guarda, para que el socket y la próxima carga usen el vigente.
+ */
+const vigenteOGuardado = async (force = false): Promise<string | null> => {
+  const fresco = await getCurrentIdToken(force).catch(() => null);
+  if (fresco) {
+    localStorage.setItem('token', fresco);
+    return fresco;
+  }
+  return localStorage.getItem('token');
+};
+
+export const attachAuthHeaders = async (config: InternalAxiosRequestConfig) => {
+  // El reintento tras un 401 ya trae el token renovado a la fuerza: no se pisa.
+  const token =
+    config.reintentoConTokenNuevo && config.headers.Authorization
+      ? String(config.headers.Authorization).replace(/^Bearer /, '')
+      : await vigenteOGuardado();
   if (!token) {
     if (config.public) return config;
     return Promise.reject(new Error('No hay sesión iniciada'));
@@ -61,10 +81,21 @@ interface BodyWithCode {
   code?: string;
 }
 
-http.interceptors.response.use(undefined, (error: unknown) => {
+http.interceptors.response.use(undefined, async (error: unknown) => {
   if (axios.isAxiosError(error)) {
     const status = error.response?.status;
     const code = (error.response?.data as BodyWithCode | undefined)?.code;
+    const original = error.config;
+    // Un 401 por token vencido se reintenta una vez con un token renovado antes de cerrar la sesión.
+    if (status === 401 && original && !original.reintentoConTokenNuevo) {
+      const renovado = await getCurrentIdToken(true).catch(() => null);
+      if (renovado) {
+        localStorage.setItem('token', renovado);
+        original.reintentoConTokenNuevo = true;
+        original.headers.Authorization = `Bearer ${renovado}`;
+        return http.request(original);
+      }
+    }
     if (status === 401) {
       clearLocalSession();
       store.dispatch(logOut({}));
