@@ -2,16 +2,17 @@ import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
-import { Badge, Button, ErrorState, LoadingState, PageHeader } from '../../common/components/ui';
+import { Button, ErrorState, LoadingState } from '../../common/components/ui';
 import { useSocketContext } from '../../context/useSocketContext';
 import { ORDER_SOCKET_EVENTS, type OrderSocketEventName } from '../../hooks/useSocket';
 import { useOrder } from '../../services/queries/orders';
 import { queryKeys } from '../../services/queries/queryKeys';
-import { formatDateTime, formatShortId } from '../../utils/format';
-import { labelOf, ORDER_STATUS } from '../../utils/statusLabels';
-import { OrderActions } from './components/details/OrderActions';
-import { OrderDeliverySupport } from './components/details/OrderDeliverySupport';
-import { OrderDetailBody } from './components/details/OrderDetailBody';
+import { OrderDepositCard } from './components/details/OrderDepositCard';
+import { OrderDetailsToolbar } from './components/details/OrderDetailsToolbar';
+import { OrderHistoryCard } from './components/details/OrderHistoryCard';
+import { OrderIncidents } from './components/details/OrderIncidents';
+import { OrderItemsSummary } from './components/details/OrderItemsSummary';
+import { OrderSideCards } from './components/details/OrderSideCards';
 
 /** Payload mínimo que manda `AdminGateway.notifyAdmins` con cada evento del ciclo de vida de un pedido. */
 interface OrderSocketPayload {
@@ -42,27 +43,35 @@ export const OrderDetails = () => {
   }, [id, subscribe, queryClient]);
 
   return (
-    <div className="mx-auto max-w-5xl p-4 md:p-8">
-      <Button variant="ghost" size="sm" icon={<ArrowLeft />} className="-ml-2 mb-3" onClick={() => navigate('/orders')}>
-        Volver a pedidos
-      </Button>
-
+    <div className="mx-auto max-w-6xl p-4 md:p-8">
       {isPending ? (
         <LoadingState />
       ) : error || !order ? (
-        <ErrorState error={error} resource="El pedido" onRetry={() => void refetch()} />
+        <>
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={<ArrowLeft />}
+            className="-ml-2 mb-3"
+            onClick={() => navigate('/orders')}
+          >
+            Volver a pedidos
+          </Button>
+          <ErrorState error={error} resource="El pedido" onRetry={() => void refetch()} />
+        </>
       ) : (
         <>
-          <PageHeader
-            eyebrow={`Pedido ${formatShortId(order.order_id)}`}
-            title={order.customer?.full_name ?? 'Cliente sin nombre'}
-            description={`Creado ${formatDateTime(order.created_at)}`}
-            actions={<Badge label={labelOf(ORDER_STATUS, order.status)} />}
-          />
-          <div className="space-y-5">
-            <OrderActions order={order} />
-            <OrderDeliverySupport order={order} />
-            <OrderDetailBody order={order} />
+          <OrderDetailsToolbar order={order} />
+          <div className="grid gap-5 lg:grid-cols-3">
+            <div className="min-w-0 space-y-5 lg:col-span-2">
+              {order.status === 'reserved' && <OrderDepositCard order={order} />}
+              <OrderItemsSummary order={order} />
+              <OrderHistoryCard order={order} />
+              <OrderIncidents orderId={order.order_id} />
+            </div>
+            <div className="min-w-0 lg:col-span-1">
+              <OrderSideCards order={order} />
+            </div>
           </div>
         </>
       )}

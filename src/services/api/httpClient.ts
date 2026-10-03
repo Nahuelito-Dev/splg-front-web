@@ -47,7 +47,8 @@ export const attachAuthHeaders = (config: InternalAxiosRequestConfig) => {
     return Promise.reject(new Error('No hay sesión iniciada'));
   }
   config.headers.Authorization = `Bearer ${token}`;
-  if (!config.skipDistributor) {
+  // Un `X-Distributor` puesto a propósito en la llamada (administrador general) manda sobre el de «Ver como».
+  if (!config.skipDistributor && !config.headers['X-Distributor']) {
     const distributor = activeDistributor.get();
     if (distributor) config.headers['X-Distributor'] = distributor;
   }

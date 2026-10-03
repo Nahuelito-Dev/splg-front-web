@@ -16,8 +16,8 @@ export const useChartPalette = () => {
     grid: isDark ? brand.dark.outlineSoft : brand.tinta['100'],
     /** Texto de los ejes, el más fuerte (categorías). */
     axisStrong: isDark ? brand.dark.muted : brand.tinta['500'],
-    /** Texto de los ejes, el más tenue (valores). */
-    axis: isDark ? brand.dark.faint : brand.tinta['400'],
+    /** Texto de los ejes (valores): el mismo gris con contraste AA que las categorías. */
+    axis: isDark ? brand.dark.muted : brand.tinta['500'],
     /** Fondo del cursor al pasar el mouse por una barra/punto. */
     cursor: isDark ? brand.dark.surfaceHover : brand.tinta['50'],
     /** Fondo y borde del tooltip. */

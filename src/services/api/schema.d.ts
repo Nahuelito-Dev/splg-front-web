@@ -1897,7 +1897,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Ventas por Repartidor */
+        /**
+         * Ventas por Repartidor
+         * @description Días en hora argentina (America/Argentina/Buenos_Aires); `to` es inclusivo. Cuenta pedidos entregados en el rango, por fecha de entrega (el listado de pedidos filtra por fecha de creación). Suma el total del pedido (con recargos) de los pedidos entregados.
+         */
         get: operations["ReportsController_getSalesByDriver"];
         put?: never;
         post?: never;
@@ -1914,7 +1917,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Ventas por Producto */
+        /**
+         * Ventas por Producto
+         * @description Días en hora argentina (America/Argentina/Buenos_Aires); `to` es inclusivo. Cuenta pedidos entregados en el rango, por fecha de entrega (el listado de pedidos filtra por fecha de creación). Suma los subtotales de los renglones (sin recargos): por eso el total puede ser menor al de sales-by-driver/sales-by-payment, que suman el total del pedido.
+         */
         get: operations["ReportsController_getSalesByProduct"];
         put?: never;
         post?: never;
@@ -1931,7 +1937,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Ventas por Método de Pago */
+        /**
+         * Ventas por Método de Pago
+         * @description Días en hora argentina (America/Argentina/Buenos_Aires); `to` es inclusivo. Cuenta pedidos entregados en el rango, por fecha de entrega (el listado de pedidos filtra por fecha de creación). Suma el total del pedido (con recargos) de los pedidos entregados.
+         */
         get: operations["ReportsController_getSalesByPayment"];
         put?: never;
         post?: never;
@@ -1948,7 +1957,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Evolución de ventas por período (día/semana/mes) */
+        /**
+         * Evolución de ventas por período (día/semana/mes)
+         * @description Días en hora argentina (America/Argentina/Buenos_Aires); `to` es inclusivo. Cuenta pedidos entregados en el rango, por fecha de entrega (el listado de pedidos filtra por fecha de creación). Los períodos (día, semana ISO lunes a domingo, mes) se agrupan en hora argentina y `period` es el instante en que arranca cada uno. Suma el total del pedido (con recargos).
+         */
         get: operations["ReportsController_getSalesEvolution"];
         put?: never;
         post?: never;
@@ -2660,6 +2672,16 @@ export interface components {
         OrderItemResponseDto: {
             /** @example 2 */
             quantity: number;
+            /**
+             * @description Precio unitario con el que se vendió el renglón (snapshot, no el del catálogo).
+             * @example 14900
+             */
+            unit_price: number;
+            /**
+             * @description Subtotal del renglón tal como quedó guardado.
+             * @example 29800
+             */
+            subtotal: number;
             gas_cylinder: components["schemas"]["ProductoDelRenglonDto"] | null;
         };
         CustomerDeOrderDto: {
@@ -2698,6 +2720,8 @@ export interface components {
         OrderResponseDto: {
             /** Format: uuid */
             order_id: string;
+            /** Format: uuid */
+            distributor_id: string;
             /** @example 22600 */
             total_amount: number;
             /**
@@ -2838,7 +2862,7 @@ export interface components {
             /** @example 22600 */
             today: number;
             /**
-             * @description Semana calendario en curso (domingo a sábado), no los últimos 7 días
+             * @description Semana ISO en curso (lunes a domingo, hora argentina), no los últimos 7 días
              * @example 958500
              */
             week: number;
@@ -6469,6 +6493,13 @@ export interface operations {
             };
             /** @description Car not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description El vehículo está en uso por un chofer: no se le cambia la patente ni el tipo */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10407,9 +10438,9 @@ export interface operations {
     ReportsController_getSalesByDriver: {
         parameters: {
             query?: {
-                /** @description Desde, en formato YYYY-MM-DD. Si no viene, el servicio elige un rango por defecto. */
+                /** @description Desde (día en hora argentina), formato YYYY-MM-DD. Si no viene: igual a `to`, o hoy si tampoco viene `to`. */
                 from?: string;
-                /** @description Hasta, en formato YYYY-MM-DD */
+                /** @description Hasta (día en hora argentina, inclusive), formato YYYY-MM-DD. Si no viene: igual a `from`, o hoy. */
                 to?: string;
             };
             header?: never;
@@ -10426,7 +10457,7 @@ export interface operations {
                     "application/json": components["schemas"]["VentasPorChoferDto"][];
                 };
             };
-            /** @description Fecha con formato inválido */
+            /** @description Fecha con formato inválido o from posterior a to */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -10452,9 +10483,9 @@ export interface operations {
     ReportsController_getSalesByProduct: {
         parameters: {
             query?: {
-                /** @description Desde, en formato YYYY-MM-DD. Si no viene, el servicio elige un rango por defecto. */
+                /** @description Desde (día en hora argentina), formato YYYY-MM-DD. Si no viene: igual a `to`, o hoy si tampoco viene `to`. */
                 from?: string;
-                /** @description Hasta, en formato YYYY-MM-DD */
+                /** @description Hasta (día en hora argentina, inclusive), formato YYYY-MM-DD. Si no viene: igual a `from`, o hoy. */
                 to?: string;
             };
             header?: never;
@@ -10471,7 +10502,7 @@ export interface operations {
                     "application/json": components["schemas"]["VentasPorProductoDto"][];
                 };
             };
-            /** @description Fecha con formato inválido */
+            /** @description Fecha con formato inválido o from posterior a to */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -10497,9 +10528,9 @@ export interface operations {
     ReportsController_getSalesByPayment: {
         parameters: {
             query?: {
-                /** @description Desde, en formato YYYY-MM-DD. Si no viene, el servicio elige un rango por defecto. */
+                /** @description Desde (día en hora argentina), formato YYYY-MM-DD. Si no viene: igual a `to`, o hoy si tampoco viene `to`. */
                 from?: string;
-                /** @description Hasta, en formato YYYY-MM-DD */
+                /** @description Hasta (día en hora argentina, inclusive), formato YYYY-MM-DD. Si no viene: igual a `from`, o hoy. */
                 to?: string;
             };
             header?: never;
@@ -10516,7 +10547,7 @@ export interface operations {
                     "application/json": components["schemas"]["VentasPorMedioDePagoDto"][];
                 };
             };
-            /** @description Fecha con formato inválido */
+            /** @description Fecha con formato inválido o from posterior a to */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -10542,9 +10573,9 @@ export interface operations {
     ReportsController_getSalesEvolution: {
         parameters: {
             query?: {
-                /** @description Desde, en formato YYYY-MM-DD. Si no viene, el servicio elige un rango por defecto. */
+                /** @description Desde (día en hora argentina), formato YYYY-MM-DD. Si no viene: igual a `to`, o hoy si tampoco viene `to`. */
                 from?: string;
-                /** @description Hasta, en formato YYYY-MM-DD */
+                /** @description Hasta (día en hora argentina, inclusive), formato YYYY-MM-DD. Si no viene: igual a `from`, o hoy. */
                 to?: string;
                 /** @description Cómo agrupar los resultados */
                 granularity?: "day" | "week" | "month";
@@ -10563,7 +10594,7 @@ export interface operations {
                     "application/json": components["schemas"]["EvolucionDeVentasDto"][];
                 };
             };
-            /** @description Fecha con formato inválido */
+            /** @description Fecha con formato inválido o from posterior a to */
             400: {
                 headers: {
                     [name: string]: unknown;

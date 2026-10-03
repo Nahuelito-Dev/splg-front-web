@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { Badge, Button, DetailList, Modal } from '../../../common/components/ui';
 import type { Reserva } from '../../../services/api/types';
 import { formatCurrency, formatDateTime, formatDay, formatShortId } from '../../../utils/format';
@@ -13,6 +14,7 @@ interface Props {
 
 /** Todo lo que la API devuelve de una reserva, y la confirmación de la seña en efectivo. */
 export const ReservationDetailModal = ({ reservation, onClose, onConfirmDeposit, confirming }: Props) => {
+  const navigate = useNavigate();
   if (!reservation) return null;
   const canConfirm = !reservation.depositPaid && reservation.paymentMethod === 'cash';
 
@@ -24,19 +26,25 @@ export const ReservationDetailModal = ({ reservation, onClose, onConfirmDeposit,
       title={`Reserva ${formatShortId(reservation.id)}`}
       description={`Creada el ${formatDateTime(reservation.createdAt)}`}
       footer={
-        canConfirm ? (
-          <Button onClick={() => onConfirmDeposit(reservation.id)} loading={confirming}>
-            Confirmar seña cobrada
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {!canConfirm && (
+            <Badge
+              label={
+                reservation.depositPaid
+                  ? { text: 'Seña paga', tone: 'success' }
+                  : { text: 'Se cobra por MercadoPago', tone: 'info' }
+              }
+            />
+          )}
+          <Button variant="secondary" onClick={() => navigate(`/orders/${reservation.id}`)}>
+            Ver pedido
           </Button>
-        ) : (
-          <Badge
-            label={
-              reservation.depositPaid
-                ? { text: 'Seña paga', tone: 'success' }
-                : { text: 'Se cobra por MercadoPago', tone: 'info' }
-            }
-          />
-        )
+          {canConfirm && (
+            <Button onClick={() => onConfirmDeposit(reservation.id)} loading={confirming}>
+              Confirmar seña cobrada
+            </Button>
+          )}
+        </div>
       }
     >
       <div className="space-y-5">

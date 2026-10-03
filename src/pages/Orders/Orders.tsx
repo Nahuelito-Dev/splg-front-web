@@ -9,7 +9,7 @@ import { useAssignOrderDelivery, useCancelOrder, useOrderStatusCounts, useOrders
 import { notify } from '../../utils/notifications';
 import { AssignDriverModal } from './components/AssignDriverModal';
 import { CancelOrderModal } from './components/CancelOrderModal';
-import { EMPTY_TOOLBAR_FILTERS, type OrdersToolbarFilters } from './components/ordersFilterValues';
+import { EMPTY_TOOLBAR_FILTERS, isInvertedRange, type OrdersToolbarFilters } from './components/ordersFilterValues';
 import { ORDER_TABS_ID, OrderStatusTabs } from './components/OrderStatusTabs';
 import { OrdersFilters } from './components/OrdersFilters';
 import { OrdersTable } from './components/OrdersTable';
@@ -30,11 +30,12 @@ export const Orders = () => {
   const [modal, setModal] = useState<ModalState>({ kind: 'closed' });
 
   const { counts, total: totalAll } = useOrderStatusCounts();
+  const invertedRange = isInvertedRange(toolbar);
   const { data, isFetching } = useOrders(pagination, {
     search: debouncedSearch,
     status: status || undefined,
-    from: toolbar.from,
-    to: toolbar.to,
+    from: invertedRange ? '' : toolbar.from,
+    to: invertedRange ? '' : toolbar.to,
   });
   const assignDelivery = useAssignOrderDelivery();
   const cancelOrderMutation = useCancelOrder();
@@ -141,6 +142,7 @@ export const Orders = () => {
         onClose={closeModal}
         onConfirm={handleAssign}
         assigning={assignDelivery.isPending}
+        distributorId={modal.kind === 'assign' ? modal.order.distributor_id : undefined}
       />
       <CancelOrderModal
         open={modal.kind === 'cancel'}

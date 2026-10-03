@@ -1,5 +1,5 @@
 import { Input, SearchInput } from '../../../common/components/ui';
-import type { OrdersToolbarFilters } from './ordersFilterValues';
+import { isInvertedRange, type OrdersToolbarFilters } from './ordersFilterValues';
 
 interface Props {
   values: OrdersToolbarFilters;
@@ -9,6 +9,7 @@ interface Props {
 /** Búsqueda y rango de fechas de Pedidos, resueltos en la API (GET /orders). El estado va por pestañas. */
 export const OrdersFilters = ({ values, onChange }: Props) => {
   const set = (patch: Partial<OrdersToolbarFilters>) => onChange({ ...values, ...patch });
+  const invertedRange = isInvertedRange(values);
 
   return (
     <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
@@ -32,6 +33,7 @@ export const OrdersFilters = ({ values, onChange }: Props) => {
           type="date"
           value={values.to}
           min={values.from || undefined}
+          error={invertedRange ? 'Tiene que ser igual o posterior a «Desde»' : undefined}
           onChange={(e) => set({ to: e.target.value })}
         />
       </div>

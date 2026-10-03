@@ -48,6 +48,15 @@ describe('attachAuthHeaders', () => {
     expect(result.headers['X-Distributor']).toBe('jeny-gas');
   });
 
+  it('un X-Distributor puesto en la llamada manda sobre el de «Ver como»', async () => {
+    localStorage.setItem('token', 'el-token');
+    localStorage.setItem('selectedDistributor', 'jeny-gas');
+    const base = config();
+    base.headers.set('X-Distributor', 'otra-empresa');
+    const result = await attachAuthHeaders(base);
+    expect(result.headers['X-Distributor']).toBe('otra-empresa');
+  });
+
   it('sin distribuidora elegida, no manda el header', async () => {
     localStorage.setItem('token', 'el-token');
     const result = await attachAuthHeaders(config());

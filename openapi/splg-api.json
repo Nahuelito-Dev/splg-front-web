@@ -2665,6 +2665,9 @@
                     },
                     "404": {
                         "description": "Car not found"
+                    },
+                    "409": {
+                        "description": "El vehículo está en uso por un chofer: no se le cambia la patente ni el tipo"
                     }
                 },
                 "security": [
@@ -7609,13 +7612,14 @@
         },
         "/api/reports/sales-by-driver": {
             "get": {
+                "description": "Días en hora argentina (America/Argentina/Buenos_Aires); `to` es inclusivo. Cuenta pedidos entregados en el rango, por fecha de entrega (el listado de pedidos filtra por fecha de creación). Suma el total del pedido (con recargos) de los pedidos entregados.",
                 "operationId": "ReportsController_getSalesByDriver",
                 "parameters": [
                     {
                         "name": "from",
                         "required": false,
                         "in": "query",
-                        "description": "Desde, en formato YYYY-MM-DD. Si no viene, el servicio elige un rango por defecto.",
+                        "description": "Desde (día en hora argentina), formato YYYY-MM-DD. Si no viene: igual a `to`, o hoy si tampoco viene `to`.",
                         "schema": {
                             "example": "2026-09-01",
                             "type": "string"
@@ -7625,7 +7629,7 @@
                         "name": "to",
                         "required": false,
                         "in": "query",
-                        "description": "Hasta, en formato YYYY-MM-DD",
+                        "description": "Hasta (día en hora argentina, inclusive), formato YYYY-MM-DD. Si no viene: igual a `from`, o hoy.",
                         "schema": {
                             "example": "2026-09-30",
                             "type": "string"
@@ -7647,7 +7651,7 @@
                         }
                     },
                     "400": {
-                        "description": "Fecha con formato inválido"
+                        "description": "Fecha con formato inválido o from posterior a to"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -7672,13 +7676,14 @@
         },
         "/api/reports/sales-by-product": {
             "get": {
+                "description": "Días en hora argentina (America/Argentina/Buenos_Aires); `to` es inclusivo. Cuenta pedidos entregados en el rango, por fecha de entrega (el listado de pedidos filtra por fecha de creación). Suma los subtotales de los renglones (sin recargos): por eso el total puede ser menor al de sales-by-driver/sales-by-payment, que suman el total del pedido.",
                 "operationId": "ReportsController_getSalesByProduct",
                 "parameters": [
                     {
                         "name": "from",
                         "required": false,
                         "in": "query",
-                        "description": "Desde, en formato YYYY-MM-DD. Si no viene, el servicio elige un rango por defecto.",
+                        "description": "Desde (día en hora argentina), formato YYYY-MM-DD. Si no viene: igual a `to`, o hoy si tampoco viene `to`.",
                         "schema": {
                             "example": "2026-09-01",
                             "type": "string"
@@ -7688,7 +7693,7 @@
                         "name": "to",
                         "required": false,
                         "in": "query",
-                        "description": "Hasta, en formato YYYY-MM-DD",
+                        "description": "Hasta (día en hora argentina, inclusive), formato YYYY-MM-DD. Si no viene: igual a `from`, o hoy.",
                         "schema": {
                             "example": "2026-09-30",
                             "type": "string"
@@ -7710,7 +7715,7 @@
                         }
                     },
                     "400": {
-                        "description": "Fecha con formato inválido"
+                        "description": "Fecha con formato inválido o from posterior a to"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -7735,13 +7740,14 @@
         },
         "/api/reports/sales-by-payment": {
             "get": {
+                "description": "Días en hora argentina (America/Argentina/Buenos_Aires); `to` es inclusivo. Cuenta pedidos entregados en el rango, por fecha de entrega (el listado de pedidos filtra por fecha de creación). Suma el total del pedido (con recargos) de los pedidos entregados.",
                 "operationId": "ReportsController_getSalesByPayment",
                 "parameters": [
                     {
                         "name": "from",
                         "required": false,
                         "in": "query",
-                        "description": "Desde, en formato YYYY-MM-DD. Si no viene, el servicio elige un rango por defecto.",
+                        "description": "Desde (día en hora argentina), formato YYYY-MM-DD. Si no viene: igual a `to`, o hoy si tampoco viene `to`.",
                         "schema": {
                             "example": "2026-09-01",
                             "type": "string"
@@ -7751,7 +7757,7 @@
                         "name": "to",
                         "required": false,
                         "in": "query",
-                        "description": "Hasta, en formato YYYY-MM-DD",
+                        "description": "Hasta (día en hora argentina, inclusive), formato YYYY-MM-DD. Si no viene: igual a `from`, o hoy.",
                         "schema": {
                             "example": "2026-09-30",
                             "type": "string"
@@ -7773,7 +7779,7 @@
                         }
                     },
                     "400": {
-                        "description": "Fecha con formato inválido"
+                        "description": "Fecha con formato inválido o from posterior a to"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -7798,13 +7804,14 @@
         },
         "/api/reports/sales-evolution": {
             "get": {
+                "description": "Días en hora argentina (America/Argentina/Buenos_Aires); `to` es inclusivo. Cuenta pedidos entregados en el rango, por fecha de entrega (el listado de pedidos filtra por fecha de creación). Los períodos (día, semana ISO lunes a domingo, mes) se agrupan en hora argentina y `period` es el instante en que arranca cada uno. Suma el total del pedido (con recargos).",
                 "operationId": "ReportsController_getSalesEvolution",
                 "parameters": [
                     {
                         "name": "from",
                         "required": false,
                         "in": "query",
-                        "description": "Desde, en formato YYYY-MM-DD. Si no viene, el servicio elige un rango por defecto.",
+                        "description": "Desde (día en hora argentina), formato YYYY-MM-DD. Si no viene: igual a `to`, o hoy si tampoco viene `to`.",
                         "schema": {
                             "example": "2026-09-01",
                             "type": "string"
@@ -7814,7 +7821,7 @@
                         "name": "to",
                         "required": false,
                         "in": "query",
-                        "description": "Hasta, en formato YYYY-MM-DD",
+                        "description": "Hasta (día en hora argentina, inclusive), formato YYYY-MM-DD. Si no viene: igual a `from`, o hoy.",
                         "schema": {
                             "example": "2026-09-30",
                             "type": "string"
@@ -7851,7 +7858,7 @@
                         }
                     },
                     "400": {
-                        "description": "Fecha con formato inválido"
+                        "description": "Fecha con formato inválido o from posterior a to"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -10139,6 +10146,16 @@
                         "type": "number",
                         "example": 2
                     },
+                    "unit_price": {
+                        "type": "number",
+                        "example": 14900,
+                        "description": "Precio unitario con el que se vendió el renglón (snapshot, no el del catálogo)."
+                    },
+                    "subtotal": {
+                        "type": "number",
+                        "example": 29800,
+                        "description": "Subtotal del renglón tal como quedó guardado."
+                    },
                     "gas_cylinder": {
                         "nullable": true,
                         "allOf": [
@@ -10150,6 +10167,8 @@
                 },
                 "required": [
                     "quantity",
+                    "unit_price",
+                    "subtotal",
                     "gas_cylinder"
                 ]
             },
@@ -10249,6 +10268,10 @@
                 "type": "object",
                 "properties": {
                     "order_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "distributor_id": {
                         "type": "string",
                         "format": "uuid"
                     },
@@ -10393,6 +10416,7 @@
                 },
                 "required": [
                     "order_id",
+                    "distributor_id",
                     "total_amount",
                     "status",
                     "created_at",
@@ -10657,7 +10681,7 @@
                     "week": {
                         "type": "number",
                         "example": 958500,
-                        "description": "Semana calendario en curso (domingo a sábado), no los últimos 7 días"
+                        "description": "Semana ISO en curso (lunes a domingo, hora argentina), no los últimos 7 días"
                     },
                     "month": {
                         "type": "number",

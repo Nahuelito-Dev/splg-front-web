@@ -3,6 +3,11 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+vi.mock('../../../hooks', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  usePermissions: () => ({ needsDistributor: false }),
+}));
+
 afterEach(cleanup);
 import type { Order } from '../../../services/api/types';
 import type { AvailablePool } from '../useAvailablePool';

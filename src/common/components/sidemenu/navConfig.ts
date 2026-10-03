@@ -9,6 +9,7 @@ import {
   Flame,
   HardHat,
   House,
+  MapPinHouse,
   ListChecks,
   Map as MapIcon,
   MessageSquareWarning,
@@ -25,7 +26,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 
-interface NavItem {
+export interface NavItem {
   title: string;
   path: string;
   icon: LucideIcon;
@@ -65,6 +66,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { title: 'Planes de flota', path: '/fleet/plans', icon: ClipboardList },
       { title: 'Tareas de flota', path: '/fleet/tasks', icon: ListChecks },
       { title: 'Calificaciones', path: '/ratings', icon: Star },
+      { title: 'Direcciones', path: '/addresses', icon: MapPinHouse, superAdminOnly: true },
     ],
   },
   {

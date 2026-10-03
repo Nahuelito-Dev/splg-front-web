@@ -28,6 +28,7 @@ export const queryKeys = {
   reports: resource('reports'),
   reservations: resource('reservations'),
   roles: resource('roles'),
+  search: resource('search'),
   stats: resource('stats'),
   timeSlots: resource('timeSlots'),
   userAddresses: resource('userAddresses'),

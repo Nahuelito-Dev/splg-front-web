@@ -12,12 +12,12 @@ export const SearchInput = forwardRef<HTMLInputElement, Props>(({ label, classNa
     <span className="sr-only">{label}</span>
     <SearchIcon
       aria-hidden="true"
-      className="pointer-events-none absolute left-3 top-1/2 !h-4 !w-4 -translate-y-1/2 text-faint"
+      className="pointer-events-none absolute left-3 top-1/2 !h-4 !w-4 -translate-y-1/2 text-muted"
     />
     <input
       ref={ref}
       type="search"
-      className="h-9 w-full rounded-[10px] border border-outline bg-surface pl-9 pr-3 text-[13px] text-ink shadow-control placeholder:text-faint focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+      className="h-9 w-full rounded-[10px] border border-outline bg-surface pl-9 pr-3 text-[13px] text-ink shadow-control placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
       {...rest}
     />
   </label>

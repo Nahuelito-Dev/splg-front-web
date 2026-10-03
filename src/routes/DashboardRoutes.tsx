@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAppDispatch } from '../hooks';
 import { logOut } from '../store/auth';
 import { DashboardLayout } from '../common/layout';
+import { RouteProgressBar } from '../common/layout/RouteProgressBar';
 import { LoadingState } from '../common/components/ui';
 import { lazyPage } from './lazyPage';
 
@@ -13,6 +14,7 @@ const Users = lazyPage(() => import('../pages/Users/Users'), 'Users');
 const UserDetails = lazyPage(() => import('../pages/Users/UserDetails'), 'UserDetails');
 const Customers = lazyPage(() => import('../pages/Customers/Customers'), 'Customers');
 const CustomerDetails = lazyPage(() => import('../pages/Customers/CustomerDetails'), 'CustomerDetails');
+const Addresses = lazyPage(() => import('../pages/Addresses/Addresses'), 'Addresses');
 const GasCylinders = lazyPage(() => import('../pages/GasCylinders/GasCylinders'), 'GasCylinders');
 const GasCylinderDetails = lazyPage(() => import('../pages/GasCylinders/GasCylinderDetails'), 'GasCylinderDetails');
 const PhysicalCylinders = lazyPage(() => import('../pages/PhysicalCylinders/PhysicalCylinders'), 'PhysicalCylinders');
@@ -29,6 +31,7 @@ const FleetTaskDetail = lazyPage(() => import('../pages/Fleet/FleetTaskDetail'),
 const Configuration = lazyPage(() => import('../pages/Configuration/Configuration'), 'Configuration');
 const Orders = lazyPage(() => import('../pages/Orders/Orders'), 'Orders');
 const OrderDetails = lazyPage(() => import('../pages/Orders/OrderDetails'), 'OrderDetails');
+const OrderInvoice = lazyPage(() => import('../pages/Orders/OrderInvoice'), 'OrderInvoice');
 const NewOrder = lazyPage(() => import('../pages/Orders/NewOrder'), 'NewOrder');
 const Claims = lazyPage(() => import('../pages/Claims/Claims'), 'Claims');
 const Incidents = lazyPage(() => import('../pages/Incidents/Incidents'), 'Incidents');
@@ -59,7 +62,14 @@ export const DashboardRoutes = () => {
 
   return (
     <DashboardLayout>
-      <Suspense fallback={<LoadingState />}>
+      <Suspense
+        fallback={
+          <>
+            <RouteProgressBar />
+            <LoadingState />
+          </>
+        }
+      >
         <Routes>
           {/* 1. Dashboard General */}
           <Route path="home" element={<Home />} />
@@ -74,6 +84,9 @@ export const DashboardRoutes = () => {
           {/* 3. Clientes */}
           <Route path="customers" element={<Customers />} />
           <Route path="customers/details/:id" element={<CustomerDetails />} />
+
+          {/* Direcciones de entrega de todos los clientes — super_admin */}
+          <Route path="addresses" element={<Addresses />} />
 
           {/* 4. Garrafas / Productos (catálogo) */}
           <Route path="cylinders" element={<GasCylinders />} />
@@ -103,6 +116,7 @@ export const DashboardRoutes = () => {
           <Route path="orders" element={<Orders />} />
           <Route path="orders/new" element={<NewOrder />} />
           <Route path="orders/:id" element={<OrderDetails />} />
+          <Route path="orders/:id/remito" element={<OrderInvoice />} />
 
           {/* 8. Tracking en vivo de choferes */}
           <Route path="tracking" element={<Tracking />} />

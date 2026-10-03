@@ -1,6 +1,6 @@
 import { useRef, useState, type ChangeEvent, type DragEvent } from 'react';
 import { Download, Eye, LayoutGrid, List, Paperclip, Trash2, Upload } from 'lucide-react';
-import { Button, EmptyState, IconButton, LoadingState } from '../../../common/components/ui';
+import { Button, EmptyState, IconButton, LoadingState, UserRefLink } from '../../../common/components/ui';
 import type { FleetTaskAttachment } from '../../../services/api/types';
 import {
   useDeleteFleetTaskAttachment,
@@ -8,6 +8,7 @@ import {
   useFleetTaskAttachments,
   useUploadFleetTaskAttachment,
 } from '../../../services/queries/fleet';
+import { useUserNames } from '../../../services/queries/userNames';
 import { formatDateTime } from '../../../utils/format';
 import { confirm, notify } from '../../../utils/notifications';
 import { FleetAttachmentDetailModal } from './FleetAttachmentDetailModal';
@@ -43,6 +44,7 @@ export const FleetTaskAttachments = ({ taskId, canWrite }: Props) => {
   // dragenter/dragleave se disparan también al cruzar los hijos: se cuentan para que el resalte no parpadee.
   const dragDepth = useRef(0);
   const { data: attachments = [], isPending, error, refetch } = useFleetTaskAttachments(taskId);
+  const names = useUserNames(attachments.map((attachment) => attachment.uploadedByUserId));
   const upload = useUploadFleetTaskAttachment();
   const download = useDownloadFleetTaskAttachment();
   const remove = useDeleteFleetTaskAttachment();
@@ -163,7 +165,7 @@ export const FleetTaskAttachments = ({ taskId, canWrite }: Props) => {
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="text-sm font-semibold text-ink">Adjuntos</h3>
         <div className="flex items-center gap-1.5">
           <div className="flex items-center gap-0.5 rounded-lg border border-outline p-0.5">
@@ -220,7 +222,7 @@ export const FleetTaskAttachments = ({ taskId, canWrite }: Props) => {
             : 'Sin adjuntos. PDF, JPG, PNG o WEBP, hasta 10 MB.'}
         </p>
       ) : viewMode === 'grid' ? (
-        <FleetAttachmentGrid attachments={attachments} onOpen={setDetail} />
+        <FleetAttachmentGrid attachments={attachments} onOpen={setDetail} names={names} />
       ) : (
         <ul className="space-y-2">
           {attachments.map((attachment) => (
@@ -228,24 +230,36 @@ export const FleetTaskAttachments = ({ taskId, canWrite }: Props) => {
               key={attachment.attachmentId}
               className="flex items-center justify-between gap-3 rounded-xl border border-outline p-3"
             >
-              <button
-                type="button"
-                onClick={() => setDetail(attachment)}
-                className="flex min-w-0 items-center gap-2.5 text-left"
-              >
-                <span
-                  aria-hidden="true"
-                  className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-outline-soft bg-bg text-ink-2"
+              <div className="min-w-0">
+                <button
+                  type="button"
+                  onClick={() => setDetail(attachment)}
+                  className="flex min-w-0 items-center gap-2.5 text-left"
                 >
-                  <Paperclip className="h-4 w-4" strokeWidth={1.8} />
-                </span>
-                <div className="min-w-0 leading-tight">
-                  <p className="truncate text-sm font-semibold text-ink">{attachment.originalName}</p>
-                  <p className="truncate text-[11.5px] text-muted">
-                    {formatAttachmentSize(attachment.sizeBytes)} · subido el {formatDateTime(attachment.uploadedAt)}
+                  <span
+                    aria-hidden="true"
+                    className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-outline-soft bg-bg text-ink-2"
+                  >
+                    <Paperclip className="h-4 w-4" strokeWidth={1.8} />
+                  </span>
+                  <div className="min-w-0 leading-tight">
+                    <p className="truncate text-sm font-semibold text-ink">{attachment.originalName}</p>
+                    <p className="truncate text-[11.5px] text-muted">
+                      {formatAttachmentSize(attachment.sizeBytes)} · subido el {formatDateTime(attachment.uploadedAt)}
+                    </p>
+                  </div>
+                </button>
+                {attachment.uploadedByUserId && (
+                  <p className="mt-1 truncate pl-[46px] text-[11.5px] text-muted">
+                    Subió{' '}
+                    <UserRefLink
+                      userId={attachment.uploadedByUserId}
+                      name={names.nameOf(attachment.uploadedByUserId)}
+                      loading={names.loading}
+                    />
                   </p>
-                </div>
-              </button>
+                )}
+              </div>
               <div className="flex shrink-0 gap-1">
                 <IconButton
                   label={`Ver ${attachment.originalName}`}
@@ -277,6 +291,7 @@ export const FleetTaskAttachments = ({ taskId, canWrite }: Props) => {
         onClose={() => setDetail(null)}
         canWrite={canWrite}
         pending={Boolean(detail && pendingId === detail.attachmentId)}
+        names={names}
         onView={(attachment) => {
           handleView(attachment);
         }}

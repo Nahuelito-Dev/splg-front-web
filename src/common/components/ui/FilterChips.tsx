@@ -28,7 +28,7 @@ export const FilterChips = ({ items, onRemove, onClearAll }: Props) => {
             type="button"
             onClick={() => onRemove(item.key)}
             aria-label={`Quitar filtro: ${item.label}`}
-            className="grid h-[18px] w-[18px] place-items-center rounded-full text-faint transition-colors hover:bg-surface-hover hover:text-ink"
+            className="grid h-[18px] w-[18px] place-items-center rounded-full text-muted transition-colors hover:bg-surface-hover hover:text-ink"
           >
             <X aria-hidden="true" className="h-3 w-3" strokeWidth={2} />
           </button>

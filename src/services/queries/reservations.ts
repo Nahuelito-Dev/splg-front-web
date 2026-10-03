@@ -4,10 +4,11 @@ import { queryKeys } from './queryKeys';
 
 const keys = queryKeys.reservations;
 
-export const useReservations = () =>
+export const useReservations = (options: { enabled?: boolean } = {}) =>
   useQuery({
     queryKey: keys.list(),
     queryFn: listReservations,
+    enabled: options.enabled ?? true,
   });
 
 /** Confirma la seña en efectivo de una reserva. Invalida reservas y pedidos (pasa a activarse solo). */

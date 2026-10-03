@@ -1,7 +1,16 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRightLeft } from 'lucide-react';
-import { Badge, Button, Card, DetailList, DetailSkeleton, ErrorState, IconButton } from '../../common/components/ui';
+import {
+  Badge,
+  Button,
+  Card,
+  DetailList,
+  DetailSkeleton,
+  ErrorState,
+  IconButton,
+  UserRefLink,
+} from '../../common/components/ui';
 import { useBackToList, usePermissions } from '../../hooks';
 import { useCylinder } from '../../services/queries/physicalCylinders';
 import { formatCurrency, formatDate, formatDateTime, formatShortId } from '../../utils/format';
@@ -61,11 +70,17 @@ export const CylinderDetails = () => {
               items={[
                 {
                   label: 'En poder de',
-                  value: cylinder.current_customer
-                    ? `${cylinder.current_customer.full_name ?? 'Cliente sin nombre'}${
-                        cylinder.current_customer.phone_number ? ` · ${cylinder.current_customer.phone_number}` : ''
-                      }`
-                    : 'La distribuidora',
+                  value: cylinder.current_customer_id ? (
+                    <>
+                      <UserRefLink
+                        userId={cylinder.current_customer_id}
+                        name={cylinder.current_customer?.full_name ?? 'Cliente sin nombre'}
+                      />
+                      {cylinder.current_customer?.phone_number ? ` · ${cylinder.current_customer.phone_number}` : ''}
+                    </>
+                  ) : (
+                    'La distribuidora'
+                  ),
                   wide: true,
                 },
                 {
