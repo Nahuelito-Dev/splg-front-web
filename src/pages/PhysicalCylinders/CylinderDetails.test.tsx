@@ -11,6 +11,9 @@ vi.mock('../../services/queries/physicalCylinders', () => ({
   useCylinderHistory: () => historyQuery() as unknown,
   useTransitionCylinder: () => ({ mutate: vi.fn(), isPending: false }),
 }));
+vi.mock('../../services/queries/userNames', () => ({
+  useUserNames: () => ({ nameOf: (id: string | null) => (id === 'u-1' ? 'Marta Gómez' : null), loading: false }),
+}));
 vi.mock('../../hooks', () => ({
   usePermissions: () => ({ canWrite: true, writeHint: undefined }),
   useBackToList: () => vi.fn(),
@@ -38,6 +41,7 @@ const MOVEMENTS = [
     from_state: 'in_depot',
     to_state: 'filled',
     order_id: null,
+    actor_user_id: 'u-1',
     note: 'Llenado',
     createdAt: '2026-09-02T10:00:00.000Z',
   },
@@ -67,6 +71,32 @@ describe('CylinderDetails', () => {
     expect(screen.getByText('Garrafa 5kg · 5 kg')).toBeInTheDocument();
     expect(screen.getByText('Llenado')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Mover de estado' })).toBeEnabled();
+  });
+
+  it('muestra quién hizo cada movimiento, con enlace a su ficha', () => {
+    cylinderQuery.mockReturnValue({ data: CYLINDER, isPending: false, error: null, refetch: vi.fn() });
+    historyQuery.mockReturnValue({
+      data: [...MOVEMENTS, { ...MOVEMENTS[0], movement_id: 'm-2', actor_user_id: null, note: 'Automático' }],
+      isPending: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+    renderPage();
+    expect(screen.getByRole('link', { name: 'Marta Gómez' })).toHaveAttribute('href', '/users/details/u-1');
+    expect(screen.getByText(/Sin registro de quién lo hizo/)).toBeInTheDocument();
+    expect(screen.queryByText(/Por el sistema/)).not.toBeInTheDocument();
+  });
+
+  it('en poder de: enlaza al cliente que lo tiene ahora', () => {
+    const withCustomer = {
+      ...CYLINDER,
+      current_customer_id: 'c-9',
+      current_customer: { user_id: 'c-9', full_name: 'Lucía Díaz', phone_number: '+5493764000000' },
+    } as unknown as Cylinder;
+    cylinderQuery.mockReturnValue({ data: withCustomer, isPending: false, error: null, refetch: vi.fn() });
+    historyQuery.mockReturnValue({ data: [], isPending: false, error: null, refetch: vi.fn() });
+    renderPage();
+    expect(screen.getByRole('link', { name: 'Lucía Díaz' })).toHaveAttribute('href', '/users/details/c-9');
   });
 
   it('un 404 dice que no existe, sin botón de reintentar', () => {

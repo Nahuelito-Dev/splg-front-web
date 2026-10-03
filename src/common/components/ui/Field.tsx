@@ -9,7 +9,7 @@ import {
 import { cx } from './cx';
 
 const CONTROL =
-  'w-full rounded-[10px] border bg-surface px-3 text-[13px] text-ink shadow-control placeholder:text-faint transition-colors ' +
+  'w-full rounded-[10px] border bg-surface px-3 text-[13px] text-ink shadow-control placeholder:text-muted transition-colors ' +
   'focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-muted';
 
 const border = (error?: string) =>

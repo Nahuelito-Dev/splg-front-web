@@ -1,11 +1,23 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Box, Tooltip } from '@mui/material';
-import { Bell, BellOff } from 'lucide-react';
+import { Tooltip } from '@mui/material';
+import {
+  Bell,
+  BellOff,
+  CircleCheck,
+  CircleX,
+  PackagePlus,
+  RotateCcw,
+  ThumbsUp,
+  Truck,
+  UserRoundX,
+  type LucideIcon,
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSocketContext } from '../../../../context/useSocketContext';
 import { ORDER_SOCKET_EVENTS, type OrderSocketEventName } from '../../../../hooks/useSocket';
 import { formatCurrency, formatShortId } from '../../../../utils/format';
-import { NotificationsDrawer } from '../../ui/NotificationsDrawer';
+import type { Tone } from '../../../../utils/statusLabels';
+import { NotificationsDrawer, type NotificationsDrawerItem } from '../../ui/NotificationsDrawer';
 
 /**
  * Payload real de los eventos `order:*` que emite `AdminGateway.notifyAdmins`
@@ -24,7 +36,9 @@ interface OrderSocketPayload {
 
 export interface OrderNotification {
   id: string;
-  message: string;
+  event: OrderSocketEventName;
+  /** Lo que el evento dice del pedido: su id corto y, según el caso, el monto, el motivo o el chofer. */
+  detail?: string;
   createdAt: string;
   read: boolean;
   /** Con qué pedido navegar al hacer click; `undefined` si el evento no trajo `orderId`. */
@@ -41,20 +55,39 @@ const EVENT_LABELS: Record<OrderSocketEventName, string> = {
   [ORDER_SOCKET_EVENTS.ASSIGNMENT_DECLINED]: 'El chofer no confirmó la asignación',
 };
 
+const EVENT_VISUALS: Record<OrderSocketEventName, { icon: LucideIcon; tone: Tone }> = {
+  [ORDER_SOCKET_EVENTS.CREATED]: { icon: PackagePlus, tone: 'primary' },
+  [ORDER_SOCKET_EVENTS.ACCEPTED]: { icon: ThumbsUp, tone: 'info' },
+  [ORDER_SOCKET_EVENTS.ON_THE_WAY]: { icon: Truck, tone: 'info' },
+  [ORDER_SOCKET_EVENTS.DELIVERED]: { icon: CircleCheck, tone: 'success' },
+  [ORDER_SOCKET_EVENTS.CANCELLED]: { icon: CircleX, tone: 'danger' },
+  [ORDER_SOCKET_EVENTS.RELEASED]: { icon: RotateCcw, tone: 'warn' },
+  [ORDER_SOCKET_EVENTS.ASSIGNMENT_DECLINED]: { icon: UserRoundX, tone: 'warn' },
+};
+
 const MAX_NOTIFICATIONS = 50;
 
-const buildMessage = (event: OrderSocketEventName, payload: OrderSocketPayload) => {
-  const orderRef = payload.orderId ? ` ${formatShortId(payload.orderId)}` : '';
-  const detail =
+const buildDetail = (event: OrderSocketEventName, payload: OrderSocketPayload) => {
+  const orderRef = payload.orderId ? formatShortId(payload.orderId) : '';
+  const extra =
     event === ORDER_SOCKET_EVENTS.CANCELLED && payload.reason
-      ? ` (${payload.reason})`
+      ? payload.reason
       : event === ORDER_SOCKET_EVENTS.ASSIGNMENT_DECLINED && payload.driverName
-        ? ` (${payload.driverName})`
+        ? payload.driverName
         : typeof payload.totalAmount === 'number'
-          ? ` — ${formatCurrency(payload.totalAmount)}`
+          ? formatCurrency(payload.totalAmount)
           : '';
-  return `${EVENT_LABELS[event]}${orderRef}${detail}`.trim();
+  return [orderRef, extra].filter(Boolean).join(' · ') || undefined;
 };
+
+const toDrawerItem = (notification: OrderNotification): NotificationsDrawerItem => ({
+  id: notification.id,
+  title: EVENT_LABELS[notification.event],
+  detail: notification.detail,
+  createdAt: notification.createdAt,
+  read: notification.read,
+  ...EVENT_VISUALS[notification.event],
+});
 
 export const NotificationBell = () => {
   const { isOnline, subscribe } = useSocketContext();
@@ -65,7 +98,8 @@ export const NotificationBell = () => {
   const pushNotification = useCallback((event: OrderSocketEventName, payload: OrderSocketPayload = {}) => {
     const notification: OrderNotification = {
       id: `${event}-${payload.orderId ?? Date.now()}-${Math.random()}`,
-      message: buildMessage(event, payload),
+      event,
+      detail: buildDetail(event, payload),
       createdAt: new Date().toISOString(),
       read: false,
       orderId: payload.orderId,
@@ -93,18 +127,19 @@ export const NotificationBell = () => {
   };
 
   /** Marca la notificación como leída y, si trajo `orderId`, abre la ficha de ese pedido. */
-  const handleNotificationClick = (notification: OrderNotification) => {
-    handleMarkAsRead(notification.id);
-    if (notification.orderId) {
+  const handleNotificationClick = ({ id }: NotificationsDrawerItem) => {
+    handleMarkAsRead(id);
+    const orderId = notifications.find((notification) => notification.id === id)?.orderId;
+    if (orderId) {
       setOpen(false);
-      navigate(`/orders/${notification.orderId}`);
+      navigate(`/orders/${orderId}`);
     }
   };
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
-    <Box>
+    <>
       <Tooltip title={isOnline ? 'Notificaciones' : 'Notificaciones (sin conexión en tiempo real)'} arrow>
         <button
           type="button"
@@ -129,10 +164,10 @@ export const NotificationBell = () => {
       <NotificationsDrawer
         open={open}
         onClose={() => setOpen(false)}
-        notifications={notifications}
+        notifications={notifications.map(toDrawerItem)}
         onNotificationClick={handleNotificationClick}
         onMarkAllAsRead={unreadCount > 0 ? handleMarkAllAsRead : undefined}
       />
-    </Box>
+    </>
   );
 };

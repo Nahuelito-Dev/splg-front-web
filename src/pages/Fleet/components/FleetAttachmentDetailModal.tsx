@@ -1,6 +1,7 @@
 import { Download, Eye, Trash2 } from 'lucide-react';
-import { Button, DetailList, Modal } from '../../../common/components/ui';
+import { Button, DetailList, Modal, UserRefLink } from '../../../common/components/ui';
 import type { FleetTaskAttachment } from '../../../services/api/types';
+import type { UserNames } from '../../../services/queries/userNames';
 import { formatDateTime } from '../../../utils/format';
 import { fleetAttachmentIcon, formatAttachmentSize } from './fleetAttachmentIcon';
 
@@ -9,6 +10,7 @@ interface Props {
   onClose: () => void;
   canWrite: boolean;
   pending: boolean;
+  names: UserNames;
   onView: (attachment: FleetTaskAttachment) => void;
   onDownload: (attachment: FleetTaskAttachment) => void;
   onDelete: (attachment: FleetTaskAttachment) => void;
@@ -20,6 +22,7 @@ export const FleetAttachmentDetailModal = ({
   onClose,
   canWrite,
   pending,
+  names,
   onView,
   onDownload,
   onDelete,
@@ -38,6 +41,18 @@ export const FleetAttachmentDetailModal = ({
             { label: 'Tipo', value: attachment.mimeType },
             { label: 'Tamaño', value: formatAttachmentSize(attachment.sizeBytes) },
             { label: 'Subido el', value: formatDateTime(attachment.uploadedAt) },
+            {
+              label: 'Subido por',
+              value: attachment.uploadedByUserId ? (
+                <UserRefLink
+                  userId={attachment.uploadedByUserId}
+                  name={names.nameOf(attachment.uploadedByUserId)}
+                  loading={names.loading}
+                />
+              ) : (
+                'Sin dato'
+              ),
+            },
           ]}
         />
         <div className="flex flex-wrap gap-2">

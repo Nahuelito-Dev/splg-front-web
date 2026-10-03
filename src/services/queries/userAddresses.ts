@@ -1,13 +1,15 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createUserAddress,
   deleteUserAddress,
   getDefaultUserAddress,
   getUserAddress,
+  listAllUserAddresses,
   listUserAddresses,
   setDefaultUserAddress,
   updateUserAddress,
 } from '../api/userAddresses';
+import type { PageParams } from '../api/httpClient';
 import type { CreateUserAddressBody, UpdateUserAddressBody } from '../api/types';
 import { queryKeys } from './queryKeys';
 
@@ -18,6 +20,15 @@ export const useUserAddresses = (userId: string | undefined) =>
     queryKey: keys.list({ userId }),
     queryFn: () => listUserAddresses(userId ?? ''),
     enabled: Boolean(userId),
+  });
+
+/** Todas las direcciones de entrega (administrador general), paginadas en el servidor. */
+export const useAllUserAddresses = (params: PageParams, { enabled = true }: { enabled?: boolean } = {}) =>
+  useQuery({
+    queryKey: keys.list({ ...params, scope: 'all' }),
+    queryFn: () => listAllUserAddresses(params),
+    placeholderData: keepPreviousData,
+    enabled,
   });
 
 /** La dirección principal sola, para el resumen de la ficha. */

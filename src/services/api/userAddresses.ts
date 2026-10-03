@@ -1,6 +1,21 @@
 import { toApiError } from './errors';
-import { http } from './httpClient';
-import type { CreateUserAddressBody, DireccionBorrada, UpdateUserAddressBody, UserAddressConUsuario } from './types';
+import { http, toQuery, type Page, type PageParams } from './httpClient';
+import type {
+  CreateUserAddressBody,
+  DireccionBorrada,
+  ListadoDeDirecciones,
+  UpdateUserAddressBody,
+  UserAddressConUsuario,
+} from './types';
+
+/**
+ * GET /user-address: todas las direcciones de entrega, paginadas, la principal primero. Sólo el
+ * administrador general (403 al admin de empresa). La API no filtra ni busca: ignora `term` y `role`.
+ */
+export const listAllUserAddresses = async (params: PageParams): Promise<Page<UserAddressConUsuario>> => {
+  const { data } = await http.get<ListadoDeDirecciones>('/user-address', { params: toQuery(params) });
+  return { rows: data.addresses, total: data.total };
+};
 
 /**
  * GET /user-address/user/:userId: las direcciones de un usuario, la

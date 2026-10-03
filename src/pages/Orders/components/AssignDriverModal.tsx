@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import TwoWheelerIcon from '@mui/icons-material/TwoWheeler';
 import { Button, cx, EmptyState, LoadingState, Modal, SearchInput } from '../../../common/components/ui';
-import { useDebounce } from '../../../hooks';
+import { useDebounce, usePermissions } from '../../../hooks';
 import { useActiveDeliveries } from '../../../services/queries/orders';
 
 interface Props {
@@ -9,13 +9,21 @@ interface Props {
   onClose: () => void;
   onConfirm: (deliveryId: string) => void;
   assigning: boolean;
+  /** La empresa del pedido: con ella el administrador general sin «Ver como» lista sólo los choferes de ese pedido. */
+  distributorId?: string;
 }
 
 /** Sobreescribe a mano la asignación automática de un pedido. */
-export const AssignDriverModal = ({ open, onClose, onConfirm, assigning }: Props) => {
+export const AssignDriverModal = ({ open, onClose, onConfirm, assigning, distributorId }: Props) => {
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search.trim());
-  const { data: drivers, isPending } = useActiveDeliveries(debouncedSearch);
+  const { needsDistributor } = usePermissions();
+  // Sin empresa conocida, el administrador general vería choferes de todas y la API rechaza los de otra (404).
+  const unscoped = needsDistributor && !distributorId;
+  const { data: drivers, isPending } = useActiveDeliveries(debouncedSearch, {
+    distributorId: needsDistributor ? distributorId : undefined,
+    enabled: !unscoped,
+  });
   const [selected, setSelected] = useState('');
 
   useEffect(() => {
@@ -49,7 +57,12 @@ export const AssignDriverModal = ({ open, onClose, onConfirm, assigning }: Props
         onChange={(e) => setSearch(e.target.value)}
         className="mb-3"
       />
-      {isPending ? (
+      {unscoped ? (
+        <EmptyState
+          title="Elegí una distribuidora"
+          description="Para asignar un chofer, elegí la distribuidora del pedido con «Ver como» en la barra superior."
+        />
+      ) : isPending ? (
         <LoadingState label="Buscando choferes disponibles…" />
       ) : !drivers || drivers.rows.length === 0 ? (
         <EmptyState

@@ -1,33 +1,33 @@
 import { Drawer } from '@mui/material';
-import { useAppDispatch, useAppSelector, usePermissions } from '../../../hooks';
-import { startLogOut } from '../../../store/auth/thunks';
-import { THEME_MODE_KEY } from '../../../theme/themeMode';
+import { useAppSelector, useLogout, usePermissions } from '../../../hooks';
+import { cx } from '../ui/cx';
+import { NavToggleButton } from './NavToggleButton';
 import { SideMenuContent } from './SideMenuContent';
 
 interface Props {
   mobileOpen: boolean;
   onCloseMobile: () => void;
+  /** Escritorio: reducido a íconos. */
+  mini: boolean;
+  onToggleMini: () => void;
 }
 
-/** Menú lateral: fijo en escritorio, drawer accesible (foco atrapado, Escape) en móvil. */
-export const SideMenu = ({ mobileOpen, onCloseMobile }: Props) => {
-  const dispatch = useAppDispatch();
+/** Menú lateral: fijo en escritorio (reducible a íconos), drawer accesible (foco atrapado, Escape) en móvil. */
+export const SideMenu = ({ mobileOpen, onCloseMobile, mini, onToggleMini }: Props) => {
   const { fullName } = useAppSelector((state) => state.auth);
   const { isSuperAdmin } = usePermissions();
-
-  const handleLogout = () => {
-    // El tema (claro/oscuro/sistema) es una preferencia del dispositivo, no de la
-    // sesión: se guarda antes de limpiar y se vuelve a poner después.
-    const themeMode = localStorage.getItem(THEME_MODE_KEY);
-    localStorage.clear();
-    if (themeMode) localStorage.setItem(THEME_MODE_KEY, themeMode);
-    void dispatch(startLogOut());
-  };
+  const handleLogout = useLogout();
 
   return (
     <>
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-side-line lg:block">
-        <SideMenuContent isSuperAdmin={isSuperAdmin} fullName={fullName} onLogout={handleLogout} />
+      <aside
+        className={cx(
+          'fixed inset-y-0 left-0 z-30 hidden border-r border-side-line transition-[width] duration-200 lg:block',
+          mini ? 'w-[76px]' : 'w-64',
+        )}
+      >
+        <SideMenuContent isSuperAdmin={isSuperAdmin} fullName={fullName} mini={mini} onLogout={handleLogout} />
+        <NavToggleButton mini={mini} onToggle={onToggleMini} />
       </aside>
       <Drawer
         open={mobileOpen}

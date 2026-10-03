@@ -29,8 +29,9 @@ export const useSalesByPayment = (range: ReportsDateRange) =>
     queryFn: () => getSalesByPayment(range),
   });
 
-export const useSalesEvolution = (params: SalesEvolutionParams) =>
+export const useSalesEvolution = (params: SalesEvolutionParams, { enabled = true }: { enabled?: boolean } = {}) =>
   useQuery({
     queryKey: keys.list({ report: 'evolution', ...params }),
     queryFn: () => getSalesEvolution(params),
+    enabled,
   });

@@ -44,7 +44,7 @@ export const KpiCard = ({ title, icon: Icon, value, loading = false, aside, pill
       )}
       {!loading && aside}
     </div>
-    <div className="flex min-h-[22px] items-center justify-between gap-2 text-[11.5px] text-faint">
+    <div className="flex min-h-[22px] items-center justify-between gap-2 text-[11.5px] text-muted">
       {pill && !loading ? (
         <span className={cx('rounded-full px-[7px] py-0.5 font-semibold', TREND[pill.trend])}>{pill.text}</span>
       ) : (

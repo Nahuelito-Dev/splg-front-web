@@ -18,6 +18,7 @@ import {
 import type { CancelOrderBody, ConfirmDeliveryBody, CreateOrderBody, Order, UpdateOrderStatusBody } from '../api/types';
 import { ORDER_FLOW } from '../../utils/statusLabels';
 import { queryKeys } from './queryKeys';
+import { useOrderStats } from './stats';
 
 const keys = queryKeys.orders;
 
@@ -41,28 +42,40 @@ export const useOrders = (
     enabled,
   });
 
+/** Los estados que el resumen `/orders/stats/summary` ya cuenta (pendientes, aceptados y en camino). */
+const FROM_SUMMARY = ['pending', 'accepted', 'out_for_delivery'] as const;
+const FROM_LIST = ORDER_FLOW.filter((status) => !(FROM_SUMMARY as readonly string[]).includes(status));
+
 /**
- * Cuántos pedidos hay en cada estado, para las pestañas de Pedidos. No hay un
- * endpoint de resumen por estado: se pide una página mínima de GET /orders
- * por cada uno y se lee `total` del cuerpo de la respuesta. Un estado sin dato
- * (cargando o con error) queda en `null`, nunca en 0, y `total` es `null` si falta alguno.
+ * Cuántos pedidos hay en cada estado (pestañas de Pedidos y dona del tablero).
+ * Pendientes, aceptados y en camino salen del resumen de estadísticas (una sola
+ * llamada, la misma que usa el tablero); el resto, de una página mínima de
+ * GET /orders por estado leyendo `total`. Un estado sin dato (cargando o con
+ * error) queda en `null`, nunca en 0, y `total` es `null` si falta alguno.
  */
 export const useOrderStatusCounts = () => {
+  const summary = useOrderStats();
   const results = useQueries({
-    queries: ORDER_FLOW.map((status) => ({
+    queries: FROM_LIST.map((status) => ({
       queryKey: keys.list({ page: 0, pageSize: 1, status }),
       queryFn: () => listOrders({ page: 0, pageSize: 1 }, { status }),
       staleTime: 30_000,
     })),
   });
 
+  const fromSummary = summary.data?.ordersSummary;
   const counts = Object.fromEntries(
-    ORDER_FLOW.map((status, index) => [status, results[index].data?.total ?? null]),
+    ORDER_FLOW.map((status) => {
+      if (status === 'pending') return [status, fromSummary?.pending ?? null];
+      if (status === 'accepted') return [status, fromSummary?.accepted ?? null];
+      if (status === 'out_for_delivery') return [status, fromSummary?.onTheWay ?? null];
+      return [status, results[FROM_LIST.indexOf(status)].data?.total ?? null];
+    }),
   ) as Record<Order['status'], number | null>;
   const values = Object.values(counts);
   const total = values.some((count) => count === null) ? null : values.reduce<number>((acc, c) => acc + (c ?? 0), 0);
 
-  return { counts, total, isError: results.some((result) => result.isError) };
+  return { counts, total, isError: summary.isError || results.some((result) => result.isError) };
 };
 
 /**
@@ -92,11 +105,18 @@ export const useOrderIncidents = (orderId: string | undefined) =>
  * acepta la API y se deja `search` para que la distribuidora encuentre al
  * resto por nombre, teléfono o patente.
  */
-export const useActiveDeliveries = (search = '') =>
+/** `distributorId`: la empresa del pedido, para el administrador general sin «Ver como». */
+interface ActiveDeliveriesScope {
+  distributorId?: string;
+  enabled?: boolean;
+}
+
+export const useActiveDeliveries = (search = '', { distributorId, enabled = true }: ActiveDeliveriesScope = {}) =>
   useQuery({
-    queryKey: queryKeys.deliveries.list({ active: true, search }),
-    queryFn: () => listActiveDeliveries({ page: 0, pageSize: 100 }, search),
+    queryKey: queryKeys.deliveries.list({ active: true, search, distributorId: distributorId ?? null }),
+    queryFn: () => listActiveDeliveries({ page: 0, pageSize: 100 }, search, distributorId),
     placeholderData: keepPreviousData,
+    enabled,
   });
 
 export const useCancelOrder = () => {

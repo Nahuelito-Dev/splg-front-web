@@ -61,7 +61,7 @@ export const ActiveOrdersCard = () => {
               )}
             >
               {t.label}
-              {t.count !== undefined && <b className="ml-1 font-semibold text-faint">{t.count}</b>}
+              {t.count !== undefined && <b className="ml-1 font-semibold text-muted">{t.count}</b>}
             </button>
           ))}
         </div>

@@ -26,8 +26,18 @@ export const listDeliveries = async (
   );
 
 /** GET /delivery/active: los choferes en línea y listos (habilitados, validados y conectados en su app). */
-export const listActiveDeliveries = async (params: PageParams, search?: string): Promise<Page<Delivery>> =>
-  toPage(await http.get<Delivery[]>('/delivery/active', { params: { ...toQuery(params), term: search || undefined } }));
+export const listActiveDeliveries = async (
+  params: PageParams,
+  search?: string,
+  distributorId?: string,
+): Promise<Page<Delivery>> =>
+  toPage(
+    await http.get<Delivery[]>('/delivery/active', {
+      params: { ...toQuery(params), term: search || undefined },
+      // El administrador general lista los choferes de una empresa puntual sin pasar por «Ver como».
+      headers: distributorId ? { 'X-Distributor': distributorId } : undefined,
+    }),
+  );
 
 /** GET /delivery/:id */
 export const getDelivery = async (id: string): Promise<Delivery> => {

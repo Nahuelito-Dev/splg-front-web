@@ -1,6 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createTimeSlot, deleteTimeSlot, getTimeSlot, getTimeSlotAvailability, listTimeSlots } from '../api/timeSlots';
-import type { CreateTimeSlotBody } from '../api/types';
+import type { CreateTimeSlotBody, SlotAvailability } from '../api/types';
 import { queryKeys } from './queryKeys';
 
 const keys = queryKeys.timeSlots;
@@ -39,4 +39,21 @@ export const useDeleteTimeSlot = () => {
     mutationFn: (id: string) => deleteTimeSlot(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
   });
+};
+
+/** Cupos por franja de varios días a la vez (la semana del calendario); una consulta por día, con la misma clave que `useTimeSlotAvailability`. */
+export const useTimeSlotAvailabilityByDay = (dates: string[], enabled = true) => {
+  const results = useQueries({
+    queries: dates.map((date) => ({
+      queryKey: [...keys.all, 'availability', date],
+      queryFn: () => getTimeSlotAvailability(date),
+      enabled,
+    })),
+  });
+  const byDay = new Map<string, SlotAvailability[]>();
+  dates.forEach((date, index) => {
+    const data = results[index]?.data;
+    if (data) byDay.set(date, data);
+  });
+  return { byDay, isPending: results.some((r) => r.isPending && r.fetchStatus !== 'idle') };
 };

@@ -11,22 +11,24 @@ export const DeliveryBalanceTab = ({ delivery }: { delivery: Delivery }) => {
   const negative = delivery.balance < 0;
 
   return (
-    <Card className="flex flex-col items-start gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted">Balance actual</p>
-        <p className={`text-3xl font-bold ${negative ? 'text-danger' : 'text-ink'}`}>
-          {formatCurrency(delivery.balance)}
-        </p>
-        <p className="mt-1 text-sm text-muted">
-          {negative
-            ? 'El chofer le debe este importe a la distribuidora.'
-            : 'Lo que la distribuidora le debe al chofer.'}
-        </p>
-      </div>
-      <Button variant="secondary" icon={<PiggyBank />} onClick={() => setAdjusting(true)}>
-        Ajustar saldo
-      </Button>
-      <BalanceAdjustModal open={adjusting} onClose={() => setAdjusting(false)} delivery={delivery} />
-    </Card>
+    <div className="space-y-6">
+      <Card className="flex flex-col items-start gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted">Balance actual</p>
+          <p className={`text-3xl font-bold ${negative ? 'text-danger' : 'text-ink'}`}>
+            {formatCurrency(delivery.balance)}
+          </p>
+          <p className="mt-1 text-sm text-muted">
+            {negative
+              ? 'El chofer le debe este importe a la distribuidora.'
+              : 'Lo que la distribuidora le debe al chofer.'}
+          </p>
+        </div>
+        <Button variant="secondary" icon={<PiggyBank />} onClick={() => setAdjusting(true)}>
+          Ajustar saldo
+        </Button>
+        <BalanceAdjustModal open={adjusting} onClose={() => setAdjusting(false)} delivery={delivery} />
+      </Card>
+    </div>
   );
 };

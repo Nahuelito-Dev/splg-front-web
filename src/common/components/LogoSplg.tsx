@@ -9,6 +9,8 @@ interface Props {
   variante?: 'claro' | 'oscuro';
   /** Línea debajo del nombre (p. ej. "Gestión de reparto"). */
   subtitle?: string;
+  /** Sólo la llama, sin el nombre (menú lateral reducido). */
+  markOnly?: boolean;
 }
 
 const SIZES: Record<Size, { mark: string; flame: string; name: string }> = {
@@ -21,7 +23,7 @@ const SIZES: Record<Size, { mark: string; flame: string; name: string }> = {
  * Es el nombre del sistema, no el de la distribuidora: el panel lo usa
  * cualquier empresa que opere con él.
  */
-export const LogoSplg = ({ className, size = 'sm', variante = 'claro', subtitle }: Props) => (
+export const LogoSplg = ({ className, size = 'sm', variante = 'claro', subtitle, markOnly = false }: Props) => (
   <div className={cx('flex select-none items-center gap-2.5', className)}>
     <span
       aria-hidden="true"
@@ -34,7 +36,7 @@ export const LogoSplg = ({ className, size = 'sm', variante = 'claro', subtitle 
         <path d="M12 1.8c1 3.6 5.6 6 5.6 11.6A5.6 5.6 0 0 1 6.4 13.4c0-2.9 1.5-4.8 2.8-6.3.4 1.8 1.2 2.9 2.4 3.4.3-3.2-.3-5.9.4-8.7z" />
       </svg>
     </span>
-    <span className="leading-tight">
+    <span className={cx('leading-tight', markOnly && 'sr-only')}>
       <span
         className={cx(
           'block font-bold tracking-[-0.02em]',
