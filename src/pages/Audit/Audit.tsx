@@ -4,7 +4,7 @@ import { Card, EmptyState, FilterChips, PageHeader } from '../../common/componen
 import { useDebounce, usePermissions } from '../../hooks';
 import { useAudit } from '../../services/queries/audit';
 import type { AsientoDeAuditoria } from '../../services/api/types';
-import { AuditDetailModal } from './components/AuditDetailModal';
+import { AuditDetailDrawer } from './components/AuditDetailDrawer';
 import { AuditFilters } from './components/AuditFilters';
 import { auditFilterChips, EMPTY_AUDIT_FILTERS, type AuditFiltersState } from './components/auditFiltersState';
 import { AuditTable } from './components/AuditTable';
@@ -53,6 +53,7 @@ export const Audit = () => {
           handleFiltersChange({ ...filters, [key]: EMPTY_AUDIT_FILTERS[key as keyof AuditFiltersState] })
         }
         onClearAll={() => handleFiltersChange(EMPTY_AUDIT_FILTERS)}
+        resultCount={data?.total}
       />
 
       <Card>
@@ -66,7 +67,7 @@ export const Audit = () => {
         />
       </Card>
 
-      <AuditDetailModal entry={detail} onClose={() => setDetail(null)} />
+      <AuditDetailDrawer entry={detail} onClose={() => setDetail(null)} />
     </div>
   );
 };

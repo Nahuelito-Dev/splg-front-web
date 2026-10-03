@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { usePermissions } from '../../../hooks';
-import { Badge, Button, DetailList, Modal, TextArea } from '../../../common/components/ui';
+import { Badge, Button, DetailList, Drawer, TextArea } from '../../../common/components/ui';
 import type { Claim } from '../../../services/api/types';
 import { useReopenClaim, useResolveClaim, useTakeClaim } from '../../../services/queries/claims';
 import { formatDateTime, formatShortId } from '../../../utils/format';
@@ -21,7 +21,7 @@ type PendingAction = 'resolve' | 'reject' | 'reopen' | null;
  * acciones de la máquina de estados — Tomar, Resolver, Rechazar, Reabrir.
  * Cada una pide confirmación; resolver/rechazar/reabrir, además, un motivo.
  */
-export const ClaimDetailModal = ({ open, onClose, claim }: Props) => {
+export const ClaimDetailDrawer = ({ open, onClose, claim }: Props) => {
   const [action, setAction] = useState<PendingAction>(null);
   const [note, setNote] = useState('');
   const { canOperate, operateHint } = usePermissions();
@@ -88,12 +88,66 @@ export const ClaimDetailModal = ({ open, onClose, claim }: Props) => {
   const acting = takeClaim.isPending || resolveClaim.isPending || reopenClaim.isPending;
 
   return (
-    <Modal
+    <Drawer
       open={open}
       onClose={onClose}
       title="Gestionar reclamo"
       description={`${formatShortId(claim.claim_id)} · Pedido ${formatShortId(claim.order_id)}`}
       size="md"
+      footer={
+        action ? (
+          <>
+            <Button variant="secondary" size="sm" onClick={() => setAction(null)}>
+              Cancelar
+            </Button>
+            <Button
+              size="sm"
+              variant={action === 'reject' ? 'danger' : 'primary'}
+              loading={acting}
+              onClick={handleConfirmAction}
+            >
+              {confirmActionLabel}
+            </Button>
+          </>
+        ) : (
+          <>
+            {operateHint && <p className="mr-auto text-sm text-muted">{operateHint}</p>}
+            {canTake && (
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={!canOperate}
+                title={operateHint}
+                loading={takeClaim.isPending}
+                onClick={() => void handleTake()}
+              >
+                Tomar
+              </Button>
+            )}
+            {canResolveOrReject && (
+              <>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  disabled={!canOperate}
+                  title={operateHint}
+                  onClick={() => setAction('reject')}
+                >
+                  Rechazar
+                </Button>
+                <Button size="sm" disabled={!canOperate} title={operateHint} onClick={() => setAction('resolve')}>
+                  Resolver
+                </Button>
+              </>
+            )}
+            {canReopen && (
+              <Button size="sm" disabled={!canOperate} title={operateHint} onClick={() => setAction('reopen')}>
+                Reabrir
+              </Button>
+            )}
+          </>
+        )
+      }
     >
       <div className="space-y-5">
         <div className="grid gap-4 sm:grid-cols-2">
@@ -135,64 +189,10 @@ export const ClaimDetailModal = ({ open, onClose, claim }: Props) => {
           <ClaimHistory claimId={claim.claim_id} />
         </div>
 
-        <div className="space-y-3 border-t border-outline pt-4">
-          {action ? (
-            <>
-              <TextArea label={noteLabel} required rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
-              <div className="flex justify-end gap-2">
-                <Button variant="secondary" size="sm" onClick={() => setAction(null)}>
-                  Cancelar
-                </Button>
-                <Button
-                  size="sm"
-                  variant={action === 'reject' ? 'danger' : 'primary'}
-                  loading={acting}
-                  onClick={handleConfirmAction}
-                >
-                  {confirmActionLabel}
-                </Button>
-              </div>
-            </>
-          ) : (
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              {operateHint && <p className="mr-auto text-sm text-muted">{operateHint}</p>}
-              {canTake && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  disabled={!canOperate}
-                  title={operateHint}
-                  loading={takeClaim.isPending}
-                  onClick={() => void handleTake()}
-                >
-                  Tomar
-                </Button>
-              )}
-              {canResolveOrReject && (
-                <>
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    disabled={!canOperate}
-                    title={operateHint}
-                    onClick={() => setAction('reject')}
-                  >
-                    Rechazar
-                  </Button>
-                  <Button size="sm" disabled={!canOperate} title={operateHint} onClick={() => setAction('resolve')}>
-                    Resolver
-                  </Button>
-                </>
-              )}
-              {canReopen && (
-                <Button size="sm" disabled={!canOperate} title={operateHint} onClick={() => setAction('reopen')}>
-                  Reabrir
-                </Button>
-              )}
-            </div>
-          )}
-        </div>
+        {action && (
+          <TextArea label={noteLabel} required rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
+        )}
       </div>
-    </Modal>
+    </Drawer>
   );
 };

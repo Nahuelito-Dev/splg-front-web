@@ -8,6 +8,9 @@ import {
   transitionCylinder,
 } from '../api/physicalCylinders';
 import type { AssignCylindersBody, CreateCylinderBody, Cylinder, TransitionCylinderBody } from '../api/types';
+import { NEXT_STATES } from '../../pages/PhysicalCylinders/cylinderTransitions';
+import { SKIP } from '../../utils/batch';
+import { useBatchMutation } from './batchMutation';
 import { queryKeys } from './queryKeys';
 
 const keys = queryKeys.cylinders;
@@ -55,3 +58,18 @@ export const useAssignCylinders = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
   });
 };
+
+/**
+ * Mover varios envases al mismo estado: una llamada por envase, de a una. Antes de cada una se vuelve a pedir el
+ * envase: si ya no puede pasar a ese estado se omite en vez de contarlo como falla.
+ */
+export const useBulkTransitionCylinders = () =>
+  useBatchMutation<{ ids: string[]; toState: Cylinder['state'] }>({
+    run: async ({ toState }, id) => {
+      if (!NEXT_STATES[(await getCylinder(id)).state].includes(toState)) return SKIP;
+      return transitionCylinder(id, { toState });
+    },
+    invalidate: keys.all,
+    noun: ['envase', 'envases'],
+    participle: ['movido', 'movidos'],
+  });

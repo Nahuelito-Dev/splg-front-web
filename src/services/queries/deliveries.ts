@@ -1,4 +1,4 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createDelivery,
   deleteDelivery,
@@ -35,6 +35,30 @@ export const useDeliveries = (params: PageParams, search: string, statusTab: Del
         : listDeliveries(params, search, statusTab === 'all' ? undefined : statusTab),
     placeholderData: keepPreviousData,
   });
+
+const DELIVERY_TABS: DeliveriesStatusTab[] = ['all', 'unvalidated', 'enabled', 'disabled', 'online'];
+
+/**
+ * Cuántos choferes hay en cada grupo de la lista: una página mínima por grupo, leyendo `X-Total-Count`. Un grupo
+ * sin dato (cargando o con error) queda en `null`, nunca en 0.
+ */
+export const useDeliveryStatusCounts = () => {
+  const results = useQueries({
+    queries: DELIVERY_TABS.map((tab) => ({
+      queryKey: keys.list({ page: 0, pageSize: 1, search: '', statusTab: tab, counts: true }),
+      queryFn: () =>
+        (tab === 'online'
+          ? listActiveDeliveries({ page: 0, pageSize: 1 })
+          : listDeliveries({ page: 0, pageSize: 1 }, '', tab === 'all' ? undefined : tab)
+        ).then((page) => page.total),
+      staleTime: 30_000,
+    })),
+  });
+  return Object.fromEntries(DELIVERY_TABS.map((tab, index) => [tab, results[index].data ?? null])) as Record<
+    DeliveriesStatusTab,
+    number | null
+  >;
+};
 
 export const useDelivery = (id: string | undefined) =>
   useQuery({

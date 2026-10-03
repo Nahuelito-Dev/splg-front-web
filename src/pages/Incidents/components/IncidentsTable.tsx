@@ -8,10 +8,12 @@ import { INCIDENT_STATUS, INCIDENT_TYPE, labelOf } from '../../../utils/statusLa
 interface Props {
   rows: Incident[];
   loading: boolean;
+  /** Hay filtros activos: un vacío significa "sin resultados". */
+  filtered?: boolean;
   onView: (incident: Incident) => void;
 }
 
-export const IncidentsTable = ({ rows, loading, onView }: Props) => {
+export const IncidentsTable = ({ rows, loading, filtered = false, onView }: Props) => {
   const columns = useMemo<GridColDef<Incident>[]>(
     () => [
       {
@@ -67,7 +69,21 @@ export const IncidentsTable = ({ rows, loading, onView }: Props) => {
       getRowId={(row) => row.incident_id}
       loading={loading}
       onRowClick={onView}
-      empty={<EmptyState title="Sin incidencias" description="Los choferes no reportaron problemas de reparto." />}
+      empty={
+        filtered ? (
+          <EmptyState
+            illustration="search"
+            title="Sin resultados"
+            description="Ninguna incidencia coincide con los filtros elegidos."
+          />
+        ) : (
+          <EmptyState
+            illustration="done"
+            title="Sin incidencias"
+            description="Los choferes no reportaron problemas de reparto."
+          />
+        )
+      }
     />
   );
 };

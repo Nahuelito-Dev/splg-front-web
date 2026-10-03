@@ -67,7 +67,8 @@ describe('CylinderDetails', () => {
     cylinderQuery.mockReturnValue({ data: CYLINDER, isPending: false, error: null, refetch: vi.fn() });
     historyQuery.mockReturnValue({ data: MOVEMENTS, isPending: false, error: null, refetch: vi.fn() });
     renderPage();
-    expect(screen.getByText('SPLG-00017')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'SPLG-00017' })).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: 'Ruta de la ficha' })).toHaveTextContent('SPLG-00017');
     expect(screen.getByText('Garrafa 5kg · 5 kg')).toBeInTheDocument();
     expect(screen.getByText('Llenado')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Mover de estado' })).toBeEnabled();

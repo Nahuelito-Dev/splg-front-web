@@ -8,10 +8,12 @@ import { CLAIM_STATUS, labelOf } from '../../../utils/statusLabels';
 interface Props {
   rows: Claim[];
   loading: boolean;
+  /** Hay filtros activos: un vacío significa "sin resultados", no "todo en orden". */
+  filtered?: boolean;
   onManage: (claim: Claim) => void;
 }
 
-export const ClaimsTable = ({ rows, loading, onManage }: Props) => {
+export const ClaimsTable = ({ rows, loading, filtered = false, onManage }: Props) => {
   const columns = useMemo<GridColDef<Claim>[]>(
     () => [
       {
@@ -73,7 +75,21 @@ export const ClaimsTable = ({ rows, loading, onManage }: Props) => {
       getRowId={(row) => row.claim_id}
       loading={loading}
       onRowClick={onManage}
-      empty={<EmptyState title="¡Todo en orden!" description="No hay reclamos pendientes de atención." />}
+      empty={
+        filtered ? (
+          <EmptyState
+            illustration="search"
+            title="Sin resultados"
+            description="Ningún reclamo coincide con los filtros elegidos."
+          />
+        ) : (
+          <EmptyState
+            illustration="done"
+            title="¡Todo en orden!"
+            description="No hay reclamos pendientes de atención."
+          />
+        )
+      }
     />
   );
 };

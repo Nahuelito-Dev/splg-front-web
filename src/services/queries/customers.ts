@@ -17,6 +17,9 @@ import { queryKeys } from './queryKeys';
 
 const keys = queryKeys.customers;
 
+/** Cuántos clientes devuelve GET /customers como máximo en una página. */
+export const SEGMENT_SCAN_LIMIT = 100;
+
 export const useCustomers = (params: PageParams, search: string) =>
   useQuery({
     queryKey: keys.list({ ...params, search }),
@@ -81,3 +84,25 @@ export const useUpdateCustomerLocation = () => {
  */
 export const useFindCustomerByUserId = () =>
   useMutation({ mutationFn: (userId: string) => getCustomerByUserId(userId) });
+
+/**
+ * Hasta 100 clientes de una vez (el máximo de la API), para segmentar por cuenta activa o bloqueada en el panel:
+ * GET /customers sólo filtra por texto. `total` dice si entran todos; si no, la lista no se segmenta.
+ */
+export const useCustomerScan = () =>
+  useQuery({
+    queryKey: keys.list({ scan: true }),
+    queryFn: () => listCustomers({ page: 0, pageSize: SEGMENT_SCAN_LIMIT }),
+    staleTime: 30_000,
+  });
+
+/**
+ * Los últimos pedidos de un cliente (hasta 100) para los números de su portada. Sin `keepPreviousData`: al pasar de
+ * una ficha a otra los KPIs no muestran datos del cliente anterior, esperan los propios.
+ */
+export const useCustomerOrderSample = (userId: string | undefined) =>
+  useQuery({
+    queryKey: [...queryKeys.orders.lists(), { customer: userId, page: 0, pageSize: 100, sample: true }],
+    queryFn: () => listCustomerOrders(userId ?? '', { page: 0, pageSize: 100 }),
+    enabled: Boolean(userId),
+  });

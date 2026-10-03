@@ -6,17 +6,17 @@ import {
   Card,
   EmptyState,
   ErrorState,
-  LoadingState,
   PageHeader,
   SearchInput,
   Select,
+  TableSkeleton,
 } from '../../common/components/ui';
 import { usePermissions } from '../../hooks';
 import type { Reserva } from '../../services/api/types';
 import { useConfirmReservationDeposit, useReservations } from '../../services/queries/reservations';
 import { notify } from '../../utils/notifications';
 import { ReservationCalendar } from './components/ReservationCalendar';
-import { ReservationDetailModal } from './components/ReservationDetailModal';
+import { ReservationDetailDrawer } from './components/ReservationDetailDrawer';
 import { ReservationsTable } from './components/ReservationsTable';
 import { filterReservations, type DepositFilter } from './reservationCalendar';
 import { countPendingCashDeposits } from './reservationStats';
@@ -104,7 +104,7 @@ export const Reservations = () => {
               <ErrorState error={error} resource="Las reservas" onRetry={() => void refetch()} />
             </div>
           ) : isPending ? (
-            <LoadingState label="Cargando reservas…" />
+            <TableSkeleton columns={5} />
           ) : view === 'calendar' ? (
             <ReservationCalendar rows={rows} onOpen={setSelected} />
           ) : (
@@ -113,7 +113,7 @@ export const Reservations = () => {
         </Card>
       )}
 
-      <ReservationDetailModal
+      <ReservationDetailDrawer
         reservation={selected}
         onClose={() => setSelected(null)}
         onConfirmDeposit={handleConfirmDeposit}

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRightLeft } from 'lucide-react';
+import { ArrowRightLeft } from 'lucide-react';
 import {
   Badge,
   Button,
@@ -8,7 +8,7 @@ import {
   DetailList,
   DetailSkeleton,
   ErrorState,
-  IconButton,
+  PageHeader,
   UserRefLink,
 } from '../../common/components/ui';
 import { useBackToList, usePermissions } from '../../hooks';
@@ -28,24 +28,27 @@ export const CylinderDetails = () => {
 
   return (
     <div className="mx-auto max-w-7xl p-4 md:p-8">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <IconButton label="Volver a envases" icon={<ArrowLeft />} onClick={goBack} />
-          <h1 className="text-2xl font-bold tracking-tight text-ink">Ficha del envase</h1>
-        </div>
-        {cylinder && (
-          <Button
-            variant="secondary"
-            size="sm"
-            icon={<ArrowRightLeft />}
-            disabled={!canWrite}
-            title={writeHint}
-            onClick={() => setTransitioning(true)}
-          >
-            Mover de estado
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        title="Ficha del envase"
+        breadcrumbs={[
+          { label: 'Envases', to: '/physical-cylinders', onClick: goBack },
+          { label: cylinder?.serial ?? 'Envase' },
+        ]}
+        actions={
+          cylinder && (
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<ArrowRightLeft />}
+              disabled={!canWrite}
+              title={writeHint}
+              onClick={() => setTransitioning(true)}
+            >
+              Mover de estado
+            </Button>
+          )
+        }
+      />
 
       {isPending ? (
         <DetailSkeleton />

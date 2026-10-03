@@ -12,9 +12,23 @@ interface Props {
   /** Sin él no se muestra el botón (p. ej. superadmin sin distribuidora elegida). */
   onTransition?: (cylinder: Cylinder) => void;
   onView: (cylinder: Cylinder) => void;
+  /** Hay filtros activos: un vacío significa "sin resultados". */
+  filtered?: boolean;
+  /** Selección múltiple para las acciones en lote (sólo con permiso de escritura). */
+  selection?: { ids: string[]; onChange: (ids: string[]) => void };
+  /** Se cambió de página de la tabla. */
+  onPageChange?: () => void;
 }
 
-export const PhysicalCylindersTable = ({ rows, loading, onTransition, onView }: Props) => {
+export const PhysicalCylindersTable = ({
+  rows,
+  loading,
+  onTransition,
+  onView,
+  filtered = false,
+  selection,
+  onPageChange,
+}: Props) => {
   const columns = useMemo<GridColDef<Cylinder>[]>(
     () => [
       {
@@ -90,11 +104,18 @@ export const PhysicalCylindersTable = ({ rows, loading, onTransition, onView }: 
       getRowId={(row) => row.cylinder_id}
       loading={loading}
       onRowClick={onView}
+      selection={selection}
+      onPageChange={onPageChange}
       empty={
-        <EmptyState
-          title="No hay envases"
-          description="Todavía no diste de alta ningún envase físico en este estado."
-        />
+        filtered ? (
+          <EmptyState
+            illustration="search"
+            title="Sin resultados"
+            description="Ningún envase coincide con los filtros elegidos."
+          />
+        ) : (
+          <EmptyState title="No hay envases" description="Todavía no diste de alta ningún envase físico." />
+        )
       }
     />
   );

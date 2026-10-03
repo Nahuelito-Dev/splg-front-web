@@ -11,7 +11,7 @@ import {
   EmptyState,
   ErrorState,
   IdentityCell,
-  LoadingState,
+  TableSkeleton,
   PageHeader,
   SearchInput,
   Select,
@@ -225,7 +225,7 @@ export const FleetTasks = () => {
             </div>
           ) : view === 'board' ? (
             isPending ? (
-              <LoadingState label="Cargando tareas…" />
+              <TableSkeleton columns={4} />
             ) : (data?.rows.length ?? 0) === 0 ? (
               <EmptyState title="Sin tareas" description="Ningún resultado con estos filtros." />
             ) : (

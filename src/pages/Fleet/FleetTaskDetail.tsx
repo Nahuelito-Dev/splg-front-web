@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, CirclePlus, Pencil, XCircle } from 'lucide-react';
-import { Badge, Button, Card, DetailList, ErrorState, LoadingState, PageHeader } from '../../common/components/ui';
-import { usePermissions } from '../../hooks';
+import { useParams } from 'react-router-dom';
+import { CirclePlus, Pencil, XCircle } from 'lucide-react';
+import { Badge, Button, Card, DetailList, DetailSkeleton, ErrorState, PageHeader } from '../../common/components/ui';
+import { useBackToList, usePermissions } from '../../hooks';
 import { useCar } from '../../services/queries/cars';
 import { useCancelFleetTask, useFleetTask } from '../../services/queries/fleet';
 import { formatDay, formatNumber } from '../../utils/format';
@@ -17,7 +17,7 @@ const isOpenTask = (status: string) => status !== 'done' && status !== 'cancelle
 /** La ficha de una tarea de flota (`GET /fleet/tasks/:id`), con su ruta propia. */
 export const FleetTaskDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+  const goBack = useBackToList('/fleet/tasks');
   const { canWrite, writeHint } = usePermissions();
   const { data: task, isPending, error, refetch } = useFleetTask(id);
   const { data: car } = useCar(task?.carId ?? undefined);
@@ -46,28 +46,19 @@ export const FleetTaskDetail = () => {
 
   return (
     <div className="mx-auto max-w-3xl p-4 md:p-8">
-      <Button
-        variant="ghost"
-        size="sm"
-        icon={<ArrowLeft />}
-        className="-ml-2 mb-3"
-        onClick={() => navigate('/fleet/tasks')}
-      >
-        Volver a tareas
-      </Button>
+      <PageHeader
+        title={task?.plan?.name ?? 'Tarea'}
+        description="Documentación de la flota"
+        breadcrumbs={[{ label: 'Tareas', to: '/fleet/tasks', onClick: goBack }, { label: task?.plan?.name ?? 'Tarea' }]}
+        actions={task && <Badge label={labelOf(FLEET_TASK_STATUS, task.status)} />}
+      />
 
       {isPending ? (
-        <LoadingState />
+        <DetailSkeleton />
       ) : error || !task ? (
         <ErrorState error={error} resource="La tarea" onRetry={() => void refetch()} />
       ) : (
         <>
-          <PageHeader
-            title={task.plan?.name ?? 'Tarea'}
-            description="Documentación de la flota"
-            actions={<Badge label={labelOf(FLEET_TASK_STATUS, task.status)} />}
-          />
-
           <Card className="space-y-5 p-4">
             <div className="flex flex-wrap items-center gap-2">
               {task.expirationStatus && <Badge label={labelOf(FLEET_EXPIRATION_STATUS, task.expirationStatus)} />}

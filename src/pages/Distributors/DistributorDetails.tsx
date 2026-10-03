@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowLeftRight, Ban, CircleCheck, Pencil, Trash2 } from 'lucide-react';
+import { ArrowLeftRight, Ban, CircleCheck, Pencil, Trash2 } from 'lucide-react';
 import {
   Badge,
   Button,
@@ -9,7 +9,7 @@ import {
   DetailSkeleton,
   EmptyState,
   ErrorState,
-  IconButton,
+  PageHeader,
 } from '../../common/components/ui';
 import { useBackToList, usePermissions } from '../../hooks';
 import { activeDistributor } from '../../services/api/activeDistributor';
@@ -47,45 +47,53 @@ export const DistributorDetails = () => {
 
   return (
     <div className="mx-auto max-w-7xl p-4 md:p-8">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <IconButton label="Volver a distribuidoras" icon={<ArrowLeft />} onClick={goBack} />
-          <h1 className="text-2xl font-bold tracking-tight text-ink">Ficha de la empresa</h1>
-        </div>
-        {distributor && (
-          <div className="flex flex-wrap gap-2">
-            {isViewing ? (
-              <span className="self-center px-2 text-xs font-semibold text-primary-strong">
-                Viendo como esta empresa
-              </span>
-            ) : (
-              <Button variant="secondary" size="sm" icon={<ArrowLeftRight />} onClick={() => viewAs(distributor.slug)}>
-                Ver como
+      <PageHeader
+        title="Ficha de la empresa"
+        breadcrumbs={[
+          { label: 'Distribuidoras', to: '/distributors', onClick: goBack },
+          { label: distributor?.name ?? 'Empresa' },
+        ]}
+        actions={
+          distributor && (
+            <>
+              {isViewing ? (
+                <span className="self-center px-2 text-xs font-semibold text-primary-strong">
+                  Viendo como esta empresa
+                </span>
+              ) : (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={<ArrowLeftRight />}
+                  onClick={() => viewAs(distributor.slug)}
+                >
+                  Ver como
+                </Button>
+              )}
+              <Button variant="secondary" size="sm" icon={<Pencil />} onClick={() => setEditing(true)}>
+                Editar
               </Button>
-            )}
-            <Button variant="secondary" size="sm" icon={<Pencil />} onClick={() => setEditing(true)}>
-              Editar
-            </Button>
-            {distributor.status === 'active' ? (
-              <Button variant="secondary" size="sm" icon={<Ban />} onClick={() => void toggleStatus(distributor)}>
-                Suspender
+              {distributor.status === 'active' ? (
+                <Button variant="secondary" size="sm" icon={<Ban />} onClick={() => void toggleStatus(distributor)}>
+                  Suspender
+                </Button>
+              ) : (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={<CircleCheck />}
+                  onClick={() => void toggleStatus(distributor)}
+                >
+                  Activar
+                </Button>
+              )}
+              <Button variant="danger" size="sm" icon={<Trash2 />} onClick={() => void remove(distributor)}>
+                Dar de baja
               </Button>
-            ) : (
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={<CircleCheck />}
-                onClick={() => void toggleStatus(distributor)}
-              >
-                Activar
-              </Button>
-            )}
-            <Button variant="danger" size="sm" icon={<Trash2 />} onClick={() => void remove(distributor)}>
-              Dar de baja
-            </Button>
-          </div>
-        )}
-      </div>
+            </>
+          )
+        }
+      />
 
       {isPending ? (
         <DetailSkeleton />

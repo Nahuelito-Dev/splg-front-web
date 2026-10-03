@@ -24,6 +24,10 @@ interface Props {
   onView: (order: Order) => void;
   onAssign: (order: Order) => void;
   onCancel: (order: Order) => void;
+  /** Selección múltiple para las acciones en lote; sin esto la tabla no dibuja casillas. */
+  /** Hay filtros activos: un vacío significa "sin resultados". */
+  filtered?: boolean;
+  selection?: { ids: string[]; onChange: (ids: string[]) => void };
 }
 
 /** Pedidos: quién, adónde, quién lo lleva, en qué estado y cuánto. Ítems, pago y tiempos van en el detalle. */
@@ -36,6 +40,8 @@ export const OrdersTable = ({
   onView,
   onAssign,
   onCancel,
+  selection,
+  filtered = false,
 }: Props) => {
   const columns = useMemo<GridColDef<Order>[]>(
     () => [
@@ -141,8 +147,20 @@ export const OrdersTable = ({
       loading={loading}
       pagination={{ model: pagination, onChange: onPaginationChange, total }}
       onRowClick={onView}
+      selection={selection && { ...selection, isSelectable: (order) => !isClosed(order.status) }}
       empty={
-        <EmptyState title="No hay pedidos" description="Los pedidos aparecen cuando un cliente compra desde la app." />
+        filtered ? (
+          <EmptyState
+            illustration="search"
+            title="Sin resultados"
+            description="Ningún pedido coincide con los filtros elegidos."
+          />
+        ) : (
+          <EmptyState
+            title="No hay pedidos"
+            description="Los pedidos aparecen cuando un cliente compra desde la app."
+          />
+        )
       }
     />
   );

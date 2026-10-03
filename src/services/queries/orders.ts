@@ -16,7 +16,10 @@ import {
   type OrderFilters,
 } from '../api/orders';
 import type { CancelOrderBody, ConfirmDeliveryBody, CreateOrderBody, Order, UpdateOrderStatusBody } from '../api/types';
+import { SKIP } from '../../utils/batch';
+import { canAssignDriver, canCancel } from '../../pages/Orders/components/orderStatus';
 import { ORDER_FLOW } from '../../utils/statusLabels';
+import { useBatchMutation } from './batchMutation';
 import { queryKeys } from './queryKeys';
 import { useOrderStats } from './stats';
 
@@ -185,3 +188,29 @@ export const useCreateOrder = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
   });
 };
+
+/**
+ * Acciones en lote sobre pedidos: una llamada por pedido, de a una. Antes de cada una se vuelve a pedir el pedido
+ * (el estado de la tabla puede estar viejo): si ya no admite la acción se omite en vez de contarlo como falla.
+ */
+export const useBulkAssignOrders = () =>
+  useBatchMutation<{ ids: string[]; deliveryId: string }>({
+    run: async ({ deliveryId }, id) => {
+      if (!canAssignDriver((await getOrder(id)).status)) return SKIP;
+      return assignOrderDelivery(id, deliveryId);
+    },
+    invalidate: keys.all,
+    noun: ['pedido', 'pedidos'],
+    participle: ['asignado', 'asignados'],
+  });
+
+export const useBulkCancelOrders = () =>
+  useBatchMutation<{ ids: string[]; body: CancelOrderBody }>({
+    run: async ({ body }, id) => {
+      if (!canCancel((await getOrder(id)).status)) return SKIP;
+      return cancelOrder(id, body);
+    },
+    invalidate: keys.all,
+    noun: ['pedido', 'pedidos'],
+    participle: ['cancelado', 'cancelados'],
+  });

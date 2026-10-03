@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Badge, Button, DetailList, Modal } from '../../../common/components/ui';
+import { Badge, Button, DetailList, Drawer } from '../../../common/components/ui';
 import type { Reserva } from '../../../services/api/types';
 import { formatCurrency, formatDateTime, formatDay, formatShortId } from '../../../utils/format';
 import { labelOf, PAYMENT_METHOD } from '../../../utils/statusLabels';
@@ -13,20 +13,20 @@ interface Props {
 }
 
 /** Todo lo que la API devuelve de una reserva, y la confirmación de la seña en efectivo. */
-export const ReservationDetailModal = ({ reservation, onClose, onConfirmDeposit, confirming }: Props) => {
+export const ReservationDetailDrawer = ({ reservation, onClose, onConfirmDeposit, confirming }: Props) => {
   const navigate = useNavigate();
   if (!reservation) return null;
   const canConfirm = !reservation.depositPaid && reservation.paymentMethod === 'cash';
 
   return (
-    <Modal
+    <Drawer
       open
       onClose={onClose}
       size="md"
       title={`Reserva ${formatShortId(reservation.id)}`}
       description={`Creada el ${formatDateTime(reservation.createdAt)}`}
       footer={
-        <div className="flex flex-wrap items-center justify-end gap-2">
+        <>
           {!canConfirm && (
             <Badge
               label={
@@ -44,7 +44,7 @@ export const ReservationDetailModal = ({ reservation, onClose, onConfirmDeposit,
               Confirmar seña cobrada
             </Button>
           )}
-        </div>
+        </>
       }
     >
       <div className="space-y-5">
@@ -86,6 +86,6 @@ export const ReservationDetailModal = ({ reservation, onClose, onConfirmDeposit,
           </dl>
         </div>
       </div>
-    </Modal>
+    </Drawer>
   );
 };

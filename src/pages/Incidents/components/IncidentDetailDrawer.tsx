@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { usePermissions } from '../../../hooks';
-import { Badge, Button, DetailList, Modal, TextArea } from '../../../common/components/ui';
+import { Badge, Button, DetailList, Drawer, TextArea } from '../../../common/components/ui';
 import type { Incident } from '../../../services/api/types';
 import { useResolveIncident } from '../../../services/queries/incidents';
 import { useUser } from '../../../services/queries/users';
@@ -27,7 +27,7 @@ interface Props {
  * El detalle de una incidencia. Si está abierta, además se resuelve acá; si ya
  * se resolvió, se ve cómo y cuándo.
  */
-export const IncidentDetailModal = ({ open, onClose, incident }: Props) => {
+export const IncidentDetailDrawer = ({ open, onClose, incident }: Props) => {
   const { canOperate, operateHint } = usePermissions();
   const resolveIncident = useResolveIncident();
   // `IncidentResponseDto.reported_by` es sólo un uuid: la API no lo trae resuelto
@@ -64,7 +64,7 @@ export const IncidentDetailModal = ({ open, onClose, incident }: Props) => {
   );
 
   return (
-    <Modal
+    <Drawer
       open={open}
       onClose={onClose}
       title={isOpen ? 'Resolver incidencia' : 'Incidencia resuelta'}
@@ -152,6 +152,6 @@ export const IncidentDetailModal = ({ open, onClose, incident }: Props) => {
           />
         )}
       </div>
-    </Modal>
+    </Drawer>
   );
 };

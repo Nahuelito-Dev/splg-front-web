@@ -10,7 +10,7 @@ vi.mock('../../../services/queries/claims', () => {
 });
 vi.mock('./ClaimHistory', () => ({ ClaimHistory: () => null }));
 
-import { ClaimDetailModal } from './ClaimDetailModal';
+import { ClaimDetailDrawer } from './ClaimDetailDrawer';
 
 const claim = (status: string) =>
   ({
@@ -24,12 +24,12 @@ const claim = (status: string) =>
 
 const HINT = 'Elegí una distribuidora para operar';
 
-describe('ClaimDetailModal', () => {
+describe('ClaimDetailDrawer', () => {
   afterEach(cleanup);
 
   it('sin distribuidora elegida deshabilita Tomar, Rechazar y Resolver y dice por qué', () => {
     permissions.mockReturnValue({ canOperate: false, operateHint: HINT });
-    render(<ClaimDetailModal open onClose={vi.fn()} claim={claim('pending')} />);
+    render(<ClaimDetailDrawer open onClose={vi.fn()} claim={claim('pending')} />);
     for (const name of ['Tomar', 'Rechazar', 'Resolver']) {
       expect(screen.getByRole('button', { name })).toBeDisabled();
     }
@@ -38,14 +38,14 @@ describe('ClaimDetailModal', () => {
 
   it('con distribuidora, las acciones quedan habilitadas y no hay aviso', () => {
     permissions.mockReturnValue({ canOperate: true, operateHint: undefined });
-    render(<ClaimDetailModal open onClose={vi.fn()} claim={claim('pending')} />);
+    render(<ClaimDetailDrawer open onClose={vi.fn()} claim={claim('pending')} />);
     expect(screen.getByRole('button', { name: 'Resolver' })).toBeEnabled();
     expect(screen.queryByText(HINT)).not.toBeInTheDocument();
   });
 
   it('un reclamo resuelto se puede reabrir, pero no resolver ni pasar a en proceso', () => {
     permissions.mockReturnValue({ canOperate: true, operateHint: undefined });
-    render(<ClaimDetailModal open onClose={vi.fn()} claim={claim('resolved')} />);
+    render(<ClaimDetailDrawer open onClose={vi.fn()} claim={claim('resolved')} />);
     expect(screen.getByRole('button', { name: 'Reabrir' })).toBeEnabled();
     expect(screen.queryByRole('button', { name: 'Resolver' })).not.toBeInTheDocument();
   });

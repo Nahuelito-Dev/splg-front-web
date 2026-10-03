@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { ArrowLeft, Pencil, Power, PowerOff } from 'lucide-react';
+import { Pencil, Power, PowerOff } from 'lucide-react';
 import {
   Badge,
   Button,
@@ -9,7 +9,7 @@ import {
   DetailSkeleton,
   EmptyState,
   ErrorState,
-  IconButton,
+  PageHeader,
 } from '../../common/components/ui';
 import { useBackToList, usePermissions } from '../../hooks';
 import { useFleetPlan, useUpdateFleetPlan } from '../../services/queries/fleet';
@@ -57,28 +57,29 @@ export const FleetPlanDetails = () => {
 
   return (
     <div className="mx-auto max-w-7xl p-4 md:p-8">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <IconButton label="Volver a planes" icon={<ArrowLeft />} onClick={goBack} />
-          <h1 className="text-2xl font-bold tracking-tight text-ink">Ficha del plan</h1>
-        </div>
-        {plan && canWrite && (
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={plan.isActive ? <PowerOff /> : <Power />}
-              loading={updatePlan.isPending}
-              onClick={() => void handleToggle()}
-            >
-              {plan.isActive ? 'Desactivar' : 'Activar'}
-            </Button>
-            <Button size="sm" icon={<Pencil />} title={writeHint} onClick={() => setEditing(true)}>
-              Editar
-            </Button>
-          </div>
-        )}
-      </div>
+      <PageHeader
+        title="Ficha del plan"
+        breadcrumbs={[{ label: 'Planes', to: '/fleet/plans', onClick: goBack }, { label: plan?.name ?? 'Plan' }]}
+        actions={
+          plan &&
+          canWrite && (
+            <>
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={plan.isActive ? <PowerOff /> : <Power />}
+                loading={updatePlan.isPending}
+                onClick={() => void handleToggle()}
+              >
+                {plan.isActive ? 'Desactivar' : 'Activar'}
+              </Button>
+              <Button size="sm" icon={<Pencil />} title={writeHint} onClick={() => setEditing(true)}>
+                Editar
+              </Button>
+            </>
+          )
+        }
+      />
 
       {isPending ? (
         <DetailSkeleton />

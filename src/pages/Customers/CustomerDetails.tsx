@@ -1,14 +1,38 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, PencilLine, Trash2 } from 'lucide-react';
-import { Button, DetailSkeleton, ErrorState, IconButton } from '../../common/components/ui';
-import { useBackToList, usePermissions } from '../../hooks';
-import { useCustomer, useDeleteCustomer } from '../../services/queries/customers';
+import { MapPin, PencilLine, Trash2 } from 'lucide-react';
+import {
+  Avatar,
+  Badge,
+  Button,
+  ErrorState,
+  PageCover,
+  PageHeader,
+  ProfileSkeleton,
+  ProfileTabPanel,
+  ProfileTabs,
+  type CoverStat,
+  type ProfileTabItem,
+} from '../../common/components/ui';
+import { useBackToList, usePermissions, useProfileTab } from '../../hooks';
+import type { Claim } from '../../services/api/types';
+import { useClaims } from '../../services/queries/claims';
+import { useCustomer, useCustomerOrderSample, useDeleteCustomer } from '../../services/queries/customers';
+import { useUserAddresses } from '../../services/queries/userAddresses';
+import { formatCurrency, formatDate } from '../../utils/format';
 import { confirm, notify } from '../../utils/notifications';
+import { ClaimDetailDrawer } from '../Claims/components/ClaimDetailDrawer';
+import { UserRatingsTab } from '../Ratings/components/UserRatingsTab';
+import { roleLabel } from '../Users/roleLabel';
 import { CustomerFormModal } from './components/CustomerFormModal';
 import { CustomerAddresses } from './components/details/CustomerAddresses';
+import { CustomerClaims } from './components/details/CustomerClaims';
+import { CustomerLocationModal } from './components/details/CustomerLocationModal';
 import { CustomerOrders } from './components/details/CustomerOrders';
-import { CustomerProfileCard } from './components/details/CustomerProfileCard';
+import { CustomerSummary } from './components/details/CustomerSummary';
+import { customerStats } from './customerStats';
+
+const TAB_KEYS = ['summary', 'orders', 'addresses', 'claims', 'ratings'];
 
 export const CustomerDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -18,6 +42,19 @@ export const CustomerDetails = () => {
   const { data: customer, isPending, error, refetch } = useCustomer(id);
   const deleteCustomer = useDeleteCustomer();
   const [editing, setEditing] = useState(false);
+  const [editingLocation, setEditingLocation] = useState(false);
+  const [claimId, setClaimId] = useState<string | null>(null);
+  const [tab, setTab] = useProfileTab(TAB_KEYS, 'summary');
+
+  const orders = useCustomerOrderSample(customer?.user_id);
+  const addresses = useUserAddresses(customer?.user_id);
+  const claimsQuery = useClaims();
+  // `claim.customer_id` es el id de la cuenta (`user_id`) del cliente, no el de su perfil: se filtran los de esta ficha.
+  const claims = useMemo(
+    () => (claimsQuery.data ?? []).filter((claim) => claim.customer_id === customer?.user_id),
+    [claimsQuery.data, customer?.user_id],
+  );
+  const openClaim = claims.find((claim) => claim.claim_id === claimId) ?? null;
 
   const handleDelete = async () => {
     if (!customer) return;
@@ -37,39 +74,94 @@ export const CustomerDetails = () => {
     });
   };
 
+  const name = customer?.user?.full_name ?? 'Sin nombre';
+  const stats = orders.data ? customerStats(orders.data.orders, orders.data.total) : null;
+  const coverStats: CoverStat[] = [
+    {
+      label: 'Total comprado',
+      value: stats ? formatCurrency(stats.totalPurchased) : '–',
+      hint: stats?.partial ? 'De sus últimos 100 pedidos' : 'Pedidos entregados',
+    },
+    { label: 'Pedidos', value: stats ? String(stats.ordersCount) : '–' },
+    {
+      label: 'Última compra',
+      value: stats ? (stats.lastPurchaseAt ? formatDate(stats.lastPurchaseAt) : 'Sin pedidos') : '–',
+    },
+  ];
+
+  const tabs: ProfileTabItem[] = [
+    { key: 'summary', label: 'Resumen' },
+    { key: 'orders', label: 'Pedidos', badge: stats?.ordersCount },
+    { key: 'addresses', label: 'Direcciones', badge: addresses.data?.length },
+    { key: 'claims', label: 'Reclamos', badge: claimsQuery.data ? claims.length : undefined },
+    { key: 'ratings', label: 'Calificaciones' },
+  ];
+
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <IconButton label="Volver a clientes" icon={<ArrowLeft />} onClick={goBack} />
-          <h1 className="text-2xl font-bold tracking-tight text-ink">Ficha del cliente</h1>
-        </div>
-        {customer && canManageCustomerAccounts && (
-          <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" size="sm" icon={<PencilLine />} onClick={() => setEditing(true)}>
-              Editar cuenta
-            </Button>
-            <Button variant="danger" size="sm" icon={<Trash2 />} onClick={() => void handleDelete()}>
-              Dar de baja
-            </Button>
-          </div>
-        )}
-      </div>
+    <div className="mx-auto max-w-5xl p-4 md:p-8">
+      <PageHeader
+        title="Ficha del cliente"
+        breadcrumbs={[{ label: 'Clientes', to: '/customers', onClick: goBack }, { label: customer ? name : 'Cliente' }]}
+        actions={
+          customer &&
+          canManageCustomerAccounts && (
+            <>
+              <Button variant="secondary" size="sm" icon={<PencilLine />} onClick={() => setEditing(true)}>
+                Editar cuenta
+              </Button>
+              <Button variant="danger" size="sm" icon={<Trash2 />} onClick={() => void handleDelete()}>
+                Dar de baja
+              </Button>
+            </>
+          )
+        }
+      />
 
       {isPending ? (
-        <DetailSkeleton />
+        <ProfileSkeleton />
       ) : error || !customer ? (
         <ErrorState error={error} resource="El cliente" onRetry={() => void refetch()} />
       ) : (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <div className="min-w-0 space-y-6">
-            <CustomerProfileCard customer={customer} />
-            <CustomerAddresses userId={customer.user_id} />
-          </div>
-          <div className="min-w-0 lg:col-span-2">
+        <>
+          <PageCover
+            avatar={<Avatar name={name} size="lg" />}
+            title={name}
+            subtitle={[customer.user?.email, customer.user?.phone_number].filter(Boolean).join(' · ') || undefined}
+            badges={
+              <>
+                <Badge label={roleLabel(customer.user?.role?.type)} />
+                {customer.user?.blocked && <Badge label={{ text: 'Cuenta bloqueada', tone: 'danger' }} />}
+              </>
+            }
+            actions={
+              <Button variant="secondary" size="sm" icon={<MapPin />} onClick={() => setEditingLocation(true)}>
+                Editar ubicación
+              </Button>
+            }
+            stats={coverStats}
+          >
+            <ProfileTabs tabs={tabs} value={tab} onChange={setTab} />
+          </PageCover>
+
+          <ProfileTabPanel tabKey="summary" value={tab}>
+            <CustomerSummary customer={customer} />
+          </ProfileTabPanel>
+          <ProfileTabPanel tabKey="orders" value={tab}>
             <CustomerOrders userId={customer.user_id} />
-          </div>
-        </div>
+          </ProfileTabPanel>
+          <ProfileTabPanel tabKey="addresses" value={tab}>
+            <CustomerAddresses userId={customer.user_id} />
+          </ProfileTabPanel>
+          <ProfileTabPanel tabKey="claims" value={tab}>
+            <CustomerClaims claims={claims} onOpen={(claim: Claim) => setClaimId(claim.claim_id)} />
+          </ProfileTabPanel>
+          <ProfileTabPanel tabKey="ratings" value={tab}>
+            <UserRatingsTab userId={customer.user_id} name={customer.user?.full_name} />
+          </ProfileTabPanel>
+
+          <CustomerLocationModal open={editingLocation} onClose={() => setEditingLocation(false)} customer={customer} />
+          <ClaimDetailDrawer open={openClaim !== null} onClose={() => setClaimId(null)} claim={openClaim} />
+        </>
       )}
 
       <CustomerFormModal open={editing} onClose={() => setEditing(false)} customer={customer ?? null} />

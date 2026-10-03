@@ -7,7 +7,7 @@ import {
   EmptyState,
   ErrorState,
   IdentityCell,
-  LoadingState,
+  TableSkeleton,
   PageHeader,
   SearchInput,
 } from '../../common/components/ui';
@@ -24,7 +24,7 @@ const SearchResult = ({ term }: { term: string }) => {
   const { data: admins } = useAdmins();
   // La búsqueda devuelve `admin_id`; la ficha de usuario se abre con `user_id`, que sale de la lista.
   const userId = admins?.find((admin) => admin.admin_id === data?.admin_id)?.user_id;
-  if (isFetching) return <LoadingState label="Buscando…" />;
+  if (isFetching) return <TableSkeleton rows={2} columns={3} />;
   if (isError || !data) {
     return <EmptyState title="Sin resultados" description={`Ningún admin tiene id o correo "${term}".`} />;
   }
@@ -73,7 +73,7 @@ export const Admins = () => {
         {debouncedSearch.length >= 3 ? (
           <SearchResult term={debouncedSearch} />
         ) : isLoading ? (
-          <LoadingState />
+          <TableSkeleton columns={3} />
         ) : error ? (
           <ErrorState error={error} resource="Los administradores" onRetry={() => void refetch()} />
         ) : (

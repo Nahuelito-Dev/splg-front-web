@@ -1,8 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { GridPaginationModel } from '@mui/x-data-grid';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import { Button, Card, EmptyState, PageHeader, SearchInput, Select, Switch } from '../../common/components/ui';
-import { useDebounce, usePermissions } from '../../hooks';
+import {
+  Button,
+  Card,
+  EmptyState,
+  FilterChips,
+  PageHeader,
+  SearchInput,
+  Select,
+  Switch,
+  type FilterChip,
+} from '../../common/components/ui';
+import { useDebounce, usePermissions, useUrlParams } from '../../hooks';
 import type { GasCylinder } from '../../services/api/types';
 import {
   useAvailableGasCylinders,
@@ -24,9 +34,13 @@ export const GasCylinders = () => {
   const [form, setForm] = useState<FormState>({ open: false });
   const [stockTarget, setStockTarget] = useState<GasCylinder | null>(null);
 
-  const [search, setSearch] = useState('');
-  const [typeFilterChoice, setTypeFilter] = useState(ALL_TYPES);
-  const [onlyAvailable, setOnlyAvailable] = useState(false);
+  // Los filtros viven en la URL: al volver de una ficha o recargar, el catálogo queda como estaba.
+  const [{ q: search, type: typeFilterChoice, available: availableParam }, setFilters] = useUrlParams({
+    q: '',
+    type: ALL_TYPES,
+    available: '',
+  });
+  const onlyAvailable = availableParam === '1';
   const debouncedSearch = useDebounce(search.trim());
 
   // El combo sale del catálogo completo (con o sin stock): una garrafa agotada también se filtra.
@@ -80,12 +94,22 @@ export const GasCylinders = () => {
   const retryActive = () => void active.refetch();
 
   const selectType = (value: string) => {
-    setTypeFilter(value);
-    if (value !== ALL_TYPES) {
-      // El tipo exacto ignora búsqueda y disponibles: no se dejan valores que no aplican.
-      setSearch('');
-      setOnlyAvailable(false);
-    }
+    // El tipo exacto ignora búsqueda y disponibles: no se dejan valores que no aplican.
+    setFilters(value === ALL_TYPES ? { type: value } : { type: value, q: '', available: '' });
+    setPagination((p) => ({ ...p, page: 0 }));
+  };
+
+  const chips: FilterChip[] = [];
+  if (search.trim()) chips.push({ key: 'q', label: `"${search.trim()}"` });
+  if (typeSelected)
+    chips.push({ key: 'type', label: typeOptions.find((o) => o.value === typeFilter)?.label ?? typeFilter });
+  if (onlyAvailable) chips.push({ key: 'available', label: 'Sólo disponibles' });
+  const removeChip = (key: string) => {
+    setFilters({ [key]: key === 'type' ? ALL_TYPES : '' });
+    setPagination((p) => ({ ...p, page: 0 }));
+  };
+  const clearAll = () => {
+    setFilters({ q: '', type: ALL_TYPES, available: '' });
     setPagination((p) => ({ ...p, page: 0 }));
   };
 
@@ -134,7 +158,7 @@ export const GasCylinders = () => {
                 disabled={typeSelected}
                 title={typeSelected ? 'No aplica: elegiste un tipo exacto' : undefined}
                 onChange={(e) => {
-                  setSearch(e.target.value);
+                  setFilters({ q: e.target.value });
                   setPagination((p) => ({ ...p, page: 0 }));
                 }}
               />
@@ -153,22 +177,26 @@ export const GasCylinders = () => {
                 title={typeSelected ? 'No aplica: elegiste un tipo exacto' : undefined}
                 label="Mostrar sólo las garrafas disponibles para la app"
                 onChange={(checked) => {
-                  setOnlyAvailable(checked);
+                  setFilters({ available: checked ? '1' : '' });
                   setPagination((p) => ({ ...p, page: 0 }));
                 }}
               />
               <span className="text-sm text-ink">Sólo disponibles</span>
             </div>
           </div>
-          <p className="text-sm text-muted" aria-live="polite">
-            {loadFailed
-              ? 'No se pudo cargar el catálogo'
-              : firstLoad
-                ? 'Cargando…'
-                : data
-                  ? `${data.total} ${data.total === 1 ? 'producto' : 'productos'}`
-                  : ''}
-          </p>
+          {chips.length > 0 && !loadFailed && data ? (
+            <FilterChips items={chips} onRemove={removeChip} onClearAll={clearAll} resultCount={data.total} />
+          ) : (
+            <p className="text-sm text-muted" aria-live="polite">
+              {loadFailed
+                ? 'No se pudo cargar el catálogo'
+                : firstLoad
+                  ? 'Cargando…'
+                  : data
+                    ? `${data.total} ${data.total === 1 ? 'producto' : 'productos'}`
+                    : ''}
+            </p>
+          )}
         </div>
         {loadFailed ? (
           <EmptyState
@@ -185,6 +213,7 @@ export const GasCylinders = () => {
             rows={data?.rows ?? []}
             total={data?.total ?? 0}
             loading={isFetching || firstLoad}
+            filtered={chips.length > 0}
             pagination={pagination}
             onPaginationChange={setPagination}
             onEdit={canWrite ? (cylinder) => setForm({ open: true, cylinder }) : undefined}

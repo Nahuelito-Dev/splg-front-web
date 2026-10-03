@@ -10,14 +10,21 @@ interface Props {
   items: FilterChip[];
   onRemove: (key: string) => void;
   onClearAll?: () => void;
+  /** Cuántos resultados dejan los filtros: se muestra "N resultados" antes de los chips. */
+  resultCount?: number;
 }
 
 /** Los filtros activos de un listado, uno por chip, para sacarlos de a uno o de golpe. */
-export const FilterChips = ({ items, onRemove, onClearAll }: Props) => {
+export const FilterChips = ({ items, onRemove, onClearAll, resultCount }: Props) => {
   if (items.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5" aria-label="Filtros activos">
+    <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Filtros activos">
+      {resultCount !== undefined && (
+        <span className="mr-1 text-sm text-muted" aria-live="polite">
+          <b className="font-semibold text-ink">{resultCount}</b> {resultCount === 1 ? 'resultado' : 'resultados'}
+        </span>
+      )}
       {items.map((item) => (
         <span
           key={item.key}

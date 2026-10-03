@@ -1,31 +1,36 @@
-import { Button } from '../../../common/components/ui';
+import { Tabs, type TabItem } from '../../../common/components/ui';
 import type { DeliveriesStatusTab } from '../../../services/queries/deliveries';
+import { DELIVERY_TAB_LABELS, DELIVERY_TAB_ORDER } from '../deliveryTabs';
 
-const TABS: { value: DeliveriesStatusTab; label: string }[] = [
-  { value: 'all', label: 'Todos' },
-  { value: 'unvalidated', label: 'Por validar' },
-  { value: 'enabled', label: 'Habilitados' },
-  { value: 'disabled', label: 'Deshabilitados' },
-  { value: 'online', label: 'En línea' },
-];
+export const DELIVERY_TABS_ID = 'deliveries';
+
+/** El tono del contador de cada grupo cuando está activo: lo que pide atención va en cálido. */
+const TONES: Partial<Record<DeliveriesStatusTab, TabItem['tone']>> = {
+  unvalidated: 'warn',
+  enabled: 'success',
+  disabled: 'danger',
+  online: 'primary',
+};
 
 interface Props {
   value: DeliveriesStatusTab;
   onChange: (value: DeliveriesStatusTab) => void;
+  /** Cantidad por grupo; `null` mientras no hay dato (no se muestra como 0). */
+  counts: Record<DeliveriesStatusTab, number | null>;
 }
 
-/** Los cuatro grupos administrativos de choferes (CU-032/CU-033) más "en línea", en pestañas. */
-export const DeliveryStatusTabs = ({ value, onChange }: Props) => (
-  <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrar choferes por estado">
-    {TABS.map((tab) => (
-      <Button
-        key={tab.value}
-        size="sm"
-        variant={value === tab.value ? 'primary' : 'secondary'}
-        onClick={() => onChange(tab.value)}
-      >
-        {tab.label}
-      </Button>
-    ))}
-  </div>
+/** Los grupos administrativos de choferes (CU-032/CU-033) más "en línea", en pestañas con su cantidad. */
+export const DeliveryStatusTabs = ({ value, onChange, counts }: Props) => (
+  <Tabs
+    items={DELIVERY_TAB_ORDER.map((tab) => ({
+      id: tab,
+      label: DELIVERY_TAB_LABELS[tab],
+      count: counts[tab],
+      tone: TONES[tab],
+    }))}
+    value={value}
+    onChange={(id) => onChange(id as DeliveriesStatusTab)}
+    label="Filtrar choferes por estado"
+    idPrefix={DELIVERY_TABS_ID}
+  />
 );
