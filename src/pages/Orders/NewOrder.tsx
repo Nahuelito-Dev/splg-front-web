@@ -2,7 +2,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
 import { Button, Card, PageHeader, Select, TextArea } from '../../common/components/ui';
 import type { Customer } from '../../services/api/types';
 import { useUserAddresses } from '../../services/queries/userAddresses';
@@ -72,12 +71,9 @@ export const NewOrder = () => {
 
   return (
     <div className="mx-auto max-w-3xl p-4 md:p-8">
-      <Button variant="ghost" size="sm" icon={<ArrowLeft />} className="-ml-2 mb-3" onClick={() => navigate('/orders')}>
-        Volver a pedidos
-      </Button>
-
       <PageHeader
         title="Nuevo pedido telefónico"
+        breadcrumbs={[{ label: 'Pedidos', to: '/orders' }, { label: 'Nuevo' }]}
         description="Alta manual para cuando el cliente llama en vez de pedir desde la app (CU-072)."
       />
 

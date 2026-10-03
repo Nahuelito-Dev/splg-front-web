@@ -1,49 +1,87 @@
-import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
 import type { GridPaginationModel } from '@mui/x-data-grid';
 import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
 import { SearchCheck } from 'lucide-react';
-import { Button, Card, PageHeader, SearchInput } from '../../common/components/ui';
-import { useDebounce, usePermissions } from '../../hooks';
+import {
+  Button,
+  Card,
+  FilterChips,
+  PageHeader,
+  SearchInput,
+  Tabs,
+  tabPanelProps,
+  type FilterChip,
+  type TabItem,
+} from '../../common/components/ui';
+import { useDebounce, usePermissions, useUrlParams } from '../../hooks';
 import type { Customer } from '../../services/api/types';
-import { useCustomers, useDeleteCustomer } from '../../services/queries/customers';
+import { SEGMENT_SCAN_LIMIT, useCustomerScan, useCustomers, useDeleteCustomer } from '../../services/queries/customers';
 import { confirm, notify } from '../../utils/notifications';
 import { CustomerFormModal } from './components/CustomerFormModal';
 import { CustomersTable } from './components/CustomersTable';
 import { FindCustomerByUserModal } from './components/FindCustomerByUserModal';
+import {
+  CUSTOMER_SEGMENTS,
+  CUSTOMER_SEGMENT_LABELS,
+  countCustomersBySegment,
+  filterCustomers,
+  type CustomerSegment,
+} from './customerSegments';
 
 type FormState = { open: false } | { open: true; customer: Customer | null };
 
+const TABS_ID = 'customers';
+const PAGE_SIZE = 10;
+
 export const Customers = () => {
   const { canManageCustomerAccounts } = usePermissions();
-  // La búsqueda y la página viven en la URL (un solo `setParams` para que no se pisen): al volver de una ficha se conservan.
-  const [params, setParams] = useSearchParams();
-  const search = params.get('q') ?? '';
-  const pageParam = params.get('page') ?? '1';
-  const updateParams = (q: string, page: number) =>
-    setParams(
-      (current) => {
-        const next = new URLSearchParams(current);
-        if (q) next.set('q', q);
-        else next.delete('q');
-        if (page > 0) next.set('page', String(page + 1));
-        else next.delete('page');
-        return next;
-      },
-      { replace: true },
-    );
+  // La búsqueda, el segmento y la página viven en la URL: al volver de una ficha se conservan.
+  const [{ q: search, status: statusParam, page: pageParam }, setFilters] = useUrlParams({
+    q: '',
+    status: 'all',
+    page: '1',
+  });
   const debouncedSearch = useDebounce(search.trim());
-  const pagination: GridPaginationModel = { page: Math.max(0, Number(pageParam) - 1 || 0), pageSize: 10 };
-  const setPagination = (model: GridPaginationModel) => updateParams(search, model.page);
+  const pagination: GridPaginationModel = { page: Math.max(0, Number(pageParam) - 1 || 0), pageSize: PAGE_SIZE };
+  const setPagination = (model: GridPaginationModel) => setFilters({ page: String(model.page + 1) });
   const [form, setForm] = useState<FormState>({ open: false });
   const [findingByUser, setFindingByUser] = useState(false);
 
-  const { data, isFetching } = useCustomers(pagination, debouncedSearch);
+  // Con hasta 100 clientes entran todos y se segmenta en el panel; con más, sólo la lista del servidor ("Todos").
+  const scan = useCustomerScan();
+  const scanned = scan.data && scan.data.total <= SEGMENT_SCAN_LIMIT ? scan.data.rows : null;
+  const segment: CustomerSegment = scanned ? (CUSTOMER_SEGMENTS.find((s) => s === statusParam) ?? 'all') : 'all';
+  const counts = useMemo(() => (scanned ? countCustomersBySegment(scanned) : null), [scanned]);
+
+  const server = useCustomers(pagination, debouncedSearch);
+  const local = useMemo(
+    () => (scanned ? filterCustomers(scanned, { segment, term: search }) : null),
+    [scanned, segment, search],
+  );
+  const rows = local
+    ? local.slice(pagination.page * PAGE_SIZE, (pagination.page + 1) * PAGE_SIZE)
+    : (server.data?.rows ?? []);
+  const total = local ? local.length : (server.data?.total ?? 0);
+  const loading = local ? false : server.isFetching;
+  // Una `?page=` fuera de rango (o una página que quedó vacía tras dar de baja) vuelve a la primera.
+  useEffect(() => {
+    if (!loading && total > 0 && rows.length === 0 && pagination.page > 0) setFilters({ page: '1' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, total, rows.length, pagination.page]);
   const deleteCustomer = useDeleteCustomer();
 
-  const handleSearch = (value: string) => {
-    updateParams(value, 0);
-  };
+  const tabs: TabItem[] = (scanned ? CUSTOMER_SEGMENTS : (['all'] as CustomerSegment[])).map((s) => ({
+    id: s,
+    label: CUSTOMER_SEGMENT_LABELS[s],
+    count: s === 'all' && !counts ? (server.data?.total ?? null) : (counts?.[s] ?? null),
+    tone: s === 'blocked' ? 'danger' : s === 'active' ? 'success' : undefined,
+  }));
+
+  const chips: FilterChip[] = [];
+  if (segment !== 'all') chips.push({ key: 'status', label: CUSTOMER_SEGMENT_LABELS[segment] });
+  if (search.trim()) chips.push({ key: 'q', label: `"${search.trim()}"` });
+  const removeChip = (key: string) =>
+    setFilters(key === 'status' ? { status: 'all', page: '1' } : { q: '', page: '1' });
 
   const handleDelete = async (customer: Customer) => {
     const confirmed = await confirm({
@@ -77,26 +115,45 @@ export const Customers = () => {
       />
 
       <Card>
-        <div className="flex flex-col gap-3 border-b border-outline p-4 sm:flex-row sm:items-center sm:justify-between">
-          <SearchInput
-            label="Buscar clientes"
-            placeholder="Nombre, email o teléfono"
-            value={search}
-            onChange={(e) => handleSearch(e.target.value)}
-          />
-          <p className="text-sm text-muted" aria-live="polite">
-            {data ? `${data.total} ${data.total === 1 ? 'cliente' : 'clientes'}` : ''}
-          </p>
-        </div>
-        <CustomersTable
-          rows={data?.rows ?? []}
-          total={data?.total ?? 0}
-          loading={isFetching}
-          pagination={pagination}
-          onPaginationChange={setPagination}
-          onEdit={canManageCustomerAccounts ? (customer) => setForm({ open: true, customer }) : undefined}
-          onDelete={canManageCustomerAccounts ? (customer) => void handleDelete(customer) : undefined}
+        <Tabs
+          items={tabs}
+          value={segment}
+          onChange={(id) => setFilters({ status: id, page: '1' })}
+          label="Filtrar clientes por estado de la cuenta"
+          idPrefix={TABS_ID}
         />
+        <div {...tabPanelProps(TABS_ID, segment)}>
+          <div className="flex flex-col gap-3 border-b border-outline p-4">
+            <SearchInput
+              label="Buscar clientes"
+              placeholder="Nombre, email o teléfono"
+              value={search}
+              onChange={(e) => setFilters({ q: e.target.value, page: '1' })}
+            />
+            {chips.length > 0 ? (
+              <FilterChips
+                items={chips}
+                onRemove={removeChip}
+                onClearAll={() => setFilters({ q: '', status: 'all', page: '1' })}
+                resultCount={local || server.data ? total : undefined}
+              />
+            ) : (
+              <p className="text-sm text-muted" aria-live="polite">
+                {local || server.data ? `${total} ${total === 1 ? 'cliente' : 'clientes'}` : ''}
+              </p>
+            )}
+          </div>
+          <CustomersTable
+            rows={rows}
+            total={total}
+            loading={loading}
+            filtered={chips.length > 0}
+            pagination={pagination}
+            onPaginationChange={setPagination}
+            onEdit={canManageCustomerAccounts ? (customer) => setForm({ open: true, customer }) : undefined}
+            onDelete={canManageCustomerAccounts ? (customer) => void handleDelete(customer) : undefined}
+          />
+        </div>
       </Card>
 
       <CustomerFormModal

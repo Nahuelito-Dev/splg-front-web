@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import TwoWheelerIcon from '@mui/icons-material/TwoWheeler';
-import { Button, cx, EmptyState, LoadingState, Modal, SearchInput } from '../../../common/components/ui';
+import { AffectedList, Button, cx, EmptyState, LoadingState, Modal, SearchInput } from '../../../common/components/ui';
 import { useDebounce, usePermissions } from '../../../hooks';
 import { useActiveDeliveries } from '../../../services/queries/orders';
 
@@ -11,10 +11,22 @@ interface Props {
   assigning: boolean;
   /** La empresa del pedido: con ella el administrador general sin «Ver como» lista sólo los choferes de ese pedido. */
   distributorId?: string;
+  /** Asignación en lote: cuántos pedidos van al chofer elegido. */
+  count?: number;
+  /** Qué pedidos se van a afectar (lote): se listan antes de confirmar. */
+  affected?: string[];
 }
 
 /** Sobreescribe a mano la asignación automática de un pedido. */
-export const AssignDriverModal = ({ open, onClose, onConfirm, assigning, distributorId }: Props) => {
+export const AssignDriverModal = ({
+  open,
+  onClose,
+  onConfirm,
+  assigning,
+  distributorId,
+  count = 1,
+  affected,
+}: Props) => {
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search.trim());
   const { needsDistributor } = usePermissions();
@@ -38,7 +50,11 @@ export const AssignDriverModal = ({ open, onClose, onConfirm, assigning, distrib
       open={open}
       onClose={onClose}
       title="Asignación manual"
-      description="Sobreescribe la asignación automática del pedido."
+      description={
+        count > 1
+          ? `Asigna los ${count} pedidos al mismo chofer y pisa la asignación automática.`
+          : 'Sobreescribe la asignación automática del pedido.'
+      }
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>
@@ -50,6 +66,11 @@ export const AssignDriverModal = ({ open, onClose, onConfirm, assigning, distrib
         </>
       }
     >
+      {affected && (
+        <div className="mb-3">
+          <AffectedList items={affected} />
+        </div>
+      )}
       <SearchInput
         label="Buscar chofer"
         placeholder="Nombre, teléfono o patente"

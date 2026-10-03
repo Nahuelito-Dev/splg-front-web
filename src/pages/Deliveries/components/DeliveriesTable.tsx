@@ -1,6 +1,7 @@
 import type { GridColDef, GridPaginationModel } from '@mui/x-data-grid';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FROM_LIST_STATE } from '../../../hooks';
 import { Pencil, ShieldCheck, ShieldX, Star, UserX } from 'lucide-react';
 import { Badge, DataTable, EmptyState, IdentityCell, RowActions } from '../../../common/components/ui';
 import type { Delivery } from '../../../services/api/types';
@@ -11,6 +12,8 @@ interface Props {
   total: number;
   loading: boolean;
   pagination: GridPaginationModel;
+  /** Hay filtros activos: un vacío significa "sin resultados". */
+  filtered?: boolean;
   onPaginationChange: (model: GridPaginationModel) => void;
   /** Sin él no se ofrece (p. ej. superadmin sin distribuidora elegida). */
   onEdit?: (delivery: Delivery) => void;
@@ -25,6 +28,7 @@ export const DeliveriesTable = ({
   total,
   loading,
   pagination,
+  filtered = false,
   onPaginationChange,
   onEdit,
   onDelete,
@@ -84,7 +88,7 @@ export const DeliveriesTable = ({
         renderCell: ({ row }) => (
           <RowActions
             rowLabel={row.user?.full_name ?? 'chofer'}
-            onView={() => navigate(`/deliveries/details/${row.delivery_id}`)}
+            onView={() => navigate(`/deliveries/details/${row.delivery_id}`, { state: FROM_LIST_STATE })}
             actions={[
               ...(onToggleValidated
                 ? [
@@ -117,12 +121,20 @@ export const DeliveriesTable = ({
       getRowId={(row) => row.delivery_id}
       loading={loading}
       pagination={{ model: pagination, onChange: onPaginationChange, total }}
-      onRowClick={(row) => navigate(`/deliveries/details/${row.delivery_id}`)}
+      onRowClick={(row) => navigate(`/deliveries/details/${row.delivery_id}`, { state: FROM_LIST_STATE })}
       empty={
-        <EmptyState
-          title="No hay choferes"
-          description="Los choferes aparecen cuando se registran en la app o cuando los das de alta."
-        />
+        filtered ? (
+          <EmptyState
+            illustration="search"
+            title="Sin resultados"
+            description="Ningún chofer coincide con los filtros elegidos."
+          />
+        ) : (
+          <EmptyState
+            title="No hay choferes"
+            description="Los choferes aparecen cuando se registran en la app o cuando los das de alta."
+          />
+        )
       }
     />
   );

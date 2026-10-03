@@ -77,10 +77,27 @@ src/
   `muted`, `outline`, `bg`, `surface`, `success`, `danger`, `warn`, `info`,
   y las escalas `llama`, `gas`, `tinta`). Ni `indigo-600` ni `#f43f5e`:
   `npm run colors` falla si aparece uno.
-- **Kit:** `PageHeader` (un solo `h1` por página), `Card`, `Button`,
+- **Kit:** `PageHeader` (un solo `h1` por página; en las fichas, con `breadcrumbs`
+  en lugar de un botón «volver» suelto), `Card`, `Button`,
   `IconButton` (con `label` obligatorio), `Badge` (con `labelOf` de
   `statusLabels`), `DataTable`, `Modal`, `SearchInput`, `EmptyState`,
   `LoadingState`, `ErrorState`.
+- **Patrones de listado:** `Tabs` con contador (la cantidad sale de la API:
+  `X-Total-Count` con una página mínima, o los endpoints de stats; sin dato es un
+  guion, nunca 0), `FilterChips` con `resultCount` («N resultados» y limpiar),
+  `AnalyticSummary` (anillo por estado) sobre Pedidos y Reclamos, y los filtros en
+  la URL con `useUrlParam` / `useUrlParams` (varios de golpe, para que no se pisen).
+  Un vacío con filtros activos es «Sin resultados» (`illustration="search"`), no el
+  vacío del recurso.
+- **Detalle sin salir de la lista:** `Drawer` (panel lateral, `aria-modal`, foco
+  atrapado, Esc) para Reclamos, Incidencias, Auditoría y Reservas; `Modal` queda para
+  formularios y confirmaciones.
+- **Fichas:** `PageHeader` + `PageCover` (portada, avatar, KPIs) + `ProfileTabs` con la
+  pestaña en la URL (`useProfileTab`). Mientras carga, `ProfileSkeleton` /
+  `DetailSkeleton`; en tablas, `TableSkeleton` / `ListSkeleton` (no el spinner).
+- **Selección múltiple:** `DataTable` con `selection` + `SelectionBar`. La API no tiene
+  endpoints en lote: la acción corre una llamada por fila con `runBatch`
+  (`utils/batch`), sin cortar en la primera falla, y se resume «X de N … Fallaron M».
 - **Formato:** moneda y fechas con `utils/format` (es-AR). Estados con
   `utils/statusLabels`: nunca un `switch` de colores dentro de un componente.
 - **Avisos:** `notify.success/error` (toasts) y `confirm({ danger: true })`

@@ -1,21 +1,44 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import BlockIcon from '@mui/icons-material/Block';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import LockOpenOutlinedIcon from '@mui/icons-material/LockOpenOutlined';
-import { Button, ErrorState, IconButton, LoadingState } from '../../common/components/ui';
-import { usePermissions } from '../../hooks';
+import {
+  Avatar,
+  Badge,
+  Button,
+  ErrorState,
+  PageCover,
+  PageHeader,
+  ProfileSkeleton,
+  ProfileTabPanel,
+  ProfileTabs,
+  type CoverStat,
+  type ProfileTabItem,
+} from '../../common/components/ui';
+import { useBackToList, usePermissions, useProfileTab } from '../../hooks';
 import { useBlockUser, useDeleteUser, useUser } from '../../services/queries/users';
 import { confirm, notify } from '../../utils/notifications';
 import { UserEditModal } from './components/UserEditModal';
-import { UserProfileCard } from './components/details/UserProfileCard';
+import { UserAccountCard } from './components/details/UserAccountCard';
 import { UserRoleDetails } from './components/details/UserRoleDetails';
+import { roleLabel } from './roleLabel';
+import { formatDate } from '../../utils/format';
+
+const TABS: ProfileTabItem[] = [
+  { key: 'account', label: 'Cuenta' },
+  { key: 'role', label: 'Rol' },
+];
 
 export const UserDetails = () => {
   const { leadId } = useParams<{ leadId: string }>();
   const navigate = useNavigate();
+  const goBack = useBackToList('/users');
+  const [tab, setTab] = useProfileTab(
+    TABS.map((t) => t.key),
+    'account',
+  );
   const { canManageCustomerAccounts } = usePermissions();
   const { data: user, isPending, error, refetch } = useUser(leadId);
   const [editing, setEditing] = useState(false);
@@ -60,44 +83,77 @@ export const UserDetails = () => {
     });
   };
 
+  const name = user?.full_name ?? 'Sin nombre';
+  const yesNo = (value: boolean) => (value ? 'Verificado' : 'Sin verificar');
+  const stats: CoverStat[] = user
+    ? [
+        { label: 'Usuario desde', value: formatDate(user.createdAt) },
+        { label: 'Teléfono', value: yesNo(user.phone_verified), hint: user.phone_number ?? undefined },
+        { label: 'Email', value: yesNo(user.email_verified), hint: user.email ?? undefined },
+      ]
+    : [];
+
   return (
     <div className="mx-auto max-w-5xl p-4 md:p-8">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <IconButton label="Volver a usuarios" icon={<ArrowBackIcon />} onClick={() => navigate('/users')} />
-          <h1 className="text-2xl font-bold tracking-tight text-ink">Ficha del usuario</h1>
-        </div>
-        {canManage && (
-          <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" size="sm" icon={<EditOutlinedIcon />} onClick={() => setEditing(true)}>
-              Editar cuenta
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={user?.blocked ? <LockOpenOutlinedIcon /> : <BlockIcon />}
-              onClick={() => void handleToggleBlock()}
-            >
-              {user?.blocked ? 'Desbloquear' : 'Bloquear'}
-            </Button>
-            <Button variant="danger" size="sm" icon={<DeleteOutlineIcon />} onClick={() => void handleDelete()}>
-              Dar de baja
-            </Button>
-          </div>
-        )}
-      </div>
+      <PageHeader
+        title="Ficha del usuario"
+        breadcrumbs={[{ label: 'Usuarios', to: '/users', onClick: goBack }, { label: user ? name : 'Usuario' }]}
+        actions={
+          canManage && (
+            <>
+              <Button variant="secondary" size="sm" icon={<EditOutlinedIcon />} onClick={() => setEditing(true)}>
+                Editar cuenta
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={user?.blocked ? <LockOpenOutlinedIcon /> : <BlockIcon />}
+                onClick={() => void handleToggleBlock()}
+              >
+                {user?.blocked ? 'Desbloquear' : 'Bloquear'}
+              </Button>
+              <Button variant="danger" size="sm" icon={<DeleteOutlineIcon />} onClick={() => void handleDelete()}>
+                Dar de baja
+              </Button>
+            </>
+          )
+        }
+      />
 
       {isPending ? (
-        <LoadingState />
+        <ProfileSkeleton />
       ) : error || !user ? (
         <ErrorState error={error} resource="El usuario" onRetry={() => void refetch()} />
       ) : (
-        <div className="grid gap-6 lg:grid-cols-3">
-          <UserProfileCard user={user} />
-          <div className="lg:col-span-2">
+        <>
+          <PageCover
+            avatar={
+              user.selfie ? (
+                <img src={user.selfie} alt="" className="h-14 w-14 rounded-full object-cover" />
+              ) : (
+                <Avatar name={name} size="lg" />
+              )
+            }
+            title={name}
+            subtitle={user.email ?? undefined}
+            badges={
+              <>
+                <Badge label={roleLabel(user.role?.type)} />
+                {user.blocked && <Badge label={{ text: 'Bloqueado', tone: 'danger' }} />}
+              </>
+            }
+            stats={stats}
+          >
+            <ProfileTabs tabs={TABS} value={tab} onChange={setTab} />
+          </PageCover>
+
+          <ProfileTabPanel tabKey="account" value={tab}>
+            <UserAccountCard user={user} />
+          </ProfileTabPanel>
+          <ProfileTabPanel tabKey="role" value={tab}>
             <UserRoleDetails user={user} />
-          </div>
-        </div>
+          </ProfileTabPanel>
+        </>
       )}
 
       <UserEditModal open={editing} onClose={() => setEditing(false)} user={user ?? null} />

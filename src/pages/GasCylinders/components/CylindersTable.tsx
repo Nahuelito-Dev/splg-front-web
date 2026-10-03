@@ -11,6 +11,8 @@ interface Props {
   rows: GasCylinder[];
   total: number;
   loading: boolean;
+  /** Hay filtros activos: un vacío significa "sin resultados". */
+  filtered?: boolean;
   pagination: GridPaginationModel;
   onPaginationChange: (model: GridPaginationModel) => void;
   /** Sin él no se muestra el botón (p. ej. superadmin sin distribuidora elegida). */
@@ -20,6 +22,7 @@ interface Props {
 }
 
 export const CylindersTable = ({
+  filtered = false,
   rows,
   total,
   loading,
@@ -95,10 +98,18 @@ export const CylindersTable = ({
       pagination={{ model: pagination, onChange: onPaginationChange, total }}
       onRowClick={(row) => navigate(`/cylinders/details/${row.gas_cylinder_id}`)}
       empty={
-        <EmptyState
-          title="No hay productos"
-          description="Cargá el primer tipo de garrafa que vende la distribuidora."
-        />
+        filtered ? (
+          <EmptyState
+            illustration="search"
+            title="Sin resultados"
+            description="Ningún producto coincide con los filtros elegidos."
+          />
+        ) : (
+          <EmptyState
+            title="No hay productos"
+            description="Cargá el primer tipo de garrafa que vende la distribuidora."
+          />
+        )
       }
     />
   );

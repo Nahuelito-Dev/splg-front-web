@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft } from 'lucide-react';
-import { Button, ErrorState, LoadingState } from '../../common/components/ui';
+import { DetailSkeleton, ErrorState, PageHeader } from '../../common/components/ui';
+import { useBackToList } from '../../hooks';
 import { useSocketContext } from '../../context/useSocketContext';
 import { ORDER_SOCKET_EVENTS, type OrderSocketEventName } from '../../hooks/useSocket';
 import { useOrder } from '../../services/queries/orders';
@@ -27,7 +27,7 @@ interface OrderSocketPayload {
  */
 export const OrderDetails = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+  const goBack = useBackToList('/orders');
   const queryClient = useQueryClient();
   const { isOnline, subscribe } = useSocketContext();
   const { data: order, isPending, error, refetch } = useOrder(id, { refetchInterval: isOnline ? false : 20_000 });
@@ -45,18 +45,13 @@ export const OrderDetails = () => {
   return (
     <div className="mx-auto max-w-6xl p-4 md:p-8">
       {isPending ? (
-        <LoadingState />
+        <DetailSkeleton />
       ) : error || !order ? (
         <>
-          <Button
-            variant="ghost"
-            size="sm"
-            icon={<ArrowLeft />}
-            className="-ml-2 mb-3"
-            onClick={() => navigate('/orders')}
-          >
-            Volver a pedidos
-          </Button>
+          <PageHeader
+            title="Pedido"
+            breadcrumbs={[{ label: 'Pedidos', to: '/orders', onClick: goBack }, { label: 'No disponible' }]}
+          />
           <ErrorState error={error} resource="El pedido" onRetry={() => void refetch()} />
         </>
       ) : (

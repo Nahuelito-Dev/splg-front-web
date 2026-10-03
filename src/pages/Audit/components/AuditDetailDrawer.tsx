@@ -1,4 +1,4 @@
-import { Badge, Modal } from '../../../common/components/ui';
+import { Badge, Drawer } from '../../../common/components/ui';
 import type { AsientoDeAuditoria } from '../../../services/api/types';
 import { formatDateTime } from '../../../utils/format';
 import { AUDIT_RESULT, labelOf } from '../../../utils/statusLabels';
@@ -16,11 +16,11 @@ const Field = ({ label, value }: { label: string; value: string }) => (
 );
 
 /** Detalle de un asiento de auditoría, con los cambios que mandó la operación. */
-export const AuditDetailModal = ({ entry, onClose }: Props) => (
-  <Modal open={Boolean(entry)} onClose={onClose} title="Detalle de la operación" size="md">
+export const AuditDetailDrawer = ({ entry, onClose }: Props) => (
+  <Drawer open={Boolean(entry)} onClose={onClose} title="Detalle de la operación" size="lg">
     {entry && (
       <div className="space-y-5">
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-2 gap-4">
           <Field label="Fecha" value={formatDateTime(entry.createdAt)} />
           <div>
             <p className="text-xs font-semibold uppercase text-muted">Resultado</p>
@@ -57,5 +57,5 @@ export const AuditDetailModal = ({ entry, onClose }: Props) => (
         </div>
       </div>
     )}
-  </Modal>
+  </Drawer>
 );

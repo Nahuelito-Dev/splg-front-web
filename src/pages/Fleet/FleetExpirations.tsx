@@ -4,7 +4,7 @@ import {
   Card,
   EmptyState,
   ErrorState,
-  LoadingState,
+  TableSkeleton,
   PageHeader,
   SearchInput,
   Select,
@@ -101,7 +101,7 @@ export const FleetExpirations = () => {
           {error ? (
             <ErrorState error={error} resource="Los vencimientos" onRetry={() => void refetch()} />
           ) : isPending ? (
-            <LoadingState />
+            <TableSkeleton columns={5} />
           ) : (
             <>
               <p className="text-sm text-muted" aria-live="polite">

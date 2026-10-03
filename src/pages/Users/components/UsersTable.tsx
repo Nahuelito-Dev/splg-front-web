@@ -1,6 +1,7 @@
 import type { GridColDef, GridPaginationModel } from '@mui/x-data-grid';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FROM_LIST_STATE } from '../../../hooks';
 import { Lock, LockOpen, Pencil, UserX } from 'lucide-react';
 import { Badge, DataTable, EmptyState, IdentityCell, RowActions } from '../../../common/components/ui';
 import type { User } from '../../../services/api/types';
@@ -10,6 +11,8 @@ interface Props {
   rows: User[];
   total: number;
   loading: boolean;
+  /** Hay filtros activos: un vacío significa "sin resultados". */
+  filtered?: boolean;
   pagination: GridPaginationModel;
   onPaginationChange: (model: GridPaginationModel) => void;
   /** La cuenta de un cliente la administra sólo el administrador general. */
@@ -23,6 +26,7 @@ export const UsersTable = ({
   rows,
   total,
   loading,
+  filtered = false,
   pagination,
   onPaginationChange,
   canManageCustomerAccounts,
@@ -81,7 +85,7 @@ export const UsersTable = ({
           return (
             <RowActions
               rowLabel={row.full_name ?? 'usuario'}
-              onView={() => navigate(`/users/details/${row.user_id}`)}
+              onView={() => navigate(`/users/details/${row.user_id}`, { state: FROM_LIST_STATE })}
               actions={
                 canManage
                   ? [
@@ -111,8 +115,18 @@ export const UsersTable = ({
       getRowId={(row) => row.user_id}
       loading={loading}
       pagination={{ model: pagination, onChange: onPaginationChange, total }}
-      onRowClick={(row) => navigate(`/users/details/${row.user_id}`)}
-      empty={<EmptyState title="No hay usuarios" description="Todavía no hay usuarios registrados." />}
+      onRowClick={(row) => navigate(`/users/details/${row.user_id}`, { state: FROM_LIST_STATE })}
+      empty={
+        filtered ? (
+          <EmptyState
+            illustration="search"
+            title="Sin resultados"
+            description="Ningún usuario coincide con los filtros elegidos."
+          />
+        ) : (
+          <EmptyState title="No hay usuarios" description="Todavía no hay usuarios registrados." />
+        )
+      }
     />
   );
 };

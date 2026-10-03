@@ -1,4 +1,4 @@
-import { Avatar, Badge, Card, ErrorState, LoadingState, PageHeader } from '../../common/components/ui';
+import { Avatar, Badge, Card, DetailSkeleton, ErrorState, PageHeader } from '../../common/components/ui';
 import { useAppDispatch, useAppSelector } from '../../hooks';
 import { startLogOut } from '../../store/auth/thunks';
 import { useMyAccount } from '../../services/queries/users';
@@ -18,7 +18,7 @@ export const Account = () => {
     <div className="mx-auto max-w-3xl p-4 md:p-8">
       <PageHeader title="Mi cuenta" description="Tus datos de acceso al panel." />
       {isPending ? (
-        <LoadingState />
+        <DetailSkeleton />
       ) : error || !user ? (
         <ErrorState error={error} resource="Tu cuenta" onRetry={() => void refetch()} />
       ) : (

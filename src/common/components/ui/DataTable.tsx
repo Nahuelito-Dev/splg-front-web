@@ -3,6 +3,7 @@ import {
   type GridColDef,
   type GridPaginationModel,
   type GridRowParams,
+  type GridRowSelectionModel,
   type GridValidRowModel,
 } from '@mui/x-data-grid';
 import type { ReactNode } from 'react';
@@ -16,6 +17,14 @@ interface ServerPagination {
   total: number;
 }
 
+interface Selection<T> {
+  /** Ids de las filas marcadas (se conservan al paginar). */
+  ids: string[];
+  onChange: (ids: string[]) => void;
+  /** Filas que no se pueden marcar (p. ej. pedidos ya cerrados). */
+  isSelectable?: (row: T) => boolean;
+}
+
 interface Props<T extends GridValidRowModel> {
   rows: T[];
   columns: GridColDef<T>[];
@@ -27,6 +36,10 @@ interface Props<T extends GridValidRowModel> {
   rowHeight?: number;
   /** Clic en la fila: abre el detalle (además del botón "Ver detalle" de RowActions). */
   onRowClick?: (row: T) => void;
+  /** Selección múltiple con casilla por fila y en el encabezado; sin esto no hay casillas. */
+  selection?: Selection<T>;
+  /** Avisa que se cambió de página (también en la paginación local), p. ej. para soltar la selección. */
+  onPageChange?: () => void;
 }
 
 /**
@@ -42,6 +55,8 @@ export function DataTable<T extends GridValidRowModel>({
   empty,
   rowHeight = 60,
   onRowClick,
+  selection,
+  onPageChange,
 }: Props<T>) {
   return (
     <DataGrid<T>
@@ -52,6 +67,17 @@ export function DataTable<T extends GridValidRowModel>({
       autoHeight
       rowHeight={rowHeight}
       disableRowSelectionOnClick
+      {...(selection
+        ? {
+            checkboxSelection: true,
+            keepNonExistentRowsSelected: true,
+            rowSelectionModel: selection.ids,
+            onRowSelectionModelChange: (model: GridRowSelectionModel) => selection.onChange(model.map(String)),
+            isRowSelectable: selection.isSelectable
+              ? (params: GridRowParams<T>) => selection.isSelectable?.(params.row) ?? true
+              : undefined,
+          }
+        : {})}
       disableColumnMenu
       onRowClick={onRowClick ? (params: GridRowParams<T>) => onRowClick(params.row) : undefined}
       pageSizeOptions={[10, 25, 50]}
@@ -59,10 +85,16 @@ export function DataTable<T extends GridValidRowModel>({
         ? {
             paginationMode: 'server' as const,
             paginationModel: pagination.model,
-            onPaginationModelChange: pagination.onChange,
+            onPaginationModelChange: (model: GridPaginationModel) => {
+              pagination.onChange(model);
+              onPageChange?.();
+            },
             rowCount: pagination.total,
           }
-        : { initialState: { pagination: { paginationModel: { pageSize: 10, page: 0 } } } })}
+        : {
+            initialState: { pagination: { paginationModel: { pageSize: 10, page: 0 } } },
+            onPaginationModelChange: () => onPageChange?.(),
+          })}
       slots={{
         noRowsOverlay: () => empty ?? <EmptyState title="No hay datos para mostrar" />,
         loadingOverlay: () => <TableSkeleton columns={columns.length} />,
@@ -81,6 +113,8 @@ export function DataTable<T extends GridValidRowModel>({
         '& .MuiDataGrid-row': { cursor: onRowClick ? 'pointer' : 'default' },
         '& .MuiDataGrid-columnHeader:first-of-type, & .MuiDataGrid-cell:first-of-type': { paddingLeft: '18px' },
         '& .MuiDataGrid-cell': { borderColor: theme.palette.divider, display: 'flex', alignItems: 'center' },
+        // Con la tabla vacía (o cargando sin filas) el DataGrid autoajustado deja una franja mínima: el vacío ilustrado no entra.
+        '& .MuiDataGrid-overlayWrapper': { minHeight: 280 },
         '& .MuiDataGrid-footerContainer': { borderTopColor: theme.palette.divider },
         '& .MuiDataGrid-cell:focus, & .MuiDataGrid-columnHeader:focus, & .MuiDataGrid-cell:focus-within': {
           outline: 'none',

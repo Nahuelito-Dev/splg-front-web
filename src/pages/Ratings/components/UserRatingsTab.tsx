@@ -1,11 +1,11 @@
-import { ErrorState, LoadingState } from '../../../common/components/ui';
-import { resolveRatingStats } from '../../Ratings/ratingStats';
-import { RatingHistoryList } from '../../Ratings/components/RatingHistoryList';
-import { RatingSummaryCard } from '../../Ratings/components/RatingSummaryCard';
+import { Card, ErrorState, TableSkeleton } from '../../../common/components/ui';
+import { resolveRatingStats } from '../ratingStats';
+import { RatingHistoryList } from './RatingHistoryList';
+import { RatingSummaryCard } from './RatingSummaryCard';
 import { useRatingHistory, useRatingSummary } from '../../../services/queries/ratings';
 
-/** Pestaña "Calificaciones": lo que recibió este chofer de sus clientes al finalizar cada pedido. */
-export const DeliveryRatingsTab = ({ userId, name }: { userId: string; name?: string | null }) => {
+/** Pestaña "Calificaciones" de una ficha: lo que recibió esta persona (chofer o cliente) al finalizar cada pedido. */
+export const UserRatingsTab = ({ userId, name }: { userId: string; name?: string | null }) => {
   const summaryQuery = useRatingSummary(userId);
   const historyQuery = useRatingHistory(userId);
   const { data: summary, isPending: loadingSummary } = summaryQuery;
@@ -25,7 +25,13 @@ export const DeliveryRatingsTab = ({ userId, name }: { userId: string; name?: st
       />
     );
   }
-  if (loadingSummary || loadingHistory) return <LoadingState label="Cargando calificaciones…" />;
+  if (loadingSummary || loadingHistory) {
+    return (
+      <Card>
+        <TableSkeleton rows={3} columns={3} />
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">

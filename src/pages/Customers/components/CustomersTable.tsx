@@ -11,6 +11,8 @@ interface Props {
   rows: Customer[];
   total: number;
   loading: boolean;
+  /** Hay filtros activos: un vacío significa "sin resultados". */
+  filtered?: boolean;
   pagination: GridPaginationModel;
   onPaginationChange: (model: GridPaginationModel) => void;
   /** Sin permiso para administrar cuentas (admin de empresa) no se muestran. */
@@ -18,7 +20,16 @@ interface Props {
   onDelete?: (customer: Customer) => void;
 }
 
-export const CustomersTable = ({ rows, total, loading, pagination, onPaginationChange, onEdit, onDelete }: Props) => {
+export const CustomersTable = ({
+  rows,
+  total,
+  loading,
+  filtered = false,
+  pagination,
+  onPaginationChange,
+  onEdit,
+  onDelete,
+}: Props) => {
   const navigate = useNavigate();
   const columns = useMemo<GridColDef<Customer>[]>(
     () => [
@@ -88,10 +99,18 @@ export const CustomersTable = ({ rows, total, loading, pagination, onPaginationC
       pagination={{ model: pagination, onChange: onPaginationChange, total }}
       onRowClick={(row) => navigate(`/customers/details/${row.customer_id}`, { state: FROM_LIST_STATE })}
       empty={
-        <EmptyState
-          title="No hay clientes"
-          description="Los clientes aparecen cuando se registran en la app o cuando los das de alta."
-        />
+        filtered ? (
+          <EmptyState
+            illustration="search"
+            title="Sin resultados"
+            description="Ningún cliente coincide con los filtros elegidos."
+          />
+        ) : (
+          <EmptyState
+            title="No hay clientes"
+            description="Los clientes aparecen cuando se registran en la app o cuando los das de alta."
+          />
+        )
       }
     />
   );

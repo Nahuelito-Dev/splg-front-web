@@ -10,3 +10,14 @@ export const TONE_CLASSES: Record<Tone, string> = {
   primary: 'bg-primary-soft text-primary-strong',
   accent: 'bg-accent-soft text-on-accent',
 };
+
+/** Color de texto/trazo de cada tono (anillos y marcas que se pintan con `currentColor`). */
+export const TONE_TEXT: Record<Tone, string> = {
+  neutral: 'text-faint',
+  info: 'text-info',
+  warn: 'text-warn',
+  success: 'text-success',
+  danger: 'text-danger',
+  primary: 'text-primary',
+  accent: 'text-accent',
+};

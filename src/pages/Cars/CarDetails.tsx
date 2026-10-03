@@ -1,29 +1,56 @@
 import { useState } from 'react';
 import type { GridPaginationModel } from '@mui/x-data-grid';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, PencilLine, Trash2 } from 'lucide-react';
-import { Button, Card, EmptyState, ErrorState, IconButton, LoadingState } from '../../common/components/ui';
-import { usePermissions } from '../../hooks';
+import { PencilLine, Trash2 } from 'lucide-react';
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  ErrorState,
+  PageCover,
+  PageHeader,
+  ProfileSkeleton,
+  ProfileTabPanel,
+  ProfileTabs,
+  type CoverStat,
+  type ProfileTabItem,
+} from '../../common/components/ui';
+import { useBackToList, usePermissions, useProfileTab } from '../../hooks';
 import { useCar, useDeleteCar } from '../../services/queries/cars';
 import { useCarAssignments } from '../../services/queries/fleet';
 import { confirm, notify } from '../../utils/notifications';
 import { FleetDocuments } from '../Fleet/components/FleetDocuments';
 import { VehicleAssignmentHistoryTable } from '../Fleet/components/VehicleAssignmentHistoryTable';
 import { CarFormModal } from './components/CarFormModal';
-import { CarProfileCard } from './components/CarProfileCard';
+import { CarSummary } from './components/CarSummary';
+import { carIcon } from './components/carIcon';
 import { CurrentDriverCard } from './components/CurrentDriverCard';
+
+const TABS: ProfileTabItem[] = [
+  { key: 'summary', label: 'Resumen' },
+  { key: 'documents', label: 'Documentación' },
+  { key: 'history', label: 'Historial de choferes' },
+];
 
 export const CarDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const goBack = useBackToList('/cars');
   const { canWrite, writeHint, needsDistributor } = usePermissions();
   const { data: car, isPending, error, refetch } = useCar(id);
   const deleteCar = useDeleteCar();
   const [editing, setEditing] = useState(false);
+  const [tab, setTab] = useProfileTab(
+    TABS.map((t) => t.key),
+    'summary',
+  );
   const [historyPagination, setHistoryPagination] = useState<GridPaginationModel>({ page: 0, pageSize: 10 });
   // Sin distribuidora elegida (super_admin sin "Ver como") no se dispara: la API la
   // rechaza con un 400 técnico ("Falta la distribuidora...") que no hay que mostrar.
   const { data: history, isFetching: isHistoryFetching } = useCarAssignments(id, historyPagination, !needsDistributor);
+  const { data: current } = useCarAssignments(id, { page: 0, pageSize: 1 }, !needsDistributor);
+  const inUseBy = current?.rows[0]?.releasedAt === null ? current.rows[0] : undefined;
 
   const handleDelete = async () => {
     if (!car) return;
@@ -43,72 +70,109 @@ export const CarDetails = () => {
     });
   };
 
+  const title = car ? [car.car_brand, car.car_model].filter(Boolean).join(' ') || 'Vehículo' : 'Vehículo';
+  const Icon = carIcon(car?.type_car ?? null);
+  const stats: CoverStat[] = [
+    { label: 'Año', value: car?.car_year ? String(car.car_year) : '—' },
+    { label: 'Capacidad', value: car?.car_capacity == null ? '—' : `${car.car_capacity} kg` },
+    {
+      label: 'En uso por',
+      value: needsDistributor ? '—' : (inUseBy?.driverName ?? 'Libre'),
+      hint: needsDistributor ? 'Elegí una distribuidora' : undefined,
+    },
+  ];
+
   return (
     <div className="mx-auto max-w-5xl p-4 md:p-8">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <IconButton label="Volver a vehículos" icon={<ArrowLeft />} onClick={() => navigate('/cars')} />
-          <h1 className="text-2xl font-bold tracking-tight text-ink">Ficha del vehículo</h1>
-        </div>
-        {car && (
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={<PencilLine />}
-              disabled={!canWrite}
-              title={writeHint}
-              onClick={() => setEditing(true)}
-            >
-              Editar
-            </Button>
-            <Button
-              variant="danger"
-              size="sm"
-              icon={<Trash2 />}
-              disabled={!canWrite}
-              title={writeHint}
-              onClick={() => void handleDelete()}
-            >
-              Eliminar
-            </Button>
-          </div>
-        )}
-      </div>
+      <PageHeader
+        title="Ficha del vehículo"
+        breadcrumbs={[{ label: 'Vehículos', to: '/cars', onClick: goBack }, { label: car ? title : 'Vehículo' }]}
+        actions={
+          car && (
+            <>
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={<PencilLine />}
+                disabled={!canWrite}
+                title={writeHint}
+                onClick={() => setEditing(true)}
+              >
+                Editar
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                icon={<Trash2 />}
+                disabled={!canWrite}
+                title={writeHint}
+                onClick={() => void handleDelete()}
+              >
+                Eliminar
+              </Button>
+            </>
+          )
+        }
+      />
 
       {isPending ? (
-        <LoadingState />
+        <ProfileSkeleton />
       ) : error || !car ? (
         <ErrorState error={error} resource="El vehículo" onRetry={() => void refetch()} />
       ) : (
-        <div className="space-y-6">
-          <CarProfileCard car={car} />
-          <CurrentDriverCard carId={car.car_id} />
-          <FleetDocuments
-            subject="vehicle"
-            ownerId={car.car_id}
-            carType={car.type_car}
-            canWrite={canWrite}
-            writeHint={writeHint}
-          />
-          {needsDistributor ? (
-            <Card className="p-6">
-              <EmptyState
-                title="Elegí una distribuidora"
-                description="Como administrador general, elegí una con «Ver como» para ver el historial de choferes."
-              />
-            </Card>
-          ) : (
-            <VehicleAssignmentHistoryTable
-              rows={history?.rows ?? []}
-              total={history?.total ?? 0}
-              loading={isHistoryFetching}
-              pagination={historyPagination}
-              onPaginationChange={setHistoryPagination}
-              variant="car"
+        <>
+          <PageCover
+            avatar={
+              <span
+                aria-hidden="true"
+                className="grid h-14 w-14 place-items-center rounded-full bg-primary-soft text-primary-strong [&_svg]:h-6 [&_svg]:w-6"
+              >
+                <Icon strokeWidth={1.8} />
+              </span>
+            }
+            title={title}
+            subtitle={<span className="font-mono uppercase tracking-wide">{car.car_patent ?? 'Sin patente'}</span>}
+            badges={car.type_car ? <Badge label={{ text: car.type_car, tone: 'neutral' }} /> : undefined}
+            stats={stats}
+          >
+            <ProfileTabs tabs={TABS} value={tab} onChange={setTab} />
+          </PageCover>
+
+          <ProfileTabPanel tabKey="summary" value={tab}>
+            <div className="space-y-6">
+              <CarSummary car={car} />
+              <CurrentDriverCard carId={car.car_id} />
+            </div>
+          </ProfileTabPanel>
+          <ProfileTabPanel tabKey="documents" value={tab}>
+            <FleetDocuments
+              subject="vehicle"
+              ownerId={car.car_id}
+              carType={car.type_car}
+              canWrite={canWrite}
+              writeHint={writeHint}
             />
-          )}
-        </div>
+          </ProfileTabPanel>
+          <ProfileTabPanel tabKey="history" value={tab}>
+            {needsDistributor ? (
+              <Card className="p-6">
+                <EmptyState
+                  title="Elegí una distribuidora"
+                  description="Como administrador general, elegí una con «Ver como» para ver el historial de choferes."
+                />
+              </Card>
+            ) : (
+              <VehicleAssignmentHistoryTable
+                rows={history?.rows ?? []}
+                total={history?.total ?? 0}
+                loading={isHistoryFetching}
+                pagination={historyPagination}
+                onPaginationChange={setHistoryPagination}
+                variant="car"
+              />
+            )}
+          </ProfileTabPanel>
+        </>
       )}
 
       <CarFormModal open={editing} onClose={() => setEditing(false)} car={car ?? null} fixedUserId={car?.user_id} />

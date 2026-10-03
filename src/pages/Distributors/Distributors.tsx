@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AddBusinessIcon from '@mui/icons-material/AddBusiness';
-import { Button, Card, ErrorState, LoadingState, PageHeader } from '../../common/components/ui';
+import { Button, Card, ErrorState, PageHeader, TableSkeleton } from '../../common/components/ui';
 import { FROM_LIST_STATE } from '../../hooks';
 import { activeDistributor } from '../../services/api/activeDistributor';
 import type { Distributor } from '../../services/api/types';
@@ -55,7 +55,7 @@ export const Distributors = () => {
 
       <Card>
         {isLoading ? (
-          <LoadingState />
+          <TableSkeleton columns={4} />
         ) : error ? (
           <ErrorState error={error} resource="Las empresas" onRetry={() => void refetch()} />
         ) : (
