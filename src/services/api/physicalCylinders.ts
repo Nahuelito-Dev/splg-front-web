@@ -1,4 +1,4 @@
-import { http } from './httpClient';
+import { http, toPage, toQuery, type Page, type PageParams } from './httpClient';
 import type {
   AssignCylindersBody,
   CreateCylinderBody,
@@ -14,11 +14,20 @@ import type {
  * catálogo, en `gasCylinders.ts`).
  */
 
-/** GET /cylinders: los envases de la distribuidora, opcionalmente filtrados por estado. */
-export const listCylinders = async (state?: Cylinder['state']): Promise<Cylinder[]> => {
-  const { data } = await http.get<Cylinder[]>('/cylinders', { params: { state } });
-  return data;
-};
+export interface CylinderFilters {
+  state?: Cylinder['state'];
+  /** Los envases que salieron en este pedido. */
+  orderId?: string;
+  /** Los que tiene este cliente: es el `user_id` del cliente, no su `customer_id`. */
+  customerUserId?: string;
+}
+
+/**
+ * GET /cylinders: los envases de la distribuidora con filtros (estado, pedido, cliente). Con `params` pagina en el
+ * servidor (limit/offset, total en X-Total-Count); sin `params` trae todos los que cumplen el filtro.
+ */
+export const listCylinders = async (filters: CylinderFilters = {}, params?: PageParams): Promise<Page<Cylinder>> =>
+  toPage(await http.get<Cylinder[]>('/cylinders', { params: { ...filters, ...(params ? toQuery(params) : {}) } }));
 
 /** GET /cylinders/:id: un envase puntual (404 si no existe o es de otra distribuidora). */
 export const getCylinder = async (id: string): Promise<Cylinder> => {

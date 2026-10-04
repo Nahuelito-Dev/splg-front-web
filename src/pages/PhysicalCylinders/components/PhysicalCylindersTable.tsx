@@ -1,14 +1,18 @@
-import type { GridColDef } from '@mui/x-data-grid';
+import type { GridColDef, GridPaginationModel } from '@mui/x-data-grid';
 import { useMemo } from 'react';
 import { ArrowRightLeft, Cylinder as CylinderIcon } from 'lucide-react';
 import { Badge, DataTable, EmptyState, IdentityCell, RowActions } from '../../../common/components/ui';
 import type { Cylinder } from '../../../services/api/types';
-import { formatCurrency } from '../../../utils/format';
+import { formatCurrency, formatDate } from '../../../utils/format';
 import { CYLINDER_STATE, labelOf } from '../../../utils/statusLabels';
 
 interface Props {
   rows: Cylinder[];
+  /** Total sin paginar (de la API). */
+  total: number;
   loading: boolean;
+  pagination: GridPaginationModel;
+  onPaginationChange: (model: GridPaginationModel) => void;
   /** Sin él no se muestra el botón (p. ej. superadmin sin distribuidora elegida). */
   onTransition?: (cylinder: Cylinder) => void;
   onView: (cylinder: Cylinder) => void;
@@ -22,7 +26,10 @@ interface Props {
 
 export const PhysicalCylindersTable = ({
   rows,
+  total,
   loading,
+  pagination,
+  onPaginationChange,
   onTransition,
   onView,
   filtered = false,
@@ -78,6 +85,13 @@ export const PhysicalCylindersTable = ({
         ),
       },
       {
+        field: 'lastMovementAt',
+        headerName: 'Último movimiento',
+        width: 160,
+        sortable: false,
+        valueGetter: ({ row }) => (row.lastMovementAt ? formatDate(row.lastMovementAt) : '—'),
+      },
+      {
         field: 'actions',
         headerName: '',
         width: 96,
@@ -103,6 +117,7 @@ export const PhysicalCylindersTable = ({
       columns={columns}
       getRowId={(row) => row.cylinder_id}
       loading={loading}
+      pagination={{ model: pagination, onChange: onPaginationChange, total }}
       onRowClick={onView}
       selection={selection}
       onPageChange={onPageChange}

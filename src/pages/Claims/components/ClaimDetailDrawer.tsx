@@ -7,6 +7,7 @@ import { formatDateTime, formatShortId } from '../../../utils/format';
 import { confirm, notify } from '../../../utils/notifications';
 import { CLAIM_STATUS, labelOf } from '../../../utils/statusLabels';
 import { ClaimHistory } from './ClaimHistory';
+import { ClaimPhoto } from './ClaimPhoto';
 
 interface Props {
   open: boolean;
@@ -172,17 +173,7 @@ export const ClaimDetailDrawer = ({ open, onClose, claim }: Props) => {
           ]}
         />
 
-        {claim.photoUrl ? (
-          <img
-            src={claim.photoUrl}
-            alt="Evidencia del reclamo"
-            className="h-56 w-full rounded-xl border border-outline object-cover"
-          />
-        ) : (
-          <p className="rounded-xl border border-dashed border-outline p-4 text-center text-sm text-muted">
-            Sin foto adjunta
-          </p>
-        )}
+        <ClaimPhoto claim={claim} open={open} canOperate={canOperate} operateHint={operateHint} />
 
         <div>
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Historial</h3>

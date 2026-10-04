@@ -9,6 +9,7 @@ import {
   useUploadFleetTaskAttachment,
 } from '../../../services/queries/fleet';
 import { useUserNames } from '../../../services/queries/userNames';
+import { openFileSource, saveFileSource } from '../../../utils/fileSource';
 import { formatDateTime } from '../../../utils/format';
 import { confirm, notify } from '../../../utils/notifications';
 import { FleetAttachmentDetailModal } from './FleetAttachmentDetailModal';
@@ -22,18 +23,6 @@ interface Props {
 }
 
 type ViewMode = 'list' | 'grid';
-
-/** Dispara la descarga de un blob en el navegador, con el nombre original del adjunto. */
-const saveBlob = (blob: Blob, filename: string) => {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-};
 
 export const FleetTaskAttachments = ({ taskId, canWrite }: Props) => {
   const fileInput = useRef<HTMLInputElement>(null);
@@ -107,13 +96,10 @@ export const FleetTaskAttachments = ({ taskId, canWrite }: Props) => {
     download.mutate(
       { taskId, attachmentId: attachment.attachmentId },
       {
-        onSuccess: (blob) => {
-          const url = URL.createObjectURL(blob);
-          const win = window.open(url, '_blank');
-          if (!win) notify.error(new Error('El navegador bloqueó la ventana: habilitá los popups para verlo.'));
-          // No se revoca al toque: la pestaña nueva todavía tiene que cargar el blob. Un
-          // minuto es de sobra para eso y no deja la URL viva para siempre.
-          setTimeout(() => URL.revokeObjectURL(url), 60_000);
+        onSuccess: (source) => {
+          if (!openFileSource(source)) {
+            notify.error(new Error('El navegador bloqueó la ventana: habilitá los popups para verlo.'));
+          }
         },
         onError: notify.error,
         onSettled: () => setPendingId(null),
@@ -126,7 +112,7 @@ export const FleetTaskAttachments = ({ taskId, canWrite }: Props) => {
     download.mutate(
       { taskId, attachmentId: attachment.attachmentId },
       {
-        onSuccess: (blob) => saveBlob(blob, attachment.originalName),
+        onSuccess: (source) => saveFileSource(source, attachment.originalName),
         onError: notify.error,
         onSettled: () => setPendingId(null),
       },

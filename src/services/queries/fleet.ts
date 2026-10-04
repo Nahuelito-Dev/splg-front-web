@@ -6,7 +6,7 @@ import {
   createFleetPlan,
   createFleetTask,
   deleteFleetTaskAttachment,
-  downloadFleetTaskAttachment,
+  getFleetTaskAttachmentFile,
   getCarDocuments,
   getDriverDocuments,
   getFleetExpirations,
@@ -147,11 +147,11 @@ export const useDeleteFleetTaskAttachment = () => {
   });
 };
 
-/** No cachea nada: dispara la descarga del archivo cuando se la pide. */
+/** No cachea nada (la URL firmada vence): pide el archivo cuando se lo necesita, en URL firmada o en blob. */
 export const useDownloadFleetTaskAttachment = () =>
   useMutation({
     mutationFn: ({ taskId, attachmentId }: { taskId: string; attachmentId: string }) =>
-      downloadFleetTaskAttachment(taskId, attachmentId),
+      getFleetTaskAttachmentFile(taskId, attachmentId),
   });
 
 /** El vehículo en uso de un chofer (`null` si no tiene ninguno). Lo usa su ficha. */

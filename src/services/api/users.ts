@@ -1,4 +1,5 @@
 import { http, toQuery, type Page, type PageParams } from './httpClient';
+import type { paths } from './schema';
 import type {
   BloqueoDeUsuario,
   CheckUserExistsBody,
@@ -9,10 +10,13 @@ import type {
   UsuarioExiste,
 } from './types';
 
-/** GET /users: todos los roles, paginados y con búsqueda por término. */
-export const listUsers = async (params: PageParams, search?: string): Promise<Page<User>> => {
+/** Tipos de rol que acepta `?role=` de GET /users. */
+export type UserRoleFilter = NonNullable<NonNullable<paths['/api/users']['get']['parameters']['query']>['role']>;
+
+/** GET /users: paginados, con búsqueda por término y filtro opcional por tipo de rol (total real de la API). */
+export const listUsers = async (params: PageParams, search?: string, role?: UserRoleFilter): Promise<Page<User>> => {
   const { data } = await http.get<ListadoDeUsuarios>('/users', {
-    params: { ...toQuery(params), term: search || undefined },
+    params: { ...toQuery(params), term: search || undefined, role },
   });
   return { rows: data.users, total: data.maxUsers };
 };

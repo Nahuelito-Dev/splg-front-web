@@ -18,10 +18,13 @@ import { useBackToList, usePermissions, useProfileTab } from '../../hooks';
 import type { Claim } from '../../services/api/types';
 import { useClaims } from '../../services/queries/claims';
 import { useCustomer, useCustomerOrderSample, useDeleteCustomer } from '../../services/queries/customers';
+import { useCylinders } from '../../services/queries/physicalCylinders';
 import { useUserAddresses } from '../../services/queries/userAddresses';
 import { formatCurrency, formatDate } from '../../utils/format';
 import { confirm, notify } from '../../utils/notifications';
 import { ClaimDetailDrawer } from '../Claims/components/ClaimDetailDrawer';
+import { CylinderLinksCard } from '../PhysicalCylinders/components/CylinderLinksCard';
+import { CYLINDER_CARD_LIMIT } from '../PhysicalCylinders/cylinderFilters';
 import { UserRatingsTab } from '../Ratings/components/UserRatingsTab';
 import { roleLabel } from '../Users/roleLabel';
 import { CustomerFormModal } from './components/CustomerFormModal';
@@ -32,7 +35,7 @@ import { CustomerOrders } from './components/details/CustomerOrders';
 import { CustomerSummary } from './components/details/CustomerSummary';
 import { customerStats } from './customerStats';
 
-const TAB_KEYS = ['summary', 'orders', 'addresses', 'claims', 'ratings'];
+const TAB_KEYS = ['summary', 'orders', 'addresses', 'cylinders', 'claims', 'ratings'];
 
 export const CustomerDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -48,6 +51,12 @@ export const CustomerDetails = () => {
 
   const orders = useCustomerOrderSample(customer?.user_id);
   const addresses = useUserAddresses(customer?.user_id);
+  const heldCylinders = useCylinders(
+    { customerUserId: customer?.user_id },
+    { page: 0, pageSize: CYLINDER_CARD_LIMIT },
+    '',
+    { enabled: Boolean(customer?.user_id) },
+  );
   const claimsQuery = useClaims();
   // `claim.customer_id` es el id de la cuenta (`user_id`) del cliente, no el de su perfil: se filtran los de esta ficha.
   const claims = useMemo(
@@ -93,6 +102,7 @@ export const CustomerDetails = () => {
     { key: 'summary', label: 'Resumen' },
     { key: 'orders', label: 'Pedidos', badge: stats?.ordersCount },
     { key: 'addresses', label: 'Direcciones', badge: addresses.data?.length },
+    { key: 'cylinders', label: 'Envases en su poder', badge: heldCylinders.data?.total },
     { key: 'claims', label: 'Reclamos', badge: claimsQuery.data ? claims.length : undefined },
     { key: 'ratings', label: 'Calificaciones' },
   ];
@@ -151,6 +161,16 @@ export const CustomerDetails = () => {
           </ProfileTabPanel>
           <ProfileTabPanel tabKey="addresses" value={tab}>
             <CustomerAddresses userId={customer.user_id} />
+          </ProfileTabPanel>
+          <ProfileTabPanel tabKey="cylinders" value={tab}>
+            <CylinderLinksCard
+              bare
+              title="Envases en su poder"
+              filters={{ customerUserId: customer.user_id }}
+              emptyTitle="Sin envases en su poder"
+              emptyDescription="Este cliente no tiene envases con número de serie a su nombre."
+              listSearch={`customer=${customer.user_id}`}
+            />
           </ProfileTabPanel>
           <ProfileTabPanel tabKey="claims" value={tab}>
             <CustomerClaims claims={claims} onOpen={(claim: Claim) => setClaimId(claim.claim_id)} />

@@ -53,7 +53,7 @@
         },
         "/api/users": {
             "get": {
-                "description": "`term` busca en correo, nombre y teléfono. Un admin de empresa ve sólo los usuarios de su distribuidora (H-66).",
+                "description": "`term` busca en correo, nombre y teléfono; `role` filtra por tipo de rol. Un admin de empresa ve sólo los usuarios de su distribuidora (H-66); un super admin ve todos, o los de la distribuidora que indique en `X-Distributor`.",
                 "operationId": "UsersController_findAll",
                 "parameters": [
                     {
@@ -76,15 +76,6 @@
                         }
                     },
                     {
-                        "name": "role",
-                        "required": false,
-                        "in": "query",
-                        "description": "Filtra por tipo de rol",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
                         "name": "page",
                         "required": false,
                         "in": "query",
@@ -101,6 +92,21 @@
                         "schema": {
                             "type": "string"
                         }
+                    },
+                    {
+                        "name": "role",
+                        "required": false,
+                        "in": "query",
+                        "description": "Filtra por tipo de rol, exacto: `admin` no incluye a `super_admin` (son dos valores distintos). Sin este parámetro devuelve todos. El total va en `maxUsers` y también en `X-Total-Count`.",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "admin",
+                                "super_admin",
+                                "customer",
+                                "delivery"
+                            ]
+                        }
                     }
                 ],
                 "responses": {
@@ -113,6 +119,9 @@
                                 }
                             }
                         }
+                    },
+                    "400": {
+                        "description": "role inválido"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -1033,15 +1042,6 @@
                         }
                     },
                     {
-                        "name": "role",
-                        "required": false,
-                        "in": "query",
-                        "description": "Filtra por tipo de rol",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
                         "name": "page",
                         "required": false,
                         "in": "query",
@@ -1057,6 +1057,19 @@
                         "description": "Texto a buscar",
                         "schema": {
                             "type": "string"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "required": false,
+                        "in": "query",
+                        "description": "Filtra por estado de la cuenta. Sin este parámetro devuelve todos. Los clientes dados de baja nunca se listan. Combinado con `limit=1`, el total en `X-Total-Count` sirve para el contador de cada pestaña.",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "active",
+                                "blocked"
+                            ]
                         }
                     }
                 ],
@@ -1375,15 +1388,6 @@
                         }
                     },
                     {
-                        "name": "role",
-                        "required": false,
-                        "in": "query",
-                        "description": "Filtra por tipo de rol",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
                         "name": "page",
                         "required": false,
                         "in": "query",
@@ -1474,15 +1478,6 @@
                         "schema": {
                             "default": 0,
                             "type": "number"
-                        }
-                    },
-                    {
-                        "name": "role",
-                        "required": false,
-                        "in": "query",
-                        "description": "Filtra por tipo de rol",
-                        "schema": {
-                            "type": "string"
                         }
                     },
                     {
@@ -2896,15 +2891,6 @@
                         }
                     },
                     {
-                        "name": "role",
-                        "required": false,
-                        "in": "query",
-                        "description": "Filtra por tipo de rol",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
                         "name": "page",
                         "required": false,
                         "in": "query",
@@ -2943,7 +2929,7 @@
                         "name": "from",
                         "required": false,
                         "in": "query",
-                        "description": "Fecha desde (inclusive), en formato YYYY-MM-DD",
+                        "description": "Fecha desde (inclusive), día en hora argentina, YYYY-MM-DD",
                         "schema": {
                             "format": "date",
                             "example": "2026-09-01",
@@ -2954,7 +2940,7 @@
                         "name": "to",
                         "required": false,
                         "in": "query",
-                        "description": "Fecha hasta (inclusive, en la fecha local), YYYY-MM-DD",
+                        "description": "Fecha hasta (inclusive), día en hora argentina, YYYY-MM-DD",
                         "schema": {
                             "format": "date",
                             "example": "2026-09-30",
@@ -2974,7 +2960,7 @@
                         }
                     },
                     "400": {
-                        "description": "status, from o to inválidos"
+                        "description": "status, from o to inválidos, o from posterior a to"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -3027,15 +3013,6 @@
                         "schema": {
                             "default": 0,
                             "type": "number"
-                        }
-                    },
-                    {
-                        "name": "role",
-                        "required": false,
-                        "in": "query",
-                        "description": "Filtra por tipo de rol",
-                        "schema": {
-                            "type": "string"
                         }
                     },
                     {
@@ -3122,15 +3099,6 @@
                         }
                     },
                     {
-                        "name": "role",
-                        "required": false,
-                        "in": "query",
-                        "description": "Filtra por tipo de rol",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
                         "name": "page",
                         "required": false,
                         "in": "query",
@@ -3202,15 +3170,6 @@
                         "schema": {
                             "default": 0,
                             "type": "number"
-                        }
-                    },
-                    {
-                        "name": "role",
-                        "required": false,
-                        "in": "query",
-                        "description": "Filtra por tipo de rol",
-                        "schema": {
-                            "type": "string"
                         }
                     },
                     {
@@ -4058,15 +4017,6 @@
                         }
                     },
                     {
-                        "name": "role",
-                        "required": false,
-                        "in": "query",
-                        "description": "Filtra por tipo de rol",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
                         "name": "page",
                         "required": false,
                         "in": "query",
@@ -4476,15 +4426,6 @@
                         "schema": {
                             "default": 0,
                             "type": "number"
-                        }
-                    },
-                    {
-                        "name": "role",
-                        "required": false,
-                        "in": "query",
-                        "description": "Filtra por tipo de rol",
-                        "schema": {
-                            "type": "string"
                         }
                     },
                     {
@@ -5298,6 +5239,7 @@
                 ]
             },
             "get": {
+                "description": "Filtros combinables: `state`, `orderId` (envases que salieron en ese pedido, también los de un pedido ya entregado) y `customerUserId` (user_id del cliente, no el customer_id del perfil: los envases que tiene hoy). Paginación opcional con `limit`/`offset`; sin ellos devuelve todos. `X-Total-Count` trae el total sin paginar. Cada ítem trae `lastMovementAt`.",
                 "operationId": "CylinderController_findAll",
                 "parameters": [
                     {
@@ -5305,14 +5247,53 @@
                         "required": false,
                         "in": "query",
                         "schema": {
+                            "type": "string",
                             "enum": [
                                 "in_depot",
                                 "filled",
                                 "dispatched",
                                 "with_customer",
                                 "empty_returned"
-                            ],
+                            ]
+                        }
+                    },
+                    {
+                        "name": "orderId",
+                        "required": false,
+                        "in": "query",
+                        "description": "Los envases que salieron en ese pedido: los que lo tienen como pedido actual o que registraron algún movimiento en él. Un pedido ya entregado sigue mostrando sus series.",
+                        "schema": {
+                            "format": "uuid",
                             "type": "string"
+                        }
+                    },
+                    {
+                        "name": "customerUserId",
+                        "required": false,
+                        "in": "query",
+                        "description": "user_id del cliente (el mismo que `customer_id` de un pedido y `user_id` de un cliente; NO el `customer_id` del perfil). Devuelve los envases que tiene hoy en su poder.",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "description": "Sin `limit` devuelve todos los envases.",
+                        "schema": {
+                            "maximum": 100,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 0,
+                            "type": "number"
                         }
                     }
                 ],
@@ -5329,6 +5310,9 @@
                                 }
                             }
                         }
+                    },
+                    "400": {
+                        "description": "Estado inválido, UUID inválido o paginación fuera de rango"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -6161,15 +6145,6 @@
                         }
                     },
                     {
-                        "name": "role",
-                        "required": false,
-                        "in": "query",
-                        "description": "Filtra por tipo de rol",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
                         "name": "page",
                         "required": false,
                         "in": "query",
@@ -6608,6 +6583,7 @@
         },
         "/api/fleet/tasks/{id}/attachments/{attachmentId}/download": {
             "get": {
+                "description": "Por defecto devuelve el archivo: redirige (302) a una URL firmada con S3, o lo sirve por streaming con el driver local. Con `?modo=url` devuelve `{ url, expiresAt }` en JSON, sin redirect: es lo que tiene que usar el panel (un 302 cross-origin pierde el token y choca con CORS).",
                 "operationId": "FleetTaskController_downloadAttachment",
                 "parameters": [
                     {
@@ -6627,11 +6603,27 @@
                         "schema": {
                             "type": "string"
                         }
+                    },
+                    {
+                        "name": "modo",
+                        "required": false,
+                        "in": "query",
+                        "description": "`url` devuelve `{ url, expiresAt }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada con S3, streaming con el driver local).",
+                        "schema": {
+                            "$ref": "#/components/schemas/DownloadMode"
+                        }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "El archivo, con su content-type original"
+                        "description": "El archivo con su content-type original; con `?modo=url`, el enlace",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DownloadLinkResponseDto"
+                                }
+                            }
+                        }
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -6648,7 +6640,7 @@
                         "bearer": []
                     }
                 ],
-                "summary": "Descargar un adjunto: redirige a una URL firmada (S3) o sirve el archivo (local)",
+                "summary": "Descargar un adjunto",
                 "tags": [
                     "Fleet · Tasks"
                 ]
@@ -7061,15 +7053,6 @@
                         }
                     },
                     {
-                        "name": "role",
-                        "required": false,
-                        "in": "query",
-                        "description": "Filtra por tipo de rol",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
                         "name": "page",
                         "required": false,
                         "in": "query",
@@ -7153,15 +7136,6 @@
                         "schema": {
                             "default": 0,
                             "type": "number"
-                        }
-                    },
-                    {
-                        "name": "role",
-                        "required": false,
-                        "in": "query",
-                        "description": "Filtra por tipo de rol",
-                        "schema": {
-                            "type": "string"
                         }
                     },
                     {
@@ -7605,6 +7579,144 @@
                     }
                 ],
                 "summary": "Admin reabre un reclamo resuelto o rechazado",
+                "tags": [
+                    "Claims"
+                ]
+            }
+        },
+        "/api/claims/{id}/photo": {
+            "post": {
+                "description": "Multipart, campo `file`: JPG, PNG o WEBP de hasta 10 MB (el tipo se valida por el contenido, no por el header). Sólo mientras el reclamo no esté resuelto ni rechazado (409). Si ya tenía foto, la anterior se borra del storage. La puede subir el cliente dueño del reclamo o un admin de la distribuidora.",
+                "operationId": "ClaimsController_uploadPhoto",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Claim UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "required": [
+                                    "file"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ClaimResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta la foto o está vacía"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: customer, admin, super_admin"
+                    },
+                    "404": {
+                        "description": "El reclamo no existe, no es del cliente o es de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "El reclamo está resuelto o rechazado: se reabre antes"
+                    },
+                    "413": {
+                        "description": "La foto supera los 10 MB"
+                    },
+                    "415": {
+                        "description": "No es JPG, PNG ni WEBP (o el contenido no coincide)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Subir o reemplazar la foto de un reclamo (CU-174)",
+                "tags": [
+                    "Claims"
+                ]
+            },
+            "get": {
+                "description": "Igual que las descargas de adjuntos: por defecto devuelve la foto (302 a la URL firmada con S3, o streaming con el driver local). Con `?modo=url` devuelve `{ url, expiresAt, requiresAuth }` en JSON, sin redirect (con el driver local `url` es esta misma ruta y se pide con el token); si el reclamo no tiene foto subida devuelve su `photoUrl` externa, o 200 con `url: null` si no tiene ninguna. Se puede ver aunque el reclamo esté cerrado.",
+                "operationId": "ClaimsController_getPhoto",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Claim UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "modo",
+                        "required": false,
+                        "in": "query",
+                        "description": "`url` devuelve `{ url, expiresAt }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada con S3, streaming con el driver local).",
+                        "schema": {
+                            "$ref": "#/components/schemas/DownloadMode"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "La foto; con `?modo=url`, el enlace (`url: null` si no tiene foto)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ClaimPhotoLinkResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: customer, admin, super_admin"
+                    },
+                    "404": {
+                        "description": "El reclamo no existe o no es del cliente; sin `modo`, también si no tiene foto"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ver la foto de un reclamo (CU-175)",
                 "tags": [
                     "Claims"
                 ]
@@ -8716,6 +8828,245 @@
                 "summary": "Consultar el registro de auditoría",
                 "tags": [
                     "Audit"
+                ]
+            }
+        },
+        "/api/attachments/{ownerType}/{ownerId}": {
+            "post": {
+                "operationId": "AttachmentController_upload",
+                "parameters": [
+                    {
+                        "name": "ownerType",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "$ref": "#/components/schemas/AttachmentOwnerType"
+                        }
+                    },
+                    {
+                        "name": "ownerId",
+                        "required": true,
+                        "in": "path",
+                        "description": "UUID del dueño",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "label": {
+                                        "type": "string",
+                                        "maxLength": 80
+                                    }
+                                },
+                                "required": [
+                                    "file"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AttachmentResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta el archivo o el tipo de dueño todavía no admite adjuntos"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Un chofer no puede adjuntar a ese tipo de dueño"
+                    },
+                    "404": {
+                        "description": "El dueño no existe o es de otra distribuidora"
+                    },
+                    "413": {
+                        "description": "El archivo supera el máximo permitido"
+                    },
+                    "415": {
+                        "description": "Tipo de archivo no permitido (sólo PDF, JPG, PNG, WEBP)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Subir un adjunto a un dueño (PDF, JPG, PNG, WEBP)",
+                "tags": [
+                    "Attachments"
+                ]
+            },
+            "get": {
+                "operationId": "AttachmentController_list",
+                "parameters": [
+                    {
+                        "name": "ownerType",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "$ref": "#/components/schemas/AttachmentOwnerType"
+                        }
+                    },
+                    {
+                        "name": "ownerId",
+                        "required": true,
+                        "in": "path",
+                        "description": "UUID del dueño",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/AttachmentResponseDto"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "El tipo de dueño todavía no admite adjuntos"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Un chofer no puede acceder a ese tipo de dueño"
+                    },
+                    "404": {
+                        "description": "El dueño no existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Listar los adjuntos de un dueño",
+                "tags": [
+                    "Attachments"
+                ]
+            }
+        },
+        "/api/attachments/{attachmentId}/download": {
+            "get": {
+                "description": "Por defecto devuelve el archivo: redirige (302) a una URL firmada con S3, o lo sirve por streaming con el driver local. Con `?modo=url` devuelve `{ url, expiresAt }` en JSON, sin redirect: es lo que tiene que usar el panel (un 302 cross-origin pierde el token y choca con CORS).",
+                "operationId": "AttachmentController_download",
+                "parameters": [
+                    {
+                        "name": "attachmentId",
+                        "required": true,
+                        "in": "path",
+                        "description": "Attachment UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "modo",
+                        "required": false,
+                        "in": "query",
+                        "description": "`url` devuelve `{ url, expiresAt }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada con S3, streaming con el driver local).",
+                        "schema": {
+                            "$ref": "#/components/schemas/DownloadMode"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "El archivo con su content-type original; con `?modo=url`, el enlace",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DownloadLinkResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin, delivery"
+                    },
+                    "404": {
+                        "description": "Adjunto no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Descargar un adjunto",
+                "tags": [
+                    "Attachments"
+                ]
+            }
+        },
+        "/api/attachments/{attachmentId}": {
+            "delete": {
+                "operationId": "AttachmentController_remove",
+                "parameters": [
+                    {
+                        "name": "attachmentId",
+                        "required": true,
+                        "in": "path",
+                        "description": "Attachment UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Borrado"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin, delivery"
+                    },
+                    "404": {
+                        "description": "Adjunto no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Borrar un adjunto",
+                "tags": [
+                    "Attachments"
                 ]
             }
         }
@@ -11696,6 +12047,12 @@
                     "updatedAt": {
                         "type": "string",
                         "format": "date-time"
+                    },
+                    "lastMovementAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "Fecha del último movimiento del envase. Sólo lo completa el listado (GET /cylinders); en el resto de las lecturas es null."
                     }
                 },
                 "required": [
@@ -11712,7 +12069,8 @@
                     "manufactured_at",
                     "last_inspection_at",
                     "createdAt",
-                    "updatedAt"
+                    "updatedAt",
+                    "lastMovementAt"
                 ]
             },
             "AssignCylindersDto": {
@@ -12698,6 +13056,37 @@
                     }
                 }
             },
+            "DownloadMode": {
+                "type": "string",
+                "enum": [
+                    "url",
+                    "archivo"
+                ]
+            },
+            "DownloadLinkResponseDto": {
+                "type": "object",
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "description": "Con S3: URL firmada, se abre sin token. Con el driver local: la ruta de este mismo backend, que hay que pedir con el token."
+                    },
+                    "expiresAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "Cuándo vence la URL; `null` si no vence (driver local)."
+                    },
+                    "requiresAuth": {
+                        "type": "boolean",
+                        "description": "`true` si pedir `url` exige el token de la sesión."
+                    }
+                },
+                "required": [
+                    "url",
+                    "expiresAt",
+                    "requiresAuth"
+                ]
+            },
             "FleetExpirationEntryDto": {
                 "type": "object",
                 "properties": {
@@ -13142,7 +13531,9 @@
                         "type": "string"
                     },
                     "photoUrl": {
-                        "type": "string"
+                        "type": "string",
+                        "deprecated": true,
+                        "description": "Obsoleto: la foto se sube después con `POST /claims/:id/photo`. Se sigue aceptando por compatibilidad con las apps ya publicadas."
                     }
                 },
                 "required": [
@@ -13336,7 +13727,8 @@
                     },
                     "photoUrl": {
                         "type": "string",
-                        "nullable": true
+                        "nullable": true,
+                        "description": "URL firmada de la foto del reclamo (vence en minutos: pedirla de nuevo con `GET /claims/:id/photo`), o `null` si no tiene foto (también con el driver local, que no firma URLs: ahí se usa `GET /claims/:id/photo`)."
                     },
                     "status": {
                         "type": "string",
@@ -13407,6 +13799,31 @@
                 },
                 "required": [
                     "reason"
+                ]
+            },
+            "ClaimPhotoLinkResponseDto": {
+                "type": "object",
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Foto subida con S3: URL firmada, se abre sin token. Foto subida con el driver local: la ruta de este mismo backend, que hay que pedir con el token. Reclamo con sólo una `photoUrl` externa (http/https): esa URL. `null` si no tiene foto."
+                    },
+                    "expiresAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "Cuándo vence la URL; `null` si no vence (driver local) o no hay foto."
+                    },
+                    "requiresAuth": {
+                        "type": "boolean",
+                        "description": "`true` sólo con el driver local (la ruta del backend exige el token). `false` con URL firmada, con URL externa y sin foto."
+                    }
+                },
+                "required": [
+                    "url",
+                    "expiresAt",
+                    "requiresAuth"
                 ]
             },
             "VentasPorChoferDto": {
@@ -13824,6 +14241,76 @@
                 "required": [
                     "items",
                     "total"
+                ]
+            },
+            "AttachmentOwnerType": {
+                "type": "string",
+                "enum": [
+                    "employee",
+                    "fuel_load",
+                    "traffic_fine",
+                    "vehicle_accident",
+                    "purchase_receipt",
+                    "stock_adjustment",
+                    "driver_settlement",
+                    "cash_movement",
+                    "customer_account_entry"
+                ]
+            },
+            "AttachmentResponseDto": {
+                "type": "object",
+                "properties": {
+                    "attachmentId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "ownerType": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/AttachmentOwnerType"
+                            }
+                        ]
+                    },
+                    "ownerId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "label": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "DNI frente"
+                    },
+                    "originalName": {
+                        "type": "string",
+                        "example": "dni-frente.jpg"
+                    },
+                    "mimeType": {
+                        "type": "string",
+                        "example": "image/jpeg"
+                    },
+                    "sizeBytes": {
+                        "type": "number",
+                        "example": 245678
+                    },
+                    "uploadedByUserId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "uploadedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "attachmentId",
+                    "ownerType",
+                    "ownerId",
+                    "label",
+                    "originalName",
+                    "mimeType",
+                    "sizeBytes",
+                    "uploadedByUserId",
+                    "uploadedAt"
                 ]
             }
         }

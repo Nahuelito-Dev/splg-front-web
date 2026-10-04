@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import type { GridPaginationModel } from '@mui/x-data-grid';
 import AddIcon from '@mui/icons-material/Add';
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import { PackageCheck, Warehouse } from 'lucide-react';
@@ -17,9 +18,15 @@ import {
   type FilterChip,
   type TabItem,
 } from '../../common/components/ui';
-import { FROM_LIST_STATE, usePermissions, useUrlParams } from '../../hooks';
+import { FROM_LIST_STATE, useDebounce, usePermissions, useUrlParams } from '../../hooks';
 import type { Cylinder } from '../../services/api/types';
-import { useBulkTransitionCylinders, useCylinders } from '../../services/queries/physicalCylinders';
+import { useUserNames } from '../../services/queries/userNames';
+import {
+  useBulkTransitionCylinders,
+  useCylinderStateCounts,
+  useCylinders,
+} from '../../services/queries/physicalCylinders';
+import { formatShortId } from '../../utils/format';
 import { notify } from '../../utils/notifications';
 import { CYLINDER_STATE, labelOf } from '../../utils/statusLabels';
 import { BulkTransitionModal } from './components/BulkTransitionModal';
@@ -27,14 +34,20 @@ import { AssignCylindersModal } from './components/AssignCylindersModal';
 import { CreateCylinderModal } from './components/CreateCylinderModal';
 import { PhysicalCylindersTable } from './components/PhysicalCylindersTable';
 import { TransitionModal } from './components/TransitionModal';
-import { countCylindersByState, filterCylinders, movable, type CylinderStateFilter } from './cylinderFilters';
+import { movable, uuidOrUndefined, type CylinderStateFilter } from './cylinderFilters';
 import { ALL_STATES } from './cylinderTransitions';
 
 const TABS_ID = 'cylinders';
+const PAGE_SIZE = 10;
 
 export const PhysicalCylinders = () => {
-  // El estado y la búsqueda viven en la URL: al volver de una ficha o recargar, la lista queda como estaba.
-  const [{ state: stateParam, q: term }, setFilters] = useUrlParams({ state: 'all', q: '' });
+  // El estado, el pedido, el cliente, la búsqueda y la página viven en la URL: al volver de una ficha o recargar, la
+  // lista queda como estaba. `order` y `customer` (user_id) llegan desde las fichas del pedido y del cliente.
+  const [{ state: stateParam, q: term, order: orderParam, customer: customerParam, page: pageParam }, setFilters] =
+    useUrlParams({ state: 'all', q: '', order: '', customer: '', page: '1' });
+  const debouncedTerm = useDebounce(term.trim());
+  const pagination: GridPaginationModel = { page: Math.max(0, Number(pageParam) - 1 || 0), pageSize: PAGE_SIZE };
+  const setPagination = (model: GridPaginationModel) => setFilters({ page: String(model.page + 1) });
   const state: CylinderStateFilter = ALL_STATES.find((s) => s === stateParam) ?? 'all';
   const [createOpen, setCreateOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
@@ -46,15 +59,29 @@ export const PhysicalCylinders = () => {
 
   const navigate = useNavigate();
   const { canWrite, writeHint } = usePermissions();
-  const { data: cylinders, isPending, isFetching, error, refetch } = useCylinders();
+  // Un `?order=` o `?customer=` que no es UUID (enlace viejo o escrito a mano) se ignora y se avisa: la API lo rechazaría.
+  const orderId = uuidOrUndefined(orderParam) ?? '';
+  const customerUserId = uuidOrUndefined(customerParam) ?? '';
+  const scope = { orderId: orderId || undefined, customerUserId: customerUserId || undefined };
+  const { data, isPending, isFetching, error, refetch } = useCylinders(
+    { ...scope, state: state === 'all' ? undefined : state },
+    pagination,
+    debouncedTerm,
+  );
+  const counts = useCylinderStateCounts(scope);
+  const customerNames = useUserNames([customerUserId]);
   const bulkTransition = useBulkTransitionCylinders();
 
-  const all = useMemo(() => cylinders ?? [], [cylinders]);
-  const counts = useMemo(() => countCylindersByState(all), [all]);
-  const rows = useMemo(() => filterCylinders(all, { state, term }), [all, state, term]);
+  const rows = useMemo(() => data?.rows ?? [], [data]);
+  const total = data?.total ?? 0;
+  // Una `?page=` fuera de rango vuelve a la primera.
+  useEffect(() => {
+    if (data && !isFetching && total > 0 && rows.length === 0 && pagination.page > 0) setFilters({ page: '1' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, isFetching, total, rows.length, pagination.page]);
   const selected = useMemo(
-    () => all.filter((cylinder) => selectedIds.includes(cylinder.cylinder_id)),
-    [all, selectedIds],
+    () => rows.filter((cylinder) => selectedIds.includes(cylinder.cylinder_id)),
+    [rows, selectedIds],
   );
 
   const tabs: TabItem[] = [
@@ -69,8 +96,16 @@ export const PhysicalCylinders = () => {
 
   const chips: FilterChip[] = [];
   if (state !== 'all') chips.push({ key: 'state', label: labelOf(CYLINDER_STATE, state).text });
+  if (orderId) chips.push({ key: 'order', label: `Pedido ${formatShortId(orderId)}` });
+  if (customerUserId)
+    chips.push({
+      key: 'customer',
+      label: `Cliente: ${customerNames.nameOf(customerUserId) ?? formatShortId(customerUserId)}`,
+    });
+  if (orderParam && !orderId) chips.push({ key: 'order', label: 'Pedido no válido (se ignora)' });
+  if (customerParam && !customerUserId) chips.push({ key: 'customer', label: 'Cliente no válido (se ignora)' });
   if (term.trim()) chips.push({ key: 'q', label: `"${term.trim()}"` });
-  const removeChip = (key: string) => setFilters(key === 'state' ? { state: 'all' } : { q: '' });
+  const removeChip = (key: string) => setFilters({ [key]: key === 'state' ? 'all' : '', page: '1' });
 
   const openBulk = (toState: Cylinder['state'], verb: string) => {
     if (movable(selected, toState).length === 0) {
@@ -125,7 +160,7 @@ export const PhysicalCylinders = () => {
               value={state}
               onChange={(id) => {
                 clearSelection();
-                setFilters({ state: id });
+                setFilters({ state: id, page: '1' });
               }}
               label="Filtrar envases por estado"
               idPrefix={TABS_ID}
@@ -138,7 +173,7 @@ export const PhysicalCylinders = () => {
                   value={term}
                   onChange={(e) => {
                     clearSelection();
-                    setFilters({ q: e.target.value });
+                    setFilters({ q: e.target.value, page: '1' });
                   }}
                 />
                 <FilterChips
@@ -149,9 +184,9 @@ export const PhysicalCylinders = () => {
                   }}
                   onClearAll={() => {
                     clearSelection();
-                    setFilters({ state: 'all', q: '' });
+                    setFilters({ state: 'all', q: '', order: '', customer: '', page: '1' });
                   }}
-                  resultCount={rows.length}
+                  resultCount={data ? total : undefined}
                 />
               </div>
               {canWrite && (
@@ -184,7 +219,10 @@ export const PhysicalCylinders = () => {
               )}
               <PhysicalCylindersTable
                 rows={rows}
+                total={total}
                 loading={isFetching}
+                pagination={pagination}
+                onPaginationChange={setPagination}
                 filtered={chips.length > 0}
                 selection={canWrite ? { ids: selectedIds, onChange: setSelectedIds } : undefined}
                 onPageChange={clearSelection}

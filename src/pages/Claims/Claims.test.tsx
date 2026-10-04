@@ -18,6 +18,7 @@ vi.mock('../../services/queries/claims', () => {
   };
 });
 vi.mock('./components/ClaimHistory', () => ({ ClaimHistory: () => null }));
+vi.mock('./components/ClaimPhoto', () => ({ ClaimPhoto: () => null }));
 vi.mock('./components/CreateClaimModal', () => ({ CreateClaimModal: () => null }));
 
 import { Claims } from './Claims';

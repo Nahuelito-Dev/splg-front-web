@@ -32,8 +32,27 @@ const cyl = (id: string, state: Cylinder['state'], serial: string): Cylinder =>
   }) as unknown as Cylinder;
 const CYLINDERS = [cyl('1', 'in_depot', 'GAS-001'), cyl('2', 'in_depot', 'GAS-002'), cyl('3', 'filled', 'GAS-003')];
 
+const listCall = vi.hoisted(() => vi.fn());
+vi.mock('../../services/queries/userNames', () => ({
+  useUserNames: () => ({ nameOf: () => 'Ana Pérez', loading: false }),
+}));
 vi.mock('../../services/queries/physicalCylinders', () => ({
-  useCylinders: () => ({ data: CYLINDERS, isPending: false, isFetching: false }),
+  useCylinders: (filters: unknown, page: unknown, term: unknown) => {
+    listCall(filters, page, term);
+    const state = (filters as { state?: Cylinder['state'] }).state;
+    const rows = CYLINDERS.filter((c) => !state || c.state === state).filter((c) =>
+      c.serial.toLowerCase().includes(String(term).toLowerCase()),
+    );
+    return { data: { rows, total: rows.length }, isPending: false, isFetching: false };
+  },
+  useCylinderStateCounts: () => ({
+    all: 3,
+    in_depot: 2,
+    filled: 1,
+    dispatched: 0,
+    with_customer: 0,
+    empty_returned: 0,
+  }),
   useBulkTransitionCylinders: () => ({ mutate: bulk, isPending: busy.value, stop }),
 }));
 vi.mock('./components/AssignCylindersModal', () => ({ AssignCylindersModal: () => null }));
@@ -60,7 +79,7 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('PhysicalCylinders', () => {
-  it('muestra una pestaña por estado con su cantidad, calculada sobre la lista completa', () => {
+  it('muestra una pestaña por estado con su cantidad, con el total real de la API', () => {
     renderPage();
     expect(screen.getByRole('tab', { name: 'Todos 3' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'En depósito 2' })).toBeInTheDocument();
@@ -76,6 +95,31 @@ describe('PhysicalCylinders', () => {
     renderPage('/physical-cylinders?q=gas-002');
     expect(screen.getByText('GAS-002')).toBeInTheDocument();
     expect(screen.queryByText('GAS-001')).not.toBeInTheDocument();
+  });
+
+  it('el pedido y el cliente de la URL se mandan como filtros a la API y quedan como chips', () => {
+    renderPage(
+      '/physical-cylinders?order=5baddc17-24e6-4a69-9e11-45f321956d60&customer=2e3b583d-d513-4ceb-ba14-a50f2748c522',
+    );
+    expect(listCall).toHaveBeenLastCalledWith(
+      {
+        orderId: '5baddc17-24e6-4a69-9e11-45f321956d60',
+        customerUserId: '2e3b583d-d513-4ceb-ba14-a50f2748c522',
+        state: undefined,
+      },
+      { page: 0, pageSize: 10 },
+      '',
+    );
+    const chips = screen.getByRole('group', { name: 'Filtros activos' });
+    expect(chips).toHaveTextContent('Pedido');
+    expect(chips).toHaveTextContent('Cliente: Ana Pérez');
+  });
+
+  it('un ?order= que no es UUID se ignora con un aviso y no se manda a la API', () => {
+    renderPage('/physical-cylinders?order=abc&customer=xyz');
+    expect(listCall).toHaveBeenLastCalledWith({ state: undefined }, { page: 0, pageSize: 10 }, '');
+    expect(screen.getByRole('group', { name: 'Filtros activos' })).toHaveTextContent('Pedido no válido');
+    expect(screen.getByRole('group', { name: 'Filtros activos' })).toHaveTextContent('Cliente no válido');
   });
 
   it('marcar como llenos abre el modal del kit con la lista de lo que cambia, manda sólo los que pueden pasar y deja marcados los que no se procesaron', async () => {

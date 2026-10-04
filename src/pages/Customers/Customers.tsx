@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { GridPaginationModel } from '@mui/x-data-grid';
 import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
 import { SearchCheck } from 'lucide-react';
@@ -15,18 +15,12 @@ import {
 } from '../../common/components/ui';
 import { useDebounce, usePermissions, useUrlParams } from '../../hooks';
 import type { Customer } from '../../services/api/types';
-import { SEGMENT_SCAN_LIMIT, useCustomerScan, useCustomers, useDeleteCustomer } from '../../services/queries/customers';
+import { useCustomerStatusCounts, useCustomers, useDeleteCustomer } from '../../services/queries/customers';
 import { confirm, notify } from '../../utils/notifications';
 import { CustomerFormModal } from './components/CustomerFormModal';
 import { CustomersTable } from './components/CustomersTable';
 import { FindCustomerByUserModal } from './components/FindCustomerByUserModal';
-import {
-  CUSTOMER_SEGMENTS,
-  CUSTOMER_SEGMENT_LABELS,
-  countCustomersBySegment,
-  filterCustomers,
-  type CustomerSegment,
-} from './customerSegments';
+import { CUSTOMER_SEGMENTS, CUSTOMER_SEGMENT_LABELS, type CustomerSegment } from './customerSegments';
 
 type FormState = { open: false } | { open: true; customer: Customer | null };
 
@@ -47,22 +41,13 @@ export const Customers = () => {
   const [form, setForm] = useState<FormState>({ open: false });
   const [findingByUser, setFindingByUser] = useState(false);
 
-  // Con hasta 100 clientes entran todos y se segmenta en el panel; con más, sólo la lista del servidor ("Todos").
-  const scan = useCustomerScan();
-  const scanned = scan.data && scan.data.total <= SEGMENT_SCAN_LIMIT ? scan.data.rows : null;
-  const segment: CustomerSegment = scanned ? (CUSTOMER_SEGMENTS.find((s) => s === statusParam) ?? 'all') : 'all';
-  const counts = useMemo(() => (scanned ? countCustomersBySegment(scanned) : null), [scanned]);
-
-  const server = useCustomers(pagination, debouncedSearch);
-  const local = useMemo(
-    () => (scanned ? filterCustomers(scanned, { segment, term: search }) : null),
-    [scanned, segment, search],
-  );
-  const rows = local
-    ? local.slice(pagination.page * PAGE_SIZE, (pagination.page + 1) * PAGE_SIZE)
-    : (server.data?.rows ?? []);
-  const total = local ? local.length : (server.data?.total ?? 0);
-  const loading = local ? false : server.isFetching;
+  // El estado de la cuenta y la búsqueda los resuelve la API (`?status=`, `?term=`); los conteos son sus totales reales.
+  const segment: CustomerSegment = CUSTOMER_SEGMENTS.find((s) => s === statusParam) ?? 'all';
+  const server = useCustomers(pagination, debouncedSearch, segment === 'all' ? undefined : segment);
+  const counts = useCustomerStatusCounts(debouncedSearch);
+  const rows = server.data?.rows ?? [];
+  const total = server.data?.total ?? 0;
+  const loading = server.isFetching;
   // Una `?page=` fuera de rango (o una página que quedó vacía tras dar de baja) vuelve a la primera.
   useEffect(() => {
     if (!loading && total > 0 && rows.length === 0 && pagination.page > 0) setFilters({ page: '1' });
@@ -70,10 +55,10 @@ export const Customers = () => {
   }, [loading, total, rows.length, pagination.page]);
   const deleteCustomer = useDeleteCustomer();
 
-  const tabs: TabItem[] = (scanned ? CUSTOMER_SEGMENTS : (['all'] as CustomerSegment[])).map((s) => ({
+  const tabs: TabItem[] = CUSTOMER_SEGMENTS.map((s) => ({
     id: s,
     label: CUSTOMER_SEGMENT_LABELS[s],
-    count: s === 'all' && !counts ? (server.data?.total ?? null) : (counts?.[s] ?? null),
+    count: counts[s],
     tone: s === 'blocked' ? 'danger' : s === 'active' ? 'success' : undefined,
   }));
 
@@ -135,11 +120,11 @@ export const Customers = () => {
                 items={chips}
                 onRemove={removeChip}
                 onClearAll={() => setFilters({ q: '', status: 'all', page: '1' })}
-                resultCount={local || server.data ? total : undefined}
+                resultCount={server.data ? total : undefined}
               />
             ) : (
               <p className="text-sm text-muted" aria-live="polite">
-                {local || server.data ? `${total} ${total === 1 ? 'cliente' : 'clientes'}` : ''}
+                {server.data ? `${total} ${total === 1 ? 'cliente' : 'clientes'}` : ''}
               </p>
             )}
           </div>

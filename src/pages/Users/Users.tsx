@@ -31,19 +31,21 @@ import { UsersTable } from './components/UsersTable';
 
 const ROLE_TABS: { id: UserRoleTab; label: string }[] = [
   { id: 'all', label: 'Todos' },
-  { id: 'customer', label: 'Clientes' },
-  { id: 'delivery', label: 'Choferes' },
   { id: 'admin', label: 'Administradores' },
+  { id: 'super_admin', label: 'Super administradores' },
+  { id: 'delivery', label: 'Choferes' },
+  { id: 'customer', label: 'Clientes' },
 ];
 
 const TABS_ID = 'users';
 
 export const Users = () => {
   const navigate = useNavigate();
-  const { canManageCustomerAccounts } = usePermissions();
+  const { canManageCustomerAccounts, isSuperAdmin } = usePermissions();
   // El rol y la búsqueda viven en la URL: al volver de una ficha o recargar, la lista queda como estaba.
   const [{ role: roleParam, q: search, page: pageParam }, setFilters] = useUrlParams({ role: 'all', q: '', page: '1' });
-  const role: UserRoleTab = ROLE_TABS.find((tab) => tab.id === roleParam)?.id ?? 'all';
+  const visibleTabs = ROLE_TABS.filter((tab) => tab.id !== 'super_admin' || isSuperAdmin);
+  const role: UserRoleTab = visibleTabs.find((tab) => tab.id === roleParam)?.id ?? 'all';
   const debouncedSearch = useDebounce(search.trim());
   const pagination: GridPaginationModel = { page: Math.max(0, Number(pageParam) - 1 || 0), pageSize: 10 };
   const setPagination = (model: GridPaginationModel) => setFilters({ page: String(model.page + 1) });
@@ -69,9 +71,9 @@ export const Users = () => {
     setFilters({ role: value, page: '1' });
   };
 
-  const tabs: TabItem[] = ROLE_TABS.map((tab) => ({ id: tab.id, label: tab.label, count: counts[tab.id] }));
+  const tabs: TabItem[] = visibleTabs.map((tab) => ({ id: tab.id, label: tab.label, count: counts[tab.id] }));
   const chips: FilterChip[] = [];
-  if (role !== 'all') chips.push({ key: 'role', label: ROLE_TABS.find((tab) => tab.id === role)?.label ?? role });
+  if (role !== 'all') chips.push({ key: 'role', label: visibleTabs.find((tab) => tab.id === role)?.label ?? role });
   if (search.trim()) chips.push({ key: 'q', label: `"${search.trim()}"` });
   const removeChip = (key: string) => (key === 'role' ? handleRole('all') : handleSearch(''));
 

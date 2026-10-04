@@ -1,4 +1,5 @@
 import { toApiErrorFromBlob } from './errors';
+import { resolveFileSource, type FileSource } from './fileSource';
 import { http, toPage, toQuery, type Page, type PageParams } from './httpClient';
 import type {
   AssignVehicleBody,
@@ -6,6 +7,7 @@ import type {
   CloseFleetTaskBody,
   CreateFleetPlanBody,
   CreateFleetTaskBody,
+  DownloadLink,
   FleetDriverDocuments,
   FleetExpirations,
   FleetPlan,
@@ -148,6 +150,27 @@ export const downloadFleetTaskAttachment = async (taskId: string, attachmentId: 
   } catch (error) {
     throw await toApiErrorFromBlob(error);
   }
+};
+
+/**
+ * GET /fleet/tasks/:id/attachments/:attachmentId/download?modo=url: la URL para bajar el adjunto. Con S3 es una
+ * URL firmada que vence (`requiresAuth: false`); con el driver local, la ruta del propio back.
+ */
+export const getFleetTaskAttachmentLink = async (taskId: string, attachmentId: string): Promise<DownloadLink> => {
+  const { data } = await http.get<DownloadLink>(`/fleet/tasks/${taskId}/attachments/${attachmentId}/download`, {
+    params: { modo: 'url' },
+  });
+  return data;
+};
+
+/** El archivo de un adjunto, listo para abrir o guardar: URL firmada directa o blob autenticado según el driver. */
+export const getFleetTaskAttachmentFile = async (taskId: string, attachmentId: string): Promise<FileSource> => {
+  const source = await resolveFileSource(
+    () => getFleetTaskAttachmentLink(taskId, attachmentId),
+    () => downloadFleetTaskAttachment(taskId, attachmentId),
+  );
+  if (!source) throw new Error('El adjunto no tiene archivo');
+  return source;
 };
 
 /** DELETE /fleet/tasks/:id/attachments/:attachmentId */

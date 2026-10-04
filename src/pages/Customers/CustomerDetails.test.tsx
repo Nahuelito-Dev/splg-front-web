@@ -70,6 +70,29 @@ vi.mock('../../services/queries/claims', () => {
     useReopenClaim: () => mutation,
   };
 });
+const cylinders = vi.hoisted(() => vi.fn());
+vi.mock('../../services/queries/physicalCylinders', () => ({
+  useCylinders: (filters: unknown) => {
+    cylinders(filters);
+    return {
+      data: {
+        rows: [
+          {
+            cylinder_id: 'cy-1',
+            serial: 'SPLG-00001',
+            state: 'with_customer',
+            gas_cylinder: { type: 'Garrafa 10kg', weight: 10 },
+            lastMovementAt: '2026-09-20T10:00:00Z',
+          },
+        ],
+        total: 1,
+      },
+      isPending: false,
+      error: null,
+    };
+  },
+}));
+vi.mock('../Claims/components/ClaimPhoto', () => ({ ClaimPhoto: () => null }));
 vi.mock('./components/CustomerFormModal', () => ({ CustomerFormModal: () => null }));
 vi.mock('./components/details/CustomerLocationModal', () => ({ CustomerLocationModal: () => null }));
 vi.mock('./components/details/CustomerAddresses', () => ({ CustomerAddresses: () => <p>direcciones del cliente</p> }));
@@ -111,10 +134,18 @@ describe('CustomerDetails: portada con KPIs y pestañas', () => {
     renderPage();
     expect(screen.getByRole('tab', { name: /Direcciones\s*2/ })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /Reclamos\s*2/ })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Envases en su poder\s*1/ })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('tab', { name: /Direcciones/ }));
     expect(screen.getByText('direcciones del cliente')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('tab', { name: /Calificaciones/ }));
     expect(screen.getByText('calificaciones')).toBeInTheDocument();
+  });
+
+  it('la pestaña Envases en su poder lista las series del cliente (por su user_id) con enlace a la ficha', () => {
+    renderPage('/customers/details/c-1?tab=cylinders');
+    expect(cylinders).toHaveBeenCalledWith({ customerUserId: 'u-1' });
+    expect(screen.getByRole('link', { name: 'SPLG-00001' })).toHaveAttribute('href', '/physical-cylinders/cy-1');
+    expect(screen.getByText('Garrafa 10kg · 10 kg')).toBeInTheDocument();
   });
 
   it('la pestaña Reclamos lista sólo los de este cliente y abre el detalle en un panel lateral', () => {
