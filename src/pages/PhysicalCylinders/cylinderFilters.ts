@@ -20,13 +20,14 @@ export const filterCylinders = (
   });
 };
 
-/** Cuántos envases hay en cada estado y en total, sobre la lista completa. */
-export const countCylindersByState = (cylinders: Cylinder[]): Record<Cylinder['state'], number> & { all: number } => {
-  const counts = { in_depot: 0, filled: 0, dispatched: 0, with_customer: 0, empty_returned: 0, all: cylinders.length };
-  for (const cylinder of cylinders) counts[cylinder.state] += 1;
-  return counts;
-};
-
 /** Los envases marcados que pueden pasar de verdad al estado pedido (la máquina de estados del back). */
 export const movable = (cylinders: Cylinder[], toState: Cylinder['state']): Cylinder[] =>
   cylinders.filter((cylinder) => NEXT_STATES[cylinder.state].includes(toState));
+
+/** Cuántos envases se muestran como mucho en la ficha de un pedido o de un cliente (el máximo de la API); el resto, en Envases. */
+export const CYLINDER_CARD_LIMIT = 100;
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** El id de un filtro de la URL (`?order=`, `?customer=`) si es un UUID; si no, `undefined` (la API rechazaría el pedido). */
+export const uuidOrUndefined = (value: string): string | undefined => (UUID.test(value) ? value : undefined);

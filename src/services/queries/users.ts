@@ -6,9 +6,6 @@ import {
   useQueryClient,
   type QueryClient,
 } from '@tanstack/react-query';
-import { listAdmins } from '../api/admins';
-import { listCustomers } from '../api/customers';
-import { listDeliveries } from '../api/deliveries';
 import {
   blockUser,
   deleteUser,
@@ -17,9 +14,10 @@ import {
   getUserByPhone,
   listUsers,
   updateUserAccount,
+  type UserRoleFilter,
 } from '../api/users';
-import type { Page, PageParams } from '../api/httpClient';
-import type { UpdateUserBody, User } from '../api/types';
+import type { PageParams } from '../api/httpClient';
+import type { UpdateUserBody } from '../api/types';
 import { queryKeys } from './queryKeys';
 
 const keys = queryKeys.users;
@@ -87,63 +85,36 @@ export const useMyAccount = (email: string | null) =>
     enabled: Boolean(email),
   });
 
-/** Los grupos de la pantalla de Usuarios: todos, o los de cada rol (cada uno sale de su endpoint). */
-export type UserRoleTab = 'all' | 'customer' | 'delivery' | 'admin';
+/** Los grupos de la pantalla de Usuarios: todos, o uno por tipo de rol (`GET /users?role=`). */
+export type UserRoleTab = 'all' | UserRoleFilter;
 
-const matches = (user: User, term: string) => {
-  const needle = term.trim().toLowerCase();
-  return (
-    !needle || [user.full_name, user.email, user.phone_number].some((f) => (f ?? '').toLowerCase().includes(needle))
-  );
-};
+export const USER_ROLE_TABS: UserRoleTab[] = ['all', 'admin', 'super_admin', 'delivery', 'customer'];
 
-const listUsersByRole = async (tab: UserRoleTab, params: PageParams, search: string): Promise<Page<User>> => {
-  if (tab === 'customer') {
-    const page = await listCustomers(params, search);
-    const rows = page.rows.flatMap((customer) => (customer.user ? [{ ...customer.user, customer }] : []));
-    // Un perfil sin cuenta (dado de baja) no es un usuario: no se muestra ni se cuenta.
-    return { total: page.total - (page.rows.length - rows.length), rows };
-  }
-  if (tab === 'delivery') {
-    const page = await listDeliveries(params, search);
-    const rows = page.rows.flatMap((delivery) => (delivery.user ? [{ ...delivery.user, delivery }] : []));
-    return { total: page.total - (page.rows.length - rows.length), rows };
-  }
-  if (tab === 'admin') {
-    // GET /admin no pagina ni busca: se filtra y se corta acá.
-    const users = (await listAdmins())
-      .flatMap((admin) => (admin.user ? [admin.user] : []))
-      .filter((u) => matches(u, search));
-    return {
-      total: users.length,
-      rows: users.slice(params.page * params.pageSize, (params.page + 1) * params.pageSize),
-    };
-  }
-  return listUsers(params, search);
-};
+const roleOf = (tab: UserRoleTab) => (tab === 'all' ? undefined : tab);
 
 /** La lista de usuarios de un grupo. Cuelga de `queryKeys.users` para refrescarse con bloquear, editar y dar de baja. */
 export const useUsersByRole = (tab: UserRoleTab, params: PageParams, search: string) =>
   useQuery({
     queryKey: keys.list({ ...params, search, tab }),
-    queryFn: () => listUsersByRole(tab, params, search),
+    queryFn: () => listUsers(params, search, roleOf(tab)),
     placeholderData: keepPreviousData,
   });
 
 /**
- * Cuántos usuarios hay en cada grupo: el total de cada endpoint (`X-Total-Count` con una página mínima, o el largo
- * de /admin). Un grupo sin dato (cargando o con error) queda en `null`, nunca en 0.
+ * Cuántos usuarios hay en cada grupo: el `total` real de la API con una página mínima por rol. Un grupo sin dato
+ * (cargando o con error) queda en `null`, nunca en 0.
  */
 export const useUserRoleCounts = () => {
   const ONE: PageParams = { page: 0, pageSize: 1 };
   const results = useQueries({
-    queries: [
-      { queryKey: keys.list({ counts: 'all' }), queryFn: () => listUsers(ONE).then((p) => p.total) },
-      { queryKey: keys.list({ counts: 'customer' }), queryFn: () => listCustomers(ONE).then((p) => p.total) },
-      { queryKey: keys.list({ counts: 'delivery' }), queryFn: () => listDeliveries(ONE).then((p) => p.total) },
-      { queryKey: keys.list({ counts: 'admin' }), queryFn: () => listAdmins().then((admins) => admins.length) },
-    ].map((query) => ({ ...query, staleTime: 30_000 })),
+    queries: USER_ROLE_TABS.map((tab) => ({
+      queryKey: keys.list({ counts: tab }),
+      queryFn: () => listUsers(ONE, undefined, roleOf(tab)).then((page) => page.total),
+      staleTime: 30_000,
+    })),
   });
-  const [all, customer, delivery, admin] = results.map((result) => result.data ?? null);
-  return { all, customer, delivery, admin } satisfies Record<UserRoleTab, number | null>;
+  return Object.fromEntries(USER_ROLE_TABS.map((tab, i) => [tab, results[i]?.data ?? null])) as Record<
+    UserRoleTab,
+    number | null
+  >;
 };

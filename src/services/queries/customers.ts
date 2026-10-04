@@ -1,5 +1,5 @@
 import { keepPreviousData } from '@tanstack/react-query';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createCustomer,
   deleteCustomer,
@@ -7,6 +7,7 @@ import {
   getCustomerByUserId,
   listCustomers,
   updateCustomerLocation,
+  type CustomerStatus,
 } from '../api/customers';
 import type { AccountFields } from '../api/registration';
 import type { PageParams } from '../api/httpClient';
@@ -17,15 +18,31 @@ import { queryKeys } from './queryKeys';
 
 const keys = queryKeys.customers;
 
-/** Cuántos clientes devuelve GET /customers como máximo en una página. */
-export const SEGMENT_SCAN_LIMIT = 100;
-
-export const useCustomers = (params: PageParams, search: string) =>
+export const useCustomers = (params: PageParams, search: string, status?: CustomerStatus) =>
   useQuery({
-    queryKey: keys.list({ ...params, search }),
-    queryFn: () => listCustomers(params, search),
+    queryKey: keys.list({ ...params, search, status }),
+    queryFn: () => listCustomers(params, search, status),
     placeholderData: keepPreviousData,
   });
+
+/**
+ * Cuántos clientes hay en cada segmento (con la búsqueda aplicada): el `total` real de la API con una página mínima
+ * por estado. Un segmento sin dato (cargando o con error) queda en `null`, nunca en 0.
+ */
+export const useCustomerStatusCounts = (search: string) => {
+  const ONE: PageParams = { page: 0, pageSize: 1 };
+  const statuses: (CustomerStatus | undefined)[] = [undefined, 'active', 'blocked'];
+  const results = useQueries({
+    queries: statuses.map((status) => ({
+      queryKey: keys.list({ counts: status ?? 'all', search }),
+      queryFn: () => listCustomers(ONE, search, status).then((page) => page.total),
+      staleTime: 30_000,
+      placeholderData: keepPreviousData,
+    })),
+  });
+  const [all, active, blocked] = results.map((result) => result.data ?? null);
+  return { all: all ?? null, active: active ?? null, blocked: blocked ?? null };
+};
 
 export const useCustomer = (id: string | undefined) =>
   useQuery({
@@ -84,17 +101,6 @@ export const useUpdateCustomerLocation = () => {
  */
 export const useFindCustomerByUserId = () =>
   useMutation({ mutationFn: (userId: string) => getCustomerByUserId(userId) });
-
-/**
- * Hasta 100 clientes de una vez (el máximo de la API), para segmentar por cuenta activa o bloqueada en el panel:
- * GET /customers sólo filtra por texto. `total` dice si entran todos; si no, la lista no se segmenta.
- */
-export const useCustomerScan = () =>
-  useQuery({
-    queryKey: keys.list({ scan: true }),
-    queryFn: () => listCustomers({ page: 0, pageSize: SEGMENT_SCAN_LIMIT }),
-    staleTime: 30_000,
-  });
 
 /**
  * Los últimos pedidos de un cliente (hasta 100) para los números de su portada. Sin `keepPreviousData`: al pasar de

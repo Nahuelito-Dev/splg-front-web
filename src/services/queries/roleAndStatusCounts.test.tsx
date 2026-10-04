@@ -12,21 +12,24 @@ vi.mock('../api/deliveries', async (importOriginal) => ({
   listDeliveries: (page: unknown, search?: string, status?: string) => listDeliveries(page, search, status),
   listActiveDeliveries: () => listActiveDeliveries(),
 }));
+const listCustomers = vi.fn((_page: unknown, _search?: string, status?: string) =>
+  Promise.resolve({ rows: [], total: status === 'active' ? 20 : status === 'blocked' ? 5 : 25 }),
+);
 vi.mock('../api/customers', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
-  listCustomers: () => Promise.resolve({ rows: [], total: 25 }),
+  listCustomers: (page: unknown, search?: string, status?: string) => listCustomers(page, search, status),
 }));
+const TOTALS: Record<string, number> = { admin: 2, super_admin: 1, delivery: 5, customer: 25 };
+const listUsers = vi.fn((_page: unknown, _search?: string, role?: string) =>
+  Promise.resolve({ rows: [], total: role ? (TOTALS[role] ?? 0) : 33 }),
+);
 vi.mock('../api/users', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
-  listUsers: () => Promise.resolve({ rows: [], total: 31 }),
-}));
-const listAdmins = vi.fn();
-vi.mock('../api/admins', async (importOriginal) => ({
-  ...(await importOriginal<Record<string, unknown>>()),
-  listAdmins: (distributorId?: string) => listAdmins(distributorId) as unknown,
+  listUsers: (page: unknown, search?: string, role?: string) => listUsers(page, search, role),
 }));
 
 import { useDeliveryStatusCounts } from './deliveries';
+import { useCustomerStatusCounts } from './customers';
 import { useUserRoleCounts } from './users';
 
 afterEach(() => {
@@ -54,10 +57,19 @@ describe('useDeliveryStatusCounts', () => {
 });
 
 describe('useUserRoleCounts', () => {
-  it('cuenta todos, clientes, choferes y administradores desde su endpoint', async () => {
-    listAdmins.mockResolvedValue([{ admin_id: 'a-1' }, { admin_id: 'a-2' }]);
+  it('pide una página mínima por rol a GET /users y lee el total real', async () => {
     const { result } = renderHook(() => useUserRoleCounts(), { wrapper });
-    await waitFor(() => expect(result.current.admin).toBe(2));
-    expect(result.current).toEqual({ all: 31, customer: 25, delivery: 5, admin: 2 });
+    await waitFor(() => expect(result.current.customer).toBe(25));
+    expect(result.current).toEqual({ all: 33, admin: 2, super_admin: 1, delivery: 5, customer: 25 });
+    for (const [page] of listUsers.mock.calls) expect(page).toEqual({ page: 0, pageSize: 1 });
+  });
+});
+
+describe('useCustomerStatusCounts', () => {
+  it('pide todos, activos y bloqueados con la búsqueda aplicada', async () => {
+    const { result } = renderHook(() => useCustomerStatusCounts('ana'), { wrapper });
+    await waitFor(() => expect(result.current.blocked).toBe(5));
+    expect(result.current).toEqual({ all: 25, active: 20, blocked: 5 });
+    expect(listCustomers).toHaveBeenCalledWith({ page: 0, pageSize: 1 }, 'ana', 'blocked');
   });
 });

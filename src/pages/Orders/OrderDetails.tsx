@@ -7,6 +7,7 @@ import { useSocketContext } from '../../context/useSocketContext';
 import { ORDER_SOCKET_EVENTS, type OrderSocketEventName } from '../../hooks/useSocket';
 import { useOrder } from '../../services/queries/orders';
 import { queryKeys } from '../../services/queries/queryKeys';
+import { CylinderLinksCard } from '../PhysicalCylinders/components/CylinderLinksCard';
 import { OrderDepositCard } from './components/details/OrderDepositCard';
 import { OrderDetailsToolbar } from './components/details/OrderDetailsToolbar';
 import { OrderHistoryCard } from './components/details/OrderHistoryCard';
@@ -62,6 +63,13 @@ export const OrderDetails = () => {
               {order.status === 'reserved' && <OrderDepositCard order={order} />}
               <OrderItemsSummary order={order} />
               <OrderHistoryCard order={order} />
+              <CylinderLinksCard
+                title="Envases"
+                filters={{ orderId: order.order_id }}
+                emptyTitle="Sin envases en este pedido"
+                emptyDescription="No hay series de envases asignadas a este pedido (la distribuidora puede no usar envases serializados)."
+                listSearch={`order=${order.order_id}`}
+              />
               <OrderIncidents orderId={order.order_id} />
             </div>
             <div className="min-w-0 lg:col-span-1">

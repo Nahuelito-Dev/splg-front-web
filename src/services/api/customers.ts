@@ -2,9 +2,18 @@ import { http, toPage, toQuery, type Page, type PageParams } from './httpClient'
 import { registerUser, type AccountFields } from './registration';
 import type { Customer, Message, User } from './types';
 
-/** GET /customers: los clientes de la distribuidora, paginados y con búsqueda. */
-export const listCustomers = async (params: PageParams, search?: string): Promise<Page<Customer>> =>
-  toPage(await http.get<Customer[]>('/customers', { params: { ...toQuery(params), term: search || undefined } }));
+/** Estado de la cuenta que acepta `?status=` de GET /customers. */
+export type CustomerStatus = 'active' | 'blocked';
+
+/** GET /customers: los clientes de la distribuidora, paginados, con búsqueda y filtro por estado de la cuenta. */
+export const listCustomers = async (
+  params: PageParams,
+  search?: string,
+  status?: CustomerStatus,
+): Promise<Page<Customer>> =>
+  toPage(
+    await http.get<Customer[]>('/customers', { params: { ...toQuery(params), term: search || undefined, status } }),
+  );
 
 /** GET /customers/:id, con el usuario y sus direcciones. */
 export const getCustomer = async (id: string): Promise<Customer> => {

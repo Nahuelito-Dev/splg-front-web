@@ -9,6 +9,7 @@ vi.mock('../../../services/queries/claims', () => {
   return { useTakeClaim: () => mutation, useResolveClaim: () => mutation, useReopenClaim: () => mutation };
 });
 vi.mock('./ClaimHistory', () => ({ ClaimHistory: () => null }));
+vi.mock('./ClaimPhoto', () => ({ ClaimPhoto: () => null }));
 
 import { ClaimDetailDrawer } from './ClaimDetailDrawer';
 

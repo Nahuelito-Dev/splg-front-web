@@ -4,14 +4,15 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { User } from '../../services/api/types';
 
 const byRole = vi.hoisted(() => vi.fn());
+const permissions = vi.hoisted(() => ({ isSuperAdmin: true }));
 
 vi.mock('../../hooks', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
-  usePermissions: () => ({ canManageCustomerAccounts: true }),
+  usePermissions: () => ({ canManageCustomerAccounts: true, isSuperAdmin: permissions.isSuperAdmin }),
 }));
 vi.mock('../../services/queries/users', () => ({
   useUsersByRole: (tab: string) => byRole(tab) as unknown,
-  useUserRoleCounts: () => ({ all: 31, customer: 25, delivery: 5, admin: 1 }),
+  useUserRoleCounts: () => ({ all: 31, admin: 1, super_admin: 1, delivery: 5, customer: 24 }),
   useBlockUser: () => ({ mutate: vi.fn() }),
   useDeleteUser: () => ({ mutate: vi.fn() }),
 }));
@@ -48,15 +49,29 @@ describe('Users: pestañas por rol', () => {
       </MemoryRouter>,
     );
     expect(screen.getByRole('tab', { name: 'Todos 31' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Clientes 25' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Clientes 24' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Choferes 5' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Administradores 1' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Super administradores 1' })).toBeInTheDocument();
     expect(byRole).toHaveBeenLastCalledWith('all');
 
     fireEvent.click(screen.getByRole('tab', { name: 'Choferes 5' }));
     expect(byRole).toHaveBeenLastCalledWith('delivery');
     expect(screen.getByTestId('search')).toHaveTextContent('?role=delivery');
     expect(screen.getByRole('group', { name: 'Filtros activos' })).toHaveTextContent('Choferes');
+  });
+
+  it('la pestaña Super administradores es sólo del super admin', () => {
+    byRole.mockReturnValue({ data: { rows: [], total: 0 }, isLoading: false, isFetching: false });
+    permissions.isSuperAdmin = false;
+    render(
+      <MemoryRouter initialEntries={['/users?role=super_admin']}>
+        <Users />
+      </MemoryRouter>,
+    );
+    permissions.isSuperAdmin = true;
+    expect(screen.queryByRole('tab', { name: /Super administradores/ })).not.toBeInTheDocument();
+    expect(byRole).toHaveBeenLastCalledWith('all');
   });
 
   it('un rol desconocido en la URL cae en "Todos"', () => {

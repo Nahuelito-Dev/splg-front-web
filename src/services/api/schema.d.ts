@@ -33,7 +33,7 @@ export interface paths {
         };
         /**
          * Get all users with pagination and search
-         * @description `term` busca en correo, nombre y teléfono. Un admin de empresa ve sólo los usuarios de su distribuidora (H-66).
+         * @description `term` busca en correo, nombre y teléfono; `role` filtra por tipo de rol. Un admin de empresa ve sólo los usuarios de su distribuidora (H-66); un super admin ve todos, o los de la distribuidora que indique en `X-Distributor`.
          */
         get: operations["UsersController_findAll"];
         put?: never;
@@ -1334,7 +1334,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Listar envases (scopeado por distribuidora) */
+        /**
+         * Listar envases (scopeado por distribuidora)
+         * @description Filtros combinables: `state`, `orderId` (envases que salieron en ese pedido, también los de un pedido ya entregado) y `customerUserId` (user_id del cliente, no el customer_id del perfil: los envases que tiene hoy). Paginación opcional con `limit`/`offset`; sin ellos devuelve todos. `X-Total-Count` trae el total sin paginar. Cada ítem trae `lastMovementAt`.
+         */
         get: operations["CylinderController_findAll"];
         put?: never;
         /** Dar de alta un envase físico (IN_DEPOT) */
@@ -1607,7 +1610,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Descargar un adjunto: redirige a una URL firmada (S3) o sirve el archivo (local) */
+        /**
+         * Descargar un adjunto
+         * @description Por defecto devuelve el archivo: redirige (302) a una URL firmada con S3, o lo sirve por streaming con el driver local. Con `?modo=url` devuelve `{ url, expiresAt }` en JSON, sin redirect: es lo que tiene que usar el panel (un 302 cross-origin pierde el token y choca con CORS).
+         */
         get: operations["FleetTaskController_downloadAttachment"];
         put?: never;
         post?: never;
@@ -1890,6 +1896,30 @@ export interface paths {
         patch: operations["ClaimsController_reopen"];
         trace?: never;
     };
+    "/api/claims/{id}/photo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ver la foto de un reclamo (CU-175)
+         * @description Igual que las descargas de adjuntos: por defecto devuelve la foto (302 a la URL firmada con S3, o streaming con el driver local). Con `?modo=url` devuelve `{ url, expiresAt, requiresAuth }` en JSON, sin redirect (con el driver local `url` es esta misma ruta y se pide con el token); si el reclamo no tiene foto subida devuelve su `photoUrl` externa, o 200 con `url: null` si no tiene ninguna. Se puede ver aunque el reclamo esté cerrado.
+         */
+        get: operations["ClaimsController_getPhoto"];
+        put?: never;
+        /**
+         * Subir o reemplazar la foto de un reclamo (CU-174)
+         * @description Multipart, campo `file`: JPG, PNG o WEBP de hasta 10 MB (el tipo se valida por el contenido, no por el header). Sólo mientras el reclamo no esté resuelto ni rechazado (409). Si ya tenía foto, la anterior se borra del storage. La puede subir el cliente dueño del reclamo o un admin de la distribuidora.
+         */
+        post: operations["ClaimsController_uploadPhoto"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/reports/sales-by-driver": {
         parameters: {
             query?: never;
@@ -2142,6 +2172,61 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/attachments/{ownerType}/{ownerId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Listar los adjuntos de un dueño */
+        get: operations["AttachmentController_list"];
+        put?: never;
+        /** Subir un adjunto a un dueño (PDF, JPG, PNG, WEBP) */
+        post: operations["AttachmentController_upload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/attachments/{attachmentId}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Descargar un adjunto
+         * @description Por defecto devuelve el archivo: redirige (302) a una URL firmada con S3, o lo sirve por streaming con el driver local. Con `?modo=url` devuelve `{ url, expiresAt }` en JSON, sin redirect: es lo que tiene que usar el panel (un 302 cross-origin pierde el token y choca con CORS).
+         */
+        get: operations["AttachmentController_download"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/attachments/{attachmentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Borrar un adjunto */
+        delete: operations["AttachmentController_remove"];
         options?: never;
         head?: never;
         patch?: never;
@@ -3311,6 +3396,11 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
+            /**
+             * Format: date-time
+             * @description Fecha del último movimiento del envase. Sólo lo completa el listado (GET /cylinders); en el resto de las lecturas es null.
+             */
+            lastMovementAt: string | null;
         };
         AssignCylindersDto: {
             /** Format: uuid */
@@ -3782,6 +3872,19 @@ export interface components {
             /** @description Por qué se cancela */
             notes?: string;
         };
+        /** @enum {string} */
+        DownloadMode: "url" | "archivo";
+        DownloadLinkResponseDto: {
+            /** @description Con S3: URL firmada, se abre sin token. Con el driver local: la ruta de este mismo backend, que hay que pedir con el token. */
+            url: string;
+            /**
+             * Format: date-time
+             * @description Cuándo vence la URL; `null` si no vence (driver local).
+             */
+            expiresAt: string | null;
+            /** @description `true` si pedir `url` exige el token de la sesión. */
+            requiresAuth: boolean;
+        };
         FleetExpirationEntryDto: {
             /** Format: uuid */
             taskId: string;
@@ -3918,6 +4021,10 @@ export interface components {
             customerId: string;
             reason: string;
             description: string;
+            /**
+             * @deprecated
+             * @description Obsoleto: la foto se sube después con `POST /claims/:id/photo`. Se sigue aceptando por compatibilidad con las apps ya publicadas.
+             */
             photoUrl?: string;
         };
         OrderRecordResponseDto: {
@@ -3976,6 +4083,7 @@ export interface components {
             /** @example Fuga de gas */
             reason: string;
             description: string;
+            /** @description URL firmada de la foto del reclamo (vence en minutos: pedirla de nuevo con `GET /claims/:id/photo`), o `null` si no tiene foto (también con el driver local, que no firma URLs: ahí se usa `GET /claims/:id/photo`). */
             photoUrl: string | null;
             /** @enum {string} */
             status: "pending" | "in_process" | "resolved" | "rejected";
@@ -3998,6 +4106,17 @@ export interface components {
         ReopenClaimDto: {
             /** @description Motivo por el que se reabre el reclamo */
             reason: string;
+        };
+        ClaimPhotoLinkResponseDto: {
+            /** @description Foto subida con S3: URL firmada, se abre sin token. Foto subida con el driver local: la ruta de este mismo backend, que hay que pedir con el token. Reclamo con sólo una `photoUrl` externa (http/https): esa URL. `null` si no tiene foto. */
+            url: string | null;
+            /**
+             * Format: date-time
+             * @description Cuándo vence la URL; `null` si no vence (driver local) o no hay foto.
+             */
+            expiresAt: string | null;
+            /** @description `true` sólo con el driver local (la ruta del backend exige el token). `false` con URL firmada, con URL externa y sin foto. */
+            requiresAuth: boolean;
         };
         VentasPorChoferDto: {
             /**
@@ -4139,6 +4258,27 @@ export interface components {
             items: components["schemas"]["AsientoDeAuditoriaDto"][];
             total: number;
         };
+        /** @enum {string} */
+        AttachmentOwnerType: "employee" | "fuel_load" | "traffic_fine" | "vehicle_accident" | "purchase_receipt" | "stock_adjustment" | "driver_settlement" | "cash_movement" | "customer_account_entry";
+        AttachmentResponseDto: {
+            /** Format: uuid */
+            attachmentId: string;
+            ownerType: components["schemas"]["AttachmentOwnerType"];
+            /** Format: uuid */
+            ownerId: string;
+            /** @example DNI frente */
+            label: string | null;
+            /** @example dni-frente.jpg */
+            originalName: string;
+            /** @example image/jpeg */
+            mimeType: string;
+            /** @example 245678 */
+            sizeBytes: number;
+            /** Format: uuid */
+            uploadedByUserId: string;
+            /** Format: date-time */
+            uploadedAt: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -4202,11 +4342,11 @@ export interface operations {
             query?: {
                 limit?: number;
                 offset?: number;
-                /** @description Filtra por tipo de rol */
-                role?: string;
                 page?: number;
                 /** @description Texto a buscar */
                 term?: string;
+                /** @description Filtra por tipo de rol, exacto: `admin` no incluye a `super_admin` (son dos valores distintos). Sin este parámetro devuelve todos. El total va en `maxUsers` y también en `X-Total-Count`. */
+                role?: "admin" | "super_admin" | "customer" | "delivery";
             };
             header?: never;
             path?: never;
@@ -4221,6 +4361,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ListadoDeUsuariosDto"];
                 };
+            };
+            /** @description role inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Sin token o token inválido */
             401: {
@@ -5054,11 +5201,11 @@ export interface operations {
             query?: {
                 limit?: number;
                 offset?: number;
-                /** @description Filtra por tipo de rol */
-                role?: string;
                 page?: number;
                 /** @description Texto a buscar */
                 term?: string;
+                /** @description Filtra por estado de la cuenta. Sin este parámetro devuelve todos. Los clientes dados de baja nunca se listan. Combinado con `limit=1`, el total en `X-Total-Count` sirve para el contador de cada pestaña. */
+                status?: "active" | "blocked";
             };
             header?: never;
             path?: never;
@@ -5332,8 +5479,6 @@ export interface operations {
             query?: {
                 limit?: number;
                 offset?: number;
-                /** @description Filtra por tipo de rol */
-                role?: string;
                 page?: number;
                 /** @description Texto a buscar */
                 term?: string;
@@ -5376,8 +5521,6 @@ export interface operations {
             query?: {
                 limit?: number;
                 offset?: number;
-                /** @description Filtra por tipo de rol */
-                role?: string;
                 page?: number;
                 /** @description Texto a buscar */
                 term?: string;
@@ -6584,16 +6727,14 @@ export interface operations {
             query?: {
                 limit?: number;
                 offset?: number;
-                /** @description Filtra por tipo de rol */
-                role?: string;
                 page?: number;
                 /** @description Texto a buscar */
                 term?: string;
                 /** @description Filtra por estado, con los mismos valores que devuelve la respuesta (`out_for_delivery` es el pedido en camino) */
                 status?: "reserved" | "pending" | "accepted" | "out_for_delivery" | "delivered" | "cancelled";
-                /** @description Fecha desde (inclusive), en formato YYYY-MM-DD */
+                /** @description Fecha desde (inclusive), día en hora argentina, YYYY-MM-DD */
                 from?: string;
-                /** @description Fecha hasta (inclusive, en la fecha local), YYYY-MM-DD */
+                /** @description Fecha hasta (inclusive), día en hora argentina, YYYY-MM-DD */
                 to?: string;
             };
             header?: never;
@@ -6610,7 +6751,7 @@ export interface operations {
                     "application/json": components["schemas"]["PaginatedOrdersResponseDto"];
                 };
             };
-            /** @description status, from o to inválidos */
+            /** @description status, from o to inválidos, o from posterior a to */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -6683,8 +6824,6 @@ export interface operations {
             query?: {
                 limit?: number;
                 offset?: number;
-                /** @description Filtra por tipo de rol */
-                role?: string;
                 page?: number;
                 /** @description Texto a buscar */
                 term?: string;
@@ -6727,8 +6866,6 @@ export interface operations {
             query?: {
                 limit?: number;
                 offset?: number;
-                /** @description Filtra por tipo de rol */
-                role?: string;
                 page?: number;
                 /** @description Texto a buscar */
                 term?: string;
@@ -6771,8 +6908,6 @@ export interface operations {
             query?: {
                 limit?: number;
                 offset?: number;
-                /** @description Filtra por tipo de rol */
-                role?: string;
                 page?: number;
                 /** @description Texto a buscar */
                 term?: string;
@@ -7444,8 +7579,6 @@ export interface operations {
             query?: {
                 limit?: number;
                 offset?: number;
-                /** @description Filtra por tipo de rol */
-                role?: string;
                 page?: number;
                 /** @description Texto a buscar */
                 term?: string;
@@ -7760,8 +7893,6 @@ export interface operations {
             query?: {
                 limit?: number;
                 offset?: number;
-                /** @description Filtra por tipo de rol */
-                role?: string;
                 page?: number;
                 /** @description Texto a buscar */
                 term?: string;
@@ -8454,6 +8585,13 @@ export interface operations {
         parameters: {
             query?: {
                 state?: "in_depot" | "filled" | "dispatched" | "with_customer" | "empty_returned";
+                /** @description Los envases que salieron en ese pedido: los que lo tienen como pedido actual o que registraron algún movimiento en él. Un pedido ya entregado sigue mostrando sus series. */
+                orderId?: string;
+                /** @description user_id del cliente (el mismo que `customer_id` de un pedido y `user_id` de un cliente; NO el `customer_id` del perfil). Devuelve los envases que tiene hoy en su poder. */
+                customerUserId?: string;
+                /** @description Sin `limit` devuelve todos los envases. */
+                limit?: number;
+                offset?: number;
             };
             header?: never;
             path?: never;
@@ -8468,6 +8606,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["CylinderResponseDto"][];
                 };
+            };
+            /** @description Estado inválido, UUID inválido o paginación fuera de rango */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Sin token o token inválido */
             401: {
@@ -9169,8 +9314,6 @@ export interface operations {
             query?: {
                 limit?: number;
                 offset?: number;
-                /** @description Filtra por tipo de rol */
-                role?: string;
                 page?: number;
                 /** @description Texto a buscar */
                 term?: string;
@@ -9582,7 +9725,10 @@ export interface operations {
     };
     FleetTaskController_downloadAttachment: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description `url` devuelve `{ url, expiresAt }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada con S3, streaming con el driver local). */
+                modo?: components["schemas"]["DownloadMode"];
+            };
             header?: never;
             path: {
                 /** @description Task UUID */
@@ -9594,12 +9740,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description El archivo, con su content-type original */
+            /** @description El archivo con su content-type original; con `?modo=url`, el enlace */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["DownloadLinkResponseDto"];
+                };
             };
             /** @description Sin token o token inválido */
             401: {
@@ -9984,8 +10132,6 @@ export interface operations {
             query?: {
                 limit?: number;
                 offset?: number;
-                /** @description Filtra por tipo de rol */
-                role?: string;
                 page?: number;
                 /** @description Texto a buscar */
                 term?: string;
@@ -10035,8 +10181,6 @@ export interface operations {
             query?: {
                 limit?: number;
                 offset?: number;
-                /** @description Filtra por tipo de rol */
-                role?: string;
                 page?: number;
                 /** @description Texto a buscar */
                 term?: string;
@@ -10428,6 +10572,131 @@ export interface operations {
             };
             /** @description El reclamo no existe o es de otra distribuidora */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ClaimsController_getPhoto: {
+        parameters: {
+            query?: {
+                /** @description `url` devuelve `{ url, expiresAt }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada con S3, streaming con el driver local). */
+                modo?: components["schemas"]["DownloadMode"];
+            };
+            header?: never;
+            path: {
+                /** @description Claim UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La foto; con `?modo=url`, el enlace (`url: null` si no tiene foto) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimPhotoLinkResponseDto"];
+                };
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: customer, admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description El reclamo no existe o no es del cliente; sin `modo`, también si no tiene foto */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ClaimsController_uploadPhoto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Claim UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimResponseDto"];
+                };
+            };
+            /** @description Falta la foto o está vacía */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: customer, admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description El reclamo no existe, no es del cliente o es de otra distribuidora */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description El reclamo está resuelto o rechazado: se reabre antes */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description La foto supera los 10 MB */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No es JPG, PNG ni WEBP (o el contenido no coincide) */
+            415: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11219,6 +11488,219 @@ export interface operations {
             };
             /** @description Requiere rol: admin, super_admin */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AttachmentController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ownerType: components["schemas"]["AttachmentOwnerType"];
+                /** @description UUID del dueño */
+                ownerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttachmentResponseDto"][];
+                };
+            };
+            /** @description El tipo de dueño todavía no admite adjuntos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Un chofer no puede acceder a ese tipo de dueño */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description El dueño no existe o es de otra distribuidora */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AttachmentController_upload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ownerType: components["schemas"]["AttachmentOwnerType"];
+                /** @description UUID del dueño */
+                ownerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                    label?: string;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttachmentResponseDto"];
+                };
+            };
+            /** @description Falta el archivo o el tipo de dueño todavía no admite adjuntos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Un chofer no puede adjuntar a ese tipo de dueño */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description El dueño no existe o es de otra distribuidora */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description El archivo supera el máximo permitido */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tipo de archivo no permitido (sólo PDF, JPG, PNG, WEBP) */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AttachmentController_download: {
+        parameters: {
+            query?: {
+                /** @description `url` devuelve `{ url, expiresAt }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada con S3, streaming con el driver local). */
+                modo?: components["schemas"]["DownloadMode"];
+            };
+            header?: never;
+            path: {
+                /** @description Attachment UUID */
+                attachmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El archivo con su content-type original; con `?modo=url`, el enlace */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DownloadLinkResponseDto"];
+                };
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin, delivery */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Adjunto no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AttachmentController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Attachment UUID */
+                attachmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Borrado */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin, delivery */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Adjunto no encontrado */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

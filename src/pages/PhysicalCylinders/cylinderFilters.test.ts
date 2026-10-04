@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Cylinder } from '../../services/api/types';
-import { countCylindersByState, filterCylinders, movable } from './cylinderFilters';
+import { filterCylinders, movable, uuidOrUndefined } from './cylinderFilters';
 
 const cylinder = (id: string, state: Cylinder['state'], serial: string, customer?: string): Cylinder =>
   ({
@@ -28,22 +28,17 @@ describe('filterCylinders', () => {
   });
 });
 
-describe('countCylindersByState', () => {
-  it('cuenta por estado y el total', () => {
-    expect(countCylindersByState(ALL)).toEqual({
-      in_depot: 1,
-      filled: 1,
-      dispatched: 0,
-      with_customer: 1,
-      empty_returned: 1,
-      all: 4,
-    });
-  });
-});
-
 describe('movable', () => {
   it('sólo deja los que pueden pasar al estado pedido según la máquina de estados', () => {
     expect(movable(ALL, 'filled').map((c) => c.cylinder_id)).toEqual(['1']);
     expect(movable(ALL, 'in_depot').map((c) => c.cylinder_id)).toEqual(['2', '4']);
+  });
+});
+
+describe('uuidOrUndefined', () => {
+  it('deja pasar un UUID y descarta cualquier otra cosa', () => {
+    expect(uuidOrUndefined('5baddc17-24e6-4a69-9e11-45f321956d60')).toBe('5baddc17-24e6-4a69-9e11-45f321956d60');
+    expect(uuidOrUndefined('abc')).toBeUndefined();
+    expect(uuidOrUndefined('')).toBeUndefined();
   });
 });
