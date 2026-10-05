@@ -2,7 +2,7 @@ import type { GridColDef, GridPaginationModel } from '@mui/x-data-grid';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FROM_LIST_STATE } from '../../../hooks';
-import { Lock, LockOpen, Pencil, UserX } from 'lucide-react';
+import { Lock, LockOpen } from 'lucide-react';
 import { Badge, DataTable, EmptyState, IdentityCell, RowActions } from '../../../common/components/ui';
 import type { User } from '../../../services/api/types';
 import { roleLabel } from '../roleLabel';
@@ -76,7 +76,7 @@ export const UsersTable = ({
       {
         field: 'actions',
         headerName: '',
-        width: 96,
+        width: 168,
         sortable: false,
         align: 'right',
         renderCell: ({ row }) => {
@@ -86,17 +86,18 @@ export const UsersTable = ({
             <RowActions
               rowLabel={row.full_name ?? 'usuario'}
               onView={() => navigate(`/users/details/${row.user_id}`, { state: FROM_LIST_STATE })}
+              onEdit={canManage ? () => onEdit(row) : undefined}
+              onDelete={canManage ? () => onDelete(row) : undefined}
+              deleteLabel="Dar de baja"
               actions={
                 canManage
                   ? [
-                      { label: 'Editar cuenta', icon: Pencil, onClick: () => onEdit(row) },
                       {
                         label: row.blocked ? 'Desbloquear' : 'Bloquear',
                         icon: row.blocked ? LockOpen : Lock,
                         tone: row.blocked ? 'neutral' : 'danger',
                         onClick: () => onToggleBlock(row),
                       },
-                      { label: 'Dar de baja', icon: UserX, tone: 'danger', onClick: () => onDelete(row) },
                     ]
                   : []
               }

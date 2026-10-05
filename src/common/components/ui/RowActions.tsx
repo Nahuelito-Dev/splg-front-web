@@ -1,6 +1,6 @@
 import { useState, type MouseEvent } from 'react';
 import { Menu, MenuItem } from '@mui/material';
-import { ChevronRight, Ellipsis, type LucideIcon } from 'lucide-react';
+import { Ellipsis, Eye, Pencil, Trash2, type LucideIcon } from 'lucide-react';
 import { IconButton } from './IconButton';
 import { cx } from './cx';
 
@@ -15,21 +15,31 @@ interface Props {
   /** Nombre de la fila para los lectores de pantalla ("pedido #1C647A"). */
   rowLabel: string;
   onView?: () => void;
-  /** Lo demás va en el menú ⋯. Sin acciones, no hay menú. */
+  onEdit?: () => void;
+  /** Baja lógica: el que llama pide la confirmación antes de dar de baja. */
+  onDelete?: () => void;
+  /** Texto de la baja según la pantalla ("Eliminar", "Dar de baja", "Desactivar"). */
+  deleteLabel?: string;
+  /** Lo demás va en el menú ⋯ al final de la fila. Sin acciones, no hay menú. */
   actions?: RowAction[];
 }
 
 /**
- * Acciones de una fila: "Ver detalle" a la vista y el resto en un menú, para
- * que la tabla muestre datos y no una fila de íconos. Los clics no llegan a la
- * fila (que también abre el detalle).
+ * Acciones de una fila: Ver, Editar y Eliminar como botones con ícono, en ese
+ * orden, y lo que no aplica a la entidad no se muestra. Las acciones extra van
+ * en un menú ⋯. Los clics no llegan a la fila (que también abre el detalle).
  */
-export const RowActions = ({ rowLabel, onView, actions = [] }: Props) => {
+export const RowActions = ({ rowLabel, onView, onEdit, onDelete, deleteLabel = 'Eliminar', actions = [] }: Props) => {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const stop = (event: MouseEvent) => event.stopPropagation();
 
   return (
     <div className="flex items-center justify-end gap-1.5" onClick={stop}>
+      {onView && <IconButton label={`Ver ${rowLabel}`} icon={<Eye />} onClick={onView} />}
+      {onEdit && <IconButton label={`Editar ${rowLabel}`} icon={<Pencil />} onClick={onEdit} />}
+      {onDelete && (
+        <IconButton label={`${deleteLabel} ${rowLabel}`} icon={<Trash2 />} tone="danger" onClick={onDelete} />
+      )}
       {actions.length > 0 && (
         <>
           <IconButton
@@ -63,7 +73,6 @@ export const RowActions = ({ rowLabel, onView, actions = [] }: Props) => {
           </Menu>
         </>
       )}
-      {onView && <IconButton label={`Ver detalle de ${rowLabel}`} icon={<ChevronRight />} onClick={onView} />}
     </div>
   );
 };

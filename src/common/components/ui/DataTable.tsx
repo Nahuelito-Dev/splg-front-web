@@ -34,7 +34,7 @@ interface Props<T extends GridValidRowModel> {
   pagination?: ServerPagination;
   empty?: ReactNode;
   rowHeight?: number;
-  /** Clic en la fila: abre el detalle (además del botón "Ver detalle" de RowActions). */
+  /** Clic en la fila: abre el detalle (además del botón "Ver" de RowActions). */
   onRowClick?: (row: T) => void;
   /** Selección múltiple con casilla por fila y en el encabezado; sin esto no hay casillas. */
   selection?: Selection<T>;

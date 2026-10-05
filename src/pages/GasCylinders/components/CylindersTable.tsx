@@ -1,7 +1,7 @@
 import type { GridColDef, GridPaginationModel } from '@mui/x-data-grid';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Ban, Flame, PackagePlus, Pencil } from 'lucide-react';
+import { Flame, PackagePlus } from 'lucide-react';
 import { Badge, DataTable, EmptyState, IdentityCell, RowActions } from '../../../common/components/ui';
 import type { GasCylinder } from '../../../services/api/types';
 import { formatCurrency } from '../../../utils/format';
@@ -66,22 +66,19 @@ export const CylindersTable = ({
       {
         field: 'actions',
         headerName: '',
-        width: 96,
+        width: 168,
         sortable: false,
         align: 'right',
         renderCell: ({ row }) => (
           <RowActions
             rowLabel={row.type}
             onView={() => navigate(`/cylinders/details/${row.gas_cylinder_id}`)}
-            actions={[
-              ...(onEdit ? [{ label: 'Editar', icon: Pencil, onClick: () => onEdit(row) }] : []),
-              ...(onAdjustStock
-                ? [{ label: 'Ajustar stock', icon: PackagePlus, onClick: () => onAdjustStock(row) }]
-                : []),
-              ...(onDelete
-                ? [{ label: 'Desactivar', icon: Ban, tone: 'danger' as const, onClick: () => onDelete(row) }]
-                : []),
-            ]}
+            onEdit={onEdit && (() => onEdit(row))}
+            onDelete={onDelete && (() => onDelete(row))}
+            deleteLabel="Desactivar"
+            actions={
+              onAdjustStock ? [{ label: 'Ajustar stock', icon: PackagePlus, onClick: () => onAdjustStock(row) }] : []
+            }
           />
         ),
       },

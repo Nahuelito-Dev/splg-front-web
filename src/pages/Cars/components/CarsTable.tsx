@@ -1,6 +1,5 @@
 import type { GridColDef } from '@mui/x-data-grid';
 import { useMemo } from 'react';
-import { Pencil, Trash2 } from 'lucide-react';
 import { DataTable, EmptyState, IdentityCell, RowActions } from '../../../common/components/ui';
 import { carIcon } from './carIcon';
 import type { Car } from '../../../services/api/types';
@@ -48,19 +47,15 @@ export const CarsTable = ({ rows, loading, onView, onEdit, onDelete }: Props) =>
       {
         field: 'actions',
         headerName: '',
-        width: 96,
+        width: 136,
         sortable: false,
         align: 'right',
         renderCell: ({ row }) => (
           <RowActions
             rowLabel={row.car_patent ?? 'vehículo'}
             onView={() => onView(row)}
-            actions={[
-              ...(onEdit ? [{ label: 'Editar', icon: Pencil, onClick: () => onEdit(row) }] : []),
-              ...(onDelete
-                ? [{ label: 'Eliminar', icon: Trash2, tone: 'danger' as const, onClick: () => onDelete(row) }]
-                : []),
-            ]}
+            onEdit={onEdit && (() => onEdit(row))}
+            onDelete={onDelete && (() => onDelete(row))}
           />
         ),
       },

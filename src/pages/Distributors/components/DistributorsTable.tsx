@@ -1,6 +1,6 @@
 import type { GridColDef } from '@mui/x-data-grid';
 import { useMemo } from 'react';
-import { ArrowLeftRight, Ban, CircleCheck, Pencil, Trash2 } from 'lucide-react';
+import { ArrowLeftRight, Ban, CircleCheck } from 'lucide-react';
 import { Badge, Button, DataTable, EmptyState, IdentityCell, RowActions } from '../../../common/components/ui';
 import type { Distributor } from '../../../services/api/types';
 import { DISTRIBUTOR_STATUS, labelOf } from '../../../utils/statusLabels';
@@ -59,7 +59,7 @@ export const DistributorsTable = ({
       {
         field: 'actions',
         headerName: '',
-        width: 210,
+        width: 300,
         sortable: false,
         align: 'right',
         renderCell: ({ row }) => (
@@ -74,12 +74,13 @@ export const DistributorsTable = ({
             <RowActions
               rowLabel={row.name}
               onView={() => onView(row)}
+              onEdit={() => onEdit(row)}
+              onDelete={() => onDelete(row)}
+              deleteLabel="Dar de baja"
               actions={[
-                { label: 'Editar', icon: Pencil, onClick: () => onEdit(row) },
                 row.status === 'active'
                   ? { label: 'Suspender', icon: Ban, tone: 'danger', onClick: () => onToggleStatus(row) }
                   : { label: 'Activar', icon: CircleCheck, onClick: () => onToggleStatus(row) },
-                { label: 'Dar de baja', icon: Trash2, tone: 'danger', onClick: () => onDelete(row) },
               ]}
             />
           </div>

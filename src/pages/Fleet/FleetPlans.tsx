@@ -1,7 +1,7 @@
 import type { GridColDef } from '@mui/x-data-grid';
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CirclePlus, Pencil, Power, PowerOff } from 'lucide-react';
+import { CirclePlus, Power, PowerOff } from 'lucide-react';
 import {
   Badge,
   Button,
@@ -125,17 +125,17 @@ export const FleetPlans = () => {
       {
         field: 'actions',
         headerName: '',
-        width: 96,
+        width: 136,
         sortable: false,
         align: 'right',
         renderCell: ({ row }) => (
           <RowActions
             rowLabel={row.name}
             onView={() => navigate(`/fleet/plans/${row.planId}`, { state: FROM_LIST_STATE })}
+            onEdit={canWrite ? () => setForm({ open: true, plan: row }) : undefined}
             actions={
               canWrite
                 ? [
-                    { label: 'Editar', icon: Pencil, onClick: () => setForm({ open: true, plan: row }) },
                     row.isActive
                       ? { label: 'Desactivar', icon: PowerOff, tone: 'danger', onClick: () => void handleToggle(row) }
                       : { label: 'Activar', icon: Power, onClick: () => void handleToggle(row) },

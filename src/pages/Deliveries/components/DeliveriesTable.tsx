@@ -2,7 +2,7 @@ import type { GridColDef, GridPaginationModel } from '@mui/x-data-grid';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FROM_LIST_STATE } from '../../../hooks';
-import { Pencil, ShieldCheck, ShieldX, Star, UserX } from 'lucide-react';
+import { ShieldCheck, ShieldX, Star } from 'lucide-react';
 import { Badge, DataTable, EmptyState, IdentityCell, RowActions } from '../../../common/components/ui';
 import type { Delivery } from '../../../services/api/types';
 import { driverStatus } from '../../../utils/statusLabels';
@@ -82,13 +82,16 @@ export const DeliveriesTable = ({
       {
         field: 'actions',
         headerName: '',
-        width: 96,
+        width: 168,
         sortable: false,
         align: 'right',
         renderCell: ({ row }) => (
           <RowActions
             rowLabel={row.user?.full_name ?? 'chofer'}
             onView={() => navigate(`/deliveries/details/${row.delivery_id}`, { state: FROM_LIST_STATE })}
+            onEdit={onEdit && (() => onEdit(row))}
+            onDelete={onDelete && (() => onDelete(row))}
+            deleteLabel="Dar de baja"
             actions={[
               ...(onToggleValidated
                 ? [
@@ -101,10 +104,6 @@ export const DeliveriesTable = ({
                         }
                       : { label: 'Validar', icon: ShieldCheck, onClick: () => onToggleValidated(row) },
                   ]
-                : []),
-              ...(onEdit ? [{ label: 'Editar', icon: Pencil, onClick: () => onEdit(row) }] : []),
-              ...(onDelete
-                ? [{ label: 'Dar de baja', icon: UserX, tone: 'danger' as const, onClick: () => onDelete(row) }]
                 : []),
             ]}
           />
