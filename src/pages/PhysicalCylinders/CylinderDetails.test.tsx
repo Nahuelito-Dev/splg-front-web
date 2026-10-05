@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../../services/api/errors';
@@ -19,6 +19,8 @@ vi.mock('../../hooks', () => ({
   useBackToList: () => vi.fn(),
 }));
 
+import { Breadcrumbs } from '../../common/components/Navbar/components/Breadcrumbs';
+import { CrumbProvider } from '../../common/components/Navbar/CrumbProvider';
 import { CylinderDetails } from './CylinderDetails';
 
 const CYLINDER = {
@@ -50,9 +52,12 @@ const MOVEMENTS = [
 const renderPage = () =>
   render(
     <MemoryRouter initialEntries={['/physical-cylinders/c-1']}>
-      <Routes>
-        <Route path="physical-cylinders/:id" element={<CylinderDetails />} />
-      </Routes>
+      <CrumbProvider>
+        <Breadcrumbs />
+        <Routes>
+          <Route path="physical-cylinders/:id" element={<CylinderDetails />} />
+        </Routes>
+      </CrumbProvider>
     </MemoryRouter>,
   );
 
@@ -68,7 +73,11 @@ describe('CylinderDetails', () => {
     historyQuery.mockReturnValue({ data: MOVEMENTS, isPending: false, error: null, refetch: vi.fn() });
     renderPage();
     expect(screen.getByRole('heading', { name: 'SPLG-00017' })).toBeInTheDocument();
-    expect(screen.getByRole('navigation', { name: 'Ruta de la ficha' })).toHaveTextContent('SPLG-00017');
+    expect(within(screen.getByRole('navigation', { name: 'Migas de pan' })).getByText('SPLG-00017')).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    expect(screen.getAllByRole('navigation')).toHaveLength(1);
     expect(screen.getByText('Garrafa 5kg · 5 kg')).toBeInTheDocument();
     expect(screen.getByText('Llenado')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Mover de estado' })).toBeEnabled();

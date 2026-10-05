@@ -15,6 +15,7 @@ import {
   type ProfileTabItem,
 } from '../../common/components/ui';
 import { useBackToList, usePermissions, useProfileTab } from '../../hooks';
+import { useCrumbLeaf } from '../../common/components';
 import type { Claim } from '../../services/api/types';
 import { useClaims } from '../../services/queries/claims';
 import { useCustomer, useCustomerOrderSample, useDeleteCustomer } from '../../services/queries/customers';
@@ -84,6 +85,7 @@ export const CustomerDetails = () => {
   };
 
   const name = customer?.user?.full_name ?? 'Sin nombre';
+  useCrumbLeaf(customer ? name : undefined, goBack);
   const stats = orders.data ? customerStats(orders.data.orders, orders.data.total) : null;
   const coverStats: CoverStat[] = [
     {
@@ -111,7 +113,6 @@ export const CustomerDetails = () => {
     <div className="mx-auto max-w-5xl p-4 md:p-8">
       <PageHeader
         title="Ficha del cliente"
-        breadcrumbs={[{ label: 'Clientes', to: '/customers', onClick: goBack }, { label: customer ? name : 'Cliente' }]}
         actions={
           customer &&
           canManageCustomerAccounts && (

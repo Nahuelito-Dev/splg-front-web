@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { CirclePlus, Pencil, XCircle } from 'lucide-react';
 import { Badge, Button, Card, DetailList, DetailSkeleton, ErrorState, PageHeader } from '../../common/components/ui';
 import { useBackToList, usePermissions } from '../../hooks';
+import { useCrumbLeaf } from '../../common/components';
 import { useCar } from '../../services/queries/cars';
 import { useCancelFleetTask, useFleetTask } from '../../services/queries/fleet';
 import { formatDay, formatNumber } from '../../utils/format';
@@ -20,6 +21,7 @@ export const FleetTaskDetail = () => {
   const goBack = useBackToList('/fleet/tasks');
   const { canWrite, writeHint } = usePermissions();
   const { data: task, isPending, error, refetch } = useFleetTask(id);
+  useCrumbLeaf(task?.plan?.name, goBack);
   const { data: car } = useCar(task?.carId ?? undefined);
   const cancelTask = useCancelFleetTask();
   const [editing, setEditing] = useState(false);
@@ -49,7 +51,6 @@ export const FleetTaskDetail = () => {
       <PageHeader
         title={task?.plan?.name ?? 'Tarea'}
         description="Documentación de la flota"
-        breadcrumbs={[{ label: 'Tareas', to: '/fleet/tasks', onClick: goBack }, { label: task?.plan?.name ?? 'Tarea' }]}
         actions={task && <Badge label={labelOf(FLEET_TASK_STATUS, task.status)} />}
       />
 

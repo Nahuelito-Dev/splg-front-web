@@ -8,6 +8,7 @@ import {
   type ProfileTabItem,
 } from '../../common/components/ui';
 import { useBackToList, usePermissions, useProfileTab } from '../../hooks';
+import { useCrumbLeaf } from '../../common/components';
 import { useDelivery } from '../../services/queries/deliveries';
 import { UserRatingsTab } from '../Ratings/components/UserRatingsTab';
 import { FleetDocuments } from '../Fleet/components/FleetDocuments';
@@ -33,6 +34,7 @@ export const DeliveryDetails = () => {
   const goBack = useBackToList('/deliveries');
   const { canWrite, writeHint } = usePermissions();
   const { data: delivery, isPending, error, refetch } = useDelivery(id);
+  useCrumbLeaf(delivery?.user?.full_name, goBack);
   const [tab, setTab] = useProfileTab(
     TABS.map((t) => t.key),
     'overview',
@@ -40,13 +42,7 @@ export const DeliveryDetails = () => {
 
   return (
     <div className="mx-auto max-w-5xl p-4 md:p-8">
-      <PageHeader
-        title="Ficha del chofer"
-        breadcrumbs={[
-          { label: 'Choferes', to: '/deliveries', onClick: goBack },
-          { label: delivery?.user?.full_name ?? 'Chofer' },
-        ]}
-      />
+      <PageHeader title="Ficha del chofer" />
 
       {isPending ? (
         <ProfileSkeleton />

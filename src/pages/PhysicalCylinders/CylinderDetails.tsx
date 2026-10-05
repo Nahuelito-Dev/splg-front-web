@@ -12,6 +12,7 @@ import {
   UserRefLink,
 } from '../../common/components/ui';
 import { useBackToList, usePermissions } from '../../hooks';
+import { useCrumbLeaf } from '../../common/components';
 import { useCylinder } from '../../services/queries/physicalCylinders';
 import { formatCurrency, formatDate, formatDateTime, formatShortId } from '../../utils/format';
 import { CYLINDER_STATE, labelOf } from '../../utils/statusLabels';
@@ -24,16 +25,13 @@ export const CylinderDetails = () => {
   const goBack = useBackToList('/physical-cylinders');
   const { canWrite, writeHint } = usePermissions();
   const { data: cylinder, isPending, error, refetch } = useCylinder(id);
+  useCrumbLeaf(cylinder?.serial, goBack);
   const [transitioning, setTransitioning] = useState(false);
 
   return (
     <div className="mx-auto max-w-7xl p-4 md:p-8">
       <PageHeader
         title="Ficha del envase"
-        breadcrumbs={[
-          { label: 'Envases', to: '/physical-cylinders', onClick: goBack },
-          { label: cylinder?.serial ?? 'Envase' },
-        ]}
         actions={
           cylinder && (
             <Button

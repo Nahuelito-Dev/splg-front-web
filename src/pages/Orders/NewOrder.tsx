@@ -73,7 +73,6 @@ export const NewOrder = () => {
     <div className="mx-auto max-w-3xl p-4 md:p-8">
       <PageHeader
         title="Nuevo pedido telefónico"
-        breadcrumbs={[{ label: 'Pedidos', to: '/orders' }, { label: 'Nuevo' }]}
         description="Alta manual para cuando el cliente llama en vez de pedir desde la app (CU-072)."
       />
 

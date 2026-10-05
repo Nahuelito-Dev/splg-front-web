@@ -3,6 +3,8 @@ import { useParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { DetailSkeleton, ErrorState, PageHeader } from '../../common/components/ui';
 import { useBackToList } from '../../hooks';
+import { formatShortId } from '../../utils/format';
+import { useCrumbLeaf } from '../../common/components';
 import { useSocketContext } from '../../context/useSocketContext';
 import { ORDER_SOCKET_EVENTS, type OrderSocketEventName } from '../../hooks/useSocket';
 import { useOrder } from '../../services/queries/orders';
@@ -32,6 +34,7 @@ export const OrderDetails = () => {
   const queryClient = useQueryClient();
   const { isOnline, subscribe } = useSocketContext();
   const { data: order, isPending, error, refetch } = useOrder(id, { refetchInterval: isOnline ? false : 20_000 });
+  useCrumbLeaf(id ? formatShortId(id) : undefined, goBack);
 
   useEffect(() => {
     if (!id) return;
@@ -49,10 +52,7 @@ export const OrderDetails = () => {
         <DetailSkeleton />
       ) : error || !order ? (
         <>
-          <PageHeader
-            title="Pedido"
-            breadcrumbs={[{ label: 'Pedidos', to: '/orders', onClick: goBack }, { label: 'No disponible' }]}
-          />
+          <PageHeader title="Pedido" />
           <ErrorState error={error} resource="El pedido" onRetry={() => void refetch()} />
         </>
       ) : (
