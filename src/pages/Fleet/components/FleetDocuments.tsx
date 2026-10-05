@@ -1,6 +1,6 @@
 import type { GridColDef } from '@mui/x-data-grid';
 import { useCallback, useMemo, useState } from 'react';
-import { CirclePlus, Pencil, ShieldAlert, XCircle } from 'lucide-react';
+import { CirclePlus, ShieldAlert, XCircle } from 'lucide-react';
 import {
   Badge,
   Button,
@@ -111,17 +111,17 @@ export const FleetDocuments = ({ subject, ownerId, carType, canWrite, writeHint 
       {
         field: 'actions',
         headerName: '',
-        width: 96,
+        width: 136,
         sortable: false,
         align: 'right',
         renderCell: ({ row }) => (
           <RowActions
             rowLabel={row.plan?.name ?? 'tarea'}
             onView={() => setDetail(row)}
+            onEdit={canWrite && isOpenTask(row.status) ? () => setForm({ open: true, task: row }) : undefined}
             actions={
               canWrite && isOpenTask(row.status)
                 ? [
-                    { label: 'Editar', icon: Pencil, onClick: () => setForm({ open: true, task: row }) },
                     { label: 'Cerrar tarea', icon: CirclePlus, onClick: () => setClosing(row) },
                     {
                       label: 'Cancelar',

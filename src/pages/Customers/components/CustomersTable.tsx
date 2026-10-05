@@ -1,7 +1,6 @@
 import type { GridColDef, GridPaginationModel } from '@mui/x-data-grid';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Pencil, UserX } from 'lucide-react';
 import { FROM_LIST_STATE } from '../../../hooks';
 import { DataTable, EmptyState, IdentityCell, RowActions } from '../../../common/components/ui';
 import type { Customer } from '../../../services/api/types';
@@ -70,19 +69,16 @@ export const CustomersTable = ({
       {
         field: 'actions',
         headerName: '',
-        width: 96,
+        width: 136,
         sortable: false,
         align: 'right',
         renderCell: ({ row }) => (
           <RowActions
             rowLabel={row.user?.full_name ?? 'cliente'}
             onView={() => navigate(`/customers/details/${row.customer_id}`, { state: FROM_LIST_STATE })}
-            actions={[
-              ...(onEdit ? [{ label: 'Editar cuenta', icon: Pencil, onClick: () => onEdit(row) }] : []),
-              ...(onDelete
-                ? [{ label: 'Dar de baja', icon: UserX, tone: 'danger' as const, onClick: () => onDelete(row) }]
-                : []),
-            ]}
+            onEdit={onEdit && (() => onEdit(row))}
+            onDelete={onDelete && (() => onDelete(row))}
+            deleteLabel="Dar de baja"
           />
         ),
       },
