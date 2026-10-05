@@ -177,7 +177,7 @@ export const ClaimDetailDrawer = ({ open, onClose, claim }: Props) => {
 
         <div>
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Historial</h3>
-          <ClaimHistory claimId={claim.claim_id} />
+          <ClaimHistory claimId={claim.claim_id} createdAt={claim.createdAt} />
         </div>
 
         {action && (

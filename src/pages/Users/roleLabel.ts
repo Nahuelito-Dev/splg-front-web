@@ -9,4 +9,6 @@ const ROLE_LABEL: Record<string, Label> = {
 };
 
 export const roleLabel = (type: string | null | undefined): Label =>
-  type && type in ROLE_LABEL ? ROLE_LABEL[type] : { text: type ?? '—', tone: 'neutral' };
+  type && Object.prototype.hasOwnProperty.call(ROLE_LABEL, type)
+    ? ROLE_LABEL[type]
+    : { text: type ?? '—', tone: 'neutral' };

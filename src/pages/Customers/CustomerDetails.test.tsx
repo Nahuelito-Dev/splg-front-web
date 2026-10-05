@@ -100,6 +100,8 @@ vi.mock('./components/details/CustomerOrders', () => ({ CustomerOrders: () => <p
 vi.mock('../Ratings/components/UserRatingsTab', () => ({ UserRatingsTab: () => <p>calificaciones</p> }));
 vi.mock('../Claims/components/ClaimHistory', () => ({ ClaimHistory: () => null }));
 
+import { Breadcrumbs } from '../../common/components/Navbar/components/Breadcrumbs';
+import { CrumbProvider } from '../../common/components/Navbar/CrumbProvider';
 import { CustomerDetails } from './CustomerDetails';
 
 afterEach(cleanup);
@@ -107,9 +109,12 @@ afterEach(cleanup);
 const renderPage = (url = '/customers/details/c-1') =>
   render(
     <MemoryRouter initialEntries={[url]}>
-      <Routes>
-        <Route path="/customers/details/:id" element={<CustomerDetails />} />
-      </Routes>
+      <CrumbProvider>
+        <Breadcrumbs />
+        <Routes>
+          <Route path="/customers/details/:id" element={<CustomerDetails />} />
+        </Routes>
+      </CrumbProvider>
     </MemoryRouter>,
   );
 
@@ -121,11 +126,13 @@ describe('CustomerDetails: portada con KPIs y pestañas', () => {
     expect(screen.getByText('Última compra').closest('div')).toHaveTextContent('2026');
   });
 
-  it('usa el encabezado de página con la ruta Clientes › nombre, sin botón "volver" suelto', () => {
+  it('la barra muestra Clientes › nombre del cliente, y la página no repite las migas ni tiene botón "volver"', () => {
     renderPage();
-    const nav = screen.getByRole('navigation', { name: 'Ruta de la ficha' });
+    const nav = screen.getByRole('navigation', { name: 'Migas de pan' });
     expect(within(nav).getByRole('link', { name: 'Clientes' })).toHaveAttribute('href', '/customers');
     expect(within(nav).getByText('Ana Pérez')).toHaveAttribute('aria-current', 'page');
+    expect(within(nav).queryByText('Detalle')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('navigation')).toHaveLength(1);
     expect(screen.queryByRole('button', { name: /Volver/ })).not.toBeInTheDocument();
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
   });

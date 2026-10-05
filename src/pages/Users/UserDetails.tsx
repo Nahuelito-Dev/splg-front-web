@@ -18,6 +18,7 @@ import {
   type ProfileTabItem,
 } from '../../common/components/ui';
 import { useBackToList, usePermissions, useProfileTab } from '../../hooks';
+import { useCrumbLeaf } from '../../common/components';
 import { useBlockUser, useDeleteUser, useUser } from '../../services/queries/users';
 import { confirm, notify } from '../../utils/notifications';
 import { UserEditModal } from './components/UserEditModal';
@@ -84,6 +85,7 @@ export const UserDetails = () => {
   };
 
   const name = user?.full_name ?? 'Sin nombre';
+  useCrumbLeaf(user ? name : undefined, goBack);
   const yesNo = (value: boolean) => (value ? 'Verificado' : 'Sin verificar');
   const stats: CoverStat[] = user
     ? [
@@ -97,7 +99,6 @@ export const UserDetails = () => {
     <div className="mx-auto max-w-5xl p-4 md:p-8">
       <PageHeader
         title="Ficha del usuario"
-        breadcrumbs={[{ label: 'Usuarios', to: '/users', onClick: goBack }, { label: user ? name : 'Usuario' }]}
         actions={
           canManage && (
             <>

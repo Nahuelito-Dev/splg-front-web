@@ -17,6 +17,7 @@ import {
   type ProfileTabItem,
 } from '../../common/components/ui';
 import { useBackToList, usePermissions, useProfileTab } from '../../hooks';
+import { useCrumbLeaf } from '../../common/components';
 import { useCar, useDeleteCar } from '../../services/queries/cars';
 import { useCarAssignments } from '../../services/queries/fleet';
 import { confirm, notify } from '../../utils/notifications';
@@ -71,6 +72,7 @@ export const CarDetails = () => {
   };
 
   const title = car ? [car.car_brand, car.car_model].filter(Boolean).join(' ') || 'Vehículo' : 'Vehículo';
+  useCrumbLeaf(car ? title : undefined, goBack);
   const Icon = carIcon(car?.type_car ?? null);
   const stats: CoverStat[] = [
     { label: 'Año', value: car?.car_year ? String(car.car_year) : '—' },
@@ -86,7 +88,6 @@ export const CarDetails = () => {
     <div className="mx-auto max-w-5xl p-4 md:p-8">
       <PageHeader
         title="Ficha del vehículo"
-        breadcrumbs={[{ label: 'Vehículos', to: '/cars', onClick: goBack }, { label: car ? title : 'Vehículo' }]}
         actions={
           car && (
             <>

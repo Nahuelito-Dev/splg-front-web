@@ -1,7 +1,6 @@
 import { BellRing, CircleX, KeyRound, PackageCheck, Printer, RefreshCw, UserRoundCog } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Badge, Button, PageHeader } from '../../../../common/components/ui';
-import { useBackToList } from '../../../../hooks';
 import type { Order } from '../../../../services/api/types';
 import { formatDateTime, formatShortId } from '../../../../utils/format';
 import { labelOf, ORDER_STATUS } from '../../../../utils/statusLabels';
@@ -25,7 +24,6 @@ import { useOrderActions } from './useOrderActions';
  * está siempre disponible.
  */
 export const OrderDetailsToolbar = ({ order }: { order: Order }) => {
-  const goBack = useBackToList('/orders');
   const actions = useOrderActions(order);
   const targets = manualStatusTargets(order.status);
 
@@ -35,7 +33,6 @@ export const OrderDetailsToolbar = ({ order }: { order: Order }) => {
         title={`Pedido ${formatShortId(order.order_id)}`}
         badges={<Badge label={labelOf(ORDER_STATUS, order.status)} />}
         description={`Creado ${formatDateTime(order.created_at)}`}
-        breadcrumbs={[{ label: 'Pedidos', to: '/orders', onClick: goBack }, { label: formatShortId(order.order_id) }]}
         actions={
           <>
             {canAssignDriver(order.status) && (

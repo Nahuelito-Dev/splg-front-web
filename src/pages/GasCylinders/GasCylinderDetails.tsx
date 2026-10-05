@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import { Button, DetailSkeleton, ErrorState, PageHeader } from '../../common/components/ui';
 import { useBackToList } from '../../hooks';
+import { useCrumbLeaf } from '../../common/components';
 import { useGasCylinder } from '../../services/queries/gasCylinders';
 import { CylinderFormModal } from './components/CylinderFormModal';
 import { CylinderProfileCard } from './components/details/CylinderProfileCard';
@@ -13,15 +14,12 @@ export const GasCylinderDetails = () => {
   const goBack = useBackToList('/cylinders');
   const [editing, setEditing] = useState(false);
   const { data: cylinder, isPending, error, refetch } = useGasCylinder(id);
+  useCrumbLeaf(cylinder?.type, goBack);
 
   return (
     <div className="mx-auto max-w-4xl p-4 md:p-8">
       <PageHeader
         title="Ficha del producto"
-        breadcrumbs={[
-          { label: 'Catálogo', to: '/cylinders', onClick: goBack },
-          { label: cylinder?.type ?? 'Producto' },
-        ]}
         actions={
           cylinder && (
             <Button variant="secondary" icon={<EditOutlinedIcon />} onClick={() => setEditing(true)}>

@@ -12,6 +12,7 @@ import {
   PageHeader,
 } from '../../common/components/ui';
 import { useBackToList, usePermissions } from '../../hooks';
+import { useCrumbLeaf } from '../../common/components';
 import { useFleetPlan, useUpdateFleetPlan } from '../../services/queries/fleet';
 import { confirm, notify } from '../../utils/notifications';
 import { FLEET_PLAN_SUBJECT, FLEET_TASK_CRITICALITY, labelOf } from '../../utils/statusLabels';
@@ -25,6 +26,7 @@ export const FleetPlanDetails = () => {
   const goBack = useBackToList('/fleet/plans');
   const { canWrite, writeHint, needsDistributor } = usePermissions();
   const { data: plan, isPending, error, refetch } = useFleetPlan(id, !needsDistributor);
+  useCrumbLeaf(plan?.name, goBack);
   const updatePlan = useUpdateFleetPlan();
   const [editing, setEditing] = useState(false);
 
@@ -59,7 +61,6 @@ export const FleetPlanDetails = () => {
     <div className="mx-auto max-w-7xl p-4 md:p-8">
       <PageHeader
         title="Ficha del plan"
-        breadcrumbs={[{ label: 'Planes', to: '/fleet/plans', onClick: goBack }, { label: plan?.name ?? 'Plan' }]}
         actions={
           plan &&
           canWrite && (

@@ -12,6 +12,7 @@ import {
   PageHeader,
 } from '../../common/components/ui';
 import { useBackToList, usePermissions } from '../../hooks';
+import { useCrumbLeaf } from '../../common/components';
 import { activeDistributor } from '../../services/api/activeDistributor';
 import { useDistributor } from '../../services/queries/distributors';
 import { formatDateTime } from '../../utils/format';
@@ -27,6 +28,7 @@ export const DistributorDetails = () => {
   const goBack = useBackToList('/distributors');
   const { isSuperAdmin } = usePermissions();
   const { data: distributor, isPending, error, refetch } = useDistributor(id, isSuperAdmin);
+  useCrumbLeaf(distributor?.name, goBack);
   const { toggleStatus, remove } = useDistributorActions({ onDeleted: () => navigate('/distributors') });
   const [editing, setEditing] = useState(false);
 
@@ -49,10 +51,6 @@ export const DistributorDetails = () => {
     <div className="mx-auto max-w-7xl p-4 md:p-8">
       <PageHeader
         title="Ficha de la empresa"
-        breadcrumbs={[
-          { label: 'Distribuidoras', to: '/distributors', onClick: goBack },
-          { label: distributor?.name ?? 'Empresa' },
-        ]}
         actions={
           distributor && (
             <>
