@@ -62,9 +62,9 @@ export const CoverageZones = () => {
 
   const handleDelete = async (zone: CoverageZone) => {
     const confirmed = await confirm({
-      title: '¿Eliminar la zona?',
-      text: `"${zone.name}" deja de aplicar cobertura y recargo a los pedidos nuevos.`,
-      confirmText: 'Eliminar',
+      title: '¿Dar de baja la zona?',
+      text: `Baja lógica: "${zone.name}" deja de aplicar cobertura y recargo a los pedidos nuevos. No se borra.`,
+      confirmText: 'Dar de baja',
       danger: true,
     });
     if (!confirmed) return;
@@ -72,7 +72,7 @@ export const CoverageZones = () => {
     const wasSelected = zone.coverage_zone_id === selectedZoneId;
     if (wasSelected) resetForm();
     deleteZone.mutate(zone.coverage_zone_id, {
-      onSuccess: () => notify.success('Zona eliminada'),
+      onSuccess: () => notify.success('Zona dada de baja'),
       onError: (error) => {
         if (wasSelected) setSelectedZoneId(zone.coverage_zone_id);
         notify.error(error);

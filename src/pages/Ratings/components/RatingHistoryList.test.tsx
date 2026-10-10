@@ -1,10 +1,19 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Rating } from '../../../services/api/types';
 
 vi.mock('../../../services/queries/userNames', () => ({
   useUserNames: () => ({ nameOf: (id: string) => (id === 'to-1' ? 'Chofer Pedro' : null), loading: false }),
+}));
+
+vi.mock('../../../hooks', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  usePermissions: () => ({ canWrite: true }),
+}));
+vi.mock('../../../services/queries/ratings', () => ({
+  useRating: () => ({ data: undefined, isPending: true, error: null }),
+  useModerateRating: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
 import { RatingHistoryList } from './RatingHistoryList';
@@ -31,6 +40,24 @@ describe('RatingHistoryList', () => {
     );
     expect(screen.getByRole('link', { name: 'Clienta Ana' })).toHaveAttribute('href', '/users/details/from-1');
     expect(screen.getByRole('link', { name: 'Chofer Pedro' })).toHaveAttribute('href', '/users/details/to-1');
+  });
+
+  it('una calificación visible se oculta (baja lógica) y una oculta se vuelve a mostrar', () => {
+    const hidden = {
+      ...RATING,
+      rating_id: 'r-2',
+      hidden: true,
+      hiddenReason: 'Lenguaje ofensivo',
+    } as unknown as Rating;
+    render(
+      <MemoryRouter>
+        <RatingHistoryList ratings={[RATING, hidden]} />
+      </MemoryRouter>,
+    );
+    expect(screen.getAllByRole('button', { name: 'Ocultar calificación' })).toHaveLength(1);
+    expect(screen.getByText('Oculta: Lenguaje ofensivo')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Más acciones de calificación' }));
+    expect(screen.getByRole('menuitem', { name: 'Volver a mostrar' })).toBeInTheDocument();
   });
 
   it('sin reseñas lo avisa', () => {

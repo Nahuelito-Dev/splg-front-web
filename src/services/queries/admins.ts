@@ -1,5 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createAdmin, findAdminByTerm, listAdmins, type AdminAccountFields, type AdminRole } from '../api/admins';
+import {
+  createAdmin,
+  findAdminByTerm,
+  getAdmin,
+  listAdmins,
+  type AdminAccountFields,
+  type AdminRole,
+} from '../api/admins';
 import { queryKeys } from './queryKeys';
 
 const keys = queryKeys.admins;
@@ -9,6 +16,9 @@ export const useAdmins = (distributorId?: string) =>
     queryKey: distributorId ? [...keys.all, 'distributor', distributorId] : keys.all,
     queryFn: () => listAdmins(distributorId),
   });
+
+export const useAdmin = (id: string | undefined) =>
+  useQuery({ queryKey: keys.detail(id ?? ''), queryFn: () => getAdmin(id ?? ''), enabled: Boolean(id) });
 
 /** CU-088: busca un admin puntual por id o correo. 404 si no hay ninguno con ese término. */
 export const useFindAdminByTerm = (term: string) =>

@@ -16,10 +16,13 @@ import {
   type FilterChip,
   type TabItem,
 } from '../../common/components/ui';
-import { useUrlParams } from '../../hooks';
+import { usePermissions, useUrlParams } from '../../hooks';
 import { useIncidents } from '../../services/queries/incidents';
+import type { Incident } from '../../services/api/types';
 import { INCIDENT_STATUS, INCIDENT_TYPE, labelOf } from '../../utils/statusLabels';
 import { CreateIncidentModal } from './components/CreateIncidentModal';
+import { DiscardIncidentModal } from './components/DiscardIncidentModal';
+import { EditIncidentModal } from './components/EditIncidentModal';
 import { IncidentDetailDrawer } from './components/IncidentDetailDrawer';
 import { IncidentsTable } from './components/IncidentsTable';
 import {
@@ -32,6 +35,12 @@ import {
 } from './incidentFilters';
 
 const TABS_ID = 'incidents';
+
+const STATUS_PLURAL: Record<Incident['status'], string> = {
+  open: 'Abiertas',
+  resolved: 'Resueltas',
+  discarded: 'Descartadas',
+};
 
 const TYPE_OPTIONS = [
   { value: 'all', label: 'Todos los tipos' },
@@ -52,6 +61,9 @@ export const Incidents = () => {
   const type: IncidentTypeFilter = INCIDENT_TYPE_ORDER.find((t) => t === typeParam) ?? 'all';
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState<Incident | null>(null);
+  const [discarding, setDiscarding] = useState<Incident | null>(null);
+  const { canOperate } = usePermissions();
 
   const all = useMemo(() => incidents ?? [], [incidents]);
   const counts = useMemo(() => countIncidentsByStatus(all), [all]);
@@ -62,14 +74,14 @@ export const Incidents = () => {
     { id: 'all', label: 'Todas', count: counts.all },
     ...INCIDENT_STATUS_ORDER.map((s) => ({
       id: s,
-      label: s === 'open' ? 'Abiertas' : 'Resueltas',
+      label: STATUS_PLURAL[s],
       count: counts[s],
       tone: labelOf(INCIDENT_STATUS, s).tone,
     })),
   ];
   const summary: AnalyticItem[] = INCIDENT_STATUS_ORDER.map((s) => ({
     key: s,
-    label: s === 'open' ? 'Abiertas' : 'Resueltas',
+    label: STATUS_PLURAL[s],
     count: counts[s],
     tone: labelOf(INCIDENT_STATUS, s).tone,
   }));
@@ -145,13 +157,23 @@ export const Incidents = () => {
                 loading={isFetching}
                 filtered={chips.length > 0}
                 onView={(incident) => setSelectedId(incident.incident_id)}
+                onEdit={canOperate ? setEditing : undefined}
+                onDiscard={canOperate ? setDiscarding : undefined}
               />
             </div>
           </Card>
         </>
       )}
 
-      <IncidentDetailDrawer open={selected !== null} onClose={() => setSelectedId(null)} incident={selected} />
+      <IncidentDetailDrawer
+        open={selected !== null}
+        onClose={() => setSelectedId(null)}
+        incident={selected}
+        onEdit={setEditing}
+        onDiscard={setDiscarding}
+      />
+      <EditIncidentModal incident={editing} onClose={() => setEditing(null)} />
+      <DiscardIncidentModal incident={discarding} onClose={() => setDiscarding(null)} />
       <CreateIncidentModal open={creating} onClose={() => setCreating(false)} />
     </div>
   );

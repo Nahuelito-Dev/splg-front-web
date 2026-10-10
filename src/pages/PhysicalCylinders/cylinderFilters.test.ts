@@ -33,6 +33,13 @@ describe('movable', () => {
     expect(movable(ALL, 'filled').map((c) => c.cylinder_id)).toEqual(['1']);
     expect(movable(ALL, 'in_depot').map((c) => c.cylinder_id)).toEqual(['2', '4']);
   });
+
+  it('un envase retirado (terminal) no se mueve a ningún estado y no rompe la selección en lote', () => {
+    const withRetired = [...ALL, cylinder('5', 'retired', 'GAS-005')];
+    expect(() => movable(withRetired, 'filled')).not.toThrow();
+    expect(movable(withRetired, 'filled').map((c) => c.cylinder_id)).toEqual(['1']);
+    expect(movable(withRetired, 'in_depot').map((c) => c.cylinder_id)).toEqual(['2', '4']);
+  });
 });
 
 describe('uuidOrUndefined', () => {

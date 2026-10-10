@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import type { GridPaginationModel } from '@mui/x-data-grid';
 import { Card, EmptyState, PageHeader } from '../../common/components/ui';
+import type { UserAddressConUsuario } from '../../services/api/types';
+import { confirm, notify } from '../../utils/notifications';
+import { AddressFormModal } from '../Customers/components/details/AddressFormModal';
 import { usePermissions } from '../../hooks';
-import { useAllUserAddresses } from '../../services/queries/userAddresses';
+import { useAllUserAddresses, useDeleteUserAddress } from '../../services/queries/userAddresses';
 import { AddressesTable } from './components/AddressesTable';
 
 /**
@@ -13,6 +16,22 @@ export const Addresses = () => {
   const { isSuperAdmin } = usePermissions();
   const [pagination, setPagination] = useState<GridPaginationModel>({ page: 0, pageSize: 10 });
   const { data, isFetching } = useAllUserAddresses(pagination, { enabled: isSuperAdmin });
+  const deleteAddress = useDeleteUserAddress();
+  const [editing, setEditing] = useState<UserAddressConUsuario | null>(null);
+
+  const handleDelete = async (address: UserAddressConUsuario) => {
+    const confirmed = await confirm({
+      title: '¿Dar de baja la dirección?',
+      text: `Baja lógica: ${address.street} deja de ofrecerse, pero no se borra.`,
+      confirmText: 'Dar de baja',
+      danger: true,
+    });
+    if (!confirmed) return;
+    deleteAddress.mutate(address.address_id, {
+      onSuccess: () => notify.success('Dirección dada de baja'),
+      onError: notify.error,
+    });
+  };
 
   return (
     <div className="mx-auto max-w-7xl p-4 md:p-8">
@@ -40,8 +59,19 @@ export const Addresses = () => {
             loading={isFetching}
             pagination={pagination}
             onPaginationChange={setPagination}
+            onEdit={setEditing}
+            onDelete={(address) => void handleDelete(address)}
           />
         </Card>
+      )}
+      {editing && (
+        <AddressFormModal
+          open
+          onClose={() => setEditing(null)}
+          userId={editing.user_id}
+          address={editing}
+          isFirstAddress={false}
+        />
       )}
     </div>
   );

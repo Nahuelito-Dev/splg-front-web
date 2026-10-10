@@ -65,6 +65,8 @@ vi.mock('../../services/queries/claims', () => {
   return {
     // Los reclamos traen el id de la cuenta (`user_id`) del cliente en `customer_id`.
     useClaims: () => ({ data: [claim('mine-1', 'u-1'), claim('mine-2', 'u-1'), claim('other', 'u-9')] }),
+    useClaim: () => ({ data: undefined }),
+    useUpdateClaim: () => mutation,
     useTakeClaim: () => mutation,
     useResolveClaim: () => mutation,
     useReopenClaim: () => mutation,

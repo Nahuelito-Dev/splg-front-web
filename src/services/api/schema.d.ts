@@ -159,6 +159,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ficha de un administrador (scopeado por distribuidora)
+         * @description La edición y la baja del administrador van por `/users` (es un usuario con perfil de admin).
+         */
+        get: operations["AdminController_findOne"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/role": {
         parameters: {
             query?: never;
@@ -244,6 +264,26 @@ export interface paths {
          * @deprecated
          */
         post: operations["RegistroController_registrarClienteRutaAnterior"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/employees/{id}/account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Otorgar una cuenta de acceso a un empleado, con el rol que le corresponde a su puesto (CU-182)
+         * @description Sólo los empleados de categoría driver tienen cuenta (rol chofer, con su perfil de reparto). Cualquier otra categoría responde 400.
+         */
+        post: operations["EmployeeAccountController_grantAccount"];
         delete?: never;
         options?: never;
         head?: never;
@@ -561,27 +601,25 @@ export interface paths {
         patch: operations["DistributorController_update"];
         trace?: never;
     };
-    "/api/auth": {
+    "/api/job-positions": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Listar los puestos con su cantidad de empleados activos */
+        get: operations["JobPositionController_findAll"];
         put?: never;
-        /**
-         * Validar el token de sesión
-         * @description Si la petición llega acá, el guard ya validó el token y la cuenta.
-         */
-        post: operations["AuthController_checkToken"];
+        /** Crear un puesto de trabajo */
+        post: operations["JobPositionController_create"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/auth/login": {
+    "/api/job-positions/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -590,15 +628,53 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Iniciar sesión desde las apps */
-        post: operations["AuthController_login"];
+        post?: never;
+        /** Eliminar un puesto (baja lógica) */
+        delete: operations["JobPositionController_remove"];
+        options?: never;
+        head?: never;
+        /** Modificar un puesto (nombre, categoría o activo) */
+        patch: operations["JobPositionController_update"];
+        trace?: never;
+    };
+    "/api/employees": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Listar empleados, sin datos personales sensibles (CU-180) */
+        get: operations["EmployeeController_findAll"];
+        put?: never;
+        /** Registrar el legajo de un empleado (CU-177) */
+        post: operations["EmployeeController_create"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/auth/login/dashboard": {
+    "/api/employees/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ver el legajo completo de un empleado (CU-179) */
+        get: operations["EmployeeController_findOne"];
+        put?: never;
+        post?: never;
+        /** Eliminar un legajo dado de alta por error (CU-178) */
+        delete: operations["EmployeeController_remove"];
+        options?: never;
+        head?: never;
+        /** Modificar el legajo de un empleado (CU-178) */
+        patch: operations["EmployeeController_update"];
+        trace?: never;
+    };
+    "/api/employees/{id}/termination": {
         parameters: {
             query?: never;
             header?: never;
@@ -607,8 +683,25 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Iniciar sesión en el panel */
-        post: operations["AuthController_dashboardLogin"];
+        /** Registrar el egreso: bloquea la cuenta, deshabilita al chofer y libera su vehículo (CU-181) */
+        post: operations["EmployeeController_terminateEmployee"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/employees/{id}/reinstatement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reingresar a un empleado egresado. No desbloquea su cuenta (CU-181) */
+        post: operations["EmployeeController_reinstate"];
         delete?: never;
         options?: never;
         head?: never;
@@ -680,6 +773,115 @@ export interface paths {
         get: operations["CarController_findByPatent"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/attachments/{ownerType}/{ownerId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Listar los adjuntos de un dueño */
+        get: operations["AttachmentController_list"];
+        put?: never;
+        /** Subir un adjunto a un dueño (PDF, JPG, PNG, WEBP) */
+        post: operations["AttachmentController_upload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/attachments/{attachmentId}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Descargar un adjunto
+         * @description Por defecto devuelve el archivo: redirige (302) a una URL firmada de S3. Con `?modo=url` devuelve `{ url, expiresAt, requiresAuth }` en JSON, sin redirect: es lo que tiene que usar el panel (un 302 cross-origin pierde el token y choca con CORS).
+         */
+        get: operations["AttachmentController_download"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/attachments/{attachmentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Borrar un adjunto */
+        delete: operations["AttachmentController_remove"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Validar el token de sesión
+         * @description Si la petición llega acá, el guard ya validó el token y la cuenta.
+         */
+        post: operations["AuthController_checkToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Iniciar sesión desde las apps */
+        post: operations["AuthController_login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/login/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Iniciar sesión en el panel */
+        post: operations["AuthController_dashboardLogin"];
         delete?: never;
         options?: never;
         head?: never;
@@ -797,7 +999,11 @@ export interface paths {
         delete: operations["OrderController_cancelOrder"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Editar un pedido pendiente (sin chofer asignado)
+         * @description Dirección, franja/fecha, medio de pago, notas y renglones. Si vienen `items` reemplazan a los actuales: se devuelve el stock viejo y se reserva el nuevo con los precios y recargos vigentes (mismas reglas que el alta). Fuera de `pending`, o con pago online, responde 409. Para eliminar un pedido: `PATCH /orders/:id/cancel`.
+         */
+        patch: operations["OrderController_update"];
         trace?: never;
     };
     "/api/orders/{id}/status": {
@@ -1324,7 +1530,8 @@ export interface paths {
         delete: operations["TimeSlotController_remove"];
         options?: never;
         head?: never;
-        patch?: never;
+        /** Editar una franja (parcial); isActive:true la reactiva */
+        patch: operations["TimeSlotController_update"];
         trace?: never;
     };
     "/api/cylinders": {
@@ -1379,7 +1586,11 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Editar datos maestros del envase (no el estado)
+         * @description Serial, producto, depósito y fechas de fabricación, inspección y vencimiento. El estado cambia sólo por `/transition` y `/retire`.
+         */
+        patch: operations["CylinderController_update"];
         trace?: never;
     };
     "/api/cylinders/{id}/history": {
@@ -1397,6 +1608,26 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/cylinders/{id}/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Dar de baja el envase (estado terminal RETIRED), con motivo
+         * @description Sólo desde `in_depot` o `empty_returned`. El registro no se borra: queda para histórico y el motivo en el historial.
+         */
+        patch: operations["CylinderController_retire"];
         trace?: never;
     };
     "/api/cylinders/{id}/transition": {
@@ -1612,7 +1843,7 @@ export interface paths {
         };
         /**
          * Descargar un adjunto
-         * @description Por defecto devuelve el archivo: redirige (302) a una URL firmada con S3, o lo sirve por streaming con el driver local. Con `?modo=url` devuelve `{ url, expiresAt }` en JSON, sin redirect: es lo que tiene que usar el panel (un 302 cross-origin pierde el token y choca con CORS).
+         * @description Por defecto devuelve el archivo: redirige (302) a una URL firmada de S3. Con `?modo=url` devuelve `{ url, expiresAt, requiresAuth }` en JSON, sin redirect: es lo que tiene que usar el panel (un 302 cross-origin pierde el token y choca con CORS).
          */
         get: operations["FleetTaskController_downloadAttachment"];
         put?: never;
@@ -1836,6 +2067,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/claims/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ficha del reclamo (con pedido y cliente) */
+        get: operations["ClaimsController_findOne"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Editar motivo y descripción de un reclamo pendiente
+         * @description Sólo mientras esté `pending` (nadie lo tomó). Eliminar un reclamo es rechazarlo con motivo: `PATCH /claims/:id/resolve` con `status: rejected`. Los reclamos nunca se borran.
+         */
+        patch: operations["ClaimsController_update"];
+        trace?: never;
+    };
     "/api/claims/{id}/resolve": {
         parameters: {
             query?: never;
@@ -1905,13 +2157,13 @@ export interface paths {
         };
         /**
          * Ver la foto de un reclamo (CU-175)
-         * @description Igual que las descargas de adjuntos: por defecto devuelve la foto (302 a la URL firmada con S3, o streaming con el driver local). Con `?modo=url` devuelve `{ url, expiresAt, requiresAuth }` en JSON, sin redirect (con el driver local `url` es esta misma ruta y se pide con el token); si el reclamo no tiene foto subida devuelve su `photoUrl` externa, o 200 con `url: null` si no tiene ninguna. Se puede ver aunque el reclamo esté cerrado.
+         * @description Igual que las descargas de adjuntos: por defecto devuelve la foto (302 a la URL firmada de S3). Con `?modo=url` devuelve `{ url, expiresAt, requiresAuth }` en JSON, sin redirect; si el reclamo no tiene foto subida devuelve su `photoUrl` externa, o 200 con `url: null` si no tiene ninguna. Se puede ver aunque el reclamo esté cerrado.
          */
         get: operations["ClaimsController_getPhoto"];
         put?: never;
         /**
          * Subir o reemplazar la foto de un reclamo (CU-174)
-         * @description Multipart, campo `file`: JPG, PNG o WEBP de hasta 10 MB (el tipo se valida por el contenido, no por el header). Sólo mientras el reclamo no esté resuelto ni rechazado (409). Si ya tenía foto, la anterior se borra del storage. La puede subir el cliente dueño del reclamo o un admin de la distribuidora.
+         * @description Multipart, campo `file`: JPG, PNG o WEBP de hasta 10 MB (el tipo se valida por el contenido, no por el header). Sólo mientras el reclamo no esté resuelto ni rechazado (409). Si ya tenía foto, la anterior se borra del bucket. La puede subir el cliente dueño del reclamo o un admin de la distribuidora.
          */
         post: operations["ClaimsController_uploadPhoto"];
         delete?: never;
@@ -2105,6 +2357,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ratings/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ficha de una calificación (incluye las ocultas) */
+        get: operations["RatingController_findOne"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ratings/{id}/hide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Ocultar una calificación (moderación), con motivo
+         * @description No se borra: deja de contar en promedios y resúmenes y no se muestra a clientes; el admin la sigue viendo marcada (`hidden: true`).
+         */
+        patch: operations["RatingController_hide"];
+        trace?: never;
+    };
+    "/api/ratings/{id}/unhide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Volver a mostrar una calificación oculta, con motivo
+         * @description Vuelve a contar en los promedios. El motivo queda en el registro de auditoría (la calificación sólo conserva el de la última ocultación vigente).
+         */
+        patch: operations["RatingController_unhide"];
+        trace?: never;
+    };
     "/api/incidents": {
         parameters: {
             query?: never;
@@ -2140,6 +2449,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/incidents/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ficha de la incidencia (con pedido y cliente) */
+        get: operations["IncidentController_findOne"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Editar descripción y tipo de una incidencia abierta
+         * @description Sólo mientras esté `open`. Eliminar una incidencia es descartarla con motivo: `PATCH /incidents/:id/resolve` con `status: discarded`. Nunca se borran.
+         */
+        patch: operations["IncidentController_update"];
+        trace?: never;
+    };
     "/api/incidents/{id}/resolve": {
         parameters: {
             query?: never;
@@ -2153,7 +2483,10 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Resolver una incidencia */
+        /**
+         * Resolver o descartar una incidencia
+         * @description `status: resolved` (default) la resuelve; `status: discarded` la descarta (baja lógica, sólo si está abierta). Ambos exigen `resolutionNote`.
+         */
         patch: operations["IncidentController_resolve"];
         trace?: never;
     };
@@ -2177,25 +2510,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/attachments/{ownerType}/{ownerId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Listar los adjuntos de un dueño */
-        get: operations["AttachmentController_list"];
-        put?: never;
-        /** Subir un adjunto a un dueño (PDF, JPG, PNG, WEBP) */
-        post: operations["AttachmentController_upload"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/attachments/{attachmentId}/download": {
+    "/api/audit/entries": {
         parameters: {
             query?: never;
             header?: never;
@@ -2203,10 +2518,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Descargar un adjunto
-         * @description Por defecto devuelve el archivo: redirige (302) a una URL firmada con S3, o lo sirve por streaming con el driver local. Con `?modo=url` devuelve `{ url, expiresAt }` en JSON, sin redirect: es lo que tiene que usar el panel (un 302 cross-origin pierde el token y choca con CORS).
+         * Consultar la auditoría de datos
+         * @description Una Auditoria por registro afectado (tipo de acción, usuario, entidadAfectada, idRegistro, ipUsuario, fechaHora) con sus DetalleAuditoria (campo, valorAnterior, valorNuevo). Un admin de empresa ve sólo lo de su distribuidora; el super admin ve todo o la que elige con X-Distributor.
          */
-        get: operations["AttachmentController_download"];
+        get: operations["DataAuditController_findAll"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2215,18 +2530,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/attachments/{attachmentId}": {
+    "/api/audit/entries/{id}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Una auditoría de datos con sus detalles
+         * @description Una Auditoria con todos sus DetalleAuditoria.
+         */
+        get: operations["DataAuditController_findOne"];
         put?: never;
         post?: never;
-        /** Borrar un adjunto */
-        delete: operations["AttachmentController_remove"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/audit/action-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Catálogo de acciones auditadas
+         * @description TipoAccionAuditoria: Alta, Modificación, Baja lógica y Reactivación.
+         */
+        get: operations["DataAuditController_findActionTypes"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -2463,6 +2801,38 @@ export interface components {
             /** @description Token FCM del dispositivo */
             notification_token?: string;
         };
+        LegajoDeChoferDto: {
+            /**
+             * Format: uuid
+             * @description Puesto de categoría chofer. Por defecto, el primero activo
+             */
+            positionId?: string;
+            /**
+             * @default dni
+             * @enum {string}
+             */
+            documentType: "dni" | "passport" | "other";
+            /**
+             * @description Si falta, queda "PENDIENTE-<legajo>" para completar después
+             * @example 30123456
+             */
+            documentNumber?: string;
+            /**
+             * @description Once dígitos; se valida el dígito verificador
+             * @example 20123456786
+             */
+            cuil?: string | null;
+            /**
+             * Format: date
+             * @example 2026-10-05
+             */
+            hireDate?: string | null;
+            /**
+             * @default permanent
+             * @enum {string}
+             */
+            employmentType: "permanent" | "fixed_term" | "part_time" | "contractor";
+        };
         RegistrarUsuarioDto: {
             /** @example ana@correo.com */
             email: string;
@@ -2496,6 +2866,91 @@ export interface components {
             latLng?: string;
             /** @description Chofer: última ubicación conocida */
             actual_location?: string;
+            /**
+             * Format: uuid
+             * @description Chofer o admin: legajo existente (sin cuenta) al que se vincula el usuario en vez de crear otro. El puesto tiene que admitir el rol. Excluye a `legajo`
+             */
+            employeeId?: string;
+            /** @description Chofer: datos del legajo que se crea con la cuenta, en la misma transacción */
+            legajo?: components["schemas"]["LegajoDeChoferDto"];
+        };
+        GrantEmployeeAccountDto: {
+            /** @example ana@correo.com */
+            email: string;
+            /** @example Test1234 */
+            password: string;
+            /**
+             * @description Formato E.164. Si falta se usa el teléfono del legajo, que tiene que estar en ese formato
+             * @example +5493764000000
+             */
+            phoneNumber?: string;
+        };
+        EmployeePositionDto: {
+            /** Format: uuid */
+            positionId: string;
+            /** @example Chofer */
+            name: string;
+            /** @enum {string} */
+            category: "driver" | "helper" | "warehouse" | "administration" | "sales" | "management" | "other";
+        };
+        EmployeeResponseDto: {
+            /** Format: uuid */
+            employeeId: string;
+            /** @example 0042 */
+            fileNumber: string;
+            /** @example Ana */
+            firstName: string;
+            /** @example Pérez */
+            lastName: string;
+            position: components["schemas"]["EmployeePositionDto"];
+            /** @enum {string} */
+            status: "active" | "terminated";
+            /**
+             * Format: date
+             * @example 2026-03-01
+             */
+            hireDate: string;
+            /** @description Tiene cuenta de acceso */
+            hasAccount: boolean;
+            /** @enum {string} */
+            documentType: "dni" | "passport" | "other";
+            /** @example 30123456 */
+            documentNumber: string;
+            /** @example 20123456786 */
+            cuil: string | null;
+            /** Format: date */
+            birthDate: string | null;
+            addressLine: string | null;
+            city: string | null;
+            province: string | null;
+            postalCode: string | null;
+            phone: string | null;
+            personalEmail: string | null;
+            emergencyContactName: string | null;
+            emergencyContactPhone: string | null;
+            emergencyContactRelationship: string | null;
+            /** Format: date */
+            terminationDate: string | null;
+            /** @enum {string|null} */
+            terminationReason: "resignation" | "dismissal" | "end_of_contract" | "retirement" | "other" | null;
+            /** @enum {string} */
+            employmentType: "permanent" | "fixed_term" | "part_time" | "contractor";
+            bankCbu: string | null;
+            notes: string | null;
+            /**
+             * Format: uuid
+             * @description Usuario de la cuenta de acceso, si tiene
+             */
+            userId: string | null;
+            /**
+             * Format: uuid
+             * @description Perfil de reparto, si la cuenta es de un chofer
+             */
+            deliveryId: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
         };
         UpdateCustomerDto: {
             /** @description Token de FCM del dispositivo */
@@ -2586,44 +3041,219 @@ export interface components {
             status?: "active" | "suspended";
             plan?: string;
         };
-        TokenValidoResponseDto: {
-            /** @example token valid */
-            response: string;
-            /** @example 100 */
-            status: number;
-            /** @example token valid */
-            message: string;
-            /** @example HttpException */
+        JobPositionResponseDto: {
+            /** Format: uuid */
+            positionId: string;
+            /** @example Chofer */
             name: string;
-        };
-        LoginDto: {
-            /** @example admin@splg.com */
-            email: string;
-            /** @example Test1234 */
-            password: string;
-            requestSource?: string;
-        };
-        UsuarioAutenticadoDto: {
-            /** @description Identificador del usuario en Firebase */
-            uid: string;
-            /** @description Correo con el que inició sesión */
-            email: string;
-            /** @description Nombre para mostrar */
-            displayName: Record<string, never> | null;
-            /** @description Teléfono verificado */
-            phoneNumber: Record<string, never> | null;
-            /** @description Si el correo está verificado */
-            emailVerified: boolean;
-        };
-        SesionIniciadaDto: {
-            /** @description Token de acceso, para la cabecera Authorization */
-            accessToken: string;
+            /** @enum {string} */
+            category: "driver" | "helper" | "warehouse" | "administration" | "sales" | "management" | "other";
+            isActive: boolean;
             /**
-             * @description Segundos que dura el token
-             * @example 3600
+             * @description Empleados activos (no egresados) que ocupan el puesto
+             * @example 3
              */
-            expiresIn: number;
-            user: components["schemas"]["UsuarioAutenticadoDto"];
+            activeEmployees: number;
+        };
+        CreateJobPositionDto: {
+            /** @example Chofer de reparto */
+            name: string;
+            /**
+             * @description La categoría manda las reglas (rol de acceso, documentación); el nombre es libre
+             * @enum {string}
+             */
+            category: "driver" | "helper" | "warehouse" | "administration" | "sales" | "management" | "other";
+            /** @default true */
+            isActive: boolean;
+        };
+        UpdateJobPositionDto: {
+            /** @example Chofer de reparto */
+            name?: string;
+            /**
+             * @description La categoría manda las reglas (rol de acceso, documentación); el nombre es libre
+             * @enum {string}
+             */
+            category?: "driver" | "helper" | "warehouse" | "administration" | "sales" | "management" | "other";
+            /** @default true */
+            isActive: boolean;
+        };
+        CreateEmployeeDto: {
+            /**
+             * Format: uuid
+             * @description Puesto activo de la distribuidora
+             */
+            positionId: string;
+            /**
+             * @description Si falta, toma el siguiente número correlativo de la distribuidora
+             * @example 0042
+             */
+            fileNumber?: string;
+            /** @example Ana */
+            firstName: string;
+            /** @example Pérez */
+            lastName: string;
+            /**
+             * @example dni
+             * @enum {string}
+             */
+            documentType: "dni" | "passport" | "other";
+            /** @example 30123456 */
+            documentNumber: string;
+            /**
+             * @description Once dígitos; se valida el dígito verificador
+             * @example 20123456786
+             */
+            cuil?: Record<string, never> | null;
+            /**
+             * Format: date
+             * @example 1990-05-17
+             */
+            birthDate?: Record<string, never> | null;
+            /** @example Av. Corrientes 1234 */
+            addressLine?: Record<string, never>;
+            /** @example Posadas */
+            city?: Record<string, never>;
+            /** @example Misiones */
+            province?: Record<string, never>;
+            /** @example 3300 */
+            postalCode?: Record<string, never>;
+            /** @example +5493764000000 */
+            phone?: Record<string, never>;
+            /** @example ana@correo.com */
+            personalEmail?: Record<string, never>;
+            /** @example Luis Pérez */
+            emergencyContactName?: Record<string, never>;
+            /** @example +5493764111111 */
+            emergencyContactPhone?: Record<string, never>;
+            /** @example Hermano */
+            emergencyContactRelationship?: Record<string, never>;
+            /**
+             * Format: date
+             * @example 2026-03-01
+             */
+            hireDate: string;
+            /**
+             * @example permanent
+             * @enum {string}
+             */
+            employmentType: "permanent" | "fixed_term" | "part_time" | "contractor";
+            /**
+             * @description 22 dígitos
+             * @example 0170099220000067890123
+             */
+            bankCbu?: Record<string, never>;
+            notes?: Record<string, never>;
+        };
+        EmployeeListItemDto: {
+            /** Format: uuid */
+            employeeId: string;
+            /** @example 0042 */
+            fileNumber: string;
+            /** @example Ana */
+            firstName: string;
+            /** @example Pérez */
+            lastName: string;
+            position: components["schemas"]["EmployeePositionDto"];
+            /** @enum {string} */
+            status: "active" | "terminated";
+            /**
+             * Format: date
+             * @example 2026-03-01
+             */
+            hireDate: string;
+            /** @description Tiene cuenta de acceso */
+            hasAccount: boolean;
+        };
+        EmployeePageDto: {
+            data: components["schemas"]["EmployeeListItemDto"][];
+            /** @example 42 */
+            total: number;
+        };
+        UpdateEmployeeDto: {
+            /**
+             * Format: uuid
+             * @description Puesto activo de la distribuidora
+             */
+            positionId?: string;
+            /**
+             * @description Si falta, toma el siguiente número correlativo de la distribuidora
+             * @example 0042
+             */
+            fileNumber?: string;
+            /** @example Ana */
+            firstName?: string;
+            /** @example Pérez */
+            lastName?: string;
+            /**
+             * @example dni
+             * @enum {string}
+             */
+            documentType?: "dni" | "passport" | "other";
+            /** @example 30123456 */
+            documentNumber?: string;
+            /**
+             * @description Once dígitos; se valida el dígito verificador
+             * @example 20123456786
+             */
+            cuil?: Record<string, never> | null;
+            /**
+             * Format: date
+             * @example 1990-05-17
+             */
+            birthDate?: Record<string, never> | null;
+            /** @example Av. Corrientes 1234 */
+            addressLine?: Record<string, never>;
+            /** @example Posadas */
+            city?: Record<string, never>;
+            /** @example Misiones */
+            province?: Record<string, never>;
+            /** @example 3300 */
+            postalCode?: Record<string, never>;
+            /** @example +5493764000000 */
+            phone?: Record<string, never>;
+            /** @example ana@correo.com */
+            personalEmail?: Record<string, never>;
+            /** @example Luis Pérez */
+            emergencyContactName?: Record<string, never>;
+            /** @example +5493764111111 */
+            emergencyContactPhone?: Record<string, never>;
+            /** @example Hermano */
+            emergencyContactRelationship?: Record<string, never>;
+            /**
+             * Format: date
+             * @example 2026-03-01
+             */
+            hireDate?: string;
+            /**
+             * @example permanent
+             * @enum {string}
+             */
+            employmentType?: "permanent" | "fixed_term" | "part_time" | "contractor";
+            /**
+             * @description 22 dígitos
+             * @example 0170099220000067890123
+             */
+            bankCbu?: Record<string, never>;
+            notes?: Record<string, never>;
+        };
+        TerminateEmployeeDto: {
+            /**
+             * Format: date
+             * @example 2026-10-04
+             */
+            terminationDate: string;
+            /**
+             * @example resignation
+             * @enum {string}
+             */
+            reason: "resignation" | "dismissal" | "end_of_contract" | "retirement" | "other";
+        };
+        ReinstateEmployeeDto: {
+            /**
+             * Format: date
+             * @example 2026-10-05
+             */
+            hireDate?: string | null;
         };
         CreateCarDto: {
             /** @description User ID */
@@ -2693,10 +3323,83 @@ export interface components {
             /** Format: uuid */
             carId: string;
         };
+        /** @enum {string} */
+        AttachmentOwnerType: "employee" | "fuel_load" | "traffic_fine" | "vehicle_accident" | "purchase_receipt" | "stock_adjustment" | "driver_settlement" | "cash_movement" | "customer_account_entry";
+        AttachmentResponseDto: {
+            /** Format: uuid */
+            attachmentId: string;
+            ownerType: components["schemas"]["AttachmentOwnerType"];
+            /** Format: uuid */
+            ownerId: string;
+            /** @example DNI frente */
+            label: string | null;
+            /** @example dni-frente.jpg */
+            originalName: string;
+            /** @example image/jpeg */
+            mimeType: string;
+            /** @example 245678 */
+            sizeBytes: number;
+            /** Format: uuid */
+            uploadedByUserId: string;
+            /** Format: date-time */
+            uploadedAt: string;
+        };
+        /** @enum {string} */
+        DownloadMode: "url" | "archivo";
+        DownloadLinkResponseDto: {
+            /** @description URL firmada de S3: se abre sin token. */
+            url: string;
+            /**
+             * Format: date-time
+             * @description Cuándo vence la URL; `null` si no vence (p. ej. la URL externa de un reclamo viejo).
+             */
+            expiresAt: string | null;
+            /** @description Siempre `false`: la URL firmada se abre sin token. Se conserva en el contrato por compatibilidad con el panel y las apps. */
+            requiresAuth: boolean;
+        };
+        TokenValidoResponseDto: {
+            /** @example token valid */
+            response: string;
+            /** @example 100 */
+            status: number;
+            /** @example token valid */
+            message: string;
+            /** @example HttpException */
+            name: string;
+        };
+        LoginDto: {
+            /** @example admin@splg.com */
+            email: string;
+            /** @example Test1234 */
+            password: string;
+            requestSource?: string;
+        };
+        UsuarioAutenticadoDto: {
+            /** @description Identificador del usuario en Firebase */
+            uid: string;
+            /** @description Correo con el que inició sesión */
+            email: string;
+            /** @description Nombre para mostrar */
+            displayName: Record<string, never> | null;
+            /** @description Teléfono verificado */
+            phoneNumber: Record<string, never> | null;
+            /** @description Si el correo está verificado */
+            emailVerified: boolean;
+        };
+        SesionIniciadaDto: {
+            /** @description Token de acceso, para la cabecera Authorization */
+            accessToken: string;
+            /**
+             * @description Segundos que dura el token
+             * @example 3600
+             */
+            expiresIn: number;
+            user: components["schemas"]["UsuarioAutenticadoDto"];
+        };
         OrderItemDto: {
             /** @description ID de la garrafa */
             gasCylinderId: string;
-            /** @description Cantidad */
+            /** @description Cantidad (entero, mínimo 1) */
             quantity: number;
             /** @description Precio unitario */
             unitPrice: number;
@@ -2999,6 +3702,41 @@ export interface components {
             sales: components["schemas"]["VentasDto"];
             performance: components["schemas"]["RendimientoDto"];
             paymentMethods: components["schemas"]["MediosDePagoDto"];
+        };
+        UpdateOrderItemDto: {
+            /**
+             * Format: uuid
+             * @description ID de la garrafa (producto)
+             */
+            gasCylinderId: string;
+            /** @example 2 */
+            quantity: number;
+        };
+        UpdateOrderDto: {
+            /**
+             * Format: uuid
+             * @description Otra dirección del mismo cliente
+             */
+            addressId?: string;
+            /**
+             * Format: uuid
+             * @description Franja de entrega. `null` saca la franja. Si la fecha agendada ya pasó, hay que mandar también `scheduledDate`.
+             */
+            timeSlotId?: string | null;
+            /**
+             * @description Fecha agendada (YYYY-MM-DD); con franja valida el cupo
+             * @example 2026-10-15
+             */
+            scheduledDate?: string;
+            /**
+             * @description Medio de pago. No se puede pasar a ni desde MercadoPago: cancelá y creá el pedido de nuevo.
+             * @enum {string}
+             */
+            paymentMethod?: "cash" | "mercadopago" | "transfer";
+            /** @example Tocar timbre 2B */
+            notes?: string;
+            /** @description Renglones nuevos: reemplazan a los actuales (se devuelve el stock viejo y se reserva el nuevo, con los precios vigentes) */
+            items?: components["schemas"]["UpdateOrderItemDto"][];
         };
         CancelOrderDto: {
             /**
@@ -3335,6 +4073,34 @@ export interface components {
             booked: number;
             remaining: number;
         };
+        UpdateTimeSlotDto: {
+            /**
+             * @description Nombre del turno
+             * @example Mañana
+             */
+            name?: string;
+            /**
+             * @description Hora de inicio (HH:MM)
+             * @example 09:00
+             */
+            startTime?: string;
+            /**
+             * @description Hora de fin (HH:MM)
+             * @example 13:00
+             */
+            endTime?: string;
+            /**
+             * @description Capacidad máxima de pedidos (columna con default en la base)
+             * @default 50
+             * @example 50
+             */
+            capacity: number;
+            /**
+             * @description true reactiva la franja; false la desactiva (baja lógica)
+             * @example true
+             */
+            isActive?: boolean;
+        };
         CreateCylinderDto: {
             /** @example SN-000123 */
             serial: string;
@@ -3374,7 +4140,7 @@ export interface components {
              */
             gas_cylinder_id: string | null;
             /** @enum {string} */
-            state: "in_depot" | "filled" | "dispatched" | "with_customer" | "empty_returned";
+            state: "in_depot" | "filled" | "dispatched" | "with_customer" | "empty_returned" | "retired";
             /**
              * Format: uuid
              * @description Cliente que lo tiene
@@ -3392,6 +4158,8 @@ export interface components {
             manufactured_at: string | null;
             /** Format: date-time */
             last_inspection_at: string | null;
+            /** Format: date-time */
+            expires_at: string | null;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -3420,9 +4188,9 @@ export interface components {
             /** Format: uuid */
             distributor_id: string;
             /** @enum {string|null} */
-            from_state: "in_depot" | "filled" | "dispatched" | "with_customer" | "empty_returned" | null;
+            from_state: "in_depot" | "filled" | "dispatched" | "with_customer" | "empty_returned" | "retired" | null;
             /** @enum {string} */
-            to_state: "in_depot" | "filled" | "dispatched" | "with_customer" | "empty_returned";
+            to_state: "in_depot" | "filled" | "dispatched" | "with_customer" | "empty_returned" | "retired";
             /** Format: uuid */
             order_id: string | null;
             /** Format: uuid */
@@ -3431,9 +4199,45 @@ export interface components {
             /** Format: date-time */
             createdAt: string;
         };
+        UpdateCylinderDto: {
+            /** @example SN-000123 */
+            serial?: string;
+            /**
+             * Format: uuid
+             * @description Producto del catálogo
+             */
+            gasCylinderId?: string;
+            /**
+             * @description Depósito del envase
+             * @example 5000
+             */
+            deposit?: number;
+            /**
+             * Format: date-time
+             * @description Fecha de fabricación
+             */
+            manufacturedAt?: string;
+            /**
+             * Format: date-time
+             * @description Fecha de la última prueba hidráulica / inspección
+             */
+            lastInspectionAt?: string;
+            /**
+             * Format: date-time
+             * @description Fecha de vencimiento
+             */
+            expiresAt?: string;
+        };
+        RetireCylinderDto: {
+            /**
+             * @description Motivo de la baja; queda en el historial del envase
+             * @example Prueba hidráulica vencida, no apto
+             */
+            reason: string;
+        };
         TransitionCylinderDto: {
             /** @enum {string} */
-            toState: "in_depot" | "filled" | "dispatched" | "with_customer" | "empty_returned";
+            toState: "in_depot" | "filled" | "dispatched" | "with_customer" | "empty_returned" | "retired";
             /** Format: uuid */
             orderId?: string;
             note?: string;
@@ -3872,19 +4676,6 @@ export interface components {
             /** @description Por qué se cancela */
             notes?: string;
         };
-        /** @enum {string} */
-        DownloadMode: "url" | "archivo";
-        DownloadLinkResponseDto: {
-            /** @description Con S3: URL firmada, se abre sin token. Con el driver local: la ruta de este mismo backend, que hay que pedir con el token. */
-            url: string;
-            /**
-             * Format: date-time
-             * @description Cuándo vence la URL; `null` si no vence (driver local).
-             */
-            expiresAt: string | null;
-            /** @description `true` si pedir `url` exige el token de la sesión. */
-            requiresAuth: boolean;
-        };
         FleetExpirationEntryDto: {
             /** Format: uuid */
             taskId: string;
@@ -4083,7 +4874,7 @@ export interface components {
             /** @example Fuga de gas */
             reason: string;
             description: string;
-            /** @description URL firmada de la foto del reclamo (vence en minutos: pedirla de nuevo con `GET /claims/:id/photo`), o `null` si no tiene foto (también con el driver local, que no firma URLs: ahí se usa `GET /claims/:id/photo`). */
+            /** @description URL firmada de la foto del reclamo (vence en minutos: pedirla de nuevo con `GET /claims/:id/photo`), o `null` si no tiene foto. */
             photoUrl: string | null;
             /** @enum {string} */
             status: "pending" | "in_process" | "resolved" | "rejected";
@@ -4092,6 +4883,10 @@ export interface components {
             createdAt: string;
             order?: components["schemas"]["OrderRecordResponseDto"];
             customer?: components["schemas"]["UserResponseDto"];
+        };
+        UpdateClaimDto: {
+            reason?: string;
+            description?: string;
         };
         ResolveClaimDto: {
             /** @description Texto de resolución del reclamo */
@@ -4108,14 +4903,14 @@ export interface components {
             reason: string;
         };
         ClaimPhotoLinkResponseDto: {
-            /** @description Foto subida con S3: URL firmada, se abre sin token. Foto subida con el driver local: la ruta de este mismo backend, que hay que pedir con el token. Reclamo con sólo una `photoUrl` externa (http/https): esa URL. `null` si no tiene foto. */
+            /** @description Foto subida: URL firmada de S3, se abre sin token. Reclamo con sólo una `photoUrl` externa (http/https): esa URL. `null` si no tiene foto. */
             url: string | null;
             /**
              * Format: date-time
-             * @description Cuándo vence la URL; `null` si no vence (driver local) o no hay foto.
+             * @description Cuándo vence la URL; `null` si no vence (URL externa) o no hay foto.
              */
             expiresAt: string | null;
-            /** @description `true` sólo con el driver local (la ruta del backend exige el token). `false` con URL firmada, con URL externa y sin foto. */
+            /** @description `false` con URL firmada, con URL externa y sin foto (no hay descargas que exijan el token de la sesión). */
             requiresAuth: boolean;
         };
         VentasPorChoferDto: {
@@ -4177,6 +4972,13 @@ export interface components {
             comment: string | null;
             /** Format: date-time */
             createdAt: string;
+            /** @description Moderación: una calificación oculta no cuenta en promedios ni se muestra a clientes */
+            hidden: boolean;
+            hiddenReason: string | null;
+            /** Format: date-time */
+            hiddenAt: string | null;
+            /** Format: uuid */
+            hiddenByUserId: string | null;
             fromUser?: components["schemas"]["UserResponseDto"];
         };
         RatingSummaryDto: {
@@ -4184,6 +4986,13 @@ export interface components {
             average: number;
             /** @example 12 */
             count: number;
+        };
+        ModerateRatingDto: {
+            /**
+             * @description Obligatorio. Al ocultar queda guardado en la calificación; al volver a mostrarla queda en el registro de auditoría.
+             * @example Lenguaje ofensivo en el comentario
+             */
+            reason: string;
         };
         CreateIncidentDto: {
             /** Format: uuid */
@@ -4211,7 +5020,7 @@ export interface components {
             description: string;
             photo_url: string | null;
             /** @enum {string} */
-            status: "open" | "resolved";
+            status: "open" | "resolved" | "discarded";
             resolution_note: string | null;
             /** Format: date-time */
             createdAt: string;
@@ -4219,9 +5028,24 @@ export interface components {
             resolvedAt: string | null;
             order?: components["schemas"]["OrderRecordResponseDto"];
         };
+        UpdateIncidentDto: {
+            /** @example El cliente no estaba en el domicilio */
+            description?: string;
+            /** @enum {string} */
+            type?: "damaged" | "out_of_stock" | "no_show" | "other";
+        };
         ResolveIncidentDto: {
-            /** @example Se reprogramó la entrega */
+            /**
+             * @description Nota de resolución o motivo del descarte (obligatoria)
+             * @example Se reprogramó la entrega
+             */
             resolutionNote: string;
+            /**
+             * @description `resolved` (default) o `discarded`: descartar es la baja lógica de una incidencia abierta, con el motivo en `resolutionNote`
+             * @default resolved
+             * @enum {string}
+             */
+            status: "resolved" | "discarded";
         };
         AsientoDeAuditoriaDto: {
             /** Format: uuid */
@@ -4258,26 +5082,79 @@ export interface components {
             items: components["schemas"]["AsientoDeAuditoriaDto"][];
             total: number;
         };
-        /** @enum {string} */
-        AttachmentOwnerType: "employee" | "fuel_load" | "traffic_fine" | "vehicle_accident" | "purchase_receipt" | "stock_adjustment" | "driver_settlement" | "cash_movement" | "customer_account_entry";
-        AttachmentResponseDto: {
+        AuditActionTypeDto: {
+            /**
+             * @description idTipoAuditoria
+             * @example 2
+             */
+            id: number;
+            /**
+             * @description nombre
+             * @example Modificación
+             */
+            name: string;
+        };
+        AuditUserDto: {
             /** Format: uuid */
-            attachmentId: string;
-            ownerType: components["schemas"]["AttachmentOwnerType"];
+            userId: string;
+            fullName: string | null;
+            email: string | null;
+            /** @description El usuario fue dado de baja después */
+            deleted: boolean;
+        };
+        AuditDetailDto: {
+            /**
+             * Format: uuid
+             * @description idDetalleAuditoria
+             */
+            auditDetailId: string;
+            /**
+             * @description campo
+             * @example status
+             */
+            field: string;
+            /** @description valorAnterior (null en una alta). Secretos: [oculto] */
+            oldValue: string | null;
+            /** @description valorNuevo. Secretos: [oculto] */
+            newValue: string | null;
+        };
+        AuditEntryDto: {
+            /**
+             * Format: uuid
+             * @description idAuditoria
+             */
+            auditId: string;
+            /** @description idTipoAuditoria con su nombre */
+            actionType: components["schemas"]["AuditActionTypeDto"];
+            /**
+             * Format: uuid
+             * @description idUsuario; null si lo hizo el sistema (cron, seed)
+             */
+            userId: string | null;
+            /** @description Datos del usuario (aunque esté dado de baja, con `deleted`); null si lo hizo el sistema */
+            user: components["schemas"]["AuditUserDto"] | null;
             /** Format: uuid */
-            ownerId: string;
-            /** @example DNI frente */
-            label: string | null;
-            /** @example dni-frente.jpg */
-            originalName: string;
-            /** @example image/jpeg */
-            mimeType: string;
-            /** @example 245678 */
-            sizeBytes: number;
-            /** Format: uuid */
-            uploadedByUserId: string;
-            /** Format: date-time */
-            uploadedAt: string;
+            distributorId: string | null;
+            /**
+             * @description entidadAfectada
+             * @example Order
+             */
+            entity: string;
+            /** @description idRegistro */
+            recordId: string;
+            /** @description ipUsuario */
+            ip: string | null;
+            /**
+             * Format: date-time
+             * @description fechaHora
+             */
+            dateTime: string;
+            details: components["schemas"]["AuditDetailDto"][];
+        };
+        AuditEntriesPageDto: {
+            data: components["schemas"]["AuditEntryDto"][];
+            /** @description Total que cumple el filtro, sin paginar */
+            total: number;
         };
     };
     responses: never;
@@ -4854,6 +5731,48 @@ export interface operations {
             };
         };
     };
+    AdminController_findOne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminResponseDto"];
+                };
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No existe o es de otra distribuidora */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     RoleController_findAll: {
         parameters: {
             query?: never;
@@ -5188,6 +6107,67 @@ export interface operations {
                 content?: never;
             };
             /** @description Email o teléfono ya en uso */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EmployeeAccountController_grantAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Empleado UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GrantEmployeeAccountDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmployeeResponseDto"];
+                };
+            };
+            /** @description La categoría del puesto no admite cuenta, o falta un teléfono válido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Empleado no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Ya tiene cuenta, está egresado, o el correo/teléfono ya están en uso */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -6319,7 +7299,7 @@ export interface operations {
             };
         };
     };
-    AuthController_checkToken: {
+    JobPositionController_findAll: {
         parameters: {
             query?: never;
             header?: never;
@@ -6328,16 +7308,74 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobPositionResponseDto"][];
+                };
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    JobPositionController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateJobPositionDto"];
+            };
+        };
+        responses: {
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TokenValidoResponseDto"];
+                    "application/json": components["schemas"]["JobPositionResponseDto"];
                 };
             };
-            /** @description Token inválido o vencido */
+            /** @description Datos inválidos o falta la distribuidora */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin token o token inválido */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Ya existe un puesto con ese nombre */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6345,16 +7383,69 @@ export interface operations {
             };
         };
     };
-    AuthController_login: {
+    JobPositionController_remove: {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                /** @description Puesto UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponseDto"];
+                };
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Puesto no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tiene empleados activos */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    JobPositionController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Puesto UUID */
+                id: string;
+            };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["LoginDto"];
+                "application/json": components["schemas"]["UpdateJobPositionDto"];
             };
         };
         responses: {
@@ -6363,18 +7454,32 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SesionIniciadaDto"];
+                    "application/json": components["schemas"]["JobPositionResponseDto"];
                 };
             };
-            /** @description Credenciales incorrectas */
-            400: {
+            /** @description Sin token o token inválido */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
-            /** @description La cuenta no está habilitada */
-            401: {
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Puesto no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Ya existe un puesto con ese nombre */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6382,7 +7487,52 @@ export interface operations {
             };
         };
     };
-    AuthController_dashboardLogin: {
+    EmployeeController_findAll: {
+        parameters: {
+            query?: {
+                limit?: number;
+                page?: number;
+                /** @description Nombre, apellido o número de legajo */
+                q?: string;
+                positionId?: string;
+                category?: "driver" | "helper" | "warehouse" | "administration" | "sales" | "management" | "other";
+                status?: "active" | "terminated";
+                /** @description true: con cuenta de acceso; false: sin ella */
+                hasAccount?: boolean;
+                /** @description Reservado para la documentación del personal (tanda B-A2): hoy se acepta y se ignora */
+                documentStatus?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmployeePageDto"];
+                };
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EmployeeController_create: {
         parameters: {
             query?: never;
             header?: never;
@@ -6391,7 +7541,161 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["LoginDto"];
+                "application/json": components["schemas"]["CreateEmployeeDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmployeeResponseDto"];
+                };
+            };
+            /** @description Datos inválidos o CUIL con dígito verificador incorrecto */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description El puesto no existe en la distribuidora */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Documento, CUIL o legajo ya usados, o puesto inactivo */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EmployeeController_findOne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Empleado UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmployeeResponseDto"];
+                };
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Empleado no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EmployeeController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Empleado UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponseDto"];
+                };
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Empleado no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No es una alta errónea: corresponde el egreso */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EmployeeController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Empleado UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateEmployeeDto"];
             };
         };
         responses: {
@@ -6400,18 +7704,161 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SesionIniciadaDto"];
+                    "application/json": components["schemas"]["EmployeeResponseDto"];
                 };
             };
-            /** @description Credenciales incorrectas */
+            /** @description Datos inválidos */
             400: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
-            /** @description La cuenta no está habilitada o no es de un administrador */
+            /** @description Sin token o token inválido */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Empleado o puesto no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Documento, CUIL o legajo ya usados */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EmployeeController_terminateEmployee: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Empleado UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TerminateEmployeeDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmployeeResponseDto"];
+                };
+            };
+            /** @description La fecha de egreso es anterior a la de ingreso */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Empleado no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Ya está egresado, o el chofer tiene pedidos en curso */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EmployeeController_reinstate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Empleado UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReinstateEmployeeDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmployeeResponseDto"];
+                };
+            };
+            /** @description La fecha de ingreso es anterior al egreso */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Empleado no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description El empleado no está egresado */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6715,6 +8162,326 @@ export interface operations {
             };
             /** @description Requiere rol: admin, super_admin */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AttachmentController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ownerType: components["schemas"]["AttachmentOwnerType"];
+                /** @description UUID del dueño */
+                ownerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttachmentResponseDto"][];
+                };
+            };
+            /** @description El tipo de dueño todavía no admite adjuntos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Un chofer no puede acceder a ese tipo de dueño */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description El dueño no existe o es de otra distribuidora */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AttachmentController_upload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ownerType: components["schemas"]["AttachmentOwnerType"];
+                /** @description UUID del dueño */
+                ownerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                    label?: string;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttachmentResponseDto"];
+                };
+            };
+            /** @description Falta el archivo o el tipo de dueño todavía no admite adjuntos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Un chofer no puede adjuntar a ese tipo de dueño */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description El dueño no existe o es de otra distribuidora */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description El archivo supera el máximo permitido */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tipo de archivo no permitido (sólo PDF, JPG, PNG, WEBP) */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AttachmentController_download: {
+        parameters: {
+            query?: {
+                /** @description `url` devuelve `{ url, expiresAt, requiresAuth }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada de S3). */
+                modo?: components["schemas"]["DownloadMode"];
+            };
+            header?: never;
+            path: {
+                /** @description Attachment UUID */
+                attachmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Con `?modo=url`: el enlace `{ url, expiresAt, requiresAuth }` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DownloadLinkResponseDto"];
+                };
+            };
+            /** @description Sin `modo`: redirección (302) a la URL firmada de S3, que sirve el archivo con su content-type original */
+            302: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin, delivery */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Adjunto no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AttachmentController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Attachment UUID */
+                attachmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Borrado */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin, delivery */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Adjunto no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AuthController_checkToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenValidoResponseDto"];
+                };
+            };
+            /** @description Token inválido o vencido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AuthController_login: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SesionIniciadaDto"];
+                };
+            };
+            /** @description Credenciales incorrectas */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description La cuenta no está habilitada */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AuthController_dashboardLogin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SesionIniciadaDto"];
+                };
+            };
+            /** @description Credenciales incorrectas */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description La cuenta no está habilitada o no es de un administrador */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7055,6 +8822,67 @@ export interface operations {
             };
             /** @description Order with ID: {id} not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    OrderController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Order UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateOrderDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderResponseDto"];
+                };
+            };
+            /** @description Datos inválidos, sin stock, o dirección fuera de cobertura */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Order with ID: {id} not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description El pedido no está pendiente, tiene chofer o pago online */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8581,10 +10409,63 @@ export interface operations {
             };
         };
     };
+    TimeSlotController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTimeSlotDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimeSlotResponseDto"];
+                };
+            };
+            /** @description Datos inválidos o rango con inicio >= fin */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description La franja no existe o es de otra distribuidora */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     CylinderController_findAll: {
         parameters: {
             query?: {
-                state?: "in_depot" | "filled" | "dispatched" | "with_customer" | "empty_returned";
+                state?: "in_depot" | "filled" | "dispatched" | "with_customer" | "empty_returned" | "retired";
                 /** @description Los envases que salieron en ese pedido: los que lo tienen como pedido actual o que registraron algún movimiento en él. Un pedido ya entregado sigue mostrando sus series. */
                 orderId?: string;
                 /** @description user_id del cliente (el mismo que `customer_id` de un pedido y `user_id` de un cliente; NO el `customer_id` del perfil). Devuelve los envases que tiene hoy en su poder. */
@@ -8775,6 +10656,67 @@ export interface operations {
             };
         };
     };
+    CylinderController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Cylinder UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCylinderDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CylinderResponseDto"];
+                };
+            };
+            /** @description Datos inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Envase no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Serial repetido en la distribuidora, o envase dado de baja */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     CylinderController_getHistory: {
         parameters: {
             query?: never;
@@ -8794,6 +10736,60 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["CylinderMovementResponseDto"][];
                 };
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Envase no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CylinderController_retire: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Cylinder UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RetireCylinderDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CylinderResponseDto"];
+                };
+            };
+            /** @description Motivo faltante o el envase no está en un estado dable de baja */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Sin token o token inválido */
             401: {
@@ -9726,7 +11722,7 @@ export interface operations {
     FleetTaskController_downloadAttachment: {
         parameters: {
             query?: {
-                /** @description `url` devuelve `{ url, expiresAt }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada con S3, streaming con el driver local). */
+                /** @description `url` devuelve `{ url, expiresAt, requiresAuth }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada de S3). */
                 modo?: components["schemas"]["DownloadMode"];
             };
             header?: never;
@@ -9740,7 +11736,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description El archivo con su content-type original; con `?modo=url`, el enlace */
+            /** @description Con `?modo=url`: el enlace `{ url, expiresAt, requiresAuth }` */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -9748,6 +11744,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["DownloadLinkResponseDto"];
                 };
+            };
+            /** @description Sin `modo`: redirección (302) a la URL firmada de S3, que sirve el archivo con su content-type original */
+            302: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Sin token o token inválido */
             401: {
@@ -10421,6 +12424,110 @@ export interface operations {
             };
         };
     };
+    ClaimsController_findOne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Claim UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimResponseDto"];
+                };
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description El reclamo no existe o es de otra distribuidora */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ClaimsController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Claim UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateClaimDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimResponseDto"];
+                };
+            };
+            /** @description Datos inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description El reclamo no existe o es de otra distribuidora */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description El reclamo ya no está pendiente */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     ClaimsController_resolve: {
         parameters: {
             query?: never;
@@ -10582,7 +12689,7 @@ export interface operations {
     ClaimsController_getPhoto: {
         parameters: {
             query?: {
-                /** @description `url` devuelve `{ url, expiresAt }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada con S3, streaming con el driver local). */
+                /** @description `url` devuelve `{ url, expiresAt, requiresAuth }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada de S3). */
                 modo?: components["schemas"]["DownloadMode"];
             };
             header?: never;
@@ -11269,6 +13376,171 @@ export interface operations {
             };
         };
     };
+    RatingController_findOne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Rating UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RatingResponseDto"];
+                };
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description La calificación no existe o es de otra distribuidora */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RatingController_hide: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Rating UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModerateRatingDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RatingResponseDto"];
+                };
+            };
+            /** @description Falta el motivo */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description La calificación no existe o es de otra distribuidora */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Ya está oculta */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RatingController_unhide: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Rating UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModerateRatingDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RatingResponseDto"];
+                };
+            };
+            /** @description Falta el motivo */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description La calificación no existe o es de otra distribuidora */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No está oculta */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     IncidentController_findAll: {
         parameters: {
             query?: never;
@@ -11396,6 +13668,110 @@ export interface operations {
             };
         };
     };
+    IncidentController_findOne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Incident UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncidentResponseDto"];
+                };
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description La incidencia no existe o es de otra distribuidora */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    IncidentController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Incident UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateIncidentDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncidentResponseDto"];
+                };
+            };
+            /** @description Datos inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description La incidencia no existe o es de otra distribuidora */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description La incidencia ya no está abierta */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     IncidentController_resolve: {
         parameters: {
             query?: never;
@@ -11448,6 +13824,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Se intenta descartar una no abierta, o tocar una descartada */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     AuditController_consultar: {
@@ -11495,152 +13878,36 @@ export interface operations {
             };
         };
     };
-    AttachmentController_list: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                ownerType: components["schemas"]["AttachmentOwnerType"];
-                /** @description UUID del dueño */
-                ownerId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AttachmentResponseDto"][];
-                };
-            };
-            /** @description El tipo de dueño todavía no admite adjuntos */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Sin token o token inválido */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Un chofer no puede acceder a ese tipo de dueño */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description El dueño no existe o es de otra distribuidora */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AttachmentController_upload: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                ownerType: components["schemas"]["AttachmentOwnerType"];
-                /** @description UUID del dueño */
-                ownerId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": {
-                    /** Format: binary */
-                    file: string;
-                    label?: string;
-                };
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AttachmentResponseDto"];
-                };
-            };
-            /** @description Falta el archivo o el tipo de dueño todavía no admite adjuntos */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Sin token o token inválido */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Un chofer no puede adjuntar a ese tipo de dueño */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description El dueño no existe o es de otra distribuidora */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description El archivo supera el máximo permitido */
-            413: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Tipo de archivo no permitido (sólo PDF, JPG, PNG, WEBP) */
-            415: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AttachmentController_download: {
+    DataAuditController_findAll: {
         parameters: {
             query?: {
-                /** @description `url` devuelve `{ url, expiresAt }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada con S3, streaming con el driver local). */
-                modo?: components["schemas"]["DownloadMode"];
+                /** @description entidadAfectada: nombre de la entidad de dominio */
+                entity?: string;
+                /** @description idRegistro: id del registro afectado */
+                recordId?: string;
+                /** @description idUsuario: quién hizo el cambio */
+                userId?: string;
+                /** @description idTipoAuditoria: 1 Alta, 2 Modificación, 3 Baja lógica, 4 Reactivación, 5 Baja física */
+                actionType?: number;
+                /** @description fechaHora desde (inclusive) */
+                from?: string;
+                /** @description fechaHora hasta (inclusive) */
+                to?: string;
+                page?: number;
+                limit?: number;
             };
             header?: never;
-            path: {
-                /** @description Attachment UUID */
-                attachmentId: string;
-            };
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description El archivo con su content-type original; con `?modo=url`, el enlace */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DownloadLinkResponseDto"];
+                    "application/json": components["schemas"]["AuditEntriesPageDto"];
                 };
             };
             /** @description Sin token o token inválido */
@@ -11650,14 +13917,49 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Requiere rol: admin, super_admin, delivery */
+            /** @description Requiere rol: admin, super_admin */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
-            /** @description Adjunto no encontrado */
+        };
+    };
+    DataAuditController_findOne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditEntryDto"];
+                };
+            };
+            /** @description Sin token o token inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requiere rol: admin, super_admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No existe, o es de otra distribuidora */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -11666,24 +13968,22 @@ export interface operations {
             };
         };
     };
-    AttachmentController_remove: {
+    DataAuditController_findActionTypes: {
         parameters: {
             query?: never;
             header?: never;
-            path: {
-                /** @description Attachment UUID */
-                attachmentId: string;
-            };
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Borrado */
-            204: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["AuditActionTypeDto"][];
+                };
             };
             /** @description Sin token o token inválido */
             401: {
@@ -11692,15 +13992,8 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Requiere rol: admin, super_admin, delivery */
+            /** @description Requiere rol: admin, super_admin */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Adjunto no encontrado */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };

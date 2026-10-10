@@ -8,6 +8,7 @@ import type {
   Message,
   Order,
   PaginatedOrders,
+  UpdateOrderBody,
   UpdateOrderStatusBody,
 } from './types';
 
@@ -32,6 +33,17 @@ export const listOrders = async (params: PageParams, filters: OrderFilters = {})
 /** GET /orders/:id: la ficha completa de un pedido. */
 export const getOrder = async (id: string): Promise<Order> => {
   const { data } = await http.get<Order>(`/orders/${id}`);
+  return data;
+};
+
+/**
+ * PATCH /orders/:id: edita un pedido pendiente (dirección, franja, fecha, pago, notas, renglones). Si llegan `items`
+ * reemplazan a todos los actuales: el back devuelve el stock viejo, reserva el nuevo y recalcula el total con los
+ * precios vigentes. 409 si el pedido no está pendiente, ya tiene chofer o se pagó online; 400 sin stock, fuera de
+ * cobertura o al pasar a MercadoPago.
+ */
+export const updateOrder = async (id: string, body: UpdateOrderBody): Promise<Order> => {
+  const { data } = await http.patch<Order>(`/orders/${id}`, body);
   return data;
 };
 

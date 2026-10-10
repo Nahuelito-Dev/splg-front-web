@@ -1,29 +1,36 @@
 import { useEffect, useState } from 'react';
 import { usePermissions } from '../../../hooks';
-import { Badge, Button, DetailList, Drawer, TextArea } from '../../../common/components/ui';
+import { AuditHistoryLink, Badge, Button, DetailList, Drawer, TextArea } from '../../../common/components/ui';
 import type { Claim } from '../../../services/api/types';
-import { useReopenClaim, useResolveClaim, useTakeClaim } from '../../../services/queries/claims';
+import { useClaim, useReopenClaim, useResolveClaim, useTakeClaim } from '../../../services/queries/claims';
 import { formatDateTime, formatShortId } from '../../../utils/format';
 import { confirm, notify } from '../../../utils/notifications';
 import { CLAIM_STATUS, labelOf } from '../../../utils/statusLabels';
 import { ClaimHistory } from './ClaimHistory';
 import { ClaimPhoto } from './ClaimPhoto';
 
+export type PendingAction = 'resolve' | 'reject' | 'reopen' | null;
+
 interface Props {
   open: boolean;
   onClose: () => void;
   claim: Claim | null;
+  /** Abre el panel ya en «Rechazar» (la baja del reclamo desde la fila de la tabla). */
+  startAction?: PendingAction;
+  /** Editar lo maneja la página (abre su propio modal). */
+  onEdit?: (claim: Claim) => void;
 }
-
-type PendingAction = 'resolve' | 'reject' | 'reopen' | null;
 
 /**
  * Ficha de un reclamo (CU-025): historial de la auditoría y las cuatro
  * acciones de la máquina de estados — Tomar, Resolver, Rechazar, Reabrir.
  * Cada una pide confirmación; resolver/rechazar/reabrir, además, un motivo.
  */
-export const ClaimDetailDrawer = ({ open, onClose, claim }: Props) => {
-  const [action, setAction] = useState<PendingAction>(null);
+export const ClaimDetailDrawer = ({ open, onClose, claim: listed, startAction = null, onEdit }: Props) => {
+  const [action, setAction] = useState<PendingAction>(startAction);
+  // El listado ya trae al cliente; el detalle suma el pedido y siempre es el dato fresco.
+  const { data: fresh } = useClaim(open ? listed?.claim_id : undefined);
+  const claim = fresh ?? listed;
   const [note, setNote] = useState('');
   const { canOperate, operateHint } = usePermissions();
   const takeClaim = useTakeClaim();
@@ -32,10 +39,11 @@ export const ClaimDetailDrawer = ({ open, onClose, claim }: Props) => {
 
   useEffect(() => {
     if (open) {
-      setAction(null);
+      setAction(startAction);
       setNote('');
     }
-  }, [open, claim]);
+    // Sólo al abrir o cambiar de reclamo: un refresco del detalle no tiene que cerrar lo que se está escribiendo.
+  }, [open, listed?.claim_id, startAction]);
 
   if (!claim) return null;
 
@@ -113,6 +121,17 @@ export const ClaimDetailDrawer = ({ open, onClose, claim }: Props) => {
         ) : (
           <>
             {operateHint && <p className="mr-auto text-sm text-muted">{operateHint}</p>}
+            {claim.status === 'pending' && onEdit && (
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={!canOperate}
+                title={operateHint}
+                onClick={() => onEdit(claim)}
+              >
+                Editar
+              </Button>
+            )}
             {canTake && (
               <Button
                 variant="secondary"
@@ -164,6 +183,8 @@ export const ClaimDetailDrawer = ({ open, onClose, claim }: Props) => {
             <p className="text-sm italic text-muted">“{claim.description}”</p>
           </div>
         </div>
+
+        <AuditHistoryLink entity="Claim" recordId={claim.claim_id} />
 
         <DetailList
           items={[

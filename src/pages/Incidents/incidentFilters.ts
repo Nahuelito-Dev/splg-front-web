@@ -3,7 +3,7 @@ import type { Incident } from '../../services/api/types';
 export type IncidentStatusFilter = Incident['status'] | 'all';
 export type IncidentTypeFilter = Incident['type'] | 'all';
 
-export const INCIDENT_STATUS_ORDER: Incident['status'][] = ['open', 'resolved'];
+export const INCIDENT_STATUS_ORDER: Incident['status'][] = ['open', 'resolved', 'discarded'];
 export const INCIDENT_TYPE_ORDER: Incident['type'][] = ['damaged', 'out_of_stock', 'no_show', 'other'];
 
 const normalize = (text: string | null | undefined) => (text ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -32,7 +32,7 @@ export const filterIncidents = (incidents: Incident[], { status, type, term }: F
 
 /** Cuántas incidencias hay en cada estado y en total, sobre la lista completa. */
 export const countIncidentsByStatus = (incidents: Incident[]): Record<Incident['status'], number> & { all: number } => {
-  const counts = { open: 0, resolved: 0, all: incidents.length };
+  const counts = { open: 0, resolved: 0, discarded: 0, all: incidents.length };
   for (const incident of incidents) counts[incident.status] += 1;
   return counts;
 };

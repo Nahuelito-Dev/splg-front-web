@@ -1,5 +1,5 @@
 import { http, type Page } from './httpClient';
-import type { AsientoDeAuditoria, RegistroDeAuditoria } from './types';
+import type { AsientoDeAuditoria, AuditActionType, AuditEntriesPage, AuditEntry, RegistroDeAuditoria } from './types';
 
 interface AuditFilters {
   actorUserId?: string;
@@ -28,4 +28,42 @@ export const buildAuditQuery = ({ limit, offset, ...filters }: AuditParams): Rec
 export const listAudit = async (params: AuditParams): Promise<Page<AsientoDeAuditoria>> => {
   const { data } = await http.get<RegistroDeAuditoria>('/audit', { params: buildAuditQuery(params) });
   return { rows: data.items, total: data.total };
+};
+
+export interface AuditEntriesParams {
+  entity?: string;
+  recordId?: string;
+  userId?: string;
+  actionType?: number;
+  /** ISO 8601 */
+  from?: string;
+  /** ISO 8601 */
+  to?: string;
+  /** Desde 1. */
+  page: number;
+  limit: number;
+}
+
+/** Saca los filtros vacíos de la auditoría de datos. */
+export const buildAuditEntriesQuery = (params: AuditEntriesParams): Record<string, string | number> =>
+  Object.fromEntries(
+    Object.entries(params).filter((entry): entry is [string, string | number] => entry[1] !== '' && entry[1] != null),
+  );
+
+/** GET /audit/entries: cada alta, cambio, baja o reactivación de un registro, con sus campos. */
+export const listAuditEntries = async (params: AuditEntriesParams): Promise<Page<AuditEntry>> => {
+  const { data } = await http.get<AuditEntriesPage>('/audit/entries', { params: buildAuditEntriesQuery(params) });
+  return { rows: data.data, total: data.total };
+};
+
+/** GET /audit/entries/:id */
+export const getAuditEntry = async (id: string): Promise<AuditEntry> => {
+  const { data } = await http.get<AuditEntry>(`/audit/entries/${id}`);
+  return data;
+};
+
+/** GET /audit/action-types: el catálogo de acciones (alta, modificación, baja lógica…). */
+export const listAuditActionTypes = async (): Promise<AuditActionType[]> => {
+  const { data } = await http.get<AuditActionType[]>('/audit/action-types');
+  return data;
 };

@@ -97,7 +97,7 @@ export const Users = () => {
   const handleDelete = async (user: User) => {
     const confirmed = await confirm({
       title: '¿Dar de baja al usuario?',
-      text: `${user.full_name ?? 'El usuario'} no va a poder volver a entrar.`,
+      text: `${user.full_name ?? 'El usuario'} no va a poder volver a entrar. Baja lógica: la cuenta y su historial no se borran.`,
       confirmText: 'Dar de baja',
       danger: true,
     });

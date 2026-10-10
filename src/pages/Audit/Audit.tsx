@@ -1,28 +1,24 @@
-import type { GridPaginationModel } from '@mui/x-data-grid';
-import { useState } from 'react';
-import { Card, EmptyState, FilterChips, PageHeader } from '../../common/components/ui';
-import { useDebounce, usePermissions } from '../../hooks';
-import { useAudit } from '../../services/queries/audit';
-import type { AsientoDeAuditoria } from '../../services/api/types';
-import { AuditDetailDrawer } from './components/AuditDetailDrawer';
-import { AuditFilters } from './components/AuditFilters';
-import { auditFilterChips, EMPTY_AUDIT_FILTERS, type AuditFiltersState } from './components/auditFiltersState';
-import { AuditTable } from './components/AuditTable';
+import { Card, EmptyState, PageHeader, Tabs, tabPanelProps } from '../../common/components/ui';
+import { usePermissions, useProfileTab } from '../../hooks';
+import { DataAuditTab } from './components/DataAuditTab';
+import { OperationsAuditTab } from './components/OperationsAuditTab';
 
-/** CU-152: quién hizo cada operación que modificó datos, sobre qué y con qué resultado. */
+const TABS_ID = 'audit';
+const TABS = [
+  { id: 'data', label: 'Cambios de datos' },
+  { id: 'operations', label: 'Operaciones' },
+];
+
+/**
+ * Auditoría. «Cambios de datos»: qué campo de qué registro cambió, de qué valor a cuál y quién lo hizo.
+ * «Operaciones» (CU-152): cada pedido de escritura a la API, exitoso o rechazado.
+ */
 export const Audit = () => {
   const { canViewAudit } = usePermissions();
-  const [filters, setFilters] = useState<AuditFiltersState>(EMPTY_AUDIT_FILTERS);
-  const [pagination, setPagination] = useState<GridPaginationModel>({ page: 0, pageSize: 25 });
-  const [detail, setDetail] = useState<AsientoDeAuditoria | null>(null);
-  const debouncedFilters = useDebounce(filters, 500);
-
-  const { data, isFetching } = useAudit({
-    ...debouncedFilters,
-    result: debouncedFilters.result || undefined,
-    limit: pagination.pageSize,
-    offset: pagination.page * pagination.pageSize,
-  });
+  const [tab, setTab] = useProfileTab(
+    TABS.map((t) => t.id),
+    'data',
+  );
 
   if (!canViewAudit) {
     return (
@@ -33,41 +29,16 @@ export const Audit = () => {
     );
   }
 
-  const handleFiltersChange = (value: AuditFiltersState) => {
-    setFilters(value);
-    setPagination((p) => ({ ...p, page: 0 }));
-  };
-
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
       <PageHeader
         title="Auditoría"
-        description="Quién hizo cada operación, sobre qué recurso, cuándo y con qué resultado."
+        description="Quién cambió qué, cuándo y desde dónde. Nada se borra: las bajas son lógicas y quedan registradas."
       />
-
-      <AuditFilters value={filters} onChange={handleFiltersChange} />
-
-      <FilterChips
-        items={auditFilterChips(filters)}
-        onRemove={(key) =>
-          handleFiltersChange({ ...filters, [key]: EMPTY_AUDIT_FILTERS[key as keyof AuditFiltersState] })
-        }
-        onClearAll={() => handleFiltersChange(EMPTY_AUDIT_FILTERS)}
-        resultCount={data?.total}
-      />
-
       <Card>
-        <AuditTable
-          rows={data?.rows ?? []}
-          total={data?.total ?? 0}
-          loading={isFetching}
-          pagination={pagination}
-          onPaginationChange={setPagination}
-          onViewDetail={setDetail}
-        />
+        <Tabs items={TABS} value={tab} onChange={setTab} label="Tipo de auditoría" idPrefix={TABS_ID} />
       </Card>
-
-      <AuditDetailDrawer entry={detail} onClose={() => setDetail(null)} />
+      <div {...tabPanelProps(TABS_ID, tab)}>{tab === 'data' ? <DataAuditTab /> : <OperationsAuditTab />}</div>
     </div>
   );
 };

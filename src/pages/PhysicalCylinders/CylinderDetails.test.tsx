@@ -10,7 +10,11 @@ vi.mock('../../services/queries/physicalCylinders', () => ({
   useCylinder: () => cylinderQuery() as unknown,
   useCylinderHistory: () => historyQuery() as unknown,
   useTransitionCylinder: () => ({ mutate: vi.fn(), isPending: false }),
+  useUpdateCylinder: () => ({ mutate: vi.fn(), isPending: false }),
+  useRetireCylinder: () => ({ mutate: vi.fn(), isPending: false }),
+  useCreateCylinder: () => ({ mutate: vi.fn(), isPending: false }),
 }));
+vi.mock('../../services/queries/gasCylinders', () => ({ useGasCylinders: () => ({ data: undefined }) }));
 vi.mock('../../services/queries/userNames', () => ({
   useUserNames: () => ({ nameOf: (id: string | null) => (id === 'u-1' ? 'Marta Gómez' : null), loading: false }),
 }));
@@ -31,7 +35,7 @@ const CYLINDER = {
   gas_cylinder: { type: 'Garrafa 5kg', weight: 5 },
   current_customer: null,
   current_order_id: null,
-  manufactured_at: null,
+  manufactured_at: '2025-01-01T00:00:00.000Z',
   last_inspection_at: null,
   createdAt: '2026-09-01T10:00:00.000Z',
   updatedAt: '2026-09-02T10:00:00.000Z',
@@ -68,11 +72,28 @@ describe('CylinderDetails', () => {
   });
   afterEach(cleanup);
 
+  it('un envase retirado muestra «Mover de estado» y «Dar de baja» apagados con su motivo, y no se edita', () => {
+    cylinderQuery.mockReturnValue({
+      data: { ...CYLINDER, state: 'retired' },
+      isPending: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+    historyQuery.mockReturnValue({ data: [], isPending: false, error: null, refetch: vi.fn() });
+    renderPage();
+    expect(screen.getByRole('button', { name: 'Mover de estado' })).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByRole('button', { name: 'Mover de estado' }).getAttribute('title')).toMatch(/retirado/);
+    expect(screen.getByRole('button', { name: 'Dar de baja' })).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.queryByRole('button', { name: 'Editar' })).toBeNull();
+  });
+
   it('muestra los datos del envase y su línea de tiempo', () => {
     cylinderQuery.mockReturnValue({ data: CYLINDER, isPending: false, error: null, refetch: vi.fn() });
     historyQuery.mockReturnValue({ data: MOVEMENTS, isPending: false, error: null, refetch: vi.fn() });
     renderPage();
     expect(screen.getByRole('heading', { name: 'SPLG-00017' })).toBeInTheDocument();
+    // la fabricación es un día de calendario: medianoche UTC no se muestra como el día anterior
+    expect(screen.getByText('1 ene 2025')).toBeInTheDocument();
     expect(within(screen.getByRole('navigation', { name: 'Migas de pan' })).getByText('SPLG-00017')).toHaveAttribute(
       'aria-current',
       'page',

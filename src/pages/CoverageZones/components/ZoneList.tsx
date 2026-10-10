@@ -102,7 +102,7 @@ export const ZoneList = ({ rows, loading, selectedZoneId, onSelectRow, onToggleA
             {onEdit && <IconButton label="Editar zona" icon={<EditOutlinedIcon />} onClick={() => onEdit(row)} />}
             {onDelete && (
               <IconButton
-                label="Eliminar zona"
+                label="Dar de baja la zona"
                 tone="danger"
                 icon={<DeleteOutlineIcon />}
                 onClick={() => onDelete(row)}

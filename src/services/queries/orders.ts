@@ -12,10 +12,18 @@ import {
   listOrderIncidents,
   listOrders,
   notifyOrderArrival,
+  updateOrder,
   updateOrderStatus,
   type OrderFilters,
 } from '../api/orders';
-import type { CancelOrderBody, ConfirmDeliveryBody, CreateOrderBody, Order, UpdateOrderStatusBody } from '../api/types';
+import type {
+  CancelOrderBody,
+  ConfirmDeliveryBody,
+  CreateOrderBody,
+  Order,
+  UpdateOrderBody,
+  UpdateOrderStatusBody,
+} from '../api/types';
 import { SKIP } from '../../utils/batch';
 import { canAssignDriver, canCancel } from '../../pages/Orders/components/orderStatus';
 import { ORDER_FLOW } from '../../utils/statusLabels';
@@ -186,6 +194,20 @@ export const useCreateOrder = () => {
   return useMutation({
     mutationFn: (body: CreateOrderBody) => createOrder(body),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
+  });
+};
+
+export const useUpdateOrder = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: UpdateOrderBody }) => updateOrder(id, body),
+    // Cambiar renglones devuelve y reserva stock y recalcula el total: el catálogo y las estadísticas quedan viejos.
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: keys.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.gasCylinders.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.stats.all }),
+      ]),
   });
 };
 

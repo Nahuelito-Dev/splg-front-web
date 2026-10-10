@@ -6,7 +6,12 @@ const permissions = vi.fn();
 vi.mock('../../../hooks', () => ({ usePermissions: () => permissions() as unknown }));
 vi.mock('../../../services/queries/claims', () => {
   const mutation = { mutate: vi.fn(), isPending: false };
-  return { useTakeClaim: () => mutation, useResolveClaim: () => mutation, useReopenClaim: () => mutation };
+  return {
+    useClaim: () => ({ data: undefined }),
+    useTakeClaim: () => mutation,
+    useResolveClaim: () => mutation,
+    useReopenClaim: () => mutation,
+  };
 });
 vi.mock('./ClaimHistory', () => ({ ClaimHistory: () => null }));
 vi.mock('./ClaimPhoto', () => ({ ClaimPhoto: () => null }));

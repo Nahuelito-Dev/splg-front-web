@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { MapPin, Pencil, Plus, Star, Trash2, type LucideIcon } from 'lucide-react';
+import { History, MapPin, Pencil, Plus, Star, Trash2, type LucideIcon } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import {
   Badge,
   Card,
@@ -16,6 +17,7 @@ import {
   useSetDefaultUserAddress,
   useUserAddresses,
 } from '../../../../services/queries/userAddresses';
+import { auditHistoryPath } from '../../../../utils/auditLabels';
 import { confirm, notify } from '../../../../utils/notifications';
 import { AddressFormModal } from './AddressFormModal';
 
@@ -47,6 +49,7 @@ export const CustomerAddresses = ({ userId }: { userId: string }) => {
   const setDefault = useSetDefaultUserAddress();
   const deleteAddress = useDeleteUserAddress();
   const [form, setForm] = useState<FormState>({ open: false });
+  const navigate = useNavigate();
 
   const handleSetDefault = (address: UserAddressConUsuario) => {
     setDefault.mutate(address.address_id, {
@@ -62,22 +65,27 @@ export const CustomerAddresses = ({ userId }: { userId: string }) => {
     if (!address.isDefault) {
       actions.push({ label: 'Marcar como principal', icon: Star, onClick: () => handleSetDefault(address) });
     }
-    actions.push({ label: 'Eliminar', icon: Trash2, tone: 'danger', onClick: () => void handleDelete(address) });
+    actions.push({
+      label: 'Ver historial de cambios',
+      icon: History,
+      onClick: () => navigate(auditHistoryPath('UserAddress', address.address_id)),
+    });
+    actions.push({ label: 'Dar de baja', icon: Trash2, tone: 'danger', onClick: () => void handleDelete(address) });
     return actions;
   };
 
   const handleDelete = async (address: UserAddressConUsuario) => {
     const confirmed = await confirm({
-      title: '¿Eliminar dirección?',
+      title: '¿Dar de baja la dirección?',
       text: address.isDefault
-        ? `Es la dirección principal de ${address.street}. Si tiene otras, la más reciente pasa a ser la principal.`
-        : `Se elimina ${address.street}.`,
-      confirmText: 'Eliminar',
+        ? `Baja lógica: ${address.street} es la dirección principal. Si tiene otras, la más reciente pasa a ser la principal. No se borra.`
+        : `Baja lógica: ${address.street} deja de ofrecerse, pero no se borra.`,
+      confirmText: 'Dar de baja',
       danger: true,
     });
     if (!confirmed) return;
     deleteAddress.mutate(address.address_id, {
-      onSuccess: () => notify.success('Dirección eliminada'),
+      onSuccess: () => notify.success('Dirección dada de baja'),
       onError: notify.error,
     });
   };

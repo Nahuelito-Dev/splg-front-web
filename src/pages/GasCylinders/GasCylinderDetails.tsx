@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
-import { Button, DetailSkeleton, ErrorState, PageHeader } from '../../common/components/ui';
+import { AuditHistoryLink, Button, DetailSkeleton, ErrorState, PageHeader } from '../../common/components/ui';
 import { useBackToList } from '../../hooks';
 import { useCrumbLeaf } from '../../common/components';
 import { useGasCylinder } from '../../services/queries/gasCylinders';
@@ -22,9 +22,12 @@ export const GasCylinderDetails = () => {
         title="Ficha del producto"
         actions={
           cylinder && (
-            <Button variant="secondary" icon={<EditOutlinedIcon />} onClick={() => setEditing(true)}>
-              Editar
-            </Button>
+            <>
+              <AuditHistoryLink entity="GasCylinder" recordId={cylinder.gas_cylinder_id} />
+              <Button variant="secondary" icon={<EditOutlinedIcon />} onClick={() => setEditing(true)}>
+                Editar
+              </Button>
+            </>
           )
         }
       />

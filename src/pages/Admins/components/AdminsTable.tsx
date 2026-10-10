@@ -10,7 +10,7 @@ interface Props {
   loading: boolean;
 }
 
-/** Administradores; la cuenta se gestiona en su ficha de usuario (editar, bloquear, dar de baja). */
+/** Administradores: «Ver» abre su ficha; la cuenta (editar, bloquear, dar de baja) se gestiona desde la ficha del usuario. */
 export const AdminsTable = ({ rows, loading }: Props) => {
   const navigate = useNavigate();
   const columns = useMemo<GridColDef<Admin>[]>(
@@ -59,7 +59,7 @@ export const AdminsTable = ({ rows, loading }: Props) => {
         renderCell: ({ row }) => (
           <RowActions
             rowLabel={row.user?.full_name ?? 'administrador'}
-            onView={() => navigate(`/users/details/${row.user_id}`)}
+            onView={() => navigate(`/admins/${row.admin_id}`)}
           />
         ),
       },
@@ -73,7 +73,7 @@ export const AdminsTable = ({ rows, loading }: Props) => {
       columns={columns}
       getRowId={(row) => row.admin_id}
       loading={loading}
-      onRowClick={(row) => navigate(`/users/details/${row.user_id}`)}
+      onRowClick={(row) => navigate(`/admins/${row.admin_id}`)}
       empty={<EmptyState title="Sin admins" description="Todavía no hay administradores en esta vista." />}
     />
   );

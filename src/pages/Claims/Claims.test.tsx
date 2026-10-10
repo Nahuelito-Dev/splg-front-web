@@ -12,6 +12,8 @@ vi.mock('../../services/queries/claims', () => {
   const mutation = { mutate: vi.fn(), isPending: false };
   return {
     useClaims: () => claimsQuery() as unknown,
+    useClaim: () => ({ data: undefined }),
+    useUpdateClaim: () => mutation,
     useTakeClaim: () => mutation,
     useResolveClaim: () => mutation,
     useReopenClaim: () => mutation,

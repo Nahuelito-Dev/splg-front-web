@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { ArrowRightLeft, Cylinder as CylinderIcon } from 'lucide-react';
 import { Badge, DataTable, EmptyState, IdentityCell, RowActions } from '../../../common/components/ui';
 import type { Cylinder } from '../../../services/api/types';
+import { canEditCylinder, canRetire } from '../cylinderTransitions';
 import { formatCurrency, formatDate } from '../../../utils/format';
 import { CYLINDER_STATE, labelOf } from '../../../utils/statusLabels';
 
@@ -16,6 +17,10 @@ interface Props {
   /** Sin él no se muestra el botón (p. ej. superadmin sin distribuidora elegida). */
   onTransition?: (cylinder: Cylinder) => void;
   onView: (cylinder: Cylinder) => void;
+  /** Sin él no se muestra «Editar». Un envase retirado no se edita. */
+  onEdit?: (cylinder: Cylinder) => void;
+  /** Baja lógica; sólo se ofrece en los estados desde los que el back la acepta. */
+  onRetire?: (cylinder: Cylinder) => void;
   /** Hay filtros activos: un vacío significa "sin resultados". */
   filtered?: boolean;
   /** Selección múltiple para las acciones en lote (sólo con permiso de escritura). */
@@ -32,6 +37,8 @@ export const PhysicalCylindersTable = ({
   onPaginationChange,
   onTransition,
   onView,
+  onEdit,
+  onRetire,
   filtered = false,
   selection,
   onPageChange,
@@ -94,21 +101,26 @@ export const PhysicalCylindersTable = ({
       {
         field: 'actions',
         headerName: '',
-        width: 96,
+        width: 128,
         sortable: false,
         align: 'right',
         renderCell: ({ row }) => (
           <RowActions
             rowLabel={`envase ${row.serial}`}
             onView={() => onView(row)}
+            onEdit={onEdit && canEditCylinder(row) ? () => onEdit(row) : undefined}
+            onDelete={onRetire && canRetire(row) ? () => onRetire(row) : undefined}
+            deleteLabel="Dar de baja"
             actions={
-              onTransition ? [{ label: 'Mover de estado', icon: ArrowRightLeft, onClick: () => onTransition(row) }] : []
+              onTransition && row.state !== 'retired'
+                ? [{ label: 'Mover de estado', icon: ArrowRightLeft, onClick: () => onTransition(row) }]
+                : []
             }
           />
         ),
       },
     ],
-    [onTransition, onView],
+    [onTransition, onView, onEdit, onRetire],
   );
 
   return (
@@ -119,7 +131,7 @@ export const PhysicalCylindersTable = ({
       loading={loading}
       pagination={{ model: pagination, onChange: onPaginationChange, total }}
       onRowClick={onView}
-      selection={selection}
+      selection={selection && { ...selection, isSelectable: canEditCylinder }}
       onPageChange={onPageChange}
       empty={
         filtered ? (

@@ -1,4 +1,4 @@
-import { Badge, DetailList, DetailSkeleton, ErrorState, Modal } from '../../../common/components/ui';
+import { AuditHistoryLink, Badge, DetailList, DetailSkeleton, ErrorState, Modal } from '../../../common/components/ui';
 import { useTimeSlot } from '../../../services/queries/timeSlots';
 import { formatDateTime } from '../../../utils/format';
 
@@ -14,7 +14,10 @@ const SlotBody = ({ slotId }: { slotId: string }) => {
   if (error || !slot) return <ErrorState error={error} resource="La franja" onRetry={() => void refetch()} />;
   return (
     <div className="space-y-4">
-      <Badge label={slot.isActive ? { text: 'Activa', tone: 'success' } : { text: 'Inactiva', tone: 'neutral' }} />
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <Badge label={slot.isActive ? { text: 'Activa', tone: 'success' } : { text: 'Inactiva', tone: 'neutral' }} />
+        <AuditHistoryLink entity="TimeSlot" recordId={slot.time_slot_id} />
+      </div>
       <DetailList
         items={[
           { label: 'Nombre', value: slot.name },

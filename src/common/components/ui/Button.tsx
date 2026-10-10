@@ -10,6 +10,11 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Muestra un indicador y deshabilita el botón. */
   loading?: boolean;
   icon?: ReactNode;
+  /**
+   * La acción existe pero hoy no se puede: el botón se ve apagado, sigue en el orden de tabulación y el motivo va en
+   * `title` y en `aria-description` (un `disabled` nativo no se enfoca y su tooltip no se ve).
+   */
+  blockedReason?: string;
 }
 
 const VARIANTS: Record<Variant, string> = {
@@ -35,6 +40,9 @@ export const Button = forwardRef<HTMLButtonElement, Props>(
       className,
       children,
       disabled,
+      blockedReason,
+      onClick,
+      title,
       type = 'button',
       ...rest
     },
@@ -45,10 +53,15 @@ export const Button = forwardRef<HTMLButtonElement, Props>(
       type={type}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
+      aria-disabled={blockedReason ? true : undefined}
+      aria-description={blockedReason}
+      title={blockedReason ?? title}
+      onClick={blockedReason ? undefined : onClick}
       className={cx(
         'inline-flex items-center justify-center gap-2 whitespace-nowrap font-semibold transition',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2',
         'disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:brightness-100 [&_svg]:h-4 [&_svg]:w-4',
+        blockedReason && 'cursor-not-allowed opacity-50 hover:brightness-100',
         VARIANTS[variant],
         SIZES[size],
         className,

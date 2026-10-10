@@ -24,6 +24,15 @@ describe('RowActions', () => {
     expect(screen.queryByRole('button', { name: /Editar|Eliminar|Más acciones/ })).toBeNull();
   });
 
+  it('una edición bloqueada se ve apagada, explica por qué y no hace nada', () => {
+    const onEdit = vi.fn();
+    render(<RowActions rowLabel="pedido 1" onEdit={onEdit} editBlockedReason="ya tiene chofer" />);
+    const button = screen.getByRole('button', { name: 'Editar pedido 1 (no disponible: ya tiene chofer)' });
+    expect(button).toHaveAttribute('aria-disabled', 'true');
+    fireEvent.click(button);
+    expect(onEdit).not.toHaveBeenCalled();
+  });
+
   it('las acciones extra quedan en el menú ⋯ al final', () => {
     const onClick = vi.fn();
     render(

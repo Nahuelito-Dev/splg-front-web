@@ -4,8 +4,16 @@ import type {
   CreateCylinderBody,
   Cylinder,
   CylinderMovement,
+  RetireCylinderBody,
   TransitionCylinderBody,
+  UpdateCylinderBody,
 } from './types';
+
+/**
+ * `PATCH /cylinders/:id` acepta `null` para limpiar el producto o una fecha (probado contra la API), aunque el Swagger
+ * no lo declare como nullable.
+ */
+export type UpdateCylinderPatch = { [K in keyof UpdateCylinderBody]: UpdateCylinderBody[K] | null };
 
 /**
  * Envases FÍSICOS (garrafas serializadas, `/cylinders`): cada fila es una
@@ -38,6 +46,21 @@ export const getCylinder = async (id: string): Promise<Cylinder> => {
 /** POST /cylinders: alta de un envase, nace en `in_depot`. El serial es único por distribuidora (409 si se repite). */
 export const createCylinder = async (body: CreateCylinderBody): Promise<Cylinder> => {
   const { data } = await http.post<Cylinder>('/cylinders', body);
+  return data;
+};
+
+/** PATCH /cylinders/:id: datos maestros del envase. 409 si el serial ya existe o el envase está retirado. */
+export const updateCylinder = async (id: string, body: UpdateCylinderPatch): Promise<Cylinder> => {
+  const { data } = await http.patch<Cylinder>(`/cylinders/${id}`, body);
+  return data;
+};
+
+/**
+ * PATCH /cylinders/:id/retire: baja lógica con motivo (queda en el historial). Sólo desde `in_depot` o
+ * `empty_returned` (400 desde otro estado). El envase no se borra: pasa a `retired`.
+ */
+export const retireCylinder = async (id: string, body: RetireCylinderBody): Promise<Cylinder> => {
+  const { data } = await http.patch<Cylinder>(`/cylinders/${id}/retire`, body);
   return data;
 };
 

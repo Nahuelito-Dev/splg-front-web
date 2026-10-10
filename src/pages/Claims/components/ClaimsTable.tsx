@@ -11,9 +11,13 @@ interface Props {
   /** Hay filtros activos: un vacío significa "sin resultados", no "todo en orden". */
   filtered?: boolean;
   onManage: (claim: Claim) => void;
+  /** Sólo en un reclamo pendiente: la API no deja editar uno que ya se tomó. */
+  onEdit?: (claim: Claim) => void;
+  /** «Rechazar» es la baja del reclamo (queda rechazado con su nota, no se borra). */
+  onReject?: (claim: Claim) => void;
 }
 
-export const ClaimsTable = ({ rows, loading, filtered = false, onManage }: Props) => {
+export const ClaimsTable = ({ rows, loading, filtered = false, onManage, onEdit, onReject }: Props) => {
   const columns = useMemo<GridColDef<Claim>[]>(
     () => [
       {
@@ -57,15 +61,23 @@ export const ClaimsTable = ({ rows, loading, filtered = false, onManage }: Props
       {
         field: 'actions',
         headerName: '',
-        width: 64,
+        width: 128,
         sortable: false,
         align: 'right',
         renderCell: ({ row }) => (
-          <RowActions rowLabel={`reclamo de ${row.customer?.full_name ?? 'cliente'}`} onView={() => onManage(row)} />
+          <RowActions
+            rowLabel={`reclamo de ${row.customer?.full_name ?? 'cliente'}`}
+            onView={() => onManage(row)}
+            onEdit={onEdit && row.status === 'pending' ? () => onEdit(row) : undefined}
+            onDelete={
+              onReject && (row.status === 'pending' || row.status === 'in_process') ? () => onReject(row) : undefined
+            }
+            deleteLabel="Rechazar"
+          />
         ),
       },
     ],
-    [onManage],
+    [onManage, onEdit, onReject],
   );
 
   return (

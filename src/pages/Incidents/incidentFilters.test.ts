@@ -16,12 +16,16 @@ const INCIDENTS = [
   incident('1', 'open', 'damaged', 'Ana Pérez'),
   incident('2', 'resolved', 'no_show', 'Beto Gómez'),
   incident('3', 'open', 'no_show', 'Carla Ruiz'),
+  incident('4', 'discarded', 'other', 'Dora Díaz'),
 ];
 
 describe('filterIncidents', () => {
   it('filtra por estado, por tipo y por término sin tildes', () => {
     expect(filterIncidents(INCIDENTS, { status: 'open', type: 'all', term: '' })).toHaveLength(2);
     expect(filterIncidents(INCIDENTS, { status: 'all', type: 'no_show', term: '' })).toHaveLength(2);
+    expect(
+      filterIncidents(INCIDENTS, { status: 'discarded', type: 'all', term: '' }).map((i) => i.incident_id),
+    ).toEqual(['4']);
     expect(filterIncidents(INCIDENTS, { status: 'all', type: 'all', term: 'perez' }).map((i) => i.incident_id)).toEqual(
       ['1'],
     );
@@ -36,7 +40,7 @@ describe('filterIncidents', () => {
 });
 
 describe('countIncidentsByStatus', () => {
-  it('cuenta abiertas, resueltas y el total', () => {
-    expect(countIncidentsByStatus(INCIDENTS)).toEqual({ open: 2, resolved: 1, all: 3 });
+  it('cuenta abiertas, resueltas, descartadas y el total, sin NaN con una descartada', () => {
+    expect(countIncidentsByStatus(INCIDENTS)).toEqual({ open: 2, resolved: 1, discarded: 1, all: 4 });
   });
 });

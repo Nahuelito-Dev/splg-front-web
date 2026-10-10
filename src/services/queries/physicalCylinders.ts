@@ -5,13 +5,22 @@ import {
   getCylinder,
   getCylinderHistory,
   listCylinders,
+  retireCylinder,
   transitionCylinder,
+  updateCylinder,
   type CylinderFilters,
+  type UpdateCylinderPatch,
 } from '../api/physicalCylinders';
 import type { Page, PageParams } from '../api/httpClient';
-import type { AssignCylindersBody, CreateCylinderBody, Cylinder, TransitionCylinderBody } from '../api/types';
+import type {
+  AssignCylindersBody,
+  CreateCylinderBody,
+  Cylinder,
+  RetireCylinderBody,
+  TransitionCylinderBody,
+} from '../api/types';
 import { filterCylinders } from '../../pages/PhysicalCylinders/cylinderFilters';
-import { ALL_STATES, NEXT_STATES } from '../../pages/PhysicalCylinders/cylinderTransitions';
+import { ALL_STATES, canMoveTo } from '../../pages/PhysicalCylinders/cylinderTransitions';
 import { SKIP } from '../../utils/batch';
 import { useBatchMutation } from './batchMutation';
 import { queryKeys } from './queryKeys';
@@ -82,6 +91,22 @@ export const useCreateCylinder = () => {
   });
 };
 
+export const useUpdateCylinder = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: UpdateCylinderPatch }) => updateCylinder(id, body),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
+  });
+};
+
+export const useRetireCylinder = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: RetireCylinderBody }) => retireCylinder(id, body),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
+  });
+};
+
 export const useTransitionCylinder = () => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -105,7 +130,7 @@ export const useAssignCylinders = () => {
 export const useBulkTransitionCylinders = () =>
   useBatchMutation<{ ids: string[]; toState: Cylinder['state'] }>({
     run: async ({ toState }, id) => {
-      if (!NEXT_STATES[(await getCylinder(id)).state].includes(toState)) return SKIP;
+      if (!canMoveTo((await getCylinder(id)).state, toState)) return SKIP;
       return transitionCylinder(id, { toState });
     },
     invalidate: keys.all,

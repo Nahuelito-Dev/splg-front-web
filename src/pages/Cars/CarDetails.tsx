@@ -3,6 +3,7 @@ import type { GridPaginationModel } from '@mui/x-data-grid';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PencilLine, Trash2 } from 'lucide-react';
 import {
+  AuditHistoryLink,
   Badge,
   Button,
   Card,
@@ -56,15 +57,15 @@ export const CarDetails = () => {
   const handleDelete = async () => {
     if (!car) return;
     const confirmed = await confirm({
-      title: '¿Eliminar el vehículo?',
-      text: `Se elimina ${car.car_brand ?? ''} ${car.car_model ?? ''} (${car.car_patent ?? 'sin patente'}).`,
-      confirmText: 'Eliminar',
+      title: '¿Dar de baja el vehículo?',
+      text: `Baja lógica: ${car.car_brand ?? ''} ${car.car_model ?? ''} (${car.car_patent ?? 'sin patente'}) deja de usarse. No se borra.`,
+      confirmText: 'Dar de baja',
       danger: true,
     });
     if (!confirmed) return;
     deleteCar.mutate(car.car_id, {
       onSuccess: () => {
-        notify.success('Vehículo eliminado');
+        notify.success('Vehículo dado de baja');
         navigate('/cars');
       },
       onError: notify.error,
@@ -91,6 +92,7 @@ export const CarDetails = () => {
         actions={
           car && (
             <>
+              <AuditHistoryLink entity="Car" recordId={car.car_id} />
               <Button
                 variant="secondary"
                 size="sm"
@@ -109,7 +111,7 @@ export const CarDetails = () => {
                 title={writeHint}
                 onClick={() => void handleDelete()}
               >
-                Eliminar
+                Dar de baja
               </Button>
             </>
           )

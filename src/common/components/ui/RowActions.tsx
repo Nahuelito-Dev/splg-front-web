@@ -16,6 +16,11 @@ interface Props {
   rowLabel: string;
   onView?: () => void;
   onEdit?: () => void;
+  /**
+   * Si «Editar» existe pero esta fila no se puede editar, el porqué: el botón se ve apagado y el motivo va en su
+   * nombre accesible y en el tooltip. Sin `onEdit` ni motivo, no se dibuja.
+   */
+  editBlockedReason?: string;
   /** Baja lógica: el que llama pide la confirmación antes de dar de baja. */
   onDelete?: () => void;
   /** Texto de la baja según la pantalla ("Eliminar", "Dar de baja", "Desactivar"). */
@@ -29,14 +34,31 @@ interface Props {
  * orden, y lo que no aplica a la entidad no se muestra. Las acciones extra van
  * en un menú ⋯. Los clics no llegan a la fila (que también abre el detalle).
  */
-export const RowActions = ({ rowLabel, onView, onEdit, onDelete, deleteLabel = 'Eliminar', actions = [] }: Props) => {
+export const RowActions = ({
+  rowLabel,
+  onView,
+  onEdit,
+  editBlockedReason,
+  onDelete,
+  deleteLabel = 'Eliminar',
+  actions = [],
+}: Props) => {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const stop = (event: MouseEvent) => event.stopPropagation();
 
   return (
     <div className="flex items-center justify-end gap-1.5" onClick={stop}>
       {onView && <IconButton label={`Ver ${rowLabel}`} icon={<Eye />} onClick={onView} />}
-      {onEdit && <IconButton label={`Editar ${rowLabel}`} icon={<Pencil />} onClick={onEdit} />}
+      {onEdit && !editBlockedReason && <IconButton label={`Editar ${rowLabel}`} icon={<Pencil />} onClick={onEdit} />}
+      {editBlockedReason && (
+        <IconButton
+          label={`Editar ${rowLabel} (no disponible: ${editBlockedReason})`}
+          icon={<Pencil />}
+          aria-disabled="true"
+          className="cursor-not-allowed opacity-50"
+          onClick={() => undefined}
+        />
+      )}
       {onDelete && (
         <IconButton label={`${deleteLabel} ${rowLabel}`} icon={<Trash2 />} tone="danger" onClick={onDelete} />
       )}

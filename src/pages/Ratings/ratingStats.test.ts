@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Rating } from '../../services/api/types';
 import { resolveRatingStats } from './ratingStats';
 
-const rating = (stars: number): Rating =>
+const rating = (stars: number, hidden = false): Rating =>
   ({
     rating_id: crypto.randomUUID(),
     order_id: crypto.randomUUID(),
@@ -13,6 +13,10 @@ const rating = (stars: number): Rating =>
     stars,
     comment: null,
     createdAt: new Date().toISOString(),
+    hidden,
+    hiddenReason: null,
+    hiddenAt: null,
+    hiddenByUserId: null,
   }) satisfies Rating;
 
 describe('resolveRatingStats', () => {
@@ -25,6 +29,10 @@ describe('resolveRatingStats', () => {
       average: 4,
       count: 3,
     });
+  });
+
+  it('las calificaciones ocultas no cuentan en el promedio calculado', () => {
+    expect(resolveRatingStats(undefined, [rating(5), rating(1, true), rating(3)])).toEqual({ average: 4, count: 2 });
   });
 
   it('sin resumen ni historial, queda en cero', () => {

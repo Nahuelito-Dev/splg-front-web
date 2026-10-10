@@ -70,7 +70,7 @@ export const FleetAttachmentDetailModal = ({
           </Button>
           {canWrite && (
             <Button variant="secondary" size="sm" icon={<Trash2 />} onClick={() => onDelete(attachment)}>
-              Borrar
+              Dar de baja
             </Button>
           )}
         </div>

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { MapPin, PencilLine, Trash2 } from 'lucide-react';
 import {
+  AuditHistoryLink,
   Avatar,
   Badge,
   Button,
@@ -114,15 +115,19 @@ export const CustomerDetails = () => {
       <PageHeader
         title="Ficha del cliente"
         actions={
-          customer &&
-          canManageCustomerAccounts && (
+          customer && (
             <>
-              <Button variant="secondary" size="sm" icon={<PencilLine />} onClick={() => setEditing(true)}>
-                Editar cuenta
-              </Button>
-              <Button variant="danger" size="sm" icon={<Trash2 />} onClick={() => void handleDelete()}>
-                Dar de baja
-              </Button>
+              <AuditHistoryLink entity="Customer" recordId={customer.customer_id} />
+              {canManageCustomerAccounts && (
+                <>
+                  <Button variant="secondary" size="sm" icon={<PencilLine />} onClick={() => setEditing(true)}>
+                    Editar cuenta
+                  </Button>
+                  <Button variant="danger" size="sm" icon={<Trash2 />} onClick={() => void handleDelete()}>
+                    Dar de baja
+                  </Button>
+                </>
+              )}
             </>
           )
         }

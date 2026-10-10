@@ -52,11 +52,13 @@ vi.mock('../../services/queries/physicalCylinders', () => ({
     dispatched: 0,
     with_customer: 0,
     empty_returned: 0,
+    retired: 0,
   }),
   useBulkTransitionCylinders: () => ({ mutate: bulk, isPending: busy.value, stop }),
+  useRetireCylinder: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 vi.mock('./components/AssignCylindersModal', () => ({ AssignCylindersModal: () => null }));
-vi.mock('./components/CreateCylinderModal', () => ({ CreateCylinderModal: () => null }));
+vi.mock('./components/CylinderFormModal', () => ({ CylinderFormModal: () => null }));
 vi.mock('./components/TransitionModal', () => ({ TransitionModal: () => null }));
 
 import { PhysicalCylinders } from './PhysicalCylinders';
