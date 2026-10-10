@@ -13,7 +13,7 @@ import {
   type AnalyticItem,
   type FilterChip,
 } from '../../common/components/ui';
-import { useDebounce } from '../../hooks';
+import { useDebounce, usePermissions } from '../../hooks';
 import type { Order } from '../../services/api/types';
 import {
   useAssignOrderDelivery,
@@ -29,6 +29,7 @@ import { labelOf, ORDER_FLOW, ORDER_STATUS } from '../../utils/statusLabels';
 import { notify } from '../../utils/notifications';
 import { AssignDriverModal } from './components/AssignDriverModal';
 import { CancelOrderModal } from './components/CancelOrderModal';
+import { EditOrderModal } from './components/EditOrderModal';
 import { EMPTY_TOOLBAR_FILTERS, isInvertedRange, type OrdersToolbarFilters } from './components/ordersFilterValues';
 import { ORDER_TABS_ID, OrderStatusTabs } from './components/OrderStatusTabs';
 import { canAssignDriver } from './components/orderStatus';
@@ -41,11 +42,13 @@ type ModalState =
   | { kind: 'closed' }
   | { kind: 'assign'; order: Order }
   | { kind: 'cancel'; order: Order }
+  | { kind: 'edit'; order: Order }
   | { kind: 'bulk-assign' }
   | { kind: 'bulk-cancel' };
 
 export const Orders = () => {
   const navigate = useNavigate();
+  const { canWrite } = usePermissions();
   const [status, setStatus] = useState<Order['status'] | ''>('');
   const [toolbar, setToolbar] = useState<OrdersToolbarFilters>(EMPTY_TOOLBAR_FILTERS);
   const debouncedSearch = useDebounce(toolbar.search.trim());
@@ -260,6 +263,7 @@ export const Orders = () => {
             }}
             onView={(order) => navigate(`/orders/${order.order_id}`)}
             onAssign={(order) => setModal({ kind: 'assign', order })}
+            onEdit={canWrite ? (order) => setModal({ kind: 'edit', order }) : undefined}
             onCancel={(order) => setModal({ kind: 'cancel', order })}
             filtered={chips.length > 0 || status !== ''}
             selection={{ ids: Object.keys(selected), onChange: handleSelection }}
@@ -282,6 +286,7 @@ export const Orders = () => {
         count={modal.kind === 'bulk-assign' ? assignable.length : 1}
         affected={modal.kind === 'bulk-assign' ? assignable.map(label) : undefined}
       />
+      <EditOrderModal order={modal.kind === 'edit' ? modal.order : null} onClose={closeModal} />
       <CancelOrderModal
         open={modal.kind === 'cancel' || modal.kind === 'bulk-cancel'}
         onClose={closeModal}

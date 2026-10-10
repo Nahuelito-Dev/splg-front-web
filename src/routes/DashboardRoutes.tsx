@@ -42,6 +42,7 @@ const Tracking = lazyPage(() => import('../pages/Tracking/Tracking'), 'Tracking'
 const Distributors = lazyPage(() => import('../pages/Distributors/Distributors'), 'Distributors');
 const DistributorDetails = lazyPage(() => import('../pages/Distributors/DistributorDetails'), 'DistributorDetails');
 const Admins = lazyPage(() => import('../pages/Admins/Admins'), 'Admins');
+const AdminDetails = lazyPage(() => import('../pages/Admins/AdminDetails'), 'AdminDetails');
 const Ratings = lazyPage(() => import('../pages/Ratings/Ratings'), 'Ratings');
 const Audit = lazyPage(() => import('../pages/Audit/Audit'), 'Audit');
 const System = lazyPage(() => import('../pages/System/System'), 'System');
@@ -133,6 +134,7 @@ export const DashboardRoutes = () => {
           <Route path="distributors/:id" element={<DistributorDetails />} />
           {/* Gestión de admins por empresa — super_admin */}
           <Route path="admins" element={<Admins />} />
+          <Route path="admins/:id" element={<AdminDetails />} />
 
           {/* Auditoría (CU-152) — admin y super_admin */}
           <Route path="audit" element={<Audit />} />

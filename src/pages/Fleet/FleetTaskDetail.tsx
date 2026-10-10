@@ -1,7 +1,16 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { CirclePlus, Pencil, XCircle } from 'lucide-react';
-import { Badge, Button, Card, DetailList, DetailSkeleton, ErrorState, PageHeader } from '../../common/components/ui';
+import {
+  AuditHistoryLink,
+  Badge,
+  Button,
+  Card,
+  DetailList,
+  DetailSkeleton,
+  ErrorState,
+  PageHeader,
+} from '../../common/components/ui';
 import { useBackToList, usePermissions } from '../../hooks';
 import { useCrumbLeaf } from '../../common/components';
 import { useCar } from '../../services/queries/cars';
@@ -51,7 +60,14 @@ export const FleetTaskDetail = () => {
       <PageHeader
         title={task?.plan?.name ?? 'Tarea'}
         description="Documentación de la flota"
-        actions={task && <Badge label={labelOf(FLEET_TASK_STATUS, task.status)} />}
+        actions={
+          task && (
+            <>
+              <AuditHistoryLink entity="MaintenanceTask" recordId={task.taskId} />
+              <Badge label={labelOf(FLEET_TASK_STATUS, task.status)} />
+            </>
+          )
+        }
       />
 
       {isPending ? (

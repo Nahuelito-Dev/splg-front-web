@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Pencil, Power, PowerOff } from 'lucide-react';
 import {
+  AuditHistoryLink,
   Badge,
   Button,
   Card,
@@ -62,21 +63,25 @@ export const FleetPlanDetails = () => {
       <PageHeader
         title="Ficha del plan"
         actions={
-          plan &&
-          canWrite && (
+          plan && (
             <>
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={plan.isActive ? <PowerOff /> : <Power />}
-                loading={updatePlan.isPending}
-                onClick={() => void handleToggle()}
-              >
-                {plan.isActive ? 'Desactivar' : 'Activar'}
-              </Button>
-              <Button size="sm" icon={<Pencil />} title={writeHint} onClick={() => setEditing(true)}>
-                Editar
-              </Button>
+              <AuditHistoryLink entity="MaintenancePlan" recordId={plan.planId} />
+              {canWrite && (
+                <>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    icon={plan.isActive ? <PowerOff /> : <Power />}
+                    loading={updatePlan.isPending}
+                    onClick={() => void handleToggle()}
+                  >
+                    {plan.isActive ? 'Desactivar' : 'Activar'}
+                  </Button>
+                  <Button size="sm" icon={<Pencil />} title={writeHint} onClick={() => setEditing(true)}>
+                    Editar
+                  </Button>
+                </>
+              )}
             </>
           )
         }

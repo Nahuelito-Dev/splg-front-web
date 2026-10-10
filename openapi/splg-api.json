@@ -655,6 +655,55 @@
                 ]
             }
         },
+        "/api/admin/{id}": {
+            "get": {
+                "description": "La edición y la baja del administrador van por `/users` (es un usuario con perfil de admin).",
+                "operationId": "AdminController_findOne",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AdminResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ficha de un administrador (scopeado por distribuidora)",
+                "tags": [
+                    "Admin"
+                ]
+            }
+        },
         "/api/role": {
             "post": {
                 "operationId": "RoleController_create",
@@ -1015,6 +1064,69 @@
                 "tags": [
                     "Registro",
                     "Auth"
+                ]
+            }
+        },
+        "/api/employees/{id}/account": {
+            "post": {
+                "description": "Sólo los empleados de categoría driver tienen cuenta (rol chofer, con su perfil de reparto). Cualquier otra categoría responde 400.",
+                "operationId": "EmployeeAccountController_grantAccount",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Empleado UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/GrantEmployeeAccountDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/EmployeeResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "La categoría del puesto no admite cuenta, o falta un teléfono válido"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Empleado no encontrado"
+                    },
+                    "409": {
+                        "description": "Ya tiene cuenta, está egresado, o el correo/teléfono ya están en uso"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Otorgar una cuenta de acceso a un empleado, con el rol que le corresponde a su puesto (CU-182)",
+                "tags": [
+                    "Personal · Empleados"
                 ]
             }
         },
@@ -2371,24 +2483,29 @@
                 ]
             }
         },
-        "/api/auth": {
-            "post": {
-                "description": "Si la petición llega acá, el guard ya validó el token y la cuenta.",
-                "operationId": "AuthController_checkToken",
+        "/api/job-positions": {
+            "get": {
+                "operationId": "JobPositionController_findAll",
                 "parameters": [],
                 "responses": {
-                    "201": {
+                    "200": {
                         "description": "",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/TokenValidoResponseDto"
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/JobPositionResponseDto"
+                                    }
                                 }
                             }
                         }
                     },
                     "401": {
-                        "description": "Token inválido o vencido"
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
                     }
                 },
                 "security": [
@@ -2396,22 +2513,79 @@
                         "bearer": []
                     }
                 ],
-                "summary": "Validar el token de sesión",
+                "summary": "Listar los puestos con su cantidad de empleados activos",
                 "tags": [
-                    "Auth"
+                    "Personal · Puestos"
                 ]
-            }
-        },
-        "/api/auth/login": {
+            },
             "post": {
-                "operationId": "AuthController_login",
+                "operationId": "JobPositionController_create",
                 "parameters": [],
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/LoginDto"
+                                "$ref": "#/components/schemas/CreateJobPositionDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/JobPositionResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Datos inválidos o falta la distribuidora"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "409": {
+                        "description": "Ya existe un puesto con ese nombre"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Crear un puesto de trabajo",
+                "tags": [
+                    "Personal · Puestos"
+                ]
+            }
+        },
+        "/api/job-positions/{id}": {
+            "patch": {
+                "operationId": "JobPositionController_update",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Puesto UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateJobPositionDto"
                             }
                         }
                     }
@@ -2422,34 +2596,314 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/SesionIniciadaDto"
+                                    "$ref": "#/components/schemas/JobPositionResponseDto"
                                 }
                             }
                         }
                     },
-                    "400": {
-                        "description": "Credenciales incorrectas"
-                    },
                     "401": {
-                        "description": "La cuenta no está habilitada"
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Puesto no encontrado"
+                    },
+                    "409": {
+                        "description": "Ya existe un puesto con ese nombre"
                     }
                 },
-                "summary": "Iniciar sesión desde las apps",
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Modificar un puesto (nombre, categoría o activo)",
                 "tags": [
-                    "Auth"
+                    "Personal · Puestos"
+                ]
+            },
+            "delete": {
+                "operationId": "JobPositionController_remove",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Puesto UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MessageResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Puesto no encontrado"
+                    },
+                    "409": {
+                        "description": "Tiene empleados activos"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Eliminar un puesto (baja lógica)",
+                "tags": [
+                    "Personal · Puestos"
                 ]
             }
         },
-        "/api/auth/login/dashboard": {
+        "/api/employees": {
             "post": {
-                "operationId": "AuthController_dashboardLogin",
+                "operationId": "EmployeeController_create",
                 "parameters": [],
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/LoginDto"
+                                "$ref": "#/components/schemas/CreateEmployeeDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/EmployeeResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Datos inválidos o CUIL con dígito verificador incorrecto"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "El puesto no existe en la distribuidora"
+                    },
+                    "409": {
+                        "description": "Documento, CUIL o legajo ya usados, o puesto inactivo"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Registrar el legajo de un empleado (CU-177)",
+                "tags": [
+                    "Personal · Empleados"
+                ]
+            },
+            "get": {
+                "operationId": "EmployeeController_findAll",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "maximum": 100,
+                            "default": 10,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 1,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "q",
+                        "required": false,
+                        "in": "query",
+                        "description": "Nombre, apellido o número de legajo",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "positionId",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "category",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "driver",
+                                "helper",
+                                "warehouse",
+                                "administration",
+                                "sales",
+                                "management",
+                                "other"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "active",
+                                "terminated"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "hasAccount",
+                        "required": false,
+                        "in": "query",
+                        "description": "true: con cuenta de acceso; false: sin ella",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "documentStatus",
+                        "required": false,
+                        "in": "query",
+                        "description": "Reservado para la documentación del personal (tanda B-A2): hoy se acepta y se ignora",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/EmployeePageDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Listar empleados, sin datos personales sensibles (CU-180)",
+                "tags": [
+                    "Personal · Empleados"
+                ]
+            }
+        },
+        "/api/employees/{id}": {
+            "get": {
+                "operationId": "EmployeeController_findOne",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Empleado UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/EmployeeResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Empleado no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ver el legajo completo de un empleado (CU-179)",
+                "tags": [
+                    "Personal · Empleados"
+                ]
+            },
+            "patch": {
+                "operationId": "EmployeeController_update",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Empleado UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateEmployeeDto"
                             }
                         }
                     }
@@ -2460,21 +2914,206 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/SesionIniciadaDto"
+                                    "$ref": "#/components/schemas/EmployeeResponseDto"
                                 }
                             }
                         }
                     },
                     "400": {
-                        "description": "Credenciales incorrectas"
+                        "description": "Datos inválidos"
                     },
                     "401": {
-                        "description": "La cuenta no está habilitada o no es de un administrador"
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Empleado o puesto no encontrado"
+                    },
+                    "409": {
+                        "description": "Documento, CUIL o legajo ya usados"
                     }
                 },
-                "summary": "Iniciar sesión en el panel",
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Modificar el legajo de un empleado (CU-178)",
                 "tags": [
-                    "Auth"
+                    "Personal · Empleados"
+                ]
+            },
+            "delete": {
+                "operationId": "EmployeeController_remove",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Empleado UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MessageResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Empleado no encontrado"
+                    },
+                    "409": {
+                        "description": "No es una alta errónea: corresponde el egreso"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Eliminar un legajo dado de alta por error (CU-178)",
+                "tags": [
+                    "Personal · Empleados"
+                ]
+            }
+        },
+        "/api/employees/{id}/termination": {
+            "post": {
+                "operationId": "EmployeeController_terminateEmployee",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Empleado UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TerminateEmployeeDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/EmployeeResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "La fecha de egreso es anterior a la de ingreso"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Empleado no encontrado"
+                    },
+                    "409": {
+                        "description": "Ya está egresado, o el chofer tiene pedidos en curso"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Registrar el egreso: bloquea la cuenta, deshabilita al chofer y libera su vehículo (CU-181)",
+                "tags": [
+                    "Personal · Empleados"
+                ]
+            }
+        },
+        "/api/employees/{id}/reinstatement": {
+            "post": {
+                "operationId": "EmployeeController_reinstate",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Empleado UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ReinstateEmployeeDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/EmployeeResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "La fecha de ingreso es anterior al egreso"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Empleado no encontrado"
+                    },
+                    "409": {
+                        "description": "El empleado no está egresado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Reingresar a un empleado egresado. No desbloquea su cuenta (CU-181)",
+                "tags": [
+                    "Personal · Empleados"
                 ]
             }
         },
@@ -2818,6 +3457,355 @@
                 "summary": "Get car by patent",
                 "tags": [
                     "Cars"
+                ]
+            }
+        },
+        "/api/attachments/{ownerType}/{ownerId}": {
+            "post": {
+                "operationId": "AttachmentController_upload",
+                "parameters": [
+                    {
+                        "name": "ownerType",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "$ref": "#/components/schemas/AttachmentOwnerType"
+                        }
+                    },
+                    {
+                        "name": "ownerId",
+                        "required": true,
+                        "in": "path",
+                        "description": "UUID del dueño",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "label": {
+                                        "type": "string",
+                                        "maxLength": 80
+                                    }
+                                },
+                                "required": [
+                                    "file"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AttachmentResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta el archivo o el tipo de dueño todavía no admite adjuntos"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Un chofer no puede adjuntar a ese tipo de dueño"
+                    },
+                    "404": {
+                        "description": "El dueño no existe o es de otra distribuidora"
+                    },
+                    "413": {
+                        "description": "El archivo supera el máximo permitido"
+                    },
+                    "415": {
+                        "description": "Tipo de archivo no permitido (sólo PDF, JPG, PNG, WEBP)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Subir un adjunto a un dueño (PDF, JPG, PNG, WEBP)",
+                "tags": [
+                    "Attachments"
+                ]
+            },
+            "get": {
+                "operationId": "AttachmentController_list",
+                "parameters": [
+                    {
+                        "name": "ownerType",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "$ref": "#/components/schemas/AttachmentOwnerType"
+                        }
+                    },
+                    {
+                        "name": "ownerId",
+                        "required": true,
+                        "in": "path",
+                        "description": "UUID del dueño",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/AttachmentResponseDto"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "El tipo de dueño todavía no admite adjuntos"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Un chofer no puede acceder a ese tipo de dueño"
+                    },
+                    "404": {
+                        "description": "El dueño no existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Listar los adjuntos de un dueño",
+                "tags": [
+                    "Attachments"
+                ]
+            }
+        },
+        "/api/attachments/{attachmentId}/download": {
+            "get": {
+                "description": "Por defecto devuelve el archivo: redirige (302) a una URL firmada de S3. Con `?modo=url` devuelve `{ url, expiresAt, requiresAuth }` en JSON, sin redirect: es lo que tiene que usar el panel (un 302 cross-origin pierde el token y choca con CORS).",
+                "operationId": "AttachmentController_download",
+                "parameters": [
+                    {
+                        "name": "attachmentId",
+                        "required": true,
+                        "in": "path",
+                        "description": "Attachment UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "modo",
+                        "required": false,
+                        "in": "query",
+                        "description": "`url` devuelve `{ url, expiresAt, requiresAuth }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada de S3).",
+                        "schema": {
+                            "$ref": "#/components/schemas/DownloadMode"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Con `?modo=url`: el enlace `{ url, expiresAt, requiresAuth }`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DownloadLinkResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "302": {
+                        "description": "Sin `modo`: redirección (302) a la URL firmada de S3, que sirve el archivo con su content-type original"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin, delivery"
+                    },
+                    "404": {
+                        "description": "Adjunto no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Descargar un adjunto",
+                "tags": [
+                    "Attachments"
+                ]
+            }
+        },
+        "/api/attachments/{attachmentId}": {
+            "delete": {
+                "operationId": "AttachmentController_remove",
+                "parameters": [
+                    {
+                        "name": "attachmentId",
+                        "required": true,
+                        "in": "path",
+                        "description": "Attachment UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Borrado"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin, delivery"
+                    },
+                    "404": {
+                        "description": "Adjunto no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Borrar un adjunto",
+                "tags": [
+                    "Attachments"
+                ]
+            }
+        },
+        "/api/auth": {
+            "post": {
+                "description": "Si la petición llega acá, el guard ya validó el token y la cuenta.",
+                "operationId": "AuthController_checkToken",
+                "parameters": [],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TokenValidoResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Token inválido o vencido"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Validar el token de sesión",
+                "tags": [
+                    "Auth"
+                ]
+            }
+        },
+        "/api/auth/login": {
+            "post": {
+                "operationId": "AuthController_login",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LoginDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SesionIniciadaDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Credenciales incorrectas"
+                    },
+                    "401": {
+                        "description": "La cuenta no está habilitada"
+                    }
+                },
+                "summary": "Iniciar sesión desde las apps",
+                "tags": [
+                    "Auth"
+                ]
+            }
+        },
+        "/api/auth/login/dashboard": {
+            "post": {
+                "operationId": "AuthController_dashboardLogin",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LoginDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SesionIniciadaDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Credenciales incorrectas"
+                    },
+                    "401": {
+                        "description": "La cuenta no está habilitada o no es de un administrador"
+                    }
+                },
+                "summary": "Iniciar sesión en el panel",
+                "tags": [
+                    "Auth"
                 ]
             }
         },
@@ -3300,6 +4288,70 @@
                     }
                 ],
                 "summary": "Get order by ID",
+                "tags": [
+                    "Orders"
+                ]
+            },
+            "patch": {
+                "description": "Dirección, franja/fecha, medio de pago, notas y renglones. Si vienen `items` reemplazan a los actuales: se devuelve el stock viejo y se reserva el nuevo con los precios y recargos vigentes (mismas reglas que el alta). Fuera de `pending`, o con pago online, responde 409. Para eliminar un pedido: `PATCH /orders/:id/cancel`.",
+                "operationId": "OrderController_update",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Order UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateOrderDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrderResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Datos inválidos, sin stock, o dirección fuera de cobertura"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Order with ID: {id} not found"
+                    },
+                    "409": {
+                        "description": "El pedido no está pendiente, tiene chofer o pago online"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Editar un pedido pendiente (sin chofer asignado)",
                 "tags": [
                     "Orders"
                 ]
@@ -5140,6 +6192,65 @@
                     "Time Slots"
                 ]
             },
+            "patch": {
+                "operationId": "TimeSlotController_update",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateTimeSlotDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TimeSlotResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Datos inválidos o rango con inicio >= fin"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "La franja no existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Editar una franja (parcial); isActive:true la reactiva",
+                "tags": [
+                    "Time Slots"
+                ]
+            },
             "delete": {
                 "operationId": "TimeSlotController_remove",
                 "parameters": [
@@ -5253,7 +6364,8 @@
                                 "filled",
                                 "dispatched",
                                 "with_customer",
-                                "empty_returned"
+                                "empty_returned",
+                                "retired"
                             ]
                         }
                     },
@@ -5437,6 +6549,70 @@
                 "tags": [
                     "Cylinders"
                 ]
+            },
+            "patch": {
+                "description": "Serial, producto, depósito y fechas de fabricación, inspección y vencimiento. El estado cambia sólo por `/transition` y `/retire`.",
+                "operationId": "CylinderController_update",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Cylinder UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateCylinderDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CylinderResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Datos inválidos"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Envase no encontrado"
+                    },
+                    "409": {
+                        "description": "Serial repetido en la distribuidora, o envase dado de baja"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Editar datos maestros del envase (no el estado)",
+                "tags": [
+                    "Cylinders"
+                ]
             }
         },
         "/api/cylinders/{id}/history": {
@@ -5486,6 +6662,69 @@
                     }
                 ],
                 "summary": "Historial de movimientos/transiciones del envase",
+                "tags": [
+                    "Cylinders"
+                ]
+            }
+        },
+        "/api/cylinders/{id}/retire": {
+            "patch": {
+                "description": "Sólo desde `in_depot` o `empty_returned`. El registro no se borra: queda para histórico y el motivo en el historial.",
+                "operationId": "CylinderController_retire",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Cylinder UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RetireCylinderDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CylinderResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Motivo faltante o el envase no está en un estado dable de baja"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Envase no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Dar de baja el envase (estado terminal RETIRED), con motivo",
                 "tags": [
                     "Cylinders"
                 ]
@@ -6583,7 +7822,7 @@
         },
         "/api/fleet/tasks/{id}/attachments/{attachmentId}/download": {
             "get": {
-                "description": "Por defecto devuelve el archivo: redirige (302) a una URL firmada con S3, o lo sirve por streaming con el driver local. Con `?modo=url` devuelve `{ url, expiresAt }` en JSON, sin redirect: es lo que tiene que usar el panel (un 302 cross-origin pierde el token y choca con CORS).",
+                "description": "Por defecto devuelve el archivo: redirige (302) a una URL firmada de S3. Con `?modo=url` devuelve `{ url, expiresAt, requiresAuth }` en JSON, sin redirect: es lo que tiene que usar el panel (un 302 cross-origin pierde el token y choca con CORS).",
                 "operationId": "FleetTaskController_downloadAttachment",
                 "parameters": [
                     {
@@ -6608,7 +7847,7 @@
                         "name": "modo",
                         "required": false,
                         "in": "query",
-                        "description": "`url` devuelve `{ url, expiresAt }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada con S3, streaming con el driver local).",
+                        "description": "`url` devuelve `{ url, expiresAt, requiresAuth }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada de S3).",
                         "schema": {
                             "$ref": "#/components/schemas/DownloadMode"
                         }
@@ -6616,7 +7855,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "El archivo con su content-type original; con `?modo=url`, el enlace",
+                        "description": "Con `?modo=url`: el enlace `{ url, expiresAt, requiresAuth }`",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -6624,6 +7863,9 @@
                                 }
                             }
                         }
+                    },
+                    "302": {
+                        "description": "Sin `modo`: redirección (302) a la URL firmada de S3, que sirve el archivo con su content-type original"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -7405,6 +8647,119 @@
                 ]
             }
         },
+        "/api/claims/{id}": {
+            "get": {
+                "operationId": "ClaimsController_findOne",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Claim UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ClaimResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "El reclamo no existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ficha del reclamo (con pedido y cliente)",
+                "tags": [
+                    "Claims"
+                ]
+            },
+            "patch": {
+                "description": "Sólo mientras esté `pending` (nadie lo tomó). Eliminar un reclamo es rechazarlo con motivo: `PATCH /claims/:id/resolve` con `status: rejected`. Los reclamos nunca se borran.",
+                "operationId": "ClaimsController_update",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Claim UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateClaimDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ClaimResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Datos inválidos"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "El reclamo no existe o es de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "El reclamo ya no está pendiente"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Editar motivo y descripción de un reclamo pendiente",
+                "tags": [
+                    "Claims"
+                ]
+            }
+        },
         "/api/claims/{id}/resolve": {
             "patch": {
                 "description": "Deja el reclamo en RESOLVED o REJECTED, con nota obligatoria (CU-025). La transición se valida contra la máquina de estados: un reclamo RESOLVED o REJECTED no se vuelve a resolver sin reabrirlo antes (`PATCH /claims/:id/reopen`). Pasar a IN_PROCESS es `PATCH /claims/:id/take`.",
@@ -7586,7 +8941,7 @@
         },
         "/api/claims/{id}/photo": {
             "post": {
-                "description": "Multipart, campo `file`: JPG, PNG o WEBP de hasta 10 MB (el tipo se valida por el contenido, no por el header). Sólo mientras el reclamo no esté resuelto ni rechazado (409). Si ya tenía foto, la anterior se borra del storage. La puede subir el cliente dueño del reclamo o un admin de la distribuidora.",
+                "description": "Multipart, campo `file`: JPG, PNG o WEBP de hasta 10 MB (el tipo se valida por el contenido, no por el header). Sólo mientras el reclamo no esté resuelto ni rechazado (409). Si ya tenía foto, la anterior se borra del bucket. La puede subir el cliente dueño del reclamo o un admin de la distribuidora.",
                 "operationId": "ClaimsController_uploadPhoto",
                 "parameters": [
                     {
@@ -7665,7 +9020,7 @@
                 ]
             },
             "get": {
-                "description": "Igual que las descargas de adjuntos: por defecto devuelve la foto (302 a la URL firmada con S3, o streaming con el driver local). Con `?modo=url` devuelve `{ url, expiresAt, requiresAuth }` en JSON, sin redirect (con el driver local `url` es esta misma ruta y se pide con el token); si el reclamo no tiene foto subida devuelve su `photoUrl` externa, o 200 con `url: null` si no tiene ninguna. Se puede ver aunque el reclamo esté cerrado.",
+                "description": "Igual que las descargas de adjuntos: por defecto devuelve la foto (302 a la URL firmada de S3). Con `?modo=url` devuelve `{ url, expiresAt, requiresAuth }` en JSON, sin redirect; si el reclamo no tiene foto subida devuelve su `photoUrl` externa, o 200 con `url: null` si no tiene ninguna. Se puede ver aunque el reclamo esté cerrado.",
                 "operationId": "ClaimsController_getPhoto",
                 "parameters": [
                     {
@@ -7681,7 +9036,7 @@
                         "name": "modo",
                         "required": false,
                         "in": "query",
-                        "description": "`url` devuelve `{ url, expiresAt }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada con S3, streaming con el driver local).",
+                        "description": "`url` devuelve `{ url, expiresAt, requiresAuth }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada de S3).",
                         "schema": {
                             "$ref": "#/components/schemas/DownloadMode"
                         }
@@ -8511,6 +9866,187 @@
                 ]
             }
         },
+        "/api/ratings/{id}": {
+            "get": {
+                "operationId": "RatingController_findOne",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Rating UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RatingResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "La calificación no existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ficha de una calificación (incluye las ocultas)",
+                "tags": [
+                    "Ratings"
+                ]
+            }
+        },
+        "/api/ratings/{id}/hide": {
+            "patch": {
+                "description": "No se borra: deja de contar en promedios y resúmenes y no se muestra a clientes; el admin la sigue viendo marcada (`hidden: true`).",
+                "operationId": "RatingController_hide",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Rating UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ModerateRatingDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RatingResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta el motivo"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "La calificación no existe o es de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "Ya está oculta"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ocultar una calificación (moderación), con motivo",
+                "tags": [
+                    "Ratings"
+                ]
+            }
+        },
+        "/api/ratings/{id}/unhide": {
+            "patch": {
+                "description": "Vuelve a contar en los promedios. El motivo queda en el registro de auditoría (la calificación sólo conserva el de la última ocultación vigente).",
+                "operationId": "RatingController_unhide",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Rating UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ModerateRatingDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RatingResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta el motivo"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "La calificación no existe o es de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "No está oculta"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Volver a mostrar una calificación oculta, con motivo",
+                "tags": [
+                    "Ratings"
+                ]
+            }
+        },
         "/api/incidents": {
             "post": {
                 "operationId": "IncidentController_create",
@@ -8652,8 +10188,122 @@
                 ]
             }
         },
+        "/api/incidents/{id}": {
+            "get": {
+                "operationId": "IncidentController_findOne",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Incident UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/IncidentResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "La incidencia no existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ficha de la incidencia (con pedido y cliente)",
+                "tags": [
+                    "Incidents"
+                ]
+            },
+            "patch": {
+                "description": "Sólo mientras esté `open`. Eliminar una incidencia es descartarla con motivo: `PATCH /incidents/:id/resolve` con `status: discarded`. Nunca se borran.",
+                "operationId": "IncidentController_update",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Incident UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateIncidentDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/IncidentResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Datos inválidos"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "La incidencia no existe o es de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "La incidencia ya no está abierta"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Editar descripción y tipo de una incidencia abierta",
+                "tags": [
+                    "Incidents"
+                ]
+            }
+        },
         "/api/incidents/{id}/resolve": {
             "patch": {
+                "description": "`status: resolved` (default) la resuelve; `status: discarded` la descarta (baja lógica, sólo si está abierta). Ambos exigen `resolutionNote`.",
                 "operationId": "IncidentController_resolve",
                 "parameters": [
                     {
@@ -8698,6 +10348,9 @@
                     },
                     "404": {
                         "description": "Incidencia no encontrada"
+                    },
+                    "409": {
+                        "description": "Se intenta descartar una no abierta, o tocar una descartada"
                     }
                 },
                 "security": [
@@ -8708,7 +10361,7 @@
                         "bearer": []
                     }
                 ],
-                "summary": "Resolver una incidencia",
+                "summary": "Resolver o descartar una incidencia",
                 "tags": [
                     "Incidents"
                 ]
@@ -8831,79 +10484,107 @@
                 ]
             }
         },
-        "/api/attachments/{ownerType}/{ownerId}": {
-            "post": {
-                "operationId": "AttachmentController_upload",
+        "/api/audit/entries": {
+            "get": {
+                "description": "Una Auditoria por registro afectado (tipo de acción, usuario, entidadAfectada, idRegistro, ipUsuario, fechaHora) con sus DetalleAuditoria (campo, valorAnterior, valorNuevo). Un admin de empresa ve sólo lo de su distribuidora; el super admin ve todo o la que elige con X-Distributor.",
+                "operationId": "DataAuditController_findAll",
                 "parameters": [
                     {
-                        "name": "ownerType",
-                        "required": true,
-                        "in": "path",
+                        "name": "entity",
+                        "required": false,
+                        "in": "query",
+                        "description": "entidadAfectada: nombre de la entidad de dominio",
                         "schema": {
-                            "$ref": "#/components/schemas/AttachmentOwnerType"
+                            "example": "Order",
+                            "type": "string"
                         }
                     },
                     {
-                        "name": "ownerId",
-                        "required": true,
-                        "in": "path",
-                        "description": "UUID del dueño",
+                        "name": "recordId",
+                        "required": false,
+                        "in": "query",
+                        "description": "idRegistro: id del registro afectado",
                         "schema": {
                             "type": "string"
                         }
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "multipart/form-data": {
-                            "schema": {
-                                "type": "object",
-                                "properties": {
-                                    "file": {
-                                        "type": "string",
-                                        "format": "binary"
-                                    },
-                                    "label": {
-                                        "type": "string",
-                                        "maxLength": 80
-                                    }
-                                },
-                                "required": [
-                                    "file"
-                                ]
-                            }
+                    },
+                    {
+                        "name": "userId",
+                        "required": false,
+                        "in": "query",
+                        "description": "idUsuario: quién hizo el cambio",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "actionType",
+                        "required": false,
+                        "in": "query",
+                        "description": "idTipoAuditoria: 1 Alta, 2 Modificación, 3 Baja lógica, 4 Reactivación, 5 Baja física",
+                        "schema": {
+                            "example": 2,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "required": false,
+                        "in": "query",
+                        "description": "fechaHora desde (inclusive)",
+                        "schema": {
+                            "format": "date-time",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "required": false,
+                        "in": "query",
+                        "description": "fechaHora hasta (inclusive)",
+                        "schema": {
+                            "format": "date-time",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "minimum": 1,
+                            "default": 1,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "maximum": 200,
+                            "default": 50,
+                            "type": "number"
                         }
                     }
-                },
+                ],
                 "responses": {
-                    "201": {
+                    "200": {
                         "description": "",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/AttachmentResponseDto"
+                                    "$ref": "#/components/schemas/AuditEntriesPageDto"
                                 }
                             }
                         }
-                    },
-                    "400": {
-                        "description": "Falta el archivo o el tipo de dueño todavía no admite adjuntos"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
                     "403": {
-                        "description": "Un chofer no puede adjuntar a ese tipo de dueño"
-                    },
-                    "404": {
-                        "description": "El dueño no existe o es de otra distribuidora"
-                    },
-                    "413": {
-                        "description": "El archivo supera el máximo permitido"
-                    },
-                    "415": {
-                        "description": "Tipo de archivo no permitido (sólo PDF, JPG, PNG, WEBP)"
+                        "description": "Requiere rol: admin, super_admin"
                     }
                 },
                 "security": [
@@ -8911,32 +10592,63 @@
                         "bearer": []
                     }
                 ],
-                "summary": "Subir un adjunto a un dueño (PDF, JPG, PNG, WEBP)",
+                "summary": "Consultar la auditoría de datos",
                 "tags": [
-                    "Attachments"
+                    "Audit"
                 ]
-            },
+            }
+        },
+        "/api/audit/entries/{id}": {
             "get": {
-                "operationId": "AttachmentController_list",
+                "description": "Una Auditoria con todos sus DetalleAuditoria.",
+                "operationId": "DataAuditController_findOne",
                 "parameters": [
                     {
-                        "name": "ownerType",
+                        "name": "id",
                         "required": true,
                         "in": "path",
-                        "schema": {
-                            "$ref": "#/components/schemas/AttachmentOwnerType"
-                        }
-                    },
-                    {
-                        "name": "ownerId",
-                        "required": true,
-                        "in": "path",
-                        "description": "UUID del dueño",
                         "schema": {
                             "type": "string"
                         }
                     }
                 ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AuditEntryDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe, o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Una auditoría de datos con sus detalles",
+                "tags": [
+                    "Audit"
+                ]
+            }
+        },
+        "/api/audit/action-types": {
+            "get": {
+                "description": "TipoAccionAuditoria: Alta, Modificación, Baja lógica y Reactivación.",
+                "operationId": "DataAuditController_findActionTypes",
+                "parameters": [],
                 "responses": {
                     "200": {
                         "description": "",
@@ -8945,23 +10657,17 @@
                                 "schema": {
                                     "type": "array",
                                     "items": {
-                                        "$ref": "#/components/schemas/AttachmentResponseDto"
+                                        "$ref": "#/components/schemas/AuditActionTypeDto"
                                     }
                                 }
                             }
                         }
                     },
-                    "400": {
-                        "description": "El tipo de dueño todavía no admite adjuntos"
-                    },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
                     "403": {
-                        "description": "Un chofer no puede acceder a ese tipo de dueño"
-                    },
-                    "404": {
-                        "description": "El dueño no existe o es de otra distribuidora"
+                        "description": "Requiere rol: admin, super_admin"
                     }
                 },
                 "security": [
@@ -8969,104 +10675,9 @@
                         "bearer": []
                     }
                 ],
-                "summary": "Listar los adjuntos de un dueño",
+                "summary": "Catálogo de acciones auditadas",
                 "tags": [
-                    "Attachments"
-                ]
-            }
-        },
-        "/api/attachments/{attachmentId}/download": {
-            "get": {
-                "description": "Por defecto devuelve el archivo: redirige (302) a una URL firmada con S3, o lo sirve por streaming con el driver local. Con `?modo=url` devuelve `{ url, expiresAt }` en JSON, sin redirect: es lo que tiene que usar el panel (un 302 cross-origin pierde el token y choca con CORS).",
-                "operationId": "AttachmentController_download",
-                "parameters": [
-                    {
-                        "name": "attachmentId",
-                        "required": true,
-                        "in": "path",
-                        "description": "Attachment UUID",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "modo",
-                        "required": false,
-                        "in": "query",
-                        "description": "`url` devuelve `{ url, expiresAt }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada con S3, streaming con el driver local).",
-                        "schema": {
-                            "$ref": "#/components/schemas/DownloadMode"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "El archivo con su content-type original; con `?modo=url`, el enlace",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/DownloadLinkResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: admin, super_admin, delivery"
-                    },
-                    "404": {
-                        "description": "Adjunto no encontrado"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Descargar un adjunto",
-                "tags": [
-                    "Attachments"
-                ]
-            }
-        },
-        "/api/attachments/{attachmentId}": {
-            "delete": {
-                "operationId": "AttachmentController_remove",
-                "parameters": [
-                    {
-                        "name": "attachmentId",
-                        "required": true,
-                        "in": "path",
-                        "description": "Attachment UUID",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "Borrado"
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: admin, super_admin, delivery"
-                    },
-                    "404": {
-                        "description": "Adjunto no encontrado"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Borrar un adjunto",
-                "tags": [
-                    "Attachments"
+                    "Audit"
                 ]
             }
         }
@@ -9776,6 +11387,52 @@
                     "phone_number"
                 ]
             },
+            "LegajoDeChoferDto": {
+                "type": "object",
+                "properties": {
+                    "positionId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Puesto de categoría chofer. Por defecto, el primero activo"
+                    },
+                    "documentType": {
+                        "type": "string",
+                        "enum": [
+                            "dni",
+                            "passport",
+                            "other"
+                        ],
+                        "default": "dni"
+                    },
+                    "documentNumber": {
+                        "type": "string",
+                        "example": "30123456",
+                        "description": "Si falta, queda \"PENDIENTE-<legajo>\" para completar después"
+                    },
+                    "cuil": {
+                        "type": "string",
+                        "example": "20123456786",
+                        "description": "Once dígitos; se valida el dígito verificador",
+                        "nullable": true
+                    },
+                    "hireDate": {
+                        "type": "string",
+                        "example": "2026-10-05",
+                        "format": "date",
+                        "nullable": true
+                    },
+                    "employmentType": {
+                        "type": "string",
+                        "enum": [
+                            "permanent",
+                            "fixed_term",
+                            "part_time",
+                            "contractor"
+                        ],
+                        "default": "permanent"
+                    }
+                }
+            },
             "RegistrarUsuarioDto": {
                 "type": "object",
                 "properties": {
@@ -9838,6 +11495,19 @@
                     "actual_location": {
                         "type": "string",
                         "description": "Chofer: última ubicación conocida"
+                    },
+                    "employeeId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Chofer o admin: legajo existente (sin cuenta) al que se vincula el usuario en vez de crear otro. El puesto tiene que admitir el rol. Excluye a `legajo`"
+                    },
+                    "legajo": {
+                        "description": "Chofer: datos del legajo que se crea con la cuenta, en la misma transacción",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/LegajoDeChoferDto"
+                            }
+                        ]
                     }
                 },
                 "required": [
@@ -9846,6 +11516,242 @@
                     "full_name",
                     "phone_number",
                     "rol"
+                ]
+            },
+            "GrantEmployeeAccountDto": {
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "example": "ana@correo.com"
+                    },
+                    "password": {
+                        "type": "string",
+                        "example": "Test1234",
+                        "minLength": 6
+                    },
+                    "phoneNumber": {
+                        "type": "string",
+                        "example": "+5493764000000",
+                        "description": "Formato E.164. Si falta se usa el teléfono del legajo, que tiene que estar en ese formato"
+                    }
+                },
+                "required": [
+                    "email",
+                    "password"
+                ]
+            },
+            "EmployeePositionDto": {
+                "type": "object",
+                "properties": {
+                    "positionId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Chofer"
+                    },
+                    "category": {
+                        "type": "string",
+                        "enum": [
+                            "driver",
+                            "helper",
+                            "warehouse",
+                            "administration",
+                            "sales",
+                            "management",
+                            "other"
+                        ]
+                    }
+                },
+                "required": [
+                    "positionId",
+                    "name",
+                    "category"
+                ]
+            },
+            "EmployeeResponseDto": {
+                "type": "object",
+                "properties": {
+                    "employeeId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "fileNumber": {
+                        "type": "string",
+                        "example": "0042"
+                    },
+                    "firstName": {
+                        "type": "string",
+                        "example": "Ana"
+                    },
+                    "lastName": {
+                        "type": "string",
+                        "example": "Pérez"
+                    },
+                    "position": {
+                        "$ref": "#/components/schemas/EmployeePositionDto"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "active",
+                            "terminated"
+                        ]
+                    },
+                    "hireDate": {
+                        "type": "string",
+                        "example": "2026-03-01",
+                        "format": "date"
+                    },
+                    "hasAccount": {
+                        "type": "boolean",
+                        "description": "Tiene cuenta de acceso"
+                    },
+                    "documentType": {
+                        "type": "string",
+                        "enum": [
+                            "dni",
+                            "passport",
+                            "other"
+                        ]
+                    },
+                    "documentNumber": {
+                        "type": "string",
+                        "example": "30123456"
+                    },
+                    "cuil": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "20123456786"
+                    },
+                    "birthDate": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "date"
+                    },
+                    "addressLine": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "city": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "province": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "postalCode": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "phone": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "personalEmail": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "emergencyContactName": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "emergencyContactPhone": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "emergencyContactRelationship": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "terminationDate": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "date"
+                    },
+                    "terminationReason": {
+                        "type": "string",
+                        "enum": [
+                            "resignation",
+                            "dismissal",
+                            "end_of_contract",
+                            "retirement",
+                            "other"
+                        ],
+                        "nullable": true
+                    },
+                    "employmentType": {
+                        "type": "string",
+                        "enum": [
+                            "permanent",
+                            "fixed_term",
+                            "part_time",
+                            "contractor"
+                        ]
+                    },
+                    "bankCbu": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "notes": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "userId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true,
+                        "description": "Usuario de la cuenta de acceso, si tiene"
+                    },
+                    "deliveryId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true,
+                        "description": "Perfil de reparto, si la cuenta es de un chofer"
+                    },
+                    "createdAt": {
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "updatedAt": {
+                        "format": "date-time",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "employeeId",
+                    "fileNumber",
+                    "firstName",
+                    "lastName",
+                    "position",
+                    "status",
+                    "hireDate",
+                    "hasAccount",
+                    "documentType",
+                    "documentNumber",
+                    "cuil",
+                    "birthDate",
+                    "addressLine",
+                    "city",
+                    "province",
+                    "postalCode",
+                    "phone",
+                    "personalEmail",
+                    "emergencyContactName",
+                    "emergencyContactPhone",
+                    "emergencyContactRelationship",
+                    "terminationDate",
+                    "terminationReason",
+                    "employmentType",
+                    "bankCbu",
+                    "notes",
+                    "userId",
+                    "deliveryId",
+                    "createdAt",
+                    "updatedAt"
                 ]
             },
             "UpdateCustomerDto": {
@@ -10055,108 +11961,457 @@
                     }
                 }
             },
-            "TokenValidoResponseDto": {
+            "JobPositionResponseDto": {
                 "type": "object",
                 "properties": {
-                    "response": {
+                    "positionId": {
                         "type": "string",
-                        "example": "token valid"
-                    },
-                    "status": {
-                        "type": "number",
-                        "example": 100
-                    },
-                    "message": {
-                        "type": "string",
-                        "example": "token valid"
+                        "format": "uuid"
                     },
                     "name": {
                         "type": "string",
-                        "example": "HttpException"
-                    }
-                },
-                "required": [
-                    "response",
-                    "status",
-                    "message",
-                    "name"
-                ]
-            },
-            "LoginDto": {
-                "type": "object",
-                "properties": {
-                    "email": {
+                        "example": "Chofer"
+                    },
+                    "category": {
                         "type": "string",
-                        "example": "admin@splg.com"
+                        "enum": [
+                            "driver",
+                            "helper",
+                            "warehouse",
+                            "administration",
+                            "sales",
+                            "management",
+                            "other"
+                        ]
                     },
-                    "password": {
-                        "type": "string",
-                        "example": "Test1234"
+                    "isActive": {
+                        "type": "boolean"
                     },
-                    "requestSource": {
-                        "type": "string"
-                    }
-                },
-                "required": [
-                    "email",
-                    "password"
-                ]
-            },
-            "UsuarioAutenticadoDto": {
-                "type": "object",
-                "properties": {
-                    "uid": {
-                        "type": "string",
-                        "description": "Identificador del usuario en Firebase"
-                    },
-                    "email": {
-                        "type": "string",
-                        "description": "Correo con el que inició sesión"
-                    },
-                    "displayName": {
-                        "type": "object",
-                        "description": "Nombre para mostrar",
-                        "nullable": true
-                    },
-                    "phoneNumber": {
-                        "type": "object",
-                        "description": "Teléfono verificado",
-                        "nullable": true
-                    },
-                    "emailVerified": {
-                        "type": "boolean",
-                        "description": "Si el correo está verificado"
-                    }
-                },
-                "required": [
-                    "uid",
-                    "email",
-                    "displayName",
-                    "phoneNumber",
-                    "emailVerified"
-                ]
-            },
-            "SesionIniciadaDto": {
-                "type": "object",
-                "properties": {
-                    "accessToken": {
-                        "type": "string",
-                        "description": "Token de acceso, para la cabecera Authorization"
-                    },
-                    "expiresIn": {
+                    "activeEmployees": {
                         "type": "number",
-                        "description": "Segundos que dura el token",
-                        "example": 3600
-                    },
-                    "user": {
-                        "$ref": "#/components/schemas/UsuarioAutenticadoDto"
+                        "example": 3,
+                        "description": "Empleados activos (no egresados) que ocupan el puesto"
                     }
                 },
                 "required": [
-                    "accessToken",
-                    "expiresIn",
-                    "user"
+                    "positionId",
+                    "name",
+                    "category",
+                    "isActive",
+                    "activeEmployees"
                 ]
+            },
+            "CreateJobPositionDto": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "example": "Chofer de reparto",
+                        "maxLength": 80
+                    },
+                    "category": {
+                        "type": "string",
+                        "enum": [
+                            "driver",
+                            "helper",
+                            "warehouse",
+                            "administration",
+                            "sales",
+                            "management",
+                            "other"
+                        ],
+                        "description": "La categoría manda las reglas (rol de acceso, documentación); el nombre es libre"
+                    },
+                    "isActive": {
+                        "type": "boolean",
+                        "default": true
+                    }
+                },
+                "required": [
+                    "name",
+                    "category"
+                ]
+            },
+            "UpdateJobPositionDto": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "example": "Chofer de reparto",
+                        "maxLength": 80
+                    },
+                    "category": {
+                        "type": "string",
+                        "enum": [
+                            "driver",
+                            "helper",
+                            "warehouse",
+                            "administration",
+                            "sales",
+                            "management",
+                            "other"
+                        ],
+                        "description": "La categoría manda las reglas (rol de acceso, documentación); el nombre es libre"
+                    },
+                    "isActive": {
+                        "type": "boolean",
+                        "default": true
+                    }
+                }
+            },
+            "CreateEmployeeDto": {
+                "type": "object",
+                "properties": {
+                    "positionId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Puesto activo de la distribuidora"
+                    },
+                    "fileNumber": {
+                        "type": "string",
+                        "example": "0042",
+                        "maxLength": 20,
+                        "description": "Si falta, toma el siguiente número correlativo de la distribuidora"
+                    },
+                    "firstName": {
+                        "type": "string",
+                        "example": "Ana",
+                        "maxLength": 80
+                    },
+                    "lastName": {
+                        "type": "string",
+                        "example": "Pérez",
+                        "maxLength": 80
+                    },
+                    "documentType": {
+                        "type": "string",
+                        "enum": [
+                            "dni",
+                            "passport",
+                            "other"
+                        ],
+                        "example": "dni"
+                    },
+                    "documentNumber": {
+                        "type": "string",
+                        "example": "30123456",
+                        "maxLength": 20
+                    },
+                    "cuil": {
+                        "type": "object",
+                        "example": "20123456786",
+                        "description": "Once dígitos; se valida el dígito verificador",
+                        "nullable": true
+                    },
+                    "birthDate": {
+                        "type": "object",
+                        "example": "1990-05-17",
+                        "format": "date",
+                        "nullable": true
+                    },
+                    "addressLine": {
+                        "type": "object",
+                        "example": "Av. Corrientes 1234",
+                        "maxLength": 200
+                    },
+                    "city": {
+                        "type": "object",
+                        "example": "Posadas",
+                        "maxLength": 80
+                    },
+                    "province": {
+                        "type": "object",
+                        "example": "Misiones",
+                        "maxLength": 80
+                    },
+                    "postalCode": {
+                        "type": "object",
+                        "example": "3300",
+                        "maxLength": 10
+                    },
+                    "phone": {
+                        "type": "object",
+                        "example": "+5493764000000",
+                        "maxLength": 30
+                    },
+                    "personalEmail": {
+                        "type": "object",
+                        "example": "ana@correo.com",
+                        "maxLength": 120
+                    },
+                    "emergencyContactName": {
+                        "type": "object",
+                        "example": "Luis Pérez",
+                        "maxLength": 120
+                    },
+                    "emergencyContactPhone": {
+                        "type": "object",
+                        "example": "+5493764111111",
+                        "maxLength": 30
+                    },
+                    "emergencyContactRelationship": {
+                        "type": "object",
+                        "example": "Hermano",
+                        "maxLength": 40
+                    },
+                    "hireDate": {
+                        "type": "string",
+                        "example": "2026-03-01",
+                        "format": "date"
+                    },
+                    "employmentType": {
+                        "type": "string",
+                        "enum": [
+                            "permanent",
+                            "fixed_term",
+                            "part_time",
+                            "contractor"
+                        ],
+                        "example": "permanent"
+                    },
+                    "bankCbu": {
+                        "type": "object",
+                        "example": "0170099220000067890123",
+                        "description": "22 dígitos"
+                    },
+                    "notes": {
+                        "type": "object"
+                    }
+                },
+                "required": [
+                    "positionId",
+                    "firstName",
+                    "lastName",
+                    "documentType",
+                    "documentNumber",
+                    "hireDate",
+                    "employmentType"
+                ]
+            },
+            "EmployeeListItemDto": {
+                "type": "object",
+                "properties": {
+                    "employeeId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "fileNumber": {
+                        "type": "string",
+                        "example": "0042"
+                    },
+                    "firstName": {
+                        "type": "string",
+                        "example": "Ana"
+                    },
+                    "lastName": {
+                        "type": "string",
+                        "example": "Pérez"
+                    },
+                    "position": {
+                        "$ref": "#/components/schemas/EmployeePositionDto"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "active",
+                            "terminated"
+                        ]
+                    },
+                    "hireDate": {
+                        "type": "string",
+                        "example": "2026-03-01",
+                        "format": "date"
+                    },
+                    "hasAccount": {
+                        "type": "boolean",
+                        "description": "Tiene cuenta de acceso"
+                    }
+                },
+                "required": [
+                    "employeeId",
+                    "fileNumber",
+                    "firstName",
+                    "lastName",
+                    "position",
+                    "status",
+                    "hireDate",
+                    "hasAccount"
+                ]
+            },
+            "EmployeePageDto": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/EmployeeListItemDto"
+                        }
+                    },
+                    "total": {
+                        "type": "number",
+                        "example": 42
+                    }
+                },
+                "required": [
+                    "data",
+                    "total"
+                ]
+            },
+            "UpdateEmployeeDto": {
+                "type": "object",
+                "properties": {
+                    "positionId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Puesto activo de la distribuidora"
+                    },
+                    "fileNumber": {
+                        "type": "string",
+                        "example": "0042",
+                        "maxLength": 20,
+                        "description": "Si falta, toma el siguiente número correlativo de la distribuidora"
+                    },
+                    "firstName": {
+                        "type": "string",
+                        "example": "Ana",
+                        "maxLength": 80
+                    },
+                    "lastName": {
+                        "type": "string",
+                        "example": "Pérez",
+                        "maxLength": 80
+                    },
+                    "documentType": {
+                        "type": "string",
+                        "enum": [
+                            "dni",
+                            "passport",
+                            "other"
+                        ],
+                        "example": "dni"
+                    },
+                    "documentNumber": {
+                        "type": "string",
+                        "example": "30123456",
+                        "maxLength": 20
+                    },
+                    "cuil": {
+                        "type": "object",
+                        "example": "20123456786",
+                        "description": "Once dígitos; se valida el dígito verificador",
+                        "nullable": true
+                    },
+                    "birthDate": {
+                        "type": "object",
+                        "example": "1990-05-17",
+                        "format": "date",
+                        "nullable": true
+                    },
+                    "addressLine": {
+                        "type": "object",
+                        "example": "Av. Corrientes 1234",
+                        "maxLength": 200
+                    },
+                    "city": {
+                        "type": "object",
+                        "example": "Posadas",
+                        "maxLength": 80
+                    },
+                    "province": {
+                        "type": "object",
+                        "example": "Misiones",
+                        "maxLength": 80
+                    },
+                    "postalCode": {
+                        "type": "object",
+                        "example": "3300",
+                        "maxLength": 10
+                    },
+                    "phone": {
+                        "type": "object",
+                        "example": "+5493764000000",
+                        "maxLength": 30
+                    },
+                    "personalEmail": {
+                        "type": "object",
+                        "example": "ana@correo.com",
+                        "maxLength": 120
+                    },
+                    "emergencyContactName": {
+                        "type": "object",
+                        "example": "Luis Pérez",
+                        "maxLength": 120
+                    },
+                    "emergencyContactPhone": {
+                        "type": "object",
+                        "example": "+5493764111111",
+                        "maxLength": 30
+                    },
+                    "emergencyContactRelationship": {
+                        "type": "object",
+                        "example": "Hermano",
+                        "maxLength": 40
+                    },
+                    "hireDate": {
+                        "type": "string",
+                        "example": "2026-03-01",
+                        "format": "date"
+                    },
+                    "employmentType": {
+                        "type": "string",
+                        "enum": [
+                            "permanent",
+                            "fixed_term",
+                            "part_time",
+                            "contractor"
+                        ],
+                        "example": "permanent"
+                    },
+                    "bankCbu": {
+                        "type": "object",
+                        "example": "0170099220000067890123",
+                        "description": "22 dígitos"
+                    },
+                    "notes": {
+                        "type": "object"
+                    }
+                }
+            },
+            "TerminateEmployeeDto": {
+                "type": "object",
+                "properties": {
+                    "terminationDate": {
+                        "type": "string",
+                        "example": "2026-10-04",
+                        "format": "date"
+                    },
+                    "reason": {
+                        "type": "string",
+                        "enum": [
+                            "resignation",
+                            "dismissal",
+                            "end_of_contract",
+                            "retirement",
+                            "other"
+                        ],
+                        "example": "resignation"
+                    }
+                },
+                "required": [
+                    "terminationDate",
+                    "reason"
+                ]
+            },
+            "ReinstateEmployeeDto": {
+                "type": "object",
+                "properties": {
+                    "hireDate": {
+                        "type": "string",
+                        "example": "2026-10-05",
+                        "format": "date",
+                        "nullable": true
+                    }
+                }
             },
             "CreateCarDto": {
                 "type": "object",
@@ -10328,6 +12583,210 @@
                     "carId"
                 ]
             },
+            "AttachmentOwnerType": {
+                "type": "string",
+                "enum": [
+                    "employee",
+                    "fuel_load",
+                    "traffic_fine",
+                    "vehicle_accident",
+                    "purchase_receipt",
+                    "stock_adjustment",
+                    "driver_settlement",
+                    "cash_movement",
+                    "customer_account_entry"
+                ]
+            },
+            "AttachmentResponseDto": {
+                "type": "object",
+                "properties": {
+                    "attachmentId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "ownerType": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/AttachmentOwnerType"
+                            }
+                        ]
+                    },
+                    "ownerId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "label": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "DNI frente"
+                    },
+                    "originalName": {
+                        "type": "string",
+                        "example": "dni-frente.jpg"
+                    },
+                    "mimeType": {
+                        "type": "string",
+                        "example": "image/jpeg"
+                    },
+                    "sizeBytes": {
+                        "type": "number",
+                        "example": 245678
+                    },
+                    "uploadedByUserId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "uploadedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "attachmentId",
+                    "ownerType",
+                    "ownerId",
+                    "label",
+                    "originalName",
+                    "mimeType",
+                    "sizeBytes",
+                    "uploadedByUserId",
+                    "uploadedAt"
+                ]
+            },
+            "DownloadMode": {
+                "type": "string",
+                "enum": [
+                    "url",
+                    "archivo"
+                ]
+            },
+            "DownloadLinkResponseDto": {
+                "type": "object",
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "description": "URL firmada de S3: se abre sin token."
+                    },
+                    "expiresAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "Cuándo vence la URL; `null` si no vence (p. ej. la URL externa de un reclamo viejo)."
+                    },
+                    "requiresAuth": {
+                        "type": "boolean",
+                        "description": "Siempre `false`: la URL firmada se abre sin token. Se conserva en el contrato por compatibilidad con el panel y las apps."
+                    }
+                },
+                "required": [
+                    "url",
+                    "expiresAt",
+                    "requiresAuth"
+                ]
+            },
+            "TokenValidoResponseDto": {
+                "type": "object",
+                "properties": {
+                    "response": {
+                        "type": "string",
+                        "example": "token valid"
+                    },
+                    "status": {
+                        "type": "number",
+                        "example": 100
+                    },
+                    "message": {
+                        "type": "string",
+                        "example": "token valid"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "HttpException"
+                    }
+                },
+                "required": [
+                    "response",
+                    "status",
+                    "message",
+                    "name"
+                ]
+            },
+            "LoginDto": {
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "example": "admin@splg.com"
+                    },
+                    "password": {
+                        "type": "string",
+                        "example": "Test1234"
+                    },
+                    "requestSource": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "email",
+                    "password"
+                ]
+            },
+            "UsuarioAutenticadoDto": {
+                "type": "object",
+                "properties": {
+                    "uid": {
+                        "type": "string",
+                        "description": "Identificador del usuario en Firebase"
+                    },
+                    "email": {
+                        "type": "string",
+                        "description": "Correo con el que inició sesión"
+                    },
+                    "displayName": {
+                        "type": "object",
+                        "description": "Nombre para mostrar",
+                        "nullable": true
+                    },
+                    "phoneNumber": {
+                        "type": "object",
+                        "description": "Teléfono verificado",
+                        "nullable": true
+                    },
+                    "emailVerified": {
+                        "type": "boolean",
+                        "description": "Si el correo está verificado"
+                    }
+                },
+                "required": [
+                    "uid",
+                    "email",
+                    "displayName",
+                    "phoneNumber",
+                    "emailVerified"
+                ]
+            },
+            "SesionIniciadaDto": {
+                "type": "object",
+                "properties": {
+                    "accessToken": {
+                        "type": "string",
+                        "description": "Token de acceso, para la cabecera Authorization"
+                    },
+                    "expiresIn": {
+                        "type": "number",
+                        "description": "Segundos que dura el token",
+                        "example": 3600
+                    },
+                    "user": {
+                        "$ref": "#/components/schemas/UsuarioAutenticadoDto"
+                    }
+                },
+                "required": [
+                    "accessToken",
+                    "expiresIn",
+                    "user"
+                ]
+            },
             "OrderItemDto": {
                 "type": "object",
                 "properties": {
@@ -10337,7 +12796,8 @@
                     },
                     "quantity": {
                         "type": "number",
-                        "description": "Cantidad"
+                        "description": "Cantidad (entero, mínimo 1)",
+                        "minimum": 1
                     },
                     "unitPrice": {
                         "type": "number",
@@ -11125,6 +13585,66 @@
                     "paymentMethods"
                 ]
             },
+            "UpdateOrderItemDto": {
+                "type": "object",
+                "properties": {
+                    "gasCylinderId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "ID de la garrafa (producto)"
+                    },
+                    "quantity": {
+                        "type": "number",
+                        "example": 2,
+                        "minimum": 1
+                    }
+                },
+                "required": [
+                    "gasCylinderId",
+                    "quantity"
+                ]
+            },
+            "UpdateOrderDto": {
+                "type": "object",
+                "properties": {
+                    "addressId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Otra dirección del mismo cliente"
+                    },
+                    "timeSlotId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true,
+                        "description": "Franja de entrega. `null` saca la franja. Si la fecha agendada ya pasó, hay que mandar también `scheduledDate`."
+                    },
+                    "scheduledDate": {
+                        "type": "string",
+                        "example": "2026-10-15",
+                        "description": "Fecha agendada (YYYY-MM-DD); con franja valida el cupo"
+                    },
+                    "paymentMethod": {
+                        "type": "string",
+                        "enum": [
+                            "cash",
+                            "mercadopago",
+                            "transfer"
+                        ],
+                        "description": "Medio de pago. No se puede pasar a ni desde MercadoPago: cancelá y creá el pedido de nuevo."
+                    },
+                    "notes": {
+                        "type": "string",
+                        "example": "Tocar timbre 2B"
+                    },
+                    "items": {
+                        "description": "Renglones nuevos: reemplazan a los actuales (se devuelve el stock viejo y se reserva el nuevo, con los precios vigentes)",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/UpdateOrderItemDto"
+                        }
+                    }
+                }
+            },
             "CancelOrderDto": {
                 "type": "object",
                 "properties": {
@@ -11905,6 +14425,37 @@
                     "remaining"
                 ]
             },
+            "UpdateTimeSlotDto": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "example": "Mañana",
+                        "description": "Nombre del turno"
+                    },
+                    "startTime": {
+                        "type": "string",
+                        "example": "09:00",
+                        "description": "Hora de inicio (HH:MM)"
+                    },
+                    "endTime": {
+                        "type": "string",
+                        "example": "13:00",
+                        "description": "Hora de fin (HH:MM)"
+                    },
+                    "capacity": {
+                        "type": "number",
+                        "example": 50,
+                        "default": 50,
+                        "description": "Capacidad máxima de pedidos (columna con default en la base)"
+                    },
+                    "isActive": {
+                        "type": "boolean",
+                        "example": true,
+                        "description": "true reactiva la franja; false la desactiva (baja lógica)"
+                    }
+                }
+            },
             "CreateCylinderDto": {
                 "type": "object",
                 "properties": {
@@ -11994,7 +14545,8 @@
                             "filled",
                             "dispatched",
                             "with_customer",
-                            "empty_returned"
+                            "empty_returned",
+                            "retired"
                         ]
                     },
                     "current_customer_id": {
@@ -12040,6 +14592,11 @@
                         "format": "date-time",
                         "nullable": true
                     },
+                    "expires_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
                     "createdAt": {
                         "type": "string",
                         "format": "date-time"
@@ -12068,6 +14625,7 @@
                     "current_customer",
                     "manufactured_at",
                     "last_inspection_at",
+                    "expires_at",
                     "createdAt",
                     "updatedAt",
                     "lastMovementAt"
@@ -12117,7 +14675,8 @@
                             "filled",
                             "dispatched",
                             "with_customer",
-                            "empty_returned"
+                            "empty_returned",
+                            "retired"
                         ],
                         "nullable": true
                     },
@@ -12128,7 +14687,8 @@
                             "filled",
                             "dispatched",
                             "with_customer",
-                            "empty_returned"
+                            "empty_returned",
+                            "retired"
                         ]
                     },
                     "order_id": {
@@ -12162,6 +14722,53 @@
                     "createdAt"
                 ]
             },
+            "UpdateCylinderDto": {
+                "type": "object",
+                "properties": {
+                    "serial": {
+                        "type": "string",
+                        "example": "SN-000123"
+                    },
+                    "gasCylinderId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Producto del catálogo"
+                    },
+                    "deposit": {
+                        "type": "number",
+                        "example": 5000,
+                        "description": "Depósito del envase"
+                    },
+                    "manufacturedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Fecha de fabricación"
+                    },
+                    "lastInspectionAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Fecha de la última prueba hidráulica / inspección"
+                    },
+                    "expiresAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Fecha de vencimiento"
+                    }
+                }
+            },
+            "RetireCylinderDto": {
+                "type": "object",
+                "properties": {
+                    "reason": {
+                        "type": "string",
+                        "example": "Prueba hidráulica vencida, no apto",
+                        "description": "Motivo de la baja; queda en el historial del envase"
+                    }
+                },
+                "required": [
+                    "reason"
+                ]
+            },
             "TransitionCylinderDto": {
                 "type": "object",
                 "properties": {
@@ -12172,7 +14779,8 @@
                             "filled",
                             "dispatched",
                             "with_customer",
-                            "empty_returned"
+                            "empty_returned",
+                            "retired"
                         ]
                     },
                     "orderId": {
@@ -13056,37 +15664,6 @@
                     }
                 }
             },
-            "DownloadMode": {
-                "type": "string",
-                "enum": [
-                    "url",
-                    "archivo"
-                ]
-            },
-            "DownloadLinkResponseDto": {
-                "type": "object",
-                "properties": {
-                    "url": {
-                        "type": "string",
-                        "description": "Con S3: URL firmada, se abre sin token. Con el driver local: la ruta de este mismo backend, que hay que pedir con el token."
-                    },
-                    "expiresAt": {
-                        "type": "string",
-                        "format": "date-time",
-                        "nullable": true,
-                        "description": "Cuándo vence la URL; `null` si no vence (driver local)."
-                    },
-                    "requiresAuth": {
-                        "type": "boolean",
-                        "description": "`true` si pedir `url` exige el token de la sesión."
-                    }
-                },
-                "required": [
-                    "url",
-                    "expiresAt",
-                    "requiresAuth"
-                ]
-            },
             "FleetExpirationEntryDto": {
                 "type": "object",
                 "properties": {
@@ -13728,7 +16305,7 @@
                     "photoUrl": {
                         "type": "string",
                         "nullable": true,
-                        "description": "URL firmada de la foto del reclamo (vence en minutos: pedirla de nuevo con `GET /claims/:id/photo`), o `null` si no tiene foto (también con el driver local, que no firma URLs: ahí se usa `GET /claims/:id/photo`)."
+                        "description": "URL firmada de la foto del reclamo (vence en minutos: pedirla de nuevo con `GET /claims/:id/photo`), o `null` si no tiene foto."
                     },
                     "status": {
                         "type": "string",
@@ -13766,6 +16343,17 @@
                     "resolutionNote",
                     "createdAt"
                 ]
+            },
+            "UpdateClaimDto": {
+                "type": "object",
+                "properties": {
+                    "reason": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    }
+                }
             },
             "ResolveClaimDto": {
                 "type": "object",
@@ -13807,17 +16395,17 @@
                     "url": {
                         "type": "string",
                         "nullable": true,
-                        "description": "Foto subida con S3: URL firmada, se abre sin token. Foto subida con el driver local: la ruta de este mismo backend, que hay que pedir con el token. Reclamo con sólo una `photoUrl` externa (http/https): esa URL. `null` si no tiene foto."
+                        "description": "Foto subida: URL firmada de S3, se abre sin token. Reclamo con sólo una `photoUrl` externa (http/https): esa URL. `null` si no tiene foto."
                     },
                     "expiresAt": {
                         "type": "string",
                         "format": "date-time",
                         "nullable": true,
-                        "description": "Cuándo vence la URL; `null` si no vence (driver local) o no hay foto."
+                        "description": "Cuándo vence la URL; `null` si no vence (URL externa) o no hay foto."
                     },
                     "requiresAuth": {
                         "type": "boolean",
-                        "description": "`true` sólo con el driver local (la ruta del backend exige el token). `false` con URL firmada, con URL externa y sin foto."
+                        "description": "`false` con URL firmada, con URL externa y sin foto (no hay descargas que exijan el token de la sesión)."
                     }
                 },
                 "required": [
@@ -13985,6 +16573,24 @@
                         "type": "string",
                         "format": "date-time"
                     },
+                    "hidden": {
+                        "type": "boolean",
+                        "description": "Moderación: una calificación oculta no cuenta en promedios ni se muestra a clientes"
+                    },
+                    "hiddenReason": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "hiddenAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "hiddenByUserId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
                     "fromUser": {
                         "$ref": "#/components/schemas/UserResponseDto"
                     }
@@ -13998,7 +16604,11 @@
                     "from_role",
                     "stars",
                     "comment",
-                    "createdAt"
+                    "createdAt",
+                    "hidden",
+                    "hiddenReason",
+                    "hiddenAt",
+                    "hiddenByUserId"
                 ]
             },
             "RatingSummaryDto": {
@@ -14016,6 +16626,19 @@
                 "required": [
                     "average",
                     "count"
+                ]
+            },
+            "ModerateRatingDto": {
+                "type": "object",
+                "properties": {
+                    "reason": {
+                        "type": "string",
+                        "example": "Lenguaje ofensivo en el comentario",
+                        "description": "Obligatorio. Al ocultar queda guardado en la calificación; al volver a mostrarla queda en el registro de auditoría."
+                    }
+                },
+                "required": [
+                    "reason"
                 ]
             },
             "CreateIncidentDto": {
@@ -14088,7 +16711,8 @@
                         "type": "string",
                         "enum": [
                             "open",
-                            "resolved"
+                            "resolved",
+                            "discarded"
                         ]
                     },
                     "resolution_note": {
@@ -14122,12 +16746,40 @@
                     "resolvedAt"
                 ]
             },
+            "UpdateIncidentDto": {
+                "type": "object",
+                "properties": {
+                    "description": {
+                        "type": "string",
+                        "example": "El cliente no estaba en el domicilio"
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "damaged",
+                            "out_of_stock",
+                            "no_show",
+                            "other"
+                        ]
+                    }
+                }
+            },
             "ResolveIncidentDto": {
                 "type": "object",
                 "properties": {
                     "resolutionNote": {
                         "type": "string",
-                        "example": "Se reprogramó la entrega"
+                        "example": "Se reprogramó la entrega",
+                        "description": "Nota de resolución o motivo del descarte (obligatoria)"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "resolved",
+                            "discarded"
+                        ],
+                        "default": "resolved",
+                        "description": "`resolved` (default) o `discarded`: descartar es la baja lógica de una incidencia abierta, con el motivo en `resolutionNote`"
                     }
                 },
                 "required": [
@@ -14243,74 +16895,175 @@
                     "total"
                 ]
             },
-            "AttachmentOwnerType": {
-                "type": "string",
-                "enum": [
-                    "employee",
-                    "fuel_load",
-                    "traffic_fine",
-                    "vehicle_accident",
-                    "purchase_receipt",
-                    "stock_adjustment",
-                    "driver_settlement",
-                    "cash_movement",
-                    "customer_account_entry"
-                ]
-            },
-            "AttachmentResponseDto": {
+            "AuditActionTypeDto": {
                 "type": "object",
                 "properties": {
-                    "attachmentId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "ownerType": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/AttachmentOwnerType"
-                            }
-                        ]
-                    },
-                    "ownerId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "label": {
-                        "type": "string",
-                        "nullable": true,
-                        "example": "DNI frente"
-                    },
-                    "originalName": {
-                        "type": "string",
-                        "example": "dni-frente.jpg"
-                    },
-                    "mimeType": {
-                        "type": "string",
-                        "example": "image/jpeg"
-                    },
-                    "sizeBytes": {
+                    "id": {
                         "type": "number",
-                        "example": 245678
+                        "example": 2,
+                        "description": "idTipoAuditoria"
                     },
-                    "uploadedByUserId": {
+                    "name": {
                         "type": "string",
-                        "format": "uuid"
-                    },
-                    "uploadedAt": {
-                        "type": "string",
-                        "format": "date-time"
+                        "example": "Modificación",
+                        "description": "nombre"
                     }
                 },
                 "required": [
-                    "attachmentId",
-                    "ownerType",
-                    "ownerId",
-                    "label",
-                    "originalName",
-                    "mimeType",
-                    "sizeBytes",
-                    "uploadedByUserId",
-                    "uploadedAt"
+                    "id",
+                    "name"
+                ]
+            },
+            "AuditUserDto": {
+                "type": "object",
+                "properties": {
+                    "userId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "fullName": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "email": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "deleted": {
+                        "type": "boolean",
+                        "description": "El usuario fue dado de baja después"
+                    }
+                },
+                "required": [
+                    "userId",
+                    "fullName",
+                    "email",
+                    "deleted"
+                ]
+            },
+            "AuditDetailDto": {
+                "type": "object",
+                "properties": {
+                    "auditDetailId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "idDetalleAuditoria"
+                    },
+                    "field": {
+                        "type": "string",
+                        "example": "status",
+                        "description": "campo"
+                    },
+                    "oldValue": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "valorAnterior (null en una alta). Secretos: [oculto]"
+                    },
+                    "newValue": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "valorNuevo. Secretos: [oculto]"
+                    }
+                },
+                "required": [
+                    "auditDetailId",
+                    "field",
+                    "oldValue",
+                    "newValue"
+                ]
+            },
+            "AuditEntryDto": {
+                "type": "object",
+                "properties": {
+                    "auditId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "idAuditoria"
+                    },
+                    "actionType": {
+                        "description": "idTipoAuditoria con su nombre",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/AuditActionTypeDto"
+                            }
+                        ]
+                    },
+                    "userId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true,
+                        "description": "idUsuario; null si lo hizo el sistema (cron, seed)"
+                    },
+                    "user": {
+                        "nullable": true,
+                        "description": "Datos del usuario (aunque esté dado de baja, con `deleted`); null si lo hizo el sistema",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/AuditUserDto"
+                            }
+                        ]
+                    },
+                    "distributorId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "entity": {
+                        "type": "string",
+                        "example": "Order",
+                        "description": "entidadAfectada"
+                    },
+                    "recordId": {
+                        "type": "string",
+                        "description": "idRegistro"
+                    },
+                    "ip": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "ipUsuario"
+                    },
+                    "dateTime": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "fechaHora"
+                    },
+                    "details": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/AuditDetailDto"
+                        }
+                    }
+                },
+                "required": [
+                    "auditId",
+                    "actionType",
+                    "userId",
+                    "user",
+                    "distributorId",
+                    "entity",
+                    "recordId",
+                    "ip",
+                    "dateTime",
+                    "details"
+                ]
+            },
+            "AuditEntriesPageDto": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/AuditEntryDto"
+                        }
+                    },
+                    "total": {
+                        "type": "number",
+                        "description": "Total que cumple el filtro, sin paginar"
+                    }
+                },
+                "required": [
+                    "data",
+                    "total"
                 ]
             }
         }

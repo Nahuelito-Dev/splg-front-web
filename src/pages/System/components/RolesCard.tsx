@@ -43,14 +43,14 @@ export const RolesCard = () => {
 
   const handleDelete = async (role: Role) => {
     const confirmed = await confirm({
-      title: '¿Eliminar el rol?',
-      text: `Se elimina "${role.type}". Si tiene usuarios asignados, la API lo rechaza.`,
-      confirmText: 'Eliminar',
+      title: '¿Dar de baja el rol?',
+      text: `Baja lógica: "${role.type}" no se borra. Si tiene usuarios asignados o es del sistema, la API lo rechaza.`,
+      confirmText: 'Dar de baja',
       danger: true,
     });
     if (!confirmed) return;
     deleteRole.mutate(role.role_id, {
-      onSuccess: () => notify.success('Rol eliminado'),
+      onSuccess: () => notify.success('Rol dado de baja'),
       onError: notify.error,
     });
   };
@@ -112,7 +112,7 @@ export const RolesCard = () => {
                           onClick={() => setForm({ open: true, role })}
                         />
                         <IconButton
-                          label={`Eliminar ${role.type}`}
+                          label={`Dar de baja ${role.type}`}
                           icon={<Trash2 />}
                           tone="danger"
                           onClick={() => void handleDelete(role)}

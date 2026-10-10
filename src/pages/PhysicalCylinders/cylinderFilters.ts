@@ -1,5 +1,5 @@
 import type { Cylinder } from '../../services/api/types';
-import { NEXT_STATES } from './cylinderTransitions';
+import { canMoveTo } from './cylinderTransitions';
 
 export type CylinderStateFilter = Cylinder['state'] | 'all';
 
@@ -22,7 +22,7 @@ export const filterCylinders = (
 
 /** Los envases marcados que pueden pasar de verdad al estado pedido (la máquina de estados del back). */
 export const movable = (cylinders: Cylinder[], toState: Cylinder['state']): Cylinder[] =>
-  cylinders.filter((cylinder) => NEXT_STATES[cylinder.state].includes(toState));
+  cylinders.filter((cylinder) => canMoveTo(cylinder.state, toState));
 
 /** Cuántos envases se muestran como mucho en la ficha de un pedido o de un cliente (el máximo de la API); el resto, en Envases. */
 export const CYLINDER_CARD_LIMIT = 100;

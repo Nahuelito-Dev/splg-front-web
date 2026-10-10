@@ -25,11 +25,13 @@ const INCIDENTS = [
   incident('i1', 'open', 'damaged', 'Ana Pérez'),
   incident('i2', 'resolved', 'no_show', 'Beto Gómez'),
   incident('i3', 'open', 'no_show', 'Carla Ruiz'),
+  incident('i4', 'discarded', 'other', 'Dora Díaz'),
 ];
 
 vi.mock('../../services/queries/incidents', () => ({
   useIncidents: () => ({ data: INCIDENTS, isLoading: false, isFetching: false }),
   useResolveIncident: () => ({ mutate: vi.fn(), isPending: false }),
+  useUpdateIncident: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 vi.mock('../../services/queries/users', () => ({
   useUser: () => ({ data: { full_name: 'Chofer Uno' }, isLoading: false }),
@@ -50,11 +52,13 @@ const renderPage = (url = '/incidents') =>
   );
 
 describe('Incidents', () => {
-  it('pestañas Todas / Abiertas / Resueltas con su cantidad', () => {
+  it('pestañas Todas / Abiertas / Resueltas / Descartadas con su cantidad, sin NaN', () => {
     renderPage();
-    expect(screen.getByRole('tab', { name: 'Todas 3' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Todas 4' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Abiertas 2' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Resueltas 1' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Descartadas 1' })).toBeInTheDocument();
+    expect(document.body).not.toHaveTextContent('NaN');
   });
 
   it('estado y tipo se combinan, viven en la URL y se muestran como chips con "N resultados"', () => {

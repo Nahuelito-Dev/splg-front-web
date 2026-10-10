@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { ArrowRightLeft } from 'lucide-react';
+import { ArrowRightLeft, PencilLine, Trash2 } from 'lucide-react';
 import {
+  AuditHistoryLink,
   Badge,
   Button,
   Card,
@@ -14,9 +15,12 @@ import {
 import { useBackToList, usePermissions } from '../../hooks';
 import { useCrumbLeaf } from '../../common/components';
 import { useCylinder } from '../../services/queries/physicalCylinders';
-import { formatCurrency, formatDate, formatDateTime, formatShortId } from '../../utils/format';
+import { formatCurrency, formatDateTime, formatDay, formatShortId } from '../../utils/format';
 import { CYLINDER_STATE, labelOf } from '../../utils/statusLabels';
+import { CylinderFormModal } from './components/CylinderFormModal';
 import { CylinderTimeline } from './components/CylinderTimeline';
+import { RetireCylinderModal } from './components/RetireCylinderModal';
+import { canEditCylinder, canRetire, RETIRE_HINT, RETIRED_HINT } from './cylinderTransitions';
 import { TransitionModal } from './components/TransitionModal';
 
 /** La ficha de un envase físico (`GET /cylinders/:id`): sus datos, su estado y su historial de movimientos. */
@@ -27,6 +31,8 @@ export const CylinderDetails = () => {
   const { data: cylinder, isPending, error, refetch } = useCylinder(id);
   useCrumbLeaf(cylinder?.serial, goBack);
   const [transitioning, setTransitioning] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [retiring, setRetiring] = useState(false);
 
   return (
     <div className="mx-auto max-w-7xl p-4 md:p-8">
@@ -34,16 +40,43 @@ export const CylinderDetails = () => {
         title="Ficha del envase"
         actions={
           cylinder && (
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={<ArrowRightLeft />}
-              disabled={!canWrite}
-              title={writeHint}
-              onClick={() => setTransitioning(true)}
-            >
-              Mover de estado
-            </Button>
+            <>
+              <AuditHistoryLink entity="Cylinder" recordId={cylinder.cylinder_id} />
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={<ArrowRightLeft />}
+                disabled={!canWrite}
+                title={writeHint}
+                blockedReason={canWrite && cylinder.state === 'retired' ? RETIRED_HINT : undefined}
+                onClick={() => setTransitioning(true)}
+              >
+                Mover de estado
+              </Button>
+              {canEditCylinder(cylinder) && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={<PencilLine />}
+                  disabled={!canWrite}
+                  title={writeHint}
+                  onClick={() => setEditing(true)}
+                >
+                  Editar
+                </Button>
+              )}
+              <Button
+                variant="danger"
+                size="sm"
+                icon={<Trash2 />}
+                disabled={!canWrite}
+                title={writeHint}
+                blockedReason={canWrite && !canRetire(cylinder) ? RETIRE_HINT : undefined}
+                onClick={() => setRetiring(true)}
+              >
+                Dar de baja
+              </Button>
+            </>
           )
         }
       />
@@ -94,8 +127,9 @@ export const CylinderDetails = () => {
                   value: cylinder.deposit > 0 ? formatCurrency(cylinder.deposit) : 'Sin garantía',
                   mono: cylinder.deposit > 0,
                 },
-                { label: 'Fabricación', value: formatDate(cylinder.manufactured_at) },
-                { label: 'Última inspección', value: formatDate(cylinder.last_inspection_at) },
+                { label: 'Fabricación', value: formatDay(cylinder.manufactured_at) },
+                { label: 'Última inspección', value: formatDay(cylinder.last_inspection_at) },
+                { label: 'Vencimiento', value: formatDay(cylinder.expires_at) },
                 { label: 'Alta', value: formatDateTime(cylinder.createdAt) },
                 { label: 'Última modificación', value: formatDateTime(cylinder.updatedAt) },
                 { label: 'ID del envase', value: cylinder.cylinder_id, mono: true, wide: true },
@@ -110,6 +144,8 @@ export const CylinderDetails = () => {
         </div>
       )}
 
+      <CylinderFormModal open={editing} onClose={() => setEditing(false)} cylinder={cylinder ?? null} />
+      <RetireCylinderModal cylinder={retiring ? (cylinder ?? null) : null} onClose={() => setRetiring(false)} />
       <TransitionModal open={transitioning} onClose={() => setTransitioning(false)} cylinder={cylinder ?? null} />
     </div>
   );

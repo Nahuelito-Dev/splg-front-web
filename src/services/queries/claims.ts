@@ -1,21 +1,35 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createClaim,
+  getClaim,
   getClaimPhotoFile,
   listClaims,
   reopenClaim,
   resolveClaim,
   takeClaim,
+  updateClaim,
   uploadClaimPhoto,
 } from '../api/claims';
 import type { FileSource } from '../api/fileSource';
-import type { CreateClaimBody, ReopenClaimBody, ResolveClaimBody } from '../api/types';
+import type { CreateClaimBody, ReopenClaimBody, ResolveClaimBody, UpdateClaimBody } from '../api/types';
 import { queryKeys } from './queryKeys';
 
 const keys = queryKeys.claims;
 
 export const useClaims = ({ refetchInterval }: { refetchInterval?: number } = {}) =>
   useQuery({ queryKey: keys.all, queryFn: listClaims, refetchInterval });
+
+/** El reclamo completo, con su pedido y su cliente. */
+export const useClaim = (id: string | undefined) =>
+  useQuery({ queryKey: keys.detail(id ?? ''), queryFn: () => getClaim(id ?? ''), enabled: Boolean(id) });
+
+export const useUpdateClaim = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: UpdateClaimBody }) => updateClaim(id, body),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
+  });
+};
 
 export const useCreateClaim = () => {
   const queryClient = useQueryClient();

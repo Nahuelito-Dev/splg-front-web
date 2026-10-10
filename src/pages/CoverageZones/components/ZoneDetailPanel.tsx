@@ -1,5 +1,14 @@
 import { Pencil, Trash2, X } from 'lucide-react';
-import { Badge, Button, Card, DetailList, ErrorState, IconButton, LoadingState } from '../../../common/components/ui';
+import {
+  AuditHistoryLink,
+  Badge,
+  Button,
+  Card,
+  DetailList,
+  ErrorState,
+  IconButton,
+  LoadingState,
+} from '../../../common/components/ui';
 import type { CoverageZone } from '../../../services/api/types';
 import { useCoverageZone } from '../../../services/queries/coverageZones';
 import { DEFAULT_ZONE_COLOR } from '../../../theme/zoneColors';
@@ -56,20 +65,19 @@ export const ZoneDetailPanel = ({ zoneId, onClose, onEdit, onDelete }: Props) =>
               { label: 'Id', value: zone.coverage_zone_id, mono: true, wide: true },
             ]}
           />
-          {(onEdit || onDelete) && (
-            <div className="flex flex-wrap justify-end gap-2 border-t border-outline pt-4">
-              {onDelete && (
-                <Button variant="danger" size="sm" icon={<Trash2 />} onClick={() => onDelete(zone)}>
-                  Eliminar
-                </Button>
-              )}
-              {onEdit && (
-                <Button size="sm" icon={<Pencil />} onClick={() => onEdit(zone)}>
-                  Editar
-                </Button>
-              )}
-            </div>
-          )}
+          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-outline pt-4">
+            <AuditHistoryLink entity="CoverageZone" recordId={zone.coverage_zone_id} />
+            {onDelete && (
+              <Button variant="danger" size="sm" icon={<Trash2 />} onClick={() => onDelete(zone)}>
+                Dar de baja
+              </Button>
+            )}
+            {onEdit && (
+              <Button size="sm" icon={<Pencil />} onClick={() => onEdit(zone)}>
+                Editar
+              </Button>
+            )}
+          </div>
         </div>
       )}
     </Card>

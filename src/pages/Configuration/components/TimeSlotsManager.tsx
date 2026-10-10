@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import { Button, Card, EmptyState, IconButton, LoadingState } from '../../../common/components/ui';
@@ -15,19 +16,19 @@ export const TimeSlotsManager = () => {
   const { data: slots, isPending } = useTimeSlots();
   const { canWrite, writeHint } = usePermissions();
   const deleteTimeSlot = useDeleteTimeSlot();
-  const [formOpen, setFormOpen] = useState(false);
+  const [form, setForm] = useState<{ open: boolean; slot: TimeSlot | null }>({ open: false, slot: null });
   const [detailId, setDetailId] = useState<string | null>(null);
 
   const handleDelete = async (slot: TimeSlot) => {
     const confirmed = await confirm({
-      title: '¿Desactivar horario?',
-      text: 'Los clientes ya no podrán elegir esta franja.',
-      confirmText: 'Desactivar',
+      title: '¿Dar de baja la franja?',
+      text: `Baja lógica: ${slot.name} deja de ofrecerse para agendar, pero no se borra y los pedidos ya agendados se mantienen.`,
+      confirmText: 'Dar de baja',
       danger: true,
     });
     if (!confirmed) return;
     deleteTimeSlot.mutate(slot.time_slot_id, {
-      onSuccess: () => notify.success('Franja desactivada'),
+      onSuccess: () => notify.success('Franja dada de baja'),
       onError: notify.error,
     });
   };
@@ -47,7 +48,7 @@ export const TimeSlotsManager = () => {
           icon={<AddCircleOutlineIcon />}
           disabled={!canWrite}
           title={writeHint}
-          onClick={() => setFormOpen(true)}
+          onClick={() => setForm({ open: true, slot: null })}
         >
           Nueva franja
         </Button>
@@ -84,7 +85,14 @@ export const TimeSlotsManager = () => {
                 />
                 {canWrite && (
                   <IconButton
-                    label={`Desactivar franja ${slot.name}`}
+                    label={`Editar franja ${slot.name}`}
+                    icon={<EditOutlinedIcon />}
+                    onClick={() => setForm({ open: true, slot })}
+                  />
+                )}
+                {canWrite && (
+                  <IconButton
+                    label={`Dar de baja la franja ${slot.name}`}
                     tone="danger"
                     icon={<DeleteOutlineIcon />}
                     onClick={() => void handleDelete(slot)}
@@ -96,7 +104,11 @@ export const TimeSlotsManager = () => {
         </ul>
       )}
 
-      <TimeSlotFormModal open={formOpen} onClose={() => setFormOpen(false)} />
+      <TimeSlotFormModal
+        open={form.open}
+        onClose={() => setForm((current) => ({ ...current, open: false }))}
+        slot={form.slot}
+      />
       <TimeSlotDetailModal slotId={detailId} onClose={() => setDetailId(null)} />
     </Card>
   );

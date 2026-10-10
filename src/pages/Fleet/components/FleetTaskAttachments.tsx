@@ -121,16 +121,16 @@ export const FleetTaskAttachments = ({ taskId, canWrite }: Props) => {
 
   const handleDelete = async (attachment: FleetTaskAttachment) => {
     const confirmed = await confirm({
-      title: '¿Borrar el adjunto?',
-      text: `Se borra «${attachment.originalName}». No se puede deshacer.`,
-      confirmText: 'Borrar',
+      title: '¿Dar de baja el adjunto?',
+      text: `Baja lógica: «${attachment.originalName}» deja de listarse. El archivo no se borra del almacenamiento.`,
+      confirmText: 'Dar de baja',
       danger: true,
     });
     if (!confirmed) return false;
     remove.mutate(
       { taskId, attachmentId: attachment.attachmentId },
       {
-        onSuccess: () => notify.success('Adjunto borrado'),
+        onSuccess: () => notify.success('Adjunto dado de baja'),
         onError: notify.error,
       },
     );
@@ -261,7 +261,7 @@ export const FleetTaskAttachments = ({ taskId, canWrite }: Props) => {
                 />
                 {canWrite && (
                   <IconButton
-                    label={`Borrar ${attachment.originalName}`}
+                    label={`Dar de baja ${attachment.originalName}`}
                     tone="danger"
                     icon={<Trash2 />}
                     onClick={() => void handleDelete(attachment)}

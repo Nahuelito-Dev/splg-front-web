@@ -11,9 +11,13 @@ interface Props {
   /** Hay filtros activos: un vacío significa "sin resultados". */
   filtered?: boolean;
   onView: (incident: Incident) => void;
+  /** Sólo se ofrece en una incidencia abierta: la API no deja tocar una cerrada. */
+  onEdit?: (incident: Incident) => void;
+  /** Baja lógica: la incidencia pasa a «Descartada». */
+  onDiscard?: (incident: Incident) => void;
 }
 
-export const IncidentsTable = ({ rows, loading, filtered = false, onView }: Props) => {
+export const IncidentsTable = ({ rows, loading, filtered = false, onView, onEdit, onDiscard }: Props) => {
   const columns = useMemo<GridColDef<Incident>[]>(
     () => [
       {
@@ -51,15 +55,21 @@ export const IncidentsTable = ({ rows, loading, filtered = false, onView }: Prop
       {
         field: 'actions',
         headerName: '',
-        width: 64,
+        width: 128,
         sortable: false,
         align: 'right',
         renderCell: ({ row }) => (
-          <RowActions rowLabel={`incidencia del pedido ${formatShortId(row.order_id)}`} onView={() => onView(row)} />
+          <RowActions
+            rowLabel={`incidencia del pedido ${formatShortId(row.order_id)}`}
+            onView={() => onView(row)}
+            onEdit={onEdit && row.status === 'open' ? () => onEdit(row) : undefined}
+            onDelete={onDiscard && row.status === 'open' ? () => onDiscard(row) : undefined}
+            deleteLabel="Descartar"
+          />
         ),
       },
     ],
-    [onView],
+    [onView, onEdit, onDiscard],
   );
 
   return (

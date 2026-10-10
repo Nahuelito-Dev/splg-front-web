@@ -1,3 +1,4 @@
+export * from './AuditHistoryLink';
 export * from './Avatar';
 export * from './Badge';
 export * from './Button';
@@ -20,6 +21,7 @@ export * from './NotificationsDrawer';
 export * from './PageCover';
 export * from './PageHeader';
 export * from './ProfileTabs';
+export * from './ReasonModal';
 export * from './RowActions';
 export * from './SearchInput';
 export * from './SelectionBar';

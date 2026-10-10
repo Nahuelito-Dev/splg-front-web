@@ -11,6 +11,12 @@ export const listAdmins = async (distributorId?: string): Promise<Admin[]> => {
   return data;
 };
 
+/** GET /admin/:id: la ficha de un administrador (usuario, rol y empresa). 404 si no existe o es de otra empresa. */
+export const getAdmin = async (id: string): Promise<Admin> => {
+  const { data } = await http.get<Admin>(`/admin/${id}`);
+  return data;
+};
+
 /** GET /admin/term/:term (CU-088): un admin puntual, por su id o su correo. */
 export const findAdminByTerm = async (term: string): Promise<AdminVista> => {
   const { data } = await http.get<AdminVista>(`/admin/term/${encodeURIComponent(term)}`);

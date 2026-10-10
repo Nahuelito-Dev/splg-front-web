@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { usePermissions } from '../../../hooks';
-import { Badge, Button, DetailList, Drawer, TextArea } from '../../../common/components/ui';
+import { AuditHistoryLink, Badge, Button, DetailList, Drawer, TextArea } from '../../../common/components/ui';
 import type { Incident } from '../../../services/api/types';
 import { useResolveIncident } from '../../../services/queries/incidents';
 import { useUser } from '../../../services/queries/users';
@@ -21,13 +21,16 @@ interface Props {
   open: boolean;
   onClose: () => void;
   incident: Incident | null;
+  /** Editar y descartar las maneja la página (abren su propio modal). */
+  onEdit?: (incident: Incident) => void;
+  onDiscard?: (incident: Incident) => void;
 }
 
 /**
  * El detalle de una incidencia. Si está abierta, además se resuelve acá; si ya
  * se resolvió, se ve cómo y cuándo.
  */
-export const IncidentDetailDrawer = ({ open, onClose, incident }: Props) => {
+export const IncidentDetailDrawer = ({ open, onClose, incident, onEdit, onDiscard }: Props) => {
   const { canOperate, operateHint } = usePermissions();
   const resolveIncident = useResolveIncident();
   // `IncidentResponseDto.reported_by` es sólo un uuid: la API no lo trae resuelto
@@ -52,7 +55,7 @@ export const IncidentDetailDrawer = ({ open, onClose, incident }: Props) => {
 
   const onSubmit = handleSubmit((body) =>
     resolveIncident.mutate(
-      { id: incident.incident_id, body },
+      { id: incident.incident_id, body: { ...body, status: 'resolved' } },
       {
         onSuccess: () => {
           notify.success('Incidencia resuelta');
@@ -67,16 +70,25 @@ export const IncidentDetailDrawer = ({ open, onClose, incident }: Props) => {
     <Drawer
       open={open}
       onClose={onClose}
-      title={isOpen ? 'Resolver incidencia' : 'Incidencia resuelta'}
+      title={
+        isOpen ? 'Resolver incidencia' : `Incidencia ${labelOf(INCIDENT_STATUS, incident.status).text.toLowerCase()}`
+      }
       description={`${formatShortId(incident.incident_id)} · Pedido ${formatShortId(incident.order_id)} · ${formatDateTime(incident.createdAt)}`}
       size="md"
       footer={
         isOpen ? (
           <>
             {operateHint && <p className="mr-auto self-center text-sm text-muted">{operateHint}</p>}
-            <Button variant="secondary" onClick={onClose}>
-              Cancelar
-            </Button>
+            {onEdit && (
+              <Button variant="secondary" disabled={!canOperate} title={operateHint} onClick={() => onEdit(incident)}>
+                Editar
+              </Button>
+            )}
+            {onDiscard && (
+              <Button variant="danger" disabled={!canOperate} title={operateHint} onClick={() => onDiscard(incident)}>
+                Descartar
+              </Button>
+            )}
             <Button
               type="submit"
               form="incident-resolve"
@@ -114,6 +126,8 @@ export const IncidentDetailDrawer = ({ open, onClose, incident }: Props) => {
 
         {/* Todo lo que trae IncidentResponseDto y no se ve ya arriba (cliente, tipo,
             descripción, quién la reportó): estado y los tres ids técnicos. */}
+        <AuditHistoryLink entity="Incident" recordId={incident.incident_id} />
+
         <DetailList
           items={[
             { label: 'Estado', value: <Badge label={labelOf(INCIDENT_STATUS, incident.status)} /> },
@@ -146,8 +160,15 @@ export const IncidentDetailDrawer = ({ open, onClose, incident }: Props) => {
         ) : (
           <DetailList
             items={[
-              { label: 'Resuelta', value: formatDateTime(incident.resolvedAt) },
-              { label: 'Cómo se resolvió', value: incident.resolution_note ?? '—', wide: true },
+              {
+                label: incident.status === 'discarded' ? 'Descartada' : 'Resuelta',
+                value: formatDateTime(incident.resolvedAt),
+              },
+              {
+                label: incident.status === 'discarded' ? 'Motivo del descarte' : 'Cómo se resolvió',
+                value: incident.resolution_note ?? '—',
+                wide: true,
+              },
             ]}
           />
         )}

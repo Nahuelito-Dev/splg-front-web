@@ -1,5 +1,5 @@
 import { http } from './httpClient';
-import type { CreateTimeSlotBody, SlotAvailability, TimeSlot } from './types';
+import type { CreateTimeSlotBody, SlotAvailability, TimeSlot, UpdateTimeSlotBody } from './types';
 
 /** Franjas horarias de entrega (`/time-slot`) y su disponibilidad por día. */
 
@@ -18,6 +18,15 @@ export const getTimeSlot = async (id: string): Promise<TimeSlot> => {
 /** POST /time-slot */
 export const createTimeSlot = async (body: CreateTimeSlotBody): Promise<TimeSlot> => {
   const { data } = await http.post<TimeSlot>('/time-slot', body);
+  return data;
+};
+
+/**
+ * PATCH /time-slot/:id: edición parcial. 400 si el rango queda invertido; 409 si el cupo baja por debajo de lo
+ * ya agendado. `isActive: true` reactiva una franja dada de baja.
+ */
+export const updateTimeSlot = async (id: string, body: UpdateTimeSlotBody): Promise<TimeSlot> => {
+  const { data } = await http.patch<TimeSlot>(`/time-slot/${id}`, body);
   return data;
 };
 

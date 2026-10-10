@@ -21,9 +21,6 @@ import { CreateAdminModal } from './components/CreateAdminModal';
 const SearchResult = ({ term }: { term: string }) => {
   const navigate = useNavigate();
   const { data, isFetching, isError } = useFindAdminByTerm(term);
-  const { data: admins } = useAdmins();
-  // La búsqueda devuelve `admin_id`; la ficha de usuario se abre con `user_id`, que sale de la lista.
-  const userId = admins?.find((admin) => admin.admin_id === data?.admin_id)?.user_id;
   if (isFetching) return <TableSkeleton rows={2} columns={3} />;
   if (isError || !data) {
     return <EmptyState title="Sin resultados" description={`Ningún admin tiene id o correo "${term}".`} />;
@@ -31,10 +28,8 @@ const SearchResult = ({ term }: { term: string }) => {
   return (
     <button
       type="button"
-      disabled={!userId}
-      title={userId ? undefined : 'No está entre los administradores de la empresa que estás viendo'}
-      onClick={() => userId && navigate(`/users/details/${userId}`)}
-      className="flex w-full items-center justify-between gap-3 p-4 text-left hover:bg-surface-hover disabled:cursor-default disabled:hover:bg-transparent"
+      onClick={() => navigate(`/admins/${data.admin_id}`)}
+      className="flex w-full items-center justify-between gap-3 p-4 text-left hover:bg-surface-hover"
     >
       <IdentityCell title={data.fullName ?? data.displayName ?? 'Sin nombre'} subtitle={data.email ?? undefined} />
       <span className="text-sm text-muted">{roleLabel(data.rol).text}</span>

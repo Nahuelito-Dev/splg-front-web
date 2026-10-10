@@ -1,10 +1,11 @@
 import type { GridColDef, GridPaginationModel } from '@mui/x-data-grid';
 import { useMemo } from 'react';
-import { CircleX, UserRoundCog } from 'lucide-react';
+import { UserRoundCog } from 'lucide-react';
 import { Badge, DataTable, EmptyState, IdentityCell, RowActions } from '../../../common/components/ui';
 import type { Order } from '../../../services/api/types';
 import { formatCurrency, formatDateTime, formatNumber, formatShortId } from '../../../utils/format';
 import { labelOf, ORDER_STATUS } from '../../../utils/statusLabels';
+import { orderEditBlockedReason } from './orderEdit';
 import { isClosed } from './orderStatus';
 
 /** "Villa Lanús +10 %" o "Garupá +$ 1.500": la zona que se cobró en ese pedido. */
@@ -23,6 +24,9 @@ interface Props {
   onPaginationChange: (model: GridPaginationModel) => void;
   onView: (order: Order) => void;
   onAssign: (order: Order) => void;
+  /** Sin él no se dibuja «Editar» (p. ej. sin distribuidora elegida). */
+  onEdit?: (order: Order) => void;
+  /** La baja del pedido: se cancela, no se borra (devuelve el stock). */
   onCancel: (order: Order) => void;
   /** Selección múltiple para las acciones en lote; sin esto la tabla no dibuja casillas. */
   /** Hay filtros activos: un vacío significa "sin resultados". */
@@ -39,6 +43,7 @@ export const OrdersTable = ({
   onPaginationChange,
   onView,
   onAssign,
+  onEdit,
   onCancel,
   selection,
   filtered = false,
@@ -117,26 +122,27 @@ export const OrdersTable = ({
       {
         field: 'actions',
         headerName: '',
-        width: 96,
+        width: 160,
         sortable: false,
         align: 'right',
         renderCell: ({ row }) => (
           <RowActions
             rowLabel={`pedido ${formatShortId(row.order_id)}`}
             onView={() => onView(row)}
+            onEdit={onEdit && (() => onEdit(row))}
+            editBlockedReason={onEdit ? (orderEditBlockedReason(row) ?? undefined) : undefined}
+            onDelete={isClosed(row.status) ? undefined : () => onCancel(row)}
+            deleteLabel="Cancelar"
             actions={
               isClosed(row.status)
                 ? []
-                : [
-                    { label: 'Asignar chofer', icon: UserRoundCog, onClick: () => onAssign(row) },
-                    { label: 'Cancelar pedido', icon: CircleX, tone: 'danger', onClick: () => onCancel(row) },
-                  ]
+                : [{ label: 'Asignar chofer', icon: UserRoundCog, onClick: () => onAssign(row) }]
             }
           />
         ),
       },
     ],
-    [onView, onAssign, onCancel],
+    [onView, onAssign, onEdit, onCancel],
   );
 
   return (

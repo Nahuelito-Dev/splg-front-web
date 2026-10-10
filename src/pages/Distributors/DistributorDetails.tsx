@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeftRight, Ban, CircleCheck, Pencil, Trash2 } from 'lucide-react';
 import {
+  AuditHistoryLink,
   Badge,
   Button,
   Card,
@@ -54,6 +55,7 @@ export const DistributorDetails = () => {
         actions={
           distributor && (
             <>
+              <AuditHistoryLink entity="Distributor" recordId={distributor.distributor_id} />
               {isViewing ? (
                 <span className="self-center px-2 text-xs font-semibold text-primary-strong">
                   Viendo como esta empresa

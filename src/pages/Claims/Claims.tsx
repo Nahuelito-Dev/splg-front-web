@@ -15,11 +15,13 @@ import {
   type FilterChip,
   type TabItem,
 } from '../../common/components/ui';
-import { useUrlParams } from '../../hooks';
+import { usePermissions, useUrlParams } from '../../hooks';
+import type { Claim } from '../../services/api/types';
 import { useClaims } from '../../services/queries/claims';
 import { CLAIM_STATUS, labelOf } from '../../utils/statusLabels';
-import { ClaimDetailDrawer } from './components/ClaimDetailDrawer';
+import { ClaimDetailDrawer, type PendingAction } from './components/ClaimDetailDrawer';
 import { ClaimsTable } from './components/ClaimsTable';
+import { EditClaimModal } from './components/EditClaimModal';
 import { CreateClaimModal } from './components/CreateClaimModal';
 import { CLAIM_STATUS_ORDER, countClaimsByStatus, filterClaims, type ClaimStatusFilter } from './claimFilters';
 
@@ -34,6 +36,9 @@ export const Claims = () => {
   const setTerm = (value: string) => setFilters({ q: value });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState<Claim | null>(null);
+  const [startAction, setStartAction] = useState<PendingAction>(null);
+  const { canOperate } = usePermissions();
 
   const all = useMemo(() => claims ?? [], [claims]);
   const counts = useMemo(() => countClaimsByStatus(all), [all]);
@@ -113,14 +118,33 @@ export const Claims = () => {
                 rows={rows}
                 loading={isFetching}
                 filtered={chips.length > 0}
-                onManage={(claim) => setSelectedId(claim.claim_id)}
+                onManage={(claim) => {
+                  setStartAction(null);
+                  setSelectedId(claim.claim_id);
+                }}
+                onEdit={canOperate ? setEditing : undefined}
+                onReject={
+                  canOperate
+                    ? (claim) => {
+                        setStartAction('reject');
+                        setSelectedId(claim.claim_id);
+                      }
+                    : undefined
+                }
               />
             </div>
           </Card>
         </>
       )}
 
-      <ClaimDetailDrawer open={selected !== null} onClose={() => setSelectedId(null)} claim={selected} />
+      <ClaimDetailDrawer
+        open={selected !== null}
+        onClose={() => setSelectedId(null)}
+        claim={selected}
+        startAction={startAction}
+        onEdit={setEditing}
+      />
+      <EditClaimModal claim={editing} onClose={() => setEditing(null)} />
       <CreateClaimModal open={creating} onClose={() => setCreating(false)} />
     </div>
   );

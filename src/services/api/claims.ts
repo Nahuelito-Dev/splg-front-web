@@ -1,11 +1,23 @@
 import { toApiErrorFromBlob } from './errors';
 import { resolveFileSource, type FileLink, type FileSource } from './fileSource';
 import { http } from './httpClient';
-import type { Claim, CreateClaimBody, ReopenClaimBody, ResolveClaimBody } from './types';
+import type { Claim, CreateClaimBody, ReopenClaimBody, ResolveClaimBody, UpdateClaimBody } from './types';
 
 /** GET /claims: todos los reclamos, acotados a la distribuidora del token. */
 export const listClaims = async (): Promise<Claim[]> => {
   const { data } = await http.get<Claim[]>('/claims');
+  return data;
+};
+
+/** GET /claims/:id: un reclamo con su pedido y su cliente (404 si no existe o es de otra distribuidora). */
+export const getClaim = async (id: string): Promise<Claim> => {
+  const { data } = await http.get<Claim>(`/claims/${id}`);
+  return data;
+};
+
+/** PATCH /claims/:id: corrige el motivo o la descripción. 409 si el reclamo ya no está pendiente. */
+export const updateClaim = async (id: string, body: UpdateClaimBody): Promise<Claim> => {
+  const { data } = await http.patch<Claim>(`/claims/${id}`, body);
   return data;
 };
 
@@ -18,7 +30,7 @@ export const createClaim = async (body: CreateClaimBody): Promise<Claim> => {
   return data;
 };
 
-/** PATCH /claims/:id/resolve: nota de resolución y nuevo estado (sólo resolved/rejected desde acá: ver `ClaimDetailModal`). */
+/** PATCH /claims/:id/resolve: nota de resolución y nuevo estado. `rejected` es la baja del reclamo: queda registrado, no se borra. */
 export const resolveClaim = async (id: string, body: ResolveClaimBody): Promise<Claim> => {
   const { data } = await http.patch<Claim>(`/claims/${id}/resolve`, body);
   return data;

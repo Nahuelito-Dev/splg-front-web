@@ -1,11 +1,15 @@
-import { BellRing, CircleX, KeyRound, PackageCheck, Printer, RefreshCw, UserRoundCog } from 'lucide-react';
+import { BellRing, CircleX, KeyRound, PackageCheck, PencilLine, Printer, RefreshCw, UserRoundCog } from 'lucide-react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Badge, Button, PageHeader } from '../../../../common/components/ui';
+import { AuditHistoryLink, Badge, Button, PageHeader } from '../../../../common/components/ui';
+import { usePermissions } from '../../../../hooks';
 import type { Order } from '../../../../services/api/types';
 import { formatDateTime, formatShortId } from '../../../../utils/format';
 import { labelOf, ORDER_STATUS } from '../../../../utils/statusLabels';
 import { AssignDriverModal } from '../AssignDriverModal';
 import { CancelOrderModal } from '../CancelOrderModal';
+import { EditOrderModal } from '../EditOrderModal';
+import { orderEditBlockedReason } from '../orderEdit';
 import { ConfirmDeliveryModal } from '../ConfirmDeliveryModal';
 import {
   canAssignDriver,
@@ -25,6 +29,9 @@ import { useOrderActions } from './useOrderActions';
  */
 export const OrderDetailsToolbar = ({ order }: { order: Order }) => {
   const actions = useOrderActions(order);
+  const { canWrite, writeHint } = usePermissions();
+  const [editing, setEditing] = useState(false);
+  const editBlocked = orderEditBlockedReason(order);
   const targets = manualStatusTargets(order.status);
 
   return (
@@ -35,6 +42,18 @@ export const OrderDetailsToolbar = ({ order }: { order: Order }) => {
         description={`Creado ${formatDateTime(order.created_at)}`}
         actions={
           <>
+            <AuditHistoryLink entity="Order" recordId={order.order_id} />
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<PencilLine />}
+              disabled={!canWrite}
+              title={writeHint}
+              blockedReason={canWrite && editBlocked ? `No se puede editar: ${editBlocked}` : undefined}
+              onClick={() => setEditing(true)}
+            >
+              Editar pedido
+            </Button>
             {canAssignDriver(order.status) && (
               <Button variant="secondary" size="sm" icon={<UserRoundCog />} onClick={() => actions.open('assign')}>
                 {order.delivery_id ? 'Reasignar chofer' : 'Asignar chofer'}
@@ -103,6 +122,7 @@ export const OrderDetailsToolbar = ({ order }: { order: Order }) => {
         </div>
       )}
 
+      <EditOrderModal order={editing ? order : null} onClose={() => setEditing(false)} />
       <AssignDriverModal
         open={actions.modal === 'assign'}
         onClose={actions.close}

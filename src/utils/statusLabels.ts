@@ -63,6 +63,7 @@ export const CYLINDER_STATE: LabelMap<Cylinder['state']> = {
   dispatched: { text: 'Despachado', tone: 'primary' },
   with_customer: { text: 'Con el cliente', tone: 'info' },
   empty_returned: { text: 'Vacío devuelto', tone: 'warn' },
+  retired: { text: 'Retirado', tone: 'danger' },
 };
 
 export const CLAIM_STATUS: LabelMap<Claim['status']> = {
@@ -82,6 +83,7 @@ export const INCIDENT_TYPE: LabelMap<Incident['type']> = {
 export const INCIDENT_STATUS: LabelMap<Incident['status']> = {
   open: { text: 'Abierta', tone: 'warn' },
   resolved: { text: 'Resuelta', tone: 'success' },
+  discarded: { text: 'Descartada', tone: 'neutral' },
 };
 
 export const DISTRIBUTOR_STATUS: LabelMap<Distributor['status']> = {

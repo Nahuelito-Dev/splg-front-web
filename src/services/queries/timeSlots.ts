@@ -1,6 +1,13 @@
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createTimeSlot, deleteTimeSlot, getTimeSlot, getTimeSlotAvailability, listTimeSlots } from '../api/timeSlots';
-import type { CreateTimeSlotBody, SlotAvailability } from '../api/types';
+import {
+  createTimeSlot,
+  deleteTimeSlot,
+  getTimeSlot,
+  getTimeSlotAvailability,
+  listTimeSlots,
+  updateTimeSlot,
+} from '../api/timeSlots';
+import type { CreateTimeSlotBody, SlotAvailability, UpdateTimeSlotBody } from '../api/types';
 import { queryKeys } from './queryKeys';
 
 const keys = queryKeys.timeSlots;
@@ -29,6 +36,14 @@ export const useCreateTimeSlot = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: CreateTimeSlotBody) => createTimeSlot(body),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
+  });
+};
+
+export const useUpdateTimeSlot = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: UpdateTimeSlotBody }) => updateTimeSlot(id, body),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
   });
 };

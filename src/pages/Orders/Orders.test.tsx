@@ -50,6 +50,7 @@ vi.mock('../../services/queries/orders', () => {
       total: 3,
     }),
     useAssignOrderDelivery: () => idle,
+    useUpdateOrder: () => idle,
     useCancelOrder: () => idle,
     useBulkCancelOrders: () => ({ mutate: bulkCancel, isPending: busy.cancel, stop }),
     useBulkAssignOrders: () => ({ mutate: bulkAssign, isPending: false, stop }),
@@ -62,6 +63,8 @@ vi.mock('../../services/queries/orders', () => {
     }),
   };
 });
+
+vi.mock('./components/EditOrderModal', () => ({ EditOrderModal: () => null }));
 
 import { Orders } from './Orders';
 

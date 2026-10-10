@@ -5,6 +5,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import LockOpenOutlinedIcon from '@mui/icons-material/LockOpenOutlined';
 import {
+  AuditHistoryLink,
   Avatar,
   Badge,
   Button,
@@ -70,7 +71,7 @@ export const UserDetails = () => {
     if (!user) return;
     const confirmed = await confirm({
       title: '¿Dar de baja al usuario?',
-      text: `${user.full_name ?? 'El usuario'} no va a poder volver a entrar.`,
+      text: `${user.full_name ?? 'El usuario'} no va a poder volver a entrar. Baja lógica: la cuenta y su historial no se borran.`,
       confirmText: 'Dar de baja',
       danger: true,
     });
@@ -100,22 +101,27 @@ export const UserDetails = () => {
       <PageHeader
         title="Ficha del usuario"
         actions={
-          canManage && (
+          user && (
             <>
-              <Button variant="secondary" size="sm" icon={<EditOutlinedIcon />} onClick={() => setEditing(true)}>
-                Editar cuenta
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={user?.blocked ? <LockOpenOutlinedIcon /> : <BlockIcon />}
-                onClick={() => void handleToggleBlock()}
-              >
-                {user?.blocked ? 'Desbloquear' : 'Bloquear'}
-              </Button>
-              <Button variant="danger" size="sm" icon={<DeleteOutlineIcon />} onClick={() => void handleDelete()}>
-                Dar de baja
-              </Button>
+              <AuditHistoryLink entity="User" recordId={user.user_id} />
+              {canManage && (
+                <>
+                  <Button variant="secondary" size="sm" icon={<EditOutlinedIcon />} onClick={() => setEditing(true)}>
+                    Editar cuenta
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    icon={user?.blocked ? <LockOpenOutlinedIcon /> : <BlockIcon />}
+                    onClick={() => void handleToggleBlock()}
+                  >
+                    {user?.blocked ? 'Desbloquear' : 'Bloquear'}
+                  </Button>
+                  <Button variant="danger" size="sm" icon={<DeleteOutlineIcon />} onClick={() => void handleDelete()}>
+                    Dar de baja
+                  </Button>
+                </>
+              )}
             </>
           )
         }

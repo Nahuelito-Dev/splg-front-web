@@ -31,7 +31,8 @@ import { notify } from '../../utils/notifications';
 import { CYLINDER_STATE, labelOf } from '../../utils/statusLabels';
 import { BulkTransitionModal } from './components/BulkTransitionModal';
 import { AssignCylindersModal } from './components/AssignCylindersModal';
-import { CreateCylinderModal } from './components/CreateCylinderModal';
+import { CylinderFormModal } from './components/CylinderFormModal';
+import { RetireCylinderModal } from './components/RetireCylinderModal';
 import { PhysicalCylindersTable } from './components/PhysicalCylindersTable';
 import { TransitionModal } from './components/TransitionModal';
 import { movable, uuidOrUndefined, type CylinderStateFilter } from './cylinderFilters';
@@ -49,7 +50,8 @@ export const PhysicalCylinders = () => {
   const pagination: GridPaginationModel = { page: Math.max(0, Number(pageParam) - 1 || 0), pageSize: PAGE_SIZE };
   const setPagination = (model: GridPaginationModel) => setFilters({ page: String(model.page + 1) });
   const state: CylinderStateFilter = ALL_STATES.find((s) => s === stateParam) ?? 'all';
-  const [createOpen, setCreateOpen] = useState(false);
+  const [form, setForm] = useState<{ open: boolean; cylinder: Cylinder | null }>({ open: false, cylinder: null });
+  const [retireTarget, setRetireTarget] = useState<Cylinder | null>(null);
   const [assignOpen, setAssignOpen] = useState(false);
   const [transitionTarget, setTransitionTarget] = useState<Cylinder | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -141,7 +143,12 @@ export const PhysicalCylinders = () => {
             >
               Asignar a pedido
             </Button>
-            <Button icon={<AddIcon />} disabled={!canWrite} title={writeHint} onClick={() => setCreateOpen(true)}>
+            <Button
+              icon={<AddIcon />}
+              disabled={!canWrite}
+              title={writeHint}
+              onClick={() => setForm({ open: true, cylinder: null })}
+            >
               Nuevo envase
             </Button>
           </>
@@ -227,6 +234,8 @@ export const PhysicalCylinders = () => {
                 selection={canWrite ? { ids: selectedIds, onChange: setSelectedIds } : undefined}
                 onPageChange={clearSelection}
                 onTransition={canWrite ? setTransitionTarget : undefined}
+                onEdit={canWrite ? (cylinder) => setForm({ open: true, cylinder }) : undefined}
+                onRetire={canWrite ? setRetireTarget : undefined}
                 onView={(cylinder) =>
                   navigate(`/physical-cylinders/${cylinder.cylinder_id}`, { state: FROM_LIST_STATE })
                 }
@@ -245,7 +254,12 @@ export const PhysicalCylinders = () => {
         toState={bulk?.toState ?? 'filled'}
         verb={bulk?.verb ?? ''}
       />
-      <CreateCylinderModal open={createOpen} onClose={() => setCreateOpen(false)} />
+      <CylinderFormModal
+        open={form.open}
+        onClose={() => setForm((current) => ({ ...current, open: false }))}
+        cylinder={form.cylinder}
+      />
+      <RetireCylinderModal cylinder={retireTarget} onClose={() => setRetireTarget(null)} />
       <AssignCylindersModal open={assignOpen} onClose={() => setAssignOpen(false)} />
       <TransitionModal
         open={Boolean(transitionTarget)}

@@ -8,7 +8,9 @@ const addressesQuery = vi.fn<[unknown, { enabled: boolean }], unknown>();
 vi.mock('../../hooks', () => ({ usePermissions: () => permissions() as unknown }));
 vi.mock('../../services/queries/userAddresses', () => ({
   useAllUserAddresses: (page: unknown, options: { enabled: boolean }) => addressesQuery(page, options),
+  useDeleteUserAddress: () => ({ mutate: vi.fn(), isPending: false }),
 }));
+vi.mock('../Customers/components/details/AddressFormModal', () => ({ AddressFormModal: () => null }));
 
 import { Addresses } from './Addresses';
 

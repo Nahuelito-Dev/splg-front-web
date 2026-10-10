@@ -13,6 +13,7 @@ import {
   IdentityCell,
   TableSkeleton,
   PageHeader,
+  RowActions,
   SearchInput,
   Select,
 } from '../../common/components/ui';
@@ -22,6 +23,7 @@ import { useCancelFleetTask, useFleetPlans, useFleetTasks } from '../../services
 import { confirm, notify } from '../../utils/notifications';
 import { FLEET_TASK_STATUS, labelOf } from '../../utils/statusLabels';
 import { FleetTaskCloseModal } from './components/FleetTaskCloseModal';
+import { FleetTaskFormModal } from './components/FleetTaskFormModal';
 import { FleetTaskDueCell } from './components/FleetTaskDueCell';
 import { FleetTaskOwnerCell } from './components/FleetTaskOwnerCell';
 import { FleetTaskKanban } from './components/FleetTaskKanban';
@@ -53,6 +55,7 @@ export const FleetTasks = () => {
   const { needsDistributor, canWrite } = usePermissions();
   const [view, setView] = useState<View>('board');
   const [closing, setClosing] = useState<FleetTask | null>(null);
+  const [editing, setEditing] = useState<FleetTask | null>(null);
   const cancelTask = useCancelFleetTask();
   const [status, setStatus] = useState<FleetTask['status'] | ''>('');
   const [carId, setCarId] = useState('');
@@ -141,8 +144,28 @@ export const FleetTasks = () => {
         width: 140,
         renderCell: ({ row }) => <Badge label={labelOf(FLEET_TASK_STATUS, row.status)} />,
       },
+      {
+        field: 'actions',
+        headerName: '',
+        width: 128,
+        sortable: false,
+        align: 'right',
+        renderCell: ({ row }) => {
+          const open = row.status !== 'done' && row.status !== 'cancelled';
+          return (
+            <RowActions
+              rowLabel={row.plan?.name ?? 'tarea'}
+              onView={() => navigate(`/fleet/tasks/${row.taskId}`)}
+              onEdit={canWrite && open ? () => setEditing(row) : undefined}
+              onDelete={canWrite && open ? () => void handleCancel(row) : undefined}
+              deleteLabel="Cancelar"
+            />
+          );
+        },
+      },
     ],
-    [carMap, driverMap],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [carMap, driverMap, canWrite, navigate],
   );
 
   return (
@@ -261,6 +284,14 @@ export const FleetTasks = () => {
         </Card>
       )}
 
+      <FleetTaskFormModal
+        open={Boolean(editing)}
+        onClose={() => setEditing(null)}
+        subject={editing?.carId ? 'vehicle' : 'driver'}
+        ownerId={editing?.carId ?? editing?.deliveryId ?? ''}
+        carType={editing?.carId ? carMap.get(editing.carId)?.type_car : undefined}
+        task={editing}
+      />
       <FleetTaskCloseModal open={Boolean(closing)} onClose={() => setClosing(null)} task={closing} />
     </div>
   );

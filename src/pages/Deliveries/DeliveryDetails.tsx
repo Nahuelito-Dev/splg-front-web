@@ -1,5 +1,6 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import {
+  AuditHistoryLink,
   ErrorState,
   PageHeader,
   ProfileSkeleton,
@@ -42,7 +43,10 @@ export const DeliveryDetails = () => {
 
   return (
     <div className="mx-auto max-w-5xl p-4 md:p-8">
-      <PageHeader title="Ficha del chofer" />
+      <PageHeader
+        title="Ficha del chofer"
+        actions={delivery && <AuditHistoryLink entity="Delivery" recordId={delivery.delivery_id} />}
+      />
 
       {isPending ? (
         <ProfileSkeleton />
