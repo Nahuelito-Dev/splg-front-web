@@ -43,6 +43,7 @@ export const CustomersTable = ({
             title={row.user?.full_name ?? 'Sin nombre'}
             subtitle={row.user?.email ?? undefined}
             avatarName={row.user?.full_name ?? '?'}
+            photo={{ kind: 'user', id: row.user_id, url: row.user?.photoUrl }}
           />
         ),
       },

@@ -194,7 +194,7 @@ export const ClaimDetailDrawer = ({ open, onClose, claim: listed, startAction = 
           ]}
         />
 
-        <ClaimPhoto claim={claim} open={open} canOperate={canOperate} operateHint={operateHint} />
+        <ClaimPhoto claim={claim} canOperate={canOperate} operateHint={operateHint} />
 
         <div>
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Historial</h3>

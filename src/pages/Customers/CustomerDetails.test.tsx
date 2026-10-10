@@ -41,6 +41,20 @@ vi.mock('../../hooks', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   usePermissions: () => ({ canManageCustomerAccounts: true, canOperate: true, operateHint: undefined }),
 }));
+vi.mock('../../services/queries/photos', () => ({
+  useUploadPhoto: () => ({ mutate: vi.fn(), isPending: false }),
+  useRemovePhoto: () => ({ mutate: vi.fn(), isPending: false }),
+  isSignedPhotoUrl: (url: string | null | undefined) => Boolean(url?.includes('X-Amz-Signature=')),
+  useRenewablePhoto: (_kind: string, _id: string, url: string | null | undefined) => ({
+    src: url ?? null,
+    failed: false,
+    none: false,
+    renewing: false,
+    handleError: vi.fn(),
+    renewIfExpired: vi.fn(),
+    retry: vi.fn(),
+  }),
+}));
 vi.mock('../../services/queries/customers', () => ({
   useCustomer: () => ({ data: CUSTOMER, isPending: false, error: null }),
   useCustomerOrderSample: () => ({

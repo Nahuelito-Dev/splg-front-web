@@ -1,4 +1,13 @@
-import { Avatar, Badge, Card, DetailSkeleton, ErrorState, PageHeader } from '../../common/components/ui';
+import {
+  Avatar,
+  Badge,
+  Card,
+  DetailSkeleton,
+  EntityPhoto,
+  ErrorState,
+  PageHeader,
+  PhotoThumb,
+} from '../../common/components/ui';
 import { useAppDispatch, useAppSelector } from '../../hooks';
 import { startLogOut } from '../../store/auth/thunks';
 import { useMyAccount } from '../../services/queries/users';
@@ -24,7 +33,13 @@ export const Account = () => {
       ) : (
         <div className="space-y-6">
           <Card className="flex items-center gap-4 p-6">
-            <Avatar name={user.full_name ?? currentEmail} size="lg" />
+            <PhotoThumb
+              kind="user"
+              id="me"
+              url={user.photoUrl}
+              size="lg"
+              fallback={<Avatar name={user.full_name ?? currentEmail} size="lg" />}
+            />
             <div className="min-w-0">
               <h2 className="truncate text-lg font-semibold text-ink">{user.full_name ?? 'Sin nombre'}</h2>
               <p className="truncate text-sm text-muted">{currentEmail}</p>
@@ -32,6 +47,9 @@ export const Account = () => {
                 <Badge label={roleLabel(user.role?.type)} />
               </div>
             </div>
+          </Card>
+          <Card className="p-6">
+            <EntityPhoto kind="user" id="me" url={user.photoUrl} subject="de perfil" canEdit className="max-w-md" />
           </Card>
           <ProfileForm user={user} />
           <ChangeEmailForm currentEmail={currentEmail} onChanged={() => void dispatch(startLogOut())} />

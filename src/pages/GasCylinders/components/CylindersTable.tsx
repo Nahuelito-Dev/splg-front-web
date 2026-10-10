@@ -40,7 +40,14 @@ export const CylindersTable = ({
         headerName: 'Producto',
         flex: 1.2,
         minWidth: 200,
-        renderCell: ({ row }) => <IdentityCell title={row.type} subtitle={`${row.weight} kg`} icon={Flame} />,
+        renderCell: ({ row }) => (
+          <IdentityCell
+            title={row.type}
+            subtitle={`${row.weight} kg`}
+            icon={Flame}
+            photo={{ kind: 'gasCylinder', id: row.gas_cylinder_id, url: row.photoUrl }}
+          />
+        ),
       },
       {
         field: 'price',

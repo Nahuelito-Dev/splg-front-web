@@ -2,7 +2,7 @@ import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined';
 import type { ReactNode } from 'react';
-import { Card, DetailList } from '../../../common/components/ui';
+import { Card, DetailList, EntityPhoto } from '../../../common/components/ui';
 import type { Delivery } from '../../../services/api/types';
 import { formatDate } from '../../../utils/format';
 import { DeliveryLocationCard } from './DeliveryLocationCard';
@@ -20,6 +20,14 @@ export const DeliveryOverview = ({ delivery }: { delivery: Delivery }) => {
   return (
     <div className="space-y-6">
       <Card className="p-6">
+        <EntityPhoto
+          kind="user"
+          id={delivery.user_id}
+          url={user?.photoUrl}
+          subject="de perfil"
+          canEdit
+          className="mb-5 max-w-md border-b border-outline pb-5"
+        />
         <ul className="space-y-3">
           <Row icon={<EmailOutlinedIcon />}>{user?.email ?? '—'}</Row>
           <Row icon={<PhoneOutlinedIcon />}>{user?.phone_number ?? '—'}</Row>

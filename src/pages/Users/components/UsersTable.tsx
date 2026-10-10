@@ -48,6 +48,7 @@ export const UsersTable = ({
             title={row.full_name ?? 'Sin nombre'}
             subtitle={row.email ?? undefined}
             avatarName={row.full_name ?? '?'}
+            photo={{ kind: 'user', id: row.user_id, url: row.photoUrl }}
           />
         ),
       },

@@ -97,6 +97,7 @@ export type OrderRecord = S['OrderRecordResponseDto'];
 export type Order = S['OrderResponseDto'];
 export type OrderStats = S['OrderStatsResponseDto'];
 export type PaginatedOrders = S['PaginatedOrdersResponseDto'];
+export type PhotoLink = S['PhotoLinkResponseDto'];
 export type PoligonoGeoJson = S['PoligonoGeoJsonDto'];
 export type ProductoDelEnvase = S['ProductoDelEnvaseDto'];
 export type ProductoDelRenglon = S['ProductoDelRenglonDto'];

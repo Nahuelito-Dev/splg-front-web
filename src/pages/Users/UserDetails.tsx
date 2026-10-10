@@ -9,9 +9,12 @@ import {
   Avatar,
   Badge,
   Button,
+  Card,
+  EntityPhoto,
   ErrorState,
   PageCover,
   PageHeader,
+  PhotoThumb,
   ProfileSkeleton,
   ProfileTabPanel,
   ProfileTabs,
@@ -135,11 +138,19 @@ export const UserDetails = () => {
         <>
           <PageCover
             avatar={
-              user.selfie ? (
-                <img src={user.selfie} alt="" className="h-14 w-14 rounded-full object-cover" />
-              ) : (
-                <Avatar name={name} size="lg" />
-              )
+              <PhotoThumb
+                kind="user"
+                id={user.user_id}
+                url={user.photoUrl}
+                size="lg"
+                fallback={
+                  user.selfie ? (
+                    <img src={user.selfie} alt="" className="h-14 w-14 rounded-full object-cover" />
+                  ) : (
+                    <Avatar name={name} size="lg" />
+                  )
+                }
+              />
             }
             title={name}
             subtitle={user.email ?? undefined}
@@ -155,7 +166,19 @@ export const UserDetails = () => {
           </PageCover>
 
           <ProfileTabPanel tabKey="account" value={tab}>
-            <UserAccountCard user={user} />
+            <div className="space-y-6">
+              <Card className="p-6">
+                <EntityPhoto
+                  kind="user"
+                  id={user.user_id}
+                  url={user.photoUrl}
+                  subject="de perfil"
+                  canEdit={canManage}
+                  className="max-w-md"
+                />
+              </Card>
+              <UserAccountCard user={user} />
+            </div>
           </ProfileTabPanel>
           <ProfileTabPanel tabKey="role" value={tab}>
             <UserRoleDetails user={user} />

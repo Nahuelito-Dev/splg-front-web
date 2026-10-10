@@ -3,6 +3,7 @@ import { ChevronsUpDown } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { usePermissions } from '../../../hooks';
 import { useCurrentDistributor } from '../../../services/queries/distributors';
+import { PhotoThumb } from '../ui/PhotoThumb';
 import { cx } from '../ui/cx';
 import { initialsOf } from '../../../utils/format';
 
@@ -23,9 +24,23 @@ export const TenantCard = ({ mini = false, onNavigate }: { mini?: boolean; onNav
     <>
       <span
         aria-hidden="true"
-        className="grid h-[26px] w-[26px] shrink-0 place-items-center rounded-[7px] bg-tinta-800 text-[11px] font-bold text-llama-300"
+        className="grid h-[26px] w-[26px] shrink-0 place-items-center overflow-hidden rounded-[7px] bg-tinta-800 text-[11px] font-bold text-llama-300"
       >
-        {needsDistributor ? '∗' : initialsOf(name)}
+        {distributor && !needsDistributor ? (
+          <PhotoThumb
+            kind="distributor"
+            id={distributor.distributor_id}
+            url={distributor.photoUrl ?? distributor.logo_url}
+            size="fill"
+            shape="square"
+            className="!rounded-none !border-0"
+            fallback={initialsOf(name)}
+          />
+        ) : needsDistributor ? (
+          '∗'
+        ) : (
+          initialsOf(name)
+        )}
       </span>
       {!mini && (
         <>

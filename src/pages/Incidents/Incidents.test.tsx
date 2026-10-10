@@ -28,6 +28,20 @@ const INCIDENTS = [
   incident('i4', 'discarded', 'other', 'Dora Díaz'),
 ];
 
+vi.mock('../../services/queries/photos', () => ({
+  useUploadPhoto: () => ({ mutate: vi.fn(), isPending: false }),
+  useRemovePhoto: () => ({ mutate: vi.fn(), isPending: false }),
+  isSignedPhotoUrl: (url: string | null | undefined) => Boolean(url?.includes('X-Amz-Signature=')),
+  useRenewablePhoto: (_kind: string, _id: string, url: string | null | undefined) => ({
+    src: url ?? null,
+    failed: false,
+    none: false,
+    renewing: false,
+    handleError: vi.fn(),
+    renewIfExpired: vi.fn(),
+    retry: vi.fn(),
+  }),
+}));
 vi.mock('../../services/queries/incidents', () => ({
   useIncidents: () => ({ data: INCIDENTS, isLoading: false, isFetching: false }),
   useResolveIncident: () => ({ mutate: vi.fn(), isPending: false }),

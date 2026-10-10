@@ -6,9 +6,12 @@ import {
   Avatar,
   Badge,
   Button,
+  Card,
+  EntityPhoto,
   ErrorState,
   PageCover,
   PageHeader,
+  PhotoThumb,
   ProfileSkeleton,
   ProfileTabPanel,
   ProfileTabs,
@@ -140,7 +143,15 @@ export const CustomerDetails = () => {
       ) : (
         <>
           <PageCover
-            avatar={<Avatar name={name} size="lg" />}
+            avatar={
+              <PhotoThumb
+                kind="user"
+                id={customer.user_id}
+                url={customer.user?.photoUrl}
+                size="lg"
+                fallback={<Avatar name={name} size="lg" />}
+              />
+            }
             title={name}
             subtitle={[customer.user?.email, customer.user?.phone_number].filter(Boolean).join(' · ') || undefined}
             badges={
@@ -160,7 +171,19 @@ export const CustomerDetails = () => {
           </PageCover>
 
           <ProfileTabPanel tabKey="summary" value={tab}>
-            <CustomerSummary customer={customer} />
+            <div className="space-y-6">
+              <Card className="p-6">
+                <EntityPhoto
+                  kind="user"
+                  id={customer.user_id}
+                  url={customer.user?.photoUrl}
+                  subject="de perfil"
+                  canEdit={canManageCustomerAccounts}
+                  className="max-w-md"
+                />
+              </Card>
+              <CustomerSummary customer={customer} />
+            </div>
           </ProfileTabPanel>
           <ProfileTabPanel tabKey="orders" value={tab}>
             <CustomerOrders userId={customer.user_id} />
