@@ -193,6 +193,307 @@
                 ]
             }
         },
+        "/api/users/me/photo": {
+            "put": {
+                "description": "Multipart, campo `file`: JPG, PNG o WEBP de hasta 5 MB (el tipo se valida por el contenido, no por el header). Si ya tenía foto, la anterior se borra del bucket. La sube cada usuario (cliente, chofer o admin) para su propia cuenta.",
+                "operationId": "UsersController_uploadMyPhoto",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "required": [
+                                    "file"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta la foto o está vacía"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    },
+                    "413": {
+                        "description": "La foto supera los 5 MB"
+                    },
+                    "415": {
+                        "description": "No es JPG, PNG ni WEBP (o el contenido no coincide)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Subir o reemplazar mi foto de perfil",
+                "tags": [
+                    "Users"
+                ]
+            },
+            "delete": {
+                "description": "Quita la referencia a la foto (el objeto se borra del bucket en segundo plano). No da de baja la cuenta.",
+                "operationId": "UsersController_removeMyPhoto",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserResponseDto"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Sacar mi foto de perfil",
+                "tags": [
+                    "Users"
+                ]
+            },
+            "get": {
+                "description": "Por defecto redirige (302) a la URL firmada de S3 (una URL externa nunca se redirige: va en JSON). Con `?modo=url` devuelve `{ url, expiresAt, requiresAuth }` en JSON, sin redirect; si no tiene foto, `url: null`.",
+                "operationId": "UsersController_getMyPhoto",
+                "parameters": [
+                    {
+                        "name": "modo",
+                        "required": false,
+                        "in": "query",
+                        "description": "`url` devuelve `{ url, expiresAt, requiresAuth }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada de S3).",
+                        "schema": {
+                            "$ref": "#/components/schemas/DownloadMode"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PhotoLinkResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora; sin `modo`, también si no tiene foto"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ver mi foto de perfil",
+                "tags": [
+                    "Users"
+                ]
+            }
+        },
+        "/api/users/{id}/photo": {
+            "put": {
+                "description": "Multipart, campo `file`: JPG, PNG o WEBP de hasta 5 MB (el tipo se valida por el contenido, no por el header). Si ya tenía foto, la anterior se borra del bucket. Un admin de empresa sólo la de su personal (choferes y admins de su distribuidora); la de un cliente es de su propia cuenta o del administrador general (403 para el admin de empresa).",
+                "operationId": "UsersController_uploadPhoto",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "User UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "required": [
+                                    "file"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta la foto o está vacía"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    },
+                    "413": {
+                        "description": "La foto supera los 5 MB"
+                    },
+                    "415": {
+                        "description": "No es JPG, PNG ni WEBP (o el contenido no coincide)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Subir o reemplazar la foto de perfil de un usuario",
+                "tags": [
+                    "Users"
+                ]
+            },
+            "delete": {
+                "description": "Mismas reglas que subirla. Quita la referencia (el objeto se borra del bucket en segundo plano); no da de baja al usuario.",
+                "operationId": "UsersController_removePhoto",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "User UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Sacar la foto de perfil de un usuario",
+                "tags": [
+                    "Users"
+                ]
+            },
+            "get": {
+                "description": "Por defecto redirige (302) a la URL firmada de S3 (una URL externa nunca se redirige: va en JSON). Con `?modo=url` devuelve `{ url, expiresAt, requiresAuth }` en JSON, sin redirect; si no tiene foto, `url: null`.",
+                "operationId": "UsersController_getPhoto",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "User UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "modo",
+                        "required": false,
+                        "in": "query",
+                        "description": "`url` devuelve `{ url, expiresAt, requiresAuth }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada de S3).",
+                        "schema": {
+                            "$ref": "#/components/schemas/DownloadMode"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PhotoLinkResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "No es su cuenta"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora; sin `modo`, también si no tiene foto"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ver la foto de perfil de un usuario",
+                "tags": [
+                    "Users"
+                ]
+            }
+        },
         "/api/users/{id}": {
             "get": {
                 "operationId": "UsersController_findOne",
@@ -2483,6 +2784,198 @@
                 ]
             }
         },
+        "/api/distributor/{id}/logo": {
+            "put": {
+                "description": "Multipart, campo `file`: JPG, PNG o WEBP de hasta 5 MB (el tipo se valida por el contenido, no por el header). Si ya tenía foto, la anterior se borra del bucket. Un admin sólo el de su distribuidora; el super admin, el de cualquiera. El logo sale en `photoUrl` (URL firmada); `logo_url` es sólo el texto guardado, que el panel usa de respaldo.",
+                "operationId": "DistributorController_uploadLogo",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Distributor UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "required": [
+                                    "file"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DistributorResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta la foto o está vacía"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    },
+                    "413": {
+                        "description": "La foto supera los 5 MB"
+                    },
+                    "415": {
+                        "description": "No es JPG, PNG ni WEBP (o el contenido no coincide)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Subir o reemplazar el logo de la distribuidora",
+                "tags": [
+                    "Distributors"
+                ]
+            },
+            "delete": {
+                "description": "Quita la referencia (el objeto se borra del bucket en segundo plano) y `photoUrl` queda en null (vale el `logo_url` de texto, si tenía). No da de baja la distribuidora.",
+                "operationId": "DistributorController_removeLogo",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Distributor UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DistributorResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "La distribuidora no existe"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Sacar el logo de la distribuidora",
+                "tags": [
+                    "Distributors"
+                ]
+            },
+            "get": {
+                "description": "Por defecto redirige (302) a la URL firmada de S3 (una URL externa nunca se redirige: va en JSON). Con `?modo=url` devuelve `{ url, expiresAt, requiresAuth }` en JSON, sin redirect; si no tiene foto, `url: null`.",
+                "operationId": "DistributorController_getLogo",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Distributor UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "modo",
+                        "required": false,
+                        "in": "query",
+                        "description": "`url` devuelve `{ url, expiresAt, requiresAuth }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada de S3).",
+                        "schema": {
+                            "$ref": "#/components/schemas/DownloadMode"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PhotoLinkResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora; sin `modo`, también si no tiene foto"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ver el logo de la distribuidora",
+                "tags": [
+                    "Distributors"
+                ]
+            }
+        },
         "/api/job-positions": {
             "get": {
                 "operationId": "JobPositionController_findAll",
@@ -2993,6 +3486,186 @@
                 ]
             }
         },
+        "/api/employees/{id}/photo": {
+            "put": {
+                "description": "Multipart, campo `file`: JPG, PNG o WEBP de hasta 5 MB (el tipo se valida por el contenido, no por el header). Si ya tenía foto, la anterior se borra del bucket. Sólo para un legajo sin cuenta de acceso: con cuenta, la foto es la de perfil del usuario (409).",
+                "operationId": "EmployeeController_uploadPhoto",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Empleado UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "required": [
+                                    "file"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/EmployeeResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta la foto o está vacía"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "El legajo tiene cuenta de acceso"
+                    },
+                    "413": {
+                        "description": "La foto supera los 5 MB"
+                    },
+                    "415": {
+                        "description": "No es JPG, PNG ni WEBP (o el contenido no coincide)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Subir o reemplazar la foto del legajo",
+                "tags": [
+                    "Personal · Empleados"
+                ]
+            },
+            "delete": {
+                "description": "Quita la referencia (el objeto se borra del bucket en segundo plano); no elimina el legajo. Con cuenta de acceso responde 409.",
+                "operationId": "EmployeeController_removePhoto",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Empleado UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/EmployeeResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Empleado no encontrado"
+                    },
+                    "409": {
+                        "description": "El legajo tiene cuenta de acceso"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Sacar la foto del legajo",
+                "tags": [
+                    "Personal · Empleados"
+                ]
+            },
+            "get": {
+                "description": "Por defecto redirige (302) a la URL firmada de S3 (una URL externa nunca se redirige: va en JSON). Con `?modo=url` devuelve `{ url, expiresAt, requiresAuth }` en JSON, sin redirect; si no tiene foto, `url: null`.",
+                "operationId": "EmployeeController_getPhoto",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Empleado UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "modo",
+                        "required": false,
+                        "in": "query",
+                        "description": "`url` devuelve `{ url, expiresAt, requiresAuth }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada de S3).",
+                        "schema": {
+                            "$ref": "#/components/schemas/DownloadMode"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PhotoLinkResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora; sin `modo`, también si no tiene foto"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ver la foto del legajo (la del usuario si tiene cuenta)",
+                "tags": [
+                    "Personal · Empleados"
+                ]
+            }
+        },
         "/api/employees/{id}/termination": {
             "post": {
                 "operationId": "EmployeeController_terminateEmployee",
@@ -3455,6 +4128,189 @@
                     }
                 ],
                 "summary": "Get car by patent",
+                "tags": [
+                    "Cars"
+                ]
+            }
+        },
+        "/api/car/{id}/photo": {
+            "put": {
+                "description": "Multipart, campo `file`: JPG, PNG o WEBP de hasta 5 MB (el tipo se valida por el contenido, no por el header). Si ya tenía foto, la anterior se borra del bucket. ",
+                "operationId": "CarController_uploadPhoto",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Car UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "required": [
+                                    "file"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CarResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta la foto o está vacía"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    },
+                    "413": {
+                        "description": "La foto supera los 5 MB"
+                    },
+                    "415": {
+                        "description": "No es JPG, PNG ni WEBP (o el contenido no coincide)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Subir o reemplazar la foto principal del vehículo",
+                "tags": [
+                    "Cars"
+                ]
+            },
+            "delete": {
+                "description": "Quita la referencia (el objeto se borra del bucket en segundo plano); no da de baja el vehículo.",
+                "operationId": "CarController_removePhoto",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Car UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CarResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Car not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Sacar la foto del vehículo",
+                "tags": [
+                    "Cars"
+                ]
+            },
+            "get": {
+                "description": "Por defecto redirige (302) a la URL firmada de S3 (una URL externa nunca se redirige: va en JSON). Con `?modo=url` devuelve `{ url, expiresAt, requiresAuth }` en JSON, sin redirect; si no tiene foto, `url: null`.",
+                "operationId": "CarController_getPhoto",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Car UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "modo",
+                        "required": false,
+                        "in": "query",
+                        "description": "`url` devuelve `{ url, expiresAt, requiresAuth }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada de S3).",
+                        "schema": {
+                            "$ref": "#/components/schemas/DownloadMode"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PhotoLinkResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora; sin `modo`, también si no tiene foto"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ver la foto del vehículo",
                 "tags": [
                     "Cars"
                 ]
@@ -5346,6 +6202,180 @@
                     }
                 ],
                 "summary": "Get all available gas cylinders",
+                "tags": [
+                    "Gas Cylinders"
+                ]
+            }
+        },
+        "/api/gascylinder/{id}/photo": {
+            "put": {
+                "description": "Multipart, campo `file`: JPG, PNG o WEBP de hasta 5 MB (el tipo se valida por el contenido, no por el header). Si ya tenía foto, la anterior se borra del bucket. Aparece como `photoUrl` en el catálogo que ven las apps.",
+                "operationId": "GasCylinderController_uploadPhoto",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Gas cylinder UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "required": [
+                                    "file"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GasCylinderResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta la foto o está vacía"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    },
+                    "413": {
+                        "description": "La foto supera los 5 MB"
+                    },
+                    "415": {
+                        "description": "No es JPG, PNG ni WEBP (o el contenido no coincide)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Subir o reemplazar la imagen del producto",
+                "tags": [
+                    "Gas Cylinders"
+                ]
+            },
+            "delete": {
+                "description": "Quita la referencia (el objeto se borra del bucket en segundo plano); no da de baja el producto.",
+                "operationId": "GasCylinderController_removePhoto",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Gas cylinder UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GasCylinderResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Sacar la imagen del producto",
+                "tags": [
+                    "Gas Cylinders"
+                ]
+            },
+            "get": {
+                "description": "Por defecto redirige (302) a la URL firmada de S3 (una URL externa nunca se redirige: va en JSON). Con `?modo=url` devuelve `{ url, expiresAt, requiresAuth }` en JSON, sin redirect; si no tiene foto, `url: null`.",
+                "operationId": "GasCylinderController_getPhoto",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Gas cylinder UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "modo",
+                        "required": false,
+                        "in": "query",
+                        "description": "`url` devuelve `{ url, expiresAt, requiresAuth }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada de S3).",
+                        "schema": {
+                            "$ref": "#/components/schemas/DownloadMode"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PhotoLinkResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora; sin `modo`, también si no tiene foto"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ver la imagen del producto",
                 "tags": [
                     "Gas Cylinders"
                 ]
@@ -10367,6 +11397,195 @@
                 ]
             }
         },
+        "/api/incidents/{id}/photo": {
+            "put": {
+                "description": "Multipart, campo `file`: JPG, PNG o WEBP de hasta 5 MB (el tipo se valida por el contenido, no por el header). Si ya tenía foto, la anterior se borra del bucket. La sube el chofer que la reportó o un admin de la distribuidora (403 para otro chofer).",
+                "operationId": "IncidentController_uploadPhoto",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Incident UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "required": [
+                                    "file"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/IncidentResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta la foto o está vacía"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: delivery, admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "La incidencia ya no está abierta"
+                    },
+                    "413": {
+                        "description": "La foto supera los 5 MB"
+                    },
+                    "415": {
+                        "description": "No es JPG, PNG ni WEBP (o el contenido no coincide)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Subir o reemplazar la foto de una incidencia",
+                "tags": [
+                    "Incidents"
+                ]
+            },
+            "delete": {
+                "description": "Quita la referencia (el objeto se borra del bucket en segundo plano); si traía una `photo_url` externa, vuelve a valer. Mismos permisos que subirla.",
+                "operationId": "IncidentController_removePhoto",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Incident UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/IncidentResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: delivery, admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Incidencia no encontrada"
+                    },
+                    "409": {
+                        "description": "La incidencia ya no está abierta"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Sacar la foto de una incidencia",
+                "tags": [
+                    "Incidents"
+                ]
+            },
+            "get": {
+                "description": "Por defecto redirige (302) a la URL firmada de S3 (una URL externa nunca se redirige: va en JSON). Con `?modo=url` devuelve `{ url, expiresAt, requiresAuth }` en JSON, sin redirect; si no tiene foto, `url: null`.",
+                "operationId": "IncidentController_getPhoto",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Incident UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "modo",
+                        "required": false,
+                        "in": "query",
+                        "description": "`url` devuelve `{ url, expiresAt, requiresAuth }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada de S3).",
+                        "schema": {
+                            "$ref": "#/components/schemas/DownloadMode"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PhotoLinkResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: delivery, admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora; sin `modo`, también si no tiene foto"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ver la foto de una incidencia",
+                "tags": [
+                    "Incidents"
+                ]
+            }
+        },
         "/api/audit": {
             "get": {
                 "description": "Quién hizo cada operación que modificó datos, sobre qué, cuándo, desde qué aplicación y con qué resultado. Un admin de empresa ve sólo lo de su distribuidora.",
@@ -10878,6 +12097,11 @@
                         "type": "string",
                         "nullable": true
                     },
+                    "photoUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "URL firmada de la foto de perfil (se abre sin token, vence); `null` si no tiene."
+                    },
                     "email": {
                         "type": "string",
                         "nullable": true
@@ -10935,6 +12159,7 @@
                     "role_id",
                     "full_name",
                     "selfie",
+                    "photoUrl",
                     "email",
                     "phone_number",
                     "phone_verified",
@@ -11048,6 +12273,38 @@
                 "required": [
                     "users",
                     "maxUsers"
+                ]
+            },
+            "DownloadMode": {
+                "type": "string",
+                "enum": [
+                    "url",
+                    "archivo"
+                ]
+            },
+            "PhotoLinkResponseDto": {
+                "type": "object",
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "URL firmada de S3 (se abre sin token), o la URL externa que la entidad traía de antes. `null` si no tiene foto."
+                    },
+                    "expiresAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "Cuándo vence la URL; `null` si no vence (URL externa) o no hay foto."
+                    },
+                    "requiresAuth": {
+                        "type": "boolean",
+                        "description": "Siempre `false`: la URL firmada se abre sin token."
+                    }
+                },
+                "required": [
+                    "url",
+                    "expiresAt",
+                    "requiresAuth"
                 ]
             },
             "CheckUserExistsDto": {
@@ -11210,7 +12467,13 @@
                     },
                     "logo_url": {
                         "type": "string",
-                        "nullable": true
+                        "nullable": true,
+                        "description": "Texto libre guardado (el que se edita con PATCH). No es el logo de S3: para mostrar usar `photoUrl ?? logo_url`."
+                    },
+                    "photoUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Logo subido a S3: URL firmada de corta vigencia, o null si no hay. Sólo de salida."
                     },
                     "status": {
                         "type": "string",
@@ -11246,6 +12509,7 @@
                     "email",
                     "phone",
                     "logo_url",
+                    "photoUrl",
                     "status",
                     "plan",
                     "createdAt",
@@ -11609,6 +12873,11 @@
                         "type": "boolean",
                         "description": "Tiene cuenta de acceso"
                     },
+                    "photoUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "URL firmada de la foto (se abre sin token, vence); `null` si no tiene. Con cuenta de acceso es la foto de perfil del usuario; sin cuenta, la del legajo."
+                    },
                     "documentType": {
                         "type": "string",
                         "enum": [
@@ -11730,6 +12999,7 @@
                     "status",
                     "hireDate",
                     "hasAccount",
+                    "photoUrl",
                     "documentType",
                     "documentNumber",
                     "cuil",
@@ -12225,6 +13495,11 @@
                     "hasAccount": {
                         "type": "boolean",
                         "description": "Tiene cuenta de acceso"
+                    },
+                    "photoUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "URL firmada de la foto (se abre sin token, vence); `null` si no tiene. Con cuenta de acceso es la foto de perfil del usuario; sin cuenta, la del legajo."
                     }
                 },
                 "required": [
@@ -12235,7 +13510,8 @@
                     "position",
                     "status",
                     "hireDate",
-                    "hasAccount"
+                    "hasAccount",
+                    "photoUrl"
                 ]
             },
             "EmployeePageDto": {
@@ -12501,6 +13777,11 @@
                         "type": "string",
                         "nullable": true
                     },
+                    "photoUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "URL firmada de la foto del vehículo (se abre sin token, vence); `null` si no tiene."
+                    },
                     "createdAt": {
                         "type": "string",
                         "format": "date-time"
@@ -12524,6 +13805,7 @@
                     "car_model",
                     "car_year",
                     "car_color",
+                    "photoUrl",
                     "createdAt",
                     "updatedAt"
                 ]
@@ -12651,13 +13933,6 @@
                     "sizeBytes",
                     "uploadedByUserId",
                     "uploadedAt"
-                ]
-            },
-            "DownloadMode": {
-                "type": "string",
-                "enum": [
-                    "url",
-                    "archivo"
                 ]
             },
             "DownloadLinkResponseDto": {
@@ -13766,6 +15041,11 @@
                     "isActive": {
                         "type": "boolean"
                     },
+                    "photoUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "URL firmada de la imagen del producto (se abre sin token, vence); `null` si no tiene."
+                    },
                     "promotions": {
                         "nullable": true,
                         "type": "array",
@@ -13791,6 +15071,7 @@
                     "stock",
                     "description",
                     "isActive",
+                    "photoUrl",
                     "promotions",
                     "createdAt",
                     "updatedAt"
@@ -16705,7 +17986,8 @@
                     },
                     "photo_url": {
                         "type": "string",
-                        "nullable": true
+                        "nullable": true,
+                        "description": "Foto: URL firmada de S3 si se subió una (vence), si no la URL externa que traía."
                     },
                     "status": {
                         "type": "string",

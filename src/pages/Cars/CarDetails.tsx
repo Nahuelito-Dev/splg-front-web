@@ -11,6 +11,7 @@ import {
   ErrorState,
   PageCover,
   PageHeader,
+  PhotoThumb,
   ProfileSkeleton,
   ProfileTabPanel,
   ProfileTabs,
@@ -126,12 +127,20 @@ export const CarDetails = () => {
         <>
           <PageCover
             avatar={
-              <span
-                aria-hidden="true"
-                className="grid h-14 w-14 place-items-center rounded-full bg-primary-soft text-primary-strong [&_svg]:h-6 [&_svg]:w-6"
-              >
-                <Icon strokeWidth={1.8} />
-              </span>
+              <PhotoThumb
+                kind="car"
+                id={car.car_id}
+                url={car.photoUrl}
+                size="lg"
+                fallback={
+                  <span
+                    aria-hidden="true"
+                    className="grid h-14 w-14 place-items-center rounded-full bg-primary-soft text-primary-strong [&_svg]:h-6 [&_svg]:w-6"
+                  >
+                    <Icon strokeWidth={1.8} />
+                  </span>
+                }
+              />
             }
             title={title}
             subtitle={<span className="font-mono uppercase tracking-wide">{car.car_patent ?? 'Sin patente'}</span>}

@@ -27,6 +27,7 @@ export const CarsTable = ({ rows, loading, onView, onEdit, onDelete }: Props) =>
             subtitle={row.car_patent ?? undefined}
             icon={carIcon(row.type_car)}
             monoSubtitle
+            photo={{ kind: 'car', id: row.car_id, url: row.photoUrl }}
           />
         ),
       },
@@ -38,7 +39,11 @@ export const CarsTable = ({ rows, loading, onView, onEdit, onDelete }: Props) =>
         valueGetter: ({ row }) => row.user?.full_name ?? '',
         renderCell: ({ row }) =>
           row.user ? (
-            <IdentityCell title={row.user.full_name ?? 'Sin nombre'} avatarName={row.user.full_name ?? '?'} />
+            <IdentityCell
+              title={row.user.full_name ?? 'Sin nombre'}
+              avatarName={row.user.full_name ?? '?'}
+              photo={{ kind: 'user', id: row.user.user_id, url: row.user.photoUrl }}
+            />
           ) : (
             <span className="text-muted">Sin asignar</span>
           ),

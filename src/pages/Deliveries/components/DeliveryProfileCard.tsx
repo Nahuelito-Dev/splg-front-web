@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { CheckCircle2, PencilLine, PiggyBank, Power, PowerOff, ShieldCheck, ShieldX, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { Avatar, Badge, Button, PageCover, type CoverStat } from '../../../common/components/ui';
+import { Avatar, Badge, Button, PageCover, PhotoThumb, type CoverStat } from '../../../common/components/ui';
 import type { Delivery } from '../../../services/api/types';
 import {
   useDeleteDelivery,
@@ -109,7 +109,15 @@ export const DeliveryProfileCard = ({ delivery, onDeleted, children }: Props) =>
   return (
     <>
       <PageCover
-        avatar={<Avatar name={user?.full_name ?? '?'} size="lg" />}
+        avatar={
+          <PhotoThumb
+            kind="user"
+            id={delivery.user_id}
+            url={user?.photoUrl}
+            size="lg"
+            fallback={<Avatar name={user?.full_name ?? '?'} size="lg" />}
+          />
+        }
         title={user?.full_name ?? 'Sin nombre'}
         subtitle={user?.email ?? '—'}
         badges={

@@ -9,6 +9,7 @@ import {
   DetailList,
   DetailSkeleton,
   EmptyState,
+  EntityPhoto,
   ErrorState,
   PageHeader,
 } from '../../common/components/ui';
@@ -109,6 +110,16 @@ export const DistributorDetails = () => {
               </div>
               <Badge label={labelOf(DISTRIBUTOR_STATUS, distributor.status)} />
             </div>
+            <EntityPhoto
+              kind="distributor"
+              id={distributor.distributor_id}
+              url={distributor.photoUrl ?? distributor.logo_url}
+              subject="de la empresa"
+              label="Logo"
+              fit="contain"
+              canEdit
+              className="mt-5 border-t border-outline pt-5"
+            />
             <DetailList
               className="mt-5 border-t border-outline pt-5"
               items={[
@@ -117,7 +128,6 @@ export const DistributorDetails = () => {
                 { label: 'Teléfono', value: distributor.phone ?? '—', mono: true },
                 { label: 'Email', value: distributor.email ?? '—', wide: true },
                 { label: 'Plan', value: distributor.plan ?? 'Sin plan asignado' },
-                { label: 'Logo', value: distributor.logo_url ? 'Cargado' : 'Sin logo' },
                 { label: 'Alta', value: formatDateTime(distributor.createdAt) },
                 { label: 'Última modificación', value: formatDateTime(distributor.updatedAt) },
                 { label: 'Id', value: distributor.distributor_id, mono: true, wide: true },

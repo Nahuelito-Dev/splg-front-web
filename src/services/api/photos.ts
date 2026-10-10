@@ -1,0 +1,60 @@
+import { http } from './httpClient';
+import type { ClaimPhotoLink, PhotoLink } from './types';
+
+/** Qué tiene foto en el back y se maneja con el mismo componente. */
+export type PhotoKind = 'user' | 'car' | 'gasCylinder' | 'distributor' | 'incident' | 'claim';
+
+interface PhotoSpec {
+  path: (id: string) => string;
+  /** El reclamo sube con POST; el resto con PUT. */
+  uploadMethod: 'put' | 'post';
+  maxBytes: number;
+  /** El reclamo no tiene DELETE: la foto sólo se reemplaza. */
+  removable: boolean;
+}
+
+const MB = 1024 * 1024;
+
+const SPECS: Record<PhotoKind, PhotoSpec> = {
+  user: { path: (id) => `/users/${id}/photo`, uploadMethod: 'put', maxBytes: 5 * MB, removable: true },
+  car: { path: (id) => `/car/${id}/photo`, uploadMethod: 'put', maxBytes: 5 * MB, removable: true },
+  gasCylinder: { path: (id) => `/gascylinder/${id}/photo`, uploadMethod: 'put', maxBytes: 5 * MB, removable: true },
+  distributor: { path: (id) => `/distributor/${id}/logo`, uploadMethod: 'put', maxBytes: 5 * MB, removable: true },
+  incident: { path: (id) => `/incidents/${id}/photo`, uploadMethod: 'put', maxBytes: 5 * MB, removable: true },
+  claim: { path: (id) => `/claims/${id}/photo`, uploadMethod: 'post', maxBytes: 10 * MB, removable: false },
+};
+
+export const photoMaxBytes = (kind: PhotoKind): number => SPECS[kind].maxBytes;
+export const photoRemovable = (kind: PhotoKind): boolean => SPECS[kind].removable;
+
+export const PHOTO_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+/**
+ * GET .../photo?modo=url: la URL firmada vigente (o `url: null` si no hay foto). Es la forma de renovar una URL que
+ * venció: el panel nunca arma ni guarda una URL de S3.
+ */
+export const getPhotoLink = async (kind: PhotoKind, id: string): Promise<PhotoLink | ClaimPhotoLink> => {
+  const { data } = await http.get<PhotoLink | ClaimPhotoLink>(SPECS[kind].path(id), { params: { modo: 'url' } });
+  return data;
+};
+
+/**
+ * Sube o reemplaza la foto (multipart, campo `file`). 413 si pasa el tamaño, 415 si no es JPG, PNG ni WEBP, 409 si
+ * la incidencia o el reclamo ya no admiten cambios. Se fuerza el content-type para que axios no mande el FormData
+ * como JSON.
+ */
+export const uploadPhoto = async (kind: PhotoKind, id: string, file: File): Promise<void> => {
+  const form = new FormData();
+  form.append('file', file);
+  await http.request({
+    url: SPECS[kind].path(id),
+    method: SPECS[kind].uploadMethod,
+    data: form,
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+};
+
+/** DELETE .../photo: quita la foto (el back borra el objeto del bucket en segundo plano). */
+export const removePhoto = async (kind: PhotoKind, id: string): Promise<void> => {
+  await http.delete(SPECS[kind].path(id));
+};

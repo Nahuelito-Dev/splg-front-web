@@ -34,7 +34,13 @@ export const DistributorsTable = ({
         flex: 1.3,
         minWidth: 200,
         renderCell: ({ row }) => (
-          <IdentityCell title={row.name} subtitle={row.slug} avatarName={row.name} monoSubtitle />
+          <IdentityCell
+            title={row.name}
+            subtitle={row.slug}
+            avatarName={row.name}
+            monoSubtitle
+            photo={{ kind: 'distributor', id: row.distributor_id, url: row.photoUrl ?? row.logo_url }}
+          />
         ),
       },
       {

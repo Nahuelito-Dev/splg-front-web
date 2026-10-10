@@ -3,7 +3,15 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { usePermissions } from '../../../hooks';
-import { AuditHistoryLink, Badge, Button, DetailList, Drawer, TextArea } from '../../../common/components/ui';
+import {
+  AuditHistoryLink,
+  Badge,
+  Button,
+  DetailList,
+  Drawer,
+  EntityPhoto,
+  TextArea,
+} from '../../../common/components/ui';
 import type { Incident } from '../../../services/api/types';
 import { useResolveIncident } from '../../../services/queries/incidents';
 import { useUser } from '../../../services/queries/users';
@@ -138,13 +146,14 @@ export const IncidentDetailDrawer = ({ open, onClose, incident, onEdit, onDiscar
           ]}
         />
 
-        {incident.photo_url && (
-          <img
-            src={incident.photo_url}
-            alt="Evidencia de la incidencia"
-            className="h-56 w-full rounded-xl border border-outline object-cover"
-          />
-        )}
+        <EntityPhoto
+          kind="incident"
+          id={incident.incident_id}
+          url={incident.photo_url}
+          subject="de la incidencia"
+          canEdit={canOperate}
+          blockedReason={isOpen ? operateHint : 'La incidencia ya no está abierta: no se puede cambiar la foto.'}
+        />
 
         {isOpen ? (
           <form id="incident-resolve" onSubmit={(e) => void onSubmit(e)} noValidate>

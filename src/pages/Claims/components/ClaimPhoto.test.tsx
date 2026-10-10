@@ -1,100 +1,55 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Claim } from '../../../services/api/types';
 
-const photo = vi.hoisted(() => vi.fn());
-const mutate = vi.hoisted(() => vi.fn<[{ id: string; file: File }, { onError: (error: unknown) => void }], void>());
-const notify = vi.hoisted(() => ({ error: vi.fn<[Error], void>(), success: vi.fn<[string], void>() }));
-const lastError = () => notify.error.mock.calls.at(-1)?.[0].message;
-vi.mock('../../../services/queries/claims', () => ({
-  useClaimPhoto: () => photo() as unknown,
-  useUploadClaimPhoto: () => ({ mutate, isPending: false }),
-}));
-vi.mock('../../../utils/notifications', async (importOriginal) => ({
-  ...(await importOriginal<Record<string, unknown>>()),
-  notify,
+vi.mock('../../../services/queries/photos', () => ({
+  useUploadPhoto: () => ({ mutate: vi.fn(), isPending: false }),
+  useRemovePhoto: () => ({ mutate: vi.fn(), isPending: false }),
+  isSignedPhotoUrl: (url: string | null | undefined) => Boolean(url?.includes('X-Amz-Signature=')),
+  useRenewablePhoto: (_kind: string, _id: string, url: string | null | undefined) => ({
+    src: url ?? null,
+    failed: false,
+    none: false,
+    renewing: false,
+    handleError: vi.fn(),
+    renewIfExpired: vi.fn(),
+    retry: vi.fn(),
+  }),
 }));
 
-import { ApiError } from '../../../services/api/errors';
 import { ClaimPhoto } from './ClaimPhoto';
 
-afterEach(() => {
-  cleanup();
-  vi.clearAllMocks();
-});
+afterEach(cleanup);
 
-const claim = (status: string) => ({ claim_id: 'c-1', status }) as unknown as Claim;
-const withPhoto = () =>
-  photo.mockReturnValue({ data: { kind: 'url', url: 'https://s3.example/f.jpg', expiresAt: null }, isPending: false });
-const noPhoto = () => photo.mockReturnValue({ data: null, isPending: false });
-const pick = (file: File) =>
-  fireEvent.change(screen.getByLabelText('Elegir la foto del reclamo'), { target: { files: [file] } });
+const SIGNED = 'https://splg.s3.amazonaws.com/claims/c.jpg?X-Amz-Signature=abc';
+const claim = (status: string, photoUrl: string | null = SIGNED) =>
+  ({ claim_id: 'c-1', status, photoUrl }) as unknown as Claim;
 
 describe('ClaimPhoto', () => {
-  it('muestra la miniatura, la amplía y ofrece reemplazar', () => {
-    withPhoto();
-    render(<ClaimPhoto claim={claim('pending')} open canOperate />);
-    expect(screen.getByAltText('Evidencia del reclamo')).toHaveAttribute('src', 'https://s3.example/f.jpg');
-    expect(screen.getByRole('button', { name: 'Reemplazar foto' })).toBeEnabled();
-    fireEvent.click(screen.getByRole('button', { name: 'Ampliar la foto del reclamo' }));
-    expect(screen.getByAltText('Evidencia del reclamo, ampliada')).toBeInTheDocument();
+  it('muestra la foto del reclamo y ofrece reemplazarla, pero no quitarla (el back no tiene DELETE)', () => {
+    render(<ClaimPhoto claim={claim('pending')} canOperate />);
+    expect(screen.getByAltText('Foto del reclamo')).toHaveAttribute('src', SIGNED);
+    expect(screen.getByRole('button', { name: 'Reemplazar' })).not.toHaveAttribute('aria-disabled');
+    expect(screen.queryByRole('button', { name: 'Quitar' })).not.toBeInTheDocument();
   });
 
-  it('si falla la carga muestra el error con reintento y no ofrece subir', () => {
-    const refetch = vi.fn();
-    photo.mockReturnValue({ data: undefined, isPending: false, error: new ApiError(404, ['No existe']), refetch });
-    render(<ClaimPhoto claim={claim('pending')} open canOperate />);
-    expect(screen.getByRole('alert')).toHaveTextContent('No se pudo cargar la foto');
-    expect(screen.queryByText('Sin foto adjunta')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Subir foto' })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
-    expect(refetch).toHaveBeenCalledOnce();
+  it('con el reclamo cerrado bloquea la acción y explica por qué', () => {
+    render(<ClaimPhoto claim={claim('resolved')} canOperate />);
+    const button = screen.getByRole('button', { name: 'Reemplazar' });
+    expect(button).toHaveAttribute('aria-disabled', 'true');
+    expect(button).toHaveAttribute('title', 'El reclamo está cerrado: reabrilo para cambiar la foto.');
+    expect(screen.getByAltText('Foto del reclamo')).toBeInTheDocument();
   });
 
-  it('si la URL firmada venció (la imagen falla) vuelve a pedirla una vez y después muestra el error', () => {
-    const refetch = vi.fn();
-    photo.mockReturnValue({
-      data: { kind: 'url', url: 'https://s3.example/f.jpg', expiresAt: null },
-      isPending: false,
-      refetch,
-    });
-    render(<ClaimPhoto claim={claim('pending')} open canOperate />);
-    fireEvent.error(screen.getByAltText('Evidencia del reclamo'));
-    expect(refetch).toHaveBeenCalledOnce();
-    fireEvent.error(screen.getByAltText('Evidencia del reclamo'));
-    expect(refetch).toHaveBeenCalledOnce();
-    expect(screen.getByRole('alert')).toHaveTextContent('No se pudo cargar la foto');
+  it('sin permiso para operar la foto se ve pero no hay acciones', () => {
+    render(<ClaimPhoto claim={claim('pending')} canOperate={false} operateHint="Elegí una distribuidora" />);
+    expect(screen.getByAltText('Foto del reclamo')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Subir foto|Reemplazar|Quitar/ })).not.toBeInTheDocument();
   });
 
-  it('sin foto dice "Sin foto adjunta" y ofrece subir', () => {
-    noPhoto();
-    render(<ClaimPhoto claim={claim('pending')} open canOperate />);
-    expect(screen.getByText('Sin foto adjunta')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Subir foto' })).toBeEnabled();
-  });
-
-  it('con el reclamo cerrado deshabilita la subida y explica por qué', () => {
-    withPhoto();
-    render(<ClaimPhoto claim={claim('resolved')} open canOperate />);
-    expect(screen.getByRole('button', { name: 'Reemplazar foto' })).toBeDisabled();
-    expect(screen.getByText('Reabrí el reclamo para subir o cambiar la foto.')).toBeInTheDocument();
-  });
-
-  it('valida tipo y tamaño en el cliente: un PDF no llega al back', () => {
-    noPhoto();
-    render(<ClaimPhoto claim={claim('pending')} open canOperate />);
-    pick(new File(['x'], 'a.pdf', { type: 'application/pdf' }));
-    expect(mutate).not.toHaveBeenCalled();
-    expect(lastError()).toContain('JPG');
-  });
-
-  it('una foto válida se sube con el id del reclamo y un 409 se muestra legible', () => {
-    noPhoto();
-    render(<ClaimPhoto claim={claim('pending')} open canOperate />);
-    const file = new File(['x'], 'a.png', { type: 'image/png' });
-    pick(file);
-    expect(mutate).toHaveBeenCalledWith({ id: 'c-1', file }, expect.anything());
-    mutate.mock.calls[0]?.[1].onError(new ApiError(409, ['Conflict']));
-    expect(lastError()).toContain('cerrado');
+  it('sin foto ofrece subir', () => {
+    render(<ClaimPhoto claim={claim('pending', null)} canOperate />);
+    expect(screen.getByText('Sin foto')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Subir foto' })).toBeInTheDocument();
   });
 });
