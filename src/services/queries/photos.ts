@@ -11,12 +11,14 @@ const AFFECTED: Record<PhotoKind, readonly (readonly string[])[]> = {
     queryKeys.deliveries.all,
     queryKeys.admins.all,
     queryKeys.cars.all,
+    queryKeys.employees.all,
   ],
   car: [queryKeys.cars.all],
   gasCylinder: [queryKeys.gasCylinders.all],
   distributor: [queryKeys.distributors.all],
   incident: [queryKeys.incidents.all],
   claim: [queryKeys.claims.all],
+  employee: [queryKeys.employees.all],
 };
 
 const useInvalidatePhoto = (kind: PhotoKind) => {

@@ -1,10 +1,13 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, Input, Modal, TextArea } from '../../../common/components/ui';
+import { Button, Input, Modal, PhotoPicker, TextArea } from '../../../common/components/ui';
 import type { Order } from '../../../services/api/types';
 import { useCreateClaim } from '../../../services/queries/claims';
+import { useUploadPhoto } from '../../../services/queries/photos';
+import { toApiError } from '../../../services/api/errors';
 import { notify } from '../../../utils/notifications';
+import { photoErrorMessage } from '../../../utils/photos';
 import { createClaimSchema, type CreateClaimFormValues } from './createClaimSchema';
 import { OrderPicker } from './OrderPicker';
 
@@ -23,7 +26,11 @@ interface Props {
  */
 export const CreateClaimModal = ({ open, onClose }: Props) => {
   const [order, setOrder] = useState<Order | null>(null);
+  const [photo, setPhoto] = useState<File | null>(null);
+  // El envío es asíncrono (validación): el estado `isPending` llega tarde para frenar un doble clic o Enter.
+  const sending = useRef(false);
   const createClaim = useCreateClaim();
+  const uploadPhoto = useUploadPhoto('claim');
   const {
     register,
     handleSubmit,
@@ -33,29 +40,53 @@ export const CreateClaimModal = ({ open, onClose }: Props) => {
 
   useEffect(() => {
     if (open) {
+      sending.current = false;
       setOrder(null);
-      reset({ reason: '', description: '', photoUrl: '' });
+      setPhoto(null);
+      reset({ reason: '', description: '' });
     }
   }, [open, reset]);
 
   if (!open) return null;
 
   const onSubmit = handleSubmit((values) => {
-    if (!order?.customer) return;
+    if (!order?.customer || sending.current) return;
+    sending.current = true;
     createClaim.mutate(
       {
         orderId: order.order_id,
         customerId: order.customer.user_id,
         reason: values.reason,
         description: values.description,
-        photoUrl: values.photoUrl || undefined,
       },
       {
-        onSuccess: () => {
-          notify.success('Reclamo cargado');
-          onClose();
+        onSuccess: (claim) => {
+          if (!photo) {
+            notify.success('Reclamo cargado');
+            onClose();
+            return;
+          }
+          // El reclamo ya existe: si la foto falla se avisa y se sube después desde el detalle.
+          uploadPhoto.mutate(
+            { id: claim.claim_id, file: photo },
+            {
+              onSuccess: () => notify.success('Reclamo cargado con su foto'),
+              onError: (error) => {
+                const { status, message } = toApiError(error);
+                notify.error(
+                  new Error(
+                    `El reclamo se registró, pero la foto no se pudo subir: ${photoErrorMessage('claim', status, message)}`,
+                  ),
+                );
+              },
+              onSettled: onClose,
+            },
+          );
         },
-        onError: notify.error,
+        onError: (error) => {
+          sending.current = false;
+          notify.error(error);
+        },
       },
     );
   });
@@ -75,7 +106,7 @@ export const CreateClaimModal = ({ open, onClose }: Props) => {
           <Button
             type="submit"
             form="claim-create"
-            loading={createClaim.isPending}
+            loading={createClaim.isPending || uploadPhoto.isPending}
             disabled={!order?.customer}
             title={order && !order.customer ? 'Este pedido no tiene un cliente asociado' : undefined}
           >
@@ -104,13 +135,7 @@ export const CreateClaimModal = ({ open, onClose }: Props) => {
           error={errors.description?.message}
           {...register('description')}
         />
-        <Input
-          label="Foto (URL, opcional)"
-          placeholder="https://…"
-          hint="El panel no sube archivos: si hay una foto, pegá el link donde ya está alojada"
-          error={errors.photoUrl?.message}
-          {...register('photoUrl')}
-        />
+        <PhotoPicker kind="claim" file={photo} onChange={setPhoto} />
       </form>
     </Modal>
   );

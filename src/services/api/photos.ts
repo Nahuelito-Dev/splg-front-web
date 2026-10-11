@@ -2,7 +2,7 @@ import { http } from './httpClient';
 import type { ClaimPhotoLink, PhotoLink } from './types';
 
 /** Qué tiene foto en el back y se maneja con el mismo componente. */
-export type PhotoKind = 'user' | 'car' | 'gasCylinder' | 'distributor' | 'incident' | 'claim';
+export type PhotoKind = 'user' | 'car' | 'gasCylinder' | 'distributor' | 'incident' | 'claim' | 'employee';
 
 interface PhotoSpec {
   path: (id: string) => string;
@@ -21,6 +21,7 @@ const SPECS: Record<PhotoKind, PhotoSpec> = {
   gasCylinder: { path: (id) => `/gascylinder/${id}/photo`, uploadMethod: 'put', maxBytes: 5 * MB, removable: true },
   distributor: { path: (id) => `/distributor/${id}/logo`, uploadMethod: 'put', maxBytes: 5 * MB, removable: true },
   incident: { path: (id) => `/incidents/${id}/photo`, uploadMethod: 'put', maxBytes: 5 * MB, removable: true },
+  employee: { path: (id) => `/employees/${id}/photo`, uploadMethod: 'put', maxBytes: 5 * MB, removable: true },
   claim: { path: (id) => `/claims/${id}/photo`, uploadMethod: 'post', maxBytes: 10 * MB, removable: false },
 };
 

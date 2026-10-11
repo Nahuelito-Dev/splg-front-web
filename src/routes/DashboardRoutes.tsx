@@ -14,6 +14,8 @@ const Users = lazyPage(() => import('../pages/Users/Users'), 'Users');
 const UserDetails = lazyPage(() => import('../pages/Users/UserDetails'), 'UserDetails');
 const Customers = lazyPage(() => import('../pages/Customers/Customers'), 'Customers');
 const CustomerDetails = lazyPage(() => import('../pages/Customers/CustomerDetails'), 'CustomerDetails');
+const Employees = lazyPage(() => import('../pages/Employees/Employees'), 'Employees');
+const EmployeeDetails = lazyPage(() => import('../pages/Employees/EmployeeDetails'), 'EmployeeDetails');
 const Addresses = lazyPage(() => import('../pages/Addresses/Addresses'), 'Addresses');
 const GasCylinders = lazyPage(() => import('../pages/GasCylinders/GasCylinders'), 'GasCylinders');
 const GasCylinderDetails = lazyPage(() => import('../pages/GasCylinders/GasCylinderDetails'), 'GasCylinderDetails');
@@ -96,6 +98,10 @@ export const DashboardRoutes = () => {
           {/* 4b. Envases físicos (garrafas serializadas, ciclo de canje) */}
           <Route path="physical-cylinders" element={<PhysicalCylinders />} />
           <Route path="physical-cylinders/:id" element={<CylinderDetails />} />
+
+          {/* Legajos del personal */}
+          <Route path="employees" element={<Employees />} />
+          <Route path="employees/details/:id" element={<EmployeeDetails />} />
 
           {/* 5. Repartidores (Deliveries) */}
           <Route path="deliveries" element={<Deliveries />} />

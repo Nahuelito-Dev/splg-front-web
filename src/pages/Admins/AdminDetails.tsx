@@ -2,6 +2,7 @@ import { Link, useParams } from 'react-router-dom';
 import { UserCog } from 'lucide-react';
 import {
   AuditHistoryLink,
+  Avatar,
   Badge,
   Button,
   Card,
@@ -9,6 +10,7 @@ import {
   DetailSkeleton,
   ErrorState,
   PageHeader,
+  PhotoThumb,
 } from '../../common/components/ui';
 import { useCrumbLeaf } from '../../common/components';
 import { useBackToList } from '../../hooks';
@@ -51,9 +53,18 @@ export const AdminDetails = () => {
       ) : (
         <Card className="p-6">
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h2 className="truncate text-lg font-semibold text-ink">{admin.user?.full_name ?? 'Sin nombre'}</h2>
-              <p className="text-sm text-muted">{admin.user?.email ?? 'Sin correo'}</p>
+            <div className="flex min-w-0 items-center gap-3">
+              <PhotoThumb
+                kind="user"
+                id={admin.user_id}
+                url={admin.user?.photoUrl}
+                size="lg"
+                fallback={<Avatar name={admin.user?.full_name ?? '?'} size="lg" />}
+              />
+              <div className="min-w-0">
+                <h2 className="truncate text-lg font-semibold text-ink">{admin.user?.full_name ?? 'Sin nombre'}</h2>
+                <p className="text-sm text-muted">{admin.user?.email ?? 'Sin correo'}</p>
+              </div>
             </div>
             <Badge label={roleLabel(admin.user?.role?.type ?? admin.role?.type)} />
           </div>

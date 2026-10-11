@@ -8,6 +8,7 @@ import {
   FileClock,
   Flame,
   HardHat,
+  IdCard,
   House,
   MapPinHouse,
   ListChecks,
@@ -61,6 +62,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { title: 'Clientes', path: '/customers', icon: Users },
       { title: 'Choferes', path: '/deliveries', icon: HardHat },
+      { title: 'Legajos', path: '/employees', icon: IdCard },
       { title: 'Vehículos', path: '/cars', icon: Truck },
       { title: 'Vencimientos', path: '/fleet/expirations', icon: CalendarClock },
       { title: 'Planes de flota', path: '/fleet/plans', icon: ClipboardList },
