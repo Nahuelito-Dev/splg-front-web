@@ -4,7 +4,6 @@ import { createIncidentSchema } from './createIncidentSchema';
 const valid = {
   type: 'other' as const,
   description: 'El cliente no estaba en el domicilio.',
-  photoUrl: '',
 };
 
 describe('createIncidentSchema', () => {
@@ -19,7 +18,6 @@ describe('createIncidentSchema', () => {
   it.each([
     ['tipo inválido', { type: 'otro-invalido' }],
     ['sin descripción', { description: '' }],
-    ['foto que no es una URL', { photoUrl: 'no-es-una-url' }],
   ])('rechaza %s', (_, cambio) => {
     expect(createIncidentSchema.safeParse({ ...valid, ...cambio }).success).toBe(false);
   });

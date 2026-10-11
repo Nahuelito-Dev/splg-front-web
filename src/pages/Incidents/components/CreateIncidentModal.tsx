@@ -1,10 +1,13 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, Input, Modal, Select, TextArea } from '../../../common/components/ui';
+import { Button, Modal, PhotoPicker, Select, TextArea } from '../../../common/components/ui';
 import type { Order } from '../../../services/api/types';
 import { useCreateIncident } from '../../../services/queries/incidents';
+import { useUploadPhoto } from '../../../services/queries/photos';
+import { toApiError } from '../../../services/api/errors';
 import { notify } from '../../../utils/notifications';
+import { photoErrorMessage } from '../../../utils/photos';
 import { INCIDENT_TYPE } from '../../../utils/statusLabels';
 import { createIncidentSchema, type CreateIncidentFormValues } from './createIncidentSchema';
 import { OrderPicker } from './OrderPicker';
@@ -26,7 +29,11 @@ interface Props {
  */
 export const CreateIncidentModal = ({ open, onClose }: Props) => {
   const [order, setOrder] = useState<Order | null>(null);
+  const [photo, setPhoto] = useState<File | null>(null);
+  // El envío es asíncrono (validación): el estado `isPending` llega tarde para frenar un doble clic o Enter.
+  const sending = useRef(false);
   const createIncident = useCreateIncident();
+  const uploadPhoto = useUploadPhoto('incident');
   const {
     register,
     handleSubmit,
@@ -39,28 +46,52 @@ export const CreateIncidentModal = ({ open, onClose }: Props) => {
 
   useEffect(() => {
     if (open) {
+      sending.current = false;
       setOrder(null);
-      reset({ type: 'other', description: '', photoUrl: '' });
+      setPhoto(null);
+      reset({ type: 'other', description: '' });
     }
   }, [open, reset]);
 
   if (!open) return null;
 
   const onSubmit = handleSubmit((values) => {
-    if (!order) return;
+    if (!order || sending.current) return;
+    sending.current = true;
     createIncident.mutate(
       {
         orderId: order.order_id,
         type: values.type,
         description: values.description,
-        photoUrl: values.photoUrl || undefined,
       },
       {
-        onSuccess: () => {
-          notify.success('Incidencia registrada');
-          onClose();
+        onSuccess: (incident) => {
+          if (!photo) {
+            notify.success('Incidencia registrada');
+            onClose();
+            return;
+          }
+          // La incidencia ya existe: si la foto falla se avisa y se sube después desde el detalle.
+          uploadPhoto.mutate(
+            { id: incident.incident_id, file: photo },
+            {
+              onSuccess: () => notify.success('Incidencia registrada con su foto'),
+              onError: (error) => {
+                const { status, message } = toApiError(error);
+                notify.error(
+                  new Error(
+                    `La incidencia se registró, pero la foto no se pudo subir: ${photoErrorMessage('incident', status, message)}`,
+                  ),
+                );
+              },
+              onSettled: onClose,
+            },
+          );
         },
-        onError: notify.error,
+        onError: (error) => {
+          sending.current = false;
+          notify.error(error);
+        },
       },
     );
   });
@@ -77,7 +108,12 @@ export const CreateIncidentModal = ({ open, onClose }: Props) => {
           <Button variant="secondary" onClick={onClose}>
             Cancelar
           </Button>
-          <Button type="submit" form="incident-create" loading={createIncident.isPending} disabled={!order}>
+          <Button
+            type="submit"
+            form="incident-create"
+            loading={createIncident.isPending || uploadPhoto.isPending}
+            disabled={!order}
+          >
             Registrar incidencia
           </Button>
         </>
@@ -94,13 +130,7 @@ export const CreateIncidentModal = ({ open, onClose }: Props) => {
           error={errors.description?.message}
           {...register('description')}
         />
-        <Input
-          label="Foto (URL, opcional)"
-          placeholder="https://…"
-          hint="El panel no sube archivos: si hay una foto, pegá el link donde ya está alojada"
-          error={errors.photoUrl?.message}
-          {...register('photoUrl')}
-        />
+        <PhotoPicker kind="incident" file={photo} onChange={setPhoto} />
       </form>
     </Modal>
   );

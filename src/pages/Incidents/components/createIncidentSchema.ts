@@ -7,7 +7,6 @@ import { z } from 'zod';
 export const createIncidentSchema = z.object({
   type: z.enum(['damaged', 'out_of_stock', 'no_show', 'other']),
   description: z.string().trim().min(1, 'Describí lo que pasó'),
-  photoUrl: z.union([z.literal(''), z.string().trim().url('Tiene que ser una URL válida')]),
 });
 
 export type CreateIncidentFormValues = z.infer<typeof createIncidentSchema>;
