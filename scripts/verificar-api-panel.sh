@@ -135,8 +135,8 @@ probar "Admin empresa no bloquea cliente" "403" PATCH "/users/${customer_user_id
 probar "Admin empresa no da de baja usuario cliente" "403" DELETE "/users/${customer_user_id}" "$token_admin" ""
 probar "Admin empresa no da de baja cliente" "403" DELETE "/customers/${customer_id}" "$token_admin" ""
 
-probar "PATCH producto promociones duplicadas" "400" PATCH "/gascylinder/${gas_id}" "$token_admin" "{\"type\":\"${gas_type}\",\"weight\":${gas_weight},\"price\":${gas_price},\"stock\":${gas_stock},\"promotions\":[{\"quantity\":2,\"discountPercentage\":10},{\"quantity\":2,\"discountPercentage\":15}]}"
-probar "PATCH producto sin tipo (no cambió)" "200" PATCH "/gascylinder/${gas_id}" "$token_admin" "{\"weight\":${gas_weight},\"price\":${gas_price},\"stock\":${gas_stock}}"
+probar "PATCH producto promociones duplicadas" "400" PATCH "/gascylinder/${gas_id}" "$token_admin" "{\"type\":\"${gas_type}\",\"weight\":${gas_weight},\"price\":${gas_price},\"promotions\":[{\"quantity\":2,\"discountPercentage\":10},{\"quantity\":2,\"discountPercentage\":15}]}"
+probar "PATCH producto sin tipo (no cambió)" "200" PATCH "/gascylinder/${gas_id}" "$token_admin" "{\"weight\":${gas_weight},\"price\":${gas_price}}"
 probar "POST producto tipo repetido" "400" POST "/gascylinder" "$token_admin" "{\"type\":\"${gas_type}\",\"weight\":${gas_weight},\"price\":${gas_price},\"stock\":0,\"promotions\":[{\"quantity\":2,\"discountPercentage\":10}]}"
 
 echo "Verificación de API del panel completa."

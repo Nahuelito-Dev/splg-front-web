@@ -49,11 +49,10 @@ export const CylinderFormModal = ({ open, onClose, cylinder }: Props) => {
   const saving = createCylinder.isPending || updateCylinder.isPending;
 
   const onSubmit = handleSubmit((values) => {
-    const body = {
+    const base = {
       type: values.type,
       weight: values.weight,
       price: values.price,
-      stock: values.stock,
       description: values.description || undefined,
       promotions: values.promotions,
     };
@@ -62,9 +61,10 @@ export const CylinderFormModal = ({ open, onClose, cylinder }: Props) => {
       onClose();
     };
     if (cylinder) {
-      updateCylinder.mutate({ id: cylinder.gas_cylinder_id, body }, { onSuccess, onError: notify.error });
+      // El stock no se edita acá: la API responde 400 si llega. Se ajusta desde "Ajustar stock".
+      updateCylinder.mutate({ id: cylinder.gas_cylinder_id, body: base }, { onSuccess, onError: notify.error });
     } else {
-      createCylinder.mutate(body, { onSuccess, onError: notify.error });
+      createCylinder.mutate({ ...base, stock: values.stock }, { onSuccess, onError: notify.error });
     }
   });
 
@@ -105,7 +105,16 @@ export const CylinderFormModal = ({ open, onClose, cylinder }: Props) => {
             error={errors.price?.message}
             {...register('price')}
           />
-          <Input label="Stock" required type="number" error={errors.stock?.message} {...register('stock')} />
+          {cylinder ? null : (
+            <Input
+              label="Stock inicial"
+              required
+              type="number"
+              hint="Queda como stock lleno del depósito central. Después se cambia con “Ajustar stock”."
+              error={errors.stock?.message}
+              {...register('stock')}
+            />
+          )}
         </div>
         <TextArea label="Descripción" error={errors.description?.message} {...register('description')} />
         <PromotionsFieldArray control={control} register={register} errors={errors} price={Number(price) || 0} />
