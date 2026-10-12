@@ -5,6 +5,7 @@ import { logOut } from '../store/auth';
 import { DashboardLayout } from '../common/layout';
 import { RouteProgressBar } from '../common/layout/RouteProgressBar';
 import { LoadingState } from '../common/components/ui';
+import { RequireDistributor } from '../common/components/RequireDistributor';
 import { lazyPage } from './lazyPage';
 
 // Cada página se carga recién al entrar (un chunk por ruta).
@@ -49,6 +50,27 @@ const AdminDetails = lazyPage(() => import('../pages/Admins/AdminDetails'), 'Adm
 const Ratings = lazyPage(() => import('../pages/Ratings/Ratings'), 'Ratings');
 const Audit = lazyPage(() => import('../pages/Audit/Audit'), 'Audit');
 const System = lazyPage(() => import('../pages/System/System'), 'System');
+const StockSummary = lazyPage(() => import('../pages/Stock/StockSummary'), 'StockSummary');
+const Warehouses = lazyPage(() => import('../pages/Stock/Warehouses'), 'Warehouses');
+const WarehouseDetails = lazyPage(() => import('../pages/Stock/WarehouseDetails'), 'WarehouseDetails');
+const Adjustments = lazyPage(() => import('../pages/Stock/Adjustments'), 'Adjustments');
+const AdjustmentDetails = lazyPage(() => import('../pages/Stock/AdjustmentDetails'), 'AdjustmentDetails');
+const Transfers = lazyPage(() => import('../pages/Stock/Transfers'), 'Transfers');
+const Movements = lazyPage(() => import('../pages/Stock/Movements'), 'Movements');
+const Thresholds = lazyPage(() => import('../pages/Stock/Thresholds'), 'Thresholds');
+const Reconciliation = lazyPage(() => import('../pages/Stock/Reconciliation'), 'Reconciliation');
+const Suppliers = lazyPage(() => import('../pages/Purchases/Suppliers'), 'Suppliers');
+const SupplierDetails = lazyPage(() => import('../pages/Purchases/SupplierDetails'), 'SupplierDetails');
+const PurchaseOrders = lazyPage(() => import('../pages/Purchases/PurchaseOrders'), 'PurchaseOrders');
+const PurchaseOrderDetails = lazyPage(() => import('../pages/Purchases/PurchaseOrderDetails'), 'PurchaseOrderDetails');
+const PurchaseReceipts = lazyPage(() => import('../pages/Purchases/PurchaseReceipts'), 'PurchaseReceipts');
+const PurchaseReceiptDetails = lazyPage(
+  () => import('../pages/Purchases/PurchaseReceiptDetails'),
+  'PurchaseReceiptDetails',
+);
+const AverageCosts = lazyPage(() => import('../pages/Purchases/AverageCosts'), 'AverageCosts');
+const TruckLoads = lazyPage(() => import('../pages/TruckLoads/TruckLoads'), 'TruckLoads');
+const TruckLoadDetails = lazyPage(() => import('../pages/TruckLoads/TruckLoadDetails'), 'TruckLoadDetails');
 
 export const DashboardRoutes = () => {
   const dispatch = useAppDispatch();
@@ -125,6 +147,28 @@ export const DashboardRoutes = () => {
           <Route path="orders/new" element={<NewOrder />} />
           <Route path="orders/:id" element={<OrderDetails />} />
           <Route path="orders/:id/remito" element={<OrderInvoice />} />
+
+          {/* Stock físico, compras y cargas del camión: sólo dentro de una distribuidora */}
+          <Route element={<RequireDistributor />}>
+            <Route path="stock" element={<StockSummary />} />
+            <Route path="stock/warehouses" element={<Warehouses />} />
+            <Route path="stock/warehouses/:id" element={<WarehouseDetails />} />
+            <Route path="stock/adjustments" element={<Adjustments />} />
+            <Route path="stock/adjustments/:id" element={<AdjustmentDetails />} />
+            <Route path="stock/transfers" element={<Transfers />} />
+            <Route path="stock/movements" element={<Movements />} />
+            <Route path="stock/thresholds" element={<Thresholds />} />
+            <Route path="stock/reconciliation" element={<Reconciliation />} />
+            <Route path="purchases/suppliers" element={<Suppliers />} />
+            <Route path="purchases/suppliers/:id" element={<SupplierDetails />} />
+            <Route path="purchases/orders" element={<PurchaseOrders />} />
+            <Route path="purchases/orders/:id" element={<PurchaseOrderDetails />} />
+            <Route path="purchases/receipts" element={<PurchaseReceipts />} />
+            <Route path="purchases/receipts/:id" element={<PurchaseReceiptDetails />} />
+            <Route path="purchases/costs" element={<AverageCosts />} />
+            <Route path="truck-loads" element={<TruckLoads />} />
+            <Route path="truck-loads/:id" element={<TruckLoadDetails />} />
+          </Route>
 
           <Route path="unpaid-collections" element={<UnpaidCollections />} />
 

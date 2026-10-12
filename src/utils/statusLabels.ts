@@ -10,6 +10,14 @@ import type {
   Incident,
   Order,
   OrderRecord,
+  PurchaseOrder,
+  PurchaseReceipt,
+  StockAdjustment,
+  StockBalance,
+  StockMovement,
+  Supplier,
+  TruckLoad,
+  Warehouse,
 } from '../services/api/types';
 
 /** Tono visual de una etiqueta (lo interpreta <Badge>). */
@@ -155,6 +163,93 @@ export const FLEET_PLAN_TRIGGER: LabelMap<FleetPlan['trigger']> = {
 export const HEALTH_STATUS: LabelMap<'up' | 'down'> = {
   up: { text: 'Operativo', tone: 'success' },
   down: { text: 'Caído', tone: 'danger' },
+};
+
+/** Condición del stock físico de una garrafa. */
+export const STOCK_CONDITION: LabelMap<StockBalance['condition']> = {
+  full: { text: 'Llenas', tone: 'success' },
+  empty: { text: 'Vacías', tone: 'neutral' },
+  defective: { text: 'Defectuosas', tone: 'danger' },
+};
+
+export const WAREHOUSE_KIND: LabelMap<Warehouse['kind']> = {
+  depot: { text: 'Galpón', tone: 'neutral' },
+  branch: { text: 'Sucursal', tone: 'info' },
+};
+
+/** Motivo de un ajuste de stock (los últimos dos los genera el sistema: conteo inicial y conciliación). */
+export const ADJUSTMENT_REASON: LabelMap<StockAdjustment['reason']> = {
+  count_correction: { text: 'Corrección de conteo', tone: 'info' },
+  shrinkage: { text: 'Merma', tone: 'warn' },
+  leak: { text: 'Fuga', tone: 'danger' },
+  damaged: { text: 'Rotura', tone: 'danger' },
+  lost: { text: 'Pérdida', tone: 'danger' },
+  found: { text: 'Encontrado', tone: 'success' },
+  initial_count: { text: 'Conteo inicial', tone: 'primary' },
+  reconciliation: { text: 'Conciliación', tone: 'accent' },
+};
+
+/** Los motivos que un administrador puede elegir al registrar un ajuste. */
+export const MANUAL_ADJUSTMENT_REASONS: StockAdjustment['reason'][] = [
+  'shrinkage',
+  'leak',
+  'damaged',
+  'lost',
+  'found',
+  'count_correction',
+];
+
+export const MOVEMENT_REASON: LabelMap<StockMovement['reason']> = {
+  initial_count: { text: 'Conteo inicial', tone: 'primary' },
+  purchase_receipt: { text: 'Recepción de compra', tone: 'success' },
+  plant_empty_out: { text: 'Vacías a la planta', tone: 'neutral' },
+  truck_load: { text: 'Carga del camión', tone: 'info' },
+  truck_return: { text: 'Vuelta del camión', tone: 'info' },
+  delivery: { text: 'Entrega', tone: 'primary' },
+  empty_collected: { text: 'Vacía recolectada', tone: 'neutral' },
+  transfer: { text: 'Transferencia', tone: 'accent' },
+  adjustment: { text: 'Ajuste', tone: 'warn' },
+  shrinkage: { text: 'Merma', tone: 'warn' },
+  condition_change: { text: 'Cambio de condición', tone: 'warn' },
+  reversal: { text: 'Contraasiento', tone: 'danger' },
+};
+
+export const PURCHASE_ORDER_STATUS: LabelMap<PurchaseOrder['status']> = {
+  draft: { text: 'Borrador', tone: 'neutral' },
+  sent: { text: 'Enviada', tone: 'info' },
+  partially_received: { text: 'Recibida parcial', tone: 'warn' },
+  received: { text: 'Recibida', tone: 'success' },
+  closed_short: { text: 'Cerrada con faltante', tone: 'accent' },
+  cancelled: { text: 'Cancelada', tone: 'danger' },
+};
+
+export const RECEIPT_STATUS: LabelMap<PurchaseReceipt['status']> = {
+  confirmed: { text: 'Confirmada', tone: 'success' },
+  voided: { text: 'Anulada', tone: 'danger' },
+};
+
+export const RECEIPT_PAYMENT: LabelMap<PurchaseReceipt['paymentStatus']> = {
+  unpaid: { text: 'Sin pagar', tone: 'warn' },
+  paid: { text: 'Pagada', tone: 'success' },
+};
+
+export const SUPPLIER_DOCUMENT_TYPE: LabelMap<PurchaseReceipt['supplierDocumentType']> = {
+  delivery_note: { text: 'Remito', tone: 'neutral' },
+  invoice: { text: 'Factura', tone: 'neutral' },
+};
+
+export const SUPPLIER_KIND: LabelMap<Supplier['kind']> = {
+  filling_plant: { text: 'Planta fraccionadora', tone: 'info' },
+  other: { text: 'Otro', tone: 'neutral' },
+};
+
+export const TRUCK_LOAD_STATUS: LabelMap<TruckLoad['status']> = {
+  loading: { text: 'Cargando', tone: 'warn' },
+  on_route: { text: 'En ruta', tone: 'primary' },
+  returned: { text: 'Volvió', tone: 'info' },
+  closed: { text: 'Rendida', tone: 'success' },
+  closed_with_difference: { text: 'Rendida con diferencia', tone: 'accent' },
+  cancelled: { text: 'Cancelada', tone: 'danger' },
 };
 
 /** La etiqueta de un valor, o el valor crudo si la API agregó uno nuevo. */

@@ -1,6 +1,7 @@
 import { Card, EntityPhoto, PageHeader } from '../../common/components/ui';
 import { usePermissions } from '../../hooks';
 import { useCurrentDistributor } from '../../services/queries/distributors';
+import { StockControlCard } from './components/StockControlCard';
 import { SlotAvailabilityPanel } from './components/SlotAvailabilityPanel';
 import { TimeSlotsManager } from './components/TimeSlotsManager';
 
@@ -25,6 +26,7 @@ export const Configuration = () => {
             />
           </Card>
         )}
+        <StockControlCard />
         <TimeSlotsManager />
         <SlotAvailabilityPanel />
       </div>

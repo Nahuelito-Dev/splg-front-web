@@ -43,3 +43,4 @@ export * from './TrendAreaChart';
 export * from './RankBarsChart';
 export * from './ShareDonutChart';
 export * from './UserRefLink';
+export * from './ResponsiveTable';
