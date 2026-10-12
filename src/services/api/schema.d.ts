@@ -2604,6 +2604,225 @@ export interface paths {
     patch: operations['CatalogStockController_updateStock'];
     trace?: never;
   };
+  '/api/truck-loads/mine': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Mi carga: la carga abierta del chofer
+     * @description Devuelve la carga abierta del chofer que pide (en carga, en ruta o devuelta) con lo esperado en vivo, y si la distribuidora exige carga abierta para recibir pedidos. `load` es null si no tiene.
+     */
+    get: operations['TruckLoadController_mine'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/truck-loads/settings': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Parámetros del control de stock del camión
+     * @description `requireOpenTruckLoad` (por defecto false): si es true, un chofer sin carga abierta no recibe ofertas ni acepta pedidos.
+     */
+    get: operations['TruckLoadController_settingsGet'];
+    /** Cambiar los parámetros del control de stock del camión */
+    put: operations['TruckLoadController_settingsPut'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/truck-loads/cars/{carId}/stock': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Stock actual de un camión
+     * @description Llenas, vacías y defectuosas que hay hoy en el camión, por tipo de garrafa.
+     */
+    get: operations['TruckLoadController_stock'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/truck-loads': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Listar las cargas por fecha, camión, chofer y estado */
+    get: operations['TruckLoadController_list'];
+    put?: never;
+    /**
+     * Abrir la carga del día de un camión y un chofer
+     * @description Crea la carga en estado `loading` con sus renglones y la numera. El camión tiene que estar en uso por el chofer y ninguno de los dos puede tener otra carga abierta. No mueve stock: sale al confirmar la salida. Acepta `Idempotency-Key`.
+     */
+    post: operations['TruckLoadController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/truck-loads/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Ver una carga con renglones, esperado, diferencias, movimientos y efectivo
+     * @description Mientras la carga está abierta, lo entregado y lo esperado se calculan en vivo desde el libro; al cerrar quedan congelados. Un chofer sólo ve las suyas. `cash` es informativo (la caja todavía no existe).
+     */
+    get: operations['TruckLoadController_detail'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/truck-loads/{id}/items': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Reemplazar los renglones de una carga que todavía no salió */
+    put: operations['TruckLoadController_items'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/truck-loads/{id}/depart': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Confirmar la salida del camión (loading -> on_route)
+     * @description El ledger pasa lo cargado del depósito de origen al camión (`truck_load`), en una transacción: si no alcanza el stock no sale nada. Lo puede hacer el administrador o el chofer de la carga. Acepta `Idempotency-Key`.
+     */
+    patch: operations['TruckLoadController_departAction'];
+    trace?: never;
+  };
+  '/api/truck-loads/{id}/reload': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Reposición en ruta: más llenas del depósito al camión
+     * @description Sólo con la carga en ruta. Suma a `reloadedFull` y mueve las llenas del depósito de origen al camión. **Exige** el header `Idempotency-Key` (400 sin él): repetirla suma otra vez.
+     */
+    patch: operations['TruckLoadController_reloadAction'];
+    trace?: never;
+  };
+  '/api/truck-loads/{id}/return': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Declarar lo que vuelve en el camión (on_route -> returned)
+     * @description El chofer o el administrador declaran las llenas y vacías que vuelven, de TODAS las garrafas de la carga. No mueve stock; la respuesta muestra lo esperado y la diferencia. Se puede volver a declarar hasta cerrar.
+     */
+    patch: operations['TruckLoadController_returnAction'];
+    trace?: never;
+  };
+  '/api/truck-loads/{id}/close': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Cerrar la rendición (returned -> closed | closed_with_difference)
+     * @description En una transacción: devuelve lo declarado del camión al depósito (`truck_return`), registra la diferencia como merma (`shrinkage`) o sobrante (`adjustment`) y deja el camión en cero. Con diferencia, `differenceNote` es obligatoria y la carga queda `closed_with_difference`. Acepta `Idempotency-Key`.
+     */
+    patch: operations['TruckLoadController_closeAction'];
+    trace?: never;
+  };
+  '/api/truck-loads/{id}/cancel': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Cancelar una carga que todavía no salió
+     * @description Sólo en `loading`: todavía no se movió stock, así que sólo libera al camión y al chofer.
+     */
+    patch: operations['TruckLoadController_cancelAction'];
+    trace?: never;
+  };
   '/api/claims': {
     parameters: {
       query?: never;
@@ -4565,6 +4784,22 @@ export interface components {
       /** @example 0 */
       offset: number;
     };
+    AvailableOrdersResponseDto: {
+      orders: components['schemas']['OrderResponseDto'][];
+      /** @example 180 */
+      total: number;
+      /** @example 10 */
+      limit: number;
+      /** @example 0 */
+      offset: number;
+      /**
+       * @description true si la distribuidora exige la carga del día abierta y el chofer no la tiene: `orders` viene vacío y la app avisa `message`
+       * @example false
+       */
+      openLoadRequired: boolean;
+      /** @example Abrí tu carga para recibir pedidos */
+      message: string | null;
+    };
     RenglonDeReservaDto: {
       /** @example 2 */
       quantity: number;
@@ -6342,6 +6577,323 @@ export interface components {
        * @example 10
        */
       quantity: number;
+    };
+    TruckLoadItemResponseDto: {
+      /** Format: uuid */
+      itemId: string;
+      /** Format: uuid */
+      gasCylinderId: string;
+      /** @example 10kg */
+      gasCylinderType: string;
+      /** @example 40 */
+      loadedFull: number;
+      /**
+       * @description Repuestas en ruta
+       * @example 10
+       */
+      reloadedFull: number;
+      /** @example 10 */
+      loadedEmpty: number;
+      /**
+       * @description Llenas entregadas por el camión (en vivo mientras la carga está abierta; congelado al cerrar)
+       * @example 30
+       */
+      deliveredFull: number;
+      /**
+       * @description Vacías recolectadas (canje 1 a 1)
+       * @example 30
+       */
+      collectedEmpty: number;
+      /**
+       * @description Cargadas + repuestas - entregadas
+       * @example 20
+       */
+      expectedFull: number;
+      /**
+       * @description Cargadas + recolectadas
+       * @example 40
+       */
+      expectedEmpty: number;
+      declaredReturnFull: number | null;
+      declaredReturnEmpty: number | null;
+      /** @description Declarado - esperado; negativo es faltante. null sin declarar */
+      differenceFull: number | null;
+      differenceEmpty: number | null;
+      /**
+       * @description Llenas que hay hoy en el camión según el libro
+       * @example 20
+       */
+      onTruckFull: number;
+      /** @example 40 */
+      onTruckEmpty: number;
+    };
+    TruckLoadOrderDto: {
+      /** Format: uuid */
+      orderId: string;
+      /** @example 14500 */
+      totalAmount: number;
+      /** @enum {string} */
+      paymentMethod: 'cash' | 'mercadopago' | 'transfer';
+      /** @enum {string} */
+      paymentStatus: 'pending' | 'paid' | 'failed' | 'unpaid' | 'written_off';
+      /** Format: date-time */
+      deliveredAt: string;
+    };
+    TruckLoadCashDto: {
+      /** @example 4 */
+      deliveredOrders: number;
+      /**
+       * @description Efectivo que el chofer confirmó haber cobrado (paid)
+       * @example 43500
+       */
+      cashCollectedAmount: number;
+      /** @example 3 */
+      cashCollectedCount: number;
+      /**
+       * @description Efectivo que el chofer informó como impago (o dado de baja)
+       * @example 14500
+       */
+      unpaidAmount: number;
+      /** @example 1 */
+      unpaidCount: number;
+      /**
+       * @description Efectivo entregado cuyo cobro el chofer todavía no confirmó
+       * @example 0
+       */
+      pendingConfirmationAmount: number;
+      /** @example 0 */
+      pendingConfirmationCount: number;
+      /**
+       * @description Pedidos cobrados (`paid`) por otro medio (transferencia, Mercado Pago); los pendientes no cuentan
+       * @example 0
+       */
+      nonCashAmount: number;
+    };
+    TruckLoadResponseDto: {
+      /** Format: uuid */
+      loadId: string;
+      /**
+       * @description Número correlativo
+       * @example 12
+       */
+      number: number;
+      /** @enum {string} */
+      status: 'loading' | 'on_route' | 'returned' | 'closed' | 'closed_with_difference' | 'cancelled';
+      /** @example 2026-10-12 */
+      businessDate: string;
+      /** Format: uuid */
+      carId: string;
+      /** @example AB123CD */
+      carPatent: string | null;
+      /** Format: uuid */
+      deliveryId: string;
+      /** @example Pedro Gómez */
+      driverName: string;
+      /** Format: uuid */
+      helperEmployeeId: string | null;
+      helperName: string | null;
+      /** Format: uuid */
+      originWarehouseId: string | null;
+      /** @example Depósito central */
+      originName: string;
+      /** Format: date-time */
+      openedAt: string;
+      /** Format: date-time */
+      departedAt: string | null;
+      /** Format: date-time */
+      returnedAt: string | null;
+      /** Format: date-time */
+      closedAt: string | null;
+      /**
+       * @description Renglones (tipos de garrafa) de la carga
+       * @example 2
+       */
+      itemsCount: number;
+      items: components['schemas']['TruckLoadItemResponseDto'][];
+      differenceNote: string | null;
+      cancelReason: string | null;
+      notes: string | null;
+      /** Format: uuid */
+      openedByUserId: string;
+      /** @description Pedidos que el chofer entregó con este camión durante la carga */
+      orders: components['schemas']['TruckLoadOrderDto'][];
+      /** @description Informativo: el efectivo de la jornada (la caja todavía no existe) */
+      cash: components['schemas']['TruckLoadCashDto'];
+      /** @description Movimientos del libro de esta carga (salida, reposiciones, vuelta y ajustes); las entregas se ven por pedido */
+      movements: components['schemas']['StockMovementDto'][];
+      /** Format: date-time */
+      createdAt: string;
+    };
+    MyTruckLoadDto: {
+      /** @description La carga abierta del chofer; null si no tiene */
+      load: components['schemas']['TruckLoadResponseDto'] | null;
+      /** @description Si la distribuidora exige carga abierta para recibir y aceptar pedidos */
+      requireOpenTruckLoad: boolean;
+    };
+    StockControlSettingsDto: {
+      /**
+       * @description Si es true, un chofer sin carga de camión abierta no recibe ofertas ni acepta pedidos
+       * @default false
+       */
+      requireOpenTruckLoad: boolean;
+    };
+    TruckStockItemDto: {
+      /** Format: uuid */
+      gasCylinderId: string;
+      /** @example 10kg */
+      gasCylinderType: string;
+      /** @example 20 */
+      full: number;
+      /** @example 40 */
+      empty: number;
+      /** @example 0 */
+      defective: number;
+    };
+    TruckStockDto: {
+      /** Format: uuid */
+      carId: string;
+      carPatent: string | null;
+      /**
+       * Format: uuid
+       * @description Carga abierta del camión, si tiene
+       */
+      openLoadId: string | null;
+      items: components['schemas']['TruckStockItemDto'][];
+    };
+    TruckLoadItemInputDto: {
+      /**
+       * Format: uuid
+       * @description Tipo de garrafa
+       */
+      gasCylinderId: string;
+      /**
+       * @description Llenas que salen en el camión
+       * @example 40
+       */
+      loadedFull: number;
+      /**
+       * @description Vacías con las que sale para canjear
+       * @default 0
+       * @example 10
+       */
+      loadedEmpty: number;
+    };
+    CreateTruckLoadDto: {
+      /**
+       * Format: uuid
+       * @description Camión; tiene que estar en uso por el chofer
+       */
+      carId: string;
+      /**
+       * Format: uuid
+       * @description Chofer (delivery_id)
+       */
+      deliveryId: string;
+      /**
+       * Format: uuid
+       * @description Ayudante (legajo del personal)
+       */
+      helperEmployeeId?: string;
+      /**
+       * Format: uuid
+       * @description Depósito del que sale la carga y al que vuelve; por defecto el predeterminado
+       */
+      originWarehouseId?: string;
+      /**
+       * Format: date
+       * @example 2026-10-12
+       */
+      businessDate?: string | null;
+      items: components['schemas']['TruckLoadItemInputDto'][];
+      notes?: string;
+    };
+    TruckLoadSummaryDto: {
+      /** Format: uuid */
+      loadId: string;
+      /**
+       * @description Número correlativo
+       * @example 12
+       */
+      number: number;
+      /** @enum {string} */
+      status: 'loading' | 'on_route' | 'returned' | 'closed' | 'closed_with_difference' | 'cancelled';
+      /** @example 2026-10-12 */
+      businessDate: string;
+      /** Format: uuid */
+      carId: string;
+      /** @example AB123CD */
+      carPatent: string | null;
+      /** Format: uuid */
+      deliveryId: string;
+      /** @example Pedro Gómez */
+      driverName: string;
+      /** Format: uuid */
+      helperEmployeeId: string | null;
+      helperName: string | null;
+      /** Format: uuid */
+      originWarehouseId: string | null;
+      /** @example Depósito central */
+      originName: string;
+      /** Format: date-time */
+      openedAt: string;
+      /** Format: date-time */
+      departedAt: string | null;
+      /** Format: date-time */
+      returnedAt: string | null;
+      /** Format: date-time */
+      closedAt: string | null;
+      /**
+       * @description Renglones (tipos de garrafa) de la carga
+       * @example 2
+       */
+      itemsCount: number;
+    };
+    TruckLoadPageDto: {
+      data: components['schemas']['TruckLoadSummaryDto'][];
+      /** @example 12 */
+      total: number;
+    };
+    UpdateTruckLoadItemsDto: {
+      /** @description Reemplaza los renglones de la carga (sólo en carga) */
+      items: components['schemas']['TruckLoadItemInputDto'][];
+    };
+    ReloadItemInputDto: {
+      /** Format: uuid */
+      gasCylinderId: string;
+      /**
+       * @description Llenas que se suman al camión
+       * @example 10
+       */
+      quantity: number;
+    };
+    ReloadTruckLoadDto: {
+      items: components['schemas']['ReloadItemInputDto'][];
+    };
+    DeclaredItemInputDto: {
+      /** Format: uuid */
+      gasCylinderId: string;
+      /**
+       * @description Llenas que vuelven
+       * @example 4
+       */
+      declaredFull: number;
+      /**
+       * @description Vacías que vuelven
+       * @example 36
+       */
+      declaredEmpty: number;
+    };
+    ReturnTruckLoadDto: {
+      /** @description Lo que vuelve, de TODAS las garrafas de la carga (aunque vuelvan en cero) */
+      items: components['schemas']['DeclaredItemInputDto'][];
+    };
+    CloseTruckLoadDto: {
+      /** @description Obligatoria si lo declarado difiere de lo esperado (merma, pérdida o sobrante) */
+      differenceNote?: string;
+    };
+    CancelTruckLoadDto: {
+      /** @example El camión no salió */
+      reason: string;
     };
     CreateClaimDto: {
       orderId: string;
@@ -11689,12 +12241,13 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
+      /** @description Si el chofer no puede recibir pedidos por su carga de camión (sin carga con el control activo, carga sin salir o ya devuelta), `orders` viene vacío, `openLoadRequired` es true y `message` dice por qué ("Abrí tu carga para recibir pedidos"). La app también lo sabe por `GET /truck-loads/mine`. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['PaginatedOrdersResponseDto'];
+          'application/json': components['schemas']['AvailableOrdersResponseDto'];
         };
       };
       /** @description Sin token o token inválido */
@@ -15977,6 +16530,8 @@ export interface operations {
         referenceType?: 'order' | 'purchase_receipt' | 'truck_load' | 'stock_adjustment' | 'transfer' | 'initial';
         /** @description Movimientos de un lote */
         batchId?: string;
+        /** @description Movimientos de un documento (por ejemplo el id de una carga de camión, con referenceType) */
+        referenceId?: string;
         from?: string | null;
         to?: string | null;
       };
@@ -16540,6 +17095,618 @@ export interface operations {
         };
       };
       /** @description El stock quedaría negativo: vendible, o llenas del depósito predeterminado (el mensaje indica dónde está el resto) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TruckLoadController_mine: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MyTruckLoadDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: delivery */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TruckLoadController_settingsGet: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StockControlSettingsDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TruckLoadController_settingsPut: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['StockControlSettingsDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StockControlSettingsDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TruckLoadController_stock: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Vehículo UUID */
+        carId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TruckStockDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TruckLoadController_list: {
+    parameters: {
+      query?: {
+        limit?: number;
+        page?: number;
+        status?: 'loading' | 'on_route' | 'returned' | 'closed' | 'closed_with_difference' | 'cancelled';
+        date?: string | null;
+        from?: string | null;
+        to?: string | null;
+        carId?: string;
+        /** @description Chofer (delivery_id) */
+        deliveryId?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TruckLoadPageDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TruckLoadController_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateTruckLoadDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TruckLoadResponseDto'];
+        };
+      };
+      /** @description El camión no está en uso por el chofer o los renglones son inválidos */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Camión, chofer, ayudante, depósito o garrafa inexistente */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El camión o el chofer ya tienen una carga abierta */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TruckLoadController_detail: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Carga UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TruckLoadResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin, delivery */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TruckLoadController_items: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Carga UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateTruckLoadItemsDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TruckLoadResponseDto'];
+        };
+      };
+      /** @description La carga no está en un estado que lo permita */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TruckLoadController_departAction: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Carga UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TruckLoadResponseDto'];
+        };
+      };
+      /** @description Estado inválido, carga vacía o stock insuficiente en el depósito */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin, delivery */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TruckLoadController_reloadAction: {
+    parameters: {
+      query?: never;
+      header: {
+        'idempotency-key': string;
+      };
+      path: {
+        /** @description Carga UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ReloadTruckLoadDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TruckLoadResponseDto'];
+        };
+      };
+      /** @description La carga no está en ruta o no alcanza el stock del depósito */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TruckLoadController_returnAction: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Carga UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ReturnTruckLoadDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TruckLoadResponseDto'];
+        };
+      };
+      /** @description Estado inválido o declaración incompleta */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin, delivery */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TruckLoadController_closeAction: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Carga UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CloseTruckLoadDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TruckLoadResponseDto'];
+        };
+      };
+      /** @description Estado inválido o diferencia sin nota */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TruckLoadController_cancelAction: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Carga UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CancelTruckLoadDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TruckLoadResponseDto'];
+        };
+      };
+      /** @description La carga no está en un estado que lo permita */
       400: {
         headers: {
           [name: string]: unknown;

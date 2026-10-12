@@ -5219,11 +5219,11 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "",
+                        "description": "Si el chofer no puede recibir pedidos por su carga de camión (sin carga con el control activo, carga sin salir o ya devuelta), `orders` viene vacío, `openLoadRequired` es true y `message` dice por qué (\"Abrí tu carga para recibir pedidos\"). La app también lo sabe por `GET /truck-loads/mine`.",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/PaginatedOrdersResponseDto"
+                                    "$ref": "#/components/schemas/AvailableOrdersResponseDto"
                                 }
                             }
                         }
@@ -10403,6 +10403,16 @@
                         }
                     },
                     {
+                        "name": "referenceId",
+                        "required": false,
+                        "in": "query",
+                        "description": "Movimientos de un documento (por ejemplo el id de una carga de camión, con referenceType)",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
                         "name": "from",
                         "required": false,
                         "in": "query",
@@ -11068,6 +11078,750 @@
                 "summary": "Update gas cylinder stock",
                 "tags": [
                     "Gas Cylinders"
+                ]
+            }
+        },
+        "/api/truck-loads/mine": {
+            "get": {
+                "description": "Devuelve la carga abierta del chofer que pide (en carga, en ruta o devuelta) con lo esperado en vivo, y si la distribuidora exige carga abierta para recibir pedidos. `load` es null si no tiene.",
+                "operationId": "TruckLoadController_mine",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MyTruckLoadDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: delivery"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Mi carga: la carga abierta del chofer",
+                "tags": [
+                    "Stock · Carga del camión"
+                ]
+            }
+        },
+        "/api/truck-loads/settings": {
+            "get": {
+                "description": "`requireOpenTruckLoad` (por defecto false): si es true, un chofer sin carga abierta no recibe ofertas ni acepta pedidos.",
+                "operationId": "TruckLoadController_settingsGet",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StockControlSettingsDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Parámetros del control de stock del camión",
+                "tags": [
+                    "Stock · Carga del camión"
+                ]
+            },
+            "put": {
+                "operationId": "TruckLoadController_settingsPut",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StockControlSettingsDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StockControlSettingsDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Cambiar los parámetros del control de stock del camión",
+                "tags": [
+                    "Stock · Carga del camión"
+                ]
+            }
+        },
+        "/api/truck-loads/cars/{carId}/stock": {
+            "get": {
+                "description": "Llenas, vacías y defectuosas que hay hoy en el camión, por tipo de garrafa.",
+                "operationId": "TruckLoadController_stock",
+                "parameters": [
+                    {
+                        "name": "carId",
+                        "required": true,
+                        "in": "path",
+                        "description": "Vehículo UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TruckStockDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Stock actual de un camión",
+                "tags": [
+                    "Stock · Carga del camión"
+                ]
+            }
+        },
+        "/api/truck-loads": {
+            "post": {
+                "description": "Crea la carga en estado `loading` con sus renglones y la numera. El camión tiene que estar en uso por el chofer y ninguno de los dos puede tener otra carga abierta. No mueve stock: sale al confirmar la salida. Acepta `Idempotency-Key`.",
+                "operationId": "TruckLoadController_create",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateTruckLoadDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TruckLoadResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "El camión no está en uso por el chofer o los renglones son inválidos"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Camión, chofer, ayudante, depósito o garrafa inexistente"
+                    },
+                    "409": {
+                        "description": "El camión o el chofer ya tienen una carga abierta"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Abrir la carga del día de un camión y un chofer",
+                "tags": [
+                    "Stock · Carga del camión"
+                ]
+            },
+            "get": {
+                "operationId": "TruckLoadController_list",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "maximum": 100,
+                            "default": 10,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 1,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "loading",
+                                "on_route",
+                                "returned",
+                                "closed",
+                                "closed_with_difference",
+                                "cancelled"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "date",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "date",
+                            "nullable": true,
+                            "example": "2026-10-12",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "date",
+                            "nullable": true,
+                            "example": "2026-10-01",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "date",
+                            "nullable": true,
+                            "example": "2026-10-31",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "carId",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "deliveryId",
+                        "required": false,
+                        "in": "query",
+                        "description": "Chofer (delivery_id)",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TruckLoadPageDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Listar las cargas por fecha, camión, chofer y estado",
+                "tags": [
+                    "Stock · Carga del camión"
+                ]
+            }
+        },
+        "/api/truck-loads/{id}": {
+            "get": {
+                "description": "Mientras la carga está abierta, lo entregado y lo esperado se calculan en vivo desde el libro; al cerrar quedan congelados. Un chofer sólo ve las suyas. `cash` es informativo (la caja todavía no existe).",
+                "operationId": "TruckLoadController_detail",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Carga UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TruckLoadResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin, delivery"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ver una carga con renglones, esperado, diferencias, movimientos y efectivo",
+                "tags": [
+                    "Stock · Carga del camión"
+                ]
+            }
+        },
+        "/api/truck-loads/{id}/items": {
+            "put": {
+                "operationId": "TruckLoadController_items",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Carga UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateTruckLoadItemsDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TruckLoadResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "La carga no está en un estado que lo permita"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Reemplazar los renglones de una carga que todavía no salió",
+                "tags": [
+                    "Stock · Carga del camión"
+                ]
+            }
+        },
+        "/api/truck-loads/{id}/depart": {
+            "patch": {
+                "description": "El ledger pasa lo cargado del depósito de origen al camión (`truck_load`), en una transacción: si no alcanza el stock no sale nada. Lo puede hacer el administrador o el chofer de la carga. Acepta `Idempotency-Key`.",
+                "operationId": "TruckLoadController_departAction",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Carga UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TruckLoadResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Estado inválido, carga vacía o stock insuficiente en el depósito"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin, delivery"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Confirmar la salida del camión (loading -> on_route)",
+                "tags": [
+                    "Stock · Carga del camión"
+                ]
+            }
+        },
+        "/api/truck-loads/{id}/reload": {
+            "patch": {
+                "description": "Sólo con la carga en ruta. Suma a `reloadedFull` y mueve las llenas del depósito de origen al camión. **Exige** el header `Idempotency-Key` (400 sin él): repetirla suma otra vez.",
+                "operationId": "TruckLoadController_reloadAction",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Carga UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "idempotency-key",
+                        "required": true,
+                        "in": "header",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ReloadTruckLoadDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TruckLoadResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "La carga no está en ruta o no alcanza el stock del depósito"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Reposición en ruta: más llenas del depósito al camión",
+                "tags": [
+                    "Stock · Carga del camión"
+                ]
+            }
+        },
+        "/api/truck-loads/{id}/return": {
+            "patch": {
+                "description": "El chofer o el administrador declaran las llenas y vacías que vuelven, de TODAS las garrafas de la carga. No mueve stock; la respuesta muestra lo esperado y la diferencia. Se puede volver a declarar hasta cerrar.",
+                "operationId": "TruckLoadController_returnAction",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Carga UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ReturnTruckLoadDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TruckLoadResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Estado inválido o declaración incompleta"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin, delivery"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Declarar lo que vuelve en el camión (on_route -> returned)",
+                "tags": [
+                    "Stock · Carga del camión"
+                ]
+            }
+        },
+        "/api/truck-loads/{id}/close": {
+            "patch": {
+                "description": "En una transacción: devuelve lo declarado del camión al depósito (`truck_return`), registra la diferencia como merma (`shrinkage`) o sobrante (`adjustment`) y deja el camión en cero. Con diferencia, `differenceNote` es obligatoria y la carga queda `closed_with_difference`. Acepta `Idempotency-Key`.",
+                "operationId": "TruckLoadController_closeAction",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Carga UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CloseTruckLoadDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TruckLoadResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Estado inválido o diferencia sin nota"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Cerrar la rendición (returned -> closed | closed_with_difference)",
+                "tags": [
+                    "Stock · Carga del camión"
+                ]
+            }
+        },
+        "/api/truck-loads/{id}/cancel": {
+            "patch": {
+                "description": "Sólo en `loading`: todavía no se movió stock, así que sólo libera al camión y al chofer.",
+                "operationId": "TruckLoadController_cancelAction",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Carga UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CancelTruckLoadDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TruckLoadResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "La carga no está en un estado que lo permita"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Cancelar una carga que todavía no salió",
+                "tags": [
+                    "Stock · Carga del camión"
                 ]
             }
         },
@@ -17608,6 +18362,47 @@
                     "offset"
                 ]
             },
+            "AvailableOrdersResponseDto": {
+                "type": "object",
+                "properties": {
+                    "orders": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/OrderResponseDto"
+                        }
+                    },
+                    "total": {
+                        "type": "number",
+                        "example": 180
+                    },
+                    "limit": {
+                        "type": "number",
+                        "example": 10
+                    },
+                    "offset": {
+                        "type": "number",
+                        "example": 0
+                    },
+                    "openLoadRequired": {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "true si la distribuidora exige la carga del día abierta y el chofer no la tiene: `orders` viene vacío y la app avisa `message`"
+                    },
+                    "message": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "Abrí tu carga para recibir pedidos"
+                    }
+                },
+                "required": [
+                    "orders",
+                    "total",
+                    "limit",
+                    "offset",
+                    "openLoadRequired",
+                    "message"
+                ]
+            },
             "RenglonDeReservaDto": {
                 "type": "object",
                 "properties": {
@@ -21807,6 +22602,761 @@
                 },
                 "required": [
                     "quantity"
+                ]
+            },
+            "TruckLoadItemResponseDto": {
+                "type": "object",
+                "properties": {
+                    "itemId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "gasCylinderId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "gasCylinderType": {
+                        "type": "string",
+                        "example": "10kg"
+                    },
+                    "loadedFull": {
+                        "type": "number",
+                        "example": 40
+                    },
+                    "reloadedFull": {
+                        "type": "number",
+                        "example": 10,
+                        "description": "Repuestas en ruta"
+                    },
+                    "loadedEmpty": {
+                        "type": "number",
+                        "example": 10
+                    },
+                    "deliveredFull": {
+                        "type": "number",
+                        "example": 30,
+                        "description": "Llenas entregadas por el camión (en vivo mientras la carga está abierta; congelado al cerrar)"
+                    },
+                    "collectedEmpty": {
+                        "type": "number",
+                        "example": 30,
+                        "description": "Vacías recolectadas (canje 1 a 1)"
+                    },
+                    "expectedFull": {
+                        "type": "number",
+                        "example": 20,
+                        "description": "Cargadas + repuestas - entregadas"
+                    },
+                    "expectedEmpty": {
+                        "type": "number",
+                        "example": 40,
+                        "description": "Cargadas + recolectadas"
+                    },
+                    "declaredReturnFull": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "declaredReturnEmpty": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "differenceFull": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Declarado - esperado; negativo es faltante. null sin declarar"
+                    },
+                    "differenceEmpty": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "onTruckFull": {
+                        "type": "number",
+                        "example": 20,
+                        "description": "Llenas que hay hoy en el camión según el libro"
+                    },
+                    "onTruckEmpty": {
+                        "type": "number",
+                        "example": 40
+                    }
+                },
+                "required": [
+                    "itemId",
+                    "gasCylinderId",
+                    "gasCylinderType",
+                    "loadedFull",
+                    "reloadedFull",
+                    "loadedEmpty",
+                    "deliveredFull",
+                    "collectedEmpty",
+                    "expectedFull",
+                    "expectedEmpty",
+                    "declaredReturnFull",
+                    "declaredReturnEmpty",
+                    "differenceFull",
+                    "differenceEmpty",
+                    "onTruckFull",
+                    "onTruckEmpty"
+                ]
+            },
+            "TruckLoadOrderDto": {
+                "type": "object",
+                "properties": {
+                    "orderId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "totalAmount": {
+                        "type": "number",
+                        "example": 14500
+                    },
+                    "paymentMethod": {
+                        "type": "string",
+                        "enum": [
+                            "cash",
+                            "mercadopago",
+                            "transfer"
+                        ]
+                    },
+                    "paymentStatus": {
+                        "type": "string",
+                        "enum": [
+                            "pending",
+                            "paid",
+                            "failed",
+                            "unpaid",
+                            "written_off"
+                        ]
+                    },
+                    "deliveredAt": {
+                        "format": "date-time",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "orderId",
+                    "totalAmount",
+                    "paymentMethod",
+                    "paymentStatus",
+                    "deliveredAt"
+                ]
+            },
+            "TruckLoadCashDto": {
+                "type": "object",
+                "properties": {
+                    "deliveredOrders": {
+                        "type": "number",
+                        "example": 4
+                    },
+                    "cashCollectedAmount": {
+                        "type": "number",
+                        "example": 43500,
+                        "description": "Efectivo que el chofer confirmó haber cobrado (paid)"
+                    },
+                    "cashCollectedCount": {
+                        "type": "number",
+                        "example": 3
+                    },
+                    "unpaidAmount": {
+                        "type": "number",
+                        "example": 14500,
+                        "description": "Efectivo que el chofer informó como impago (o dado de baja)"
+                    },
+                    "unpaidCount": {
+                        "type": "number",
+                        "example": 1
+                    },
+                    "pendingConfirmationAmount": {
+                        "type": "number",
+                        "example": 0,
+                        "description": "Efectivo entregado cuyo cobro el chofer todavía no confirmó"
+                    },
+                    "pendingConfirmationCount": {
+                        "type": "number",
+                        "example": 0
+                    },
+                    "nonCashAmount": {
+                        "type": "number",
+                        "example": 0,
+                        "description": "Pedidos cobrados (`paid`) por otro medio (transferencia, Mercado Pago); los pendientes no cuentan"
+                    }
+                },
+                "required": [
+                    "deliveredOrders",
+                    "cashCollectedAmount",
+                    "cashCollectedCount",
+                    "unpaidAmount",
+                    "unpaidCount",
+                    "pendingConfirmationAmount",
+                    "pendingConfirmationCount",
+                    "nonCashAmount"
+                ]
+            },
+            "TruckLoadResponseDto": {
+                "type": "object",
+                "properties": {
+                    "loadId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "number": {
+                        "type": "number",
+                        "example": 12,
+                        "description": "Número correlativo"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "loading",
+                            "on_route",
+                            "returned",
+                            "closed",
+                            "closed_with_difference",
+                            "cancelled"
+                        ]
+                    },
+                    "businessDate": {
+                        "type": "string",
+                        "example": "2026-10-12"
+                    },
+                    "carId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "carPatent": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "AB123CD"
+                    },
+                    "deliveryId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "driverName": {
+                        "type": "string",
+                        "example": "Pedro Gómez"
+                    },
+                    "helperEmployeeId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "helperName": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "originWarehouseId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "originName": {
+                        "type": "string",
+                        "example": "Depósito central"
+                    },
+                    "openedAt": {
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "departedAt": {
+                        "format": "date-time",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "returnedAt": {
+                        "format": "date-time",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "closedAt": {
+                        "format": "date-time",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "itemsCount": {
+                        "type": "number",
+                        "example": 2,
+                        "description": "Renglones (tipos de garrafa) de la carga"
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TruckLoadItemResponseDto"
+                        }
+                    },
+                    "differenceNote": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "cancelReason": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "notes": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "openedByUserId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "orders": {
+                        "description": "Pedidos que el chofer entregó con este camión durante la carga",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TruckLoadOrderDto"
+                        }
+                    },
+                    "cash": {
+                        "description": "Informativo: el efectivo de la jornada (la caja todavía no existe)",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/TruckLoadCashDto"
+                            }
+                        ]
+                    },
+                    "movements": {
+                        "description": "Movimientos del libro de esta carga (salida, reposiciones, vuelta y ajustes); las entregas se ven por pedido",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/StockMovementDto"
+                        }
+                    },
+                    "createdAt": {
+                        "format": "date-time",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "loadId",
+                    "number",
+                    "status",
+                    "businessDate",
+                    "carId",
+                    "carPatent",
+                    "deliveryId",
+                    "driverName",
+                    "helperEmployeeId",
+                    "helperName",
+                    "originWarehouseId",
+                    "originName",
+                    "openedAt",
+                    "departedAt",
+                    "returnedAt",
+                    "closedAt",
+                    "itemsCount",
+                    "items",
+                    "differenceNote",
+                    "cancelReason",
+                    "notes",
+                    "openedByUserId",
+                    "orders",
+                    "cash",
+                    "movements",
+                    "createdAt"
+                ]
+            },
+            "MyTruckLoadDto": {
+                "type": "object",
+                "properties": {
+                    "load": {
+                        "nullable": true,
+                        "description": "La carga abierta del chofer; null si no tiene",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/TruckLoadResponseDto"
+                            }
+                        ]
+                    },
+                    "requireOpenTruckLoad": {
+                        "type": "boolean",
+                        "description": "Si la distribuidora exige carga abierta para recibir y aceptar pedidos"
+                    }
+                },
+                "required": [
+                    "load",
+                    "requireOpenTruckLoad"
+                ]
+            },
+            "StockControlSettingsDto": {
+                "type": "object",
+                "properties": {
+                    "requireOpenTruckLoad": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Si es true, un chofer sin carga de camión abierta no recibe ofertas ni acepta pedidos"
+                    }
+                },
+                "required": [
+                    "requireOpenTruckLoad"
+                ]
+            },
+            "TruckStockItemDto": {
+                "type": "object",
+                "properties": {
+                    "gasCylinderId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "gasCylinderType": {
+                        "type": "string",
+                        "example": "10kg"
+                    },
+                    "full": {
+                        "type": "number",
+                        "example": 20
+                    },
+                    "empty": {
+                        "type": "number",
+                        "example": 40
+                    },
+                    "defective": {
+                        "type": "number",
+                        "example": 0
+                    }
+                },
+                "required": [
+                    "gasCylinderId",
+                    "gasCylinderType",
+                    "full",
+                    "empty",
+                    "defective"
+                ]
+            },
+            "TruckStockDto": {
+                "type": "object",
+                "properties": {
+                    "carId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "carPatent": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "openLoadId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true,
+                        "description": "Carga abierta del camión, si tiene"
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TruckStockItemDto"
+                        }
+                    }
+                },
+                "required": [
+                    "carId",
+                    "carPatent",
+                    "openLoadId",
+                    "items"
+                ]
+            },
+            "TruckLoadItemInputDto": {
+                "type": "object",
+                "properties": {
+                    "gasCylinderId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Tipo de garrafa"
+                    },
+                    "loadedFull": {
+                        "type": "number",
+                        "example": 40,
+                        "description": "Llenas que salen en el camión"
+                    },
+                    "loadedEmpty": {
+                        "type": "number",
+                        "example": 10,
+                        "default": 0,
+                        "description": "Vacías con las que sale para canjear"
+                    }
+                },
+                "required": [
+                    "gasCylinderId",
+                    "loadedFull"
+                ]
+            },
+            "CreateTruckLoadDto": {
+                "type": "object",
+                "properties": {
+                    "carId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Camión; tiene que estar en uso por el chofer"
+                    },
+                    "deliveryId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Chofer (delivery_id)"
+                    },
+                    "helperEmployeeId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Ayudante (legajo del personal)"
+                    },
+                    "originWarehouseId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Depósito del que sale la carga y al que vuelve; por defecto el predeterminado"
+                    },
+                    "businessDate": {
+                        "type": "string",
+                        "example": "2026-10-12",
+                        "format": "date",
+                        "nullable": true
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TruckLoadItemInputDto"
+                        }
+                    },
+                    "notes": {
+                        "type": "string",
+                        "maxLength": 300
+                    }
+                },
+                "required": [
+                    "carId",
+                    "deliveryId",
+                    "items"
+                ]
+            },
+            "TruckLoadSummaryDto": {
+                "type": "object",
+                "properties": {
+                    "loadId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "number": {
+                        "type": "number",
+                        "example": 12,
+                        "description": "Número correlativo"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "loading",
+                            "on_route",
+                            "returned",
+                            "closed",
+                            "closed_with_difference",
+                            "cancelled"
+                        ]
+                    },
+                    "businessDate": {
+                        "type": "string",
+                        "example": "2026-10-12"
+                    },
+                    "carId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "carPatent": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "AB123CD"
+                    },
+                    "deliveryId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "driverName": {
+                        "type": "string",
+                        "example": "Pedro Gómez"
+                    },
+                    "helperEmployeeId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "helperName": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "originWarehouseId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "originName": {
+                        "type": "string",
+                        "example": "Depósito central"
+                    },
+                    "openedAt": {
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "departedAt": {
+                        "format": "date-time",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "returnedAt": {
+                        "format": "date-time",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "closedAt": {
+                        "format": "date-time",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "itemsCount": {
+                        "type": "number",
+                        "example": 2,
+                        "description": "Renglones (tipos de garrafa) de la carga"
+                    }
+                },
+                "required": [
+                    "loadId",
+                    "number",
+                    "status",
+                    "businessDate",
+                    "carId",
+                    "carPatent",
+                    "deliveryId",
+                    "driverName",
+                    "helperEmployeeId",
+                    "helperName",
+                    "originWarehouseId",
+                    "originName",
+                    "openedAt",
+                    "departedAt",
+                    "returnedAt",
+                    "closedAt",
+                    "itemsCount"
+                ]
+            },
+            "TruckLoadPageDto": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TruckLoadSummaryDto"
+                        }
+                    },
+                    "total": {
+                        "type": "number",
+                        "example": 12
+                    }
+                },
+                "required": [
+                    "data",
+                    "total"
+                ]
+            },
+            "UpdateTruckLoadItemsDto": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "description": "Reemplaza los renglones de la carga (sólo en carga)",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TruckLoadItemInputDto"
+                        }
+                    }
+                },
+                "required": [
+                    "items"
+                ]
+            },
+            "ReloadItemInputDto": {
+                "type": "object",
+                "properties": {
+                    "gasCylinderId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "quantity": {
+                        "type": "number",
+                        "example": 10,
+                        "description": "Llenas que se suman al camión"
+                    }
+                },
+                "required": [
+                    "gasCylinderId",
+                    "quantity"
+                ]
+            },
+            "ReloadTruckLoadDto": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ReloadItemInputDto"
+                        }
+                    }
+                },
+                "required": [
+                    "items"
+                ]
+            },
+            "DeclaredItemInputDto": {
+                "type": "object",
+                "properties": {
+                    "gasCylinderId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "declaredFull": {
+                        "type": "number",
+                        "example": 4,
+                        "description": "Llenas que vuelven"
+                    },
+                    "declaredEmpty": {
+                        "type": "number",
+                        "example": 36,
+                        "description": "Vacías que vuelven"
+                    }
+                },
+                "required": [
+                    "gasCylinderId",
+                    "declaredFull",
+                    "declaredEmpty"
+                ]
+            },
+            "ReturnTruckLoadDto": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "description": "Lo que vuelve, de TODAS las garrafas de la carga (aunque vuelvan en cero)",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DeclaredItemInputDto"
+                        }
+                    }
+                },
+                "required": [
+                    "items"
+                ]
+            },
+            "CloseTruckLoadDto": {
+                "type": "object",
+                "properties": {
+                    "differenceNote": {
+                        "type": "string",
+                        "maxLength": 500,
+                        "description": "Obligatoria si lo declarado difiere de lo esperado (merma, pérdida o sobrante)"
+                    }
+                }
+            },
+            "CancelTruckLoadDto": {
+                "type": "object",
+                "properties": {
+                    "reason": {
+                        "type": "string",
+                        "maxLength": 300,
+                        "example": "El camión no salió"
+                    }
+                },
+                "required": [
+                    "reason"
                 ]
             },
             "CreateClaimDto": {
