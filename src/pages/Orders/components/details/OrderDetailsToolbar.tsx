@@ -1,7 +1,7 @@
 import { BellRing, CircleX, KeyRound, PackageCheck, PencilLine, Printer, RefreshCw, UserRoundCog } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AuditHistoryLink, Badge, Button, PageHeader } from '../../../../common/components/ui';
+import { AuditHistoryLink, Badge, Button, PageHeader, ReasonModal } from '../../../../common/components/ui';
 import { usePermissions } from '../../../../hooks';
 import type { Order } from '../../../../services/api/types';
 import { formatDateTime, formatShortId } from '../../../../utils/format';
@@ -11,6 +11,7 @@ import { CancelOrderModal } from '../CancelOrderModal';
 import { EditOrderModal } from '../EditOrderModal';
 import { orderEditBlockedReason } from '../orderEdit';
 import { ConfirmDeliveryModal } from '../ConfirmDeliveryModal';
+import { deliveryReasonCounter, deliveryReasonError } from '../deliveryReason';
 import {
   canAssignDriver,
   canCancel,
@@ -143,11 +144,29 @@ export const OrderDetailsToolbar = ({ order }: { order: Order }) => {
         onConfirm={actions.cancel}
         cancelling={actions.pending.cancel}
       />
+      <ReasonModal
+        open={actions.modal === 'deliver'}
+        onClose={actions.close}
+        title="Marcar como entregado"
+        description="Esta entrega se registra manualmente. Indicá por qué se confirma desde el panel."
+        placeholder="Ej: El cliente llamó para confirmar la recepción."
+        confirmLabel="Marcar como entregado"
+        danger={false}
+        onConfirm={actions.deliverManually}
+        loading={actions.pending.status}
+        closeBlocked={actions.pending.status}
+        validateReason={deliveryReasonError}
+        reasonHint={deliveryReasonCounter}
+        serverError={actions.manualDeliveryError}
+        onReasonChange={actions.clearManualDeliveryError}
+      />
       <ConfirmDeliveryModal
         open={actions.modal === 'confirm'}
         onClose={actions.close}
         onConfirm={actions.confirmDeliveryWithCode}
         confirming={actions.pending.confirm}
+        error={actions.confirmDeliveryError}
+        onEdit={actions.clearConfirmDeliveryError}
         defaultCode={actions.revealedCode ?? ''}
       />
     </>

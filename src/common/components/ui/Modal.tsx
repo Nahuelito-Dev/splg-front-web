@@ -7,6 +7,7 @@ import { IconButton } from './IconButton';
 interface Props {
   open: boolean;
   onClose: () => void;
+  closeBlocked?: boolean;
   title: string;
   description?: string;
   children: ReactNode;
@@ -19,14 +20,27 @@ interface Props {
  * Modal accesible: foco atrapado, Escape cierra y el título es el nombre del
  * diálogo (lo resuelve el Dialog de MUI). El contenido va con Tailwind.
  */
-export const Modal = ({ open, onClose, title, description, children, footer, size = 'sm' }: Props) => {
+export const Modal = ({
+  open,
+  onClose,
+  closeBlocked = false,
+  title,
+  description,
+  children,
+  footer,
+  size = 'sm',
+}: Props) => {
   const titleId = useId();
   // La confirmación (SweetAlert) vive fuera del Dialog: mientras está abierta, el Dialog no le roba el foco.
   const confirming = useSyncExternalStore(subscribeConfirmOpen, isConfirmOpen);
+  const close = () => {
+    if (!closeBlocked) onClose();
+  };
+
   return (
     <Dialog
       open={open}
-      onClose={onClose}
+      onClose={close}
       fullWidth
       disableEnforceFocus={confirming}
       maxWidth={size}
@@ -40,7 +54,7 @@ export const Modal = ({ open, onClose, title, description, children, footer, siz
           </h2>
           {description && <p className="mt-0.5 text-sm text-muted">{description}</p>}
         </div>
-        <IconButton label="Cerrar" icon={<CloseIcon />} onClick={onClose} />
+        <IconButton label="Cerrar" icon={<CloseIcon />} onClick={close} disabled={closeBlocked} />
       </div>
       <div className="max-h-[70vh] overflow-y-auto px-6 py-5">{children}</div>
       {footer && (

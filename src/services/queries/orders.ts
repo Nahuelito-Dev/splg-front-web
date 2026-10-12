@@ -30,6 +30,7 @@ import { SKIP } from '../../utils/batch';
 import { canAssignDriver, canCancel } from '../../pages/Orders/components/orderStatus';
 import { ORDER_FLOW } from '../../utils/statusLabels';
 import { useBatchMutation } from './batchMutation';
+import { runIntent } from './intent';
 import { queryKeys } from './queryKeys';
 import { useOrderStats } from './stats';
 
@@ -152,7 +153,10 @@ export const useAssignOrderDelivery = () => {
 export const useUpdateOrderStatus = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: UpdateOrderStatusBody }) => updateOrderStatus(id, body),
+    mutationFn: ({ id, body, scope }: { id: string; body: UpdateOrderStatusBody; scope?: string }) =>
+      scope
+        ? runIntent(queryClient, scope, { id, body }, (key) => updateOrderStatus(id, body, key))
+        : updateOrderStatus(id, body),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
   });
 };
@@ -168,7 +172,8 @@ export const useOrderDeliveryCode = () => useMutation({ mutationFn: (id: string)
 export const useConfirmOrderDelivery = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: ConfirmDeliveryBody }) => confirmOrderDelivery(id, body),
+    mutationFn: ({ id, body, scope }: { id: string; body: ConfirmDeliveryBody; scope: string }) =>
+      runIntent(queryClient, scope, { id, body }, (key) => confirmOrderDelivery(id, body, key)),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
   });
 };
