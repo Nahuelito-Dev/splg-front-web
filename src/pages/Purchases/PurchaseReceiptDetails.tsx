@@ -3,6 +3,7 @@ import type { GridColDef } from '@mui/x-data-grid';
 import { Ban, Banknote } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { useCrumbLeaf } from '../../common/components';
+import { AttachmentsPanel } from '../../common/components/AttachmentsPanel';
 import {
   Badge,
   Button,
@@ -178,6 +179,16 @@ export const PurchaseReceiptDetails = () => {
                     </p>
                   </div>
                 )}
+              />
+            </Card>
+            <Card className="p-6">
+              <AttachmentsPanel
+                ownerType="purchase_receipt"
+                ownerId={receipt.receiptId}
+                canWrite={canWrite}
+                blockedReason={writeHint}
+                title="Foto del remito"
+                hint="remito, factura, comprobante…"
               />
             </Card>
           </div>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { LogOut, PencilLine, Trash2 } from 'lucide-react';
+import { KeyRound, LogOut, PencilLine, RotateCcw, Trash2 } from 'lucide-react';
 import {
   AuditHistoryLink,
   Avatar,
@@ -26,6 +26,8 @@ import { useDeleteEmployee, useEmployee } from '../../services/queries/employees
 import { formatDate } from '../../utils/format';
 import { confirm, notify } from '../../utils/notifications';
 import { EmployeeFormModal } from './components/EmployeeFormModal';
+import { GrantAccountModal } from './components/GrantAccountModal';
+import { ReinstateEmployeeModal } from './components/ReinstateEmployeeModal';
 import { TerminateEmployeeModal } from './components/TerminateEmployeeModal';
 import { employeePhotoOwner } from './employeePhotoOwner';
 import {
@@ -47,6 +49,8 @@ export const EmployeeDetails = () => {
   const deleteEmployee = useDeleteEmployee();
   const [editing, setEditing] = useState(false);
   const [terminating, setTerminating] = useState(false);
+  const [reinstating, setReinstating] = useState(false);
+  const [granting, setGranting] = useState(false);
   const [tab, setTab] = useProfileTab(TAB_KEYS, 'summary');
 
   const name = employee ? employeeFullName(employee) : 'Sin nombre';
@@ -109,6 +113,28 @@ export const EmployeeDetails = () => {
                   onClick={() => canWrite && setTerminating(true)}
                 >
                   Registrar egreso
+                </Button>
+              )}
+              {employee.status === 'terminated' && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={<RotateCcw />}
+                  blockedReason={writeHint}
+                  onClick={() => canWrite && setReinstating(true)}
+                >
+                  Reincorporar
+                </Button>
+              )}
+              {employee.status === 'active' && !employee.hasAccount && employee.position.category === 'driver' && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={<KeyRound />}
+                  blockedReason={writeHint}
+                  onClick={() => canWrite && setGranting(true)}
+                >
+                  Crear cuenta de acceso
                 </Button>
               )}
               {!employee.hasAccount && (
@@ -248,7 +274,11 @@ export const EmployeeDetails = () => {
         </>
       )}
       {employee && (
-        <TerminateEmployeeModal open={terminating} onClose={() => setTerminating(false)} employee={employee} />
+        <>
+          <TerminateEmployeeModal open={terminating} onClose={() => setTerminating(false)} employee={employee} />
+          <ReinstateEmployeeModal open={reinstating} onClose={() => setReinstating(false)} employee={employee} />
+          <GrantAccountModal open={granting} onClose={() => setGranting(false)} employee={employee} />
+        </>
       )}
       <EmployeeFormModal open={editing} onClose={() => setEditing(false)} employee={employee ?? null} />
     </div>

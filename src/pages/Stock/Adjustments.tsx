@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import type { GridColDef } from '@mui/x-data-grid';
 import { ClipboardList, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -16,7 +15,7 @@ import {
   RowActions,
   Select,
 } from '../../common/components/ui';
-import { FROM_LIST_STATE, useUrlParams, usePermissions } from '../../hooks';
+import { FROM_LIST_STATE, useClampPage, useUrlPagedParams, usePermissions } from '../../hooks';
 import type { StockAdjustment } from '../../services/api/types';
 import { useAdjustments } from '../../services/queries/stock';
 import { formatDateTime } from '../../utils/format';
@@ -38,8 +37,10 @@ const summaryOf = (adjustment: StockAdjustment): string =>
 export const Adjustments = () => {
   const navigate = useNavigate();
   const { canWrite, writeHint } = usePermissions();
-  const [filters, setFilters] = useUrlParams({ reason: '', from: '', to: '', new: '' });
-  const [pagination, setPagination] = useState({ page: 0, pageSize: 10 });
+  const [filters, setFilters, pagination, setPagination] = useUrlPagedParams(
+    { reason: '', from: '', to: '', new: '' },
+    10,
+  );
   const { data, isFetching, error, refetch } = useAdjustments(pagination, {
     reason: (filters.reason || undefined) as StockAdjustment['reason'] | undefined,
     from: filters.from || undefined,
@@ -55,7 +56,6 @@ export const Adjustments = () => {
     ...(filters.to ? [{ key: 'to', label: `Hasta ${filters.to}` }] : []),
   ];
   const change = (patch: Partial<typeof filters>) => {
-    setPagination((p) => ({ ...p, page: 0 }));
     setFilters(patch);
   };
 
@@ -103,13 +103,20 @@ export const Adjustments = () => {
     },
   ];
 
+  useClampPage(pagination, data?.total, setPagination);
+
   return (
     <div className="mx-auto max-w-7xl p-4 md:p-8">
       <PageHeader
         title="Ajustes de stock"
         description="Mermas, fugas, roturas, pérdidas y correcciones. Cada ajuste lleva una nota y puede tener su foto o acta."
         actions={
-          <Button icon={<Plus />} disabled={!canWrite} title={writeHint} onClick={() => setFilters({ new: '1' })}>
+          <Button
+            icon={<Plus />}
+            disabled={!canWrite}
+            title={writeHint}
+            onClick={() => setFilters({ new: '1' }, { keepPage: true })}
+          >
             Nuevo ajuste
           </Button>
         }
@@ -179,7 +186,7 @@ export const Adjustments = () => {
       </Card>
       <AdjustmentFormModal
         open={filters.new === '1'}
-        onClose={() => setFilters({ new: '' })}
+        onClose={() => setFilters({ new: '' }, { keepPage: true })}
         onCreated={(adjustment) => navigate(`/stock/adjustments/${adjustment.adjustmentId}`)}
       />
     </div>

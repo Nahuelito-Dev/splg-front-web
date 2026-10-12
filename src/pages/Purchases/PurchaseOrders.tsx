@@ -16,7 +16,7 @@ import {
   RowActions,
   Select,
 } from '../../common/components/ui';
-import { FROM_LIST_STATE, usePermissions, useUrlParams } from '../../hooks';
+import { FROM_LIST_STATE, usePermissions, useClampPage, useUrlPagedParams } from '../../hooks';
 import type { PurchaseOrderSummary } from '../../services/api/types';
 import { usePurchaseOrders, useSupplierOptions } from '../../services/queries/purchases';
 import { formatCurrency, formatDay } from '../../utils/format';
@@ -35,8 +35,10 @@ const STATUS_OPTIONS = [
 export const PurchaseOrders = () => {
   const navigate = useNavigate();
   const { canWrite, writeHint } = usePermissions();
-  const [filters, setFilters] = useUrlParams({ status: '', supplier: '', from: '', to: '' });
-  const [pagination, setPagination] = useState({ page: 0, pageSize: 10 });
+  const [filters, setFilters, pagination, setPagination] = useUrlPagedParams(
+    { status: '', supplier: '', from: '', to: '' },
+    10,
+  );
   const [creating, setCreating] = useState(false);
   const suppliers = useSupplierOptions();
   const { data, isFetching, error, refetch } = usePurchaseOrders(pagination, {
@@ -48,7 +50,6 @@ export const PurchaseOrders = () => {
   const goTo = (row: PurchaseOrderSummary) =>
     navigate(`/purchases/orders/${row.purchaseOrderId}`, { state: FROM_LIST_STATE });
   const change = (patch: Partial<typeof filters>) => {
-    setPagination((p) => ({ ...p, page: 0 }));
     setFilters(patch);
   };
   const supplierName =
@@ -116,6 +117,8 @@ export const PurchaseOrders = () => {
       renderCell: ({ row }) => <RowActions rowLabel={`orden ${row.number}`} onView={() => goTo(row)} />,
     },
   ];
+
+  useClampPage(pagination, data?.total, setPagination);
 
   return (
     <div className="mx-auto max-w-7xl p-4 md:p-8">

@@ -17,7 +17,8 @@ vi.mock('../../utils/notifications', async (importOriginal) => ({
   confirm,
 }));
 const openFileSource = vi.hoisted(() => vi.fn(() => true));
-vi.mock('../../utils/fileSource', () => ({ openFileSource, saveFileSource: vi.fn() }));
+const saveFileSource = vi.hoisted(() => vi.fn());
+vi.mock('../../utils/fileSource', () => ({ openFileSource, saveFileSource }));
 
 import { AttachmentsPanel } from './AttachmentsPanel';
 
@@ -55,9 +56,21 @@ describe('AttachmentsPanel', () => {
     expect(api.listAttachments).toHaveBeenCalledWith('employee', 'e-1');
     fireEvent.click(screen.getByRole('button', { name: 'Ver DNI frente' }));
     await waitFor(() => expect(openFileSource).toHaveBeenCalledWith(expect.objectContaining({ url: SIGNED })));
-    expect(api.getAttachmentFile).toHaveBeenCalledWith('a-1');
+    expect(api.getAttachmentFile).toHaveBeenCalledWith('a-1', 'inline');
     // La URL firmada se usa para abrir el archivo, pero nunca se escribe en la pantalla ni en un enlace.
     expect(document.body.innerHTML).not.toContain('X-Amz-Signature');
+  });
+
+  it('«Descargar» pide la URL con disposición attachment, distinta de «Ver»', async () => {
+    api.listAttachments.mockResolvedValue([item]);
+    api.getAttachmentFile.mockResolvedValue({ kind: 'url', url: SIGNED, expiresAt: null });
+    renderPanel();
+    await screen.findByText('DNI frente');
+    fireEvent.click(screen.getByRole('button', { name: 'Descargar DNI frente' }));
+    await waitFor(() =>
+      expect(saveFileSource).toHaveBeenCalledWith(expect.objectContaining({ url: SIGNED }), 'dni.png'),
+    );
+    expect(api.getAttachmentFile).toHaveBeenCalledWith('a-1', 'attachment');
   });
 
   it('sube con la etiqueta y rechaza un tipo no permitido sin llamar al back', async () => {

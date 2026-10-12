@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import type { GridColDef } from '@mui/x-data-grid';
 import { BookOpen } from 'lucide-react';
 import {
@@ -13,7 +12,7 @@ import {
   ResponsiveTable,
   Select,
 } from '../../common/components/ui';
-import { useUrlParams } from '../../hooks';
+import { useClampPage, useUrlPagedParams } from '../../hooks';
 import type { StockMovement } from '../../services/api/types';
 import { useStockLocations, useStockMovements } from '../../services/queries/stock';
 import { formatDateTime } from '../../utils/format';
@@ -33,8 +32,10 @@ const detail = (m: StockMovement) =>
 
 /** El libro de movimientos de stock: sólo se agrega, nunca se edita. Filtros por fecha, motivo y ubicación. */
 export const Movements = () => {
-  const [filters, setFilters] = useUrlParams({ from: '', to: '', reason: '', location: '' });
-  const [pagination, setPagination] = useState({ page: 0, pageSize: 25 });
+  const [filters, setFilters, pagination, setPagination] = useUrlPagedParams(
+    { from: '', to: '', reason: '', location: '' },
+    25,
+  );
   const locations = useStockLocations();
   const { data, isFetching, error, refetch } = useStockMovements(pagination, {
     from: filters.from || undefined,
@@ -43,7 +44,6 @@ export const Movements = () => {
     locationId: filters.location || undefined,
   });
   const change = (patch: Partial<typeof filters>) => {
-    setPagination((p) => ({ ...p, page: 0 }));
     setFilters(patch);
   };
   const locationName = (locations.data ?? []).find((l) => l.locationId === filters.location)?.name ?? 'Ubicación';
@@ -91,6 +91,8 @@ export const Movements = () => {
       valueGetter: ({ row }) => row.notes ?? '—',
     },
   ];
+
+  useClampPage(pagination, data?.total, setPagination);
 
   return (
     <div className="mx-auto max-w-7xl p-4 md:p-8">

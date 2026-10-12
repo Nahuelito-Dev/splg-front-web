@@ -33,4 +33,27 @@ describe('NavItemLink', () => {
     renderLink(false, 0);
     expect(screen.queryByLabelText(/esperando chofer/)).not.toBeInTheDocument();
   });
+
+  it('con una ruta más específica en el menú, sólo esa queda activa (Legajos / Puestos)', () => {
+    const legajos = { title: 'Legajos', path: '/employees', icon: House };
+    const puestos = { title: 'Puestos', path: '/employees/positions', icon: House };
+    render(
+      <MemoryRouter initialEntries={['/employees/positions']}>
+        <NavItemLink item={legajos} mini={false} pendingCount={0} />
+        <NavItemLink item={puestos} mini={false} pendingCount={0} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole('link', { name: 'Puestos' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Legajos' })).not.toHaveAttribute('aria-current');
+  });
+
+  it('la ficha de un legajo sigue marcando «Legajos»', () => {
+    const legajos = { title: 'Legajos', path: '/employees', icon: House };
+    render(
+      <MemoryRouter initialEntries={['/employees/details/e-1']}>
+        <NavItemLink item={legajos} mini={false} pendingCount={0} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole('link', { name: 'Legajos' })).toHaveAttribute('aria-current', 'page');
+  });
 });

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { moneySchema } from './moneySchema';
 
 const units = (label: string) =>
   z.coerce
@@ -18,10 +19,7 @@ export const orderSchema = z.object({
       z.object({
         gasCylinderId: z.string().min(1, 'Elegí la garrafa'),
         quantity: units('quantity'),
-        unitCost: z.coerce
-          .number({ invalid_type_error: 'Ingresá un número' })
-          .min(0, 'No puede ser negativo')
-          .max(90000, 'Hasta $90.000 por garrafa'),
+        unitCost: moneySchema,
         emptiesToExchange: units('empties'),
       }),
     )

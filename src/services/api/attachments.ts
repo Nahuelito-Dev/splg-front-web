@@ -27,16 +27,26 @@ export const uploadAttachment = async (
   return data;
 };
 
+type AttachmentDisposition = 'attachment' | 'inline';
+
 /** GET /attachments/:id/download?modo=url: la URL firmada vigente (vence en minutos). */
-export const getAttachmentLink = async (attachmentId: string): Promise<DownloadLink> => {
-  const { data } = await http.get<DownloadLink>(`/attachments/${attachmentId}/download`, { params: { modo: 'url' } });
+export const getAttachmentLink = async (
+  attachmentId: string,
+  disposition: AttachmentDisposition = 'attachment',
+): Promise<DownloadLink> => {
+  const { data } = await http.get<DownloadLink>(`/attachments/${attachmentId}/download`, {
+    params: { modo: 'url', disposicion: disposition },
+  });
   return data;
 };
 
 /** La URL firmada del adjunto, lista para abrir o guardar. Nunca se guarda: se pide cada vez. */
-export const getAttachmentFile = async (attachmentId: string): Promise<FileSource> => {
+export const getAttachmentFile = async (
+  attachmentId: string,
+  disposition: AttachmentDisposition = 'attachment',
+): Promise<FileSource> => {
   const source = await resolveFileSource(
-    () => getAttachmentLink(attachmentId),
+    () => getAttachmentLink(attachmentId, disposition),
     () => Promise.reject(new Error('El adjunto sólo se descarga por URL firmada')),
   );
   if (!source) throw new Error('El adjunto no tiene archivo');

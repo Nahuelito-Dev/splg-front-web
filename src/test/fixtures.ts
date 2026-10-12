@@ -1,0 +1,107 @@
+import type {
+  PurchaseOrderSummary,
+  PurchaseReceiptSummary,
+  StockMovement,
+  Supplier,
+  TruckLoadSummary,
+} from '../services/api/types';
+
+export const PLACE_A = { locationId: 'l-1', name: 'Galpón Central', kind: 'warehouse' as const };
+export const PLACE_B = { locationId: 'l-2', name: 'Camión AB123CD', kind: 'vehicle' as const };
+
+export const movement = (over: Partial<StockMovement> = {}): StockMovement => ({
+  movementId: 'm-1',
+  batchId: 'b-1',
+  occurredAt: '2026-10-10T12:00:00.000Z',
+  gasCylinderId: 'g-1',
+  gasCylinderType: '10kg',
+  quantity: 5,
+  from: PLACE_A,
+  fromCondition: 'full',
+  to: PLACE_B,
+  toCondition: 'full',
+  reason: 'transfer',
+  referenceType: 'transfer',
+  referenceId: 'b-1',
+  reversedMovementId: null,
+  notes: null,
+  actorName: 'Ana',
+  ...over,
+});
+
+export const supplier = (over: Partial<Supplier> = {}): Supplier => ({
+  supplierId: 's-1',
+  businessName: 'Gas del Norte SA',
+  cuit: '30715123459',
+  kind: 'filling_plant',
+  contactName: 'Luis',
+  phone: null,
+  email: null,
+  address: null,
+  paymentTermsDays: 30,
+  isActive: true,
+  createdAt: '2026-10-01T10:00:00.000Z',
+  updatedAt: '2026-10-01T10:00:00.000Z',
+  ...over,
+});
+
+export const orderSummary = (over: Partial<PurchaseOrderSummary> = {}): PurchaseOrderSummary => ({
+  purchaseOrderId: 'po-1',
+  number: 12,
+  supplierId: 's-1',
+  supplierName: 'Gas del Norte SA',
+  destinationWarehouseId: 'w-1',
+  destinationWarehouseName: 'Galpón Central',
+  status: 'sent',
+  issuedAt: '2026-10-09T10:00:00.000Z',
+  expectedDate: null,
+  totalAmount: 50000,
+  cancelReason: null,
+  closeReason: null,
+  notes: null,
+  orderedQuantity: 10,
+  receivedQuantity: 4,
+  pendingQuantity: 6,
+  createdAt: '2026-10-09T10:00:00.000Z',
+  updatedAt: '2026-10-09T10:00:00.000Z',
+  ...over,
+});
+
+export const receiptSummary = (over: Partial<PurchaseReceiptSummary> = {}): PurchaseReceiptSummary => ({
+  receiptId: 'r-1',
+  number: 21,
+  supplierId: 's-1',
+  supplierName: 'Gas del Norte SA',
+  purchaseOrderId: null,
+  purchaseOrderNumber: null,
+  warehouseId: 'w-1',
+  warehouseName: 'Galpón Central',
+  supplierDocumentType: 'delivery_note',
+  supplierDocumentNumber: '0001-00001234',
+  receivedAt: '2026-10-10T12:00:00.000Z',
+  totalAmount: 120000,
+  paymentStatus: 'unpaid',
+  status: 'confirmed',
+  ...over,
+});
+
+export const loadSummary = (over: Partial<TruckLoadSummary> = {}): TruckLoadSummary => ({
+  loadId: 'tl-1',
+  number: 33,
+  status: 'loading',
+  businessDate: '2026-10-12',
+  carId: 'c-1',
+  carPatent: 'AB123CD',
+  deliveryId: 'd-1',
+  driverName: 'Pedro Pérez',
+  helperEmployeeId: null,
+  helperName: null,
+  originWarehouseId: 'w-1',
+  originName: 'Galpón Central',
+  openedAt: '2026-10-12T08:00:00.000Z',
+  departedAt: null,
+  returnedAt: null,
+  closedAt: null,
+  itemsCount: 2,
+  ...over,
+});

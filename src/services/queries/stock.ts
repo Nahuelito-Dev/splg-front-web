@@ -35,6 +35,7 @@ import type {
   ReverseBatchBody,
   UpsertThresholdsBody,
 } from '../api/types';
+import { clearIntent } from '../api/idempotency';
 import { runIntent } from './intent';
 import { queryKeys } from './queryKeys';
 
@@ -48,6 +49,7 @@ export const invalidateStockViews = (queryClient: QueryClient) =>
       queryKeys.truckLoads,
       queryKeys.purchaseOrders,
       queryKeys.purchaseReceipts,
+      queryKeys.suppliers,
     ].map((resource) => queryClient.invalidateQueries({ queryKey: resource.all })),
   );
 
@@ -144,6 +146,26 @@ export const useAdjustments = (params: ListParams, filters: AdjustmentFilters, {
     enabled,
   });
 
+const COUNT_PAGE_SIZE = 100;
+
+/** El conteo inicial de una ubicación, recorriendo las páginas hasta dar con él (la API no filtra por ubicación). */
+export const findInitialCount = async (locationId: string) => {
+  for (let page = 0; ; page += 1) {
+    const result = await listAdjustments({ page, pageSize: COUNT_PAGE_SIZE }, { reason: 'initial_count' });
+    const found = result.data.find((a) => a.location.locationId === locationId);
+    if (found) return found;
+    if ((page + 1) * COUNT_PAGE_SIZE >= result.total) return null;
+  }
+};
+
+/** `null` si la ubicación no tiene conteo inicial; `undefined` mientras carga o si la consulta falla. */
+export const useInitialCount = (locationId: string | undefined) =>
+  useQuery({
+    queryKey: keys.list({ initialCount: locationId }),
+    queryFn: () => findInitialCount(locationId ?? ''),
+    enabled: Boolean(locationId),
+  });
+
 export const useAdjustment = (id: string | undefined, { enabled = true }: Options = {}) =>
   useQuery({
     queryKey: keys.detail(`adjustment:${id}`),
@@ -216,10 +238,21 @@ export const useCreateReconciliationAdjustment = () => {
   });
 };
 
+/**
+ * Cada pedido del usuario es una acción nueva: el cuerpo es siempre `{}` y el back guarda 24 h la respuesta de cada clave,
+ * así que una clave compartida devolvería el resultado de una reaplicación anterior.
+ */
 export const useReapplyDeliveries = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (scope: string) => runIntent(queryClient, scope, {}, (key) => reapplyDeliveries(key)),
+    mutationFn: async () => {
+      const scope = `reapply:${crypto.randomUUID()}`;
+      try {
+        return await runIntent(queryClient, scope, {}, (key) => reapplyDeliveries(key));
+      } finally {
+        clearIntent(scope);
+      }
+    },
     onSuccess: () => invalidateStockViews(queryClient),
   });
 };

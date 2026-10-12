@@ -15,7 +15,7 @@ import {
   ResponsiveTable,
 } from '../../common/components/ui';
 import { useBackToList, usePermissions } from '../../hooks';
-import { useAdjustments, useUpdateWarehouse, useWarehouse } from '../../services/queries/stock';
+import { useInitialCount, useUpdateWarehouse, useWarehouse } from '../../services/queries/stock';
 import { confirm, notify } from '../../utils/notifications';
 import { formatDateTime } from '../../utils/format';
 import { WAREHOUSE_KIND, labelOf } from '../../utils/statusLabels';
@@ -41,10 +41,8 @@ export const WarehouseDetails = () => {
   const [editing, setEditing] = useState(false);
   const [counting, setCounting] = useState(false);
   // El conteo inicial se hace una vez: si ya existe, se avisa. Si la consulta falla no se afirma nada: la API lo exige igual.
-  const counts = useAdjustments({ page: 0, pageSize: 100 }, { reason: 'initial_count' });
-  const initialCount = warehouse
-    ? counts.data?.data.find((a) => a.location.locationId === warehouse.locationId)
-    : undefined;
+  const counts = useInitialCount(warehouse?.locationId);
+  const initialCount = counts.data ?? undefined;
 
   const setDefault = async () => {
     if (!warehouse) return;
@@ -83,7 +81,7 @@ export const WarehouseDetails = () => {
                   Marcar predeterminado
                 </Button>
               )}
-              {canWrite && !initialCount && warehouse.isActive && (
+              {canWrite && counts.isSuccess && !initialCount && warehouse.isActive && (
                 <Button variant="secondary" size="sm" icon={<ClipboardCheck />} onClick={() => setCounting(true)}>
                   Conteo inicial
                 </Button>
@@ -124,7 +122,18 @@ export const WarehouseDetails = () => {
                       N° {initialCount.number} · {formatDateTime(initialCount.createdAt)}
                     </Link>
                   ) : counts.isError ? (
-                    'No se pudo consultar'
+                    <span>
+                      No se pudo consultar.{' '}
+                      <button
+                        type="button"
+                        className="font-semibold text-primary underline"
+                        onClick={() => void counts.refetch()}
+                      >
+                        Reintentar
+                      </button>
+                    </span>
+                  ) : counts.isPending ? (
+                    'Consultando…'
                   ) : (
                     'Pendiente'
                   ),

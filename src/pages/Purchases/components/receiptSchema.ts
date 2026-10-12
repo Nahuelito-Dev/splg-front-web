@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { moneySchema } from './moneySchema';
 
 const units = z.coerce
   .number({ invalid_type_error: 'Ingresá un número' })
@@ -28,10 +29,7 @@ export const receiptSchema = z
           pending: z.number().optional(),
           quantityFull: units,
           quantityEmptyOut: units,
-          unitCost: z.coerce
-            .number({ invalid_type_error: 'Ingresá un número' })
-            .min(0, 'No puede ser negativo')
-            .max(90000, 'Hasta $90.000 por garrafa'),
+          unitCost: moneySchema,
         }),
       )
       .max(20, 'Hasta 20 renglones'),
