@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ReasonModal } from './ReasonModal';
 
@@ -19,10 +19,16 @@ const renderModal = (onConfirm = vi.fn(), required = true) =>
   );
 
 describe('ReasonModal', () => {
+  it('enfoca el motivo al abrir', async () => {
+    renderModal();
+    await waitFor(() => expect(screen.getByRole('textbox')).toHaveFocus());
+  });
+
   it('sin motivo no confirma y avisa', () => {
     const onConfirm = vi.fn();
     renderModal(onConfirm);
-    fireEvent.click(screen.getByRole('button', { name: 'Dar de baja' }));
+    fireEvent.mouseDown(screen.getByRole('button', { name: 'Dar de baja' }));
+    fireEvent.blur(screen.getByRole('textbox'));
     expect(onConfirm).not.toHaveBeenCalled();
     expect(screen.getByText('Escribí el motivo')).toBeInTheDocument();
   });
@@ -40,5 +46,28 @@ describe('ReasonModal', () => {
     renderModal(onConfirm, false);
     fireEvent.click(screen.getByRole('button', { name: 'Dar de baja' }));
     expect(onConfirm).toHaveBeenCalledWith('');
+  });
+
+  it('muestra ayuda y error a la vez y bloquea cerrar mientras carga', () => {
+    const onClose = vi.fn();
+    render(
+      <ReasonModal
+        open
+        onClose={onClose}
+        onConfirm={vi.fn()}
+        title="Entregar"
+        description="Motivo obligatorio"
+        confirmLabel="Entregar"
+        loading
+        validateReason={(reason) => (reason.trim().length < 10 ? 'Escribí al menos 10 caracteres' : undefined)}
+        reasonHint={(reason) => `${reason.trim().length}/500`}
+        serverError="El pedido ya fue cerrado"
+      />,
+    );
+    expect(screen.getByText('0/500')).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('El pedido ya fue cerrado');
+    fireEvent.click(screen.getByRole('button', { name: 'Volver' }));
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Cerrar' })).toBeDisabled();
   });
 });

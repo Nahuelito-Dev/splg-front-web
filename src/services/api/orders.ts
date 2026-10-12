@@ -1,4 +1,5 @@
 import { http, toQuery, type PageParams } from './httpClient';
+import { idempotencyHeaders } from './idempotency';
 import type {
   CancelOrderBody,
   CodigoDeEntrega,
@@ -79,8 +80,16 @@ export const assignOrderDelivery = async (id: string, deliveryId: string): Promi
  * sólo la usa para las transiciones que no necesitan asignar chofer ni
  * restituir stock (eso lo hacen `assignOrderDelivery` y `cancelOrder`).
  */
-export const updateOrderStatus = async (id: string, body: UpdateOrderStatusBody): Promise<Order> => {
-  const { data } = await http.patch<Order>(`/orders/${id}/status`, body);
+export const updateOrderStatus = async (
+  id: string,
+  body: UpdateOrderStatusBody,
+  idempotencyKey?: string,
+): Promise<Order> => {
+  const { data } = await http.patch<Order>(
+    `/orders/${id}/status`,
+    body,
+    idempotencyKey ? { headers: idempotencyHeaders(idempotencyKey) } : undefined,
+  );
   return data;
 };
 
@@ -95,8 +104,14 @@ export const getOrderDeliveryCode = async (id: string): Promise<CodigoDeEntrega>
 };
 
 /** POST /orders/:id/confirm-delivery: confirma la entrega con el código leído del QR del chofer. */
-export const confirmOrderDelivery = async (id: string, body: ConfirmDeliveryBody): Promise<Order> => {
-  const { data } = await http.post<Order>(`/orders/${id}/confirm-delivery`, body);
+export const confirmOrderDelivery = async (
+  id: string,
+  body: ConfirmDeliveryBody,
+  idempotencyKey: string,
+): Promise<Order> => {
+  const { data } = await http.post<Order>(`/orders/${id}/confirm-delivery`, body, {
+    headers: idempotencyHeaders(idempotencyKey),
+  });
   return data;
 };
 

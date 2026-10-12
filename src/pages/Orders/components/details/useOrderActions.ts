@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Order } from '../../../../services/api/types';
+import { errorMessage } from '../../../../services/api/errors';
 import {
   useAssignOrderDelivery,
   useCancelOrder,
@@ -11,7 +12,7 @@ import {
 import { confirm, notify } from '../../../../utils/notifications';
 import { canViewDeliveryCode, manualStatusActionLabel } from '../orderStatus';
 
-export type OrderModal = 'closed' | 'assign' | 'cancel' | 'confirm';
+export type OrderModal = 'closed' | 'assign' | 'cancel' | 'confirm' | 'deliver';
 
 /**
  * Todas las acciones operativas de un pedido (asignar, cambiar estado,
@@ -20,7 +21,12 @@ export type OrderModal = 'closed' | 'assign' | 'cancel' | 'confirm';
  */
 export const useOrderActions = (order: Order) => {
   const [modal, setModal] = useState<OrderModal>('closed');
+  const modalRef = useRef<OrderModal>('closed');
+  const manualDeliverySubmitting = useRef(false);
+  const confirmDeliverySubmitting = useRef(false);
   const [revealed, setRevealed] = useState<{ orderId: string; code: string } | null>(null);
+  const [manualDeliveryError, setManualDeliveryError] = useState<string | null>(null);
+  const [confirmDeliveryError, setConfirmDeliveryError] = useState<string | null>(null);
   // El código pertenece al pedido que se consultó: no se arrastra a otro ni sobrevive a un estado que ya no lo admite.
   const revealedCode = revealed?.orderId === order.order_id && canViewDeliveryCode(order.status) ? revealed.code : null;
   const assignDelivery = useAssignOrderDelivery();
@@ -29,7 +35,20 @@ export const useOrderActions = (order: Order) => {
   const deliveryCode = useOrderDeliveryCode();
   const confirmDelivery = useConfirmOrderDelivery();
   const notifyArrival = useNotifyOrderArrival();
-  const close = () => setModal('closed');
+
+  useEffect(() => {
+    modalRef.current = modal;
+  }, [modal]);
+
+  const open = (next: OrderModal) => {
+    if (next === 'deliver') setManualDeliveryError(null);
+    if (next === 'confirm') setConfirmDeliveryError(null);
+    setModal(next);
+  };
+  const close = () => {
+    if ((modal === 'deliver' && updateStatus.isPending) || (modal === 'confirm' && confirmDelivery.isPending)) return;
+    setModal('closed');
+  };
 
   const assign = (deliveryId: string) =>
     assignDelivery.mutate(
@@ -56,6 +75,10 @@ export const useOrderActions = (order: Order) => {
     );
 
   const changeStatus = async (target: Order['status']) => {
+    if (target === 'delivered') {
+      open('deliver');
+      return;
+    }
     const confirmed = await confirm({
       title: `¿${manualStatusActionLabel(order.status, target)}?`,
       text: 'Cambio de estado manual: no pasa por el flujo normal de despacho.',
@@ -64,6 +87,30 @@ export const useOrderActions = (order: Order) => {
     updateStatus.mutate(
       { id: order.order_id, body: { status: target } },
       { onSuccess: () => notify.success('Estado actualizado'), onError: notify.error },
+    );
+  };
+
+  const deliverManually = (reason: string) => {
+    if (manualDeliverySubmitting.current) return;
+    manualDeliverySubmitting.current = true;
+    setManualDeliveryError(null);
+    const body = { status: 'delivered', reason } as const;
+    updateStatus.mutate(
+      { id: order.order_id, body, scope: `order:${order.order_id}:deliver-manual` },
+      {
+        onSuccess: () => {
+          notify.success('Estado actualizado');
+          close();
+        },
+        onError: (error) => {
+          const message = errorMessage(error);
+          if (modalRef.current === 'deliver') setManualDeliveryError(message);
+          else notify.error(new Error(message));
+        },
+        onSettled: () => {
+          manualDeliverySubmitting.current = false;
+        },
+      },
     );
   };
 
@@ -82,17 +129,29 @@ export const useOrderActions = (order: Order) => {
     });
   };
 
-  const confirmDeliveryWithCode = (code: string) =>
+  const confirmDeliveryWithCode = (code: string, reason: string) => {
+    if (confirmDeliverySubmitting.current) return;
+    confirmDeliverySubmitting.current = true;
+    setConfirmDeliveryError(null);
+    const body = { code, reason };
     confirmDelivery.mutate(
-      { id: order.order_id, body: { code } },
+      { id: order.order_id, body, scope: `order:${order.order_id}:confirm-delivery` },
       {
         onSuccess: () => {
           notify.success('Entrega confirmada');
           close();
         },
-        onError: notify.error,
+        onError: (error) => {
+          const message = errorMessage(error);
+          if (modalRef.current === 'confirm') setConfirmDeliveryError(message);
+          else notify.error(new Error(message));
+        },
+        onSettled: () => {
+          confirmDeliverySubmitting.current = false;
+        },
       },
     );
+  };
 
   const announceArrival = async () => {
     const confirmed = await confirm({
@@ -108,12 +167,17 @@ export const useOrderActions = (order: Order) => {
 
   return {
     modal,
-    open: setModal,
+    open,
     close,
     revealedCode,
+    manualDeliveryError,
+    confirmDeliveryError,
+    clearManualDeliveryError: () => setManualDeliveryError(null),
+    clearConfirmDeliveryError: () => setConfirmDeliveryError(null),
     assign,
     cancel,
     changeStatus,
+    deliverManually,
     viewCode,
     confirmDeliveryWithCode,
     announceArrival,

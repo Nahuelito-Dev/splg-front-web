@@ -24,7 +24,7 @@ interface FieldProps {
 }
 
 const describedBy = (id: string, error?: string, hint?: string) =>
-  error ? `${id}-error` : hint ? `${id}-hint` : undefined;
+  [error ? `${id}-error` : null, hint ? `${id}-hint` : null].filter(Boolean).join(' ') || undefined;
 
 /** Envoltorio común: etiqueta asociada, ayuda y error anunciado a lectores de pantalla. */
 const FieldShell = ({
@@ -45,16 +45,21 @@ const FieldShell = ({
       )}
     </label>
     {children}
-    {error ? (
-      <p id={`${id}-error`} role="alert" className="text-xs text-danger">
-        {error}
-      </p>
-    ) : (
-      hint && (
-        <p id={`${id}-hint`} className="text-xs text-muted">
-          {hint}
-        </p>
-      )
+    {(error || hint) && (
+      <div className="flex items-start justify-between gap-3">
+        {error ? (
+          <p id={`${id}-error`} role="alert" className="text-xs text-danger">
+            {error}
+          </p>
+        ) : (
+          <span />
+        )}
+        {hint && (
+          <p id={`${id}-hint`} className="text-xs text-muted">
+            {hint}
+          </p>
+        )}
+      </div>
     )}
   </div>
 );

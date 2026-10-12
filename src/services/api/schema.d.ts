@@ -1218,7 +1218,7 @@ export interface paths {
      *     - `status: pending` sobre un pedido ACCEPTED/ON_THE_WAY libera al chofer asignado (mismo camino que el punto anterior): limpia el chofer, corta su tracking, cierra cualquier oferta que hubiera quedado y avisa al chofer anterior, al cliente y al panel. `POST /:id/reject` sobre una asignación manual NO usa este camino: no libera, sólo avisa al panel (ver `/reject`).
      *     - `status: pending` sobre una RESERVA (pedido `reserved`) la ACTIVA a mano, con las mismas condiciones que el cron (seña paga y día agendado cumplido) — sólo admin/super_admin, 400 claro si no las cumple.
      *     - `status: accepted` sobre un pedido YA `accepted` con el MISMO chofer es idempotente: no regenera `acceptedAt` ni el código de entrega (pasa cuando el chofer "acepta" el aviso de una asignación manual).
-     *     - `status: delivered` NO lo puede pedir el chofer (403): la entrega se confirma con el QR del cliente en `POST /:id/confirm-delivery`. El admin/super_admin sí puede marcarla por acá (cliente sin celular).
+     *     - `status: delivered` NO lo puede pedir el chofer (403): la entrega se confirma con el QR del cliente en `POST /:id/confirm-delivery`. El admin/super_admin sí puede marcarla por acá (cliente sin celular), pero tiene que mandar `reason` (mínimo 10 caracteres, 400 si falta): queda en el historial de estados (`order_status_history`) y en la auditoría de datos (campo `manualDeliveryReason` del `Order`).
      */
     patch: operations['OrderController_updateStatus'];
     trace?: never;
@@ -1276,7 +1276,7 @@ export interface paths {
     put?: never;
     /**
      * Confirmar entrega escaneando el QR del chofer (prueba anti-fraude)
-     * @description El cliente escanea el QR que muestra el chofer y envía el código leído. Si coincide con `order.deliveryCode` y el pedido está ON_THE_WAY, se marca DELIVERED. Idempotente vía header `Idempotency-Key`: reintentos de red no re-procesan la entrega.
+     * @description El cliente escanea el QR que muestra el chofer y envía el código leído. Si coincide con `order.deliveryCode` y el pedido está ON_THE_WAY, se marca DELIVERED. Idempotente vía header `Idempotency-Key`: reintentos de red no re-procesan la entrega. Si lo confirma un admin/super_admin, `reason` es obligatorio (10 a 500 caracteres, 400 si falta) y queda en el historial de estados y en la auditoría; para el cliente no se pide y se ignora.
      */
     post: operations['OrderController_confirmDelivery'];
     delete?: never;
@@ -4841,6 +4841,11 @@ export interface components {
       status: 'reserved' | 'pending' | 'accepted' | 'out_for_delivery' | 'delivered' | 'cancelled';
       /** @description ID del repartidor (solo admin; el chofer usa su token) */
       deliveryId?: string;
+      /**
+       * @description Motivo de la entrega manual. Obligatorio (mínimo 10 caracteres) cuando un admin/super_admin pasa el pedido a `delivered`; queda en el historial de estados y en la auditoría. Se ignora en los demás estados.
+       * @example El cliente no tiene celular: confirmó la entrega por teléfono
+       */
+      reason?: string;
     };
     RechazoDeOfertaResponseDto: {
       /** @description false si el chofer no tenía una oferta activa del pedido */
@@ -4858,6 +4863,11 @@ export interface components {
        * @example A1B2C3D4E5
        */
       code: string;
+      /**
+       * @description Motivo de la entrega. Obligatorio (10 a 500 caracteres) si confirma un admin/super_admin; para el cliente no se pide y se ignora.
+       * @example El cliente no tiene celular: confirmó por teléfono
+       */
+      reason?: string;
     };
     ResolveUnpaidDto: {
       /**
@@ -6234,15 +6244,15 @@ export interface components {
        * @example CENTRAL
        */
       code?: string;
-      /**
-       * @default depot
-       * @enum {string}
-       */
-      kind: 'depot' | 'branch';
       /** @example Av. Siempreviva 742 */
       address?: string;
       /** @description Lo deja como predeterminado (el que usa la entrega cuando el camión no tiene stock). El primero que se crea lo es siempre. */
       isDefault?: boolean;
+      /**
+       * @description Sólo cambia si se envía; si falta, conserva el tipo actual
+       * @enum {string}
+       */
+      kind?: 'depot' | 'branch';
       /** @description false lo deja fuera de las listas de operación; no se puede con el predeterminado */
       isActive?: boolean;
     };
@@ -6710,6 +6720,13 @@ export interface components {
        */
       itemsCount: number;
       items: components['schemas']['TruckLoadItemResponseDto'][];
+      /** @description Vista previa del cierre (mismo cálculo que `close`): true si la rendición tendría diferencias (declarado distinto del esperado, o el camión con otra cosa que lo declarado). null mientras no se declaró la vuelta de todos los renglones y en cargas cerradas o canceladas (ahí vale el estado). */
+      hayDiferencia: boolean | null;
+      /**
+       * @description true si el camión entregó garrafas DESPUÉS de declarar la vuelta: el cierre respondería 409 hasta que el chofer vuelva a declarar. En ese caso `hayDiferencia` es null.
+       * @example false
+       */
+      requiereVolverADeclarar: boolean;
       differenceNote: string | null;
       cancelReason: string | null;
       notes: string | null;
@@ -7343,18 +7360,21 @@ export interface components {
        */
       kind: 'filling_plant' | 'other';
       /** @example Marta Gómez */
-      contactName?: Record<string, never>;
+      contactName?: string | null;
       /** @example +5493624123456 */
-      phone?: Record<string, never>;
-      /** @example compras@gasdellitoral.com.ar */
-      email?: Record<string, never>;
+      phone?: string | null;
+      /**
+       * Format: email
+       * @example compras@gasdellitoral.com.ar
+       */
+      email?: string | null;
       /** @example Ruta 11 km 1005, Resistencia */
-      address?: Record<string, never>;
+      address?: string | null;
       /**
        * @description Plazo de pago en días (0 = contado)
        * @example 30
        */
-      paymentTermsDays?: Record<string, never>;
+      paymentTermsDays?: number | null;
     };
     PurchaseReceiptSummaryDto: {
       /** Format: uuid */
@@ -7431,18 +7451,21 @@ export interface components {
        */
       kind?: 'filling_plant' | 'other';
       /** @example Marta Gómez */
-      contactName?: Record<string, never>;
+      contactName?: string | null;
       /** @example +5493624123456 */
-      phone?: Record<string, never>;
-      /** @example compras@gasdellitoral.com.ar */
-      email?: Record<string, never>;
+      phone?: string | null;
+      /**
+       * Format: email
+       * @example compras@gasdellitoral.com.ar
+       */
+      email?: string | null;
       /** @example Ruta 11 km 1005, Resistencia */
-      address?: Record<string, never>;
+      address?: string | null;
       /**
        * @description Plazo de pago en días (0 = contado)
        * @example 30
        */
-      paymentTermsDays?: Record<string, never>;
+      paymentTermsDays?: number | null;
       /** @description false lo deja fuera de las listas de operación */
       isActive?: boolean;
     };
@@ -7483,7 +7506,7 @@ export interface components {
        */
       expectedDate?: string | null;
       /** @example Entrega en horario de la mañana */
-      notes?: Record<string, never>;
+      notes?: string | null;
       items: components['schemas']['PurchaseOrderItemInputDto'][];
     };
     PurchaseOrderItemResponseDto: {
@@ -7628,7 +7651,7 @@ export interface components {
        */
       expectedDate?: string | null;
       /** @example Entrega en horario de la mañana */
-      notes?: Record<string, never>;
+      notes?: string | null;
       items?: components['schemas']['PurchaseOrderItemInputDto'][];
     };
     CancelPurchaseOrderDto: {
@@ -7694,7 +7717,7 @@ export interface components {
        */
       receivedAt?: string;
       /** @example Llegó en el camión de las 14 */
-      notes?: Record<string, never>;
+      notes?: string | null;
       items: components['schemas']['PurchaseReceiptItemInputDto'][];
     };
     PurchaseReceiptItemResponseDto: {
@@ -12140,6 +12163,13 @@ export interface operations {
         };
         content?: never;
       };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
   };
   OrderController_findByCustomer: {
@@ -12553,6 +12583,13 @@ export interface operations {
         };
         content?: never;
       };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
   };
   OrderController_rejectOffer: {
@@ -12584,6 +12621,13 @@ export interface operations {
       };
       /** @description Requiere rol: delivery */
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
         headers: {
           [name: string]: unknown;
         };
@@ -12694,6 +12738,13 @@ export interface operations {
         };
         content?: never;
       };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
   };
   OrderController_confirmCashReceived: {
@@ -12747,6 +12798,13 @@ export interface operations {
       };
       /** @description El pago ya se informó como impago (lo resuelve un admin) */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
         headers: {
           [name: string]: unknown;
         };
@@ -12808,6 +12866,13 @@ export interface operations {
       };
       /** @description El pedido no tiene el pago informado como impago */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
         headers: {
           [name: string]: unknown;
         };
@@ -12989,6 +13054,13 @@ export interface operations {
       };
       /** @description Order with ID: {id} not found */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
         headers: {
           [name: string]: unknown;
         };
@@ -16631,6 +16703,13 @@ export interface operations {
         };
         content?: never;
       };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
   };
   StockController_transferir: {
@@ -16677,6 +16756,13 @@ export interface operations {
       };
       /** @description Depósito, vehículo o garrafa inexistente o de otra distribuidora */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
         headers: {
           [name: string]: unknown;
         };
@@ -16735,6 +16821,13 @@ export interface operations {
       };
       /** @description El depósito ya tiene su conteo inicial */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
         headers: {
           [name: string]: unknown;
         };
@@ -16826,6 +16919,13 @@ export interface operations {
       };
       /** @description Ubicación o garrafa inexistente */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
         headers: {
           [name: string]: unknown;
         };
@@ -17017,6 +17117,13 @@ export interface operations {
         };
         content?: never;
       };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
   };
   StockController_corregirVendible: {
@@ -17063,6 +17170,13 @@ export interface operations {
       };
       /** @description La diferencia cambió */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
         headers: {
           [name: string]: unknown;
         };
@@ -17117,6 +17231,13 @@ export interface operations {
       };
       /** @description No existe o es de otra distribuidora */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
         headers: {
           [name: string]: unknown;
         };
@@ -17369,6 +17490,13 @@ export interface operations {
         };
         content?: never;
       };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
   };
   TruckLoadController_detail: {
@@ -17516,6 +17644,13 @@ export interface operations {
         };
         content?: never;
       };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
   };
   TruckLoadController_reloadAction: {
@@ -17567,6 +17702,13 @@ export interface operations {
       };
       /** @description No existe o es de otra distribuidora */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
         headers: {
           [name: string]: unknown;
         };
@@ -17675,6 +17817,13 @@ export interface operations {
       };
       /** @description No existe o es de otra distribuidora */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
         headers: {
           [name: string]: unknown;
         };
@@ -19602,6 +19751,13 @@ export interface operations {
         };
         content?: never;
       };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
   };
   AuditController_consultar: {
@@ -19859,6 +20015,13 @@ export interface operations {
       };
       /** @description Ya hay un proveedor vigente con ese CUIT */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
         headers: {
           [name: string]: unknown;
         };
@@ -20145,6 +20308,13 @@ export interface operations {
       };
       /** @description Proveedor, depósito o garrafa inexistente */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
         headers: {
           [name: string]: unknown;
         };
@@ -20555,6 +20725,13 @@ export interface operations {
         };
         content?: never;
       };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
   };
   PurchaseReceiptController_costos: {
@@ -20687,6 +20864,13 @@ export interface operations {
       };
       /** @description Ya está anulada, o las llenas ya no están en el depósito donde entraron */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
         headers: {
           [name: string]: unknown;
         };
