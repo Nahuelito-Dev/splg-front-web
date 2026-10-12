@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { labelOf, ORDER_STATUS, vehicleAssignmentStatus } from './statusLabels';
+import {
+  INCIDENT_TYPE,
+  labelOf,
+  ORDER_STATUS,
+  PAYMENT_STATUS,
+  PAYMENT_STATUS_ORDER,
+  vehicleAssignmentStatus,
+} from './statusLabels';
 
 describe('statusLabels', () => {
   it('los dos nombres de "en camino" se muestran igual', () => {
@@ -17,5 +24,19 @@ describe('statusLabels', () => {
 
   it('una asignación de vehículo con `releasedAt` ya se liberó', () => {
     expect(vehicleAssignmentStatus('2026-09-30T12:00:00.000Z')).toEqual({ text: 'Liberado', tone: 'neutral' });
+  });
+});
+
+describe('estado de cobro', () => {
+  it('cada estado tiene su etiqueta en castellano', () => {
+    expect(labelOf(PAYMENT_STATUS, 'pending').text).toBe('Pendiente');
+    expect(labelOf(PAYMENT_STATUS, 'paid').text).toBe('Cobrado');
+    expect(labelOf(PAYMENT_STATUS, 'unpaid')).toEqual({ text: 'Impago', tone: 'danger' });
+    expect(labelOf(PAYMENT_STATUS, 'written_off').text).toBe('Pérdida');
+    expect(labelOf(INCIDENT_TYPE, 'unpaid_collection').text).toBe('Cobro impago');
+  });
+
+  it('el filtro ofrece todos los estados', () => {
+    expect([...PAYMENT_STATUS_ORDER].sort()).toEqual(Object.keys(PAYMENT_STATUS).sort());
   });
 });

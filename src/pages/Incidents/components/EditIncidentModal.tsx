@@ -8,7 +8,10 @@ import { useUpdateIncident } from '../../../services/queries/incidents';
 import { notify } from '../../../utils/notifications';
 import { INCIDENT_TYPE } from '../../../utils/statusLabels';
 
-const TYPE_OPTIONS = Object.entries(INCIDENT_TYPE).map(([value, label]) => ({ value, label: label.text }));
+/** `unpaid_collection` la abre el sistema y no se edita: se resuelve con «Resolver impago». */
+const TYPE_OPTIONS = Object.entries(INCIDENT_TYPE)
+  .filter(([value]) => value !== 'unpaid_collection')
+  .map(([value, label]) => ({ value, label: label.text }));
 
 const schema = z.object({
   type: z.enum(['damaged', 'out_of_stock', 'no_show', 'other']),
@@ -33,7 +36,11 @@ export const EditIncidentModal = ({ incident, onClose }: Props) => {
   } = useForm<FormValues>({ resolver: zodResolver(schema) });
 
   useEffect(() => {
-    if (incident) reset({ type: incident.type, description: incident.description });
+    if (incident)
+      reset({
+        type: incident.type === 'unpaid_collection' ? 'other' : incident.type,
+        description: incident.description,
+      });
   }, [incident, reset]);
 
   const onSubmit = handleSubmit((values) => {

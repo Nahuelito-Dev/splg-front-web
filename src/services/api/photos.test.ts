@@ -65,9 +65,9 @@ describe('uploadPhoto', () => {
 });
 
 describe('reglas por recurso', () => {
-  it('el reclamo admite 10 MB y no se puede quitar; el resto 5 MB y sí', () => {
+  it('el reclamo admite 10 MB; todos se pueden quitar', () => {
     expect(photoMaxBytes('claim')).toBe(10 * 1024 * 1024);
-    expect(photoRemovable('claim')).toBe(false);
+    expect(photoRemovable('claim')).toBe(true);
     expect(photoMaxBytes('car')).toBe(5 * 1024 * 1024);
     expect(photoRemovable('car')).toBe(true);
   });

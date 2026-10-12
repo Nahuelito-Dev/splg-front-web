@@ -12,7 +12,10 @@ import { INCIDENT_TYPE } from '../../../utils/statusLabels';
 import { createIncidentSchema, type CreateIncidentFormValues } from './createIncidentSchema';
 import { OrderPicker } from './OrderPicker';
 
-const TYPE_OPTIONS = Object.entries(INCIDENT_TYPE).map(([value, label]) => ({ value, label: label.text }));
+/** `unpaid_collection` la abre el sistema cuando el chofer informa un impago: no se carga a mano. */
+const TYPE_OPTIONS = Object.entries(INCIDENT_TYPE)
+  .filter(([value]) => value !== 'unpaid_collection')
+  .map(([value, label]) => ({ value, label: label.text }));
 
 interface Props {
   open: boolean;

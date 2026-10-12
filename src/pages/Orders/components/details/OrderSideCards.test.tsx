@@ -53,3 +53,65 @@ describe('OrderSideCards: enlace de pago', () => {
     expect(screen.queryByText(URL)).not.toBeInTheDocument();
   });
 });
+
+describe('OrderSideCards: cobro en efectivo', () => {
+  it('muestra el estado, cuándo se confirmó y la nota de resolución', () => {
+    renderCards(
+      order({
+        payment_method: 'cash',
+        payment_url: undefined,
+        paymentStatus: 'paid',
+        paymentConfirmedAt: '2026-10-10T15:30:00.000Z',
+        paymentResolutionNote: 'Transfirió al día siguiente',
+      }),
+    );
+    expect(screen.getByText('Estado del cobro')).toBeInTheDocument();
+    expect(screen.getByText('Cobrado')).toBeInTheDocument();
+    expect(screen.getByText('Cobro confirmado')).toBeInTheDocument();
+    expect(screen.getByText(/Transfirió al día siguiente/)).toBeInTheDocument();
+  });
+
+  it('un pedido sin confirmación no inventa quién ni cuándo', () => {
+    renderCards(order({ payment_method: 'cash', payment_url: undefined, paymentStatus: 'pending' }));
+    expect(screen.getByText('Pendiente')).toBeInTheDocument();
+    expect(screen.queryByText('Cobro confirmado')).toBeNull();
+    expect(screen.queryByText('Confirmado por')).toBeNull();
+    expect(screen.queryByText(/Nota de resolución/)).toBeNull();
+  });
+});
+
+describe('OrderSideCards: resolución del impago', () => {
+  it('una pérdida no muestra «Cobro confirmado» y sí cuándo se dio por perdida y la nota', () => {
+    renderCards(
+      order({
+        payment_method: 'cash',
+        payment_url: undefined,
+        paymentStatus: 'written_off',
+        paymentConfirmedAt: null,
+        paymentConfirmedBy: null,
+        paymentResolvedAt: '2026-10-11T12:00:00.000Z',
+        paymentResolvedBy: 'u-9',
+        paymentResolutionNote: 'No atiende hace un mes',
+      }),
+    );
+    expect(screen.queryByText('Cobro confirmado')).toBeNull();
+    expect(screen.queryByText('Confirmado por')).toBeNull();
+    expect(screen.getByText('Dado por perdido')).toBeInTheDocument();
+    expect(screen.getByText('Resuelto por')).toBeInTheDocument();
+    expect(screen.getByText(/No atiende hace un mes/)).toBeInTheDocument();
+  });
+
+  it('un impago cobrado después muestra «Cobrado después»', () => {
+    renderCards(
+      order({
+        payment_method: 'cash',
+        payment_url: undefined,
+        paymentStatus: 'paid',
+        paymentConfirmedAt: '2026-10-11T12:00:00.000Z',
+        paymentResolvedAt: '2026-10-11T12:00:00.000Z',
+      }),
+    );
+    expect(screen.getByText('Cobrado después')).toBeInTheDocument();
+    expect(screen.getByText('Cobro confirmado')).toBeInTheDocument();
+  });
+});

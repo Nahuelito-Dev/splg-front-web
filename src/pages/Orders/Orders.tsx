@@ -25,7 +25,7 @@ import {
 } from '../../services/queries/orders';
 import type { BatchResult } from '../../utils/batch';
 import { formatShortId } from '../../utils/format';
-import { labelOf, ORDER_FLOW, ORDER_STATUS } from '../../utils/statusLabels';
+import { labelOf, ORDER_FLOW, ORDER_STATUS, PAYMENT_STATUS } from '../../utils/statusLabels';
 import { notify } from '../../utils/notifications';
 import { AssignDriverModal } from './components/AssignDriverModal';
 import { CancelOrderModal } from './components/CancelOrderModal';
@@ -63,6 +63,7 @@ export const Orders = () => {
   const { data, isFetching } = useOrders(pagination, {
     search: debouncedSearch,
     status: status || undefined,
+    paymentStatus: toolbar.payment || undefined,
     from: invertedRange ? '' : toolbar.from,
     to: invertedRange ? '' : toolbar.to,
   });
@@ -145,11 +146,13 @@ export const Orders = () => {
 
   const chips: FilterChip[] = [];
   if (toolbar.search) chips.push({ key: 'search', label: `"${toolbar.search}"` });
+  if (toolbar.payment) chips.push({ key: 'payment', label: `Cobro: ${labelOf(PAYMENT_STATUS, toolbar.payment).text}` });
   if (toolbar.from) chips.push({ key: 'from', label: `Desde ${toolbar.from}` });
   if (toolbar.to) chips.push({ key: 'to', label: `Hasta ${toolbar.to}` });
 
   const removeChip = (key: string) => {
     if (key === 'search') handleToolbar({ ...toolbar, search: '' });
+    else if (key === 'payment') handleToolbar({ ...toolbar, payment: '' });
     else if (key === 'from') handleToolbar({ ...toolbar, from: '' });
     else if (key === 'to') handleToolbar({ ...toolbar, to: '' });
   };

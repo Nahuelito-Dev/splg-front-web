@@ -9,7 +9,7 @@ interface PhotoSpec {
   /** El reclamo sube con POST; el resto con PUT. */
   uploadMethod: 'put' | 'post';
   maxBytes: number;
-  /** El reclamo no tiene DELETE: la foto sólo se reemplaza. */
+  /** Si el back tiene `DELETE .../photo` para este recurso; apagado, el botón «Quitar» no se dibuja. */
   removable: boolean;
 }
 
@@ -22,7 +22,7 @@ const SPECS: Record<PhotoKind, PhotoSpec> = {
   distributor: { path: (id) => `/distributor/${id}/logo`, uploadMethod: 'put', maxBytes: 5 * MB, removable: true },
   incident: { path: (id) => `/incidents/${id}/photo`, uploadMethod: 'put', maxBytes: 5 * MB, removable: true },
   employee: { path: (id) => `/employees/${id}/photo`, uploadMethod: 'put', maxBytes: 5 * MB, removable: true },
-  claim: { path: (id) => `/claims/${id}/photo`, uploadMethod: 'post', maxBytes: 10 * MB, removable: false },
+  claim: { path: (id) => `/claims/${id}/photo`, uploadMethod: 'post', maxBytes: 10 * MB, removable: true },
 };
 
 export const photoMaxBytes = (kind: PhotoKind): number => SPECS[kind].maxBytes;

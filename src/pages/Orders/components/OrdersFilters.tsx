@@ -1,4 +1,5 @@
-import { Input, SearchInput } from '../../../common/components/ui';
+import { Input, SearchInput, Select } from '../../../common/components/ui';
+import { labelOf, PAYMENT_STATUS, PAYMENT_STATUS_ORDER } from '../../../utils/statusLabels';
 import { isInvertedRange, type OrdersToolbarFilters } from './ordersFilterValues';
 
 interface Props {
@@ -6,7 +7,12 @@ interface Props {
   onChange: (values: OrdersToolbarFilters) => void;
 }
 
-/** Búsqueda y rango de fechas de Pedidos, resueltos en la API (GET /orders). El estado va por pestañas. */
+const PAYMENT_OPTIONS = [
+  { value: '', label: 'Todos los cobros' },
+  ...PAYMENT_STATUS_ORDER.map((status) => ({ value: status, label: labelOf(PAYMENT_STATUS, status).text })),
+];
+
+/** Búsqueda, estado de cobro y rango de fechas de Pedidos, resueltos en la API (GET /orders). El estado va por pestañas. */
 export const OrdersFilters = ({ values, onChange }: Props) => {
   const set = (patch: Partial<OrdersToolbarFilters>) => onChange({ ...values, ...patch });
   const invertedRange = isInvertedRange(values);
@@ -19,6 +25,13 @@ export const OrdersFilters = ({ values, onChange }: Props) => {
         value={values.search}
         onChange={(e) => set({ search: e.target.value })}
         className="lg:w-80"
+      />
+      <Select
+        label="Cobro"
+        className="lg:w-44"
+        value={values.payment}
+        options={PAYMENT_OPTIONS}
+        onChange={(e) => set({ payment: e.target.value as OrdersToolbarFilters['payment'] })}
       />
       <div className="grid grid-cols-2 gap-3 sm:flex sm:items-end">
         <Input

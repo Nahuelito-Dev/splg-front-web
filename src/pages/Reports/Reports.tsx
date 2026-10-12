@@ -9,6 +9,7 @@ import {
   type RangePresetId,
 } from '../../utils/dateRange';
 import { formatDay } from '../../utils/format';
+import { CollectionsCards } from './components/CollectionsCards';
 import { DriverSales } from './components/DriverSales';
 import { PaymentSales } from './components/PaymentSales';
 import { ProductSales } from './components/ProductSales';
@@ -65,10 +66,11 @@ export const Reports = () => {
     <div className="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
       <PageHeader
         title="Reportes"
-        description={`Ventas entregadas del ${formatDay(range.from)} al ${formatDay(range.to)}.`}
+        description={`Ventas cobradas del ${formatDay(range.from)} al ${formatDay(range.to)}: el efectivo cuenta recién cuando el chofer confirma el cobro o cuando un administrador lo registra como cobrado.`}
         actions={<DateRangePicker value={range} preset={preset} onChange={setRange} />}
       />
       <SummaryCards range={range} />
+      <CollectionsCards range={range} />
       <SalesTrend range={range} granularity={granularity} onGranularityChange={setGranularity} />
       <ProductSales range={range} />
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

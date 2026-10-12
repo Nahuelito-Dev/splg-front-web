@@ -8,6 +8,8 @@ import type {
   Message,
   Order,
   PaginatedOrders,
+  ResolveUnpaid,
+  ResolveUnpaidBody,
   UpdateOrderBody,
   UpdateOrderStatusBody,
 } from './types';
@@ -17,15 +19,23 @@ export interface OrderFilters {
   /** Nombre, email o teléfono del cliente, o parte del id del pedido. */
   search?: string;
   status?: Order['status'];
+  paymentStatus?: NonNullable<Order['paymentStatus']>;
   from?: string;
   to?: string;
 }
 
 /** GET /orders: pedidos de la distribuidora, paginados y filtrados en la API. */
 export const listOrders = async (params: PageParams, filters: OrderFilters = {}): Promise<PaginatedOrders> => {
-  const { search, status, from, to } = filters;
+  const { search, status, paymentStatus, from, to } = filters;
   const { data } = await http.get<PaginatedOrders>('/orders', {
-    params: { ...toQuery(params), term: search || undefined, status, from: from || undefined, to: to || undefined },
+    params: {
+      ...toQuery(params),
+      term: search || undefined,
+      status,
+      paymentStatus,
+      from: from || undefined,
+      to: to || undefined,
+    },
   });
   return data;
 };
@@ -133,5 +143,21 @@ export const createOrder = async (body: CreateOrderBody): Promise<Order> => {
 /** GET /orders/delivery/:deliveryId — el historial de pedidos de un chofer (CU-081). Lo usa Choferes. */
 export const listDeliveryOrders = async (deliveryId: string, params: PageParams): Promise<PaginatedOrders> => {
   const { data } = await http.get<PaginatedOrders>(`/orders/delivery/${deliveryId}`, { params: toQuery(params) });
+  return data;
+};
+
+/**
+ * PATCH /orders/:id/payment/resolve-unpaid: el admin cierra un cobro en efectivo informado como impago, ya sea porque
+ * se cobró después (`paid`) o porque se da por perdido (`written_off`). La nota es obligatoria. El back cierra la incidencia `unpaid_collection` en la misma transacción; `alreadyResolved` avisa que otro administrador ya había hecho la misma resolución. 409 si el pedido no
+ * está impago (por ejemplo, ya lo resolvió otro admin). Con la misma `Idempotency-Key` un reintento no repite el efecto.
+ */
+export const resolveUnpaidOrder = async (
+  id: string,
+  body: ResolveUnpaidBody,
+  idempotencyKey: string,
+): Promise<ResolveUnpaid> => {
+  const { data } = await http.patch<ResolveUnpaid>(`/orders/${id}/payment/resolve-unpaid`, body, {
+    headers: { 'Idempotency-Key': idempotencyKey },
+  });
   return data;
 };

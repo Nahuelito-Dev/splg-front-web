@@ -9,6 +9,7 @@ import {
   Flame,
   HardHat,
   IdCard,
+  HandCoins,
   House,
   MapPinHouse,
   ListChecks,
@@ -53,6 +54,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { title: 'Tablero', path: '/home', icon: House },
       { title: 'Pedidos', path: '/orders', icon: ReceiptText, showPendingOrders: true },
+      { title: 'Cobros impagos', path: '/unpaid-collections', icon: HandCoins },
       { title: 'Reservas', path: '/reservations', icon: CalendarDays },
       { title: 'Seguimiento en vivo', path: '/tracking', icon: Navigation },
     ],
