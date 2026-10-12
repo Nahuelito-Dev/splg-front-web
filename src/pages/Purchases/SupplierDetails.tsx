@@ -11,11 +11,12 @@ import {
   DetailSkeleton,
   EmptyState,
   ErrorState,
+  Input,
   KpiCard,
   PageHeader,
   ResponsiveTable,
 } from '../../common/components/ui';
-import { useBackToList, usePermissions } from '../../hooks';
+import { useBackToList, usePermissions, useClampPage, useUrlPagedParams } from '../../hooks';
 import type { PurchaseReceiptSummary } from '../../services/api/types';
 import { useSupplier, useSupplierHistory } from '../../services/queries/purchases';
 import { formatCuit } from '../../utils/cuit';
@@ -38,8 +39,8 @@ export const SupplierDetails = () => {
   const { canWrite, writeHint } = usePermissions();
   const { data: supplier, isPending, error, refetch } = useSupplier(id);
   useCrumbLeaf(supplier?.businessName, goBack);
-  const [pagination, setPagination] = useState({ page: 0, pageSize: 10 });
-  const history = useSupplierHistory(id, pagination);
+  const [{ from, to }, setFilters, pagination, setPagination] = useUrlPagedParams({ from: '', to: '' }, 10);
+  const history = useSupplierHistory(id, pagination, { from: from || undefined, to: to || undefined });
   const [editing, setEditing] = useState(false);
 
   const columns: GridColDef<PurchaseReceiptSummary>[] = [
@@ -86,6 +87,8 @@ export const SupplierDetails = () => {
       ),
     },
   ];
+
+  useClampPage(pagination, history.data?.total, setPagination);
 
   return (
     <div className="mx-auto max-w-7xl p-4 md:p-8">
@@ -157,7 +160,23 @@ export const SupplierDetails = () => {
               />
             </div>
             <Card>
-              <h2 className="border-b border-outline px-4 py-3 text-sm font-semibold text-ink">Historial de compras</h2>
+              <div className="flex flex-wrap items-end justify-between gap-3 border-b border-outline px-4 py-3">
+                <h2 className="text-sm font-semibold text-ink">Historial de compras</h2>
+                <div className="grid w-full gap-3 sm:w-auto sm:grid-cols-2">
+                  <Input
+                    label="Desde"
+                    type="date"
+                    value={from}
+                    onChange={(event) => setFilters({ from: event.target.value })}
+                  />
+                  <Input
+                    label="Hasta"
+                    type="date"
+                    value={to}
+                    onChange={(event) => setFilters({ to: event.target.value })}
+                  />
+                </div>
+              </div>
               {history.error ? (
                 <ErrorState error={history.error} resource="El historial" onRetry={() => void history.refetch()} />
               ) : (
@@ -169,7 +188,17 @@ export const SupplierDetails = () => {
                   loading={history.isFetching}
                   pagination={{ model: pagination, onChange: setPagination, total: history.data?.total ?? 0 }}
                   onRowClick={(row) => navigate(`/purchases/receipts/${row.receiptId}`)}
-                  empty={<EmptyState icon={Receipt} title="Todavía no se le compró nada" />}
+                  empty={
+                    from || to ? (
+                      <EmptyState
+                        icon={Receipt}
+                        title="Sin compras en ese período"
+                        description="Probá con otras fechas."
+                      />
+                    ) : (
+                      <EmptyState icon={Receipt} title="Todavía no se le compró nada" />
+                    )
+                  }
                   renderCard={(row) => (
                     <>
                       <button

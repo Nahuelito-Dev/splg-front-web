@@ -16,7 +16,7 @@ import {
   RowActions,
   Select,
 } from '../../common/components/ui';
-import { FROM_LIST_STATE, usePermissions, useUrlParams } from '../../hooks';
+import { FROM_LIST_STATE, usePermissions, useClampPage, useUrlPagedParams } from '../../hooks';
 import type { TruckLoadSummary } from '../../services/api/types';
 import { useTruckLoads } from '../../services/queries/truckLoads';
 import { formatDateTime, formatDay } from '../../utils/format';
@@ -37,8 +37,10 @@ const STATUS_OPTIONS = [
 export const TruckLoads = () => {
   const navigate = useNavigate();
   const { canWrite, writeHint } = usePermissions();
-  const [filters, setFilters] = useUrlParams({ date: '', car: '', driver: '', status: '' });
-  const [pagination, setPagination] = useState({ page: 0, pageSize: 10 });
+  const [filters, setFilters, pagination, setPagination] = useUrlPagedParams(
+    { date: '', car: '', driver: '', status: '' },
+    10,
+  );
   const [opening, setOpening] = useState(false);
   const [stockCar, setStockCar] = useState('');
   const cars = useCarOptions();
@@ -51,7 +53,6 @@ export const TruckLoads = () => {
   });
   const goTo = (row: TruckLoadSummary) => navigate(`/truck-loads/${row.loadId}`, { state: FROM_LIST_STATE });
   const change = (patch: Partial<typeof filters>) => {
-    setPagination((p) => ({ ...p, page: 0 }));
     setFilters(patch);
   };
   const chips = [
@@ -106,6 +107,8 @@ export const TruckLoads = () => {
       renderCell: ({ row }) => <RowActions rowLabel={`carga ${row.number}`} onView={() => goTo(row)} />,
     },
   ];
+
+  useClampPage(pagination, data?.total, setPagination);
 
   return (
     <div className="mx-auto max-w-7xl p-4 md:p-8">

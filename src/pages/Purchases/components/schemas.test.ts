@@ -38,6 +38,12 @@ describe('orderSchema', () => {
     expect(orderSchema.safeParse({ ...base, items: [{ ...base.items[0], unitCost: 90001 }] }).success).toBe(false);
     expect(orderSchema.safeParse({ ...base, items: Array(21).fill(base.items[0]) }).success).toBe(false);
   });
+  it.each([100.123, 5200.5001, 0.0001])('el costo unitario %s tiene más de 2 decimales', (unitCost) =>
+    expect(orderSchema.safeParse({ ...base, items: [{ ...base.items[0], unitCost }] }).success).toBe(false),
+  );
+  it.each([0.07, 5200.5, 100])('el costo unitario %s es válido', (unitCost) =>
+    expect(orderSchema.safeParse({ ...base, items: [{ ...base.items[0], unitCost }] }).success).toBe(true),
+  );
 });
 
 describe('receiptSchema', () => {
@@ -63,6 +69,11 @@ describe('receiptSchema', () => {
     expect(
       receiptSchema.safeParse({ ...base, items: [{ ...row, quantityFull: 0, quantityEmptyOut: 3 }] }).success,
     ).toBe(true));
+  it.each([100.123, 5200.5001, 0.0001])('el costo unitario %s tiene más de 2 decimales', (unitCost) =>
+    expect(receiptSchema.safeParse({ ...base, items: [{ ...row, unitCost }] }).success).toBe(false),
+  );
+  it('un costo con 2 decimales es válido', () =>
+    expect(receiptSchema.safeParse({ ...base, items: [{ ...row, unitCost: 5200.55 }] }).success).toBe(true));
 });
 
 describe('cuerpo de la orden', () => {

@@ -8,7 +8,6 @@ import { useVehicleInUse } from '../../../services/queries/fleet';
 import { useCreateTruckLoad } from '../../../services/queries/truckLoads';
 import { notify } from '../../../utils/notifications';
 import {
-  useCarOptions,
   useCylinderOptions,
   useDriverOptions,
   useWarehouseOptions,
@@ -26,7 +25,6 @@ interface Props {
 /** Abre la carga del día: camión + chofer (+ ayudante) + galpón de origen y lo que se va a cargar. No mueve stock todavía. */
 export const OpenTruckLoadModal = ({ open, onClose, onCreated }: Props) => {
   const drivers = useDriverOptions();
-  const cars = useCarOptions();
   const warehouses = useWarehouseOptions();
   const cylinders = useCylinderOptions();
   const helpers = useEmployees({ page: 0, pageSize: 100 }, { status: 'active' }, open);
@@ -58,6 +56,17 @@ export const OpenTruckLoadModal = ({ open, onClose, onCreated }: Props) => {
   // Al elegir chofer se sugiere el camión que tiene en uso: la API exige que esté en uso por él.
   const deliveryId = watch('deliveryId');
   const inUse = useVehicleInUse(deliveryId || undefined, open);
+  const carOptions =
+    deliveryId && inUse.data
+      ? [
+          {
+            value: inUse.data.carId,
+            label: `${inUse.data.carPatent ?? 'Sin patente'} · ${inUse.data.carBrand ?? ''} ${
+              inUse.data.carModel ?? ''
+            }`.trim(),
+          },
+        ]
+      : [];
   useEffect(() => {
     if (inUse.data?.carId) setValue('carId', inUse.data.carId);
   }, [inUse.data, setValue]);
@@ -86,7 +95,7 @@ export const OpenTruckLoadModal = ({ open, onClose, onCreated }: Props) => {
     ),
   );
 
-  const loadFailed = drivers.failed || cars.failed || warehouses.failed || cylinders.failed;
+  const loadFailed = drivers.failed || warehouses.failed || cylinders.failed;
 
   return (
     <Modal
@@ -108,13 +117,12 @@ export const OpenTruckLoadModal = ({ open, onClose, onCreated }: Props) => {
     >
       {loadFailed ? (
         <p role="alert" className="text-sm text-danger">
-          No se pudieron cargar los choferes, camiones, galpones o garrafas.{' '}
+          No se pudieron cargar los choferes, galpones o garrafas.{' '}
           <button
             type="button"
             className="font-semibold underline"
             onClick={() => {
               void drivers.refetch();
-              void cars.refetch();
               void warehouses.refetch();
               void cylinders.refetch();
             }}
@@ -129,17 +137,21 @@ export const OpenTruckLoadModal = ({ open, onClose, onCreated }: Props) => {
               label="Chofer"
               required
               options={withPlaceholder(drivers.options)}
+              hint={drivers.limited ? 'Se muestran los primeros 100 choferes.' : undefined}
               error={errors.deliveryId?.message}
               {...register('deliveryId', { onChange: () => setValue('carId', '') })}
             />
             <Select
               label="Camión"
               required
-              options={withPlaceholder(cars.options)}
+              options={withPlaceholder(carOptions)}
+              disabled={!deliveryId || inUse.isPending || !inUse.data}
               hint={
                 deliveryId && inUse.isSuccess && !inUse.data
                   ? 'El chofer no tiene un camión en uso: asignáselo antes en Vehículos.'
-                  : 'Tiene que estar en uso por el chofer.'
+                  : deliveryId
+                    ? 'Camión en uso por el chofer.'
+                    : 'Elegí el chofer para ver su camión en uso.'
               }
               error={errors.carId?.message}
               {...register('carId')}
@@ -150,7 +162,13 @@ export const OpenTruckLoadModal = ({ open, onClose, onCreated }: Props) => {
                 (helpers.data?.rows ?? []).map((e) => ({ value: e.employeeId, label: `${e.firstName} ${e.lastName}` })),
                 'Sin ayudante',
               )}
-              hint={helpers.isError ? 'No se pudieron cargar los legajos' : undefined}
+              hint={
+                helpers.isError
+                  ? 'No se pudieron cargar los legajos'
+                  : (helpers.data?.total ?? 0) > (helpers.data?.rows.length ?? 0)
+                    ? 'Se muestran los primeros 100 legajos activos.'
+                    : undefined
+              }
               {...register('helperEmployeeId')}
             />
             <Select
@@ -159,7 +177,21 @@ export const OpenTruckLoadModal = ({ open, onClose, onCreated }: Props) => {
               {...register('originWarehouseId')}
             />
           </div>
-          <LoadItemsFields control={control} register={register} errors={errors} cylinders={cylinders.options} />
+          {inUse.isError && (
+            <p role="alert" className="text-sm text-danger">
+              No se pudo consultar el camión en uso del chofer.{' '}
+              <button type="button" className="font-semibold underline" onClick={() => void inUse.refetch()}>
+                Reintentar
+              </button>
+            </p>
+          )}
+          <LoadItemsFields
+            control={control}
+            register={register}
+            errors={errors}
+            cylinders={cylinders.options}
+            cylindersLimited={cylinders.limited}
+          />
           <TextArea label="Notas (opcional)" maxLength={300} error={errors.notes?.message} {...register('notes')} />
         </form>
       )}

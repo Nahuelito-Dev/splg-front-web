@@ -9,12 +9,16 @@ import { usePermissions } from './usePermissions';
  */
 export const useDistributorEventFilter = () => {
   const { isSuperAdmin, needsDistributor } = usePermissions();
-  const { data: current } = useCurrentDistributor(isSuperAdmin && !needsDistributor);
-  const viewingId = isSuperAdmin && !needsDistributor ? current?.distributor_id : undefined;
+  const mustFilter = isSuperAdmin && !needsDistributor;
+  const { data: current } = useCurrentDistributor(mustFilter);
+  const viewingId = mustFilter ? current?.distributor_id : undefined;
 
   return useCallback(
-    (payload: { distributorId?: string | null } | undefined): boolean =>
-      !viewingId || !payload?.distributorId || payload.distributorId === viewingId,
-    [viewingId],
+    (payload: { distributorId?: string | null } | undefined): boolean => {
+      if (!mustFilter) return true;
+      if (!payload?.distributorId) return true;
+      return Boolean(viewingId) && payload.distributorId === viewingId;
+    },
+    [mustFilter, viewingId],
   );
 };

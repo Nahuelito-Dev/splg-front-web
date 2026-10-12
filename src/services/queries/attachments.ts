@@ -27,4 +27,7 @@ export const useDeleteAttachment = (ownerType: AttachmentOwnerType, ownerId: str
 
 /** No cachea nada: la URL firmada vence, así que se pide cada vez que se abre o se baja. */
 export const useAttachmentFile = () =>
-  useMutation({ mutationFn: (attachmentId: string) => getAttachmentFile(attachmentId) });
+  useMutation({
+    mutationFn: ({ attachmentId, disposition }: { attachmentId: string; disposition?: 'attachment' | 'inline' }) =>
+      getAttachmentFile(attachmentId, disposition),
+  });

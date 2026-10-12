@@ -1,7 +1,7 @@
 import { Tooltip } from '@mui/material';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { cx } from '../ui/cx';
-import type { NavItem } from './navConfig';
+import { NAV_SECTIONS, type NavItem } from './navConfig';
 
 const linkClass = (mini: boolean) => {
   const base = cx(
@@ -20,6 +20,17 @@ const linkClass = (mini: boolean) => {
     );
 };
 
+const matches = (pathname: string, path: string) => pathname === path || pathname.startsWith(`${path}/`);
+
+/**
+ * ¿Hay otro ítem del menú, con una ruta más específica, que también coincide? (`/employees` coincide con
+ * `/employees/positions`, pero el activo tiene que ser sólo «Puestos»).
+ */
+const isShadowed = (pathname: string, item: Pick<NavItem, 'path'>): boolean =>
+  NAV_SECTIONS.some((section) =>
+    section.items.some((other) => other.path.length > item.path.length && matches(pathname, other.path)),
+  );
+
 interface Props {
   item: NavItem;
   /** Menú reducido a íconos: el nombre pasa a un tooltip. */
@@ -31,6 +42,8 @@ interface Props {
 /** Una pantalla del menú lateral: ícono y nombre, o sólo el ícono con tooltip cuando el menú está reducido. */
 export const NavItemLink = ({ item, mini, pendingCount, onNavigate }: Props) => {
   const showCount = Boolean(item.showPendingOrders) && pendingCount > 0;
+  const { pathname } = useLocation();
+  const shadowed = isShadowed(pathname, item);
   return (
     // El Tooltip clona a su hijo y mezcla `className` como texto: por eso envuelve un span y no el NavLink.
     <Tooltip title={mini ? item.title : ''} placement="right" arrow>
@@ -38,6 +51,7 @@ export const NavItemLink = ({ item, mini, pendingCount, onNavigate }: Props) => 
         <NavLink
           to={item.path}
           className={linkClass(mini)}
+          end={shadowed}
           onClick={onNavigate}
           aria-label={mini ? item.title : undefined}
         >

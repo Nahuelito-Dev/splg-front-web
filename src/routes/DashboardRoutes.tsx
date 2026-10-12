@@ -16,6 +16,7 @@ const UserDetails = lazyPage(() => import('../pages/Users/UserDetails'), 'UserDe
 const Customers = lazyPage(() => import('../pages/Customers/Customers'), 'Customers');
 const CustomerDetails = lazyPage(() => import('../pages/Customers/CustomerDetails'), 'CustomerDetails');
 const Employees = lazyPage(() => import('../pages/Employees/Employees'), 'Employees');
+const JobPositions = lazyPage(() => import('../pages/Employees/JobPositions'), 'JobPositions');
 const EmployeeDetails = lazyPage(() => import('../pages/Employees/EmployeeDetails'), 'EmployeeDetails');
 const Addresses = lazyPage(() => import('../pages/Addresses/Addresses'), 'Addresses');
 const GasCylinders = lazyPage(() => import('../pages/GasCylinders/GasCylinders'), 'GasCylinders');
@@ -125,6 +126,7 @@ export const DashboardRoutes = () => {
           {/* Legajos del personal */}
           <Route path="employees" element={<Employees />} />
           <Route path="employees/details/:id" element={<EmployeeDetails />} />
+          <Route path="employees/positions" element={<JobPositions />} />
 
           {/* 5. Repartidores (Deliveries) */}
           <Route path="deliveries" element={<Deliveries />} />

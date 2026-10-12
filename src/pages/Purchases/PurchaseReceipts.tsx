@@ -16,7 +16,7 @@ import {
   RowActions,
   Select,
 } from '../../common/components/ui';
-import { FROM_LIST_STATE, usePermissions, useUrlParams } from '../../hooks';
+import { FROM_LIST_STATE, usePermissions, useClampPage, useUrlPagedParams } from '../../hooks';
 import type { PurchaseReceiptSummary } from '../../services/api/types';
 import { usePurchaseReceipts, useSupplierOptions } from '../../services/queries/purchases';
 import { formatCurrency, formatDateTime } from '../../utils/format';
@@ -38,8 +38,10 @@ const PAYMENT_OPTIONS = [
 export const PurchaseReceipts = () => {
   const navigate = useNavigate();
   const { canWrite, writeHint } = usePermissions();
-  const [filters, setFilters] = useUrlParams({ status: '', payment: '', supplier: '', from: '', to: '' });
-  const [pagination, setPagination] = useState({ page: 0, pageSize: 10 });
+  const [filters, setFilters, pagination, setPagination] = useUrlPagedParams(
+    { status: '', payment: '', supplier: '', from: '', to: '' },
+    10,
+  );
   const [creating, setCreating] = useState(false);
   const suppliers = useSupplierOptions();
   const { data, isFetching, error, refetch } = usePurchaseReceipts(pagination, {
@@ -52,7 +54,6 @@ export const PurchaseReceipts = () => {
   const goTo = (row: PurchaseReceiptSummary) =>
     navigate(`/purchases/receipts/${row.receiptId}`, { state: FROM_LIST_STATE });
   const change = (patch: Partial<typeof filters>) => {
-    setPagination((p) => ({ ...p, page: 0 }));
     setFilters(patch);
   };
   const supplierName =
@@ -118,6 +119,8 @@ export const PurchaseReceipts = () => {
       renderCell: ({ row }) => <RowActions rowLabel={`recepción ${row.number}`} onView={() => goTo(row)} />,
     },
   ];
+
+  useClampPage(pagination, data?.total, setPagination);
 
   return (
     <div className="mx-auto max-w-7xl p-4 md:p-8">

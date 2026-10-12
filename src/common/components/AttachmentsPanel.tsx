@@ -68,13 +68,20 @@ export const AttachmentsPanel = ({
     );
   };
 
-  const withFile = (attachmentId: string, then: (source: Parameters<typeof openFileSource>[0]) => void) => {
+  const withFile = (
+    attachmentId: string,
+    disposition: 'attachment' | 'inline',
+    then: (source: Parameters<typeof openFileSource>[0]) => void,
+  ) => {
     setPendingId(attachmentId);
-    fileSource.mutate(attachmentId, {
-      onSuccess: then,
-      onError: notify.error,
-      onSettled: () => setPendingId(null),
-    });
+    fileSource.mutate(
+      { attachmentId, disposition },
+      {
+        onSuccess: then,
+        onError: notify.error,
+        onSettled: () => setPendingId(null),
+      },
+    );
   };
 
   const handleDelete = async (id: string, name: string) => {
@@ -91,7 +98,7 @@ export const AttachmentsPanel = ({
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <h3 className="text-sm font-semibold text-ink">{title}</h3>
+        <h3 className="flex h-10 items-center text-sm font-semibold text-ink">{title}</h3>
         {canWrite && (
           <div className="flex flex-wrap items-end gap-2">
             <Input
@@ -169,7 +176,7 @@ export const AttachmentsPanel = ({
                     icon={<Eye />}
                     disabled={busy}
                     onClick={() =>
-                      withFile(attachment.attachmentId, (source) => {
+                      withFile(attachment.attachmentId, 'inline', (source) => {
                         if (!openFileSource(source)) {
                           notify.error(new Error('El navegador bloqueó la ventana: habilitá los popups para verlo.'));
                         }
@@ -181,7 +188,9 @@ export const AttachmentsPanel = ({
                     icon={<Download />}
                     disabled={busy}
                     onClick={() =>
-                      withFile(attachment.attachmentId, (source) => saveFileSource(source, attachment.originalName))
+                      withFile(attachment.attachmentId, 'attachment', (source) =>
+                        saveFileSource(source, attachment.originalName),
+                      )
                     }
                   />
                   {canWrite && (

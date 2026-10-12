@@ -11,7 +11,9 @@ import {
 } from '../api/gasCylinders';
 import type { PageParams } from '../api/httpClient';
 import type { CreateGasCylinderBody, UpdateGasCylinderBody, UpdateStockBody } from '../api/types';
+import { runIntent } from './intent';
 import { queryKeys } from './queryKeys';
+import { invalidateStockViews } from './stock';
 
 const keys = queryKeys.gasCylinders;
 
@@ -71,8 +73,10 @@ export const useUpdateGasCylinder = () => {
 export const useUpdateGasCylinderStock = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: UpdateStockBody }) => updateGasCylinderStock(id, body),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
+    mutationFn: ({ id, body }: { id: string; body: UpdateStockBody }) =>
+      runIntent(queryClient, `gcstock:${id}`, body, (key) => updateGasCylinderStock(id, body, key)),
+    onSuccess: () =>
+      Promise.all([queryClient.invalidateQueries({ queryKey: keys.all }), invalidateStockViews(queryClient)]),
   });
 };
 

@@ -53,10 +53,11 @@ export const useSuppliers = (params: ListParams, filters: SupplierFilters, { ena
   });
 
 /** Todos los proveedores vigentes, para los combos (una página grande). */
-export const useSupplierOptions = ({ enabled = true }: Options = {}) =>
+export const useSupplierOptions = ({ enabled = true, term }: Options & { term?: string } = {}) =>
   useQuery({
-    queryKey: queryKeys.suppliers.list({ options: true }),
-    queryFn: () => listSuppliers({ page: 0, pageSize: 100 }, {}),
+    queryKey: queryKeys.suppliers.list({ options: true, term: term ?? '' }),
+    queryFn: () => listSuppliers({ page: 0, pageSize: 100 }, term ? { term } : {}),
+    placeholderData: keepPreviousData,
     enabled,
   });
 
@@ -67,10 +68,17 @@ export const useSupplier = (id: string | undefined, { enabled = true }: Options 
     enabled: Boolean(id) && enabled,
   });
 
-export const useSupplierHistory = (id: string | undefined, params: ListParams, { enabled = true }: Options = {}) =>
+export const useSupplierHistory = (
+  id: string | undefined,
+  params: ListParams,
+  range: { from?: string; to?: string } = {},
+  { enabled = true }: Options = {},
+) =>
   useQuery({
-    queryKey: queryKeys.suppliers.detail(`history:${id}:${params.page}:${params.pageSize}`),
-    queryFn: () => getSupplierHistory(id ?? '', params),
+    queryKey: queryKeys.suppliers.detail(
+      `history:${id}:${params.page}:${params.pageSize}:${range.from ?? ''}:${range.to ?? ''}`,
+    ),
+    queryFn: () => getSupplierHistory(id ?? '', params, range),
     placeholderData: keepPreviousData,
     enabled: Boolean(id) && enabled,
   });
@@ -211,6 +219,12 @@ export const useUpdateReceiptPaymentStatus = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, body }: { id: string; body: UpdatePaymentStatusBody }) => updateReceiptPaymentStatus(id, body),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.purchaseReceipts.all }),
+    // El historial del proveedor también muestra el estado de pago de cada recepción.
+    onSuccess: () =>
+      Promise.all(
+        [queryKeys.purchaseReceipts, queryKeys.suppliers].map((resource) =>
+          queryClient.invalidateQueries({ queryKey: resource.all }),
+        ),
+      ),
   });
 };

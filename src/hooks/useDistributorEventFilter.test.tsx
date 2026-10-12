@@ -33,6 +33,13 @@ describe('useDistributorEventFilter', () => {
     expect(result.current({ distributorId: 'dist-B' })).toBe(true);
   });
 
+  it('mientras carga la empresa elegida no deja pasar eventos de otras distribuidoras', () => {
+    state.current = undefined;
+    const { result } = renderHook(() => useDistributorEventFilter());
+    expect(result.current({ distributorId: 'dist-B' })).toBe(false);
+    expect(result.current({})).toBe(true);
+  });
+
   it('un admin de empresa no filtra: el back ya lo acota por sala', () => {
     state.perms = { isSuperAdmin: false, needsDistributor: false };
     const { result } = renderHook(() => useDistributorEventFilter());

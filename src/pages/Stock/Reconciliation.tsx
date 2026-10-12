@@ -25,13 +25,17 @@ export const Reconciliation = () => {
   const reapply = useReapplyDeliveries();
   const [adjusting, setAdjusting] = useState<DiferenciaDeVendible | null>(null);
 
+  const overReserved = (data?.cylinders ?? []).filter((c) => (c.overReserved ?? 0) > 0);
+  const hasDifferences = (data?.cylinders ?? []).some((c) => c.difference !== 0);
+  const hasPendingDeliveries = (data?.deliveriesWithoutMovement.length ?? 0) > 0;
+
   const handleReapply = async () => {
     const ok = await confirm({
       title: '¿Reaplicar las entregas?',
       text: 'Descuenta del stock físico los pedidos entregados que quedaron sin movimiento. No duplica lo ya descontado.',
     });
     if (!ok) return;
-    reapply.mutate('reapply', {
+    reapply.mutate(undefined, {
       onSuccess: (result) => {
         notify.success(
           `Revisados ${result.revisados}, reaplicados ${result.reaplicados}, pendientes ${result.pendientes}`,
@@ -103,7 +107,11 @@ export const Reconciliation = () => {
           data && (
             <Badge
               label={
-                data.consistent ? { text: 'Consistente', tone: 'success' } : { text: 'Con diferencias', tone: 'danger' }
+                data.consistent
+                  ? { text: 'Consistente', tone: 'success' }
+                  : overReserved.length > 0 && !hasDifferences && !hasPendingDeliveries
+                    ? { text: 'Reservas de más', tone: 'danger' }
+                    : { text: 'Con diferencias', tone: 'danger' }
               }
             />
           )
@@ -132,6 +140,22 @@ export const Reconciliation = () => {
           <p className="text-sm text-muted" aria-live="polite">
             Verificado el {formatDateTime(data.checkedAt)}
           </p>
+          {overReserved.length > 0 && (
+            <div role="alert" className="rounded-lg border border-danger bg-danger-soft px-4 py-3 text-sm text-ink">
+              <p className="font-semibold text-danger">Hay más reservas que garrafas físicas</p>
+              <ul className="mt-1 space-y-0.5">
+                {overReserved.map((c) => (
+                  <li key={c.gasCylinderId}>
+                    <b>{c.gasCylinderType}</b>: {c.reserved} reservadas y {c.physicalFull} llenas físicas (faltan{' '}
+                    {c.overReserved}).
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-1 text-muted">
+                No es un error de conteo y un ajuste no lo arregla: cancelá pedidos o reponé stock.
+              </p>
+            </div>
+          )}
           <Card>
             <h2 className="border-b border-outline px-4 py-3 text-sm font-semibold text-ink">Vendible por garrafa</h2>
             <ResponsiveTable

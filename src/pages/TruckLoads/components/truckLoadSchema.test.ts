@@ -21,8 +21,8 @@ describe('openLoadSchema', () => {
 });
 
 describe('loadItemsSchema', () => {
-  it('las llenas tienen que ser al menos 1', () =>
-    expect(loadItemsSchema.safeParse([{ gasCylinderId: 'g1', loadedFull: 0, loadedEmpty: 0 }]).success).toBe(false));
+  it('las llenas pueden ser 0 para cargar un renglón sólo de vacías', () =>
+    expect(loadItemsSchema.safeParse([{ gasCylinderId: 'g1', loadedFull: 0, loadedEmpty: 3 }]).success).toBe(true));
 
   it('las vacías pueden ser 0', () =>
     expect(loadItemsSchema.safeParse([{ gasCylinderId: 'g1', loadedFull: 1, loadedEmpty: 0 }]).success).toBe(true));
@@ -41,6 +41,9 @@ describe('loadItemsSchema', () => {
   });
 
   it('exige al menos un renglón', () => expect(loadItemsSchema.safeParse([]).success).toBe(false));
+
+  it('respeta el tope del back por tipo', () =>
+    expect(loadItemsSchema.safeParse([{ gasCylinderId: 'g1', loadedFull: 2001, loadedEmpty: 0 }]).success).toBe(false));
 });
 
 describe('reloadSchema', () => {

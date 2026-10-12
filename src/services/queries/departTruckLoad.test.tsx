@@ -3,27 +3,45 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { AxiosError } from 'axios';
 import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { departTruckLoad } from '../api/truckLoads';
+import { toApiError } from '../api/errors';
+import { departTruckLoad, getTruckLoad } from '../api/truckLoads';
 import { DEPART_ALREADY_DONE, useDepartTruckLoad } from './truckLoads';
 
-vi.mock('../api/truckLoads', () => ({ departTruckLoad: vi.fn() }));
+vi.mock('../api/truckLoads', () => ({ departTruckLoad: vi.fn(), getTruckLoad: vi.fn() }));
 
 const wrapper = ({ children }: { children: ReactNode }) => (
   <QueryClientProvider client={new QueryClient()}>{children}</QueryClientProvider>
 );
 
 describe('useDepartTruckLoad', () => {
-  it('un 409 de transición se muestra como «La salida ya estaba registrada»', async () => {
-    vi.mocked(departTruckLoad).mockRejectedValue(
-      new AxiosError('x', 'E', undefined, undefined, {
-        status: 409,
-        data: { message: 'No se puede pasar a on_route' },
-      } as never),
-    );
+  const conflict = (message: string) =>
+    new AxiosError('x', 'E', undefined, undefined, { status: 409, data: { message } } as never);
+
+  it('un 409 con la carga ya en ruta se muestra como «La salida ya estaba registrada»', async () => {
+    vi.mocked(departTruckLoad).mockRejectedValue(conflict('No se puede pasar a on_route'));
+    vi.mocked(getTruckLoad).mockResolvedValue({ status: 'on_route' } as never);
     const { result } = renderHook(() => useDepartTruckLoad(), { wrapper });
     result.current.mutate({ id: 'L1', scope: 'depart:L1' });
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect((result.current.error as Error).message).toBe(DEPART_ALREADY_DONE);
+  });
+
+  it('un 409 por otra causa (carga cancelada) muestra el mensaje del back', async () => {
+    vi.mocked(departTruckLoad).mockRejectedValue(conflict('La carga N° 7 está cancelada'));
+    vi.mocked(getTruckLoad).mockResolvedValue({ status: 'cancelled' } as never);
+    const { result } = renderHook(() => useDepartTruckLoad(), { wrapper });
+    result.current.mutate({ id: 'L3', scope: 'depart:L3' });
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(toApiError(result.current.error).messages).toEqual(['La carga N° 7 está cancelada']);
+  });
+
+  it('si no se puede consultar la carga tras el 409 tampoco se inventa que ya salió', async () => {
+    vi.mocked(departTruckLoad).mockRejectedValue(conflict('La carga N° 7 está cancelada'));
+    vi.mocked(getTruckLoad).mockRejectedValue(new Error('red'));
+    const { result } = renderHook(() => useDepartTruckLoad(), { wrapper });
+    result.current.mutate({ id: 'L4', scope: 'depart:L4' });
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(toApiError(result.current.error).messages).toEqual(['La carga N° 7 está cancelada']);
   });
 
   it('el reintento de la salida usa la misma clave', async () => {

@@ -91,12 +91,13 @@ export const useDepartTruckLoad = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, scope }: { id: string; scope: string }) =>
-      runIntent(queryClient, scope, { id }, (key) => departTruckLoad(id, key)).catch((error: unknown) => {
-        // 409 de transición: la carga ya no está en `loading`, o sea que otra salida (la misma, reintentada) ya entró.
-        if (toApiError(error).status === 409) {
-          void queryClient.invalidateQueries({ queryKey: keys.all });
-          throw new ApiError(409, [DEPART_ALREADY_DONE]);
-        }
+      runIntent(queryClient, scope, { id }, (key) => departTruckLoad(id, key)).catch(async (error: unknown) => {
+        if (toApiError(error).status !== 409) throw error;
+        // 409: el back dice por qué (cancelada, devuelta...). Sólo si la carga ya salió, la salida estaba registrada
+        // (el reintento de la misma salida); en cualquier otro caso se muestra el mensaje del back.
+        void queryClient.invalidateQueries({ queryKey: keys.all });
+        const current = await getTruckLoad(id).catch(() => null);
+        if (current?.status === 'on_route') throw new ApiError(409, [DEPART_ALREADY_DONE]);
         throw error;
       }),
     onSuccess: () => invalidateStockViews(queryClient),

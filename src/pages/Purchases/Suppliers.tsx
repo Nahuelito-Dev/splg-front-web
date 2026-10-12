@@ -16,7 +16,7 @@ import {
   SearchInput,
   Select,
 } from '../../common/components/ui';
-import { FROM_LIST_STATE, useDebounce, usePermissions, useUrlParams } from '../../hooks';
+import { FROM_LIST_STATE, useDebounce, usePermissions, useClampPage, useUrlPagedParams } from '../../hooks';
 import type { Supplier } from '../../services/api/types';
 import { useDeleteSupplier, useSuppliers, useUpdateSupplier } from '../../services/queries/purchases';
 import { formatCuit } from '../../utils/cuit';
@@ -34,9 +34,8 @@ const KIND_FILTER = [
 export const Suppliers = () => {
   const navigate = useNavigate();
   const { canWrite, writeHint } = usePermissions();
-  const [filters, setFilters] = useUrlParams({ q: '', kind: '', inactive: '' });
+  const [filters, setFilters, pagination, setPagination] = useUrlPagedParams({ q: '', kind: '', inactive: '' }, 10);
   const term = useDebounce(filters.q, 300);
-  const [pagination, setPagination] = useState({ page: 0, pageSize: 10 });
   const [editing, setEditing] = useState<Supplier | null>(null);
   const [creating, setCreating] = useState(false);
   const { data, isFetching, error, refetch } = useSuppliers(pagination, {
@@ -50,7 +49,6 @@ export const Suppliers = () => {
 
   const goTo = (row: Supplier) => navigate(`/purchases/suppliers/${row.supplierId}`, { state: FROM_LIST_STATE });
   const change = (patch: Partial<typeof filters>) => {
-    setPagination((p) => ({ ...p, page: 0 }));
     setFilters(patch);
   };
 
@@ -124,6 +122,8 @@ export const Suppliers = () => {
       ),
     },
   ];
+
+  useClampPage(pagination, data?.total, setPagination);
 
   return (
     <div className="mx-auto max-w-7xl p-4 md:p-8">

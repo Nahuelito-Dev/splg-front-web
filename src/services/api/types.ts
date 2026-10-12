@@ -77,7 +77,11 @@ export type CylinderMovement = S['CylinderMovementResponseDto'];
 export type Cylinder = S['CylinderResponseDto'];
 export type DeclaredItemInputBody = S['DeclaredItemInputDto'];
 export type Delivery = S['DeliveryResponseDto'];
-export type DiferenciaDeVendible = S['DiferenciaDeVendibleDto'];
+/**
+ * `overReserved` (reservas de pedidos abiertos que el físico no cubre) lo agrega el back del blindaje de stock;
+ * está tipado a mano hasta regenerar `npm run api:types` al integrarlo, y por eso es opcional.
+ */
+export type DiferenciaDeVendible = S['DiferenciaDeVendibleDto'] & { overReserved?: number };
 export type DireccionBorrada = S['DireccionBorradaDto'];
 export type DisponibilidadDelChofer = S['DisponibilidadDelChoferDto'];
 export type Disponibles = S['DisponiblesDto'];
@@ -184,7 +188,9 @@ export type StockLocationRef = S['StockLocationRefDto'];
 export type StockMovement = S['StockMovementDto'];
 export type StockMovementPage = S['StockMovementPageDto'];
 export type StockOperationResult = S['StockOperationResultDto'];
-export type StockReconciliation = S['StockReconciliationDto'];
+export type StockReconciliation = Omit<S['StockReconciliationDto'], 'cylinders'> & {
+  cylinders: DiferenciaDeVendible[];
+};
 export type StockSummary = S['StockSummaryDto'];
 export type StockThreshold = S['StockThresholdDto'];
 export type SupplierHistory = S['SupplierHistoryDto'];

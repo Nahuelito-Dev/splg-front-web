@@ -13,6 +13,7 @@ import { formatCurrency } from '../../../utils/format';
 import { notify } from '../../../utils/notifications';
 import { useCylinderOptions, useWarehouseOptions, withPlaceholder } from '../../Stock/components/useStockOptions';
 import { linesTotal } from '../purchaseRules';
+import { SupplierField } from './SupplierField';
 import { orderCreateBody, orderSchema, orderUpdateBody, type OrderFormValues } from './orderSchema';
 
 interface Props {
@@ -115,12 +116,8 @@ export const PurchaseOrderFormModal = ({ open, onClose, order, onSaved }: Props)
       ) : (
         <form id="order-form" onSubmit={(e) => void onSubmit(e)} className="space-y-4" noValidate>
           <div className="grid gap-4 sm:grid-cols-3">
-            <Select
-              label="Proveedor"
-              required
-              options={withPlaceholder(
-                (suppliers.data?.data ?? []).map((s) => ({ value: s.supplierId, label: s.businessName })),
-              )}
+            <SupplierField
+              selectedId={watch('supplierId') ?? ''}
               error={errors.supplierId?.message}
               {...register('supplierId')}
             />
@@ -139,6 +136,7 @@ export const PurchaseOrderFormModal = ({ open, onClose, order, onSaved }: Props)
                   <Select
                     label="Tipo"
                     options={withPlaceholder(cylinders.options)}
+                    hint={cylinders.limited ? 'Se muestran las primeras 100 garrafas.' : undefined}
                     error={errors.items?.[index]?.gasCylinderId?.message}
                     {...register(`items.${index}.gasCylinderId`)}
                   />

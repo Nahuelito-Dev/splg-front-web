@@ -15,7 +15,14 @@ export const useCylinderOptions = () => {
     () => (query.data?.rows ?? []).map((c) => ({ value: c.gas_cylinder_id, label: c.type })),
     [query.data],
   );
-  return { options, failed: query.isError, loading: query.isPending, refetch: query.refetch, error: query.error };
+  return {
+    options,
+    limited: (query.data?.total ?? 0) > (query.data?.rows.length ?? 0),
+    failed: query.isError,
+    loading: query.isPending,
+    refetch: query.refetch,
+    error: query.error,
+  };
 };
 
 /** Los galpones vigentes como opciones. */
@@ -64,7 +71,14 @@ export const useDriverOptions = () => {
       })),
     [query.data],
   );
-  return { options, failed: query.isError, loading: query.isPending, error: query.error, refetch: query.refetch };
+  return {
+    options,
+    limited: (query.data?.total ?? 0) > (query.data?.rows.length ?? 0),
+    failed: query.isError,
+    loading: query.isPending,
+    error: query.error,
+    refetch: query.refetch,
+  };
 };
 
 /** Antepone «Elegí una opción» a un combo. */

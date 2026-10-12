@@ -10,10 +10,11 @@ interface Props {
   register: UseFormRegister<OpenLoadFormValues>;
   errors: FieldErrors<OpenLoadFormValues>;
   cylinders: SelectOption[];
+  cylindersLimited?: boolean;
 }
 
 /** Los renglones de la carga: tipo de garrafa, llenas que salen y vacías que se llevan para canje. */
-export const LoadItemsFields = ({ control, register, errors, cylinders }: Props) => {
+export const LoadItemsFields = ({ control, register, errors, cylinders, cylindersLimited = false }: Props) => {
   const { fields, append, remove } = useFieldArray({ control, name: 'items' });
   return (
     <div className="space-y-3">
@@ -24,13 +25,14 @@ export const LoadItemsFields = ({ control, register, errors, cylinders }: Props)
             <Select
               label="Tipo"
               options={withPlaceholder(cylinders)}
+              hint={cylindersLimited ? 'Se muestran las primeras 100 garrafas.' : undefined}
               error={errors.items?.[index]?.gasCylinderId?.message}
               {...register(`items.${index}.gasCylinderId`)}
             />
             <Input
               label="Llenas que salen"
               type="number"
-              min={1}
+              min={0}
               error={errors.items?.[index]?.loadedFull?.message}
               {...register(`items.${index}.loadedFull`)}
             />

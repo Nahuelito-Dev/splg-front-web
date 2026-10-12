@@ -11,7 +11,7 @@ import {
   PageHeader,
   ResponsiveTable,
 } from '../../common/components/ui';
-import { usePermissions } from '../../hooks';
+import { usePermissions, useClampPage, useUrlPagedParams } from '../../hooks';
 import { useBatchReversed, useStockMovements } from '../../services/queries/stock';
 import { formatDateTime } from '../../utils/format';
 import { STOCK_CONDITION, labelOf } from '../../utils/statusLabels';
@@ -48,7 +48,7 @@ const BatchAction = ({
 /** Transferencias entre ubicaciones, tal como quedaron en el libro: una fila por lote, con su contraasiento. */
 export const Transfers = () => {
   const { canWrite, writeHint } = usePermissions();
-  const [pagination, setPagination] = useState({ page: 0, pageSize: 10 });
+  const [, , pagination, setPagination] = useUrlPagedParams({}, 10);
   const [creating, setCreating] = useState(false);
   const [reversing, setReversing] = useState<string | null>(null);
   const transfers = useStockMovements(pagination, { reason: 'transfer' });
@@ -99,6 +99,8 @@ export const Transfers = () => {
       ),
     },
   ];
+
+  useClampPage(pagination, transfers.data?.total, setPagination);
 
   return (
     <div className="mx-auto max-w-7xl p-4 md:p-8">

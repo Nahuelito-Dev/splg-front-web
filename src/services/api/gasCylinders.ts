@@ -1,3 +1,4 @@
+import { idempotencyHeaders } from './idempotency';
 import { http, type Page, type PageParams, toQuery } from './httpClient';
 import type {
   BajaDeProducto,
@@ -56,9 +57,11 @@ export const updateGasCylinder = async (id: string, body: UpdateGasCylinderBody)
   return data;
 };
 
-/** PATCH /gascylinder/:id/stock: suma (positivo) o resta (negativo) unidades del stock actual. */
-export const updateGasCylinderStock = async (id: string, body: UpdateStockBody): Promise<GasCylinder> => {
-  const { data } = await http.patch<GasCylinder>(`/gascylinder/${id}/stock`, body);
+/** PATCH /gascylinder/:id/stock: suma (positivo) o resta (negativo) unidades. La clave de idempotencia es obligatoria. */
+export const updateGasCylinderStock = async (id: string, body: UpdateStockBody, key: string): Promise<GasCylinder> => {
+  const { data } = await http.patch<GasCylinder>(`/gascylinder/${id}/stock`, body, {
+    headers: idempotencyHeaders(key),
+  });
   return data;
 };
 

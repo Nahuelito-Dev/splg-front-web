@@ -13,6 +13,7 @@ import { formatCurrency } from '../../../utils/format';
 import { notify } from '../../../utils/notifications';
 import { useCylinderOptions, useWarehouseOptions, withPlaceholder } from '../../Stock/components/useStockOptions';
 import { linesTotal, receiptRowsFromPending } from '../purchaseRules';
+import { SupplierField } from './SupplierField';
 import { receiptSchema, type ReceiptFormValues } from './receiptSchema';
 
 interface Props {
@@ -158,12 +159,8 @@ export const PurchaseReceiptFormModal = ({ open, onClose, order, onSaved }: Prop
           <div className="grid gap-4 sm:grid-cols-2">
             {!order && (
               <>
-                <Select
-                  label="Proveedor"
-                  required
-                  options={withPlaceholder(
-                    (suppliers.data?.data ?? []).map((s) => ({ value: s.supplierId, label: s.businessName })),
-                  )}
+                <SupplierField
+                  selectedId={watch('supplierId') ?? ''}
                   error={errors.supplierId?.message}
                   {...register('supplierId')}
                 />
@@ -203,6 +200,7 @@ export const PurchaseReceiptFormModal = ({ open, onClose, order, onSaved }: Prop
                     <Select
                       label="Tipo"
                       options={withPlaceholder(cylinders.options)}
+                      hint={cylinders.limited ? 'Se muestran las primeras 100 garrafas.' : undefined}
                       error={errors.items?.[index]?.gasCylinderId?.message}
                       {...register(`items.${index}.gasCylinderId`)}
                     />
@@ -270,6 +268,9 @@ export const PurchaseReceiptFormModal = ({ open, onClose, order, onSaved }: Prop
             </div>
           </div>
           <TextArea label="Notas (opcional)" maxLength={500} error={errors.notes?.message} {...register('notes')} />
+          <p className="text-xs text-muted">
+            Al registrarla se abre su ficha, donde podés adjuntar la foto del remito.
+          </p>
         </form>
       )}
     </Modal>

@@ -5,14 +5,14 @@ const units = (min: number, message: string) =>
     .number({ invalid_type_error: 'Ingresá un número' })
     .int('Tiene que ser un número entero')
     .min(min, message)
-    .max(5000, 'Hasta 5.000 unidades');
+    .max(2000, 'Hasta 2.000 unidades');
 
-/** Renglones de la carga: llenas obligatorias (≥ 1) y vacías para canje (≥ 0), sin repetir el tipo. */
+/** Renglones de la carga: llenas y vacías desde 0, sin repetir el tipo. */
 export const loadItemsSchema = z
   .array(
     z.object({
       gasCylinderId: z.string().min(1, 'Elegí la garrafa'),
-      loadedFull: units(1, 'Tiene que ser mayor a 0'),
+      loadedFull: units(0, 'No puede ser negativo'),
       loadedEmpty: units(0, 'No puede ser negativo'),
     }),
   )
@@ -70,7 +70,7 @@ const counted = z
   .trim()
   .min(1, 'Contá y cargá este valor')
   .regex(/^\d+$/, 'Tiene que ser un número entero, 0 o más')
-  .refine((v) => Number(v) <= 5000, 'Hasta 5.000 unidades');
+  .refine((v) => Number(v) <= 4000, 'Hasta 4.000 unidades');
 
 /** Declarar la vuelta: lo que vuelve de cada tipo, llenas y vacías. */
 export const returnSchema = z.object({
