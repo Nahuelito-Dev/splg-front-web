@@ -1,5 +1,11 @@
 import { http } from './httpClient';
-import type { EvolucionDeVentas, VentasPorChofer, VentasPorMedioDePago, VentasPorProducto } from './types';
+import type {
+  CobrosDeEfectivo,
+  EvolucionDeVentas,
+  VentasPorChofer,
+  VentasPorMedioDePago,
+  VentasPorProducto,
+} from './types';
 
 export interface ReportsDateRange {
   /** YYYY-MM-DD. Sin rango, el back usa "hoy 00:00 hasta ahora". */
@@ -39,5 +45,11 @@ export const getSalesEvolution = async ({
   const { data } = await http.get<EvolucionDeVentas[]>('/reports/sales-evolution', {
     params: { ...dateQuery(range), granularity },
   });
+  return data;
+};
+
+/** GET /reports/collections: efectivo pendiente de confirmar, impagos sin resolver y pérdidas del rango. */
+export const getCollections = async (range: ReportsDateRange): Promise<CobrosDeEfectivo> => {
+  const { data } = await http.get<CobrosDeEfectivo>('/reports/collections', { params: dateQuery(range) });
   return data;
 };

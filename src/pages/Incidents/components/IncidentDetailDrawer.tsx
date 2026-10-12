@@ -18,6 +18,7 @@ import { useUser } from '../../../services/queries/users';
 import { notify } from '../../../utils/notifications';
 import { INCIDENT_STATUS, INCIDENT_TYPE, labelOf } from '../../../utils/statusLabels';
 import { formatDateTime, formatShortId } from '../../../utils/format';
+import { ResolveUnpaidAction } from '../../Orders/components/details/ResolveUnpaidAction';
 
 const resolveSchema = z.object({
   resolutionNote: z.string().trim().min(1, 'Escribí cómo se resolvió la incidencia'),
@@ -60,6 +61,8 @@ export const IncidentDetailDrawer = ({ open, onClose, incident, onEdit, onDiscar
 
   if (!incident) return null;
   const isOpen = incident.status === 'open';
+  const unpaidOrder =
+    incident.type === 'unpaid_collection' && incident.order?.paymentStatus === 'unpaid' ? incident.order : null;
 
   const onSubmit = handleSubmit((body) =>
     resolveIncident.mutate(
@@ -87,25 +90,32 @@ export const IncidentDetailDrawer = ({ open, onClose, incident, onEdit, onDiscar
         isOpen ? (
           <>
             {operateHint && <p className="mr-auto self-center text-sm text-muted">{operateHint}</p>}
-            {onEdit && (
+            {unpaidOrder && (
+              <ResolveUnpaidAction
+                order={{ order_id: unpaidOrder.order_id, total_amount: Number(unpaidOrder.totalAmount) }}
+              />
+            )}
+            {onEdit && incident.type !== 'unpaid_collection' && (
               <Button variant="secondary" disabled={!canOperate} title={operateHint} onClick={() => onEdit(incident)}>
                 Editar
               </Button>
             )}
-            {onDiscard && (
+            {onDiscard && !unpaidOrder && (
               <Button variant="danger" disabled={!canOperate} title={operateHint} onClick={() => onDiscard(incident)}>
                 Descartar
               </Button>
             )}
-            <Button
-              type="submit"
-              form="incident-resolve"
-              disabled={!canOperate}
-              title={operateHint}
-              loading={resolveIncident.isPending}
-            >
-              Marcar como resuelta
-            </Button>
+            {!unpaidOrder && (
+              <Button
+                type="submit"
+                form="incident-resolve"
+                disabled={!canOperate}
+                title={operateHint}
+                loading={resolveIncident.isPending}
+              >
+                Marcar como resuelta
+              </Button>
+            )}
           </>
         ) : undefined
       }
@@ -155,7 +165,11 @@ export const IncidentDetailDrawer = ({ open, onClose, incident, onEdit, onDiscar
           blockedReason={isOpen ? operateHint : 'La incidencia ya no está abierta: no se puede cambiar la foto.'}
         />
 
-        {isOpen ? (
+        {unpaidOrder ? (
+          <p className="rounded-xl border border-outline bg-surface-hover p-3 text-sm text-muted">
+            El pedido sigue impago: la incidencia se cierra sola al resolver el cobro con «Resolver impago».
+          </p>
+        ) : isOpen ? (
           <form id="incident-resolve" onSubmit={(e) => void onSubmit(e)} noValidate>
             <TextArea
               label="Nota de resolución"

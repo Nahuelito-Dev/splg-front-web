@@ -5,7 +5,7 @@ import { AuditHistoryLink, Badge, Button, PageHeader } from '../../../../common/
 import { usePermissions } from '../../../../hooks';
 import type { Order } from '../../../../services/api/types';
 import { formatDateTime, formatShortId } from '../../../../utils/format';
-import { labelOf, ORDER_STATUS } from '../../../../utils/statusLabels';
+import { labelOf, ORDER_STATUS, PAYMENT_STATUS } from '../../../../utils/statusLabels';
 import { AssignDriverModal } from '../AssignDriverModal';
 import { CancelOrderModal } from '../CancelOrderModal';
 import { EditOrderModal } from '../EditOrderModal';
@@ -20,6 +20,7 @@ import {
   manualStatusActionLabel,
   manualStatusTargets,
 } from '../orderStatus';
+import { ResolveUnpaidAction } from './ResolveUnpaidAction';
 import { useOrderActions } from './useOrderActions';
 
 /**
@@ -38,7 +39,12 @@ export const OrderDetailsToolbar = ({ order }: { order: Order }) => {
     <>
       <PageHeader
         title={`Pedido ${formatShortId(order.order_id)}`}
-        badges={<Badge label={labelOf(ORDER_STATUS, order.status)} />}
+        badges={
+          <>
+            <Badge label={labelOf(ORDER_STATUS, order.status)} />
+            {order.paymentStatus && <Badge label={labelOf(PAYMENT_STATUS, order.paymentStatus)} />}
+          </>
+        }
         description={`Creado ${formatDateTime(order.created_at)}`}
         actions={
           <>
@@ -98,6 +104,7 @@ export const OrderDetailsToolbar = ({ order }: { order: Order }) => {
                 Confirmar entrega
               </Button>
             )}
+            {order.paymentStatus === 'unpaid' && <ResolveUnpaidAction order={order} />}
             {canCancel(order.status) && (
               <Button variant="danger" size="sm" icon={<CircleX />} onClick={() => actions.open('cancel')}>
                 Cancelar pedido

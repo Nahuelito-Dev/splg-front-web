@@ -17,6 +17,10 @@ interface Props {
   onDiscard?: (incident: Incident) => void;
 }
 
+/** Un cobro impago sin resolver: la incidencia se cierra resolviendo el cobro, no se descarta. */
+const awaitsPayment = (incident: Incident) =>
+  incident.type === 'unpaid_collection' && incident.order?.paymentStatus === 'unpaid';
+
 export const IncidentsTable = ({ rows, loading, filtered = false, onView, onEdit, onDiscard }: Props) => {
   const columns = useMemo<GridColDef<Incident>[]>(
     () => [
@@ -62,8 +66,8 @@ export const IncidentsTable = ({ rows, loading, filtered = false, onView, onEdit
           <RowActions
             rowLabel={`incidencia del pedido ${formatShortId(row.order_id)}`}
             onView={() => onView(row)}
-            onEdit={onEdit && row.status === 'open' ? () => onEdit(row) : undefined}
-            onDelete={onDiscard && row.status === 'open' ? () => onDiscard(row) : undefined}
+            onEdit={onEdit && row.status === 'open' && row.type !== 'unpaid_collection' ? () => onEdit(row) : undefined}
+            onDelete={onDiscard && row.status === 'open' && !awaitsPayment(row) ? () => onDiscard(row) : undefined}
             deleteLabel="Descartar"
           />
         ),

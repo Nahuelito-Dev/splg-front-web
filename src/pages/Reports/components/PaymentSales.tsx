@@ -34,7 +34,7 @@ export const PaymentSales = ({ range }: { range: DayRange }) => {
   return (
     <ReportSection
       title="Ventas por método de pago"
-      description="Cómo pagaron los pedidos entregados."
+      description="Cómo pagaron los pedidos entregados y cobrados."
       fileName={`ventas-por-pago_${range.from}_${range.to}`}
       rows={data}
       columns={columns}

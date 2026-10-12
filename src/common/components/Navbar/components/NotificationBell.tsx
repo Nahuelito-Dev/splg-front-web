@@ -5,6 +5,7 @@ import {
   BellOff,
   CircleCheck,
   CircleX,
+  HandCoins,
   PackagePlus,
   RotateCcw,
   ThumbsUp,
@@ -12,9 +13,18 @@ import {
   UserRoundX,
   type LucideIcon,
 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { useDistributorEventFilter } from '../../../../hooks/useDistributorEventFilter';
 import { useSocketContext } from '../../../../context/useSocketContext';
-import { ORDER_SOCKET_EVENTS, type OrderSocketEventName } from '../../../../hooks/useSocket';
+import {
+  INCIDENT_CREATED_EVENT,
+  ORDER_SOCKET_EVENTS,
+  type IncidentCreatedPayload,
+  type OrderSocketEventName,
+} from '../../../../hooks/useSocket';
+import { queryKeys } from '../../../../services/queries/queryKeys';
+import { notify } from '../../../../utils/notifications';
 import { formatCurrency, formatShortId } from '../../../../utils/format';
 import type { Tone } from '../../../../utils/statusLabels';
 import { NotificationsDrawer, type NotificationsDrawerItem } from '../../ui/NotificationsDrawer';
@@ -27,6 +37,7 @@ import { NotificationsDrawer, type NotificationsDrawerItem } from '../../ui/Noti
  */
 interface OrderSocketPayload {
   orderId?: string;
+  distributorId?: string;
   totalAmount?: number;
   reason?: string | null;
   /** Sólo en `order:assignment-declined`: el chofer que no confirmó. */
@@ -34,9 +45,12 @@ interface OrderSocketPayload {
   [key: string]: unknown;
 }
 
+/** Los eventos que la campana muestra: los del ciclo de vida del pedido y el aviso de un cobro impago. */
+type NotificationEvent = OrderSocketEventName | typeof INCIDENT_CREATED_EVENT;
+
 export interface OrderNotification {
   id: string;
-  event: OrderSocketEventName;
+  event: NotificationEvent;
   /** Lo que el evento dice del pedido: su id corto y, según el caso, el monto, el motivo o el chofer. */
   detail?: string;
   createdAt: string;
@@ -45,7 +59,8 @@ export interface OrderNotification {
   orderId?: string;
 }
 
-const EVENT_LABELS: Record<OrderSocketEventName, string> = {
+const EVENT_LABELS: Record<NotificationEvent, string> = {
+  [INCIDENT_CREATED_EVENT]: 'Cobro impago: el chofer no pudo cobrar',
   [ORDER_SOCKET_EVENTS.CREATED]: 'Nuevo pedido',
   [ORDER_SOCKET_EVENTS.ACCEPTED]: 'Pedido aceptado',
   [ORDER_SOCKET_EVENTS.ON_THE_WAY]: 'Pedido en camino',
@@ -55,7 +70,8 @@ const EVENT_LABELS: Record<OrderSocketEventName, string> = {
   [ORDER_SOCKET_EVENTS.ASSIGNMENT_DECLINED]: 'El chofer no confirmó la asignación',
 };
 
-const EVENT_VISUALS: Record<OrderSocketEventName, { icon: LucideIcon; tone: Tone }> = {
+const EVENT_VISUALS: Record<NotificationEvent, { icon: LucideIcon; tone: Tone }> = {
+  [INCIDENT_CREATED_EVENT]: { icon: HandCoins, tone: 'danger' },
   [ORDER_SOCKET_EVENTS.CREATED]: { icon: PackagePlus, tone: 'primary' },
   [ORDER_SOCKET_EVENTS.ACCEPTED]: { icon: ThumbsUp, tone: 'info' },
   [ORDER_SOCKET_EVENTS.ON_THE_WAY]: { icon: Truck, tone: 'info' },
@@ -67,7 +83,7 @@ const EVENT_VISUALS: Record<OrderSocketEventName, { icon: LucideIcon; tone: Tone
 
 const MAX_NOTIFICATIONS = 50;
 
-const buildDetail = (event: OrderSocketEventName, payload: OrderSocketPayload) => {
+const buildDetail = (event: NotificationEvent, payload: OrderSocketPayload) => {
   const orderRef = payload.orderId ? formatShortId(payload.orderId) : '';
   const extra =
     event === ORDER_SOCKET_EVENTS.CANCELLED && payload.reason
@@ -92,10 +108,12 @@ const toDrawerItem = (notification: OrderNotification): NotificationsDrawerItem 
 export const NotificationBell = () => {
   const { isOnline, subscribe } = useSocketContext();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const belongsToView = useDistributorEventFilter();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<OrderNotification[]>([]);
 
-  const pushNotification = useCallback((event: OrderSocketEventName, payload: OrderSocketPayload = {}) => {
+  const pushNotification = useCallback((event: NotificationEvent, payload: OrderSocketPayload = {}) => {
     const notification: OrderNotification = {
       id: `${event}-${payload.orderId ?? Date.now()}-${Math.random()}`,
       event,
@@ -110,11 +128,25 @@ export const NotificationBell = () => {
 
   useEffect(() => {
     const unsubscribers = (Object.values(ORDER_SOCKET_EVENTS) as OrderSocketEventName[]).map((event) =>
-      subscribe<OrderSocketPayload>(event, (payload) => pushNotification(event, payload)),
+      subscribe<OrderSocketPayload>(event, (payload) => {
+        if (belongsToView(payload)) pushNotification(event, payload);
+      }),
+    );
+
+    // Un cobro impago cambia el pedido, la lista de incidencias y los reportes: se refrescan y se avisa con un toast.
+    unsubscribers.push(
+      subscribe<IncidentCreatedPayload>(INCIDENT_CREATED_EVENT, (payload) => {
+        if (payload.type !== 'unpaid_collection' || !belongsToView(payload)) return;
+        pushNotification(INCIDENT_CREATED_EVENT, { orderId: payload.orderId });
+        notify.info(`Cobro impago en el pedido ${formatShortId(payload.orderId)}: el chofer no pudo cobrar`);
+        void queryClient.invalidateQueries({ queryKey: queryKeys.incidents.all });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.orders.all });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.reports.all });
+      }),
     );
 
     return () => unsubscribers.forEach((unsubscribe) => unsubscribe());
-  }, [subscribe, pushNotification]);
+  }, [subscribe, pushNotification, queryClient, belongsToView]);
 
   const handleMarkAsRead = (id: string) => {
     setNotifications((prev) =>

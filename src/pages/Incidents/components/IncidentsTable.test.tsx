@@ -60,3 +60,41 @@ describe('IncidentsTable: acciones por estado', () => {
     expect(screen.queryByRole('button', { name: /^Descartar incidencia/ })).toBeNull();
   });
 });
+
+describe('IncidentsTable: cobro impago', () => {
+  it('una incidencia de cobro impago abierta se descarta pero no se edita (la abre el sistema)', () => {
+    render(
+      <IncidentsTable
+        rows={[{ ...incident('u', 'open'), type: 'unpaid_collection' }]}
+        loading={false}
+        onView={vi.fn()}
+        onEdit={vi.fn()}
+        onDiscard={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('Cobro impago')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Editar incidencia/ })).toBeNull();
+    expect(screen.getByRole('button', { name: /^Descartar incidencia/ })).toBeInTheDocument();
+  });
+});
+
+describe('IncidentsTable: impago sin resolver', () => {
+  it('no se descarta mientras el pedido siga impago (se resuelve el cobro)', () => {
+    render(
+      <IncidentsTable
+        rows={[
+          {
+            ...incident('w', 'open'),
+            type: 'unpaid_collection',
+            order: { paymentStatus: 'unpaid' },
+          } as unknown as Incident,
+        ]}
+        loading={false}
+        onView={vi.fn()}
+        onEdit={vi.fn()}
+        onDiscard={vi.fn()}
+      />,
+    );
+    expect(screen.queryByRole('button', { name: /^Descartar incidencia/ })).toBeNull();
+  });
+});

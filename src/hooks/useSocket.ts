@@ -26,6 +26,22 @@ export const ORDER_SOCKET_EVENTS = {
 export type OrderSocketEventName = (typeof ORDER_SOCKET_EVENTS)[keyof typeof ORDER_SOCKET_EVENTS];
 
 /**
+ * Evento que emite el AdminGateway cuando se abre una incidencia de reparto. El panel sólo avisa las de tipo
+ * `unpaid_collection` (el chofer informó que no pudo cobrar en efectivo).
+ */
+export const INCIDENT_CREATED_EVENT = 'incident:created';
+
+/** Payload de INCIDENT_CREATED_EVENT. */
+export interface IncidentCreatedPayload {
+  incidentId: string;
+  orderId: string;
+  distributorId?: string;
+  type: string;
+  description?: string;
+  createdAt?: string;
+}
+
+/**
  * Evento que emite el AdminGateway por cada pedido en curso cuyo chofer manda
  * su GPS. Se centraliza acá junto a ORDER_SOCKET_EVENTS (Tracking es hoy su
  * único consumidor).

@@ -1,12 +1,13 @@
 import type { ReactNode } from 'react';
 import { CircleUser, Copy, ExternalLink, MapPin, Truck, Wallet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Avatar, Button, Card } from '../../../../common/components/ui';
+import { Avatar, Badge, Button, Card, UserRefLink } from '../../../../common/components/ui';
 import type { Order } from '../../../../services/api/types';
 import { useFindCustomerByUserId } from '../../../../services/queries/customers';
-import { formatCurrency, formatDay } from '../../../../utils/format';
+import { useUser } from '../../../../services/queries/users';
+import { formatCurrency, formatDateTime, formatDay } from '../../../../utils/format';
 import { notify } from '../../../../utils/notifications';
-import { labelOf, PAYMENT_TYPE } from '../../../../utils/statusLabels';
+import { labelOf, PAYMENT_STATUS, PAYMENT_TYPE } from '../../../../utils/statusLabels';
 import { isClosed } from '../orderStatus';
 import { OrderMiniMap } from './OrderMiniMap';
 import { orderCoordinates } from './orderLocation';
@@ -174,10 +175,37 @@ const PaymentLink = ({ url }: { url: string }) => {
   );
 };
 
+/** Quién confirmó o resolvió el cobro (es un usuario de la distribuidora: el chofer o el admin). */
+const ConfirmedBy = ({ userId }: { userId: string }) => {
+  const { data, isLoading } = useUser(userId);
+  return <UserRefLink userId={userId} name={data?.full_name} loading={isLoading} />;
+};
+
 const PaymentSection = ({ order }: { order: Order }) => (
   <Section icon={<Wallet {...iconProps} />} title="Pago">
     <dl className="space-y-1.5">
       <Row label="Método">{labelOf(PAYMENT_TYPE, order.payment_method).text}</Row>
+      {order.paymentStatus && (
+        <Row label="Estado del cobro">
+          <Badge label={labelOf(PAYMENT_STATUS, order.paymentStatus)} />
+        </Row>
+      )}
+      {order.paymentConfirmedAt && <Row label="Cobro confirmado">{formatDateTime(order.paymentConfirmedAt)}</Row>}
+      {order.paymentConfirmedBy && (
+        <Row label="Confirmado por">
+          <ConfirmedBy userId={order.paymentConfirmedBy} />
+        </Row>
+      )}
+      {order.paymentResolvedAt && (
+        <Row label={order.paymentStatus === 'written_off' ? 'Dado por perdido' : 'Cobrado después'}>
+          {formatDateTime(order.paymentResolvedAt)}
+        </Row>
+      )}
+      {order.paymentResolvedBy && (
+        <Row label="Resuelto por">
+          <ConfirmedBy userId={order.paymentResolvedBy} />
+        </Row>
+      )}
       {(order.depositAmount ?? 0) > 0 && (
         <>
           <Row label="Seña">
@@ -190,6 +218,12 @@ const PaymentSection = ({ order }: { order: Order }) => (
         <span className="text-base font-bold">{formatCurrency(order.total_amount)}</span>
       </Row>
     </dl>
+    {order.paymentResolutionNote && (
+      <p className="mt-3 rounded-lg bg-surface-hover p-2 text-xs text-muted">
+        <span className="font-semibold text-ink-2">Nota de resolución: </span>
+        {order.paymentResolutionNote}
+      </p>
+    )}
     {order.payment_method === 'online' && order.payment_url && !isClosed(order.status) && (
       <PaymentLink url={order.payment_url} />
     )}

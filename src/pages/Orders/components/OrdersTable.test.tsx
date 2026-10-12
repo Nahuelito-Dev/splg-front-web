@@ -80,3 +80,17 @@ describe('OrdersTable: editar y cancelar', () => {
     expect(screen.queryByRole('button', { name: /^Cancelar pedido/ })).toBeNull();
   });
 });
+
+describe('OrdersTable: estado de cobro', () => {
+  it('cada pedido muestra su cobro con la etiqueta en castellano', () => {
+    renderTable([
+      order('a1', { paymentStatus: 'pending' }),
+      order('a2', { paymentStatus: 'paid' }),
+      order('a3', { paymentStatus: 'unpaid' }),
+      order('a4', { paymentStatus: 'written_off' }),
+    ]);
+    for (const text of ['Pendiente', 'Cobrado', 'Impago', 'Pérdida']) {
+      expect(screen.getAllByText(text).length).toBeGreaterThan(0);
+    }
+  });
+});

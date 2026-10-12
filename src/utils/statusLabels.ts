@@ -57,6 +57,24 @@ export const PAYMENT_METHOD: LabelMap<OrderRecord['paymentMethod']> = {
   transfer: { text: 'Transferencia', tone: 'accent' },
 };
 
+/** Estado del cobro de un pedido (`paymentStatus`). En efectivo arranca `pending` hasta que el chofer confirma. */
+export const PAYMENT_STATUS: LabelMap<NonNullable<Order['paymentStatus']>> = {
+  pending: { text: 'Pendiente', tone: 'warn' },
+  paid: { text: 'Cobrado', tone: 'success' },
+  failed: { text: 'Rechazado', tone: 'danger' },
+  unpaid: { text: 'Impago', tone: 'danger' },
+  written_off: { text: 'Pérdida', tone: 'neutral' },
+};
+
+/** Los estados de cobro que se ofrecen como filtro, en el orden del circuito. */
+export const PAYMENT_STATUS_ORDER: NonNullable<Order['paymentStatus']>[] = [
+  'pending',
+  'paid',
+  'unpaid',
+  'written_off',
+  'failed',
+];
+
 export const CYLINDER_STATE: LabelMap<Cylinder['state']> = {
   in_depot: { text: 'En depósito', tone: 'neutral' },
   filled: { text: 'Lleno', tone: 'success' },
@@ -77,6 +95,7 @@ export const INCIDENT_TYPE: LabelMap<Incident['type']> = {
   damaged: { text: 'Envase dañado', tone: 'danger' },
   out_of_stock: { text: 'Sin stock', tone: 'warn' },
   no_show: { text: 'Cliente ausente', tone: 'accent' },
+  unpaid_collection: { text: 'Cobro impago', tone: 'danger' },
   other: { text: 'Otra', tone: 'neutral' },
 };
 

@@ -18,7 +18,7 @@ export const TopDriversCard = () => {
   return (
     <TableroWidget
       title="Mejores choferes"
-      subtitle="Entregas y ventas de los últimos 30 días."
+      subtitle="Entregas y ventas cobradas de los últimos 30 días."
       loading={sales.isLoading}
       error={sales.error}
       onRetry={() => void sales.refetch()}

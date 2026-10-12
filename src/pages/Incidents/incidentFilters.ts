@@ -4,7 +4,13 @@ export type IncidentStatusFilter = Incident['status'] | 'all';
 export type IncidentTypeFilter = Incident['type'] | 'all';
 
 export const INCIDENT_STATUS_ORDER: Incident['status'][] = ['open', 'resolved', 'discarded'];
-export const INCIDENT_TYPE_ORDER: Incident['type'][] = ['damaged', 'out_of_stock', 'no_show', 'other'];
+export const INCIDENT_TYPE_ORDER: Incident['type'][] = [
+  'damaged',
+  'out_of_stock',
+  'no_show',
+  'unpaid_collection',
+  'other',
+];
 
 const normalize = (text: string | null | undefined) => (text ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 

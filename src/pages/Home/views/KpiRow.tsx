@@ -47,7 +47,7 @@ export const KpiRow = () => {
   return (
     <section aria-label="Indicadores" className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
       <KpiCard
-        title="Ventas de hoy"
+        title="Ventas cobradas de hoy"
         icon={Banknote}
         value={formatCurrency(stats?.sales.today)}
         loading={statsLoading}
@@ -99,7 +99,7 @@ export const KpiRow = () => {
         hint="vs. ayer"
       />
       <KpiCard
-        title="Ventas de 30 días"
+        title="Ventas cobradas de 30 días"
         icon={Receipt}
         value={compactMoney.format(monthSales)}
         loading={seriesLoading}

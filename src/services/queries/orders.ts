@@ -12,6 +12,7 @@ import {
   listOrderIncidents,
   listOrders,
   notifyOrderArrival,
+  resolveUnpaidOrder,
   updateOrder,
   updateOrderStatus,
   type OrderFilters,
@@ -21,6 +22,7 @@ import type {
   ConfirmDeliveryBody,
   CreateOrderBody,
   Order,
+  ResolveUnpaidBody,
   UpdateOrderBody,
   UpdateOrderStatusBody,
 } from '../api/types';
@@ -236,3 +238,22 @@ export const useBulkCancelOrders = () =>
     noun: ['pedido', 'pedidos'],
     participle: ['cancelado', 'cancelados'],
   });
+
+/**
+ * Resuelve un cobro impago en una sola llamada: el back cierra además la incidencia `unpaid_collection` en la misma
+ * transacción. La respuesta trae `alreadyResolved` si otro administrador ya había hecho la misma resolución.
+ */
+export const useResolveUnpaid = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body, idempotencyKey }: { id: string; body: ResolveUnpaidBody; idempotencyKey: string }) =>
+      resolveUnpaidOrder(id, body, idempotencyKey),
+    onSettled: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: keys.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.incidents.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.reports.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.stats.all }),
+      ]),
+  });
+};

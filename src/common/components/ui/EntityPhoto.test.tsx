@@ -88,10 +88,10 @@ describe('EntityPhoto', () => {
     expect(api.uploadPhoto).not.toHaveBeenCalled();
   });
 
-  it('el reclamo no ofrece quitar la foto (el back no tiene DELETE)', () => {
+  it('el reclamo ofrece reemplazar y quitar la foto', () => {
     renderPhoto({ kind: 'claim', subject: 'del reclamo' });
     expect(screen.getByRole('button', { name: 'Reemplazar' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Quitar' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Quitar' })).toBeInTheDocument();
   });
 
   it('sube y refresca las listas que muestran la foto', async () => {

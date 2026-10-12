@@ -10,7 +10,7 @@ interface Props {
 
 /**
  * Foto del reclamo: la URL firmada viene en `claim.photoUrl` y se renueva sola si vence. Un reclamo resuelto o
- * rechazado no admite foto nueva (409): se reabre antes. La foto de un reclamo se reemplaza, no se quita.
+ * rechazado no admite foto nueva (409): se reabre antes.
  */
 export const ClaimPhoto = ({ claim, canOperate, operateHint }: Props) => {
   const closed = claim.status === 'resolved' || claim.status === 'rejected';

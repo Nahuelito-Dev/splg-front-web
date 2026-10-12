@@ -35,6 +35,7 @@ const Orders = lazyPage(() => import('../pages/Orders/Orders'), 'Orders');
 const OrderDetails = lazyPage(() => import('../pages/Orders/OrderDetails'), 'OrderDetails');
 const OrderInvoice = lazyPage(() => import('../pages/Orders/OrderInvoice'), 'OrderInvoice');
 const NewOrder = lazyPage(() => import('../pages/Orders/NewOrder'), 'NewOrder');
+const UnpaidCollections = lazyPage(() => import('../pages/UnpaidCollections/UnpaidCollections'), 'UnpaidCollections');
 const Claims = lazyPage(() => import('../pages/Claims/Claims'), 'Claims');
 const Incidents = lazyPage(() => import('../pages/Incidents/Incidents'), 'Incidents');
 const CoverageZones = lazyPage(() => import('../pages/CoverageZones/CoverageZones'), 'CoverageZones');
@@ -124,6 +125,8 @@ export const DashboardRoutes = () => {
           <Route path="orders/new" element={<NewOrder />} />
           <Route path="orders/:id" element={<OrderDetails />} />
           <Route path="orders/:id/remito" element={<OrderInvoice />} />
+
+          <Route path="unpaid-collections" element={<UnpaidCollections />} />
 
           {/* 8. Tracking en vivo de choferes */}
           <Route path="tracking" element={<Tracking />} />

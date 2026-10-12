@@ -4,7 +4,7 @@ import { UserRoundCog } from 'lucide-react';
 import { Badge, DataTable, EmptyState, IdentityCell, RowActions } from '../../../common/components/ui';
 import type { Order } from '../../../services/api/types';
 import { formatCurrency, formatDateTime, formatNumber, formatShortId } from '../../../utils/format';
-import { labelOf, ORDER_STATUS } from '../../../utils/statusLabels';
+import { labelOf, ORDER_STATUS, PAYMENT_STATUS } from '../../../utils/statusLabels';
 import { orderEditBlockedReason } from './orderEdit';
 import { isClosed } from './orderStatus';
 
@@ -108,6 +108,15 @@ export const OrdersTable = ({
         headerName: 'Estado',
         width: 140,
         renderCell: ({ row }) => <Badge label={labelOf(ORDER_STATUS, row.status)} />,
+      },
+      {
+        field: 'paymentStatus',
+        headerName: 'Cobro',
+        width: 120,
+        sortable: false,
+        valueGetter: ({ row }) => row.paymentStatus ?? '',
+        renderCell: ({ row }) =>
+          row.paymentStatus ? <Badge label={labelOf(PAYMENT_STATUS, row.paymentStatus)} /> : <span>—</span>,
       },
       {
         field: 'total_amount',

@@ -26,11 +26,11 @@ const claim = (status: string, photoUrl: string | null = SIGNED) =>
   ({ claim_id: 'c-1', status, photoUrl }) as unknown as Claim;
 
 describe('ClaimPhoto', () => {
-  it('muestra la foto del reclamo y ofrece reemplazarla, pero no quitarla (el back no tiene DELETE)', () => {
+  it('muestra la foto del reclamo y ofrece reemplazarla y quitarla', () => {
     render(<ClaimPhoto claim={claim('pending')} canOperate />);
     expect(screen.getByAltText('Foto del reclamo')).toHaveAttribute('src', SIGNED);
     expect(screen.getByRole('button', { name: 'Reemplazar' })).not.toHaveAttribute('aria-disabled');
-    expect(screen.queryByRole('button', { name: 'Quitar' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Quitar' })).not.toHaveAttribute('aria-disabled');
   });
 
   it('con el reclamo cerrado bloquea la acción y explica por qué', () => {
@@ -38,6 +38,7 @@ describe('ClaimPhoto', () => {
     const button = screen.getByRole('button', { name: 'Reemplazar' });
     expect(button).toHaveAttribute('aria-disabled', 'true');
     expect(button).toHaveAttribute('title', 'El reclamo está cerrado: reabrilo para cambiar la foto.');
+    expect(screen.getByRole('button', { name: 'Quitar' })).toHaveAttribute('aria-disabled', 'true');
     expect(screen.getByAltText('Foto del reclamo')).toBeInTheDocument();
   });
 

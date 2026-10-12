@@ -1,12 +1,26 @@
 import ReportProblemOutlinedIcon from '@mui/icons-material/ReportProblemOutlined';
 import { Badge, Card } from '../../../../common/components/ui';
 import { useOrderIncidents } from '../../../../services/queries/orders';
+import { errorMessage } from '../../../../services/api/errors';
 import { formatDateTime } from '../../../../utils/format';
 import { INCIDENT_STATUS, INCIDENT_TYPE, labelOf } from '../../../../utils/statusLabels';
 
 /** Incidencias que un chofer reportó durante el reparto de este pedido (GET /incidents/order/:id). */
 export const OrderIncidents = ({ orderId }: { orderId: string }) => {
-  const { data: incidents } = useOrderIncidents(orderId);
+  const { data: incidents, isError, error, refetch } = useOrderIncidents(orderId);
+
+  if (isError) {
+    return (
+      <Card className="p-4">
+        <p role="alert" className="text-sm text-danger">
+          No se pudieron cargar las incidencias del pedido: {errorMessage(error)}{' '}
+          <button type="button" className="font-semibold underline" onClick={() => void refetch()}>
+            Reintentar
+          </button>
+        </p>
+      </Card>
+    );
+  }
 
   if (!incidents || incidents.length === 0) return null;
 

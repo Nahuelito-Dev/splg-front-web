@@ -64,7 +64,7 @@ export const DistributionCard = () => {
             <p className="text-xs text-muted">Sin pedidos en el período.</p>
           )}
         </Section>
-        <Section title="Ventas por método de pago">
+        <Section title="Ventas cobradas por método de pago">
           {paymentItems.length ? (
             <TableroBarList label="Ventas por método de pago" items={paymentItems} />
           ) : (

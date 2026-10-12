@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import {
+  getCollections,
   getSalesByDriver,
   getSalesByPayment,
   getSalesByProduct,
@@ -34,4 +35,10 @@ export const useSalesEvolution = (params: SalesEvolutionParams, { enabled = true
     queryKey: keys.list({ report: 'evolution', ...params }),
     queryFn: () => getSalesEvolution(params),
     enabled,
+  });
+
+export const useCollections = (range: ReportsDateRange) =>
+  useQuery({
+    queryKey: keys.list({ report: 'collections', ...range }),
+    queryFn: () => getCollections(range),
   });

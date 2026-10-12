@@ -22,7 +22,7 @@ const MONTHS = 12;
 
 const compact = new Intl.NumberFormat('es-AR', { notation: 'compact', maximumFractionDigits: 1 });
 
-/** Ventas entregadas en un gráfico de área, con selector de período (semana, mes o año). */
+/** Ventas cobradas (entregadas y cobradas) en un gráfico de área, con selector de período (semana, mes o año). */
 export const SalesAreaCard = () => {
   const gradientId = useId();
   const palette = useChartPalette();
@@ -70,14 +70,14 @@ export const SalesAreaCard = () => {
   return (
     <TableroWidget
       title="Ventas"
-      subtitle={`Pedidos entregados en ${info.title}.`}
+      subtitle={`Pedidos entregados y cobrados en ${info.title}.`}
       action={selector}
       loading={active.isLoading}
       error={active.error}
       onRetry={() => void active.refetch()}
       empty={
         total === 0
-          ? { title: 'Sin ventas en este período', description: 'Cuando se entregue un pedido aparece acá.' }
+          ? { title: 'Sin ventas en este período', description: 'Cuando se entregue y cobre un pedido aparece acá.' }
           : null
       }
     >
