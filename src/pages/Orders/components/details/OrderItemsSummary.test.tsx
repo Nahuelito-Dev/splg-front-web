@@ -31,4 +31,14 @@ describe('OrderItemsSummary: medio de pago', () => {
     render(<OrderItemsSummary order={order({ payment_method: 'cash', paymentMethodDetail: 'cash' })} />);
     expect(screen.getByText('Efectivo')).toBeInTheDocument();
   });
+
+  it('el recargo se nombra por el medio de pago, no como «pago online»', () => {
+    const conRecargo = { total_amount: 1100, subtotal_items: 1000 };
+    render(<OrderItemsSummary order={order(conRecargo)} />);
+    expect(screen.getByText('Recargo por transferencia')).toBeInTheDocument();
+    cleanup();
+    render(<OrderItemsSummary order={order({ ...conRecargo, paymentMethodDetail: 'mercadopago' })} />);
+    expect(screen.getByText('Recargo por Mercado Pago')).toBeInTheDocument();
+    expect(screen.queryByText(/pago online/)).not.toBeInTheDocument();
+  });
 });

@@ -83,4 +83,15 @@ describe('OrderRemito', () => {
     expect(screen.getByText('Transferencia')).toBeInTheDocument();
     expect(screen.queryByText('Online')).not.toBeInTheDocument();
   });
+
+  it('el recargo del medio de pago se nombra por la transferencia, no como «pago online»', () => {
+    render(
+      <OrderRemito
+        order={{ ...order, total_amount: 27500, paymentMethodDetail: 'transfer' } as Order}
+        distributor={undefined}
+      />,
+    );
+    expect(screen.getByText('Recargo por transferencia')).toBeInTheDocument();
+    expect(screen.queryByText(/pago online/)).not.toBeInTheDocument();
+  });
 });

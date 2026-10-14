@@ -5159,6 +5159,46 @@
                 ]
             }
         },
+        "/api/orders/delivery/me/active": {
+            "get": {
+                "description": "Devuelve el pedido que el chofer tiene en curso, sin importar cuándo se creó: el que lleva `out_for_delivery` o, si no, el `accepted` más antiguo. Si no tiene ninguno, el pedido entregado HOY en efectivo cuyo cobro sigue `pending` (para que confirme el cobro). Responde `204` sin cuerpo si no tiene nada de eso. Sólo del chofer autenticado y de su distribuidora.",
+                "operationId": "OrderController_findMyActive",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrderResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "204": {
+                        "description": "El chofer no tiene un pedido en curso"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: delivery"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "El pedido en curso del chofer (para retomar al abrir la app)",
+                "tags": [
+                    "Orders"
+                ]
+            }
+        },
         "/api/orders/delivery/{deliveryId}": {
             "get": {
                 "operationId": "OrderController_findByDelivery",
@@ -5412,6 +5452,65 @@
                     }
                 ],
                 "summary": "Foto del chofer asignado al pedido",
+                "tags": [
+                    "Orders"
+                ]
+            }
+        },
+        "/api/orders/{id}/status-history": {
+            "get": {
+                "description": "Del más viejo al más nuevo: de qué estado a cuál, cuándo, quién y el motivo. Las filas con `isNote: true` (origen = destino) son anotaciones de un cobro manual del admin, no cambios de estado. La regla de lectura es la de `GET /orders/:id`: el cliente sólo los suyos, el chofer los que ve en el detalle, admin y super admin los de su distribuidora (el super admin tiene que mandar `X-Distributor`: sin él, 400); lo ajeno responde 404. `changedBy.fullName` sólo lo ven admin y super admin. Los pedidos anteriores al historial no tienen sus transiciones pasadas.",
+                "operationId": "OrderController_statusHistory",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Order UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/OrderStatusHistoryEntryDto"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "El super admin no mandó `X-Distributor`"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: customer, delivery, admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Pedido no encontrado"
+                    },
+                    "410": {
+                        "description": "Sólo para el chofer: el pedido lo tuvo él y ya no es suyo (igual que `GET /orders/:id`)."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Historial de estados del pedido",
                 "tags": [
                     "Orders"
                 ]
@@ -14578,7 +14677,7 @@
         },
         "/api/orders/{id}/payment/register-unpaid": {
             "patch": {
-                "description": "Para cuando el chofer no lo informó (no lo hizo, ya no está). Mismo efecto que `PATCH /orders/{id}/payment/unpaid`: pasa el pago a `unpaid` y abre UNA incidencia `unpaid_collection` (reportada por el admin). `reason` es obligatorio (10 a 500 caracteres) y queda en el historial de estados y en la auditoría. Sólo pedidos `delivered` en efectivo con el pago `pending`; repetirlo devuelve la misma incidencia. Se cierra con `PATCH /orders/{id}/payment/resolve-unpaid`. `X-Distributor` es obligatorio para el super admin.",
+                "description": "Para cuando el chofer no lo informó (no lo hizo, ya no está). Mismo efecto que `PATCH /orders/{id}/payment/unpaid`: pasa el pago a `unpaid` y abre UNA incidencia `unpaid_collection` (reportada por el admin). `reason` es obligatorio (10 a 500 caracteres) y queda en el historial de estados, en la auditoría y en el pedido (`paymentResolutionNote`, `paymentResolvedBy/At`; `resolve-unpaid` los reemplaza al cerrar el impago). Sólo pedidos `delivered` en efectivo con el pago `pending`; repetirlo devuelve la misma incidencia. Se cierra con `PATCH /orders/{id}/payment/resolve-unpaid`. `X-Distributor` es obligatorio para el super admin.",
                 "operationId": "UnpaidCashController_registerUnpaid",
                 "parameters": [
                     {
@@ -18860,18 +18959,18 @@
                         "type": "string",
                         "format": "date-time",
                         "nullable": true,
-                        "description": "Cuándo un admin resolvió el impago (`paid` o `written_off`). `null` si nunca fue impago."
+                        "description": "Cuándo un admin resolvió el impago (`paid` o `written_off`), o registró el cobro manual (`register-cash`, `confirm-transfer`). Con `paymentStatus: unpaid` es cuándo el admin lo registró (`register-unpaid`); `resolve-unpaid` lo reemplaza. `null` si nadie lo tocó."
                     },
                     "paymentResolvedBy": {
                         "type": "string",
                         "format": "uuid",
                         "nullable": true,
-                        "description": "Admin que resolvió el impago (`paid` o `written_off`)."
+                        "description": "Admin que resolvió el impago (`paid` o `written_off`) o registró el cobro manual. Con `paymentStatus: unpaid`, el admin que lo registró."
                     },
                     "paymentResolutionNote": {
                         "type": "string",
                         "nullable": true,
-                        "description": "Motivo con el que el admin resolvió un impago"
+                        "description": "Motivo del admin: la resolución del impago, el cobro manual o, con `paymentStatus: unpaid`, el motivo con que registró el impago."
                     },
                     "editable": {
                         "type": "boolean",
@@ -19396,6 +19495,101 @@
                     "items"
                 ]
             },
+            "HistorialDeEstadoActorDto": {
+                "type": "object",
+                "properties": {
+                    "userId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "role": {
+                        "type": "string",
+                        "enum": [
+                            "customer",
+                            "delivery",
+                            "admin",
+                            "super_admin"
+                        ],
+                        "nullable": true,
+                        "description": "Rol del usuario; `null` si la cuenta ya no tiene rol."
+                    },
+                    "fullName": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Nombre completo. Sólo lo ven admin y super admin; para el cliente y el chofer es `null`."
+                    }
+                },
+                "required": [
+                    "userId",
+                    "role",
+                    "fullName"
+                ]
+            },
+            "OrderStatusHistoryEntryDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "fromStatus": {
+                        "type": "string",
+                        "enum": [
+                            "reserved",
+                            "pending",
+                            "accepted",
+                            "out_for_delivery",
+                            "delivered",
+                            "cancelled"
+                        ],
+                        "nullable": true,
+                        "description": "Estado de origen, con los mismos valores que `status` del pedido (`on_the_way` sale como `out_for_delivery`). `null` en el alta."
+                    },
+                    "toStatus": {
+                        "type": "string",
+                        "enum": [
+                            "reserved",
+                            "pending",
+                            "accepted",
+                            "out_for_delivery",
+                            "delivered",
+                            "cancelled"
+                        ],
+                        "description": "Estado de destino, con los mismos valores que `status`."
+                    },
+                    "isNote": {
+                        "type": "boolean",
+                        "description": "`true` si es una anotación y no un cambio de estado (origen = destino): los cobros manuales del admin (`register-cash`, `register-unpaid`, `confirm-transfer`). Mostrarla como nota."
+                    },
+                    "reason": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Motivo: cancelación, entrega manual o texto del cobro manual."
+                    },
+                    "changedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "changedBy": {
+                        "nullable": true,
+                        "description": "Quién lo hizo. `null` si lo hizo el sistema (vencimiento, webhook) o la cuenta se dio de baja.",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/HistorialDeEstadoActorDto"
+                            }
+                        ]
+                    }
+                },
+                "required": [
+                    "id",
+                    "fromStatus",
+                    "toStatus",
+                    "isNote",
+                    "reason",
+                    "changedAt",
+                    "changedBy"
+                ]
+            },
             "UpdateOrderStatusDto": {
                 "type": "object",
                 "properties": {
@@ -19578,18 +19772,18 @@
                         "type": "string",
                         "format": "date-time",
                         "nullable": true,
-                        "description": "Cuándo un admin resolvió el impago (`paid` o `written_off`). `null` si nunca fue impago."
+                        "description": "Cuándo un admin resolvió el impago (`paid` o `written_off`), o registró el cobro manual (`register-cash`, `confirm-transfer`). Con `paymentStatus: unpaid` es cuándo el admin lo registró (`register-unpaid`); `resolve-unpaid` lo reemplaza. `null` si nadie lo tocó."
                     },
                     "paymentResolvedBy": {
                         "type": "string",
                         "format": "uuid",
                         "nullable": true,
-                        "description": "Admin que resolvió el impago (`paid` o `written_off`)."
+                        "description": "Admin que resolvió el impago (`paid` o `written_off`) o registró el cobro manual. Con `paymentStatus: unpaid`, el admin que lo registró."
                     },
                     "paymentResolutionNote": {
                         "type": "string",
                         "nullable": true,
-                        "description": "Motivo con el que el admin resolvió un impago"
+                        "description": "Motivo del admin: la resolución del impago, el cobro manual o, con `paymentStatus: unpaid`, el motivo con que registró el impago."
                     },
                     "editable": {
                         "type": "boolean",

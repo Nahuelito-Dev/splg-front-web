@@ -9,6 +9,7 @@ import {
   createOrder,
   getOrder,
   getOrderDeliveryCode,
+  getOrderStatusHistory,
   listAvailableOrders,
   listOrderIncidents,
   listOrders,
@@ -108,6 +109,14 @@ export const useOrder = (id: string | undefined, { refetchInterval }: LiveOption
     queryFn: () => getOrder(id ?? ''),
     enabled: Boolean(id),
     refetchInterval,
+  });
+
+/** Historial real de estados del pedido; cuelga de su detalle, así que se refresca cuando el pedido cambia. */
+export const useOrderStatusHistory = (orderId: string | undefined) =>
+  useQuery({
+    queryKey: [...keys.detail(orderId ?? ''), 'status-history'],
+    queryFn: () => getOrderStatusHistory(orderId ?? ''),
+    enabled: Boolean(orderId),
   });
 
 /** Incidencias reportadas para un pedido puntual (se muestran en su detalle). */
