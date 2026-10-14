@@ -1126,6 +1126,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/orders/delivery/me/active': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * El pedido en curso del chofer (para retomar al abrir la app)
+     * @description Devuelve el pedido que el chofer tiene en curso, sin importar cuándo se creó: el que lleva `out_for_delivery` o, si no, el `accepted` más antiguo. Si no tiene ninguno, el pedido entregado HOY en efectivo cuyo cobro sigue `pending` (para que confirme el cobro). Responde `204` sin cuerpo si no tiene nada de eso. Sólo del chofer autenticado y de su distribuidora.
+     */
+    get: operations['OrderController_findMyActive'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/orders/delivery/{deliveryId}': {
     parameters: {
       query?: never;
@@ -1189,6 +1209,26 @@ export interface paths {
      * @description Por defecto redirige (302) a la URL firmada de S3. Con `?modo=url` devuelve `{ url, expiresAt, requiresAuth }` en JSON, sin redirect; si no tiene foto, `url: null`.
      */
     get: operations['OrderController_getDriverPhoto'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/orders/{id}/status-history': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Historial de estados del pedido
+     * @description Del más viejo al más nuevo: de qué estado a cuál, cuándo, quién y el motivo. Las filas con `isNote: true` (origen = destino) son anotaciones de un cobro manual del admin, no cambios de estado. La regla de lectura es la de `GET /orders/:id`: el cliente sólo los suyos, el chofer los que ve en el detalle, admin y super admin los de su distribuidora (el super admin tiene que mandar `X-Distributor`: sin él, 400); lo ajeno responde 404. `changedBy.fullName` sólo lo ven admin y super admin. Los pedidos anteriores al historial no tienen sus transiciones pasadas.
+     */
+    get: operations['OrderController_statusHistory'];
     put?: never;
     post?: never;
     delete?: never;
@@ -3463,7 +3503,7 @@ export interface paths {
     head?: never;
     /**
      * El admin informa el impago de un efectivo entregado
-     * @description Para cuando el chofer no lo informó (no lo hizo, ya no está). Mismo efecto que `PATCH /orders/{id}/payment/unpaid`: pasa el pago a `unpaid` y abre UNA incidencia `unpaid_collection` (reportada por el admin). `reason` es obligatorio (10 a 500 caracteres) y queda en el historial de estados y en la auditoría. Sólo pedidos `delivered` en efectivo con el pago `pending`; repetirlo devuelve la misma incidencia. Se cierra con `PATCH /orders/{id}/payment/resolve-unpaid`. `X-Distributor` es obligatorio para el super admin.
+     * @description Para cuando el chofer no lo informó (no lo hizo, ya no está). Mismo efecto que `PATCH /orders/{id}/payment/unpaid`: pasa el pago a `unpaid` y abre UNA incidencia `unpaid_collection` (reportada por el admin). `reason` es obligatorio (10 a 500 caracteres) y queda en el historial de estados, en la auditoría y en el pedido (`paymentResolutionNote`, `paymentResolvedBy/At`; `resolve-unpaid` los reemplaza al cerrar el impago). Sólo pedidos `delivered` en efectivo con el pago `pending`; repetirlo devuelve la misma incidencia. Se cierra con `PATCH /orders/{id}/payment/resolve-unpaid`. `X-Distributor` es obligatorio para el super admin.
      */
     patch: operations['UnpaidCashController_registerUnpaid'];
     trace?: never;
@@ -4874,15 +4914,15 @@ export interface components {
       paymentConfirmedBy: string | null;
       /**
        * Format: date-time
-       * @description Cuándo un admin resolvió el impago (`paid` o `written_off`). `null` si nunca fue impago.
+       * @description Cuándo un admin resolvió el impago (`paid` o `written_off`), o registró el cobro manual (`register-cash`, `confirm-transfer`). Con `paymentStatus: unpaid` es cuándo el admin lo registró (`register-unpaid`); `resolve-unpaid` lo reemplaza. `null` si nadie lo tocó.
        */
       paymentResolvedAt: string | null;
       /**
        * Format: uuid
-       * @description Admin que resolvió el impago (`paid` o `written_off`).
+       * @description Admin que resolvió el impago (`paid` o `written_off`) o registró el cobro manual. Con `paymentStatus: unpaid`, el admin que lo registró.
        */
       paymentResolvedBy: string | null;
-      /** @description Motivo con el que el admin resolvió un impago */
+      /** @description Motivo del admin: la resolución del impago, el cobro manual o, con `paymentStatus: unpaid`, el motivo con que registró el impago. */
       paymentResolutionNote: string | null;
       /**
        * @description Regla del pedido, no del rol: está pendiente, sin chofer y sin pago online en curso o cobrado. No dice si quien lo consulta puede editarlo: `PATCH /orders/:id` es de administradores (un cliente o un chofer recibe 403 aunque sea `true`).
@@ -5075,6 +5115,39 @@ export interface components {
       createdAt: string;
       items: components['schemas']['RenglonDeReservaDto'][];
     };
+    HistorialDeEstadoActorDto: {
+      /** Format: uuid */
+      userId: string;
+      /**
+       * @description Rol del usuario; `null` si la cuenta ya no tiene rol.
+       * @enum {string|null}
+       */
+      role: 'customer' | 'delivery' | 'admin' | 'super_admin' | null;
+      /** @description Nombre completo. Sólo lo ven admin y super admin; para el cliente y el chofer es `null`. */
+      fullName: string | null;
+    };
+    OrderStatusHistoryEntryDto: {
+      /** Format: uuid */
+      id: string;
+      /**
+       * @description Estado de origen, con los mismos valores que `status` del pedido (`on_the_way` sale como `out_for_delivery`). `null` en el alta.
+       * @enum {string|null}
+       */
+      fromStatus: 'reserved' | 'pending' | 'accepted' | 'out_for_delivery' | 'delivered' | 'cancelled' | null;
+      /**
+       * @description Estado de destino, con los mismos valores que `status`.
+       * @enum {string}
+       */
+      toStatus: 'reserved' | 'pending' | 'accepted' | 'out_for_delivery' | 'delivered' | 'cancelled';
+      /** @description `true` si es una anotación y no un cambio de estado (origen = destino): los cobros manuales del admin (`register-cash`, `register-unpaid`, `confirm-transfer`). Mostrarla como nota. */
+      isNote: boolean;
+      /** @description Motivo: cancelación, entrega manual o texto del cobro manual. */
+      reason: string | null;
+      /** Format: date-time */
+      changedAt: string;
+      /** @description Quién lo hizo. `null` si lo hizo el sistema (vencimiento, webhook) o la cuenta se dio de baja. */
+      changedBy: components['schemas']['HistorialDeEstadoActorDto'] | null;
+    };
     UpdateOrderStatusDto: {
       /**
        * @description Nuevo estado del pedido, con el vocabulario de la respuesta (`out_for_delivery` es el pedido en camino)
@@ -5168,15 +5241,15 @@ export interface components {
       paymentConfirmedBy: string | null;
       /**
        * Format: date-time
-       * @description Cuándo un admin resolvió el impago (`paid` o `written_off`). `null` si nunca fue impago.
+       * @description Cuándo un admin resolvió el impago (`paid` o `written_off`), o registró el cobro manual (`register-cash`, `confirm-transfer`). Con `paymentStatus: unpaid` es cuándo el admin lo registró (`register-unpaid`); `resolve-unpaid` lo reemplaza. `null` si nadie lo tocó.
        */
       paymentResolvedAt: string | null;
       /**
        * Format: uuid
-       * @description Admin que resolvió el impago (`paid` o `written_off`).
+       * @description Admin que resolvió el impago (`paid` o `written_off`) o registró el cobro manual. Con `paymentStatus: unpaid`, el admin que lo registró.
        */
       paymentResolvedBy: string | null;
-      /** @description Motivo con el que el admin resolvió un impago */
+      /** @description Motivo del admin: la resolución del impago, el cobro manual o, con `paymentStatus: unpaid`, el motivo con que registró el impago. */
       paymentResolutionNote: string | null;
       /**
        * @description Regla del pedido, no del rol: está pendiente, sin chofer y sin pago online en curso o cobrado. No dice si quien lo consulta puede editarlo: `PATCH /orders/:id` es de administradores (un cliente o un chofer recibe 403 aunque sea `true`).
@@ -12595,6 +12668,46 @@ export interface operations {
       };
     };
   };
+  OrderController_findMyActive: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['OrderResponseDto'];
+        };
+      };
+      /** @description El chofer no tiene un pedido en curso */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: delivery */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   OrderController_findByDelivery: {
     parameters: {
       query?: {
@@ -12756,6 +12869,63 @@ export interface operations {
       };
       /** @description El pedido no está aceptado ni en camino */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  OrderController_statusHistory: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Order UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['OrderStatusHistoryEntryDto'][];
+        };
+      };
+      /** @description El super admin no mandó `X-Distributor` */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer, delivery, admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Pedido no encontrado */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sólo para el chofer: el pedido lo tuvo él y ya no es suyo (igual que `GET /orders/:id`). */
+      410: {
         headers: {
           [name: string]: unknown;
         };

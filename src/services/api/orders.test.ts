@@ -7,7 +7,13 @@ const http = vi.hoisted(() => ({
 }));
 vi.mock('./httpClient', async (importOriginal) => ({ ...(await importOriginal<Record<string, unknown>>()), http }));
 
-import { confirmOrderDelivery, listOrders, resolveUnpaidOrder, updateOrderStatus } from './orders';
+import {
+  confirmOrderDelivery,
+  getOrderStatusHistory,
+  listOrders,
+  resolveUnpaidOrder,
+  updateOrderStatus,
+} from './orders';
 
 beforeEach(() => {
   http.get.mockReset().mockResolvedValue({ data: { orders: [], total: 0 } });
@@ -44,5 +50,13 @@ describe('API de pedidos: cobros', () => {
       { code: 'A1B2C3', reason: 'Cliente confirmó recepción' },
       { headers: { 'Idempotency-Key': 'confirm-key' } },
     );
+  });
+});
+
+describe('API de pedidos: historial', () => {
+  it('lee el historial real de GET /orders/:id/status-history', async () => {
+    http.get.mockResolvedValue({ data: [{ id: 'h-1' }] });
+    await expect(getOrderStatusHistory('o-1')).resolves.toEqual([{ id: 'h-1' }]);
+    expect(http.get.mock.calls[0][0]).toBe('/orders/o-1/status-history');
   });
 });

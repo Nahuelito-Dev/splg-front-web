@@ -14,3 +14,7 @@ export const onlinePaymentSurcharge = (
   const surcharge = order.total_amount - order.subtotal_items - zoneAmount;
   return surcharge > 0 ? surcharge : 0;
 };
+
+/** Cómo se nombra el recargo en el desglose: por el medio de pago real (transferencia o Mercado Pago), no «online». */
+export const paymentSurchargeLabel = (order: Pick<Order, 'paymentMethodDetail'>): string =>
+  order.paymentMethodDetail === 'transfer' ? 'Recargo por transferencia' : 'Recargo por Mercado Pago';

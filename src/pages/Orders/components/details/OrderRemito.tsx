@@ -2,7 +2,7 @@ import type { Order } from '../../../../services/api/types';
 import type { Distributor } from '../../../../services/api/types';
 import { formatCurrency, formatDateTime, formatDay, formatShortId } from '../../../../utils/format';
 import { labelOf, ORDER_STATUS, PAYMENT_METHOD } from '../../../../utils/statusLabels';
-import { onlinePaymentSurcharge } from './orderPricing';
+import { onlinePaymentSurcharge, paymentSurchargeLabel } from './orderPricing';
 
 interface Props {
   order: Order;
@@ -118,7 +118,7 @@ export const OrderRemito = ({ order, distributor }: Props) => {
           )}
           {onlineSurcharge > 0 && (
             <div className="flex justify-between gap-4">
-              <dt className="text-tinta-700">Recargo pago online</dt>
+              <dt className="text-tinta-700">{paymentSurchargeLabel(order)}</dt>
               <dd>{formatCurrency(onlineSurcharge)}</dd>
             </div>
           )}

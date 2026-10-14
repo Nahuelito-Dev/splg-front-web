@@ -62,7 +62,7 @@ export const OrderDetails = () => {
             <div className="min-w-0 space-y-5 lg:col-span-2">
               {order.status === 'reserved' && <OrderDepositCard order={order} />}
               <OrderItemsSummary order={order} />
-              <OrderHistoryCard order={order} />
+              <OrderHistoryCard orderId={order.order_id} />
               <CylinderLinksCard
                 title="Envases"
                 filters={{ orderId: order.order_id }}

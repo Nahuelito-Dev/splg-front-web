@@ -7,6 +7,8 @@ interface ErrorBody {
   statusCode?: number;
 }
 
+const MISSING_DISTRIBUTOR_MESSAGE = 'Elegí una distribuidora en «Ver como» para operar';
+
 /** Un error de la API ya interpretado: estado HTTP y mensajes legibles. */
 export class ApiError extends Error {
   constructor(
@@ -26,6 +28,11 @@ export class ApiError extends Error {
     return this.status === 400 && this.messages.some((message) => message.includes('uuid is expected'));
   }
 
+  /** 400 por falta de `X-Distributor`: el super admin tiene que elegir una distribuidora en «Ver como». */
+  get missingDistributor(): boolean {
+    return this.status === 400 && this.messages.includes(MISSING_DISTRIBUTOR_MESSAGE);
+  }
+
   get forbidden(): boolean {
     return this.status === 403;
   }
@@ -41,7 +48,6 @@ const isErrorBody = (value: unknown): value is ErrorBody =>
 
 /** El back pide `X-Distributor` con «Falta la distribuidora…»: en el panel se resuelve eligiendo una empresa. */
 const MISSING_DISTRIBUTOR = /^Falta la distribuidora/;
-const MISSING_DISTRIBUTOR_MESSAGE = 'Elegí una distribuidora en «Ver como» para operar';
 
 /** El límite de pedidos del back (`ThrottlerException: Too Many Requests`) no le dice nada a quien opera el panel. */
 const RATE_LIMITED_MESSAGE = 'Hiciste demasiados intentos seguidos: esperá un minuto y volvé a intentar';

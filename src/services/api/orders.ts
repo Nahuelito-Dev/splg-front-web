@@ -10,6 +10,7 @@ import type {
   Message,
   MotivoDeCobroBody,
   Order,
+  OrderStatusHistoryEntry,
   PaginatedOrders,
   ResolveUnpaid,
   ResolveUnpaidBody,
@@ -47,6 +48,15 @@ export const listOrders = async (params: PageParams, filters: OrderFilters = {})
 /** GET /orders/:id: la ficha completa de un pedido. */
 export const getOrder = async (id: string): Promise<Order> => {
   const { data } = await http.get<Order>(`/orders/${id}`);
+  return data;
+};
+
+/**
+ * GET /orders/:id/status-history: las transiciones y anotaciones reales del pedido, de la más vieja a la más nueva.
+ * El super admin necesita «Ver como» (`X-Distributor`): sin distribuidora el back responde 400.
+ */
+export const getOrderStatusHistory = async (id: string): Promise<OrderStatusHistoryEntry[]> => {
+  const { data } = await http.get<OrderStatusHistoryEntry[]>(`/orders/${id}/status-history`);
   return data;
 };
 

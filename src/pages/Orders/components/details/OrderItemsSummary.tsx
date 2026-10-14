@@ -3,7 +3,7 @@ import { Badge, Card } from '../../../../common/components/ui';
 import type { Order } from '../../../../services/api/types';
 import { formatCurrency } from '../../../../utils/format';
 import { labelOf, PAYMENT_METHOD } from '../../../../utils/statusLabels';
-import { onlinePaymentSurcharge } from './orderPricing';
+import { onlinePaymentSurcharge, paymentSurchargeLabel } from './orderPricing';
 
 const TotalRow = ({ label, value, strong }: { label: string; value: string; strong?: boolean }) => (
   <div className="flex items-baseline justify-between gap-4">
@@ -59,7 +59,9 @@ export const OrderItemsSummary = ({ order }: { order: Order }) => {
             value={formatCurrency(zone.amount)}
           />
         )}
-        {onlineSurcharge > 0 && <TotalRow label="Recargo por pago online" value={formatCurrency(onlineSurcharge)} />}
+        {onlineSurcharge > 0 && (
+          <TotalRow label={paymentSurchargeLabel(order)} value={formatCurrency(onlineSurcharge)} />
+        )}
         <TotalRow label="Total" value={formatCurrency(order.total_amount)} strong />
       </dl>
     </Card>
