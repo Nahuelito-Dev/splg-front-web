@@ -2417,7 +2417,7 @@ export interface paths {
     put?: never;
     /**
      * Contraasentar una transferencia
-     * @description El libro no se edita: se agregan movimientos inversos (`reversal`) que apuntan a los originales. Sólo transferencias; un ajuste se corrige con otro ajuste.
+     * @description El libro no se edita: se agregan movimientos inversos (`reversal`) que apuntan a los originales. Sólo transferencias; un ajuste se corrige con otro ajuste. **Exige** `Idempotency-Key` (400 sin ella). No se contraasienta hacia un camión (409): el stock del camión entra sólo por la carga del día.
      */
     post: operations['StockController_contraasentar'];
     delete?: never;
@@ -2435,7 +2435,10 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Transferir stock entre depósitos o entre un depósito y un vehículo (CU-212) */
+    /**
+     * Transferir stock entre depósitos o entre un depósito y un vehículo (CU-212)
+     * @description **Exige** el header `Idempotency-Key` (400 sin él): un reintento sin clave duplicaría el movimiento.
+     */
     post: operations['StockController_transferir'];
     delete?: never;
     options?: never;
@@ -2454,7 +2457,7 @@ export interface paths {
     put?: never;
     /**
      * Conteo inicial de un depósito
-     * @description Carga lo que hay físicamente. Registra un ajuste `initial_count` con las diferencias contra el saldo actual y el vendible acompaña a las llenas. Una vez por depósito.
+     * @description **Exige** `Idempotency-Key` (400 sin ella). Carga lo que hay físicamente. Registra un ajuste `initial_count` con las diferencias contra el saldo actual y el vendible acompaña a las llenas. Una vez por depósito.
      */
     post: operations['StockController_conteoInicial'];
     delete?: never;
@@ -2475,7 +2478,7 @@ export interface paths {
     put?: never;
     /**
      * Registrar un ajuste o una merma de stock (CU-213)
-     * @description Motivos: corrección de conteo, merma, fuga, rotura (llena a defectuosa), pérdida y encontrado. Nota obligatoria; el número es correlativo por distribuidora. Si toca llenas, el vendible acompaña y nunca queda negativo.
+     * @description **Exige** `Idempotency-Key` (400 sin ella). Motivos: corrección de conteo, merma, fuga, rotura (llena a defectuosa), pérdida y encontrado. Nota obligatoria; el número es correlativo por distribuidora. Si toca llenas, el vendible acompaña y nunca queda negativo.
      */
     post: operations['StockController_ajustar'];
     delete?: never;
@@ -2531,7 +2534,7 @@ export interface paths {
     };
     /**
      * Conciliar el vendible contra el físico (CU-224)
-     * @description vendible = Σ llenas en depósitos y camiones − Σ pedidos abiertos. Informa las diferencias y las entregas sin movimiento; no corrige nada.
+     * @description vendible = max(0, Σ llenas en depósitos y camiones − Σ pedidos abiertos). Informa las diferencias, las reservas que el físico no cubre (`overReserved`, p. ej. tras una merma con pedidos abiertos) y las entregas sin movimiento; no corrige nada.
      */
     get: operations['StockController_conciliar'];
     put?: never;
@@ -2573,7 +2576,7 @@ export interface paths {
     put?: never;
     /**
      * Corregir el vendible de una garrafa hasta la invariante
-     * @description Ajuste de conciliación: deja `gas_cylinder.stock = llenas − reservado` SIN tocar el físico (`correction` de la conciliación). Documento numerado con motivo `reconciliation` y nota obligatoria; no genera movimientos físicos. Con `expectedDifference` falla con 409 si la diferencia cambió.
+     * @description **Exige** `Idempotency-Key` (400 sin ella). Ajuste de conciliación: deja `gas_cylinder.stock = max(0, llenas − reservado)` SIN tocar el físico (`correction` de la conciliación). Documento numerado con motivo `reconciliation` y nota obligatoria; no genera movimientos físicos. Con `expectedDifference` falla con 409 si la diferencia cambió.
      */
     post: operations['StockController_corregirVendible'];
     delete?: never;
@@ -2597,7 +2600,7 @@ export interface paths {
     head?: never;
     /**
      * Update gas cylinder stock
-     * @description Suma (positivo) o resta (negativo) llenas en el depósito predeterminado como un ajuste de conteo: deja el rastro en el libro de stock y mantiene el vendible igual al físico menos lo reservado.
+     * @description **Exige** `Idempotency-Key` (400 sin ella): suma y resta son relativas, un reintento sin clave ajustaría dos veces. Suma (positivo) o resta (negativo) llenas en el depósito predeterminado como un ajuste de conteo: deja el rastro en el libro de stock y mantiene el vendible igual al físico menos lo reservado.
      *
      *     **Cambio de contrato:** al restar, si el depósito predeterminado no tiene tantas llenas responde 400 con un mensaje que dice dónde están las demás (camiones u otros depósitos) y cómo ajustarlas ahí; antes sólo comparaba contra el vendible.
      */
@@ -3627,7 +3630,7 @@ export interface paths {
     put?: never;
     /**
      * Registrar la recepción de una compra (con o sin orden)
-     * @description En una transacción: suma las llenas al depósito (sube el vendible), descuenta las vacías que se llevó la planta (sin dejar el depósito en negativo), actualiza lo recibido y el estado de la orden y recalcula el costo promedio ponderado. El número del documento del proveedor es único por proveedor. Acepta `Idempotency-Key`.
+     * @description En una transacción: suma las llenas al depósito (sube el vendible), descuenta las vacías que se llevó la planta (sin dejar el depósito en negativo), actualiza lo recibido y el estado de la orden y recalcula el costo promedio ponderado. El número del documento del proveedor es único por proveedor. **Exige** `Idempotency-Key` (400 sin ella). Un `receivedAt` anterior al conteo inicial del depósito responde 400.
      */
     post: operations['PurchaseReceiptController_create'];
     delete?: never;
@@ -3688,7 +3691,7 @@ export interface paths {
     head?: never;
     /**
      * Anular una recepción (contraasiento del libro, con motivo)
-     * @description Saca las llenas que entraron y devuelve las vacías que se llevó la planta; recalcula lo recibido de la orden y el costo promedio. Si las llenas ya no están en el depósito responde 409 diciendo dónde están. No se anula una recepción pagada.
+     * @description Saca las llenas que entraron y devuelve las vacías que se llevó la planta; recalcula lo recibido de la orden y el costo promedio (recalculado de las recepciones que siguen confirmadas). **Exige** `Idempotency-Key`. Si las llenas ya no están en el depósito responde 409 diciendo dónde están. No se anula una recepción pagada.
      */
     patch: operations['PurchaseReceiptController_void'];
     trace?: never;
@@ -6532,10 +6535,16 @@ export interface components {
       physicalFull: number;
       /** @description Unidades de pedidos abiertos */
       reserved: number;
-      /** @description Lo que debería valer el vendible */
+      /** @description Lo que debería valer el vendible: max(0, llenas - reservadas) */
       expected: number;
+      /** @description Reservas de pedidos abiertos que el físico no cubre (max(0, reservadas - llenas)). Mientras sea mayor que cero el vendible queda en 0: cancelar pedidos o reponer stock lo cubre primero y sólo el resto vuelve a ser vendible */
+      overReserved: number;
       /** @description sellable - expected; distinto de cero es una discrepancia */
       difference: number;
+      /** @description Déficit de reservas guardado (`gas_cylinder.reservation_deficit`): lo que el vendible en cero ocultó cuando una pérdida dejó las reservas por encima del físico */
+      reservationDeficit: number;
+      /** @description `reservationDeficit - overReserved`; distinto de cero es un desfasaje del déficit (se corrige con POST /stock/reconciliation/adjustments aunque `difference` sea 0) */
+      deficitDifference: number;
       /** @description Variación a aplicar al vendible para que cierre (-difference). Se aplica con POST /stock/reconciliation/adjustments */
       correction: number;
     };
@@ -6553,7 +6562,7 @@ export interface components {
     StockReconciliationDto: {
       /** Format: date-time */
       checkedAt: string;
-      /** @description true si todas las garrafas cumplen la invariante y no hay entregas sin movimiento */
+      /** @description true si todas las garrafas cumplen la invariante, ninguna tiene reservas por encima del físico y no hay entregas sin movimiento */
       consistent: boolean;
       cylinders: components['schemas']['DiferenciaDeVendibleDto'][];
       /** @description Renglones de pedidos entregados desde que arrancó el módulo que no descontaron el físico (no había saldo donde sacar) */
@@ -6642,6 +6651,11 @@ export interface components {
       orderId: string;
       /** @example 14500 */
       totalAmount: number;
+      /**
+       * @description Saldo que el chofer cobra al entregar: el total menos la seña ya paga
+       * @example 9500
+       */
+      remainingBalance: number;
       /** @enum {string} */
       paymentMethod: 'cash' | 'mercadopago' | 'transfer';
       /** @enum {string} */
@@ -6653,7 +6667,7 @@ export interface components {
       /** @example 4 */
       deliveredOrders: number;
       /**
-       * @description Efectivo que el chofer confirmó haber cobrado (paid)
+       * @description Efectivo que el chofer confirmó haber cobrado (paid): el saldo de cada pedido, sin la seña que ya se pagó por adelantado
        * @example 43500
        */
       cashCollectedAmount: number;
@@ -16647,7 +16661,11 @@ export interface operations {
   StockController_contraasentar: {
     parameters: {
       query?: never;
-      header?: never;
+      header: {
+        'idempotency-key': string;
+        /** @description UUID v4 de la operación. Obligatoria: sin ella responde 400 (un reintento duplicaría el movimiento). */
+        'Idempotency-Key': string;
+      };
       path: {
         /** @description Lote de la transferencia */
         batchId: string;
@@ -16715,7 +16733,11 @@ export interface operations {
   StockController_transferir: {
     parameters: {
       query?: never;
-      header?: never;
+      header: {
+        'idempotency-key': string;
+        /** @description UUID v4 de la operación. Obligatoria: sin ella responde 400 (un reintento duplicaría el movimiento). */
+        'Idempotency-Key': string;
+      };
       path?: never;
       cookie?: never;
     };
@@ -16773,7 +16795,11 @@ export interface operations {
   StockController_conteoInicial: {
     parameters: {
       query?: never;
-      header?: never;
+      header: {
+        'idempotency-key': string;
+        /** @description UUID v4 de la operación. Obligatoria: sin ella responde 400 (un reintento duplicaría el movimiento). */
+        'Idempotency-Key': string;
+      };
       path?: never;
       cookie?: never;
     };
@@ -16878,7 +16904,11 @@ export interface operations {
   StockController_ajustar: {
     parameters: {
       query?: never;
-      header?: never;
+      header: {
+        'idempotency-key': string;
+        /** @description UUID v4 de la operación. Obligatoria: sin ella responde 400 (un reintento duplicaría el movimiento). */
+        'Idempotency-Key': string;
+      };
       path?: never;
       cookie?: never;
     };
@@ -17129,7 +17159,11 @@ export interface operations {
   StockController_corregirVendible: {
     parameters: {
       query?: never;
-      header?: never;
+      header: {
+        'idempotency-key': string;
+        /** @description UUID v4 de la operación. Obligatoria: sin ella responde 400 (un reintento duplicaría el movimiento). */
+        'Idempotency-Key': string;
+      };
       path?: never;
       cookie?: never;
     };
@@ -17147,7 +17181,7 @@ export interface operations {
           'application/json': components['schemas']['StockAdjustmentResponseDto'];
         };
       };
-      /** @description Sin diferencia, sin nota, o el físico es menor que lo reservado (corregí el físico primero) */
+      /** @description Sin diferencia, sin nota o sin `Idempotency-Key` */
       400: {
         headers: {
           [name: string]: unknown;
@@ -17163,6 +17197,13 @@ export interface operations {
       };
       /** @description Requiere rol: admin, super_admin */
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La garrafa no existe o es de otra distribuidora */
+      404: {
         headers: {
           [name: string]: unknown;
         };
@@ -17187,7 +17228,11 @@ export interface operations {
   CatalogStockController_updateStock: {
     parameters: {
       query?: never;
-      header?: never;
+      header: {
+        'idempotency-key': string;
+        /** @description UUID v4 de la operación. Obligatoria: sin ella responde 400 (un reintento duplicaría el movimiento). */
+        'Idempotency-Key': string;
+      };
       path: {
         /** @description Gas cylinder UUID */
         id: string;
@@ -17566,7 +17611,7 @@ export interface operations {
           'application/json': components['schemas']['TruckLoadResponseDto'];
         };
       };
-      /** @description La carga no está en un estado que lo permita */
+      /** @description Renglones inválidos */
       400: {
         headers: {
           [name: string]: unknown;
@@ -17589,6 +17634,13 @@ export interface operations {
       };
       /** @description No existe o es de otra distribuidora */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La carga no está en un estado que lo permita (conflicto de estado) */
+      409: {
         headers: {
           [name: string]: unknown;
         };
@@ -17616,7 +17668,7 @@ export interface operations {
           'application/json': components['schemas']['TruckLoadResponseDto'];
         };
       };
-      /** @description Estado inválido, carga vacía o stock insuficiente en el depósito */
+      /** @description Carga vacía, camión con garrafas o stock insuficiente en el depósito */
       400: {
         headers: {
           [name: string]: unknown;
@@ -17644,6 +17696,13 @@ export interface operations {
         };
         content?: never;
       };
+      /** @description La carga no está en un estado que lo permita (conflicto de estado) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
       422: {
         headers: {
@@ -17658,6 +17717,8 @@ export interface operations {
       query?: never;
       header: {
         'idempotency-key': string;
+        /** @description UUID v4 de la operación. Obligatoria: sin ella responde 400 (un reintento duplicaría el movimiento). */
+        'Idempotency-Key': string;
       };
       path: {
         /** @description Carga UUID */
@@ -17679,7 +17740,7 @@ export interface operations {
           'application/json': components['schemas']['TruckLoadResponseDto'];
         };
       };
-      /** @description La carga no está en ruta o no alcanza el stock del depósito */
+      /** @description Sin `Idempotency-Key`, no alcanza el stock del depósito o la carga pasaría de 20 tipos de garrafa */
       400: {
         headers: {
           [name: string]: unknown;
@@ -17702,6 +17763,13 @@ export interface operations {
       };
       /** @description No existe o es de otra distribuidora */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La carga no está en ruta */
+      409: {
         headers: {
           [name: string]: unknown;
         };
@@ -17740,7 +17808,7 @@ export interface operations {
           'application/json': components['schemas']['TruckLoadResponseDto'];
         };
       };
-      /** @description Estado inválido o declaración incompleta */
+      /** @description Declaración incompleta */
       400: {
         headers: {
           [name: string]: unknown;
@@ -17763,6 +17831,13 @@ export interface operations {
       };
       /** @description No existe o es de otra distribuidora */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La carga no está en ruta ni devuelta, o el chofer tiene pedidos en curso */
+      409: {
         headers: {
           [name: string]: unknown;
         };
@@ -17794,7 +17869,7 @@ export interface operations {
           'application/json': components['schemas']['TruckLoadResponseDto'];
         };
       };
-      /** @description Estado inválido o diferencia sin nota */
+      /** @description Diferencia sin nota */
       400: {
         headers: {
           [name: string]: unknown;
@@ -17817,6 +17892,13 @@ export interface operations {
       };
       /** @description No existe o es de otra distribuidora */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La carga no está devuelta, o se entregaron garrafas después de declarar la vuelta */
+      409: {
         headers: {
           [name: string]: unknown;
         };
@@ -17855,13 +17937,6 @@ export interface operations {
           'application/json': components['schemas']['TruckLoadResponseDto'];
         };
       };
-      /** @description La carga no está en un estado que lo permita */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
       /** @description Sin token o token inválido */
       401: {
         headers: {
@@ -17878,6 +17953,13 @@ export interface operations {
       };
       /** @description No existe o es de otra distribuidora */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La carga no está en un estado que lo permita (conflicto de estado) */
+      409: {
         headers: {
           [name: string]: unknown;
         };
@@ -20672,7 +20754,11 @@ export interface operations {
   PurchaseReceiptController_create: {
     parameters: {
       query?: never;
-      header?: never;
+      header: {
+        'idempotency-key': string;
+        /** @description UUID v4 de la operación. Obligatoria: sin ella responde 400 (un reintento duplicaría el movimiento). */
+        'Idempotency-Key': string;
+      };
       path?: never;
       cookie?: never;
     };
@@ -20690,7 +20776,7 @@ export interface operations {
           'application/json': components['schemas']['PurchaseReceiptResponseDto'];
         };
       };
-      /** @description La orden no es recibible, la recepción se pasa de lo pendiente, no alcanzan las vacías o faltan datos */
+      /** @description Sin `Idempotency-Key`, orden no recibible, la recepción se pasa de lo pendiente, fecha anterior al conteo inicial del depósito, no alcanzan las vacías o faltan datos */
       400: {
         headers: {
           [name: string]: unknown;
@@ -20813,7 +20899,11 @@ export interface operations {
   PurchaseReceiptController_void: {
     parameters: {
       query?: never;
-      header?: never;
+      header: {
+        'idempotency-key': string;
+        /** @description UUID v4 de la operación. Obligatoria: sin ella responde 400 (un reintento duplicaría el movimiento). */
+        'Idempotency-Key': string;
+      };
       path: {
         /** @description Recepción UUID */
         id: string;
@@ -20834,7 +20924,7 @@ export interface operations {
           'application/json': components['schemas']['PurchaseReceiptResponseDto'];
         };
       };
-      /** @description Sin motivo, o la recepción figura como pagada */
+      /** @description Sin motivo, sin `Idempotency-Key` o la recepción figura como pagada */
       400: {
         headers: {
           [name: string]: unknown;
