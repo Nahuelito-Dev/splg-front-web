@@ -9,6 +9,7 @@ const order = {
   order_id: '5baddc17-24e6-4a69-9e11-45f321956d60',
   status: 'delivered',
   payment_method: 'cash',
+  paymentMethodDetail: 'cash',
   created_at: '2026-10-01T13:00:00.000Z',
   total_amount: 25000,
   subtotal_items: 22600,
@@ -70,5 +71,16 @@ describe('OrderRemito', () => {
     const noSurcharge = { ...order, zone_surcharge: { ...order.zone_surcharge, amount: 0 } } as unknown as Order;
     render(<OrderRemito order={noSurcharge} distributor={undefined} />);
     expect(screen.queryByText(/Recargo zona/)).not.toBeInTheDocument();
+  });
+
+  it('la forma de pago es el medio real: una transferencia no sale como «Online»', () => {
+    render(
+      <OrderRemito
+        order={{ ...order, payment_method: 'online', paymentMethodDetail: 'transfer' } as Order}
+        distributor={undefined}
+      />,
+    );
+    expect(screen.getByText('Transferencia')).toBeInTheDocument();
+    expect(screen.queryByText('Online')).not.toBeInTheDocument();
   });
 });

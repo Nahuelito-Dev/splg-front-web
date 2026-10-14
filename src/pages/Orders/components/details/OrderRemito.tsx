@@ -1,7 +1,7 @@
 import type { Order } from '../../../../services/api/types';
 import type { Distributor } from '../../../../services/api/types';
 import { formatCurrency, formatDateTime, formatDay, formatShortId } from '../../../../utils/format';
-import { labelOf, ORDER_STATUS, PAYMENT_TYPE } from '../../../../utils/statusLabels';
+import { labelOf, ORDER_STATUS, PAYMENT_METHOD } from '../../../../utils/statusLabels';
 import { onlinePaymentSurcharge } from './orderPricing';
 
 interface Props {
@@ -76,7 +76,7 @@ export const OrderRemito = ({ order, distributor }: Props) => {
             </span>
           )}
         </Field>
-        <Field label="Forma de pago">{labelOf(PAYMENT_TYPE, order.payment_method).text}</Field>
+        <Field label="Forma de pago">{labelOf(PAYMENT_METHOD, order.paymentMethodDetail).text}</Field>
         <Field label="Chofer">{order.delivery_name ?? 'Sin asignar'}</Field>
       </dl>
 

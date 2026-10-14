@@ -4,10 +4,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Delivery } from '../../services/api/types';
 
 const deliveriesQuery = vi.hoisted(() => vi.fn());
+const permissions = vi.hoisted(() => ({ canOperate: true }));
+const tableProps = vi.hoisted(() => ({ current: {} as Record<string, unknown> }));
 
 vi.mock('../../hooks', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
-  usePermissions: () => ({ canWrite: true }),
+  usePermissions: () => ({ canWrite: permissions.canOperate, canOperate: permissions.canOperate }),
 }));
 vi.mock('../../services/queries/deliveries', () => ({
   useDeliveries: (_page: unknown, _search: string, tab: string) => deliveriesQuery(tab) as unknown,
@@ -16,12 +18,21 @@ vi.mock('../../services/queries/deliveries', () => ({
   useValidateDelivery: () => ({ mutate: vi.fn() }),
   useInvalidateDelivery: () => ({ mutate: vi.fn() }),
 }));
+vi.mock('./components/DeliveriesTable', () => ({
+  DeliveriesTable: (props: Record<string, unknown>) => {
+    tableProps.current = props;
+    return null;
+  },
+}));
 vi.mock('./components/DeliveryFormModal', () => ({ DeliveryFormModal: () => null }));
 vi.mock('./components/FindDeliveryByUserModal', () => ({ FindDeliveryByUserModal: () => null }));
 
 import { Deliveries } from './Deliveries';
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  permissions.canOperate = true;
+});
 
 const Search = () => <output data-testid="search">{useLocation().search}</output>;
 
@@ -50,5 +61,31 @@ describe('Deliveries: pestañas con contador', () => {
     expect(deliveriesQuery).toHaveBeenLastCalledWith('online');
     expect(screen.getByTestId('search')).toHaveTextContent('?status=online');
     expect(screen.getByRole('group', { name: 'Filtros activos' })).toHaveTextContent('En línea');
+  });
+});
+
+describe('Deliveries: administrador general sin distribuidora elegida', () => {
+  const renderPage = () => {
+    deliveriesQuery.mockReturnValue({ data: { rows: [] as Delivery[], total: 0 }, isFetching: false });
+    render(
+      <MemoryRouter>
+        <Deliveries />
+      </MemoryRouter>,
+    );
+  };
+
+  it('la tabla no recibe editar, dar de baja ni validar: la API contestaría 400', () => {
+    permissions.canOperate = false;
+    renderPage();
+    expect(tableProps.current.onEdit).toBeUndefined();
+    expect(tableProps.current.onDelete).toBeUndefined();
+    expect(tableProps.current.onToggleValidated).toBeUndefined();
+  });
+
+  it('con distribuidora elegida sí', () => {
+    renderPage();
+    expect(tableProps.current.onEdit).toBeTypeOf('function');
+    expect(tableProps.current.onDelete).toBeTypeOf('function');
+    expect(tableProps.current.onToggleValidated).toBeTypeOf('function');
   });
 });

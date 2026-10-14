@@ -7,7 +7,7 @@ import { useFindCustomerByUserId } from '../../../../services/queries/customers'
 import { useUser } from '../../../../services/queries/users';
 import { formatCurrency, formatDateTime, formatDay } from '../../../../utils/format';
 import { notify } from '../../../../utils/notifications';
-import { labelOf, PAYMENT_STATUS, PAYMENT_TYPE } from '../../../../utils/statusLabels';
+import { labelOf, PAYMENT_METHOD, paymentStatusLabel } from '../../../../utils/statusLabels';
 import { isClosed } from '../orderStatus';
 import { OrderMiniMap } from './OrderMiniMap';
 import { orderCoordinates } from './orderLocation';
@@ -181,13 +181,20 @@ const ConfirmedBy = ({ userId }: { userId: string }) => {
   return <UserRefLink userId={userId} name={data?.full_name} loading={isLoading} />;
 };
 
+/** Qué fue lo que decidió el administrador, según el pago en que quedó el pedido. */
+const PAYMENT_RESOLVED_LABEL: Partial<Record<NonNullable<Order['paymentStatus']>, string>> = {
+  paid: 'Cobro registrado',
+  failed: 'Marcada como no recibida',
+  written_off: 'Dado por perdido',
+};
+
 const PaymentSection = ({ order }: { order: Order }) => (
   <Section icon={<Wallet {...iconProps} />} title="Pago">
     <dl className="space-y-1.5">
-      <Row label="Método">{labelOf(PAYMENT_TYPE, order.payment_method).text}</Row>
+      <Row label="Método">{labelOf(PAYMENT_METHOD, order.paymentMethodDetail).text}</Row>
       {order.paymentStatus && (
         <Row label="Estado del cobro">
-          <Badge label={labelOf(PAYMENT_STATUS, order.paymentStatus)} />
+          <Badge label={paymentStatusLabel(order.paymentStatus, order.paymentMethodDetail)} />
         </Row>
       )}
       {order.paymentConfirmedAt && <Row label="Cobro confirmado">{formatDateTime(order.paymentConfirmedAt)}</Row>}
@@ -197,7 +204,7 @@ const PaymentSection = ({ order }: { order: Order }) => (
         </Row>
       )}
       {order.paymentResolvedAt && (
-        <Row label={order.paymentStatus === 'written_off' ? 'Dado por perdido' : 'Cobrado después'}>
+        <Row label={PAYMENT_RESOLVED_LABEL[order.paymentStatus] ?? 'Resuelto'}>
           {formatDateTime(order.paymentResolvedAt)}
         </Row>
       )}
@@ -222,6 +229,13 @@ const PaymentSection = ({ order }: { order: Order }) => (
       <p className="mt-3 rounded-lg bg-surface-hover p-2 text-xs text-muted">
         <span className="font-semibold text-ink-2">Nota de resolución: </span>
         {order.paymentResolutionNote}
+      </p>
+    )}
+    {order.status === 'cancelled' && order.paymentStatus === 'paid' && (
+      <p role="status" className="mt-3 rounded-lg border border-warn/30 bg-warn-soft p-2 text-xs text-warn">
+        <span className="font-semibold">Reintegro pendiente: </span>
+        el pedido se cobró y después se canceló. El sistema no gestiona la devolución: la hace la distribuidora por
+        fuera.
       </p>
     )}
     {order.payment_method === 'online' && order.payment_url && !isClosed(order.status) && (

@@ -2,7 +2,7 @@ import { Flame } from 'lucide-react';
 import { Badge, Card } from '../../../../common/components/ui';
 import type { Order } from '../../../../services/api/types';
 import { formatCurrency } from '../../../../utils/format';
-import { labelOf, PAYMENT_TYPE } from '../../../../utils/statusLabels';
+import { labelOf, PAYMENT_METHOD } from '../../../../utils/statusLabels';
 import { onlinePaymentSurcharge } from './orderPricing';
 
 const TotalRow = ({ label, value, strong }: { label: string; value: string; strong?: boolean }) => (
@@ -21,7 +21,7 @@ export const OrderItemsSummary = ({ order }: { order: Order }) => {
     <Card>
       <div className="flex items-center justify-between gap-3 p-5 pb-3">
         <h2 className="text-base font-semibold text-ink">Detalle</h2>
-        <Badge label={labelOf(PAYMENT_TYPE, order.payment_method)} />
+        <Badge label={labelOf(PAYMENT_METHOD, order.paymentMethodDetail)} />
       </div>
 
       <ul className="px-5">

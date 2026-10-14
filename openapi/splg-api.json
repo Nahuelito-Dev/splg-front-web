@@ -745,6 +745,7 @@
         },
         "/api/users/check-exists": {
             "post": {
+                "description": "Público. Máximo 10 consultas por minuto y por IP (429): contesta si una cuenta existe, así que no puede usarse para recorrer listas.",
                 "operationId": "UsersController_checkUserExists",
                 "parameters": [],
                 "requestBody": {
@@ -770,6 +771,9 @@
                     },
                     "400": {
                         "description": "Sin correo ni teléfono"
+                    },
+                    "429": {
+                        "description": "Superó el cupo por minuto"
                     }
                 },
                 "security": [
@@ -875,7 +879,7 @@
                         }
                     },
                     "400": {
-                        "description": "Sólo un usuario con rol admin o super_admin tiene perfil de administrador · property role_id should not exist; user_id must be a UUID"
+                        "description": "Sólo un usuario con rol admin o super_admin tiene perfil de administrador · el perfil de un admin de empresa exige X-Distributor y que coincida con distributor_id · property role_id should not exist; user_id must be a UUID"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -3872,6 +3876,9 @@
                     },
                     "409": {
                         "description": "Ya está egresado, o el chofer tiene pedidos en curso"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
                     }
                 },
                 "security": [
@@ -3934,6 +3941,9 @@
                     },
                     "409": {
                         "description": "El empleado no está egresado"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
                     }
                 },
                 "security": [
@@ -4546,6 +4556,9 @@
                     },
                     "415": {
                         "description": "Tipo de archivo no permitido (sólo PDF, JPG, PNG, WEBP)"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro archivo u otros datos."
                     }
                 },
                 "security": [
@@ -4780,11 +4793,11 @@
                             }
                         }
                     },
-                    "400": {
-                        "description": "Credenciales incorrectas"
-                    },
                     "401": {
-                        "description": "La cuenta no está habilitada"
+                        "description": "Email o contraseña incorrectos (misma respuesta para un usuario inexistente y para una contraseña equivocada) o cuenta dada de baja (Firebase la rechaza antes de mirar la clave: misma respuesta, no revela que existe). Con la clave correcta, una cuenta bloqueada recibe `La cuenta no está habilitada`"
+                    },
+                    "429": {
+                        "description": "Demasiados intentos fallidos"
                     }
                 },
                 "summary": "Iniciar sesión desde las apps",
@@ -4818,11 +4831,11 @@
                             }
                         }
                     },
-                    "400": {
-                        "description": "Credenciales incorrectas"
-                    },
                     "401": {
-                        "description": "La cuenta no está habilitada o no es de un administrador"
+                        "description": "Email o contraseña incorrectos, cuenta no habilitada o no es de un administrador"
+                    },
+                    "429": {
+                        "description": "Demasiados intentos fallidos"
                     }
                 },
                 "summary": "Iniciar sesión en el panel",
@@ -5012,8 +5025,59 @@
                 ]
             }
         },
+        "/api/orders/quote": {
+            "post": {
+                "description": "Mismo cuerpo que `POST /orders` (sólo `items` y `paymentMethod` son obligatorios). Devuelve el desglose que cobrará el alta: renglones con la promoción por volumen, `subtotal`, recargo de zona (con `addressId`; el admin además manda `customerId`), recargo por medio de pago (+10% sobre subtotal + zona en `mercadopago` y `transfer`), `deposit` (si `isReservation`), `total` y `balance` (`total - deposit`). El `total` es exactamente el del pedido que se crea con el mismo cuerpo. No escribe nada ni reserva stock; sí rechaza lo que el alta rechazaría (producto de otra distribuidora, sin stock, dirección fuera de cobertura). Cliente sin `X-Distributor`: distribuidora por defecto, igual que el alta.",
+                "operationId": "OrderController_quote",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/QuoteOrderDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/QuoteResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Datos inválidos, sin stock, dirección fuera de cobertura, o falta `customerId` con `addressId` (admin)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: customer, admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Cotizar un pedido",
+                "tags": [
+                    "Orders"
+                ]
+            }
+        },
         "/api/orders/customer/{customerId}": {
             "get": {
+                "description": "Cliente (el suyo), admin y super_admin. El chofer no lista pedidos por cliente: los suyos están en `GET /orders/delivery/:deliveryId` (403 si lo intenta).",
                 "operationId": "OrderController_findByCustomer",
                 "parameters": [
                     {
@@ -5078,7 +5142,7 @@
                         "description": "Sin token o token inválido"
                     },
                     "403": {
-                        "description": "Requiere rol: customer, delivery, admin, super_admin"
+                        "description": "Requiere rol: customer, admin, super_admin"
                     }
                 },
                 "security": [
@@ -5355,6 +5419,7 @@
         },
         "/api/orders/{id}": {
             "get": {
+                "description": "El cliente lee sólo sus pedidos. El chofer lee el pedido que tiene asignado, el que tiene en oferta vigente o uno del pool de `GET /orders/available` (pendiente, sin chofer, de su distribuidora); cualquier otro responde 404 como si no existiera. Admin y super_admin leen los de su distribuidora.",
                 "operationId": "OrderController_findOne",
                 "parameters": [
                     {
@@ -5383,6 +5448,9 @@
                     },
                     "404": {
                         "description": "Order not found"
+                    },
+                    "410": {
+                        "description": "Sólo para el chofer: el pedido lo tuvo él y ya no es suyo (lo liberó el admin, lo reasignaron o el control de carga lo sacó del pool). La app debe salir de la pantalla del pedido."
                     }
                 },
                 "security": [
@@ -5609,6 +5677,9 @@
                     },
                     "403": {
                         "description": "Requiere rol: delivery"
+                    },
+                    "404": {
+                        "description": "El pedido no existe o es de otra distribuidora"
                     },
                     "422": {
                         "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
@@ -5875,6 +5946,136 @@
                 ]
             }
         },
+        "/api/orders/{id}/payment/register-cash": {
+            "patch": {
+                "description": "Para el efectivo que el chofer no confirmó (no lo hizo, ya no está). Sólo pedidos `delivered` en efectivo con el pago `pending`: pasa a `paid` y registra `paymentConfirmedBy` (el admin), `paymentResolvedBy/At` y el motivo en `paymentResolutionNote`. `reason` es obligatorio (10 a 500 caracteres) y queda en el historial de estados y en la auditoría. Repetirlo sobre un pedido ya `paid` devuelve el pedido tal cual. Si el pago ya se informó como impago responde 409 (se resuelve con `resolve-unpaid`). `X-Distributor` es obligatorio para el super admin.",
+                "operationId": "OrderController_registerCash",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/MotivoDeCobroDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrderResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta o es inválido el motivo, el pedido no está entregado o no es en efectivo, o falta la distribuidora"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "409": {
+                        "description": "El pago ya se informó como impago"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "El admin registra el cobro en efectivo de un pedido entregado",
+                "tags": [
+                    "Orders"
+                ]
+            }
+        },
+        "/api/orders/{id}/payment/confirm-transfer": {
+            "patch": {
+                "description": "Sólo pedidos con medio `transfer`, no cancelados, con el pago `pending`. `received: true` pasa el pago a `paid` (registra `paymentConfirmedAt/By`) y recién ahí el pedido entregado cuenta como venta en los reportes; `received: false` lo deja en `failed` (aparece en `GET /reports/collections` como `notReceivedTransfer`). `reason` obligatorio (10 a 500 caracteres): queda en `paymentResolutionNote`, en el historial de estados y en la auditoría. Repetir la misma decisión devuelve el pedido tal cual; la contraria sobre algo ya decidido es 409. `X-Distributor` es obligatorio para el super admin.",
+                "operationId": "OrderController_confirmTransfer",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ConfirmTransferDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrderResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Datos inválidos, el pedido no es una transferencia o está cancelado, o falta la distribuidora"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "409": {
+                        "description": "La transferencia ya se resolvió con la decisión contraria"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "El admin confirma (o marca como no recibida) una transferencia",
+                "tags": [
+                    "Orders"
+                ]
+            }
+        },
         "/api/orders/{id}/assign/{deliveryId}": {
             "patch": {
                 "description": "Asignación manual del admin: exige que el chofer esté habilitado y validado, y que ni su licencia ni el vehículo que maneja tengan un documento bloqueante vencido (seguro, VTV, licencia — CU-136 a CU-138). NO exige que esté en línea (a diferencia del despacho automático).",
@@ -5921,6 +6122,9 @@
                     },
                     "404": {
                         "description": "Order or delivery not found"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
                     }
                 },
                 "security": [
@@ -6185,6 +6389,9 @@
                     },
                     "404": {
                         "description": "Reserva no encontrada"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
                     }
                 },
                 "security": [
@@ -6801,6 +7008,9 @@
                     },
                     "404": {
                         "description": "El usuario no existe"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
                     }
                 },
                 "security": [
@@ -7256,6 +7466,9 @@
                     },
                     "403": {
                         "description": "Requiere rol: super_admin"
+                    },
+                    "404": {
+                        "description": "El cliente no existe"
                     }
                 },
                 "security": [
@@ -7852,6 +8065,9 @@
                     },
                     "404": {
                         "description": "Pedido o envase no encontrado"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
                     }
                 },
                 "security": [
@@ -8715,6 +8931,9 @@
                     },
                     "404": {
                         "description": "Plan, vehículo o chofer no encontrado"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
                     }
                 },
                 "security": [
@@ -9126,6 +9345,9 @@
                     },
                     "415": {
                         "description": "Tipo de archivo no permitido (sólo PDF, JPG, PNG, WEBP)"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro archivo u otros datos."
                     }
                 },
                 "security": [
@@ -12056,6 +12278,9 @@
                     },
                     "404": {
                         "description": "El pedido no existe"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
                     }
                 },
                 "security": [
@@ -12539,6 +12764,9 @@
                     },
                     "415": {
                         "description": "No es JPG, PNG ni WEBP (o el contenido no coincide)"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro archivo u otros datos."
                     }
                 },
                 "security": [
@@ -12665,7 +12893,7 @@
         },
         "/api/reports/sales-by-driver": {
             "get": {
-                "description": "Días en hora argentina (America/Argentina/Buenos_Aires); `to` es inclusivo. Cuenta pedidos entregados en el rango, por fecha de entrega (el listado de pedidos filtra por fecha de creación). Suma el total del pedido (con recargos) de los pedidos entregados. Cuenta sólo lo COBRADO: `paymentStatus: paid`, o `pending` en medios que no son efectivo; el efectivo pendiente de confirmar, los impagos y las pérdidas no suman (ver `GET /reports/collections`).",
+                "description": "Días en hora argentina (America/Argentina/Buenos_Aires); `to` es inclusivo. Cuenta pedidos entregados en el rango, por fecha de entrega (el listado de pedidos filtra por fecha de creación). Suma el total del pedido (con recargos) de los pedidos entregados. Cuenta sólo lo COBRADO: `paymentStatus: paid` (cualquier medio); el efectivo pendiente de confirmar, las transferencias sin confirmar o no recibidas, los impagos y las pérdidas no suman (ver `GET /reports/collections`).",
                 "operationId": "ReportsController_getSalesByDriver",
                 "parameters": [
                     {
@@ -12729,7 +12957,7 @@
         },
         "/api/reports/sales-by-product": {
             "get": {
-                "description": "Días en hora argentina (America/Argentina/Buenos_Aires); `to` es inclusivo. Cuenta pedidos entregados en el rango, por fecha de entrega (el listado de pedidos filtra por fecha de creación). Suma los subtotales de los renglones (sin recargos): por eso el total puede ser menor al de sales-by-driver/sales-by-payment, que suman el total del pedido. Cuenta sólo lo COBRADO: `paymentStatus: paid`, o `pending` en medios que no son efectivo; el efectivo pendiente de confirmar, los impagos y las pérdidas no suman (ver `GET /reports/collections`).",
+                "description": "Días en hora argentina (America/Argentina/Buenos_Aires); `to` es inclusivo. Cuenta pedidos entregados en el rango, por fecha de entrega (el listado de pedidos filtra por fecha de creación). Suma los subtotales de los renglones (sin recargos): por eso el total puede ser menor al de sales-by-driver/sales-by-payment, que suman el total del pedido. Cuenta sólo lo COBRADO: `paymentStatus: paid` (cualquier medio); el efectivo pendiente de confirmar, las transferencias sin confirmar o no recibidas, los impagos y las pérdidas no suman (ver `GET /reports/collections`).",
                 "operationId": "ReportsController_getSalesByProduct",
                 "parameters": [
                     {
@@ -12793,7 +13021,7 @@
         },
         "/api/reports/sales-by-payment": {
             "get": {
-                "description": "Días en hora argentina (America/Argentina/Buenos_Aires); `to` es inclusivo. Cuenta pedidos entregados en el rango, por fecha de entrega (el listado de pedidos filtra por fecha de creación). Suma el total del pedido (con recargos) de los pedidos entregados. Cuenta sólo lo COBRADO: `paymentStatus: paid`, o `pending` en medios que no son efectivo; el efectivo pendiente de confirmar, los impagos y las pérdidas no suman (ver `GET /reports/collections`).",
+                "description": "Días en hora argentina (America/Argentina/Buenos_Aires); `to` es inclusivo. Cuenta pedidos entregados en el rango, por fecha de entrega (el listado de pedidos filtra por fecha de creación). Suma el total del pedido (con recargos) de los pedidos entregados. Cuenta sólo lo COBRADO: `paymentStatus: paid` (cualquier medio); el efectivo pendiente de confirmar, las transferencias sin confirmar o no recibidas, los impagos y las pérdidas no suman (ver `GET /reports/collections`).",
                 "operationId": "ReportsController_getSalesByPayment",
                 "parameters": [
                     {
@@ -12857,7 +13085,7 @@
         },
         "/api/reports/sales-evolution": {
             "get": {
-                "description": "Días en hora argentina (America/Argentina/Buenos_Aires); `to` es inclusivo. Cuenta pedidos entregados en el rango, por fecha de entrega (el listado de pedidos filtra por fecha de creación). Los períodos (día, semana ISO lunes a domingo, mes) se agrupan en hora argentina y `period` es el instante en que arranca cada uno. Suma el total del pedido (con recargos). Cuenta sólo lo COBRADO: `paymentStatus: paid`, o `pending` en medios que no son efectivo; el efectivo pendiente de confirmar, los impagos y las pérdidas no suman (ver `GET /reports/collections`).",
+                "description": "Días en hora argentina (America/Argentina/Buenos_Aires); `to` es inclusivo. Cuenta pedidos entregados en el rango, por fecha de entrega (el listado de pedidos filtra por fecha de creación). Los períodos (día, semana ISO lunes a domingo, mes) se agrupan en hora argentina y `period` es el instante en que arranca cada uno. Suma el total del pedido (con recargos). Cuenta sólo lo COBRADO: `paymentStatus: paid` (cualquier medio); el efectivo pendiente de confirmar, las transferencias sin confirmar o no recibidas, los impagos y las pérdidas no suman (ver `GET /reports/collections`).",
                 "operationId": "ReportsController_getSalesEvolution",
                 "parameters": [
                     {
@@ -12936,7 +13164,7 @@
         },
         "/api/reports/collections": {
             "get": {
-                "description": "Días en hora argentina; `to` es inclusivo; por fecha de entrega. Cifras que NO suman a las ventas: efectivo entregado pendiente de confirmar por el chofer (`pendingCash`), impagos sin resolver (`unpaid`) y pérdidas (`writtenOff`).",
+                "description": "Días en hora argentina; `to` es inclusivo; por fecha de entrega. Cifras que NO suman a las ventas: efectivo entregado pendiente de confirmar por el chofer (`pendingCash`), impagos sin resolver (`unpaid`) y pérdidas (`writtenOff`); y transferencias entregadas que un admin todavía no confirmó (`pendingTransfer`) o marcó como no recibidas (`notReceivedTransfer`).",
                 "operationId": "ReportsController_getCollections",
                 "parameters": [
                     {
@@ -12989,7 +13217,7 @@
                         "bearer": []
                     }
                 ],
-                "summary": "Cobros en efectivo fuera de las ventas",
+                "summary": "Cobros fuera de las ventas",
                 "tags": [
                     "Reports"
                 ]
@@ -13365,6 +13593,79 @@
                 ]
             }
         },
+        "/api/routes/driving": {
+            "get": {
+                "description": "Ruta del chofer hasta la dirección de entrega de UN pedido, para dibujarla en el mapa sin que las apps lleven la clave de Google. Sólo la pide el chofer asignado (pedido `accepted` u `on_the_way`) o el cliente dueño (`on_the_way`); el destino es siempre la dirección del pedido. El origen es la última posición reciente del chofer; `from` es opcional y se acepta sólo si está a menos de `ROUTES_FROM_MAX_DISTANCE_M` (300 m) de ella. El servidor consulta Google Directions con su propia clave (`GOOGLE_DIRECTIONS_API_KEY`) y, si falta o Google falla, OSRM propio (`OSRM_BASE_URL`; el público sólo en desarrollo); `provider` dice cuál respondió. Cupos: 30 por minuto y usuario, y por día (24 h) 100 por usuario y 3000 por distribuidora, ajustables con `ROUTES_DAILY_LIMIT_PER_USER` y `ROUTES_DAILY_LIMIT_PER_DISTRIBUTOR` (429). Las respuestas se guardan 60 s por origen y destino redondeados a 4 decimales y no cuentan contra el cupo diario.",
+                "operationId": "RoutesController_driving",
+                "parameters": [
+                    {
+                        "name": "orderId",
+                        "required": true,
+                        "in": "query",
+                        "description": "Pedido activo (aceptado o en camino) del que se pide la ruta. El destino es siempre su dirección de entrega",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "required": false,
+                        "in": "query",
+                        "description": "Origen `lat,lng`. Se usa sólo si está a pocos metros de la última posición conocida del chofer (`ROUTES_FROM_MAX_DISTANCE_M`, 300 por defecto); si no se manda, el origen es esa última posición",
+                        "schema": {
+                            "example": "-34.6037,-58.3816",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DrivingRouteDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "`orderId` o `from` inválidos, o `from` lejos de la posición del chofer"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: delivery, customer"
+                    },
+                    "404": {
+                        "description": "El pedido no es suyo o no existe"
+                    },
+                    "409": {
+                        "description": "Sin posición reciente del chofer o dirección sin coordenadas"
+                    },
+                    "429": {
+                        "description": "Superó el cupo por minuto o por día"
+                    },
+                    "502": {
+                        "description": "Ningún proveedor de mapas respondió"
+                    },
+                    "503": {
+                        "description": "No hay proveedor de rutas configurado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ruta por calles de un pedido activo",
+                "tags": [
+                    "routes"
+                ]
+            }
+        },
         "/api/ratings": {
             "post": {
                 "description": "Solo pedidos DELIVERED. El emisor sale del token; a quién califica se deriva del pedido. Una calificación por pedido y por lado.",
@@ -13730,6 +14031,9 @@
                     },
                     "404": {
                         "description": "Pedido no encontrado"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
                     }
                 },
                 "security": [
@@ -14267,6 +14571,74 @@
                     }
                 ],
                 "summary": "El chofer informa que el cliente no pagó el efectivo",
+                "tags": [
+                    "Incidents"
+                ]
+            }
+        },
+        "/api/orders/{id}/payment/register-unpaid": {
+            "patch": {
+                "description": "Para cuando el chofer no lo informó (no lo hizo, ya no está). Mismo efecto que `PATCH /orders/{id}/payment/unpaid`: pasa el pago a `unpaid` y abre UNA incidencia `unpaid_collection` (reportada por el admin). `reason` es obligatorio (10 a 500 caracteres) y queda en el historial de estados y en la auditoría. Sólo pedidos `delivered` en efectivo con el pago `pending`; repetirlo devuelve la misma incidencia. Se cierra con `PATCH /orders/{id}/payment/resolve-unpaid`. `X-Distributor` es obligatorio para el super admin.",
+                "operationId": "UnpaidCashController_registerUnpaid",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/MotivoDeCobroDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UnpaidCashResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Motivo ausente o inválido, el pedido no está entregado o no es en efectivo, o falta la distribuidora"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Pedido inexistente o de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "El pago ya no está pendiente (cobrado o resuelto)"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "El admin informa el impago de un efectivo entregado",
                 "tags": [
                     "Incidents"
                 ]
@@ -18340,6 +18712,77 @@
                     "model"
                 ]
             },
+            "DriverLocationDto": {
+                "type": "object",
+                "properties": {
+                    "lat": {
+                        "type": "number",
+                        "example": -34.6037
+                    },
+                    "lng": {
+                        "type": "number",
+                        "example": -58.3816
+                    },
+                    "at": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "2026-10-12T20:15:00.000Z",
+                        "description": "Cuándo se registró (ISO); `null` si la posición es anterior a que el back anotara la hora"
+                    }
+                },
+                "required": [
+                    "lat",
+                    "lng",
+                    "at"
+                ]
+            },
+            "DriverDeOrderDto": {
+                "type": "object",
+                "properties": {
+                    "userId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "`user_id` del chofer"
+                    },
+                    "fullName": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "Ana Gómez"
+                    },
+                    "phoneNumber": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "+5491155550000"
+                    },
+                    "ratingAverage": {
+                        "type": "number",
+                        "example": 4.8,
+                        "description": "Promedio de estrellas de las calificaciones visibles (0 si todavía no tiene)"
+                    },
+                    "ratingCount": {
+                        "type": "number",
+                        "example": 37,
+                        "description": "Cantidad de calificaciones visibles"
+                    },
+                    "location": {
+                        "nullable": true,
+                        "description": "Última ubicación conocida del chofer (la misma que se emite por `order:driver-location`); `null` si todavía no reportó ninguna",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/DriverLocationDto"
+                            }
+                        ]
+                    }
+                },
+                "required": [
+                    "userId",
+                    "fullName",
+                    "phoneNumber",
+                    "ratingAverage",
+                    "ratingCount",
+                    "location"
+                ]
+            },
             "OrderResponseDto": {
                 "type": "object",
                 "properties": {
@@ -18544,6 +18987,24 @@
                                 "$ref": "#/components/schemas/VehicleDeOrderDto"
                             }
                         ]
+                    },
+                    "cancelledBy": {
+                        "type": "string",
+                        "enum": [
+                            "customer",
+                            "admin",
+                            "system",
+                            "driver"
+                        ],
+                        "nullable": true
+                    },
+                    "driver": {
+                        "nullable": true,
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/DriverDeOrderDto"
+                            }
+                        ]
                     }
                 },
                 "required": [
@@ -18577,7 +19038,204 @@
                     "on_the_way_at",
                     "zone_surcharge",
                     "subtotal_items",
-                    "vehicle"
+                    "vehicle",
+                    "cancelledBy",
+                    "driver"
+                ]
+            },
+            "QuoteOrderDto": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "description": "Ítems del pedido",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/OrderItemDto"
+                        }
+                    },
+                    "paymentMethod": {
+                        "type": "string",
+                        "description": "Método de pago",
+                        "enum": [
+                            "cash",
+                            "mercadopago",
+                            "transfer"
+                        ],
+                        "example": "cash"
+                    },
+                    "customerId": {
+                        "type": "string",
+                        "description": "ID del cliente"
+                    },
+                    "addressId": {
+                        "type": "string",
+                        "description": "ID de la dirección de entrega"
+                    },
+                    "notes": {
+                        "type": "string",
+                        "description": "Notas adicionales"
+                    },
+                    "notificationToken": {
+                        "type": "string",
+                        "description": "Token de notificación push"
+                    },
+                    "timeSlotId": {
+                        "type": "string",
+                        "description": "ID del turno de entrega (TimeSlot)"
+                    },
+                    "scheduledDate": {
+                        "type": "string",
+                        "description": "Fecha agendada de entrega (YYYY-MM-DD). Con timeSlotId, agenda el pedido a esa franja de ese día (valida capacidad). Omitir = entrega inmediata.",
+                        "example": "2026-07-15"
+                    },
+                    "isReservation": {
+                        "type": "boolean",
+                        "description": "Marca el pedido como pre-reserva: reserva stock para la fecha agendada pero NO se despacha hasta que la seña esté paga y llegue el día (el sistema lo activa solo). Requiere scheduledDate."
+                    },
+                    "depositAmount": {
+                        "type": "number",
+                        "description": "Monto de la seña de la reserva (obligatorio si isReservation)."
+                    }
+                },
+                "required": [
+                    "items",
+                    "paymentMethod"
+                ]
+            },
+            "QuoteItemDto": {
+                "type": "object",
+                "properties": {
+                    "gasCylinderId": {
+                        "type": "string"
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "Garrafa 10kg"
+                    },
+                    "quantity": {
+                        "type": "number",
+                        "example": 2
+                    },
+                    "unitPrice": {
+                        "type": "number",
+                        "example": 9500,
+                        "description": "Precio unitario con la promoción por volumen aplicada"
+                    },
+                    "subtotal": {
+                        "type": "number",
+                        "example": 19000
+                    }
+                },
+                "required": [
+                    "gasCylinderId",
+                    "title",
+                    "quantity",
+                    "unitPrice",
+                    "subtotal"
+                ]
+            },
+            "QuoteZoneDto": {
+                "type": "object",
+                "properties": {
+                    "coverageZoneId": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Zona norte"
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "fixed",
+                            "percentage"
+                        ]
+                    },
+                    "value": {
+                        "type": "number",
+                        "example": 5
+                    },
+                    "amount": {
+                        "type": "number",
+                        "example": 950
+                    }
+                },
+                "required": [
+                    "coverageZoneId",
+                    "name",
+                    "type",
+                    "value",
+                    "amount"
+                ]
+            },
+            "QuoteResponseDto": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/QuoteItemDto"
+                        }
+                    },
+                    "subtotal": {
+                        "type": "number",
+                        "example": 19000,
+                        "description": "Suma de los renglones, ya con promociones por volumen"
+                    },
+                    "zone": {
+                        "nullable": true,
+                        "description": "Zona de cobertura de la dirección y su recargo; `null` si no se mandó `addressId` o la distribuidora no tiene zonas",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/QuoteZoneDto"
+                            }
+                        ]
+                    },
+                    "zoneSurcharge": {
+                        "type": "number",
+                        "example": 950,
+                        "description": "Recargo por zona (0 si no hay)"
+                    },
+                    "paymentMethod": {
+                        "type": "string",
+                        "enum": [
+                            "cash",
+                            "mercadopago",
+                            "transfer"
+                        ],
+                        "example": "transfer"
+                    },
+                    "paymentSurcharge": {
+                        "type": "number",
+                        "example": 1995,
+                        "description": "Recargo por medio de pago: +10% sobre subtotal + recargo de zona en `mercadopago` y `transfer`; 0 en `cash`"
+                    },
+                    "deposit": {
+                        "type": "number",
+                        "example": 0,
+                        "description": "Seña de la reserva (0 si no es reserva)"
+                    },
+                    "total": {
+                        "type": "number",
+                        "example": 21945,
+                        "description": "Total del pedido: es el `total` que tendrá el pedido creado"
+                    },
+                    "balance": {
+                        "type": "number",
+                        "example": 21945,
+                        "description": "Saldo a cobrar una vez paga la seña: `total - deposit`"
+                    }
+                },
+                "required": [
+                    "items",
+                    "subtotal",
+                    "zone",
+                    "zoneSurcharge",
+                    "paymentMethod",
+                    "paymentSurcharge",
+                    "deposit",
+                    "total",
+                    "balance"
                 ]
             },
             "PaginatedOrdersResponseDto": {
@@ -18775,7 +19433,7 @@
                 "properties": {
                     "rejected": {
                         "type": "boolean",
-                        "description": "false si el chofer no tenía una oferta activa del pedido"
+                        "description": "true: el rechazo se registró (con oferta real, se re-ofrece; con asignación manual, se avisa al panel). El pedido que no existe responde 404, no `false`."
                     }
                 },
                 "required": [
@@ -19048,6 +19706,24 @@
                             }
                         ]
                     },
+                    "cancelledBy": {
+                        "type": "string",
+                        "enum": [
+                            "customer",
+                            "admin",
+                            "system",
+                            "driver"
+                        ],
+                        "nullable": true
+                    },
+                    "driver": {
+                        "nullable": true,
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/DriverDeOrderDto"
+                            }
+                        ]
+                    },
                     "alreadyResolved": {
                         "type": "boolean",
                         "example": false,
@@ -19086,7 +19762,45 @@
                     "zone_surcharge",
                     "subtotal_items",
                     "vehicle",
+                    "cancelledBy",
+                    "driver",
                     "alreadyResolved"
+                ]
+            },
+            "MotivoDeCobroDto": {
+                "type": "object",
+                "properties": {
+                    "reason": {
+                        "type": "string",
+                        "minLength": 10,
+                        "maxLength": 500,
+                        "example": "El chofer fue dado de baja antes de rendir el efectivo",
+                        "description": "Por qué lo registra el administrador y no el chofer (10 a 500 caracteres). Queda en el pedido, en el historial de estados y en la auditoría."
+                    }
+                },
+                "required": [
+                    "reason"
+                ]
+            },
+            "ConfirmTransferDto": {
+                "type": "object",
+                "properties": {
+                    "reason": {
+                        "type": "string",
+                        "minLength": 10,
+                        "maxLength": 500,
+                        "example": "El chofer fue dado de baja antes de rendir el efectivo",
+                        "description": "Por qué lo registra el administrador y no el chofer (10 a 500 caracteres). Queda en el pedido, en el historial de estados y en la auditoría."
+                    },
+                    "received": {
+                        "type": "boolean",
+                        "example": true,
+                        "description": "`true`: la transferencia llegó (el pago pasa a `paid` y el pedido cuenta como venta). `false`: no llegó (queda `failed`)."
+                    }
+                },
+                "required": [
+                    "reason",
+                    "received"
                 ]
             },
             "UpdateLocationDto": {
@@ -19578,7 +20292,7 @@
                 "properties": {
                     "user_id": {
                         "type": "string",
-                        "description": "ID del usuario"
+                        "description": "Dueño de la dirección. Sólo lo usa el administrador general (obligatorio para él). Un cliente o un chofer crea siempre para sí mismo con el de su token: puede omitirlo; si lo manda y es el de otro usuario, 403."
                     },
                     "street": {
                         "type": "string",
@@ -19640,7 +20354,6 @@
                     }
                 },
                 "required": [
-                    "user_id",
                     "street",
                     "city",
                     "latitude",
@@ -24199,12 +24912,97 @@
                                 "$ref": "#/components/schemas/CifraDeCobroDto"
                             }
                         ]
+                    },
+                    "pendingTransfer": {
+                        "description": "Transferencias de pedidos entregados que un admin todavía no confirmó (`paymentStatus: pending`). Se confirman con `PATCH /orders/{id}/payment/confirm-transfer`",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/CifraDeCobroDto"
+                            }
+                        ]
+                    },
+                    "notReceivedTransfer": {
+                        "description": "Transferencias que un admin marcó como no recibidas (`paymentStatus: failed`). Sólo se marcan sobre pedidos entregados; si el dinero llega después, `confirm-transfer` con `received: true` lo corrige",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/CifraDeCobroDto"
+                            }
+                        ]
+                    },
+                    "pendingRefund": {
+                        "description": "Pedidos COBRADOS (`paymentStatus: paid`: transferencia o MercadoPago) y luego CANCELADOS en el rango (por fecha de la última modificación): el dinero hay que devolverlo. Dato informativo, el sistema no gestiona el reintegro",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/CifraDeCobroDto"
+                            }
+                        ]
                     }
                 },
                 "required": [
                     "pendingCash",
                     "unpaid",
-                    "writtenOff"
+                    "writtenOff",
+                    "pendingTransfer",
+                    "notReceivedTransfer",
+                    "pendingRefund"
+                ]
+            },
+            "RoutePointDto": {
+                "type": "object",
+                "properties": {
+                    "lat": {
+                        "type": "number",
+                        "example": -34.6037
+                    },
+                    "lng": {
+                        "type": "number",
+                        "example": -58.3816
+                    }
+                },
+                "required": [
+                    "lat",
+                    "lng"
+                ]
+            },
+            "DrivingRouteDto": {
+                "type": "object",
+                "properties": {
+                    "provider": {
+                        "type": "string",
+                        "enum": [
+                            "google",
+                            "osrm"
+                        ],
+                        "description": "Quién calculó la ruta (`osrm` si el servidor no tiene clave de Google o Google falló)"
+                    },
+                    "distanceMeters": {
+                        "type": "number",
+                        "example": 5230,
+                        "description": "Distancia por calles, en metros"
+                    },
+                    "durationSeconds": {
+                        "type": "number",
+                        "example": 780,
+                        "description": "Duración estimada, en segundos"
+                    },
+                    "encodedPolyline": {
+                        "type": "string",
+                        "description": "Polilínea codificada (formato de Google, precisión 5)"
+                    },
+                    "points": {
+                        "description": "La misma polilínea ya decodificada",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RoutePointDto"
+                        }
+                    }
+                },
+                "required": [
+                    "provider",
+                    "distanceMeters",
+                    "durationSeconds",
+                    "encodedPolyline",
+                    "points"
                 ]
             },
             "CreateRatingDto": {

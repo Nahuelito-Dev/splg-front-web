@@ -25,8 +25,28 @@ describe('toApiError', () => {
 
   it('la falta de distribuidora se muestra como pide el panel', () => {
     const message = 'Falta la distribuidora: enviá el header X-Distributor (slug o id)';
-    expect(errorMessage(axiosError(400, { message }))).toBe('Elegí una distribuidora para operar');
+    expect(errorMessage(axiosError(400, { message }))).toBe('Elegí una distribuidora en «Ver como» para operar');
     expect(errorMessage(axiosError(403, { message }))).toBe(message);
+  });
+
+  it('el límite de consultas (429) se explica en castellano, venga o no con cuerpo', () => {
+    const expected = 'Hiciste demasiados intentos seguidos: esperá un minuto y volvé a intentar';
+    const withBody = axiosError(429, { statusCode: 429, message: 'ThrottlerException: Too Many Requests' });
+    expect(errorMessage(withBody)).toBe(expected);
+    expect(toApiError(withBody).rateLimited).toBe(true);
+    expect(errorMessage(axiosError(429))).toBe(expected);
+    expect(toApiError(axiosError(409, { message: 'x' })).rateLimited).toBe(false);
+  });
+
+  it('cerrar la incidencia de un impago (409) manda a «Resolver impago» en vez de mostrar el endpoint', () => {
+    const message =
+      'La incidencia de cobro impago se cierra resolviendo el cobro del pedido: PATCH /orders/:id/payment/resolve-unpaid';
+    expect(errorMessage(axiosError(409, { message }))).toBe(
+      'Una incidencia de cobro impago se cierra resolviendo el cobro del pedido: usá «Resolver impago» en el pedido',
+    );
+    expect(errorMessage(axiosError(409, { message: 'La transferencia ya se confirmó: no se cambia' }))).toBe(
+      'La transferencia ya se confirmó: no se cambia',
+    );
   });
 
   it('un id que no es UUID es un id inválido; otro 400 no', () => {

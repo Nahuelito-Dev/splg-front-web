@@ -16,7 +16,12 @@ export const ResolveUnpaidAction = ({ order, size = 'sm' }: Props) => {
 
   return (
     <>
-      <Button size={size} icon={<HandCoins />} disabled={!canOperate} title={operateHint} onClick={() => setOpen(true)}>
+      <Button
+        size={size}
+        icon={<HandCoins />}
+        blockedReason={canOperate ? undefined : operateHint}
+        onClick={() => setOpen(true)}
+      >
         Resolver impago
       </Button>
       <ResolveUnpaidModal open={open} onClose={() => setOpen(false)} order={order} />

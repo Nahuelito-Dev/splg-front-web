@@ -25,7 +25,7 @@ import {
 } from '../../services/queries/orders';
 import type { BatchResult } from '../../utils/batch';
 import { formatShortId } from '../../utils/format';
-import { labelOf, ORDER_FLOW, ORDER_STATUS, PAYMENT_STATUS } from '../../utils/statusLabels';
+import { labelOf, ORDER_FLOW, ORDER_STATUS, paymentFilterLabel } from '../../utils/statusLabels';
 import { notify } from '../../utils/notifications';
 import { AssignDriverModal } from './components/AssignDriverModal';
 import { CancelOrderModal } from './components/CancelOrderModal';
@@ -48,7 +48,9 @@ type ModalState =
 
 export const Orders = () => {
   const navigate = useNavigate();
-  const { canWrite } = usePermissions();
+  const { canWrite, writeHint, canOperate, operateHint } = usePermissions();
+  // Sin distribuidora elegida (administrador general) la API rechaza con 400 toda escritura sobre pedidos.
+  const blockedReason = canOperate ? undefined : operateHint;
   const [status, setStatus] = useState<Order['status'] | ''>('');
   const [toolbar, setToolbar] = useState<OrdersToolbarFilters>(EMPTY_TOOLBAR_FILTERS);
   const debouncedSearch = useDebounce(toolbar.search.trim());
@@ -146,7 +148,7 @@ export const Orders = () => {
 
   const chips: FilterChip[] = [];
   if (toolbar.search) chips.push({ key: 'search', label: `"${toolbar.search}"` });
-  if (toolbar.payment) chips.push({ key: 'payment', label: `Cobro: ${labelOf(PAYMENT_STATUS, toolbar.payment).text}` });
+  if (toolbar.payment) chips.push({ key: 'payment', label: `Cobro: ${paymentFilterLabel(toolbar.payment).text}` });
   if (toolbar.from) chips.push({ key: 'from', label: `Desde ${toolbar.from}` });
   if (toolbar.to) chips.push({ key: 'to', label: `Hasta ${toolbar.to}` });
 
@@ -193,7 +195,11 @@ export const Orders = () => {
         title="Pedidos"
         description="Pedidos en curso y su historial. La asignación de chofer es automática; acá se puede forzar o cancelar."
         actions={
-          <Button icon={<CirclePlus />} onClick={() => navigate('/orders/new')}>
+          <Button
+            icon={<CirclePlus />}
+            blockedReason={canWrite ? undefined : writeHint}
+            onClick={() => navigate('/orders/new')}
+          >
             Pedido telefónico
           </Button>
         }
@@ -241,7 +247,14 @@ export const Orders = () => {
             busy={bulkBusy}
             onStop={bulkAssign.isPending ? bulkAssign.stop : bulkCancel.stop}
           >
-            <Button size="sm" variant="secondary" icon={<UserRoundCog />} disabled={bulkBusy} onClick={startBulkAssign}>
+            <Button
+              size="sm"
+              variant="secondary"
+              icon={<UserRoundCog />}
+              disabled={bulkBusy}
+              blockedReason={blockedReason}
+              onClick={startBulkAssign}
+            >
               Asignar chofer
             </Button>
             <Button
@@ -249,6 +262,7 @@ export const Orders = () => {
               variant="danger"
               icon={<CircleX />}
               disabled={bulkBusy}
+              blockedReason={blockedReason}
               onClick={() => setModal({ kind: 'bulk-cancel' })}
             >
               Cancelar pedidos
@@ -265,9 +279,9 @@ export const Orders = () => {
               setPagination(model);
             }}
             onView={(order) => navigate(`/orders/${order.order_id}`)}
-            onAssign={(order) => setModal({ kind: 'assign', order })}
+            onAssign={canOperate ? (order) => setModal({ kind: 'assign', order }) : undefined}
             onEdit={canWrite ? (order) => setModal({ kind: 'edit', order }) : undefined}
-            onCancel={(order) => setModal({ kind: 'cancel', order })}
+            onCancel={canOperate ? (order) => setModal({ kind: 'cancel', order }) : undefined}
             filtered={chips.length > 0 || status !== ''}
             selection={{ ids: Object.keys(selected), onChange: handleSelection }}
           />

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { Button, Card, PageHeader, Select, TextArea } from '../../common/components/ui';
+import { usePermissions } from '../../hooks';
 import type { Customer } from '../../services/api/types';
 import { useUserAddresses } from '../../services/queries/userAddresses';
 import { useCreateOrder } from '../../services/queries/orders';
@@ -21,6 +22,7 @@ const PAYMENT_OPTIONS = Object.entries(PAYMENT_METHOD).map(([value, label]) => (
  */
 export const NewOrder = () => {
   const navigate = useNavigate();
+  const { canWrite, writeHint } = usePermissions();
   const [customer, setCustomer] = useState<Customer | null>(null);
   const { data: addresses, isPending: loadingAddresses } = useUserAddresses(customer?.user_id);
   const createOrder = useCreateOrder();
@@ -51,6 +53,8 @@ export const NewOrder = () => {
   ];
 
   const onSubmit = handleSubmit((values) => {
+    // Un botón de envío bloqueado igual dispara el submit del formulario (Enter, click): se corta acá.
+    if (!canWrite) return;
     createOrder.mutate(
       {
         customerId: values.customerId,
@@ -119,7 +123,7 @@ export const NewOrder = () => {
           <Button type="button" variant="secondary" onClick={() => navigate('/orders')}>
             Cancelar
           </Button>
-          <Button type="submit" loading={createOrder.isPending}>
+          <Button type="submit" loading={createOrder.isPending} blockedReason={canWrite ? undefined : writeHint}>
             Crear pedido
           </Button>
         </div>

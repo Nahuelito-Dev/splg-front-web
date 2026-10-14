@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { CheckCircle2, PencilLine, PiggyBank, Power, PowerOff, ShieldCheck, ShieldX, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { usePermissions } from '../../../hooks';
 import { Avatar, Badge, Button, PageCover, PhotoThumb, type CoverStat } from '../../../common/components/ui';
 import type { Delivery } from '../../../services/api/types';
 import {
@@ -26,6 +27,9 @@ interface Props {
 /** La portada de la ficha del chofer: identidad, estado, KPIs y las acciones de CU-032/CU-033. */
 export const DeliveryProfileCard = ({ delivery, onDeleted, children }: Props) => {
   const user = delivery.user;
+  // Toda escritura sobre un chofer pide la distribuidora (X-Distributor): sin «Ver como» la API contesta 400.
+  const { canOperate, operateHint } = usePermissions();
+  const blockedReason = canOperate ? undefined : operateHint;
   const setEnabled = useSetDeliveryEnabled();
   const validateDelivery = useValidateDelivery();
   const invalidateDelivery = useInvalidateDelivery();
@@ -128,7 +132,13 @@ export const DeliveryProfileCard = ({ delivery, onDeleted, children }: Props) =>
         }
         actions={
           <>
-            <Button variant="secondary" size="sm" icon={<PencilLine />} onClick={() => setEditing(true)}>
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<PencilLine />}
+              blockedReason={blockedReason}
+              onClick={() => setEditing(true)}
+            >
               Editar
             </Button>
             <Button
@@ -136,6 +146,7 @@ export const DeliveryProfileCard = ({ delivery, onDeleted, children }: Props) =>
               size="sm"
               icon={delivery.validated ? <ShieldX /> : <ShieldCheck />}
               loading={validateDelivery.isPending || invalidateDelivery.isPending}
+              blockedReason={blockedReason}
               onClick={handleToggleValidated}
             >
               {delivery.validated ? 'Quitar validación' : 'Validar'}
@@ -145,6 +156,7 @@ export const DeliveryProfileCard = ({ delivery, onDeleted, children }: Props) =>
               size="sm"
               icon={delivery.isEnabled ? undefined : <CheckCircle2 />}
               loading={setEnabled.isPending}
+              blockedReason={blockedReason}
               onClick={() => void handleToggleEnabled()}
             >
               {delivery.isEnabled ? 'Deshabilitar' : 'Habilitar'}
@@ -154,14 +166,27 @@ export const DeliveryProfileCard = ({ delivery, onDeleted, children }: Props) =>
               size="sm"
               icon={delivery.isAvailable ? <PowerOff /> : <Power />}
               loading={toggleAvailability.isPending}
+              blockedReason={blockedReason}
               onClick={() => void handleToggleAvailability()}
             >
               {delivery.isAvailable ? 'Desconectar' : 'Conectar'}
             </Button>
-            <Button variant="secondary" size="sm" icon={<PiggyBank />} onClick={() => setAdjustingBalance(true)}>
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<PiggyBank />}
+              blockedReason={blockedReason}
+              onClick={() => setAdjustingBalance(true)}
+            >
               Ajustar saldo
             </Button>
-            <Button variant="danger" size="sm" icon={<Trash2 />} onClick={() => void handleDelete()}>
+            <Button
+              variant="danger"
+              size="sm"
+              icon={<Trash2 />}
+              blockedReason={blockedReason}
+              onClick={() => void handleDelete()}
+            >
               Dar de baja
             </Button>
           </>

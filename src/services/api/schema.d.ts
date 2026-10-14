@@ -172,7 +172,10 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Check if user exists by email or phone */
+    /**
+     * Check if user exists by email or phone
+     * @description Público. Máximo 10 consultas por minuto y por IP (429): contesta si una cuenta existe, así que no puede usarse para recorrer listas.
+     */
     post: operations['UsersController_checkUserExists'];
     delete?: never;
     options?: never;
@@ -1083,6 +1086,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/orders/quote': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Cotizar un pedido
+     * @description Mismo cuerpo que `POST /orders` (sólo `items` y `paymentMethod` son obligatorios). Devuelve el desglose que cobrará el alta: renglones con la promoción por volumen, `subtotal`, recargo de zona (con `addressId`; el admin además manda `customerId`), recargo por medio de pago (+10% sobre subtotal + zona en `mercadopago` y `transfer`), `deposit` (si `isReservation`), `total` y `balance` (`total - deposit`). El `total` es exactamente el del pedido que se crea con el mismo cuerpo. No escribe nada ni reserva stock; sí rechaza lo que el alta rechazaría (producto de otra distribuidora, sin stock, dirección fuera de cobertura). Cliente sin `X-Distributor`: distribuidora por defecto, igual que el alta.
+     */
+    post: operations['OrderController_quote'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/orders/customer/{customerId}': {
     parameters: {
       query?: never;
@@ -1090,7 +1113,10 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** Get orders by customer ID */
+    /**
+     * Get orders by customer ID
+     * @description Cliente (el suyo), admin y super_admin. El chofer no lista pedidos por cliente: los suyos están en `GET /orders/delivery/:deliveryId` (403 si lo intenta).
+     */
     get: operations['OrderController_findByCustomer'];
     put?: never;
     post?: never;
@@ -1178,7 +1204,10 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** Get order by ID */
+    /**
+     * Get order by ID
+     * @description El cliente lee sólo sus pedidos. El chofer lee el pedido que tiene asignado, el que tiene en oferta vigente o uno del pool de `GET /orders/available` (pendiente, sin chofer, de su distribuidora); cualquier otro responde 404 como si no existiera. Admin y super_admin leen los de su distribuidora.
+     */
     get: operations['OrderController_findOne'];
     put?: never;
     post?: never;
@@ -1323,6 +1352,46 @@ export interface paths {
      * @description Cierra un pedido con `paymentStatus: unpaid`: `resolution: paid` (el cliente pagó después) o `resolution: written_off` (se da por perdido). Exige `note` con el motivo; quedan registrados quién y cuándo (`paymentResolvedBy`, `paymentResolvedAt`, `paymentResolutionNote`) y la auditoría; `paymentConfirmedAt/By` se llenan sólo con `paid` (una pérdida no es un cobro). En la misma transacción cierra la incidencia `unpaid_collection` del pedido (`resolved`, con la misma nota). Repetir la resolución (mismo admin u otro) es idempotente: no toca la nota ni la incidencia y responde 200 con `alreadyResolved: true`; si cambió algo, `false`.
      */
     patch: operations['OrderController_resolveUnpaid'];
+    trace?: never;
+  };
+  '/api/orders/{id}/payment/register-cash': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * El admin registra el cobro en efectivo de un pedido entregado
+     * @description Para el efectivo que el chofer no confirmó (no lo hizo, ya no está). Sólo pedidos `delivered` en efectivo con el pago `pending`: pasa a `paid` y registra `paymentConfirmedBy` (el admin), `paymentResolvedBy/At` y el motivo en `paymentResolutionNote`. `reason` es obligatorio (10 a 500 caracteres) y queda en el historial de estados y en la auditoría. Repetirlo sobre un pedido ya `paid` devuelve el pedido tal cual. Si el pago ya se informó como impago responde 409 (se resuelve con `resolve-unpaid`). `X-Distributor` es obligatorio para el super admin.
+     */
+    patch: operations['OrderController_registerCash'];
+    trace?: never;
+  };
+  '/api/orders/{id}/payment/confirm-transfer': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * El admin confirma (o marca como no recibida) una transferencia
+     * @description Sólo pedidos con medio `transfer`, no cancelados, con el pago `pending`. `received: true` pasa el pago a `paid` (registra `paymentConfirmedAt/By`) y recién ahí el pedido entregado cuenta como venta en los reportes; `received: false` lo deja en `failed` (aparece en `GET /reports/collections` como `notReceivedTransfer`). `reason` obligatorio (10 a 500 caracteres): queda en `paymentResolutionNote`, en el historial de estados y en la auditoría. Repetir la misma decisión devuelve el pedido tal cual; la contraria sobre algo ya decidido es 409. `X-Distributor` es obligatorio para el super admin.
+     */
+    patch: operations['OrderController_confirmTransfer'];
     trace?: never;
   };
   '/api/orders/{id}/assign/{deliveryId}': {
@@ -2982,7 +3051,7 @@ export interface paths {
     };
     /**
      * Ventas por Repartidor
-     * @description Días en hora argentina (America/Argentina/Buenos_Aires); `to` es inclusivo. Cuenta pedidos entregados en el rango, por fecha de entrega (el listado de pedidos filtra por fecha de creación). Suma el total del pedido (con recargos) de los pedidos entregados. Cuenta sólo lo COBRADO: `paymentStatus: paid`, o `pending` en medios que no son efectivo; el efectivo pendiente de confirmar, los impagos y las pérdidas no suman (ver `GET /reports/collections`).
+     * @description Días en hora argentina (America/Argentina/Buenos_Aires); `to` es inclusivo. Cuenta pedidos entregados en el rango, por fecha de entrega (el listado de pedidos filtra por fecha de creación). Suma el total del pedido (con recargos) de los pedidos entregados. Cuenta sólo lo COBRADO: `paymentStatus: paid` (cualquier medio); el efectivo pendiente de confirmar, las transferencias sin confirmar o no recibidas, los impagos y las pérdidas no suman (ver `GET /reports/collections`).
      */
     get: operations['ReportsController_getSalesByDriver'];
     put?: never;
@@ -3002,7 +3071,7 @@ export interface paths {
     };
     /**
      * Ventas por Producto
-     * @description Días en hora argentina (America/Argentina/Buenos_Aires); `to` es inclusivo. Cuenta pedidos entregados en el rango, por fecha de entrega (el listado de pedidos filtra por fecha de creación). Suma los subtotales de los renglones (sin recargos): por eso el total puede ser menor al de sales-by-driver/sales-by-payment, que suman el total del pedido. Cuenta sólo lo COBRADO: `paymentStatus: paid`, o `pending` en medios que no son efectivo; el efectivo pendiente de confirmar, los impagos y las pérdidas no suman (ver `GET /reports/collections`).
+     * @description Días en hora argentina (America/Argentina/Buenos_Aires); `to` es inclusivo. Cuenta pedidos entregados en el rango, por fecha de entrega (el listado de pedidos filtra por fecha de creación). Suma los subtotales de los renglones (sin recargos): por eso el total puede ser menor al de sales-by-driver/sales-by-payment, que suman el total del pedido. Cuenta sólo lo COBRADO: `paymentStatus: paid` (cualquier medio); el efectivo pendiente de confirmar, las transferencias sin confirmar o no recibidas, los impagos y las pérdidas no suman (ver `GET /reports/collections`).
      */
     get: operations['ReportsController_getSalesByProduct'];
     put?: never;
@@ -3022,7 +3091,7 @@ export interface paths {
     };
     /**
      * Ventas por Método de Pago
-     * @description Días en hora argentina (America/Argentina/Buenos_Aires); `to` es inclusivo. Cuenta pedidos entregados en el rango, por fecha de entrega (el listado de pedidos filtra por fecha de creación). Suma el total del pedido (con recargos) de los pedidos entregados. Cuenta sólo lo COBRADO: `paymentStatus: paid`, o `pending` en medios que no son efectivo; el efectivo pendiente de confirmar, los impagos y las pérdidas no suman (ver `GET /reports/collections`).
+     * @description Días en hora argentina (America/Argentina/Buenos_Aires); `to` es inclusivo. Cuenta pedidos entregados en el rango, por fecha de entrega (el listado de pedidos filtra por fecha de creación). Suma el total del pedido (con recargos) de los pedidos entregados. Cuenta sólo lo COBRADO: `paymentStatus: paid` (cualquier medio); el efectivo pendiente de confirmar, las transferencias sin confirmar o no recibidas, los impagos y las pérdidas no suman (ver `GET /reports/collections`).
      */
     get: operations['ReportsController_getSalesByPayment'];
     put?: never;
@@ -3042,7 +3111,7 @@ export interface paths {
     };
     /**
      * Evolución de ventas por período (día/semana/mes)
-     * @description Días en hora argentina (America/Argentina/Buenos_Aires); `to` es inclusivo. Cuenta pedidos entregados en el rango, por fecha de entrega (el listado de pedidos filtra por fecha de creación). Los períodos (día, semana ISO lunes a domingo, mes) se agrupan en hora argentina y `period` es el instante en que arranca cada uno. Suma el total del pedido (con recargos). Cuenta sólo lo COBRADO: `paymentStatus: paid`, o `pending` en medios que no son efectivo; el efectivo pendiente de confirmar, los impagos y las pérdidas no suman (ver `GET /reports/collections`).
+     * @description Días en hora argentina (America/Argentina/Buenos_Aires); `to` es inclusivo. Cuenta pedidos entregados en el rango, por fecha de entrega (el listado de pedidos filtra por fecha de creación). Los períodos (día, semana ISO lunes a domingo, mes) se agrupan en hora argentina y `period` es el instante en que arranca cada uno. Suma el total del pedido (con recargos). Cuenta sólo lo COBRADO: `paymentStatus: paid` (cualquier medio); el efectivo pendiente de confirmar, las transferencias sin confirmar o no recibidas, los impagos y las pérdidas no suman (ver `GET /reports/collections`).
      */
     get: operations['ReportsController_getSalesEvolution'];
     put?: never;
@@ -3061,8 +3130,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Cobros en efectivo fuera de las ventas
-     * @description Días en hora argentina; `to` es inclusivo; por fecha de entrega. Cifras que NO suman a las ventas: efectivo entregado pendiente de confirmar por el chofer (`pendingCash`), impagos sin resolver (`unpaid`) y pérdidas (`writtenOff`).
+     * Cobros fuera de las ventas
+     * @description Días en hora argentina; `to` es inclusivo; por fecha de entrega. Cifras que NO suman a las ventas: efectivo entregado pendiente de confirmar por el chofer (`pendingCash`), impagos sin resolver (`unpaid`) y pérdidas (`writtenOff`); y transferencias entregadas que un admin todavía no confirmó (`pendingTransfer`) o marcó como no recibidas (`notReceivedTransfer`).
      */
     get: operations['ReportsController_getCollections'];
     put?: never;
@@ -3116,6 +3185,26 @@ export interface paths {
     };
     /** Readiness probe (DB + Redis) */
     get: operations['HealthController_ready'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/routes/driving': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Ruta por calles de un pedido activo
+     * @description Ruta del chofer hasta la dirección de entrega de UN pedido, para dibujarla en el mapa sin que las apps lleven la clave de Google. Sólo la pide el chofer asignado (pedido `accepted` u `on_the_way`) o el cliente dueño (`on_the_way`); el destino es siempre la dirección del pedido. El origen es la última posición reciente del chofer; `from` es opcional y se acepta sólo si está a menos de `ROUTES_FROM_MAX_DISTANCE_M` (300 m) de ella. El servidor consulta Google Directions con su propia clave (`GOOGLE_DIRECTIONS_API_KEY`) y, si falta o Google falla, OSRM propio (`OSRM_BASE_URL`; el público sólo en desarrollo); `provider` dice cuál respondió. Cupos: 30 por minuto y usuario, y por día (24 h) 100 por usuario y 3000 por distribuidora, ajustables con `ROUTES_DAILY_LIMIT_PER_USER` y `ROUTES_DAILY_LIMIT_PER_DISTRIBUTOR` (429). Las respuestas se guardan 60 s por origen y destino redondeados a 4 decimales y no cuentan contra el cupo diario.
+     */
+    get: operations['RoutesController_driving'];
     put?: never;
     post?: never;
     delete?: never;
@@ -3357,6 +3446,26 @@ export interface paths {
      * @description Pasa el pago a `unpaid` y abre una incidencia `unpaid_collection` (avisa a los admins por el panel en vivo, evento `incident:created` con `incidentId`, `orderId`, `distributorId`, `type`, `description`, `createdAt`). Body opcional: `note`. Para adjuntar foto, subirla con `PUT /incidents/{incident.incident_id}/photo`. Sólo el chofer asignado, sólo pedidos `delivered` en efectivo con el pago pendiente. Repetirlo (o reintentar con la misma `Idempotency-Key`) devuelve la misma incidencia, sin duplicar. Un admin lo resuelve con `PATCH /orders/{id}/payment/resolve-unpaid`, que también cierra la incidencia.
      */
     patch: operations['UnpaidCashController_report'];
+    trace?: never;
+  };
+  '/api/orders/{id}/payment/register-unpaid': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * El admin informa el impago de un efectivo entregado
+     * @description Para cuando el chofer no lo informó (no lo hizo, ya no está). Mismo efecto que `PATCH /orders/{id}/payment/unpaid`: pasa el pago a `unpaid` y abre UNA incidencia `unpaid_collection` (reportada por el admin). `reason` es obligatorio (10 a 500 caracteres) y queda en el historial de estados y en la auditoría. Sólo pedidos `delivered` en efectivo con el pago `pending`; repetirlo devuelve la misma incidencia. Se cierra con `PATCH /orders/{id}/payment/resolve-unpaid`. `X-Distributor` es obligatorio para el super admin.
+     */
+    patch: operations['UnpaidCashController_registerUnpaid'];
     trace?: never;
   };
   '/api/audit': {
@@ -4688,6 +4797,40 @@ export interface components {
       brand: string | null;
       model: string | null;
     };
+    DriverLocationDto: {
+      /** @example -34.6037 */
+      lat: number;
+      /** @example -58.3816 */
+      lng: number;
+      /**
+       * @description Cuándo se registró (ISO); `null` si la posición es anterior a que el back anotara la hora
+       * @example 2026-10-12T20:15:00.000Z
+       */
+      at: string | null;
+    };
+    DriverDeOrderDto: {
+      /**
+       * Format: uuid
+       * @description `user_id` del chofer
+       */
+      userId: string;
+      /** @example Ana Gómez */
+      fullName: string | null;
+      /** @example +5491155550000 */
+      phoneNumber: string | null;
+      /**
+       * @description Promedio de estrellas de las calificaciones visibles (0 si todavía no tiene)
+       * @example 4.8
+       */
+      ratingAverage: number;
+      /**
+       * @description Cantidad de calificaciones visibles
+       * @example 37
+       */
+      ratingCount: number;
+      /** @description Última ubicación conocida del chofer (la misma que se emite por `order:driver-location`); `null` si todavía no reportó ninguna */
+      location: components['schemas']['DriverLocationDto'] | null;
+    };
     OrderResponseDto: {
       /** Format: uuid */
       order_id: string;
@@ -4777,6 +4920,103 @@ export interface components {
       /** @example 20000 */
       subtotal_items: number;
       vehicle: components['schemas']['VehicleDeOrderDto'] | null;
+      /** @enum {string|null} */
+      cancelledBy: 'customer' | 'admin' | 'system' | 'driver' | null;
+      driver: components['schemas']['DriverDeOrderDto'] | null;
+    };
+    QuoteOrderDto: {
+      /** @description Ítems del pedido */
+      items: components['schemas']['OrderItemDto'][];
+      /**
+       * @description Método de pago
+       * @example cash
+       * @enum {string}
+       */
+      paymentMethod: 'cash' | 'mercadopago' | 'transfer';
+      /** @description ID del cliente */
+      customerId?: string;
+      /** @description ID de la dirección de entrega */
+      addressId?: string;
+      /** @description Notas adicionales */
+      notes?: string;
+      /** @description Token de notificación push */
+      notificationToken?: string;
+      /** @description ID del turno de entrega (TimeSlot) */
+      timeSlotId?: string;
+      /**
+       * @description Fecha agendada de entrega (YYYY-MM-DD). Con timeSlotId, agenda el pedido a esa franja de ese día (valida capacidad). Omitir = entrega inmediata.
+       * @example 2026-07-15
+       */
+      scheduledDate?: string;
+      /** @description Marca el pedido como pre-reserva: reserva stock para la fecha agendada pero NO se despacha hasta que la seña esté paga y llegue el día (el sistema lo activa solo). Requiere scheduledDate. */
+      isReservation?: boolean;
+      /** @description Monto de la seña de la reserva (obligatorio si isReservation). */
+      depositAmount?: number;
+    };
+    QuoteItemDto: {
+      gasCylinderId: string;
+      /** @example Garrafa 10kg */
+      title: string;
+      /** @example 2 */
+      quantity: number;
+      /**
+       * @description Precio unitario con la promoción por volumen aplicada
+       * @example 9500
+       */
+      unitPrice: number;
+      /** @example 19000 */
+      subtotal: number;
+    };
+    QuoteZoneDto: {
+      coverageZoneId: string;
+      /** @example Zona norte */
+      name: string;
+      /** @enum {string} */
+      type: 'fixed' | 'percentage';
+      /** @example 5 */
+      value: number;
+      /** @example 950 */
+      amount: number;
+    };
+    QuoteResponseDto: {
+      items: components['schemas']['QuoteItemDto'][];
+      /**
+       * @description Suma de los renglones, ya con promociones por volumen
+       * @example 19000
+       */
+      subtotal: number;
+      /** @description Zona de cobertura de la dirección y su recargo; `null` si no se mandó `addressId` o la distribuidora no tiene zonas */
+      zone: components['schemas']['QuoteZoneDto'] | null;
+      /**
+       * @description Recargo por zona (0 si no hay)
+       * @example 950
+       */
+      zoneSurcharge: number;
+      /**
+       * @example transfer
+       * @enum {string}
+       */
+      paymentMethod: 'cash' | 'mercadopago' | 'transfer';
+      /**
+       * @description Recargo por medio de pago: +10% sobre subtotal + recargo de zona en `mercadopago` y `transfer`; 0 en `cash`
+       * @example 1995
+       */
+      paymentSurcharge: number;
+      /**
+       * @description Seña de la reserva (0 si no es reserva)
+       * @example 0
+       */
+      deposit: number;
+      /**
+       * @description Total del pedido: es el `total` que tendrá el pedido creado
+       * @example 21945
+       */
+      total: number;
+      /**
+       * @description Saldo a cobrar una vez paga la seña: `total - deposit`
+       * @example 21945
+       */
+      balance: number;
     };
     PaginatedOrdersResponseDto: {
       orders: components['schemas']['OrderResponseDto'][];
@@ -4851,7 +5091,7 @@ export interface components {
       reason?: string;
     };
     RechazoDeOfertaResponseDto: {
-      /** @description false si el chofer no tenía una oferta activa del pedido */
+      /** @description true: el rechazo se registró (con oferta real, se re-ofrece; con asignación manual, se avisa al panel). El pedido que no existe responde 404, no `false`. */
       rejected: boolean;
     };
     CodigoDeEntregaResponseDto: {
@@ -4974,11 +5214,33 @@ export interface components {
       /** @example 20000 */
       subtotal_items: number;
       vehicle: components['schemas']['VehicleDeOrderDto'] | null;
+      /** @enum {string|null} */
+      cancelledBy: 'customer' | 'admin' | 'system' | 'driver' | null;
+      driver: components['schemas']['DriverDeOrderDto'] | null;
       /**
        * @description `true` si el pedido ya estaba en el destino pedido (reintento o segundo admin): no se tocó nada, ni la nota del pedido ni la incidencia.
        * @example false
        */
       alreadyResolved: boolean;
+    };
+    MotivoDeCobroDto: {
+      /**
+       * @description Por qué lo registra el administrador y no el chofer (10 a 500 caracteres). Queda en el pedido, en el historial de estados y en la auditoría.
+       * @example El chofer fue dado de baja antes de rendir el efectivo
+       */
+      reason: string;
+    };
+    ConfirmTransferDto: {
+      /**
+       * @description Por qué lo registra el administrador y no el chofer (10 a 500 caracteres). Queda en el pedido, en el historial de estados y en la auditoría.
+       * @example El chofer fue dado de baja antes de rendir el efectivo
+       */
+      reason: string;
+      /**
+       * @description `true`: la transferencia llegó (el pago pasa a `paid` y el pedido cuenta como venta). `false`: no llegó (queda `failed`).
+       * @example true
+       */
+      received: boolean;
     };
     UpdateLocationDto: {
       /**
@@ -5200,8 +5462,8 @@ export interface components {
       gasCylinderId: string;
     };
     CreateUserAddressDto: {
-      /** @description ID del usuario */
-      user_id: string;
+      /** @description Dueño de la dirección. Sólo lo usa el administrador general (obligatorio para él). Un cliente o un chofer crea siempre para sí mismo con el de su token: puede omitirlo; si lo manda y es el de otro usuario, 403. */
+      user_id?: string;
       /** @description Calle y número */
       street: string;
       /** @description Ciudad */
@@ -7100,6 +7362,39 @@ export interface components {
       unpaid: components['schemas']['CifraDeCobroDto'];
       /** @description Impagos que un admin dio por perdidos (`written_off`) */
       writtenOff: components['schemas']['CifraDeCobroDto'];
+      /** @description Transferencias de pedidos entregados que un admin todavía no confirmó (`paymentStatus: pending`). Se confirman con `PATCH /orders/{id}/payment/confirm-transfer` */
+      pendingTransfer: components['schemas']['CifraDeCobroDto'];
+      /** @description Transferencias que un admin marcó como no recibidas (`paymentStatus: failed`). Sólo se marcan sobre pedidos entregados; si el dinero llega después, `confirm-transfer` con `received: true` lo corrige */
+      notReceivedTransfer: components['schemas']['CifraDeCobroDto'];
+      /** @description Pedidos COBRADOS (`paymentStatus: paid`: transferencia o MercadoPago) y luego CANCELADOS en el rango (por fecha de la última modificación): el dinero hay que devolverlo. Dato informativo, el sistema no gestiona el reintegro */
+      pendingRefund: components['schemas']['CifraDeCobroDto'];
+    };
+    RoutePointDto: {
+      /** @example -34.6037 */
+      lat: number;
+      /** @example -58.3816 */
+      lng: number;
+    };
+    DrivingRouteDto: {
+      /**
+       * @description Quién calculó la ruta (`osrm` si el servidor no tiene clave de Google o Google falló)
+       * @enum {string}
+       */
+      provider: 'google' | 'osrm';
+      /**
+       * @description Distancia por calles, en metros
+       * @example 5230
+       */
+      distanceMeters: number;
+      /**
+       * @description Duración estimada, en segundos
+       * @example 780
+       */
+      durationSeconds: number;
+      /** @description Polilínea codificada (formato de Google, precisión 5) */
+      encodedPolyline: string;
+      /** @description La misma polilínea ya decodificada */
+      points: components['schemas']['RoutePointDto'][];
     };
     CreateRatingDto: {
       /** Format: uuid */
@@ -8524,6 +8819,13 @@ export interface operations {
         };
         content?: never;
       };
+      /** @description Superó el cupo por minuto */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
   };
   UsersController_blockUser: {
@@ -8651,7 +8953,7 @@ export interface operations {
           'application/json': components['schemas']['AdminResponseDto'];
         };
       };
-      /** @description Sólo un usuario con rol admin o super_admin tiene perfil de administrador · property role_id should not exist; user_id must be a UUID */
+      /** @description Sólo un usuario con rol admin o super_admin tiene perfil de administrador · el perfil de un admin de empresa exige X-Distributor y que coincida con distributor_id · property role_id should not exist; user_id must be a UUID */
       400: {
         headers: {
           [name: string]: unknown;
@@ -11232,6 +11534,13 @@ export interface operations {
         };
         content?: never;
       };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
   };
   EmployeeController_reinstate: {
@@ -11288,6 +11597,13 @@ export interface operations {
       };
       /** @description El empleado no está egresado */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
         headers: {
           [name: string]: unknown;
         };
@@ -11880,6 +12196,13 @@ export interface operations {
         };
         content?: never;
       };
+      /** @description La `Idempotency-Key` ya se usó con otro archivo u otros datos. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
   };
   AttachmentController_download: {
@@ -12027,15 +12350,15 @@ export interface operations {
           'application/json': components['schemas']['SesionIniciadaDto'];
         };
       };
-      /** @description Credenciales incorrectas */
-      400: {
+      /** @description Email o contraseña incorrectos (misma respuesta para un usuario inexistente y para una contraseña equivocada) o cuenta dada de baja (Firebase la rechaza antes de mirar la clave: misma respuesta, no revela que existe). Con la clave correcta, una cuenta bloqueada recibe `La cuenta no está habilitada` */
+      401: {
         headers: {
           [name: string]: unknown;
         };
         content?: never;
       };
-      /** @description La cuenta no está habilitada */
-      401: {
+      /** @description Demasiados intentos fallidos */
+      429: {
         headers: {
           [name: string]: unknown;
         };
@@ -12064,15 +12387,15 @@ export interface operations {
           'application/json': components['schemas']['SesionIniciadaDto'];
         };
       };
-      /** @description Credenciales incorrectas */
-      400: {
+      /** @description Email o contraseña incorrectos, cuenta no habilitada o no es de un administrador */
+      401: {
         headers: {
           [name: string]: unknown;
         };
         content?: never;
       };
-      /** @description La cuenta no está habilitada o no es de un administrador */
-      401: {
+      /** @description Demasiados intentos fallidos */
+      429: {
         headers: {
           [name: string]: unknown;
         };
@@ -12186,6 +12509,50 @@ export interface operations {
       };
     };
   };
+  OrderController_quote: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['QuoteOrderDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['QuoteResponseDto'];
+        };
+      };
+      /** @description Datos inválidos, sin stock, dirección fuera de cobertura, o falta `customerId` con `addressId` (admin) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer, admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   OrderController_findByCustomer: {
     parameters: {
       query?: {
@@ -12219,7 +12586,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: customer, delivery, admin, super_admin */
+      /** @description Requiere rol: customer, admin, super_admin */
       403: {
         headers: {
           [name: string]: unknown;
@@ -12430,6 +12797,13 @@ export interface operations {
         };
         content?: never;
       };
+      /** @description Sólo para el chofer: el pedido lo tuvo él y ya no es suyo (lo liberó el admin, lo reasignaron o el control de carga lo sacó del pool). La app debe salir de la pantalla del pedido. */
+      410: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
   };
   OrderController_cancelOrder: {
@@ -12635,6 +13009,13 @@ export interface operations {
       };
       /** @description Requiere rol: delivery */
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El pedido no existe o es de otra distribuidora */
+      404: {
         headers: {
           [name: string]: unknown;
         };
@@ -12894,6 +13275,126 @@ export interface operations {
       };
     };
   };
+  OrderController_registerCash: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MotivoDeCobroDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['OrderResponseDto'];
+        };
+      };
+      /** @description Falta o es inválido el motivo, el pedido no está entregado o no es en efectivo, o falta la distribuidora */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El pago ya se informó como impago */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  OrderController_confirmTransfer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ConfirmTransferDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['OrderResponseDto'];
+        };
+      };
+      /** @description Datos inválidos, el pedido no es una transferencia o está cancelado, o falta la distribuidora */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La transferencia ya se resolvió con la decisión contraria */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   OrderController_assignDelivery: {
     parameters: {
       query?: never;
@@ -12940,6 +13441,13 @@ export interface operations {
       };
       /** @description Order or delivery not found */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
         headers: {
           [name: string]: unknown;
         };
@@ -13177,6 +13685,13 @@ export interface operations {
       };
       /** @description Reserva no encontrada */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
         headers: {
           [name: string]: unknown;
         };
@@ -13704,6 +14219,13 @@ export interface operations {
         };
         content?: never;
       };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
   };
   UserAddressController_findOne: {
@@ -14056,6 +14578,13 @@ export interface operations {
       };
       /** @description Requiere rol: super_admin */
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El cliente no existe */
+      404: {
         headers: {
           [name: string]: unknown;
         };
@@ -14515,6 +15044,13 @@ export interface operations {
       };
       /** @description Pedido o envase no encontrado */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
         headers: {
           [name: string]: unknown;
         };
@@ -15307,6 +15843,13 @@ export interface operations {
         };
         content?: never;
       };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
   };
   FleetTaskController_findOne: {
@@ -15621,6 +16164,13 @@ export interface operations {
       };
       /** @description Tipo de archivo no permitido (sólo PDF, JPG, PNG, WEBP) */
       415: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro archivo u otros datos. */
+      422: {
         headers: {
           [name: string]: unknown;
         };
@@ -18049,6 +18599,13 @@ export interface operations {
         };
         content?: never;
       };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
   };
   ClaimsController_findMine: {
@@ -18476,6 +19033,13 @@ export interface operations {
       };
       /** @description No es JPG, PNG ni WEBP (o el contenido no coincide) */
       415: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro archivo u otros datos. */
+      422: {
         headers: {
           [name: string]: unknown;
         };
@@ -19020,6 +19584,86 @@ export interface operations {
       };
     };
   };
+  RoutesController_driving: {
+    parameters: {
+      query: {
+        /** @description Pedido activo (aceptado o en camino) del que se pide la ruta. El destino es siempre su dirección de entrega */
+        orderId: string;
+        /** @description Origen `lat,lng`. Se usa sólo si está a pocos metros de la última posición conocida del chofer (`ROUTES_FROM_MAX_DISTANCE_M`, 300 por defecto); si no se manda, el origen es esa última posición */
+        from?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DrivingRouteDto'];
+        };
+      };
+      /** @description `orderId` o `from` inválidos, o `from` lejos de la posición del chofer */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: delivery, customer */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El pedido no es suyo o no existe */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin posición reciente del chofer o dirección sin coordenadas */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Superó el cupo por minuto o por día */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ningún proveedor de mapas respondió */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No hay proveedor de rutas configurado */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   RatingController_create: {
     parameters: {
       query?: never;
@@ -19385,6 +20029,13 @@ export interface operations {
       };
       /** @description Pedido no encontrado */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
         headers: {
           [name: string]: unknown;
         };
@@ -19820,6 +20471,73 @@ export interface operations {
         content?: never;
       };
       /** @description Pedido no encontrado */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El pago ya no está pendiente (cobrado o resuelto) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  UnpaidCashController_registerUnpaid: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MotivoDeCobroDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['UnpaidCashResponseDto'];
+        };
+      };
+      /** @description Motivo ausente o inválido, el pedido no está entregado o no es en efectivo, o falta la distribuidora */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Pedido inexistente o de otra distribuidora */
       404: {
         headers: {
           [name: string]: unknown;

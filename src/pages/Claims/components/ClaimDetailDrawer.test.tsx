@@ -28,7 +28,7 @@ const claim = (status: string) =>
     createdAt: '2026-10-01',
   }) as unknown as Claim;
 
-const HINT = 'Elegí una distribuidora para operar';
+const HINT = 'Elegí una distribuidora en «Ver como» para operar';
 
 describe('ClaimDetailDrawer', () => {
   afterEach(cleanup);

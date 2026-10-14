@@ -81,6 +81,30 @@ describe('OrdersTable: editar y cancelar', () => {
   });
 });
 
+describe('OrdersTable: sin distribuidora elegida', () => {
+  it('sin asignar ni cancelar no se ofrecen esas acciones; ver sí', () => {
+    render(
+      <OrdersTable
+        rows={[order('aaaaaa', {})]}
+        total={1}
+        loading={false}
+        pagination={{ page: 0, pageSize: 10 }}
+        onPaginationChange={vi.fn()}
+        onView={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('button', { name: /^Ver pedido/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Cancelar pedido/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Más acciones de pedido/ })).toBeNull();
+  });
+
+  it('con los dos manejadores se ofrecen cancelar y más acciones (asignar)', () => {
+    renderTable([order('aaaaaa', {})]);
+    expect(screen.getByRole('button', { name: /^Cancelar pedido/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Más acciones de pedido/ })).toBeInTheDocument();
+  });
+});
+
 describe('OrdersTable: estado de cobro', () => {
   it('cada pedido muestra su cobro con la etiqueta en castellano', () => {
     renderTable([
@@ -92,5 +116,14 @@ describe('OrdersTable: estado de cobro', () => {
     for (const text of ['Pendiente', 'Cobrado', 'Impago', 'Pérdida']) {
       expect(screen.getAllByText(text).length).toBeGreaterThan(0);
     }
+  });
+
+  it('una transferencia que no llegó se muestra «No recibida»; otro medio rechazado, «Rechazado»', () => {
+    renderTable([
+      order('b1', { paymentStatus: 'failed', paymentMethodDetail: 'transfer' }),
+      order('b2', { paymentStatus: 'failed', paymentMethodDetail: 'mercadopago' }),
+    ]);
+    expect(screen.getAllByText('No recibida')).toHaveLength(1);
+    expect(screen.getAllByText('Rechazado')).toHaveLength(1);
   });
 });

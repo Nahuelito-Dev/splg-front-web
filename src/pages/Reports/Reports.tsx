@@ -66,7 +66,7 @@ export const Reports = () => {
     <div className="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
       <PageHeader
         title="Reportes"
-        description={`Ventas cobradas del ${formatDay(range.from)} al ${formatDay(range.to)}: el efectivo cuenta recién cuando el chofer confirma el cobro o cuando un administrador lo registra como cobrado.`}
+        description={`Ventas cobradas del ${formatDay(range.from)} al ${formatDay(range.to)}: el efectivo cuenta recién cuando el chofer confirma el cobro o un administrador lo registra, y la transferencia, cuando un administrador confirma que llegó.`}
         actions={<DateRangePicker value={range} preset={preset} onChange={setRange} />}
       />
       <SummaryCards range={range} />

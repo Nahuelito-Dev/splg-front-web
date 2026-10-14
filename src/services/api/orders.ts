@@ -4,13 +4,16 @@ import type {
   CancelOrderBody,
   CodigoDeEntrega,
   ConfirmDeliveryBody,
+  ConfirmTransferBody,
   CreateOrderBody,
   Incident,
   Message,
+  MotivoDeCobroBody,
   Order,
   PaginatedOrders,
   ResolveUnpaid,
   ResolveUnpaidBody,
+  UnpaidCash,
   UpdateOrderBody,
   UpdateOrderStatusBody,
 } from './types';
@@ -173,6 +176,53 @@ export const resolveUnpaidOrder = async (
 ): Promise<ResolveUnpaid> => {
   const { data } = await http.patch<ResolveUnpaid>(`/orders/${id}/payment/resolve-unpaid`, body, {
     headers: { 'Idempotency-Key': idempotencyKey },
+  });
+  return data;
+};
+
+/**
+ * PATCH /orders/:id/payment/register-cash: el admin registra que cobró el efectivo de un pedido entregado cuyo chofer
+ * no lo confirmó. `reason` (10 a 500 caracteres) queda en el pedido, en el historial y en la auditoría. 400 si el
+ * pedido no está entregado o no es en efectivo; 409 si el pago ya se informó como impago. Repetirlo es un no-op.
+ */
+export const registerCashPayment = async (
+  id: string,
+  body: MotivoDeCobroBody,
+  idempotencyKey: string,
+): Promise<Order> => {
+  const { data } = await http.patch<Order>(`/orders/${id}/payment/register-cash`, body, {
+    headers: idempotencyHeaders(idempotencyKey),
+  });
+  return data;
+};
+
+/**
+ * PATCH /orders/:id/payment/register-unpaid: el admin informa el impago de un pedido entregado en efectivo cuando el
+ * chofer no lo hizo. Pasa el pago a `unpaid` y abre UNA incidencia `unpaid_collection`; se cierra con `resolve-unpaid`.
+ */
+export const registerUnpaidPayment = async (
+  id: string,
+  body: MotivoDeCobroBody,
+  idempotencyKey: string,
+): Promise<UnpaidCash> => {
+  const { data } = await http.patch<UnpaidCash>(`/orders/${id}/payment/register-unpaid`, body, {
+    headers: idempotencyHeaders(idempotencyKey),
+  });
+  return data;
+};
+
+/**
+ * PATCH /orders/:id/payment/confirm-transfer: el admin confirma que la transferencia llegó (`received: true`, pasa a
+ * `paid` desde `pending` o `failed`) o que no llegó (`received: false`, `failed`; sólo desde `pending` y sobre un pedido
+ * entregado). 409 si la contraria ya estaba decidida (`paid` → `failed`).
+ */
+export const confirmTransfer = async (
+  id: string,
+  body: ConfirmTransferBody,
+  idempotencyKey: string,
+): Promise<Order> => {
+  const { data } = await http.patch<Order>(`/orders/${id}/payment/confirm-transfer`, body, {
+    headers: idempotencyHeaders(idempotencyKey),
   });
   return data;
 };

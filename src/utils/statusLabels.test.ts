@@ -5,6 +5,8 @@ import {
   ORDER_STATUS,
   PAYMENT_STATUS,
   PAYMENT_STATUS_ORDER,
+  paymentFilterLabel,
+  paymentStatusLabel,
   vehicleAssignmentStatus,
 } from './statusLabels';
 
@@ -38,5 +40,25 @@ describe('estado de cobro', () => {
 
   it('el filtro ofrece todos los estados', () => {
     expect([...PAYMENT_STATUS_ORDER].sort()).toEqual(Object.keys(PAYMENT_STATUS).sort());
+  });
+});
+
+describe('paymentStatusLabel', () => {
+  it('una transferencia que no llegó es «No recibida»; el resto de los medios, «Rechazado»', () => {
+    expect(paymentStatusLabel('failed', 'transfer')).toEqual({ text: 'No recibida', tone: 'danger' });
+    expect(paymentStatusLabel('failed', 'mercadopago')).toEqual(labelOf(PAYMENT_STATUS, 'failed'));
+    expect(paymentStatusLabel('failed')).toEqual(labelOf(PAYMENT_STATUS, 'failed'));
+  });
+
+  it('los demás estados no cambian con la transferencia', () => {
+    expect(paymentStatusLabel('pending', 'transfer')).toEqual(labelOf(PAYMENT_STATUS, 'pending'));
+    expect(paymentStatusLabel('paid', 'transfer')).toEqual(labelOf(PAYMENT_STATUS, 'paid'));
+  });
+});
+
+describe('paymentFilterLabel', () => {
+  it('el filtro de `failed` nombra los dos casos; el resto, como siempre', () => {
+    expect(paymentFilterLabel('failed').text).toBe('Rechazado / no recibida');
+    expect(paymentFilterLabel('unpaid')).toEqual(labelOf(PAYMENT_STATUS, 'unpaid'));
   });
 });

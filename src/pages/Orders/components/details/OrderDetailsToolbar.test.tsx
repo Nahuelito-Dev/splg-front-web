@@ -33,7 +33,7 @@ vi.mock('../../../../utils/notifications', () => ({
 
 afterEach(cleanup);
 beforeEach(() => {
-  permissions.mockReturnValue({ canWrite: true, writeHint: undefined });
+  permissions.mockReturnValue({ canWrite: true, writeHint: undefined, canOperate: true, operateHint: undefined });
   api.updateOrderStatus.mockReset().mockResolvedValue({ order_id: 'abcdef123456' });
   api.confirmOrderDelivery.mockReset().mockResolvedValue({ order_id: 'abcdef123456' });
   notifications.confirm.mockClear().mockResolvedValue(true);
@@ -42,7 +42,7 @@ beforeEach(() => {
   notifications.notify.info.mockClear();
 });
 
-const HINT = 'Elegí una distribuidora para operar';
+const HINT = 'Elegí una distribuidora en «Ver como» para operar';
 const order = (status: Order['status'] = 'accepted') =>
   ({
     order_id: 'abcdef123456',
@@ -61,13 +61,52 @@ const renderToolbar = (status: Order['status'] = 'accepted') =>
   );
 
 describe('OrderDetailsToolbar: permisos', () => {
-  it('el administrador general sin distribuidora elegida opera pedidos igual: la API lo permite', () => {
-    permissions.mockReturnValue({ canOperate: false, operateHint: HINT });
+  const withoutDistributor = () =>
+    permissions.mockReturnValue({ canWrite: false, writeHint: undefined, canOperate: false, operateHint: HINT });
+
+  it('el administrador general sin distribuidora elegida no puede operar un pedido: la API contesta 400', () => {
+    withoutDistributor();
+    for (const status of ['pending', 'accepted', 'out_for_delivery'] as const) {
+      renderToolbar(status);
+      const operations = screen
+        .getAllByRole('button')
+        .filter((button) =>
+          /Asignar chofer|Reasignar chofer|Cancelar pedido|Marcar|Volver a|Avisar llegada|Confirmar entrega/.test(
+            button.textContent ?? '',
+          ),
+        );
+      expect(operations.length).toBeGreaterThan(0);
+      for (const button of operations) {
+        expect(button).toHaveAttribute('aria-disabled', 'true');
+        expect(button).toHaveAttribute('title', HINT);
+      }
+      cleanup();
+    }
+  });
+
+  it('un botón bloqueado no abre nada ni llama a la API', () => {
+    withoutDistributor();
+    renderToolbar('out_for_delivery');
+    fireEvent.click(screen.getByRole('button', { name: /Confirmar entrega/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Marcar como entregado' }));
+    fireEvent.click(screen.getByRole('button', { name: /Cancelar pedido/ }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(notifications.confirm).not.toHaveBeenCalled();
+    expect(api.updateOrderStatus).not.toHaveBeenCalled();
+  });
+
+  it('lo que no escribe sigue disponible: el remito', () => {
+    withoutDistributor();
     renderToolbar();
-    expect(screen.getByRole('button', { name: /Asignar chofer/ })).toBeEnabled();
-    expect(screen.getByRole('button', { name: /Cancelar pedido/ })).toBeEnabled();
-    expect(screen.queryByText(HINT)).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Imprimir remito/ })).toBeInTheDocument();
+  });
+
+  it('con distribuidora elegida las acciones están habilitadas y sin aviso', () => {
+    renderToolbar();
+    const assign = screen.getByRole('button', { name: /Asignar chofer/ });
+    expect(assign).not.toHaveAttribute('aria-disabled');
+    expect(assign).not.toHaveAttribute('title');
+    expect(screen.getByRole('button', { name: /Cancelar pedido/ })).not.toHaveAttribute('aria-disabled');
   });
 });
 

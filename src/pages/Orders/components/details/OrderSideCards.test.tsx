@@ -101,7 +101,7 @@ describe('OrderSideCards: resolución del impago', () => {
     expect(screen.getByText(/No atiende hace un mes/)).toBeInTheDocument();
   });
 
-  it('un impago cobrado después muestra «Cobrado después»', () => {
+  it('un cobro registrado por el administrador muestra «Cobro registrado»', () => {
     renderCards(
       order({
         payment_method: 'cash',
@@ -111,7 +111,49 @@ describe('OrderSideCards: resolución del impago', () => {
         paymentResolvedAt: '2026-10-11T12:00:00.000Z',
       }),
     );
-    expect(screen.getByText('Cobrado después')).toBeInTheDocument();
+    expect(screen.getByText('Cobro registrado')).toBeInTheDocument();
     expect(screen.getByText('Cobro confirmado')).toBeInTheDocument();
+  });
+});
+
+describe('OrderSideCards: transferencia', () => {
+  const transfer = (over: Partial<Order>) =>
+    order({ payment_method: 'online', payment_url: undefined, paymentMethodDetail: 'transfer', ...over });
+
+  it('muestra el medio real y una transferencia no recibida como «No recibida», con su nota', () => {
+    renderCards(
+      transfer({
+        status: 'delivered',
+        paymentStatus: 'failed',
+        paymentResolvedAt: '2026-10-11T12:00:00.000Z',
+        paymentResolutionNote: 'No figura el crédito en el banco',
+      }),
+    );
+    expect(screen.getByText('Transferencia')).toBeInTheDocument();
+    expect(screen.getByText('No recibida')).toBeInTheDocument();
+    expect(screen.getByText('Marcada como no recibida')).toBeInTheDocument();
+    expect(screen.getByText(/No figura el crédito en el banco/)).toBeInTheDocument();
+  });
+
+  it('una transferencia confirmada es «Cobrado»', () => {
+    renderCards(transfer({ paymentStatus: 'paid' }));
+    expect(screen.getByText('Cobrado')).toBeInTheDocument();
+    expect(screen.queryByText('No recibida')).toBeNull();
+  });
+});
+
+describe('OrderSideCards: reintegro pendiente', () => {
+  it('un pedido cobrado y cancelado avisa que hay que devolver el dinero', () => {
+    renderCards(order({ status: 'cancelled', paymentStatus: 'paid', payment_url: undefined }));
+    expect(screen.getByRole('status')).toHaveTextContent('Reintegro pendiente');
+    expect(screen.getByRole('status')).toHaveTextContent('no gestiona la devolución');
+  });
+
+  it('cancelado sin cobrar, o cobrado sin cancelar, no lo muestra', () => {
+    renderCards(order({ status: 'cancelled', paymentStatus: 'pending', payment_url: undefined }));
+    expect(screen.queryByText(/Reintegro pendiente/)).toBeNull();
+    cleanup();
+    renderCards(order({ status: 'delivered', paymentStatus: 'paid', payment_url: undefined }));
+    expect(screen.queryByText(/Reintegro pendiente/)).toBeNull();
   });
 });
