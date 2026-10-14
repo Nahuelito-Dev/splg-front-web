@@ -29,6 +29,11 @@ export class ApiError extends Error {
   get forbidden(): boolean {
     return this.status === 403;
   }
+
+  /** 429: el back limita las consultas por minuto (p. ej. `POST /users/check-exists`, 10 por IP). */
+  get rateLimited(): boolean {
+    return this.status === 429;
+  }
 }
 
 const isErrorBody = (value: unknown): value is ErrorBody =>
@@ -36,10 +41,23 @@ const isErrorBody = (value: unknown): value is ErrorBody =>
 
 /** El back pide `X-Distributor` con «Falta la distribuidora…»: en el panel se resuelve eligiendo una empresa. */
 const MISSING_DISTRIBUTOR = /^Falta la distribuidora/;
-const MISSING_DISTRIBUTOR_MESSAGE = 'Elegí una distribuidora para operar';
+const MISSING_DISTRIBUTOR_MESSAGE = 'Elegí una distribuidora en «Ver como» para operar';
 
-const friendly = (status: number | null, messages: string[]): string[] =>
-  status === 400 ? messages.map((m) => (MISSING_DISTRIBUTOR.test(m) ? MISSING_DISTRIBUTOR_MESSAGE : m)) : messages;
+/** El límite de pedidos del back (`ThrottlerException: Too Many Requests`) no le dice nada a quien opera el panel. */
+const RATE_LIMITED_MESSAGE = 'Hiciste demasiados intentos seguidos: esperá un minuto y volvé a intentar';
+
+/** `PATCH /incidents/:id/resolve` responde 409 con el endpoint en el texto: en el panel el cierre es «Resolver impago». */
+const UNPAID_INCIDENT = /^La incidencia de cobro impago se cierra/;
+const UNPAID_INCIDENT_MESSAGE =
+  'Una incidencia de cobro impago se cierra resolviendo el cobro del pedido: usá «Resolver impago» en el pedido';
+
+const friendly = (status: number | null, messages: string[]): string[] => {
+  if (status === 429) return [RATE_LIMITED_MESSAGE];
+  if (status === 409) return messages.map((m) => (UNPAID_INCIDENT.test(m) ? UNPAID_INCIDENT_MESSAGE : m));
+  return status === 400
+    ? messages.map((m) => (MISSING_DISTRIBUTOR.test(m) ? MISSING_DISTRIBUTOR_MESSAGE : m))
+    : messages;
+};
 
 /** Convierte cualquier error (de axios o no) en un ApiError. */
 export function toApiError(error: unknown): ApiError {
@@ -51,7 +69,7 @@ export function toApiError(error: unknown): ApiError {
       return new ApiError(status, friendly(status, Array.isArray(body.message) ? body.message : [body.message]));
     }
     if (status === null) return new ApiError(null, ['No se pudo conectar con el servidor']);
-    return new ApiError(status, [`Error ${status}`]);
+    return new ApiError(status, friendly(status, [`Error ${status}`]));
   }
   if (error instanceof Error) return new ApiError(null, [error.message]);
   return new ApiError(null, ['Error inesperado']);

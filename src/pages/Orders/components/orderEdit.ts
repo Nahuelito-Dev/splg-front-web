@@ -3,10 +3,10 @@ import type { Order, UpdateOrderBody } from '../../../services/api/types';
 /**
  * Por qué un pedido no se puede editar de antemano (la API contesta 409), o `null` si se puede intentar.
  *
- * El back también rechaza si el medio de pago es MercadoPago o el pago no está pendiente, pero el DTO del pedido sólo
- * trae `payment_method` como `cash | online` (online incluye la transferencia): no permite distinguirlos. Sólo se
- * bloquea de antemano lo que sí se sabe (pedido sin pendiente, con chofer, o con un checkout de MercadoPago en
- * `payment_url`); el resto se intenta y el 409 del back se muestra con su mensaje.
+ * El back también rechaza si el medio de pago es MercadoPago o el pago no está pendiente. El pedido ya trae
+ * `paymentMethodDetail` (`cash | mercadopago | transfer`) y `paymentStatus`, pero acá sólo se bloquea de antemano lo
+ * que no depende de ellos (pedido no pendiente, con chofer, o con un checkout de MercadoPago en `payment_url`); el
+ * resto se intenta y el 409 del back se muestra con su mensaje.
  */
 export const orderEditBlockedReason = (order: Pick<Order, 'status' | 'delivery_id' | 'payment_url'>): string | null => {
   if (order.status !== 'pending') return 'sólo se edita un pedido pendiente';

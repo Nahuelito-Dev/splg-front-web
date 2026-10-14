@@ -3,12 +3,21 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+const HINT = 'Elegí una distribuidora en «Ver como» para operar';
+const permissions = vi.hoisted(() => ({ operate: true }));
 vi.mock('../../../hooks', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
-  usePermissions: () => ({ needsDistributor: false }),
+  usePermissions: () => ({
+    needsDistributor: !permissions.operate,
+    canOperate: permissions.operate,
+    operateHint: permissions.operate ? undefined : HINT,
+  }),
 }));
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  permissions.operate = true;
+});
 import type { Order } from '../../../services/api/types';
 import type { AvailablePool } from '../useAvailablePool';
 import { AvailableOrdersPool } from './AvailableOrdersPool';
@@ -82,5 +91,24 @@ describe('AvailableOrdersPool', () => {
     renderPool(basePool({ orders: [order('o1')], total: 1 }));
     expect(screen.getByText('Cliente o1')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Siguiente' })).not.toBeInTheDocument();
+  });
+
+  it('con distribuidora elegida asignar y cancelar abren su diálogo', () => {
+    renderPool(basePool({ orders: [order('o1')], total: 1 }));
+    fireEvent.click(screen.getByRole('button', { name: /^Cancelar pedido/ }));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('sin distribuidora elegida (administrador general) asignar y cancelar quedan bloqueados con su explicación', () => {
+    permissions.operate = false;
+    renderPool(basePool({ orders: [order('o1')], total: 1 }));
+    const blocked = screen.getAllByRole('button', { name: /no disponible/ });
+    expect(blocked).toHaveLength(2);
+    for (const button of blocked) {
+      expect(button).toHaveAttribute('aria-disabled', 'true');
+      expect(button.getAttribute('aria-label')).toContain(HINT);
+      fireEvent.click(button);
+    }
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });

@@ -32,7 +32,7 @@ describe('filtro por estado de cobro', () => {
       'Cobrado',
       'Impago',
       'Pérdida',
-      'Rechazado',
+      'Rechazado / no recibida',
     ]);
   });
 

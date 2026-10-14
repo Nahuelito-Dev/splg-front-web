@@ -10,6 +10,9 @@ const notifyError = vi.hoisted(() => vi.fn<[Error], void>());
 const notifySuccess = vi.hoisted(() => vi.fn<[string], void>());
 const stop = vi.hoisted(() => vi.fn());
 const busy = vi.hoisted(() => ({ cancel: false }));
+const HINT = 'Elegí una distribuidora en «Ver como» para operar';
+const WRITE_HINT = 'Elegí una distribuidora con «Ver como» para crear';
+const permissions = vi.hoisted(() => ({ operate: true }));
 
 const order = (id: string, status: Order['status'], name: string) =>
   ({
@@ -33,7 +36,13 @@ const ORDERS = [
 
 vi.mock('../../hooks', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
-  usePermissions: () => ({ needsDistributor: false }),
+  usePermissions: () => ({
+    needsDistributor: !permissions.operate,
+    canWrite: permissions.operate,
+    writeHint: permissions.operate ? undefined : WRITE_HINT,
+    canOperate: permissions.operate,
+    operateHint: permissions.operate ? undefined : HINT,
+  }),
 }));
 vi.mock('../../utils/notifications', () => ({
   notify: { success: notifySuccess, error: notifyError, info: vi.fn() },
@@ -82,6 +91,7 @@ beforeEach(() => {
   bulkAssign.mockReset();
   stop.mockReset();
   busy.cancel = false;
+  permissions.operate = true;
   notifyError.mockReset();
   notifySuccess.mockReset();
 });
@@ -183,5 +193,31 @@ describe('Orders: resumen analítico y selección múltiple', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Detener' }));
     expect(stop).toHaveBeenCalledOnce();
     expect(screen.getByRole('button', { name: 'Cancelar pedidos' })).toBeDisabled();
+  });
+});
+
+describe('Orders: administrador general sin distribuidora elegida', () => {
+  beforeEach(() => {
+    permissions.operate = false;
+  });
+
+  it('las acciones en lote quedan bloqueadas con su explicación y no abren nada', () => {
+    renderPage();
+    fireEvent.click(checkboxes()[0]);
+    for (const name of ['Asignar chofer', 'Cancelar pedidos']) {
+      const button = screen.getByRole('button', { name });
+      expect(button).toHaveAttribute('aria-disabled', 'true');
+      expect(button).toHaveAttribute('title', HINT);
+      fireEvent.click(button);
+    }
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(notifyError).not.toHaveBeenCalled();
+  });
+
+  it('el pedido telefónico (POST /orders) también queda bloqueado', () => {
+    renderPage();
+    const button = screen.getByRole('button', { name: /Pedido telefónico/ });
+    expect(button).toHaveAttribute('aria-disabled', 'true');
+    expect(button).toHaveAttribute('title', WRITE_HINT);
   });
 });

@@ -5,7 +5,7 @@ import { AuditHistoryLink, Badge, Button, PageHeader, ReasonModal } from '../../
 import { usePermissions } from '../../../../hooks';
 import type { Order } from '../../../../services/api/types';
 import { formatDateTime, formatShortId } from '../../../../utils/format';
-import { labelOf, ORDER_STATUS, PAYMENT_STATUS } from '../../../../utils/statusLabels';
+import { labelOf, ORDER_STATUS, paymentStatusLabel } from '../../../../utils/statusLabels';
 import { AssignDriverModal } from '../AssignDriverModal';
 import { CancelOrderModal } from '../CancelOrderModal';
 import { EditOrderModal } from '../EditOrderModal';
@@ -21,6 +21,7 @@ import {
   manualStatusActionLabel,
   manualStatusTargets,
 } from '../orderStatus';
+import { OrderPaymentActions } from './OrderPaymentActions';
 import { ResolveUnpaidAction } from './ResolveUnpaidAction';
 import { useOrderActions } from './useOrderActions';
 
@@ -31,7 +32,9 @@ import { useOrderActions } from './useOrderActions';
  */
 export const OrderDetailsToolbar = ({ order }: { order: Order }) => {
   const actions = useOrderActions(order);
-  const { canWrite, writeHint } = usePermissions();
+  const { canWrite, writeHint, canOperate, operateHint } = usePermissions();
+  // La API rechaza con 400 toda escritura sobre un pedido sin distribuidora (administrador general sin «Ver como»).
+  const blockedReason = canOperate ? undefined : operateHint;
   const [editing, setEditing] = useState(false);
   const editBlocked = orderEditBlockedReason(order);
   const targets = manualStatusTargets(order.status);
@@ -43,7 +46,9 @@ export const OrderDetailsToolbar = ({ order }: { order: Order }) => {
         badges={
           <>
             <Badge label={labelOf(ORDER_STATUS, order.status)} />
-            {order.paymentStatus && <Badge label={labelOf(PAYMENT_STATUS, order.paymentStatus)} />}
+            {order.paymentStatus && (
+              <Badge label={paymentStatusLabel(order.paymentStatus, order.paymentMethodDetail)} />
+            )}
           </>
         }
         description={`Creado ${formatDateTime(order.created_at)}`}
@@ -62,7 +67,13 @@ export const OrderDetailsToolbar = ({ order }: { order: Order }) => {
               Editar pedido
             </Button>
             {canAssignDriver(order.status) && (
-              <Button variant="secondary" size="sm" icon={<UserRoundCog />} onClick={() => actions.open('assign')}>
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={<UserRoundCog />}
+                blockedReason={blockedReason}
+                onClick={() => actions.open('assign')}
+              >
                 {order.delivery_id ? 'Reasignar chofer' : 'Asignar chofer'}
               </Button>
             )}
@@ -73,6 +84,7 @@ export const OrderDetailsToolbar = ({ order }: { order: Order }) => {
                 size="sm"
                 icon={<RefreshCw />}
                 disabled={actions.pending.status}
+                blockedReason={blockedReason}
                 onClick={() => void actions.changeStatus(target)}
               >
                 {manualStatusActionLabel(order.status, target)}
@@ -95,19 +107,32 @@ export const OrderDetailsToolbar = ({ order }: { order: Order }) => {
                 size="sm"
                 icon={<BellRing />}
                 loading={actions.pending.arrival}
+                blockedReason={blockedReason}
                 onClick={() => void actions.announceArrival()}
               >
                 Avisar llegada
               </Button>
             )}
             {canConfirmDelivery(order.status) && (
-              <Button size="sm" icon={<PackageCheck />} onClick={() => actions.open('confirm')}>
+              <Button
+                size="sm"
+                icon={<PackageCheck />}
+                blockedReason={blockedReason}
+                onClick={() => actions.open('confirm')}
+              >
                 Confirmar entrega
               </Button>
             )}
             {order.paymentStatus === 'unpaid' && <ResolveUnpaidAction order={order} />}
+            <OrderPaymentActions order={order} />
             {canCancel(order.status) && (
-              <Button variant="danger" size="sm" icon={<CircleX />} onClick={() => actions.open('cancel')}>
+              <Button
+                variant="danger"
+                size="sm"
+                icon={<CircleX />}
+                blockedReason={blockedReason}
+                onClick={() => actions.open('cancel')}
+              >
                 Cancelar pedido
               </Button>
             )}

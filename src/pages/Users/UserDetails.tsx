@@ -29,6 +29,7 @@ import { UserEditModal } from './components/UserEditModal';
 import { UserAccountCard } from './components/details/UserAccountCard';
 import { UserRoleDetails } from './components/details/UserRoleDetails';
 import { roleLabel } from './roleLabel';
+import { isDistributorStaff } from './userScope';
 import { formatDate } from '../../utils/format';
 
 const TABS: ProfileTabItem[] = [
@@ -44,13 +45,15 @@ export const UserDetails = () => {
     TABS.map((t) => t.key),
     'account',
   );
-  const { canManageCustomerAccounts } = usePermissions();
+  const { canManageCustomerAccounts, needsDistributor, operateHint } = usePermissions();
   const { data: user, isPending, error, refetch } = useUser(leadId);
   const [editing, setEditing] = useState(false);
   const blockUser = useBlockUser();
   const deleteUser = useDeleteUser();
 
   const canManage = Boolean(user) && (canManageCustomerAccounts || !user?.customer);
+  // Sobre la cuenta de un chofer o admin de empresa, el administrador general necesita «Ver como»: la API contesta 400.
+  const blockedReason = user && needsDistributor && isDistributorStaff(user) ? operateHint : undefined;
 
   const handleToggleBlock = async () => {
     if (!user) return;
@@ -109,18 +112,31 @@ export const UserDetails = () => {
               <AuditHistoryLink entity="User" recordId={user.user_id} />
               {canManage && (
                 <>
-                  <Button variant="secondary" size="sm" icon={<EditOutlinedIcon />} onClick={() => setEditing(true)}>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    icon={<EditOutlinedIcon />}
+                    blockedReason={blockedReason}
+                    onClick={() => setEditing(true)}
+                  >
                     Editar cuenta
                   </Button>
                   <Button
                     variant="secondary"
                     size="sm"
                     icon={user?.blocked ? <LockOpenOutlinedIcon /> : <BlockIcon />}
+                    blockedReason={blockedReason}
                     onClick={() => void handleToggleBlock()}
                   >
                     {user?.blocked ? 'Desbloquear' : 'Bloquear'}
                   </Button>
-                  <Button variant="danger" size="sm" icon={<DeleteOutlineIcon />} onClick={() => void handleDelete()}>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    icon={<DeleteOutlineIcon />}
+                    blockedReason={blockedReason}
+                    onClick={() => void handleDelete()}
+                  >
                     Dar de baja
                   </Button>
                 </>
@@ -174,6 +190,7 @@ export const UserDetails = () => {
                   url={user.photoUrl}
                   subject="de perfil"
                   canEdit={canManage}
+                  blockedReason={blockedReason}
                   className="max-w-md"
                 />
               </Card>

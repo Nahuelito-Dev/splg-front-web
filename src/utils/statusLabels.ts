@@ -54,11 +54,6 @@ export const ORDER_FLOW: Order['status'][] = [
   'cancelled',
 ];
 
-export const PAYMENT_TYPE: LabelMap<Order['payment_method']> = {
-  cash: { text: 'Efectivo', tone: 'neutral' },
-  online: { text: 'Online', tone: 'info' },
-};
-
 export const PAYMENT_METHOD: LabelMap<OrderRecord['paymentMethod']> = {
   cash: { text: 'Efectivo', tone: 'neutral' },
   mercadopago: { text: 'MercadoPago', tone: 'info' },
@@ -255,6 +250,25 @@ export const TRUCK_LOAD_STATUS: LabelMap<TruckLoad['status']> = {
 /** La etiqueta de un valor, o el valor crudo si la API agregó uno nuevo. */
 export const labelOf = <K extends string>(map: LabelMap<K>, value: K | null | undefined): Label =>
   value && value in map ? map[value] : { text: value ?? '—', tone: 'neutral' };
+
+/**
+ * El cobro de un pedido. Una transferencia que no llegó es «No recibida» (el pago queda `failed`, que para un pago
+ * online en general es «Rechazado»).
+ */
+export const paymentStatusLabel = (
+  status: NonNullable<Order['paymentStatus']>,
+  method?: Order['paymentMethodDetail'],
+): Label =>
+  status === 'failed' && method === 'transfer'
+    ? { text: 'No recibida', tone: 'danger' }
+    : labelOf(PAYMENT_STATUS, status);
+
+/**
+ * El texto del filtro «Cobro» para un estado: `failed` es «Rechazado» en MercadoPago y «No recibida» en una
+ * transferencia, y el filtro trae los dos.
+ */
+export const paymentFilterLabel = (status: NonNullable<Order['paymentStatus']>): Label =>
+  status === 'failed' ? { text: 'Rechazado / no recibida', tone: 'danger' } : labelOf(PAYMENT_STATUS, status);
 
 /**
  * Estado de un chofer en una sola etiqueta, en el orden en que lo decide la

@@ -6,6 +6,7 @@ import { Lock, LockOpen } from 'lucide-react';
 import { Badge, DataTable, EmptyState, IdentityCell, RowActions } from '../../../common/components/ui';
 import type { User } from '../../../services/api/types';
 import { roleLabel } from '../roleLabel';
+import { isDistributorStaff } from '../userScope';
 
 interface Props {
   rows: User[];
@@ -17,6 +18,8 @@ interface Props {
   onPaginationChange: (model: GridPaginationModel) => void;
   /** La cuenta de un cliente la administra sólo el administrador general. */
   canManageCustomerAccounts: boolean;
+  /** Administrador general sin distribuidora elegida: la cuenta de un chofer o admin de empresa no se puede tocar. */
+  needsDistributor?: boolean;
   onEdit: (user: User) => void;
   onToggleBlock: (user: User) => void;
   onDelete: (user: User) => void;
@@ -30,6 +33,7 @@ export const UsersTable = ({
   pagination,
   onPaginationChange,
   canManageCustomerAccounts,
+  needsDistributor = false,
   onEdit,
   onToggleBlock,
   onDelete,
@@ -82,7 +86,8 @@ export const UsersTable = ({
         align: 'right',
         renderCell: ({ row }) => {
           // La cuenta de un cliente sólo la administra el administrador general.
-          const canManage = canManageCustomerAccounts || !row.customer;
+          const canManage =
+            (canManageCustomerAccounts || !row.customer) && !(needsDistributor && isDistributorStaff(row));
           return (
             <RowActions
               rowLabel={row.full_name ?? 'usuario'}
@@ -107,7 +112,7 @@ export const UsersTable = ({
         },
       },
     ],
-    [navigate, canManageCustomerAccounts, onEdit, onToggleBlock, onDelete],
+    [navigate, canManageCustomerAccounts, needsDistributor, onEdit, onToggleBlock, onDelete],
   );
 
   return (

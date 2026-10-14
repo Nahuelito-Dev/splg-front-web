@@ -2,6 +2,7 @@ import { CircleX, UserRoundCog } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, EmptyState, ErrorState, IconButton, SearchInput, TableSkeleton } from '../../../common/components/ui';
+import { usePermissions } from '../../../hooks';
 import { AssignDriverModal } from '../../Orders/components/AssignDriverModal';
 import { CancelOrderModal } from '../../Orders/components/CancelOrderModal';
 import type { Order } from '../../../services/api/types';
@@ -19,6 +20,8 @@ type ModalState = { kind: 'closed' } | { kind: 'assign'; order: Order } | { kind
  */
 export const AvailableOrdersPool = ({ pool }: { pool: AvailablePool }) => {
   const navigate = useNavigate();
+  // Sin distribuidora elegida (administrador general) la API rechaza con 400 asignar y cancelar.
+  const { canOperate, operateHint } = usePermissions();
   const [modal, setModal] = useState<ModalState>({ kind: 'closed' });
   const { search, setSearch, page, setPage, orders, total, isLoading, isError, error, refetch } = pool;
   const assignDelivery = useAssignOrderDelivery();
@@ -107,15 +110,25 @@ export const AvailableOrdersPool = ({ pool }: { pool: AvailablePool }) => {
                   </span>
                 </button>
                 <IconButton
-                  label={`Asignar chofer al pedido ${formatShortId(order.order_id)}`}
+                  label={
+                    canOperate
+                      ? `Asignar chofer al pedido ${formatShortId(order.order_id)}`
+                      : `Asignar chofer al pedido ${formatShortId(order.order_id)} (no disponible: ${operateHint})`
+                  }
                   icon={<UserRoundCog />}
-                  onClick={() => setModal({ kind: 'assign', order })}
+                  {...(canOperate ? {} : { 'aria-disabled': true, className: 'cursor-not-allowed opacity-50' })}
+                  onClick={canOperate ? () => setModal({ kind: 'assign', order }) : undefined}
                 />
                 <IconButton
-                  label={`Cancelar pedido ${formatShortId(order.order_id)}`}
+                  label={
+                    canOperate
+                      ? `Cancelar pedido ${formatShortId(order.order_id)}`
+                      : `Cancelar pedido ${formatShortId(order.order_id)} (no disponible: ${operateHint})`
+                  }
                   icon={<CircleX />}
                   tone="danger"
-                  onClick={() => setModal({ kind: 'cancel', order })}
+                  {...(canOperate ? {} : { 'aria-disabled': true, className: 'cursor-not-allowed opacity-50' })}
+                  onClick={canOperate ? () => setModal({ kind: 'cancel', order }) : undefined}
                 />
               </li>
             ))}

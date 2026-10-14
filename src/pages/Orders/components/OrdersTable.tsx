@@ -4,7 +4,7 @@ import { UserRoundCog } from 'lucide-react';
 import { Badge, DataTable, EmptyState, IdentityCell, RowActions } from '../../../common/components/ui';
 import type { Order } from '../../../services/api/types';
 import { formatCurrency, formatDateTime, formatNumber, formatShortId } from '../../../utils/format';
-import { labelOf, ORDER_STATUS, PAYMENT_STATUS } from '../../../utils/statusLabels';
+import { labelOf, ORDER_STATUS, paymentStatusLabel } from '../../../utils/statusLabels';
 import { orderEditBlockedReason } from './orderEdit';
 import { isClosed } from './orderStatus';
 
@@ -23,11 +23,12 @@ interface Props {
   pagination: GridPaginationModel;
   onPaginationChange: (model: GridPaginationModel) => void;
   onView: (order: Order) => void;
-  onAssign: (order: Order) => void;
+  /** Sin él no se ofrece «Asignar chofer» (p. ej. sin distribuidora elegida: la API rechaza la escritura). */
+  onAssign?: (order: Order) => void;
   /** Sin él no se dibuja «Editar» (p. ej. sin distribuidora elegida). */
   onEdit?: (order: Order) => void;
-  /** La baja del pedido: se cancela, no se borra (devuelve el stock). */
-  onCancel: (order: Order) => void;
+  /** La baja del pedido: se cancela, no se borra (devuelve el stock). Sin él no se dibuja «Cancelar». */
+  onCancel?: (order: Order) => void;
   /** Selección múltiple para las acciones en lote; sin esto la tabla no dibuja casillas. */
   /** Hay filtros activos: un vacío significa "sin resultados". */
   filtered?: boolean;
@@ -116,7 +117,11 @@ export const OrdersTable = ({
         sortable: false,
         valueGetter: ({ row }) => row.paymentStatus ?? '',
         renderCell: ({ row }) =>
-          row.paymentStatus ? <Badge label={labelOf(PAYMENT_STATUS, row.paymentStatus)} /> : <span>—</span>,
+          row.paymentStatus ? (
+            <Badge label={paymentStatusLabel(row.paymentStatus, row.paymentMethodDetail)} />
+          ) : (
+            <span>—</span>
+          ),
       },
       {
         field: 'total_amount',
@@ -140,12 +145,12 @@ export const OrdersTable = ({
             onView={() => onView(row)}
             onEdit={onEdit && (() => onEdit(row))}
             editBlockedReason={onEdit ? (orderEditBlockedReason(row) ?? undefined) : undefined}
-            onDelete={isClosed(row.status) ? undefined : () => onCancel(row)}
+            onDelete={onCancel && !isClosed(row.status) ? () => onCancel(row) : undefined}
             deleteLabel="Cancelar"
             actions={
-              isClosed(row.status)
-                ? []
-                : [{ label: 'Asignar chofer', icon: UserRoundCog, onClick: () => onAssign(row) }]
+              onAssign && !isClosed(row.status)
+                ? [{ label: 'Asignar chofer', icon: UserRoundCog, onClick: () => onAssign(row) }]
+                : []
             }
           />
         ),

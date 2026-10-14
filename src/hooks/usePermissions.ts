@@ -2,7 +2,7 @@ import { activeDistributor } from '../services/api/activeDistributor';
 import { useAppSelector } from './reduxHooks';
 
 /** Lo que se le dice al administrador general cuando una acción necesita una empresa elegida. */
-export const OPERATE_HINT = 'Elegí una distribuidora para operar';
+export const OPERATE_HINT = 'Elegí una distribuidora en «Ver como» para operar';
 
 /**
  * Lo que la sesión puede hacer según su rol, con las mismas reglas que la API.

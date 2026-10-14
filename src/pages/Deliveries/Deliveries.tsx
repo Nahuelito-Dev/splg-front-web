@@ -11,7 +11,7 @@ import {
   tabPanelProps,
   type FilterChip,
 } from '../../common/components/ui';
-import { useDebounce, useUrlParams } from '../../hooks';
+import { useDebounce, usePermissions, useUrlParams } from '../../hooks';
 import type { Delivery } from '../../services/api/types';
 import {
   useDeleteDelivery,
@@ -31,6 +31,8 @@ import { FindDeliveryByUserModal } from './components/FindDeliveryByUserModal';
 type FormState = { open: false } | { open: true; delivery: Delivery | null };
 
 export const Deliveries = () => {
+  // Editar, dar de baja y validar piden la distribuidora (X-Distributor): sin «Ver como» la API contesta 400.
+  const { canOperate } = usePermissions();
   // El grupo y la búsqueda viven en la URL: al volver de una ficha o recargar, la lista queda como estaba.
   const [{ status: statusParam, q: search, page: pageParam }, setFilters] = useUrlParams({
     status: 'all',
@@ -139,9 +141,9 @@ export const Deliveries = () => {
             loading={isFetching}
             pagination={pagination}
             onPaginationChange={setPagination}
-            onEdit={(delivery) => setForm({ open: true, delivery })}
-            onDelete={(delivery) => void handleDelete(delivery)}
-            onToggleValidated={handleToggleValidated}
+            onEdit={canOperate ? (delivery) => setForm({ open: true, delivery }) : undefined}
+            onDelete={canOperate ? (delivery) => void handleDelete(delivery) : undefined}
+            onToggleValidated={canOperate ? handleToggleValidated : undefined}
             filtered={chips.length > 0}
           />
         </div>

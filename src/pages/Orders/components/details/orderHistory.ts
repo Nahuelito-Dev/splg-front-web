@@ -25,6 +25,21 @@ const CURRENT: Record<Order['status'], Milestone> = {
   cancelled: 'cancelled',
 };
 
+/** Quién canceló, según `cancelledBy` (el super admin cuenta como administrador; `system` es un vencimiento). */
+const CANCELLED_BY: Record<NonNullable<Order['cancelledBy']>, string> = {
+  customer: 'Cancelado por el cliente',
+  admin: 'Cancelado por un administrador',
+  driver: 'Cancelado por el chofer',
+  system: 'Cancelado por el sistema',
+};
+
+/** Qué dejó anotado el administrador al cobrar o dar de baja un pago, según el pago en que quedó el pedido. */
+const PAYMENT_NOTE_TITLE: Partial<Record<NonNullable<Order['paymentStatus']>, string>> = {
+  paid: 'Cobro registrado',
+  failed: 'Transferencia no recibida',
+  written_off: 'Impago dado por perdido',
+};
+
 interface MilestoneDraft extends Omit<FichaTimelineItem, 'state' | 'id'> {
   id: Milestone;
   /** Si el pedido tiene algún dato de este hito (o lo alcanzó). */
@@ -83,12 +98,13 @@ export const buildOrderHistory = (order: Order): FichaTimelineItem[] => {
     {
       id: 'cancelled',
       title: 'Cancelado',
+      actor: order.cancelledBy ? CANCELLED_BY[order.cancelledBy] : null,
       note: order.cancellation_reason ? `Motivo: ${order.cancellation_reason}` : 'Sin motivo informado',
       hasData: cancelled,
     },
   ];
 
-  return milestones
+  const items = milestones
     .filter((m) => {
       if (m.id === 'cancelled') return cancelled;
       if (m.id === 'reserved') return m.hasData;
@@ -109,4 +125,17 @@ export const buildOrderHistory = (order: Order): FichaTimelineItem[] => {
         tone: state === 'current' || state === 'cancelled' ? tone : undefined,
       };
     });
+
+  // El cobro manual no cambia el estado del pedido: es una anotación, no un hito del recorrido.
+  const paymentTitle = order.paymentStatus ? PAYMENT_NOTE_TITLE[order.paymentStatus] : undefined;
+  if (paymentTitle && order.paymentResolvedAt && order.paymentResolutionNote) {
+    items.push({
+      id: 'payment-note',
+      title: paymentTitle,
+      when: formatDateTime(order.paymentResolvedAt),
+      note: order.paymentResolutionNote,
+      state: 'done',
+    });
+  }
+  return items;
 };

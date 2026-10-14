@@ -1,5 +1,5 @@
 import { Input, SearchInput, Select } from '../../../common/components/ui';
-import { labelOf, PAYMENT_STATUS, PAYMENT_STATUS_ORDER } from '../../../utils/statusLabels';
+import { PAYMENT_STATUS_ORDER, paymentFilterLabel } from '../../../utils/statusLabels';
 import { isInvertedRange, type OrdersToolbarFilters } from './ordersFilterValues';
 
 interface Props {
@@ -9,7 +9,7 @@ interface Props {
 
 const PAYMENT_OPTIONS = [
   { value: '', label: 'Todos los cobros' },
-  ...PAYMENT_STATUS_ORDER.map((status) => ({ value: status, label: labelOf(PAYMENT_STATUS, status).text })),
+  ...PAYMENT_STATUS_ORDER.map((status) => ({ value: status, label: paymentFilterLabel(status).text })),
 ];
 
 /** Búsqueda, estado de cobro y rango de fechas de Pedidos, resueltos en la API (GET /orders). El estado va por pestañas. */

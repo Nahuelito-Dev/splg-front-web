@@ -5,6 +5,7 @@ import {
   assignOrderDelivery,
   cancelOrder,
   confirmOrderDelivery,
+  confirmTransfer,
   createOrder,
   getOrder,
   getOrderDeliveryCode,
@@ -12,6 +13,8 @@ import {
   listOrderIncidents,
   listOrders,
   notifyOrderArrival,
+  registerCashPayment,
+  registerUnpaidPayment,
   resolveUnpaidOrder,
   updateOrder,
   updateOrderStatus,
@@ -20,7 +23,9 @@ import {
 import type {
   CancelOrderBody,
   ConfirmDeliveryBody,
+  ConfirmTransferBody,
   CreateOrderBody,
+  MotivoDeCobroBody,
   Order,
   ResolveUnpaidBody,
   UpdateOrderBody,
@@ -260,5 +265,47 @@ export const useResolveUnpaid = () => {
         queryClient.invalidateQueries({ queryKey: queryKeys.reports.all }),
         queryClient.invalidateQueries({ queryKey: queryKeys.stats.all }),
       ]),
+  });
+};
+
+/** Un cobro manual cambia el pago del pedido y, según el caso, la incidencia de impago, los reportes y las ventas. */
+const invalidateAfterPayment = (queryClient: ReturnType<typeof useQueryClient>) =>
+  Promise.all([
+    queryClient.invalidateQueries({ queryKey: keys.all }),
+    queryClient.invalidateQueries({ queryKey: queryKeys.incidents.all }),
+    queryClient.invalidateQueries({ queryKey: queryKeys.reports.all }),
+    queryClient.invalidateQueries({ queryKey: queryKeys.stats.all }),
+  ]);
+
+/**
+ * PATCH /orders/:id/payment/register-cash: el admin registra el cobro en efectivo. `scope` ata la `Idempotency-Key`
+ * a la intención (pedido + cuerpo): un reintento tras un corte de red no repite el efecto.
+ */
+export const useRegisterCashPayment = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body, scope }: { id: string; body: MotivoDeCobroBody; scope: string }) =>
+      runIntent(queryClient, scope, { id, body }, (key) => registerCashPayment(id, body, key)),
+    onSettled: () => invalidateAfterPayment(queryClient),
+  });
+};
+
+/** PATCH /orders/:id/payment/register-unpaid: el admin informa el impago; abre la incidencia `unpaid_collection`. */
+export const useRegisterUnpaidPayment = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body, scope }: { id: string; body: MotivoDeCobroBody; scope: string }) =>
+      runIntent(queryClient, scope, { id, body }, (key) => registerUnpaidPayment(id, body, key)),
+    onSettled: () => invalidateAfterPayment(queryClient),
+  });
+};
+
+/** PATCH /orders/:id/payment/confirm-transfer: confirma o marca como no recibida la transferencia. */
+export const useConfirmTransfer = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body, scope }: { id: string; body: ConfirmTransferBody; scope: string }) =>
+      runIntent(queryClient, scope, { id, body }, (key) => confirmTransfer(id, body, key)),
+    onSettled: () => invalidateAfterPayment(queryClient),
   });
 };
