@@ -3137,6 +3137,170 @@
                 ]
             }
         },
+        "/api/module-config/dispatch": {
+            "get": {
+                "description": "Pasos de radio (km) y ventana de aceptación de la oferta (s). Si la distribuidora no configuró nada, devuelve los valores por omisión (`isDefault: true`).",
+                "operationId": "ModuleConfigController_getDispatch",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DispatchConfigResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\") o cuerpo fuera de los límites (detalle por campo)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Parámetros del despacho de la distribuidora",
+                "tags": [
+                    "Configuración · Parámetros por distribuidora"
+                ]
+            },
+            "put": {
+                "description": "Reemplaza la configuración. De 1 a 8 pasos de radio, cada uno entre 1 y 100 km y estrictamente mayor que el anterior; ventana entre 10 y 300 s. Rige para las ofertas que se creen desde ese momento (las ya enviadas conservan su vencimiento); en otras instancias del servidor, como máximo un minuto después.",
+                "operationId": "ModuleConfigController_putDispatch",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DispatchConfigDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DispatchConfigResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\") o cuerpo fuera de los límites (detalle por campo)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Cambiar los parámetros del despacho",
+                "tags": [
+                    "Configuración · Parámetros por distribuidora"
+                ]
+            }
+        },
+        "/api/module-config/scheduled_tasks": {
+            "get": {
+                "description": "Intervalo (s) de cada tarea y hora del aviso de vencimientos de flota. Sin configuración, los valores por omisión (los vigentes antes de CU-173).",
+                "operationId": "ModuleConfigController_getScheduledTasks",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ScheduledTasksConfigResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\") o cuerpo fuera de los límites (detalle por campo)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Frecuencia de las tareas programadas de la distribuidora",
+                "tags": [
+                    "Configuración · Parámetros por distribuidora"
+                ]
+            },
+            "put": {
+                "description": "Reemplaza la configuración. Cada intervalo es un múltiplo entero del ciclo de base de su tarea (15 s, 5 min, 1 h, 30 min) y de hasta 24 h; la hora del aviso de flota va de 0 a 23. Al guardar se borran las marcas de última ejecución de la distribuidora: los intervalos nuevos rigen desde el ciclo siguiente.",
+                "operationId": "ModuleConfigController_putScheduledTasks",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ScheduledTasksConfigDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ScheduledTasksConfigResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\") o cuerpo fuera de los límites (detalle por campo)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Cambiar la frecuencia de las tareas programadas",
+                "tags": [
+                    "Configuración · Parámetros por distribuidora"
+                ]
+            }
+        },
         "/api/job-positions": {
             "get": {
                 "operationId": "JobPositionController_findAll",
@@ -5027,7 +5191,7 @@
         },
         "/api/orders/quote": {
             "post": {
-                "description": "Mismo cuerpo que `POST /orders` (sólo `items` y `paymentMethod` son obligatorios). Devuelve el desglose que cobrará el alta: renglones con la promoción por volumen, `subtotal`, recargo de zona (con `addressId`; el admin además manda `customerId`), recargo por medio de pago (+10% sobre subtotal + zona en `mercadopago` y `transfer`), `deposit` (si `isReservation`), `total` y `balance` (`total - deposit`). El `total` es exactamente el del pedido que se crea con el mismo cuerpo. No escribe nada ni reserva stock; sí rechaza lo que el alta rechazaría (producto de otra distribuidora, sin stock, dirección fuera de cobertura). Cliente sin `X-Distributor`: distribuidora por defecto, igual que el alta.",
+                "description": "Mismo cuerpo que `POST /orders` (sólo `items` y `paymentMethod` son obligatorios). Devuelve el desglose que cobrará el alta: renglones con la promoción por volumen, `subtotal`, recargo de zona (con `addressId`; el admin además manda `customerId`), recargo por medio de pago (+10% sobre subtotal + zona en `mercadopago` y `transfer`), `deposit` (si `isReservation`), `total` y `balance` (`total - deposit`). El `total` es exactamente el del pedido que se crea con el mismo cuerpo. No escribe nada ni reserva stock; sí rechaza lo que el alta rechazaría (producto de otra distribuidora, sin stock, dirección fuera de cobertura). Cliente sin `X-Distributor`: distribuidora por defecto, igual que el alta. Con `orderId` cotiza la EDICIÓN de ese pedido (mismas reglas que `PATCH /orders/:id`): pedido ajeno o inexistente 404, no editable 409, stock por diferencia contra lo ya reservado, franja y fecha sólo si cambian.",
                 "operationId": "OrderController_quote",
                 "parameters": [],
                 "requestBody": {
@@ -5059,6 +5223,12 @@
                     },
                     "403": {
                         "description": "Requiere rol: customer, admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Con `orderId`: el pedido no existe o no es del cliente"
+                    },
+                    "409": {
+                        "description": "Con `orderId`: el pedido no es editable"
                     }
                 },
                 "security": [
@@ -5563,7 +5733,7 @@
                 ]
             },
             "patch": {
-                "description": "Dirección, franja/fecha, medio de pago, notas y renglones. Si vienen `items` reemplazan a los actuales: se devuelve el stock viejo y se reserva el nuevo con los precios y recargos vigentes (mismas reglas que el alta). Fuera de `pending`, o con pago online, responde 409. Para eliminar un pedido: `PATCH /orders/:id/cancel`.",
+                "description": "Admin, super admin y el CLIENTE DUEÑO del pedido (uno ajeno es 404). Idempotente vía `Idempotency-Key`. Los precios y recargos los calcula SIEMPRE el servidor. El cliente deja una anotación en el historial de estados. Dirección, franja/fecha, medio de pago, notas y renglones. Si vienen `items` reemplazan a los actuales: se devuelve el stock viejo y se reserva el nuevo con los precios y recargos vigentes (mismas reglas que el alta). Fuera de `pending`, o con pago online, responde 409. Para eliminar un pedido: `PATCH /orders/:id/cancel`.",
                 "operationId": "OrderController_update",
                 "parameters": [
                     {
@@ -5604,13 +5774,16 @@
                         "description": "Sin token o token inválido"
                     },
                     "403": {
-                        "description": "Requiere rol: admin, super_admin"
+                        "description": "Requiere rol: customer, admin, super_admin"
                     },
                     "404": {
                         "description": "Order with ID: {id} not found"
                     },
                     "409": {
-                        "description": "El pedido no está pendiente, tiene chofer o pago online"
+                        "description": "El pedido no está pendiente, tiene chofer (cliente: «El pedido ya fue tomado por un repartidor: no se puede modificar») o pago online"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
                     }
                 },
                 "security": [
@@ -14129,7 +14302,10 @@
                         "description": "Requiere rol: delivery, admin, super_admin"
                     },
                     "404": {
-                        "description": "Pedido no encontrado"
+                        "description": "Pedido no encontrado, de otra distribuidora o (para el chofer) que no tiene asignado"
+                    },
+                    "410": {
+                        "description": "El chofer tuvo el pedido y ya no está asignado a su usuario"
                     },
                     "422": {
                         "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
@@ -16188,7 +16364,7 @@
         },
         "/api/purchase-receipts/{id}/void": {
             "patch": {
-                "description": "Saca las llenas que entraron y devuelve las vacías que se llevó la planta; recalcula lo recibido de la orden y el costo promedio (recalculado de las recepciones que siguen confirmadas). **Exige** `Idempotency-Key`. Si las llenas ya no están en el depósito responde 409 diciendo dónde están. No se anula una recepción pagada.",
+                "description": "Saca las llenas que entraron y devuelve las vacías que se llevó la planta; recalcula lo recibido de la orden y el costo promedio (recalculado de las recepciones que siguen confirmadas). **Exige** `Idempotency-Key`. Si las llenas ya no están en el depósito responde 409 diciendo dónde están; si el depósito fue dado de baja, 409. No se anula una recepción pagada.",
                 "operationId": "PurchaseReceiptController_void",
                 "parameters": [
                     {
@@ -16253,7 +16429,7 @@
                         "description": "No existe o es de otra distribuidora"
                     },
                     "409": {
-                        "description": "Ya está anulada, o las llenas ya no están en el depósito donde entraron"
+                        "description": "Ya está anulada, las llenas ya no están en el depósito donde entraron, o ese depósito fue dado de baja"
                     },
                     "422": {
                         "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
@@ -17660,6 +17836,160 @@
                     },
                     "plan": {
                         "type": "string"
+                    }
+                }
+            },
+            "DispatchConfigResponseDto": {
+                "type": "object",
+                "properties": {
+                    "radiusStepsKm": {
+                        "example": [
+                            5,
+                            10,
+                            15,
+                            20
+                        ],
+                        "type": "array",
+                        "items": {
+                            "type": "number"
+                        }
+                    },
+                    "offerTtlSeconds": {
+                        "type": "number",
+                        "example": 30
+                    },
+                    "isDefault": {
+                        "type": "boolean",
+                        "description": "true si rigen los valores por omisión (no configuró nada o todo coincide con ellos)",
+                        "example": true
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "description": "Cuándo se modificó por última vez (null si nunca)",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "updatedByUserId": {
+                        "type": "string",
+                        "description": "Usuario que la modificó por última vez (null si nunca)",
+                        "format": "uuid",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "radiusStepsKm",
+                    "offerTtlSeconds",
+                    "isDefault",
+                    "updatedAt",
+                    "updatedByUserId"
+                ]
+            },
+            "DispatchConfigDto": {
+                "type": "object",
+                "properties": {
+                    "radiusStepsKm": {
+                        "description": "Pasos de radio (km) con que se amplía la búsqueda de choferes: de 1 a 8 pasos, cada uno entre 1 y 100 km y estrictamente mayor que el anterior",
+                        "example": [
+                            5,
+                            10,
+                            15,
+                            20
+                        ],
+                        "type": "array",
+                        "items": {
+                            "type": "number"
+                        }
+                    },
+                    "offerTtlSeconds": {
+                        "type": "number",
+                        "description": "Ventana de aceptación de cada oferta, en segundos (10 a 300). Las ofertas ya enviadas conservan su vencimiento",
+                        "example": 30,
+                        "minimum": 10,
+                        "maximum": 300
+                    }
+                }
+            },
+            "ScheduledTasksConfigResponseDto": {
+                "type": "object",
+                "properties": {
+                    "dispatchRetrySeconds": {
+                        "type": "number",
+                        "example": 15
+                    },
+                    "reservationActivationSeconds": {
+                        "type": "number",
+                        "example": 300
+                    },
+                    "unpaidReservationExpirySeconds": {
+                        "type": "number",
+                        "example": 3600
+                    },
+                    "unpaidMercadoPagoExpirySeconds": {
+                        "type": "number",
+                        "example": 1800
+                    },
+                    "fleetAlertHour": {
+                        "type": "number",
+                        "example": 8
+                    },
+                    "isDefault": {
+                        "type": "boolean",
+                        "description": "true si rigen los valores por omisión (no configuró nada o todo coincide con ellos)",
+                        "example": true
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "description": "Cuándo se modificó por última vez (null si nunca)",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "updatedByUserId": {
+                        "type": "string",
+                        "description": "Usuario que la modificó por última vez (null si nunca)",
+                        "format": "uuid",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "dispatchRetrySeconds",
+                    "reservationActivationSeconds",
+                    "unpaidReservationExpirySeconds",
+                    "unpaidMercadoPagoExpirySeconds",
+                    "fleetAlertHour",
+                    "isDefault",
+                    "updatedAt",
+                    "updatedByUserId"
+                ]
+            },
+            "ScheduledTasksConfigDto": {
+                "type": "object",
+                "properties": {
+                    "dispatchRetrySeconds": {
+                        "type": "number",
+                        "description": "Reintentos del despacho (ofertas vencidas y pedidos sin oferta), en segundos. Múltiplo de 15, hasta 300 s (5 min)",
+                        "example": 15
+                    },
+                    "reservationActivationSeconds": {
+                        "type": "number",
+                        "description": "Activación de reservas con la seña paga, en segundos. Múltiplo de 300, hasta 24 h",
+                        "example": 300
+                    },
+                    "unpaidReservationExpirySeconds": {
+                        "type": "number",
+                        "description": "Vencimiento de reservas sin seña, en segundos. Múltiplo de 3600, hasta 24 h",
+                        "example": 3600
+                    },
+                    "unpaidMercadoPagoExpirySeconds": {
+                        "type": "number",
+                        "description": "Vencimiento de pedidos de MercadoPago sin pagar, en segundos. Múltiplo de 1800, hasta 24 h",
+                        "example": 1800
+                    },
+                    "fleetAlertHour": {
+                        "type": "number",
+                        "description": "Hora del día (0 a 23, hora de Argentina) del aviso de vencimientos de flota",
+                        "example": 8,
+                        "minimum": 0,
+                        "maximum": 23
                     }
                 }
             },
@@ -19194,6 +19524,11 @@
                     "depositAmount": {
                         "type": "number",
                         "description": "Monto de la seña de la reserva (obligatorio si isReservation)."
+                    },
+                    "orderId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Cotización de EDICIÓN de un pedido existente (el del cliente que cotiza, o de la distribuidora del staff; si no, 404). Sólo vale si el pedido es editable (409 con el mismo mensaje que `PATCH /orders/:id`). El stock se compara por la diferencia contra el pedido actual; la franja y la fecha sólo se validan si cambian; lo que no se manda se toma del pedido (dirección y zona incluidas)."
                     }
                 },
                 "required": [

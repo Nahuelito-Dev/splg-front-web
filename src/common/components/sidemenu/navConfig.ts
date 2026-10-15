@@ -29,6 +29,8 @@ import {
   ReceiptText,
   ServerCog,
   Settings,
+  SlidersHorizontal,
+  Timer,
   ShieldCheck,
   Star,
   TriangleAlert,
@@ -108,6 +110,8 @@ export const NAV_SECTIONS: NavSection[] = [
       { title: 'Envases', path: '/physical-cylinders', icon: Cylinder },
       { title: 'Zonas de cobertura', path: '/coverage-zones', icon: MapIcon },
       { title: 'Configuración', path: '/settings', icon: Settings },
+      { title: 'Parámetros del despacho', path: '/settings/dispatch', icon: SlidersHorizontal },
+      { title: 'Tareas programadas', path: '/settings/scheduled-tasks', icon: Timer },
     ],
   },
   {

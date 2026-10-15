@@ -6,6 +6,11 @@ describe('buildBreadcrumbs', () => {
     expect(buildBreadcrumbs('/customers')).toEqual([{ label: 'Clientes y flota' }, { label: 'Clientes' }]);
   });
 
+  it('las pantallas de parámetros de M1 cuelgan del menú de Configuración', () => {
+    expect(buildBreadcrumbs('/settings/dispatch').at(-1)).toEqual({ label: 'Parámetros del despacho' });
+    expect(buildBreadcrumbs('/settings/scheduled-tasks').at(-1)).toEqual({ label: 'Tareas programadas' });
+  });
+
   it('el detalle lleva a la lista y termina en «Detalle»', () => {
     expect(buildBreadcrumbs('/customers/details/abc')).toEqual([
       { label: 'Clientes y flota' },

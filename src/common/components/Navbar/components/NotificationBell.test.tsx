@@ -82,6 +82,52 @@ describe('NotificationBell: incident:created', () => {
   });
 });
 
+describe('NotificationBell: order:no-drivers', () => {
+  it('suma una notificación con el motivo en lenguaje simple', () => {
+    setup();
+    act(() => {
+      handlers.get('order:no-drivers')?.({
+        orderId: 'aaaaaaaa-1111',
+        distributorId: 'dist-A',
+        reason: 'no_drivers_in_range',
+        at: '2026-10-15T12:00:00.000Z',
+      });
+    });
+    fireEvent.click(screen.getByRole('button', { name: /1 sin leer/ }));
+    expect(screen.getByText('Pedido sin chofer disponible')).toBeInTheDocument();
+    expect(screen.getByText(/no hay choferes dentro del radio máximo/)).toBeInTheDocument();
+  });
+
+  it('usa el `at` del payload como hora del aviso', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-15T15:00:00.000Z'));
+    setup();
+    act(() => {
+      handlers.get('order:no-drivers')?.({
+        orderId: 'aaaaaaaa-1111',
+        reason: 'no_drivers_in_range',
+        at: '2026-10-15T12:00:00.000Z',
+      });
+    });
+    fireEvent.click(screen.getByRole('button', { name: /1 sin leer/ }));
+    expect(screen.getByText(/hace 3h/)).toBeInTheDocument();
+    vi.useRealTimers();
+  });
+
+  it('ignora el de otra distribuidora', () => {
+    scope.viewing = 'dist-A';
+    setup();
+    act(() => {
+      handlers.get('order:no-drivers')?.({
+        orderId: 'bbbbbbbb-2',
+        distributorId: 'dist-B',
+        reason: 'all_drivers_exhausted',
+      });
+    });
+    expect(screen.queryByRole('button', { name: /sin leer/ })).toBeNull();
+  });
+});
+
 describe('NotificationBell: suscripción', () => {
   it('al desmontar se da de baja de incident:created y deja de avisar', () => {
     const view = setup();
