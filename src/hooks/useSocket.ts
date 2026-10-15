@@ -25,6 +25,23 @@ export const ORDER_SOCKET_EVENTS = {
 
 export type OrderSocketEventName = (typeof ORDER_SOCKET_EVENTS)[keyof typeof ORDER_SOCKET_EVENTS];
 
+/** Motivos por los que un pedido pendiente se queda sin chofer a quien ofrecerlo (`MotivoSinChoferes` del back). */
+export type NoDriversReason = 'no_drivers_in_range' | 'all_drivers_exhausted' | 'no_delivery_point';
+
+/**
+ * Evento que emite el DispatchOrchestratorService a los admins de la distribuidora cuando un pedido pendiente ya no
+ * tiene candidatos (una sola vez por agotamiento).
+ */
+export const NO_DRIVERS_EVENT = 'order:no-drivers';
+
+/** Payload de NO_DRIVERS_EVENT. */
+export interface NoDriversPayload {
+  orderId: string;
+  distributorId?: string | null;
+  reason: NoDriversReason;
+  at?: string;
+}
+
 /**
  * Evento que emite el AdminGateway cuando se abre una incidencia de reparto. El panel sólo avisa las de tipo
  * `unpaid_collection` (el chofer informó que no pudo cobrar en efectivo).

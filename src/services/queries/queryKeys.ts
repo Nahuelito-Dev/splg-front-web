@@ -25,6 +25,7 @@ export const queryKeys = {
   health: resource('health'),
   incidents: resource('incidents'),
   jobPositions: resource('jobPositions'),
+  moduleConfig: resource('moduleConfig'),
   attachments: resource('attachments'),
   orders: resource('orders'),
   ratings: resource('ratings'),

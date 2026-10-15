@@ -33,6 +33,11 @@ const FleetPlanDetails = lazyPage(() => import('../pages/Fleet/FleetPlanDetails'
 const FleetTasks = lazyPage(() => import('../pages/Fleet/FleetTasks'), 'FleetTasks');
 const FleetTaskDetail = lazyPage(() => import('../pages/Fleet/FleetTaskDetail'), 'FleetTaskDetail');
 const Configuration = lazyPage(() => import('../pages/Configuration/Configuration'), 'Configuration');
+const DispatchSettings = lazyPage(() => import('../pages/Configuration/DispatchSettings'), 'DispatchSettings');
+const ScheduledTasksSettings = lazyPage(
+  () => import('../pages/Configuration/ScheduledTasksSettings'),
+  'ScheduledTasksSettings',
+);
 const Orders = lazyPage(() => import('../pages/Orders/Orders'), 'Orders');
 const OrderDetails = lazyPage(() => import('../pages/Orders/OrderDetails'), 'OrderDetails');
 const OrderInvoice = lazyPage(() => import('../pages/Orders/OrderInvoice'), 'OrderInvoice');
@@ -136,6 +141,8 @@ export const DashboardRoutes = () => {
           <Route path="cars" element={<Cars />} />
           <Route path="cars/details/:id" element={<CarDetails />} />
           <Route path="settings" element={<Configuration />} />
+          <Route path="settings/dispatch" element={<DispatchSettings />} />
+          <Route path="settings/scheduled-tasks" element={<ScheduledTasksSettings />} />
 
           {/* Documentación de la flota: vencimientos (CU-139), planes (CU-105/140) y tareas */}
           <Route path="fleet/expirations" element={<FleetExpirations />} />

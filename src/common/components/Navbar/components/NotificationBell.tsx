@@ -11,6 +11,7 @@ import {
   ThumbsUp,
   Truck,
   UserRoundX,
+  UserRoundSearch,
   type LucideIcon,
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -19,8 +20,11 @@ import { useDistributorEventFilter } from '../../../../hooks/useDistributorEvent
 import { useSocketContext } from '../../../../context/useSocketContext';
 import {
   INCIDENT_CREATED_EVENT,
+  NO_DRIVERS_EVENT,
   ORDER_SOCKET_EVENTS,
   type IncidentCreatedPayload,
+  type NoDriversPayload,
+  type NoDriversReason,
   type OrderSocketEventName,
 } from '../../../../hooks/useSocket';
 import { queryKeys } from '../../../../services/queries/queryKeys';
@@ -37,16 +41,18 @@ import { NotificationsDrawer, type NotificationsDrawerItem } from '../../ui/Noti
  */
 interface OrderSocketPayload {
   orderId?: string;
-  distributorId?: string;
+  distributorId?: string | null;
   totalAmount?: number;
   reason?: string | null;
+  /** Cuándo ocurrió, si el evento lo trae (ISO). */
+  at?: string;
   /** Sólo en `order:assignment-declined`: el chofer que no confirmó. */
   driverName?: string;
   [key: string]: unknown;
 }
 
 /** Los eventos que la campana muestra: los del ciclo de vida del pedido y el aviso de un cobro impago. */
-type NotificationEvent = OrderSocketEventName | typeof INCIDENT_CREATED_EVENT;
+type NotificationEvent = OrderSocketEventName | typeof INCIDENT_CREATED_EVENT | typeof NO_DRIVERS_EVENT;
 
 export interface OrderNotification {
   id: string;
@@ -61,6 +67,7 @@ export interface OrderNotification {
 
 const EVENT_LABELS: Record<NotificationEvent, string> = {
   [INCIDENT_CREATED_EVENT]: 'Cobro impago: el chofer no pudo cobrar',
+  [NO_DRIVERS_EVENT]: 'Pedido sin chofer disponible',
   [ORDER_SOCKET_EVENTS.CREATED]: 'Nuevo pedido',
   [ORDER_SOCKET_EVENTS.ACCEPTED]: 'Pedido aceptado',
   [ORDER_SOCKET_EVENTS.ON_THE_WAY]: 'Pedido en camino',
@@ -72,6 +79,7 @@ const EVENT_LABELS: Record<NotificationEvent, string> = {
 
 const EVENT_VISUALS: Record<NotificationEvent, { icon: LucideIcon; tone: Tone }> = {
   [INCIDENT_CREATED_EVENT]: { icon: HandCoins, tone: 'danger' },
+  [NO_DRIVERS_EVENT]: { icon: UserRoundSearch, tone: 'warn' },
   [ORDER_SOCKET_EVENTS.CREATED]: { icon: PackagePlus, tone: 'primary' },
   [ORDER_SOCKET_EVENTS.ACCEPTED]: { icon: ThumbsUp, tone: 'info' },
   [ORDER_SOCKET_EVENTS.ON_THE_WAY]: { icon: Truck, tone: 'info' },
@@ -81,18 +89,26 @@ const EVENT_VISUALS: Record<NotificationEvent, { icon: LucideIcon; tone: Tone }>
   [ORDER_SOCKET_EVENTS.ASSIGNMENT_DECLINED]: { icon: UserRoundX, tone: 'warn' },
 };
 
+const NO_DRIVERS_REASONS: Record<NoDriversReason, string> = {
+  no_drivers_in_range: 'no hay choferes dentro del radio máximo',
+  all_drivers_exhausted: 'ya se ofreció a todos los choferes disponibles',
+  no_delivery_point: 'el pedido no tiene punto de entrega',
+};
+
 const MAX_NOTIFICATIONS = 50;
 
 const buildDetail = (event: NotificationEvent, payload: OrderSocketPayload) => {
   const orderRef = payload.orderId ? formatShortId(payload.orderId) : '';
   const extra =
-    event === ORDER_SOCKET_EVENTS.CANCELLED && payload.reason
-      ? payload.reason
-      : event === ORDER_SOCKET_EVENTS.ASSIGNMENT_DECLINED && payload.driverName
-        ? payload.driverName
-        : typeof payload.totalAmount === 'number'
-          ? formatCurrency(payload.totalAmount)
-          : '';
+    event === NO_DRIVERS_EVENT
+      ? (NO_DRIVERS_REASONS[payload.reason as NoDriversReason] ?? payload.reason ?? '')
+      : event === ORDER_SOCKET_EVENTS.CANCELLED && payload.reason
+        ? payload.reason
+        : event === ORDER_SOCKET_EVENTS.ASSIGNMENT_DECLINED && payload.driverName
+          ? payload.driverName
+          : typeof payload.totalAmount === 'number'
+            ? formatCurrency(payload.totalAmount)
+            : '';
   return [orderRef, extra].filter(Boolean).join(' · ') || undefined;
 };
 
@@ -118,7 +134,7 @@ export const NotificationBell = () => {
       id: `${event}-${payload.orderId ?? Date.now()}-${Math.random()}`,
       event,
       detail: buildDetail(event, payload),
-      createdAt: new Date().toISOString(),
+      createdAt: payload.at ?? new Date().toISOString(),
       read: false,
       orderId: payload.orderId,
     };
@@ -130,6 +146,13 @@ export const NotificationBell = () => {
     const unsubscribers = (Object.values(ORDER_SOCKET_EVENTS) as OrderSocketEventName[]).map((event) =>
       subscribe<OrderSocketPayload>(event, (payload) => {
         if (belongsToView(payload)) pushNotification(event, payload);
+      }),
+    );
+
+    // Sin choferes: el despacho agotó los candidatos y el pedido espera una asignación manual.
+    unsubscribers.push(
+      subscribe<NoDriversPayload>(NO_DRIVERS_EVENT, (payload) => {
+        if (belongsToView(payload)) pushNotification(NO_DRIVERS_EVENT, { ...payload });
       }),
     );
 

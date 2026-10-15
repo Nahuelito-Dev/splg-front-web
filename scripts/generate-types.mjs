@@ -9,6 +9,8 @@ import { readFileSync, writeFileSync } from 'node:fs';
 
 const SPEC = 'openapi/splg-api.json';
 execSync(`npx openapi-typescript ${SPEC} -o src/services/api/schema.d.ts`, { stdio: 'inherit' });
+// .prettierignore lo excluye del formato del panel; se formatea igual para que el diff sea sólo el cambio real.
+execSync('npx prettier --write --ignore-path /dev/null src/services/api/schema.d.ts', { stdio: 'inherit' });
 
 const spec = JSON.parse(readFileSync(SPEC, 'utf8'));
 const esquemas = Object.keys(spec.components.schemas).sort();

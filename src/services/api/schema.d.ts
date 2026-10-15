@@ -719,6 +719,54 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/module-config/dispatch': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Parámetros del despacho de la distribuidora
+     * @description Pasos de radio (km) y ventana de aceptación de la oferta (s). Si la distribuidora no configuró nada, devuelve los valores por omisión (`isDefault: true`).
+     */
+    get: operations['ModuleConfigController_getDispatch'];
+    /**
+     * Cambiar los parámetros del despacho
+     * @description Reemplaza la configuración. De 1 a 8 pasos de radio, cada uno entre 1 y 100 km y estrictamente mayor que el anterior; ventana entre 10 y 300 s. Rige para las ofertas que se creen desde ese momento (las ya enviadas conservan su vencimiento); en otras instancias del servidor, como máximo un minuto después.
+     */
+    put: operations['ModuleConfigController_putDispatch'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/module-config/scheduled_tasks': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Frecuencia de las tareas programadas de la distribuidora
+     * @description Intervalo (s) de cada tarea y hora del aviso de vencimientos de flota. Sin configuración, los valores por omisión (los vigentes antes de CU-173).
+     */
+    get: operations['ModuleConfigController_getScheduledTasks'];
+    /**
+     * Cambiar la frecuencia de las tareas programadas
+     * @description Reemplaza la configuración. Cada intervalo es un múltiplo entero del ciclo de base de su tarea (15 s, 5 min, 1 h, 30 min) y de hasta 24 h; la hora del aviso de flota va de 0 a 23. Al guardar se borran las marcas de última ejecución de la distribuidora: los intervalos nuevos rigen desde el ciclo siguiente.
+     */
+    put: operations['ModuleConfigController_putScheduledTasks'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/job-positions': {
     parameters: {
       query?: never;
@@ -1097,7 +1145,7 @@ export interface paths {
     put?: never;
     /**
      * Cotizar un pedido
-     * @description Mismo cuerpo que `POST /orders` (sólo `items` y `paymentMethod` son obligatorios). Devuelve el desglose que cobrará el alta: renglones con la promoción por volumen, `subtotal`, recargo de zona (con `addressId`; el admin además manda `customerId`), recargo por medio de pago (+10% sobre subtotal + zona en `mercadopago` y `transfer`), `deposit` (si `isReservation`), `total` y `balance` (`total - deposit`). El `total` es exactamente el del pedido que se crea con el mismo cuerpo. No escribe nada ni reserva stock; sí rechaza lo que el alta rechazaría (producto de otra distribuidora, sin stock, dirección fuera de cobertura). Cliente sin `X-Distributor`: distribuidora por defecto, igual que el alta.
+     * @description Mismo cuerpo que `POST /orders` (sólo `items` y `paymentMethod` son obligatorios). Devuelve el desglose que cobrará el alta: renglones con la promoción por volumen, `subtotal`, recargo de zona (con `addressId`; el admin además manda `customerId`), recargo por medio de pago (+10% sobre subtotal + zona en `mercadopago` y `transfer`), `deposit` (si `isReservation`), `total` y `balance` (`total - deposit`). El `total` es exactamente el del pedido que se crea con el mismo cuerpo. No escribe nada ni reserva stock; sí rechaza lo que el alta rechazaría (producto de otra distribuidora, sin stock, dirección fuera de cobertura). Cliente sin `X-Distributor`: distribuidora por defecto, igual que el alta. Con `orderId` cotiza la EDICIÓN de ese pedido (mismas reglas que `PATCH /orders/:id`): pedido ajeno o inexistente 404, no editable 409, stock por diferencia contra lo ya reservado, franja y fecha sólo si cambian.
      */
     post: operations['OrderController_quote'];
     delete?: never;
@@ -1261,7 +1309,7 @@ export interface paths {
     head?: never;
     /**
      * Editar un pedido pendiente (sin chofer asignado)
-     * @description Dirección, franja/fecha, medio de pago, notas y renglones. Si vienen `items` reemplazan a los actuales: se devuelve el stock viejo y se reserva el nuevo con los precios y recargos vigentes (mismas reglas que el alta). Fuera de `pending`, o con pago online, responde 409. Para eliminar un pedido: `PATCH /orders/:id/cancel`.
+     * @description Admin, super admin y el CLIENTE DUEÑO del pedido (uno ajeno es 404). Idempotente vía `Idempotency-Key`. Los precios y recargos los calcula SIEMPRE el servidor. El cliente deja una anotación en el historial de estados. Dirección, franja/fecha, medio de pago, notas y renglones. Si vienen `items` reemplazan a los actuales: se devuelve el stock viejo y se reserva el nuevo con los precios y recargos vigentes (mismas reglas que el alta). Fuera de `pending`, o con pago online, responde 409. Para eliminar un pedido: `PATCH /orders/:id/cancel`.
      */
     patch: operations['OrderController_update'];
     trace?: never;
@@ -3840,7 +3888,7 @@ export interface paths {
     head?: never;
     /**
      * Anular una recepción (contraasiento del libro, con motivo)
-     * @description Saca las llenas que entraron y devuelve las vacías que se llevó la planta; recalcula lo recibido de la orden y el costo promedio (recalculado de las recepciones que siguen confirmadas). **Exige** `Idempotency-Key`. Si las llenas ya no están en el depósito responde 409 diciendo dónde están. No se anula una recepción pagada.
+     * @description Saca las llenas que entraron y devuelve las vacías que se llevó la planta; recalcula lo recibido de la orden y el costo promedio (recalculado de las recepciones que siguen confirmadas). **Exige** `Idempotency-Key`. Si las llenas ya no están en el depósito responde 409 diciendo dónde están; si el depósito fue dado de baja, 409. No se anula una recepción pagada.
      */
     patch: operations['PurchaseReceiptController_void'];
     trace?: never;
@@ -4359,6 +4407,105 @@ export interface components {
       /** @enum {string} */
       status?: 'active' | 'suspended';
       plan?: string;
+    };
+    DispatchConfigResponseDto: {
+      /**
+       * @example [
+       *       5,
+       *       10,
+       *       15,
+       *       20
+       *     ]
+       */
+      radiusStepsKm: number[];
+      /** @example 30 */
+      offerTtlSeconds: number;
+      /**
+       * @description true si rigen los valores por omisión (no configuró nada o todo coincide con ellos)
+       * @example true
+       */
+      isDefault: boolean;
+      /**
+       * Format: date-time
+       * @description Cuándo se modificó por última vez (null si nunca)
+       */
+      updatedAt: string | null;
+      /**
+       * Format: uuid
+       * @description Usuario que la modificó por última vez (null si nunca)
+       */
+      updatedByUserId: string | null;
+    };
+    DispatchConfigDto: {
+      /**
+       * @description Pasos de radio (km) con que se amplía la búsqueda de choferes: de 1 a 8 pasos, cada uno entre 1 y 100 km y estrictamente mayor que el anterior
+       * @example [
+       *       5,
+       *       10,
+       *       15,
+       *       20
+       *     ]
+       */
+      radiusStepsKm?: number[];
+      /**
+       * @description Ventana de aceptación de cada oferta, en segundos (10 a 300). Las ofertas ya enviadas conservan su vencimiento
+       * @example 30
+       */
+      offerTtlSeconds?: number;
+    };
+    ScheduledTasksConfigResponseDto: {
+      /** @example 15 */
+      dispatchRetrySeconds: number;
+      /** @example 300 */
+      reservationActivationSeconds: number;
+      /** @example 3600 */
+      unpaidReservationExpirySeconds: number;
+      /** @example 1800 */
+      unpaidMercadoPagoExpirySeconds: number;
+      /** @example 8 */
+      fleetAlertHour: number;
+      /**
+       * @description true si rigen los valores por omisión (no configuró nada o todo coincide con ellos)
+       * @example true
+       */
+      isDefault: boolean;
+      /**
+       * Format: date-time
+       * @description Cuándo se modificó por última vez (null si nunca)
+       */
+      updatedAt: string | null;
+      /**
+       * Format: uuid
+       * @description Usuario que la modificó por última vez (null si nunca)
+       */
+      updatedByUserId: string | null;
+    };
+    ScheduledTasksConfigDto: {
+      /**
+       * @description Reintentos del despacho (ofertas vencidas y pedidos sin oferta), en segundos. Múltiplo de 15, hasta 300 s (5 min)
+       * @example 15
+       */
+      dispatchRetrySeconds?: number;
+      /**
+       * @description Activación de reservas con la seña paga, en segundos. Múltiplo de 300, hasta 24 h
+       * @example 300
+       */
+      reservationActivationSeconds?: number;
+      /**
+       * @description Vencimiento de reservas sin seña, en segundos. Múltiplo de 3600, hasta 24 h
+       * @example 3600
+       */
+      unpaidReservationExpirySeconds?: number;
+      /**
+       * @description Vencimiento de pedidos de MercadoPago sin pagar, en segundos. Múltiplo de 1800, hasta 24 h
+       * @example 1800
+       */
+      unpaidMercadoPagoExpirySeconds?: number;
+      /**
+       * @description Hora del día (0 a 23, hora de Argentina) del aviso de vencimientos de flota
+       * @example 8
+       */
+      fleetAlertHour?: number;
     };
     JobPositionResponseDto: {
       /** Format: uuid */
@@ -4992,6 +5139,11 @@ export interface components {
       isReservation?: boolean;
       /** @description Monto de la seña de la reserva (obligatorio si isReservation). */
       depositAmount?: number;
+      /**
+       * Format: uuid
+       * @description Cotización de EDICIÓN de un pedido existente (el del cliente que cotiza, o de la distribuidora del staff; si no, 404). Sólo vale si el pedido es editable (409 con el mismo mensaje que `PATCH /orders/:id`). El stock se compara por la diferencia contra el pedido actual; la franja y la fecha sólo se validan si cambian; lo que no se manda se toma del pedido (dirección y zona incluidas).
+       */
+      orderId?: string;
     };
     QuoteItemDto: {
       gasCylinderId: string;
@@ -10929,6 +11081,174 @@ export interface operations {
       };
     };
   };
+  ModuleConfigController_getDispatch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DispatchConfigResponseDto'];
+        };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") o cuerpo fuera de los límites (detalle por campo) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ModuleConfigController_putDispatch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['DispatchConfigDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DispatchConfigResponseDto'];
+        };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") o cuerpo fuera de los límites (detalle por campo) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ModuleConfigController_getScheduledTasks: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ScheduledTasksConfigResponseDto'];
+        };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") o cuerpo fuera de los límites (detalle por campo) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ModuleConfigController_putScheduledTasks: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ScheduledTasksConfigDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ScheduledTasksConfigResponseDto'];
+        };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") o cuerpo fuera de los límites (detalle por campo) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   JobPositionController_findAll: {
     parameters: {
       query?: never;
@@ -12624,6 +12944,20 @@ export interface operations {
         };
         content?: never;
       };
+      /** @description Con `orderId`: el pedido no existe o no es del cliente */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Con `orderId`: el pedido no es editable */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
   };
   OrderController_findByCustomer: {
@@ -13065,7 +13399,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description Requiere rol: customer, admin, super_admin */
       403: {
         headers: {
           [name: string]: unknown;
@@ -13079,8 +13413,15 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description El pedido no está pendiente, tiene chofer o pago online */
+      /** @description El pedido no está pendiente, tiene chofer (cliente: «El pedido ya fue tomado por un repartidor: no se puede modificar») o pago online */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
         headers: {
           [name: string]: unknown;
         };
@@ -20197,8 +20538,15 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Pedido no encontrado */
+      /** @description Pedido no encontrado, de otra distribuidora o (para el chofer) que no tiene asignado */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El chofer tuvo el pedido y ya no está asignado a su usuario */
+      410: {
         headers: {
           [name: string]: unknown;
         };
@@ -21840,7 +22188,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Ya está anulada, o las llenas ya no están en el depósito donde entraron */
+      /** @description Ya está anulada, las llenas ya no están en el depósito donde entraron, o ese depósito fue dado de baja */
       409: {
         headers: {
           [name: string]: unknown;
