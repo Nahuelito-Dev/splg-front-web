@@ -4,6 +4,9 @@ import type {
   CreateCylinderBody,
   Cylinder,
   CylinderMovement,
+  CylinderVigencia,
+  ExpiringCylinders,
+  RegisterInspectionBody,
   RetireCylinderBody,
   TransitionCylinderBody,
   UpdateCylinderBody,
@@ -28,10 +31,14 @@ export interface CylinderFilters {
   orderId?: string;
   /** Los que tiene este cliente: es el `user_id` del cliente, no su `customer_id`. */
   customerUserId?: string;
+  /** Vigencia de la revisión: `valid`, `expired` (no se puede despachar) o `unverified` (sin revisión registrada) o `dispatchable` (vigentes + sin revisión: los que se pueden asignar). */
+  vigencia?: CylinderVigencia['status'] | 'dispatchable';
+  /** Tipo de producto del envase. */
+  gasCylinderId?: string;
 }
 
 /**
- * GET /cylinders: los envases de la distribuidora con filtros (estado, pedido, cliente). Con `params` pagina en el
+ * GET /cylinders: los envases de la distribuidora con filtros (estado, pedido, cliente, vigencia, producto). Con `params` pagina en el
  * servidor (limit/offset, total en X-Total-Count); sin `params` trae todos los que cumplen el filtro.
  */
 export const listCylinders = async (filters: CylinderFilters = {}, params?: PageParams): Promise<Page<Cylinder>> =>
@@ -79,5 +86,32 @@ export const assignCylinders = async (body: AssignCylindersBody): Promise<Cylind
 /** GET /cylinders/:id/history: movimientos auditables del envase. */
 export const getCylinderHistory = async (id: string): Promise<CylinderMovement[]> => {
   const { data } = await http.get<CylinderMovement[]>(`/cylinders/${id}/history`);
+  return data;
+};
+
+/** GET /cylinders/:id/vigencia: fabricación, última revisión, vencimiento, días que faltan e historial de revisiones. */
+export const getCylinderVigencia = async (id: string): Promise<CylinderVigencia> => {
+  const { data } = await http.get<CylinderVigencia>(`/cylinders/${id}/vigencia`);
+  return data;
+};
+
+/**
+ * POST /cylinders/:id/inspections: registra la revisión periódica. Un rechazo deja el vencimiento en la fecha de la
+ * revisión (el envase queda bloqueado para el despacho). 400 por fecha futura o vencimiento faltante/no posterior;
+ * 409 si el envase está dado de baja.
+ */
+export const registerInspection = async (id: string, body: RegisterInspectionBody): Promise<CylinderVigencia> => {
+  const { data } = await http.post<CylinderVigencia>(`/cylinders/${id}/inspections`, body);
+  return data;
+};
+
+/** GET /cylinders/vigencia/proximos-a-vencer: vencidos, por vencer en `days` días y sin revisión registrada. */
+export const listExpiringCylinders = async (
+  days: number,
+  page: { limit: number; offset: number },
+): Promise<ExpiringCylinders> => {
+  const { data } = await http.get<ExpiringCylinders>('/cylinders/vigencia/proximos-a-vencer', {
+    params: { days, ...page },
+  });
   return data;
 };

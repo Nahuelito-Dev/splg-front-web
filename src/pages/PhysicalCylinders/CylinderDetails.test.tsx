@@ -6,9 +6,12 @@ import type { Cylinder, CylinderMovement } from '../../services/api/types';
 
 const cylinderQuery = vi.fn();
 const historyQuery = vi.fn();
+const vigenciaQuery = vi.fn();
 vi.mock('../../services/queries/physicalCylinders', () => ({
   useCylinder: () => cylinderQuery() as unknown,
   useCylinderHistory: () => historyQuery() as unknown,
+  useCylinderVigencia: () => vigenciaQuery() as unknown,
+  useRegisterInspection: () => ({ mutate: vi.fn(), isPending: false }),
   useTransitionCylinder: () => ({ mutate: vi.fn(), isPending: false }),
   useUpdateCylinder: () => ({ mutate: vi.fn(), isPending: false }),
   useRetireCylinder: () => ({ mutate: vi.fn(), isPending: false }),
@@ -41,6 +44,26 @@ const CYLINDER = {
   updatedAt: '2026-09-02T10:00:00.000Z',
 } as unknown as Cylinder;
 
+const VIGENCIA = {
+  cylinderId: 'c-1',
+  status: 'valid',
+  daysRemaining: 40,
+  manufacturedAt: '2025-01-01T00:00:00.000Z',
+  lastInspectionAt: '2026-09-01T00:00:00.000Z',
+  expiresAt: '2026-11-26T00:00:00.000Z',
+  withdrawalPending: false,
+  inspections: [
+    {
+      inspectionId: 'i-1',
+      cylinderId: 'c-1',
+      inspectedAt: '2026-09-01T00:00:00.000Z',
+      result: 'approved',
+      nextDueAt: '2026-11-26T00:00:00.000Z',
+      notes: 'Sin observaciones',
+    },
+  ],
+};
+
 const MOVEMENTS = [
   {
     movement_id: 'm-1',
@@ -69,6 +92,8 @@ describe('CylinderDetails', () => {
   beforeEach(() => {
     cylinderQuery.mockReset();
     historyQuery.mockReset();
+    vigenciaQuery.mockReset();
+    vigenciaQuery.mockReturnValue({ data: VIGENCIA, isPending: false, error: null, refetch: vi.fn() });
   });
   afterEach(cleanup);
 
@@ -173,5 +198,54 @@ describe('CylinderDetails', () => {
     historyQuery.mockReturnValue({ data: [], isPending: false, error: null, refetch: vi.fn() });
     renderPage();
     expect(screen.getByText('Sin movimientos')).toBeInTheDocument();
+  });
+
+  it('muestra la vigencia con los días que faltan y el historial de revisiones', () => {
+    cylinderQuery.mockReturnValue({ data: CYLINDER, isPending: false, error: null, refetch: vi.fn() });
+    historyQuery.mockReturnValue({ data: [], isPending: false, error: null, refetch: vi.fn() });
+    renderPage();
+    expect(screen.getByRole('heading', { name: 'Vigencia y revisiones' })).toBeInTheDocument();
+    expect(screen.getByText('Vigente')).toBeInTheDocument();
+    expect(screen.getByText(/Vence en 40 días/)).toBeInTheDocument();
+    expect(screen.getByText('Sin observaciones')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Registrar revisión' })).toBeEnabled();
+  });
+
+  it('un envase vencido y afuera avisa que hay que retirarlo; sin revisión registrada no lo da por vencido', () => {
+    cylinderQuery.mockReturnValue({ data: CYLINDER, isPending: false, error: null, refetch: vi.fn() });
+    historyQuery.mockReturnValue({ data: [], isPending: false, error: null, refetch: vi.fn() });
+    vigenciaQuery.mockReturnValue({
+      data: { ...VIGENCIA, status: 'expired', daysRemaining: -3, withdrawalPending: true },
+      isPending: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+    renderPage();
+    expect(screen.getByText(/Venció hace 3 días/)).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent(/retirarlo cuando vuelva/);
+    cleanup();
+
+    vigenciaQuery.mockReturnValue({
+      data: { ...VIGENCIA, status: 'unverified', daysRemaining: null, expiresAt: null, inspections: [] },
+      isPending: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+    renderPage();
+    expect(screen.getByText('Sin revisión registrada')).toBeInTheDocument();
+    expect(screen.getByText(/no es lo mismo que vencido/)).toBeInTheDocument();
+    expect(screen.getByText('Sin revisiones')).toBeInTheDocument();
+  });
+
+  it('un envase retirado no admite revisiones', () => {
+    cylinderQuery.mockReturnValue({
+      data: { ...CYLINDER, state: 'retired' },
+      isPending: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+    historyQuery.mockReturnValue({ data: [], isPending: false, error: null, refetch: vi.fn() });
+    renderPage();
+    expect(screen.getByRole('button', { name: 'Registrar revisión' })).toHaveAttribute('aria-disabled', 'true');
   });
 });

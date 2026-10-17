@@ -81,3 +81,19 @@ export const formatLongDay = (value: Date): string => {
 /** Variación porcentual con un decimal: 12,4 %. `null` si no hay base para comparar. */
 export const percentChange = (current: number, previous: number): number | null =>
   previous > 0 ? Math.round(((current - previous) / previous) * 1000) / 10 : null;
+
+const ARGENTINA = 'America/Argentina/Buenos_Aires';
+const dayKeyAr = new Intl.DateTimeFormat('en-CA', {
+  timeZone: ARGENTINA,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
+/** El día calendario (YYYY-MM-DD) de un instante en Buenos Aires: la zona en que se cuentan los vencimientos. */
+export const argentinaDay = (value: string | Date): string =>
+  dayKeyAr.format(typeof value === 'string' ? new Date(value) : value);
+
+/** 26 sept 2026: el día de Buenos Aires de un instante ISO (no el del navegador ni el de UTC). */
+export const formatArgentinaDay = (value: string | null | undefined): string =>
+  value ? formatDay(argentinaDay(value)) : '—';

@@ -5,6 +5,7 @@ import {
   BellOff,
   CircleCheck,
   CircleX,
+  ShieldAlert,
   HandCoins,
   PackagePlus,
   RotateCcw,
@@ -19,9 +20,11 @@ import { useNavigate } from 'react-router-dom';
 import { useDistributorEventFilter } from '../../../../hooks/useDistributorEventFilter';
 import { useSocketContext } from '../../../../context/useSocketContext';
 import {
+  CYLINDER_BLOCKED_EVENT,
   INCIDENT_CREATED_EVENT,
   NO_DRIVERS_EVENT,
   ORDER_SOCKET_EVENTS,
+  type CylinderBlockedPayload,
   type IncidentCreatedPayload,
   type NoDriversPayload,
   type NoDriversReason,
@@ -48,11 +51,14 @@ interface OrderSocketPayload {
   at?: string;
   /** Sólo en `order:assignment-declined`: el chofer que no confirmó. */
   driverName?: string;
+  /** Sólo en `cylinder:dispatch-blocked`: los seriales vencidos. */
+  serials?: string[];
   [key: string]: unknown;
 }
 
 /** Los eventos que la campana muestra: los del ciclo de vida del pedido y el aviso de un cobro impago. */
-type NotificationEvent = OrderSocketEventName | typeof INCIDENT_CREATED_EVENT | typeof NO_DRIVERS_EVENT;
+type NotificationEvent =
+  OrderSocketEventName | typeof INCIDENT_CREATED_EVENT | typeof NO_DRIVERS_EVENT | typeof CYLINDER_BLOCKED_EVENT;
 
 export interface OrderNotification {
   id: string;
@@ -68,6 +74,7 @@ export interface OrderNotification {
 const EVENT_LABELS: Record<NotificationEvent, string> = {
   [INCIDENT_CREATED_EVENT]: 'Cobro impago: el chofer no pudo cobrar',
   [NO_DRIVERS_EVENT]: 'Pedido sin chofer disponible',
+  [CYLINDER_BLOCKED_EVENT]: 'Despacho bloqueado: envase con la revisión vencida',
   [ORDER_SOCKET_EVENTS.CREATED]: 'Nuevo pedido',
   [ORDER_SOCKET_EVENTS.ACCEPTED]: 'Pedido aceptado',
   [ORDER_SOCKET_EVENTS.ON_THE_WAY]: 'Pedido en camino',
@@ -80,6 +87,7 @@ const EVENT_LABELS: Record<NotificationEvent, string> = {
 const EVENT_VISUALS: Record<NotificationEvent, { icon: LucideIcon; tone: Tone }> = {
   [INCIDENT_CREATED_EVENT]: { icon: HandCoins, tone: 'danger' },
   [NO_DRIVERS_EVENT]: { icon: UserRoundSearch, tone: 'warn' },
+  [CYLINDER_BLOCKED_EVENT]: { icon: ShieldAlert, tone: 'danger' },
   [ORDER_SOCKET_EVENTS.CREATED]: { icon: PackagePlus, tone: 'primary' },
   [ORDER_SOCKET_EVENTS.ACCEPTED]: { icon: ThumbsUp, tone: 'info' },
   [ORDER_SOCKET_EVENTS.ON_THE_WAY]: { icon: Truck, tone: 'info' },
@@ -100,15 +108,17 @@ const MAX_NOTIFICATIONS = 50;
 const buildDetail = (event: NotificationEvent, payload: OrderSocketPayload) => {
   const orderRef = payload.orderId ? formatShortId(payload.orderId) : '';
   const extra =
-    event === NO_DRIVERS_EVENT
-      ? (NO_DRIVERS_REASONS[payload.reason as NoDriversReason] ?? payload.reason ?? '')
-      : event === ORDER_SOCKET_EVENTS.CANCELLED && payload.reason
-        ? payload.reason
-        : event === ORDER_SOCKET_EVENTS.ASSIGNMENT_DECLINED && payload.driverName
-          ? payload.driverName
-          : typeof payload.totalAmount === 'number'
-            ? formatCurrency(payload.totalAmount)
-            : '';
+    event === CYLINDER_BLOCKED_EVENT
+      ? (payload.serials ?? []).join(', ')
+      : event === NO_DRIVERS_EVENT
+        ? (NO_DRIVERS_REASONS[payload.reason as NoDriversReason] ?? payload.reason ?? '')
+        : event === ORDER_SOCKET_EVENTS.CANCELLED && payload.reason
+          ? payload.reason
+          : event === ORDER_SOCKET_EVENTS.ASSIGNMENT_DECLINED && payload.driverName
+            ? payload.driverName
+            : typeof payload.totalAmount === 'number'
+              ? formatCurrency(payload.totalAmount)
+              : '';
   return [orderRef, extra].filter(Boolean).join(' · ') || undefined;
 };
 
@@ -153,6 +163,18 @@ export const NotificationBell = () => {
     unsubscribers.push(
       subscribe<NoDriversPayload>(NO_DRIVERS_EVENT, (payload) => {
         if (belongsToView(payload)) pushNotification(NO_DRIVERS_EVENT, { ...payload });
+      }),
+    );
+
+    // Un despacho rechazado por vencimiento: el aviso lleva los seriales; sin pedido, no hay a dónde navegar.
+    unsubscribers.push(
+      subscribe<CylinderBlockedPayload>(CYLINDER_BLOCKED_EVENT, (payload) => {
+        if (!belongsToView(payload)) return;
+        pushNotification(CYLINDER_BLOCKED_EVENT, {
+          orderId: payload.orderId ?? undefined,
+          serials: payload.serials,
+        });
+        notify.info(`Despacho bloqueado: revisión vencida (${payload.serials.join(', ')})`);
       }),
     );
 

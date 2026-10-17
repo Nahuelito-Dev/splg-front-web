@@ -7,8 +7,6 @@ const CYLINDER = {
   gas_cylinder_id: 'g-1',
   deposit: 5000,
   manufactured_at: '2025-01-01T00:00:00.000Z',
-  last_inspection_at: null,
-  expires_at: '2030-12-31T00:00:00.000Z',
 } as unknown as Cylinder;
 
 describe('dayOf / cylinderEditDefaults', () => {
@@ -27,15 +25,15 @@ describe('buildCylinderUpdate', () => {
   });
 
   it('manda sólo lo modificado', () => {
-    expect(buildCylinderUpdate(CYLINDER, { ...same, deposit: 6000, expiresAt: '2031-06-30' })).toEqual({
+    expect(buildCylinderUpdate(CYLINDER, { ...same, deposit: 6000, manufacturedAt: '2024-06-30' })).toEqual({
       deposit: 6000,
-      expiresAt: '2031-06-30',
+      manufacturedAt: '2024-06-30',
     });
   });
 
   it('vaciar una fecha o el producto viaja como null: no se pierde en silencio', () => {
-    expect(buildCylinderUpdate(CYLINDER, { ...same, expiresAt: '', gasCylinderId: '' })).toEqual({
-      expiresAt: null,
+    expect(buildCylinderUpdate(CYLINDER, { ...same, manufacturedAt: '', gasCylinderId: '' })).toEqual({
+      manufacturedAt: null,
       gasCylinderId: null,
     });
   });

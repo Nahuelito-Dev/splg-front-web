@@ -4,7 +4,10 @@ import {
   createCylinder,
   getCylinder,
   getCylinderHistory,
+  getCylinderVigencia,
   listCylinders,
+  listExpiringCylinders,
+  registerInspection,
   retireCylinder,
   transitionCylinder,
   updateCylinder,
@@ -16,6 +19,7 @@ import type {
   AssignCylindersBody,
   CreateCylinderBody,
   Cylinder,
+  RegisterInspectionBody,
   RetireCylinderBody,
   TransitionCylinderBody,
 } from '../api/types';
@@ -52,13 +56,13 @@ export const useCylinders = (
   });
 
 /** Cuántos envases hay por estado y en total (con los mismos filtros de pedido y cliente): el total real de la API. */
-export const useCylinderStateCounts = ({ orderId, customerUserId }: Omit<CylinderFilters, 'state'>) => {
+export const useCylinderStateCounts = ({ orderId, customerUserId, vigencia }: Omit<CylinderFilters, 'state'>) => {
   const ONE: PageParams = { page: 0, pageSize: 1 };
   const states: (Cylinder['state'] | undefined)[] = [undefined, ...ALL_STATES];
   const results = useQueries({
     queries: states.map((state) => ({
-      queryKey: keys.list({ counts: state ?? 'all', orderId, customerUserId }),
-      queryFn: () => listCylinders({ state, orderId, customerUserId }, ONE).then((page) => page.total),
+      queryKey: keys.list({ counts: state ?? 'all', orderId, customerUserId, vigencia }),
+      queryFn: () => listCylinders({ state, orderId, customerUserId, vigencia }, ONE).then((page) => page.total),
       staleTime: 30_000,
       placeholderData: keepPreviousData,
     })),
@@ -82,6 +86,32 @@ export const useCylinderHistory = (id: string | undefined, enabled: boolean) =>
     queryFn: () => getCylinderHistory(id ?? ''),
     enabled: Boolean(id) && enabled,
   });
+
+export const useCylinderVigencia = (id: string | undefined) =>
+  useQuery({
+    queryKey: [...keys.detail(id ?? ''), 'vigencia'],
+    queryFn: () => getCylinderVigencia(id ?? ''),
+    enabled: Boolean(id),
+  });
+
+/** Lo máximo que la API devuelve por grupo en una página; `totals` dice si hay más. */
+const EXPIRING_PAGE = 500;
+
+/** Vencidos, por vencer dentro de `days` días y sin revisión registrada. */
+export const useExpiringCylinders = (days: number) =>
+  useQuery({
+    queryKey: keys.list({ expiring: days }),
+    queryFn: () => listExpiringCylinders(days, { limit: EXPIRING_PAGE, offset: 0 }),
+    placeholderData: keepPreviousData,
+  });
+
+export const useRegisterInspection = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: RegisterInspectionBody }) => registerInspection(id, body),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
+  });
+};
 
 export const useCreateCylinder = () => {
   const queryClient = useQueryClient();

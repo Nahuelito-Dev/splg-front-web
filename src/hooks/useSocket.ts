@@ -43,6 +43,19 @@ export interface NoDriversPayload {
 }
 
 /**
+ * Evento que emite el AdminGateway cuando el back rechaza despachar envases con la revisión vencida (asignación a un
+ * pedido o transición a `dispatched`).
+ */
+export const CYLINDER_BLOCKED_EVENT = 'cylinder:dispatch-blocked';
+
+/** Payload de CYLINDER_BLOCKED_EVENT: `orderId` es null si el despacho fue una transición suelta. */
+export interface CylinderBlockedPayload {
+  orderId: string | null;
+  distributorId?: string | null;
+  serials: string[];
+}
+
+/**
  * Evento que emite el AdminGateway cuando se abre una incidencia de reparto. El panel sólo avisa las de tipo
  * `unpaid_collection` (el chofer informó que no pudo cobrar en efectivo).
  */
