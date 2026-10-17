@@ -4652,20 +4652,20 @@
                 "operationId": "AttachmentController_upload",
                 "parameters": [
                     {
-                        "name": "ownerType",
-                        "required": true,
-                        "in": "path",
-                        "schema": {
-                            "$ref": "#/components/schemas/AttachmentOwnerType"
-                        }
-                    },
-                    {
                         "name": "ownerId",
                         "required": true,
                         "in": "path",
                         "description": "UUID del dueño",
                         "schema": {
                             "type": "string"
+                        }
+                    },
+                    {
+                        "name": "ownerType",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "$ref": "#/components/schemas/AttachmentOwnerType"
                         }
                     }
                 ],
@@ -4739,20 +4739,20 @@
                 "operationId": "AttachmentController_list",
                 "parameters": [
                     {
-                        "name": "ownerType",
-                        "required": true,
-                        "in": "path",
-                        "schema": {
-                            "$ref": "#/components/schemas/AttachmentOwnerType"
-                        }
-                    },
-                    {
                         "name": "ownerId",
                         "required": true,
                         "in": "path",
                         "description": "UUID del dueño",
                         "schema": {
                             "type": "string"
+                        }
+                    },
+                    {
+                        "name": "ownerType",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "$ref": "#/components/schemas/AttachmentOwnerType"
                         }
                     }
                 ],
@@ -8241,6 +8241,31 @@
                         }
                     },
                     {
+                        "name": "gasCylinderId",
+                        "required": false,
+                        "in": "query",
+                        "description": "Tipo de producto del envase (para buscar un reemplazo).",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "vigencia",
+                        "required": false,
+                        "in": "query",
+                        "description": "Vigencia de la revisión: `valid` (no venció), `expired` (venció, no se puede despachar), `unverified` (sin revisión registrada) o `dispatchable` (vigentes y sin revisión registrada: los que se pueden asignar a un pedido).",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "valid",
+                                "expired",
+                                "unverified",
+                                "dispatchable"
+                            ]
+                        }
+                    },
+                    {
                         "name": "limit",
                         "required": false,
                         "in": "query",
@@ -8327,7 +8352,7 @@
                         }
                     },
                     "400": {
-                        "description": "Algún envase no está FILLED (no se puede despachar)"
+                        "description": "Algún envase no está FILLED (no se puede despachar) o hay seriales repetidos"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -8337,6 +8362,16 @@
                     },
                     "404": {
                         "description": "Pedido o envase no encontrado"
+                    },
+                    "409": {
+                        "description": "Algún envase tiene la revisión vencida: se rechaza la asignación completa y no se asigna ninguno. El cuerpo trae `code: CYLINDER_EXPIRED` y `serials` con los vencidos. Los envases sin vencimiento cargado pasan.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CylinderExpiredResponseDto"
+                                }
+                            }
+                        }
                     },
                     "422": {
                         "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
@@ -8630,6 +8665,16 @@
                     },
                     "404": {
                         "description": "Envase no encontrado"
+                    },
+                    "409": {
+                        "description": "Despachar (`dispatched`) un envase con la revisión vencida: el mismo 409 `CYLINDER_EXPIRED` que la asignación a un pedido.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CylinderExpiredResponseDto"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": [
@@ -16505,6 +16550,245 @@
                     "Compras · Recepciones"
                 ]
             }
+        },
+        "/api/cylinders/vigencia/proximos-a-vencer": {
+            "get": {
+                "description": "Separa los ya vencidos, los que vencen dentro de la ventana de `days` días (default 30) y los sin revisión registrada, que no tienen fecha con la cual comparar. Cada grupo va ordenado por vencimiento, del más urgente al menos, y se pagina por separado con `limit` (default 100, máx. 500) y `offset`; `totals` trae el total de cada grupo. No incluye envases dados de baja.",
+                "operationId": "CylinderController_expiring",
+                "parameters": [
+                    {
+                        "name": "days",
+                        "required": false,
+                        "in": "query",
+                        "description": "Ventana en días: los que vencen de hoy a hoy + `days`.",
+                        "schema": {
+                            "minimum": 1,
+                            "maximum": 365,
+                            "default": 30,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "description": "Tamaño de página de cada grupo.",
+                        "schema": {
+                            "maximum": 500,
+                            "default": 100,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 0,
+                            "type": "number"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ExpiringCylindersResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "`days` o la paginación fuera de rango"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Envases próximos a vencer (CU-134)",
+                "tags": [
+                    "Cylinders"
+                ]
+            }
+        },
+        "/api/cylinders/vigencia/serial/{serial}": {
+            "get": {
+                "description": "Lo que se escanea: el serial grabado en el envase. El serial es único por distribuidora, así que el super admin tiene que elegir una con `X-Distributor` (400 si no).",
+                "operationId": "CylinderController_vigenciaBySerial",
+                "parameters": [
+                    {
+                        "name": "serial",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "example": "SN-000123",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CylinderVigenciaResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Envase no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Vigencia de un envase por número de serie (CU-133)",
+                "tags": [
+                    "Cylinders"
+                ]
+            }
+        },
+        "/api/cylinders/{id}/vigencia": {
+            "get": {
+                "description": "Fabricación, última revisión, vencimiento, días que faltan e historial de revisiones. `status`: `valid`, `expired` o `unverified` (sin revisión registrada: no es lo mismo que vencido y no bloquea el despacho).",
+                "operationId": "CylinderController_getVigencia",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Cylinder UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CylinderVigenciaResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Envase no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Vigencia de un envase (CU-133)",
+                "tags": [
+                    "Cylinders"
+                ]
+            }
+        },
+        "/api/cylinders/{id}/inspections": {
+            "post": {
+                "description": "Guarda la revisión en el historial y copia la última fecha y el vencimiento en la ficha. Un resultado `rejected` deja el vencimiento en la fecha de la revisión: el envase queda alcanzado por el bloqueo del despacho. Si está en poder de un cliente o en reparto no se lo saca de circulación: `withdrawalPending` lo marca para retirar.",
+                "operationId": "CylinderController_registerInspection",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Cylinder UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RegisterInspectionDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CylinderVigenciaResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Fecha de revisión futura, vencimiento faltante o no posterior a la revisión"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Envase no encontrado"
+                    },
+                    "409": {
+                        "description": "El envase está dado de baja"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Registrar la revisión periódica de un envase (CU-132)",
+                "tags": [
+                    "Cylinders"
+                ]
+            }
         }
     },
     "info": {
@@ -21541,6 +21825,327 @@
                     "serials"
                 ]
             },
+            "CylinderExpiredResponseDto": {
+                "type": "object",
+                "properties": {
+                    "statusCode": {
+                        "type": "number",
+                        "example": 409
+                    },
+                    "error": {
+                        "type": "string",
+                        "example": "Conflict"
+                    },
+                    "code": {
+                        "type": "string",
+                        "example": "CYLINDER_EXPIRED"
+                    },
+                    "message": {
+                        "type": "string",
+                        "example": "Envases con la revisión vencida: SN-000123"
+                    },
+                    "serials": {
+                        "example": [
+                            "SN-000123"
+                        ],
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": [
+                    "statusCode",
+                    "error",
+                    "code",
+                    "message",
+                    "serials"
+                ]
+            },
+            "TotalesDeVencimientosDto": {
+                "type": "object",
+                "properties": {
+                    "expired": {
+                        "type": "number"
+                    },
+                    "expiring": {
+                        "type": "number"
+                    },
+                    "unverified": {
+                        "type": "number"
+                    }
+                },
+                "required": [
+                    "expired",
+                    "expiring",
+                    "unverified"
+                ]
+            },
+            "CylinderVencimientoDto": {
+                "type": "object",
+                "properties": {
+                    "cylinderId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "serial": {
+                        "type": "string",
+                        "example": "SN-000123"
+                    },
+                    "state": {
+                        "type": "string",
+                        "enum": [
+                            "in_depot",
+                            "filled",
+                            "dispatched",
+                            "with_customer",
+                            "empty_returned",
+                            "retired"
+                        ]
+                    },
+                    "productType": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "Garrafa 10kg",
+                        "description": "Tipo de producto del envase (null si no tiene uno asignado)"
+                    },
+                    "lastInspectionAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "expiresAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "valid",
+                            "expired",
+                            "unverified"
+                        ]
+                    },
+                    "daysRemaining": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Días que faltan; negativo si ya venció; null sin vencimiento."
+                    }
+                },
+                "required": [
+                    "cylinderId",
+                    "serial",
+                    "state",
+                    "productType",
+                    "lastInspectionAt",
+                    "expiresAt",
+                    "status",
+                    "daysRemaining"
+                ]
+            },
+            "ExpiringCylindersResponseDto": {
+                "type": "object",
+                "properties": {
+                    "windowDays": {
+                        "type": "number",
+                        "example": 30
+                    },
+                    "totals": {
+                        "description": "Total de cada grupo, sin paginar.",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/TotalesDeVencimientosDto"
+                            }
+                        ]
+                    },
+                    "expired": {
+                        "description": "Ya vencidos (no se pueden despachar), del más atrasado al menos.",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CylinderVencimientoDto"
+                        }
+                    },
+                    "expiring": {
+                        "description": "Vencen dentro de la ventana, del más urgente al menos.",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CylinderVencimientoDto"
+                        }
+                    },
+                    "unverified": {
+                        "description": "Sin revisión registrada: no hay fecha con la cual comparar.",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CylinderVencimientoDto"
+                        }
+                    }
+                },
+                "required": [
+                    "windowDays",
+                    "totals",
+                    "expired",
+                    "expiring",
+                    "unverified"
+                ]
+            },
+            "CylinderInspectionResponseDto": {
+                "type": "object",
+                "properties": {
+                    "inspectionId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "cylinderId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "inspectedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "result": {
+                        "type": "string",
+                        "enum": [
+                            "approved",
+                            "conditional",
+                            "rejected"
+                        ]
+                    },
+                    "nextDueAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "notes": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "inspectionId",
+                    "cylinderId",
+                    "inspectedAt",
+                    "result",
+                    "nextDueAt",
+                    "notes"
+                ]
+            },
+            "CylinderVigenciaResponseDto": {
+                "type": "object",
+                "properties": {
+                    "cylinderId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "serial": {
+                        "type": "string",
+                        "example": "SN-000123"
+                    },
+                    "state": {
+                        "type": "string",
+                        "enum": [
+                            "in_depot",
+                            "filled",
+                            "dispatched",
+                            "with_customer",
+                            "empty_returned",
+                            "retired"
+                        ]
+                    },
+                    "productType": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "Garrafa 10kg",
+                        "description": "Tipo de producto del envase (null si no tiene uno asignado)"
+                    },
+                    "lastInspectionAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "expiresAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "valid",
+                            "expired",
+                            "unverified"
+                        ]
+                    },
+                    "daysRemaining": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Días que faltan; negativo si ya venció; null sin vencimiento."
+                    },
+                    "manufacturedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "withdrawalPending": {
+                        "type": "boolean",
+                        "description": "Vencido y todavía en poder de un cliente o en reparto: hay que retirarlo cuando vuelva (no se lo saca de circulación antes)."
+                    },
+                    "inspections": {
+                        "description": "Historial de revisiones, de la más reciente a la más antigua.",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CylinderInspectionResponseDto"
+                        }
+                    }
+                },
+                "required": [
+                    "cylinderId",
+                    "serial",
+                    "state",
+                    "productType",
+                    "lastInspectionAt",
+                    "expiresAt",
+                    "status",
+                    "daysRemaining",
+                    "manufacturedAt",
+                    "withdrawalPending",
+                    "inspections"
+                ]
+            },
+            "RegisterInspectionDto": {
+                "type": "object",
+                "properties": {
+                    "inspectedAt": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2026-10-15",
+                        "description": "Día de la revisión (`YYYY-MM-DD`, día calendario de Buenos Aires; si llega un ISO completo se toma su parte de fecha). No puede ser futuro."
+                    },
+                    "result": {
+                        "type": "string",
+                        "enum": [
+                            "approved",
+                            "conditional",
+                            "rejected"
+                        ]
+                    },
+                    "nextDueAt": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2031-10-15",
+                        "description": "Último día en que puede circular (`YYYY-MM-DD`, día de Buenos Aires: vale hasta las 23:59 de ese día). Obligatorio salvo que el resultado sea `rejected`; tiene que ser posterior a `inspectedAt`. En un rechazo se ignora: el vencimiento queda en la fecha de la revisión."
+                    },
+                    "notes": {
+                        "type": "string",
+                        "example": "Válvula reemplazada"
+                    }
+                },
+                "required": [
+                    "inspectedAt",
+                    "result"
+                ]
+            },
             "CylinderMovementResponseDto": {
                 "type": "object",
                 "properties": {
@@ -21631,16 +22236,6 @@
                         "type": "string",
                         "format": "date-time",
                         "description": "Fecha de fabricación"
-                    },
-                    "lastInspectionAt": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "Fecha de la última prueba hidráulica / inspección"
-                    },
-                    "expiresAt": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "Fecha de vencimiento"
                     }
                 }
             },

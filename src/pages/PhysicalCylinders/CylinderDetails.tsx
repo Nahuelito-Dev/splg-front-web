@@ -15,9 +15,10 @@ import {
 import { useBackToList, usePermissions } from '../../hooks';
 import { useCrumbLeaf } from '../../common/components';
 import { useCylinder } from '../../services/queries/physicalCylinders';
-import { formatCurrency, formatDateTime, formatDay, formatShortId } from '../../utils/format';
+import { formatCurrency, formatDateTime, formatArgentinaDay, formatDay, formatShortId } from '../../utils/format';
 import { CYLINDER_STATE, labelOf } from '../../utils/statusLabels';
 import { CylinderFormModal } from './components/CylinderFormModal';
+import { CylinderVigenciaCard } from './components/CylinderVigenciaCard';
 import { CylinderTimeline } from './components/CylinderTimeline';
 import { RetireCylinderModal } from './components/RetireCylinderModal';
 import { canEditCylinder, canRetire, RETIRE_HINT, RETIRED_HINT } from './cylinderTransitions';
@@ -128,8 +129,8 @@ export const CylinderDetails = () => {
                   mono: cylinder.deposit > 0,
                 },
                 { label: 'Fabricación', value: formatDay(cylinder.manufactured_at) },
-                { label: 'Última inspección', value: formatDay(cylinder.last_inspection_at) },
-                { label: 'Vencimiento', value: formatDay(cylinder.expires_at) },
+                { label: 'Última inspección', value: formatArgentinaDay(cylinder.last_inspection_at) },
+                { label: 'Vencimiento', value: formatArgentinaDay(cylinder.expires_at) },
                 { label: 'Alta', value: formatDateTime(cylinder.createdAt) },
                 { label: 'Última modificación', value: formatDateTime(cylinder.updatedAt) },
                 { label: 'ID del envase', value: cylinder.cylinder_id, mono: true, wide: true },
@@ -141,6 +142,8 @@ export const CylinderDetails = () => {
             <h2 className="mb-4 text-base font-semibold text-ink">Movimientos</h2>
             <CylinderTimeline cylinderId={cylinder.cylinder_id} />
           </Card>
+
+          <CylinderVigenciaCard cylinderId={cylinder.cylinder_id} retired={cylinder.state === 'retired'} />
         </div>
       )}
 

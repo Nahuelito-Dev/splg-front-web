@@ -5,10 +5,8 @@ export interface CylinderEditValues {
   serial: string;
   gasCylinderId: string;
   deposit: number;
-  /** YYYY-MM-DD; vacío limpia la fecha. */
+  /** YYYY-MM-DD; vacío limpia la fecha. La revisión y el vencimiento no se editan acá: van por «Registrar revisión». */
   manufacturedAt: string;
-  lastInspectionAt: string;
-  expiresAt: string;
 }
 
 /** El día (sin hora ni zona) de un date-time ISO: las fechas del envase son de calendario. */
@@ -19,8 +17,6 @@ export const cylinderEditDefaults = (cylinder?: Cylinder | null): CylinderEditVa
   gasCylinderId: cylinder?.gas_cylinder_id ?? '',
   deposit: cylinder?.deposit ?? 0,
   manufacturedAt: dayOf(cylinder?.manufactured_at),
-  lastInspectionAt: dayOf(cylinder?.last_inspection_at),
-  expiresAt: dayOf(cylinder?.expires_at),
 });
 
 /**
@@ -33,8 +29,6 @@ export const buildCylinderUpdate = (cylinder: Cylinder, values: CylinderEditValu
   if (values.serial.trim() !== before.serial) body.serial = values.serial.trim();
   if (values.gasCylinderId !== before.gasCylinderId) body.gasCylinderId = values.gasCylinderId || null;
   if (Number(values.deposit) !== Number(before.deposit)) body.deposit = Number(values.deposit);
-  for (const key of ['manufacturedAt', 'lastInspectionAt', 'expiresAt'] as const) {
-    if (values[key] !== before[key]) body[key] = values[key] || null;
-  }
+  if (values.manufacturedAt !== before.manufacturedAt) body.manufacturedAt = values.manufacturedAt || null;
   return body;
 };

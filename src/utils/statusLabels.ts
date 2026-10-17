@@ -1,7 +1,10 @@
+import type { CylinderFilters } from '../services/api/physicalCylinders';
 import type {
   AsientoDeAuditoria,
   Claim,
   Cylinder,
+  CylinderInspection,
+  CylinderVigencia,
   Delivery,
   Distributor,
   FleetExpirationEntry,
@@ -85,6 +88,26 @@ export const CYLINDER_STATE: LabelMap<Cylinder['state']> = {
   with_customer: { text: 'Con el cliente', tone: 'info' },
   empty_returned: { text: 'Vacío devuelto', tone: 'warn' },
   retired: { text: 'Retirado', tone: 'danger' },
+};
+
+export const CYLINDER_VIGENCIA: LabelMap<CylinderVigencia['status']> = {
+  valid: { text: 'Vigente', tone: 'success' },
+  expired: { text: 'Vencido', tone: 'danger' },
+  unverified: { text: 'Sin revisión registrada', tone: 'neutral' },
+};
+
+/** Opciones del filtro de vigencia del listado: los tres estados y «Despachables» (vigentes + sin revisión registrada). */
+export const VIGENCIA_FILTER_LABEL: Record<NonNullable<CylinderFilters['vigencia']>, string> = {
+  valid: 'Vigentes',
+  expired: 'Vencidos',
+  unverified: 'Sin revisión registrada',
+  dispatchable: 'Despachables (vigentes y sin revisión)',
+};
+
+export const INSPECTION_RESULT: LabelMap<CylinderInspection['result']> = {
+  approved: { text: 'Aprobada', tone: 'success' },
+  conditional: { text: 'Condicional', tone: 'warn' },
+  rejected: { text: 'Rechazada', tone: 'danger' },
 };
 
 export const CLAIM_STATUS: LabelMap<Claim['status']> = {

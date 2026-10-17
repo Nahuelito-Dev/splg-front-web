@@ -3913,6 +3913,86 @@ export interface paths {
     patch: operations['PurchaseReceiptController_paymentStatus'];
     trace?: never;
   };
+  '/api/cylinders/vigencia/proximos-a-vencer': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Envases próximos a vencer (CU-134)
+     * @description Separa los ya vencidos, los que vencen dentro de la ventana de `days` días (default 30) y los sin revisión registrada, que no tienen fecha con la cual comparar. Cada grupo va ordenado por vencimiento, del más urgente al menos, y se pagina por separado con `limit` (default 100, máx. 500) y `offset`; `totals` trae el total de cada grupo. No incluye envases dados de baja.
+     */
+    get: operations['CylinderController_expiring'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/cylinders/vigencia/serial/{serial}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Vigencia de un envase por número de serie (CU-133)
+     * @description Lo que se escanea: el serial grabado en el envase. El serial es único por distribuidora, así que el super admin tiene que elegir una con `X-Distributor` (400 si no).
+     */
+    get: operations['CylinderController_vigenciaBySerial'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/cylinders/{id}/vigencia': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Vigencia de un envase (CU-133)
+     * @description Fabricación, última revisión, vencimiento, días que faltan e historial de revisiones. `status`: `valid`, `expired` o `unverified` (sin revisión registrada: no es lo mismo que vencido y no bloquea el despacho).
+     */
+    get: operations['CylinderController_getVigencia'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/cylinders/{id}/inspections': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Registrar la revisión periódica de un envase (CU-132)
+     * @description Guarda la revisión en el historial y copia la última fecha y el vencimiento en la ficha. Un resultado `rejected` deja el vencimiento en la fecha de la revisión: el envase queda alcanzado por el bloqueo del despacho. Si está en poder de un cliente o en reparto no se lo saca de circulación: `withdrawalPending` lo marca para retirar.
+     */
+    post: operations['CylinderController_registerInspection'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -6018,6 +6098,118 @@ export interface components {
        */
       serials: string[];
     };
+    CylinderExpiredResponseDto: {
+      /** @example 409 */
+      statusCode: number;
+      /** @example Conflict */
+      error: string;
+      /** @example CYLINDER_EXPIRED */
+      code: string;
+      /** @example Envases con la revisión vencida: SN-000123 */
+      message: string;
+      /**
+       * @example [
+       *       "SN-000123"
+       *     ]
+       */
+      serials: string[];
+    };
+    TotalesDeVencimientosDto: {
+      expired: number;
+      expiring: number;
+      unverified: number;
+    };
+    CylinderVencimientoDto: {
+      /** Format: uuid */
+      cylinderId: string;
+      /** @example SN-000123 */
+      serial: string;
+      /** @enum {string} */
+      state: 'in_depot' | 'filled' | 'dispatched' | 'with_customer' | 'empty_returned' | 'retired';
+      /**
+       * @description Tipo de producto del envase (null si no tiene uno asignado)
+       * @example Garrafa 10kg
+       */
+      productType: string | null;
+      /** Format: date-time */
+      lastInspectionAt: string | null;
+      /** Format: date-time */
+      expiresAt: string | null;
+      /** @enum {string} */
+      status: 'valid' | 'expired' | 'unverified';
+      /** @description Días que faltan; negativo si ya venció; null sin vencimiento. */
+      daysRemaining: number | null;
+    };
+    ExpiringCylindersResponseDto: {
+      /** @example 30 */
+      windowDays: number;
+      /** @description Total de cada grupo, sin paginar. */
+      totals: components['schemas']['TotalesDeVencimientosDto'];
+      /** @description Ya vencidos (no se pueden despachar), del más atrasado al menos. */
+      expired: components['schemas']['CylinderVencimientoDto'][];
+      /** @description Vencen dentro de la ventana, del más urgente al menos. */
+      expiring: components['schemas']['CylinderVencimientoDto'][];
+      /** @description Sin revisión registrada: no hay fecha con la cual comparar. */
+      unverified: components['schemas']['CylinderVencimientoDto'][];
+    };
+    CylinderInspectionResponseDto: {
+      /** Format: uuid */
+      inspectionId: string;
+      /** Format: uuid */
+      cylinderId: string;
+      /** Format: date-time */
+      inspectedAt: string;
+      /** @enum {string} */
+      result: 'approved' | 'conditional' | 'rejected';
+      /** Format: date-time */
+      nextDueAt: string | null;
+      notes: string | null;
+    };
+    CylinderVigenciaResponseDto: {
+      /** Format: uuid */
+      cylinderId: string;
+      /** @example SN-000123 */
+      serial: string;
+      /** @enum {string} */
+      state: 'in_depot' | 'filled' | 'dispatched' | 'with_customer' | 'empty_returned' | 'retired';
+      /**
+       * @description Tipo de producto del envase (null si no tiene uno asignado)
+       * @example Garrafa 10kg
+       */
+      productType: string | null;
+      /** Format: date-time */
+      lastInspectionAt: string | null;
+      /** Format: date-time */
+      expiresAt: string | null;
+      /** @enum {string} */
+      status: 'valid' | 'expired' | 'unverified';
+      /** @description Días que faltan; negativo si ya venció; null sin vencimiento. */
+      daysRemaining: number | null;
+      /** Format: date-time */
+      manufacturedAt: string | null;
+      /** @description Vencido y todavía en poder de un cliente o en reparto: hay que retirarlo cuando vuelva (no se lo saca de circulación antes). */
+      withdrawalPending: boolean;
+      /** @description Historial de revisiones, de la más reciente a la más antigua. */
+      inspections: components['schemas']['CylinderInspectionResponseDto'][];
+    };
+    RegisterInspectionDto: {
+      /**
+       * Format: date
+       * @description Día de la revisión (`YYYY-MM-DD`, día calendario de Buenos Aires; si llega un ISO completo se toma su parte de fecha). No puede ser futuro.
+       * @example 2026-10-15
+       */
+      inspectedAt: string;
+      /** @enum {string} */
+      result: 'approved' | 'conditional' | 'rejected';
+      /**
+       * Format: date
+       * @description Último día en que puede circular (`YYYY-MM-DD`, día de Buenos Aires: vale hasta las 23:59 de ese día). Obligatorio salvo que el resultado sea `rejected`; tiene que ser posterior a `inspectedAt`. En un rechazo se ignora: el vencimiento queda en la fecha de la revisión.
+       * @example 2031-10-15
+       */
+      nextDueAt?: string;
+      /** @example Válvula reemplazada */
+      notes?: string;
+    };
     CylinderMovementResponseDto: {
       /** Format: uuid */
       movement_id: string;
@@ -6055,16 +6247,6 @@ export interface components {
        * @description Fecha de fabricación
        */
       manufacturedAt?: string;
-      /**
-       * Format: date-time
-       * @description Fecha de la última prueba hidráulica / inspección
-       */
-      lastInspectionAt?: string;
-      /**
-       * Format: date-time
-       * @description Fecha de vencimiento
-       */
-      expiresAt?: string;
     };
     RetireCylinderDto: {
       /**
@@ -12472,9 +12654,9 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        ownerType: components['schemas']['AttachmentOwnerType'];
         /** @description UUID del dueño */
         ownerId: string;
+        ownerType: components['schemas']['AttachmentOwnerType'];
       };
       cookie?: never;
     };
@@ -12523,9 +12705,9 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        ownerType: components['schemas']['AttachmentOwnerType'];
         /** @description UUID del dueño */
         ownerId: string;
+        ownerType: components['schemas']['AttachmentOwnerType'];
       };
       cookie?: never;
     };
@@ -15419,6 +15601,10 @@ export interface operations {
         orderId?: string;
         /** @description user_id del cliente (el mismo que `customer_id` de un pedido y `user_id` de un cliente; NO el `customer_id` del perfil). Devuelve los envases que tiene hoy en su poder. */
         customerUserId?: string;
+        /** @description Tipo de producto del envase (para buscar un reemplazo). */
+        gasCylinderId?: string;
+        /** @description Vigencia de la revisión: `valid` (no venció), `expired` (venció, no se puede despachar), `unverified` (sin revisión registrada) o `dispatchable` (vigentes y sin revisión registrada: los que se pueden asignar a un pedido). */
+        vigencia?: 'valid' | 'expired' | 'unverified' | 'dispatchable';
         /** @description Sin `limit` devuelve todos los envases. */
         limit?: number;
         offset?: number;
@@ -15532,7 +15718,7 @@ export interface operations {
           'application/json': components['schemas']['CylinderResponseDto'][];
         };
       };
-      /** @description Algún envase no está FILLED (no se puede despachar) */
+      /** @description Algún envase no está FILLED (no se puede despachar) o hay seriales repetidos */
       400: {
         headers: {
           [name: string]: unknown;
@@ -15559,6 +15745,15 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+      /** @description Algún envase tiene la revisión vencida: se rechaza la asignación completa y no se asigna ninguno. El cuerpo trae `code: CYLINDER_EXPIRED` y `serials` con los vencidos. Los envases sin vencimiento cargado pasan. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CylinderExpiredResponseDto'];
+        };
       };
       /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
       422: {
@@ -15821,6 +16016,15 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+      /** @description Despachar (`dispatched`) un envase con la revisión vencida: el mismo 409 `CYLINDER_EXPIRED` que la asignación a un pedido. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CylinderExpiredResponseDto'];
+        };
       };
     };
   };
@@ -22251,6 +22455,198 @@ export interface operations {
       };
       /** @description No existe o es de otra distribuidora */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CylinderController_expiring: {
+    parameters: {
+      query?: {
+        /** @description Ventana en días: los que vencen de hoy a hoy + `days`. */
+        days?: number;
+        /** @description Tamaño de página de cada grupo. */
+        limit?: number;
+        offset?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ExpiringCylindersResponseDto'];
+        };
+      };
+      /** @description `days` o la paginación fuera de rango */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CylinderController_vigenciaBySerial: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        serial: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CylinderVigenciaResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Envase no encontrado */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CylinderController_getVigencia: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Cylinder UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CylinderVigenciaResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Envase no encontrado */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CylinderController_registerInspection: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Cylinder UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RegisterInspectionDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CylinderVigenciaResponseDto'];
+        };
+      };
+      /** @description Fecha de revisión futura, vencimiento faltante o no posterior a la revisión */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Envase no encontrado */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El envase está dado de baja */
+      409: {
         headers: {
           [name: string]: unknown;
         };

@@ -166,3 +166,30 @@ describe('NotificationBell: «Ver como» otra distribuidora', () => {
     expect(screen.getByRole('button', { name: /2 sin leer/ })).toBeInTheDocument();
   });
 });
+
+describe('NotificationBell: cylinder:dispatch-blocked', () => {
+  it('suma una notificación con los seriales vencidos', () => {
+    setup();
+    act(() => {
+      handlers.get('cylinder:dispatch-blocked')?.({
+        orderId: 'aaaaaaaa-1111',
+        distributorId: 'dist-A',
+        serials: ['SN-1', 'SN-2'],
+      });
+    });
+    fireEvent.click(screen.getByRole('button', { name: /1 sin leer/ }));
+    expect(screen.getByText('Despacho bloqueado: envase con la revisión vencida')).toBeInTheDocument();
+    expect(screen.getByText(/SN-1, SN-2/)).toBeInTheDocument();
+    expect(notifyInfo).toHaveBeenCalledWith(expect.stringContaining('SN-1, SN-2'));
+  });
+
+  it('sin pedido (transición suelta) también avisa; ignora el de otra distribuidora', () => {
+    scope.viewing = 'dist-A';
+    setup();
+    act(() => {
+      handlers.get('cylinder:dispatch-blocked')?.({ orderId: null, distributorId: 'dist-A', serials: ['SN-9'] });
+      handlers.get('cylinder:dispatch-blocked')?.({ orderId: null, distributorId: 'dist-B', serials: ['SN-8'] });
+    });
+    expect(screen.getByRole('button', { name: /1 sin leer/ })).toBeInTheDocument();
+  });
+});

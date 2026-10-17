@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import type { GridPaginationModel } from '@mui/x-data-grid';
 import AddIcon from '@mui/icons-material/Add';
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
-import { PackageCheck, Warehouse } from 'lucide-react';
+import { CalendarClock, PackageCheck, Warehouse } from 'lucide-react';
 import {
   Button,
   Card,
@@ -12,6 +12,7 @@ import {
   ListSkeleton,
   PageHeader,
   SearchInput,
+  Select,
   SelectionBar,
   Tabs,
   tabPanelProps,
@@ -28,7 +29,7 @@ import {
 } from '../../services/queries/physicalCylinders';
 import { formatShortId } from '../../utils/format';
 import { notify } from '../../utils/notifications';
-import { CYLINDER_STATE, labelOf } from '../../utils/statusLabels';
+import { CYLINDER_STATE, VIGENCIA_FILTER_LABEL, labelOf } from '../../utils/statusLabels';
 import { BulkTransitionModal } from './components/BulkTransitionModal';
 import { AssignCylindersModal } from './components/AssignCylindersModal';
 import { CylinderFormModal } from './components/CylinderFormModal';
@@ -40,16 +41,27 @@ import { ALL_STATES } from './cylinderTransitions';
 
 const TABS_ID = 'cylinders';
 const PAGE_SIZE = 10;
+const VIGENCIAS = ['valid', 'expired', 'unverified', 'dispatchable'] as const;
 
 export const PhysicalCylinders = () => {
   // El estado, el pedido, el cliente, la búsqueda y la página viven en la URL: al volver de una ficha o recargar, la
   // lista queda como estaba. `order` y `customer` (user_id) llegan desde las fichas del pedido y del cliente.
-  const [{ state: stateParam, q: term, order: orderParam, customer: customerParam, page: pageParam }, setFilters] =
-    useUrlParams({ state: 'all', q: '', order: '', customer: '', page: '1' });
+  const [
+    {
+      state: stateParam,
+      q: term,
+      order: orderParam,
+      customer: customerParam,
+      vigencia: vigenciaParam,
+      page: pageParam,
+    },
+    setFilters,
+  ] = useUrlParams({ state: 'all', q: '', order: '', customer: '', vigencia: '', page: '1' });
   const debouncedTerm = useDebounce(term.trim());
   const pagination: GridPaginationModel = { page: Math.max(0, Number(pageParam) - 1 || 0), pageSize: PAGE_SIZE };
   const setPagination = (model: GridPaginationModel) => setFilters({ page: String(model.page + 1) });
   const state: CylinderStateFilter = ALL_STATES.find((s) => s === stateParam) ?? 'all';
+  const vigencia = VIGENCIAS.find((v) => v === vigenciaParam);
   const [form, setForm] = useState<{ open: boolean; cylinder: Cylinder | null }>({ open: false, cylinder: null });
   const [retireTarget, setRetireTarget] = useState<Cylinder | null>(null);
   const [assignOpen, setAssignOpen] = useState(false);
@@ -66,11 +78,11 @@ export const PhysicalCylinders = () => {
   const customerUserId = uuidOrUndefined(customerParam) ?? '';
   const scope = { orderId: orderId || undefined, customerUserId: customerUserId || undefined };
   const { data, isPending, isFetching, error, refetch } = useCylinders(
-    { ...scope, state: state === 'all' ? undefined : state },
+    { ...scope, state: state === 'all' ? undefined : state, vigencia },
     pagination,
     debouncedTerm,
   );
-  const counts = useCylinderStateCounts(scope);
+  const counts = useCylinderStateCounts({ ...scope, vigencia });
   const customerNames = useUserNames([customerUserId]);
   const bulkTransition = useBulkTransitionCylinders();
 
@@ -106,6 +118,7 @@ export const PhysicalCylinders = () => {
     });
   if (orderParam && !orderId) chips.push({ key: 'order', label: 'Pedido no válido (se ignora)' });
   if (customerParam && !customerUserId) chips.push({ key: 'customer', label: 'Cliente no válido (se ignora)' });
+  if (vigencia) chips.push({ key: 'vigencia', label: VIGENCIA_FILTER_LABEL[vigencia] });
   if (term.trim()) chips.push({ key: 'q', label: `"${term.trim()}"` });
   const removeChip = (key: string) => setFilters({ [key]: key === 'state' ? 'all' : '', page: '1' });
 
@@ -134,6 +147,13 @@ export const PhysicalCylinders = () => {
         description="Garrafas serializadas y su ciclo de vida: depósito → llenado → reparto → cliente → retorno."
         actions={
           <>
+            <Button
+              variant="secondary"
+              icon={<CalendarClock />}
+              onClick={() => navigate('/physical-cylinders/expirations')}
+            >
+              Vencimientos
+            </Button>
             <Button
               variant="secondary"
               icon={<AssignmentTurnedInIcon />}
@@ -183,6 +203,18 @@ export const PhysicalCylinders = () => {
                     setFilters({ q: e.target.value, page: '1' });
                   }}
                 />
+                <Select
+                  label="Vigencia de la revisión"
+                  value={vigencia ?? ''}
+                  onChange={(e) => {
+                    clearSelection();
+                    setFilters({ vigencia: e.target.value, page: '1' });
+                  }}
+                  options={[
+                    { value: '', label: 'Todas' },
+                    ...VIGENCIAS.map((v) => ({ value: v, label: VIGENCIA_FILTER_LABEL[v] })),
+                  ]}
+                />
                 <FilterChips
                   items={chips}
                   onRemove={(key) => {
@@ -191,7 +223,7 @@ export const PhysicalCylinders = () => {
                   }}
                   onClearAll={() => {
                     clearSelection();
-                    setFilters({ state: 'all', q: '', order: '', customer: '', page: '1' });
+                    setFilters({ state: 'all', q: '', order: '', customer: '', vigencia: '', page: '1' });
                   }}
                   resultCount={data ? total : undefined}
                 />

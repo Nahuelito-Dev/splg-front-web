@@ -15,8 +15,6 @@ const schema = z.object({
   gasCylinderId: z.string(),
   deposit: z.coerce.number({ invalid_type_error: 'Ingresá un número' }).min(0, 'No puede ser negativo'),
   manufacturedAt: z.string(),
-  lastInspectionAt: z.string(),
-  expiresAt: z.string(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -111,11 +109,12 @@ export const CylinderFormModal = ({ open, onClose, cylinder }: Props) => {
           {...register('deposit')}
         />
         {editing && (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <Input label="Fabricación" type="date" {...register('manufacturedAt')} />
-            <Input label="Última inspección" type="date" {...register('lastInspectionAt')} />
-            <Input label="Vencimiento" type="date" {...register('expiresAt')} />
-          </div>
+          <Input
+            label="Fabricación"
+            type="date"
+            hint="La última revisión y el vencimiento se cargan con «Registrar revisión» en la ficha."
+            {...register('manufacturedAt')}
+          />
         )}
       </form>
     </Modal>
