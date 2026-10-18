@@ -2,10 +2,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   getDispatchConfig,
   getScheduledTasksConfig,
+  listProcessConfigs,
   putDispatchConfig,
+  putProcessConfig,
   putScheduledTasksConfig,
+  type ProcessConfigBody,
 } from '../api/moduleConfig';
-import type { DispatchConfigBody, ScheduledTasksConfigBody } from '../api/types';
+import type { DispatchConfigBody, ProcessConfig, ScheduledTasksConfigBody } from '../api/types';
 import { queryKeys } from './queryKeys';
 
 const keys = queryKeys.moduleConfig;
@@ -36,6 +39,21 @@ export const useUpdateScheduledTasksConfig = () => {
     mutationFn: (body: ScheduledTasksConfigBody) => putScheduledTasksConfig(body),
     onSuccess: (saved) => {
       queryClient.setQueryData(keys.detail('scheduled_tasks'), saved);
+    },
+  });
+};
+
+export const useProcessConfigs = ({ enabled = true }: Options = {}) =>
+  useQuery({ queryKey: keys.list({ kind: 'processes' }), queryFn: listProcessConfigs, enabled });
+
+export const useUpdateProcessConfig = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ process, body }: { process: string; body: ProcessConfigBody }) => putProcessConfig(process, body),
+    onSuccess: (saved) => {
+      queryClient.setQueryData(keys.list({ kind: 'processes' }), (current: ProcessConfig[] | undefined) =>
+        current?.map((p) => (p.process === saved.process ? saved : p)),
+      );
     },
   });
 };

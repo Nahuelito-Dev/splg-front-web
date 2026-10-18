@@ -1,7 +1,7 @@
 import type { GridColDef, GridPaginationModel } from '@mui/x-data-grid';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Flame, PackagePlus } from 'lucide-react';
+import { Flame, PackagePlus, RotateCcw } from 'lucide-react';
 import { Badge, DataTable, EmptyState, IdentityCell, RowActions } from '../../../common/components/ui';
 import type { GasCylinder } from '../../../services/api/types';
 import { formatCurrency } from '../../../utils/format';
@@ -13,16 +13,21 @@ interface Props {
   loading: boolean;
   /** Hay filtros activos: un vacío significa "sin resultados". */
   filtered?: boolean;
+  /** Vista de los productos dados de baja (CU-269): sólo se pueden ver y reactivar. */
+  inactive?: boolean;
   pagination: GridPaginationModel;
   onPaginationChange: (model: GridPaginationModel) => void;
   /** Sin él no se muestra el botón (p. ej. superadmin sin distribuidora elegida). */
   onEdit?: (cylinder: GasCylinder) => void;
   onAdjustStock?: (cylinder: GasCylinder) => void;
   onDelete?: (cylinder: GasCylinder) => void;
+  /** Reactivar un producto dado de baja (CU-268); sólo se usa en la vista de inactivos. */
+  onReactivate?: (cylinder: GasCylinder) => void;
 }
 
 export const CylindersTable = ({
   filtered = false,
+  inactive = false,
   rows,
   total,
   loading,
@@ -31,6 +36,7 @@ export const CylindersTable = ({
   onEdit,
   onAdjustStock,
   onDelete,
+  onReactivate,
 }: Props) => {
   const navigate = useNavigate();
   const columns = useMemo<GridColDef<GasCylinder>[]>(
@@ -80,17 +86,23 @@ export const CylindersTable = ({
           <RowActions
             rowLabel={row.type}
             onView={() => navigate(`/cylinders/details/${row.gas_cylinder_id}`)}
-            onEdit={onEdit && (() => onEdit(row))}
-            onDelete={onDelete && (() => onDelete(row))}
+            onEdit={!inactive && onEdit ? () => onEdit(row) : undefined}
+            onDelete={!inactive && onDelete ? () => onDelete(row) : undefined}
             deleteLabel="Desactivar"
             actions={
-              onAdjustStock ? [{ label: 'Ajustar stock', icon: PackagePlus, onClick: () => onAdjustStock(row) }] : []
+              inactive
+                ? onReactivate
+                  ? [{ label: 'Reactivar', icon: RotateCcw, onClick: () => onReactivate(row) }]
+                  : []
+                : onAdjustStock
+                  ? [{ label: 'Ajustar stock', icon: PackagePlus, onClick: () => onAdjustStock(row) }]
+                  : []
             }
           />
         ),
       },
     ],
-    [navigate, onEdit, onAdjustStock, onDelete],
+    [navigate, inactive, onEdit, onAdjustStock, onDelete, onReactivate],
   );
 
   return (
@@ -108,6 +120,8 @@ export const CylindersTable = ({
             title="Sin resultados"
             description="Ningún producto coincide con los filtros elegidos."
           />
+        ) : inactive ? (
+          <EmptyState title="No hay productos dados de baja" description="Todos los productos están activos." />
         ) : (
           <EmptyState
             title="No hay productos"

@@ -7,6 +7,8 @@ import {
   CircleX,
   ShieldAlert,
   HandCoins,
+  MapPinned,
+  MapPinOff,
   PackagePlus,
   RotateCcw,
   ThumbsUp,
@@ -22,7 +24,9 @@ import { useSocketContext } from '../../../../context/useSocketContext';
 import {
   CYLINDER_BLOCKED_EVENT,
   INCIDENT_CREATED_EVENT,
+  NO_ACTIVE_ZONES_EVENT,
   NO_DRIVERS_EVENT,
+  type NoActiveZonesPayload,
   ORDER_SOCKET_EVENTS,
   type CylinderBlockedPayload,
   type IncidentCreatedPayload,
@@ -58,7 +62,11 @@ interface OrderSocketPayload {
 
 /** Los eventos que la campana muestra: los del ciclo de vida del pedido y el aviso de un cobro impago. */
 type NotificationEvent =
-  OrderSocketEventName | typeof INCIDENT_CREATED_EVENT | typeof NO_DRIVERS_EVENT | typeof CYLINDER_BLOCKED_EVENT;
+  | OrderSocketEventName
+  | typeof INCIDENT_CREATED_EVENT
+  | typeof NO_DRIVERS_EVENT
+  | typeof CYLINDER_BLOCKED_EVENT
+  | typeof NO_ACTIVE_ZONES_EVENT;
 
 export interface OrderNotification {
   id: string;
@@ -75,6 +83,7 @@ const EVENT_LABELS: Record<NotificationEvent, string> = {
   [INCIDENT_CREATED_EVENT]: 'Cobro impago: el chofer no pudo cobrar',
   [NO_DRIVERS_EVENT]: 'Pedido sin chofer disponible',
   [CYLINDER_BLOCKED_EVENT]: 'Despacho bloqueado: envase con la revisión vencida',
+  [NO_ACTIVE_ZONES_EVENT]: 'Sin zonas de cobertura activas: no se aceptan pedidos nuevos',
   [ORDER_SOCKET_EVENTS.CREATED]: 'Nuevo pedido',
   [ORDER_SOCKET_EVENTS.ACCEPTED]: 'Pedido aceptado',
   [ORDER_SOCKET_EVENTS.ON_THE_WAY]: 'Pedido en camino',
@@ -82,12 +91,14 @@ const EVENT_LABELS: Record<NotificationEvent, string> = {
   [ORDER_SOCKET_EVENTS.CANCELLED]: 'Pedido cancelado',
   [ORDER_SOCKET_EVENTS.RELEASED]: 'Pedido liberado, vuelve a buscar chofer',
   [ORDER_SOCKET_EVENTS.ASSIGNMENT_DECLINED]: 'El chofer no confirmó la asignación',
+  [ORDER_SOCKET_EVENTS.ADDRESS_CHANGED]: 'El cliente cambió la dirección de entrega',
 };
 
 const EVENT_VISUALS: Record<NotificationEvent, { icon: LucideIcon; tone: Tone }> = {
   [INCIDENT_CREATED_EVENT]: { icon: HandCoins, tone: 'danger' },
   [NO_DRIVERS_EVENT]: { icon: UserRoundSearch, tone: 'warn' },
   [CYLINDER_BLOCKED_EVENT]: { icon: ShieldAlert, tone: 'danger' },
+  [NO_ACTIVE_ZONES_EVENT]: { icon: MapPinOff, tone: 'danger' },
   [ORDER_SOCKET_EVENTS.CREATED]: { icon: PackagePlus, tone: 'primary' },
   [ORDER_SOCKET_EVENTS.ACCEPTED]: { icon: ThumbsUp, tone: 'info' },
   [ORDER_SOCKET_EVENTS.ON_THE_WAY]: { icon: Truck, tone: 'info' },
@@ -95,6 +106,7 @@ const EVENT_VISUALS: Record<NotificationEvent, { icon: LucideIcon; tone: Tone }>
   [ORDER_SOCKET_EVENTS.CANCELLED]: { icon: CircleX, tone: 'danger' },
   [ORDER_SOCKET_EVENTS.RELEASED]: { icon: RotateCcw, tone: 'warn' },
   [ORDER_SOCKET_EVENTS.ASSIGNMENT_DECLINED]: { icon: UserRoundX, tone: 'warn' },
+  [ORDER_SOCKET_EVENTS.ADDRESS_CHANGED]: { icon: MapPinned, tone: 'info' },
 };
 
 const NO_DRIVERS_REASONS: Record<NoDriversReason, string> = {
@@ -178,6 +190,15 @@ export const NotificationBell = () => {
       }),
     );
 
+    // El barrido de zonas vencidas apagó la última zona activa: la distribuidora ya no cubre ninguna dirección.
+    unsubscribers.push(
+      subscribe<NoActiveZonesPayload>(NO_ACTIVE_ZONES_EVENT, (payload) => {
+        if (!belongsToView(payload)) return;
+        pushNotification(NO_ACTIVE_ZONES_EVENT, { at: payload.at });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.coverageZones.all });
+      }),
+    );
+
     // Un cobro impago cambia el pedido, la lista de incidencias y los reportes: se refrescan y se avisa con un toast.
     unsubscribers.push(
       subscribe<IncidentCreatedPayload>(INCIDENT_CREATED_EVENT, (payload) => {
@@ -206,7 +227,13 @@ export const NotificationBell = () => {
   /** Marca la notificación como leída y, si trajo `orderId`, abre la ficha de ese pedido. */
   const handleNotificationClick = ({ id }: NotificationsDrawerItem) => {
     handleMarkAsRead(id);
-    const orderId = notifications.find((notification) => notification.id === id)?.orderId;
+    const clicked = notifications.find((notification) => notification.id === id);
+    if (clicked?.event === NO_ACTIVE_ZONES_EVENT) {
+      setOpen(false);
+      navigate('/coverage-zones');
+      return;
+    }
+    const orderId = clicked?.orderId;
     if (orderId) {
       setOpen(false);
       navigate(`/orders/${orderId}`);

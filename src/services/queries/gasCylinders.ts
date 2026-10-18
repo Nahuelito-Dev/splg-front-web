@@ -6,6 +6,8 @@ import {
   getGasCylinder,
   getGasCylinderByType,
   listGasCylinders,
+  listInactiveGasCylinders,
+  reactivateGasCylinder,
   updateGasCylinder,
   updateGasCylinderStock,
 } from '../api/gasCylinders';
@@ -22,6 +24,15 @@ export const useGasCylinders = (params: PageParams, search = '') =>
     queryKey: keys.list({ ...params, search }),
     queryFn: () => listGasCylinders(params, search),
     placeholderData: keepPreviousData,
+  });
+
+/** Los productos dados de baja (CU-269). Sólo consulta cuando la pantalla está en esa vista. */
+export const useInactiveGasCylinders = (params: PageParams, search = '', enabled = true) =>
+  useQuery({
+    queryKey: [...keys.all, 'inactive', { ...params, search }],
+    queryFn: () => listInactiveGasCylinders(params, search),
+    placeholderData: keepPreviousData,
+    enabled,
   });
 
 /** Todos los tipos del catálogo (con o sin stock) para el combo de filtro: una página grande, sin buscador. */
@@ -84,6 +95,14 @@ export const useDeleteGasCylinder = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => deleteGasCylinder(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
+  });
+};
+
+export const useReactivateGasCylinder = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => reactivateGasCylinder(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
   });
 };
