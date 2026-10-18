@@ -13,6 +13,9 @@ vi.mock('../../services/queries/orders', () => ({
   useCreateOrder: () => ({ mutate: createOrder, isPending: false }),
   useDeliveryOptions: () => ({ data: deliveryOptions.data }),
 }));
+vi.mock('../../services/queries/finance', () => ({
+  useCustomerAccountOf: () => ({ data: null, isPending: false }),
+}));
 vi.mock('../../services/queries/userAddresses', () => ({
   useUserAddresses: () => ({
     data: [{ address_id: 'a-1', street: 'Calle 1', city: 'Posadas', isDefault: false }],

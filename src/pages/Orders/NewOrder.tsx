@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button, Card, PageHeader, Select, TextArea } from '../../common/components/ui';
 import { usePermissions } from '../../hooks';
 import type { Customer } from '../../services/api/types';
+import { useCustomerAccountOf } from '../../services/queries/finance';
 import { useUserAddresses } from '../../services/queries/userAddresses';
 import { useCreateOrder, useDeliveryOptions } from '../../services/queries/orders';
 import { notify } from '../../utils/notifications';
@@ -27,6 +28,7 @@ export const NewOrder = () => {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const { data: addresses, isPending: loadingAddresses } = useUserAddresses(customer?.user_id);
   const createOrder = useCreateOrder();
+  const account = useCustomerAccountOf(customer?.user_id, customer?.user?.full_name ?? undefined);
 
   const {
     register,
@@ -55,6 +57,18 @@ export const NewOrder = () => {
   useEffect(() => {
     if (deliveryMode === 'express' && express && !express.available) setValue('deliveryMode', 'standard');
   }, [deliveryMode, express, setValue]);
+  const onAccount = watch('paymentMethod') === 'account';
+  const accountHint = !onAccount
+    ? undefined
+    : !customer
+      ? 'Elegí primero un cliente.'
+      : account.isPending
+        ? 'Consultando su cuenta…'
+        : !account.data
+          ? 'El cliente no tiene cuenta corriente en esta distribuidora: habilitala desde su ficha.'
+          : account.data.status !== 'active'
+            ? `La cuenta está ${account.data.status === 'blocked' ? 'bloqueada' : 'cerrada'}.`
+            : `Crédito disponible: ${formatCurrency(account.data.availableCredit)}`;
 
   const handleSelectCustomer = (picked: Customer) => {
     setCustomer(picked);
@@ -152,6 +166,7 @@ export const NewOrder = () => {
           <Select
             label="Método de pago"
             options={PAYMENT_OPTIONS}
+            hint={accountHint}
             error={errors.paymentMethod?.message}
             {...register('paymentMethod')}
           />
