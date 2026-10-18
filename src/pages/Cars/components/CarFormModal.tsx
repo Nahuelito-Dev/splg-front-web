@@ -5,7 +5,7 @@ import { Button, Input, Modal, Select, type SelectOption } from '../../../common
 import type { Car } from '../../../services/api/types';
 import { useCreateCar, useUpdateCar } from '../../../services/queries/cars';
 import { notify } from '../../../utils/notifications';
-import { CAR_TYPE_OPTIONS, carSchema, type CarFormValues } from '../carSchema';
+import { CAR_TYPE_OPTIONS, FUEL_TYPE_OPTIONS, carSchema, type CarFormValues } from '../carSchema';
 
 interface Props {
   open: boolean;
@@ -44,11 +44,20 @@ export const CarFormModal = ({ open, onClose, car, fixedUserId, driverOptions, d
       car_color: car?.car_color ?? '',
       car_year: car?.car_year ?? undefined,
       car_capacity: car?.car_capacity ?? undefined,
+      fuel_type: car?.fuel_type ?? '',
+      tank_capacity_liters: car?.tank_capacity_liters ?? undefined,
     });
   }, [open, car, fixedUserId, reset]);
 
   const onSubmit = handleSubmit((values) => {
-    const body = { ...values, user_id: fixedUserId ?? values.user_id };
+    const { fuel_type: fuelType, tank_capacity_liters: tank, ...rest } = values;
+    const body = {
+      ...rest,
+      user_id: fixedUserId ?? values.user_id,
+      // Vacío limpia el dato guardado (la API acepta `null`).
+      fuel_type: fuelType || null,
+      tank_capacity_liters: tank ?? null,
+    };
     const options = {
       onSuccess: () => {
         notify.success(isEditing ? 'Vehículo actualizado' : 'Vehículo agregado');
@@ -125,6 +134,21 @@ export const CarFormModal = ({ open, onClose, car, fixedUserId, driverOptions, d
           type="number"
           error={errors.car_capacity?.message}
           {...register('car_capacity')}
+        />
+        <Select
+          label="Combustible"
+          options={FUEL_TYPE_OPTIONS}
+          hint="El de las cargas que no indican otro."
+          error={errors.fuel_type?.message}
+          {...register('fuel_type')}
+        />
+        <Input
+          label="Capacidad del tanque (L)"
+          type="number"
+          step="0.01"
+          hint="Una carga no puede superarla en más de 5 %."
+          error={errors.tank_capacity_liters?.message}
+          {...register('tank_capacity_liters')}
         />
       </form>
     </Modal>

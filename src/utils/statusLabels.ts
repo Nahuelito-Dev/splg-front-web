@@ -2,6 +2,7 @@ import type { CylinderFilters } from '../services/api/physicalCylinders';
 import type {
   AsientoDeAuditoria,
   Attendance,
+  Car,
   Claim,
   Cylinder,
   CylinderInspection,
@@ -11,6 +12,7 @@ import type {
   FleetExpirationEntry,
   FleetPlan,
   FleetTask,
+  FuelLoad,
   Incident,
   Leave,
   Order,
@@ -21,7 +23,11 @@ import type {
   StockBalance,
   StockMovement,
   Supplier,
+  Tire,
+  TireEvent,
+  TrafficFine,
   TruckLoad,
+  VehicleAccident,
   Warehouse,
 } from '../services/api/types';
 
@@ -316,6 +322,57 @@ export const TRUCK_LOAD_STATUS: LabelMap<TruckLoad['status']> = {
 };
 
 /** La etiqueta de un valor, o el valor crudo si la API agregó uno nuevo. */
+/** Estado de flota del vehículo: «fuera de servicio» es el que deja un siniestro (se vuelve con Reactivar). */
+export const CAR_FLEET_STATUS: LabelMap<Car['fleet_status']> = {
+  active: { text: 'Activo', tone: 'success' },
+  in_service: { text: 'En taller', tone: 'info' },
+  grounded: { text: 'Fuera de servicio', tone: 'danger' },
+};
+
+export const FUEL_TYPE: LabelMap<NonNullable<Car['fuel_type']>> = {
+  diesel: { text: 'Gasoil', tone: 'neutral' },
+  gasoline: { text: 'Nafta', tone: 'neutral' },
+  cng: { text: 'GNC', tone: 'neutral' },
+  lpg: { text: 'GLP', tone: 'neutral' },
+};
+
+export const FUEL_PAYMENT_METHOD: LabelMap<FuelLoad['paymentMethod']> = {
+  cash_box: { text: 'Caja', tone: 'neutral' },
+  driver_cash: { text: 'Efectivo del chofer', tone: 'neutral' },
+  card: { text: 'Tarjeta', tone: 'neutral' },
+  fuel_account: { text: 'Cuenta corriente de combustible', tone: 'neutral' },
+};
+
+/** Ciclo de la multa: pagada y anulada no vuelven atrás. */
+export const TRAFFIC_FINE_STATUS: LabelMap<TrafficFine['status']> = {
+  pending: { text: 'Pendiente', tone: 'warn' },
+  appealed: { text: 'Apelada', tone: 'info' },
+  paid: { text: 'Pagada', tone: 'success' },
+  voided: { text: 'Anulada', tone: 'neutral' },
+};
+
+/** Ciclo del siniestro: denunciado, en revisión, en reparación y cerrado. */
+export const ACCIDENT_STATUS: LabelMap<VehicleAccident['status']> = {
+  reported: { text: 'Denunciado', tone: 'warn' },
+  under_review: { text: 'En revisión', tone: 'info' },
+  repairing: { text: 'En reparación', tone: 'primary' },
+  closed: { text: 'Cerrado', tone: 'success' },
+};
+
+export const TIRE_STATUS: LabelMap<Tire['status']> = {
+  in_stock: { text: 'En depósito', tone: 'neutral' },
+  mounted: { text: 'Montado', tone: 'success' },
+  retired: { text: 'Dado de baja', tone: 'danger' },
+};
+
+export const TIRE_EVENT_TYPE: LabelMap<TireEvent['type']> = {
+  mount: { text: 'Montaje', tone: 'success' },
+  unmount: { text: 'Desmontaje', tone: 'neutral' },
+  rotate: { text: 'Rotación', tone: 'info' },
+  retread: { text: 'Recapado', tone: 'accent' },
+  retire: { text: 'Baja', tone: 'danger' },
+};
+
 export const labelOf = <K extends string>(map: LabelMap<K>, value: K | null | undefined): Label =>
   value && value in map ? map[value] : { text: value ?? '—', tone: 'neutral' };
 

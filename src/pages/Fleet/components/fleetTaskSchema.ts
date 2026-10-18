@@ -19,6 +19,8 @@ const optionalText = (max: number) =>
 
 /** Lo que se edita de una tarea abierta (`UpdateFleetTaskDto`): nunca el plan ni a quién pertenece. */
 export const fleetTaskDetailsSchema = z.object({
+  validFrom: z.string().optional(),
+  cost: optionalNumber(z.coerce.number().nonnegative('No puede ser negativo')),
   dueAt: z.string().optional(),
   dueKm: optionalInt(),
   provider: optionalText(120),
@@ -34,6 +36,10 @@ export const fleetTaskCreateSchema = fleetTaskDetailsSchema
   .refine((values) => Boolean(values.dueAt) || values.dueKm !== undefined, {
     message: 'Ingresá una fecha límite o un kilometraje',
     path: ['dueAt'],
+  })
+  .refine((values) => !values.validFrom || !values.dueAt || values.validFrom <= values.dueAt, {
+    message: 'El inicio de la vigencia no puede ser posterior al vencimiento',
+    path: ['validFrom'],
   });
 
 export type FleetTaskCreateValues = z.infer<typeof fleetTaskCreateSchema>;

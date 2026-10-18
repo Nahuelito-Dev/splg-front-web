@@ -4652,20 +4652,20 @@
                 "operationId": "AttachmentController_upload",
                 "parameters": [
                     {
-                        "name": "ownerType",
-                        "required": true,
-                        "in": "path",
-                        "schema": {
-                            "$ref": "#/components/schemas/AttachmentOwnerType"
-                        }
-                    },
-                    {
                         "name": "ownerId",
                         "required": true,
                         "in": "path",
                         "description": "UUID del dueño",
                         "schema": {
                             "type": "string"
+                        }
+                    },
+                    {
+                        "name": "ownerType",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "$ref": "#/components/schemas/AttachmentOwnerType"
                         }
                     }
                 ],
@@ -4739,20 +4739,20 @@
                 "operationId": "AttachmentController_list",
                 "parameters": [
                     {
-                        "name": "ownerType",
-                        "required": true,
-                        "in": "path",
-                        "schema": {
-                            "$ref": "#/components/schemas/AttachmentOwnerType"
-                        }
-                    },
-                    {
                         "name": "ownerId",
                         "required": true,
                         "in": "path",
                         "description": "UUID del dueño",
                         "schema": {
                             "type": "string"
+                        }
+                    },
+                    {
+                        "name": "ownerType",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "$ref": "#/components/schemas/AttachmentOwnerType"
                         }
                     }
                 ],
@@ -9063,8 +9063,7 @@
                             "type": "string",
                             "enum": [
                                 "vehicle",
-                                "driver",
-                                "employee"
+                                "driver"
                             ]
                         }
                     },
@@ -9315,15 +9314,6 @@
                     },
                     {
                         "name": "deliveryId",
-                        "required": false,
-                        "in": "query",
-                        "schema": {
-                            "format": "uuid",
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "employeeId",
                         "required": false,
                         "in": "query",
                         "schema": {
@@ -9862,7 +9852,7 @@
         },
         "/api/fleet/expirations": {
             "get": {
-                "description": "Lo vencido y lo que vence dentro de `withinDays`, agrupado por vehículo, por chofer (histórico) y por empleado, con si están inhabilitados. `subject` y `category` acotan qué trae.",
+                "description": "Lo vencido y lo que vence dentro de `withinDays`, agrupado por vehículo y por chofer, con si están inhabilitados.",
                 "operationId": "FleetExpirationsController_find",
                 "parameters": [
                     {
@@ -9875,37 +9865,6 @@
                             "maximum": 365,
                             "default": 30,
                             "type": "number"
-                        }
-                    },
-                    {
-                        "name": "subject",
-                        "required": false,
-                        "in": "query",
-                        "description": "`vehicle`: sólo vehículos y choferes (CU-139); `employee`: sólo personal (CU-187). Sin indicar, todo.",
-                        "schema": {
-                            "type": "string",
-                            "enum": [
-                                "vehicle",
-                                "employee"
-                            ]
-                        }
-                    },
-                    {
-                        "name": "category",
-                        "required": false,
-                        "in": "query",
-                        "description": "Filtra el personal por la categoría de su puesto (CU-187)",
-                        "schema": {
-                            "type": "string",
-                            "enum": [
-                                "driver",
-                                "helper",
-                                "warehouse",
-                                "administration",
-                                "sales",
-                                "management",
-                                "other"
-                            ]
                         }
                     }
                 ],
@@ -9932,7 +9891,7 @@
                         "bearer": []
                     }
                 ],
-                "summary": "CU-139 y CU-187: vencimientos de la flota y del personal en una pantalla",
+                "summary": "CU-139: vencimientos de la flota en una pantalla",
                 "tags": [
                     "Fleet · Expirations"
                 ]
@@ -16831,16 +16790,16 @@
                 ]
             }
         },
-        "/api/employees/{id}/documents": {
-            "get": {
-                "description": "Las altas del curso de mercancías peligrosas, el psicofísico y la ART (CU-183 a CU-185) se hacen con `POST /fleet/tasks` indicando `employeeId`, el plan y el detalle.",
-                "operationId": "EmployeeDocumentsController_find",
+        "/api/car/{id}/reactivate": {
+            "post": {
+                "description": "Lo pasa de `grounded` a `active` si el seguro, la VTV y la habilitación de mercancías peligrosas están vigentes. No lo asigna a ningún chofer.",
+                "operationId": "CarReactivationController_reactivar",
                 "parameters": [
                     {
                         "name": "id",
                         "required": true,
                         "in": "path",
-                        "description": "Empleado UUID",
+                        "description": "Car UUID",
                         "schema": {
                             "type": "string"
                         }
@@ -16852,10 +16811,13 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/EmployeeDocumentsResponseDto"
+                                    "$ref": "#/components/schemas/CarResponseDto"
                                 }
                             }
                         }
+                    },
+                    "400": {
+                        "description": "Hay documentación bloqueante vencida: el detalle dice cuál"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -16864,7 +16826,10 @@
                         "description": "Requiere rol: admin, super_admin"
                     },
                     "404": {
-                        "description": "Empleado no encontrado"
+                        "description": "Vehículo no encontrado"
+                    },
+                    "409": {
+                        "description": "El vehículo no está fuera de servicio"
                     }
                 },
                 "security": [
@@ -16872,32 +16837,23 @@
                         "bearer": []
                     }
                 ],
-                "summary": "Documentación de un empleado: tarjetas, si queda inhabilitado y qué le falta cargar (CU-187)",
+                "summary": "Reactivar un vehículo fuera de servicio",
                 "tags": [
-                    "Personal · Documentación"
+                    "Fleet · Vehicle status"
                 ]
             }
         },
-        "/api/employees/{id}/leaves": {
+        "/api/fleet/fuel-loads": {
             "post": {
-                "operationId": "LeaveController_create",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "required": true,
-                        "in": "path",
-                        "description": "Empleado UUID",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
+                "description": "Valida el importe contra litros × precio (±1 %), los litros contra el tanque (+5 %) y el kilometraje contra la última carga. Sube el kilometraje del vehículo y marca la carga como anómala si el consumo del tramo se aparta más de un 25 % del habitual (avisa a los administradores).",
+                "operationId": "FuelLoadController_create",
+                "parameters": [],
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/CreateLeaveDto"
+                                "$ref": "#/components/schemas/CreateFuelLoadDto"
                             }
                         }
                     }
@@ -16908,13 +16864,13 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/LeaveResponseDto"
+                                    "$ref": "#/components/schemas/FuelLoadResponseDto"
                                 }
                             }
                         }
                     },
                     "400": {
-                        "description": "Datos inválidos o fin anterior al inicio"
+                        "description": "Importe, litros o kilometraje inválidos; falta el combustible del vehículo"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -16923,10 +16879,7 @@
                         "description": "Requiere rol: admin, super_admin"
                     },
                     "404": {
-                        "description": "Empleado no encontrado"
-                    },
-                    "409": {
-                        "description": "El empleado está egresado, o el período se superpone con otra licencia solicitada o aprobada"
+                        "description": "Vehículo no encontrado"
                     },
                     "422": {
                         "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
@@ -16937,75 +16890,14 @@
                         "bearer": []
                     }
                 ],
-                "summary": "Registrar una licencia o ausencia: nace solicitada (CU-191)",
+                "summary": "Registrar una carga de combustible (administrador)",
                 "tags": [
-                    "Personal · Licencias"
+                    "Fleet · Combustible"
                 ]
-            }
-        },
-        "/api/employees/{id}/vacation-balance": {
+            },
             "get": {
-                "description": "Días que corresponden por antigüedad al 31/12 (LCT art. 150), días tomados (vacaciones aprobadas del año) y saldo. Se calcula en cada consulta.",
-                "operationId": "LeaveController_vacationBalance",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "required": true,
-                        "in": "path",
-                        "description": "Empleado UUID",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "year",
-                        "required": false,
-                        "in": "query",
-                        "description": "Por omisión, el año actual",
-                        "schema": {
-                            "example": 2026,
-                            "type": "number"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/VacationBalanceDto"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Año inválido"
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: admin, super_admin"
-                    },
-                    "404": {
-                        "description": "Empleado no encontrado"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Consultar el saldo de vacaciones de un empleado (CU-193)",
-                "tags": [
-                    "Personal · Licencias"
-                ]
-            }
-        },
-        "/api/leaves": {
-            "get": {
-                "operationId": "LeaveController_findAll",
+                "description": "Filtra por vehículo, chofer, rango de fechas y anomalía. Devuelve la página y el total de litros e importe de lo filtrado.",
+                "operationId": "FuelLoadController_findAll",
                 "parameters": [
                     {
                         "name": "limit",
@@ -17018,53 +16910,28 @@
                         }
                     },
                     {
-                        "name": "page",
+                        "name": "offset",
                         "required": false,
                         "in": "query",
                         "schema": {
-                            "default": 1,
+                            "default": 0,
                             "type": "number"
                         }
                     },
                     {
-                        "name": "status",
+                        "name": "carId",
                         "required": false,
                         "in": "query",
                         "schema": {
-                            "type": "string",
-                            "enum": [
-                                "requested",
-                                "approved",
-                                "rejected",
-                                "cancelled"
-                            ]
-                        }
-                    },
-                    {
-                        "name": "type",
-                        "required": false,
-                        "in": "query",
-                        "schema": {
-                            "type": "string",
-                            "enum": [
-                                "vacation",
-                                "sick",
-                                "work_accident",
-                                "study",
-                                "marriage",
-                                "birth",
-                                "bereavement",
-                                "unpaid",
-                                "suspension",
-                                "unjustified_absence",
-                                "other"
-                            ]
+                            "format": "uuid",
+                            "type": "string"
                         }
                     },
                     {
                         "name": "employeeId",
                         "required": false,
                         "in": "query",
+                        "description": "Legajo de quien cargó",
                         "schema": {
                             "format": "uuid",
                             "type": "string"
@@ -17077,7 +16944,7 @@
                         "schema": {
                             "format": "date",
                             "nullable": true,
-                            "example": "2026-12-01",
+                            "example": "2026-10-01",
                             "type": "string"
                         }
                     },
@@ -17088,8 +16955,17 @@
                         "schema": {
                             "format": "date",
                             "nullable": true,
-                            "example": "2026-12-31",
+                            "example": "2026-10-31",
                             "type": "string"
+                        }
+                    },
+                    {
+                        "name": "anomaly",
+                        "required": false,
+                        "in": "query",
+                        "description": "Sólo las marcadas como anómalas (o sólo las que no)",
+                        "schema": {
+                            "type": "boolean"
                         }
                     }
                 ],
@@ -17099,13 +16975,13 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/LeavePageDto"
+                                    "$ref": "#/components/schemas/FuelLoadPageDto"
                                 }
                             }
                         }
                     },
                     "400": {
-                        "description": "Un filtro tiene un valor inválido"
+                        "description": "Filtro inválido"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -17119,21 +16995,122 @@
                         "bearer": []
                     }
                 ],
-                "summary": "Consultar las licencias y la bandeja de pendientes (CU-319)",
+                "summary": "Consultar las cargas de combustible vigentes",
                 "tags": [
-                    "Personal · Licencias"
+                    "Fleet · Combustible"
                 ]
             }
         },
-        "/api/leaves/{id}": {
-            "patch": {
-                "operationId": "LeaveController_update",
+        "/api/fleet/fuel-loads/mine": {
+            "post": {
+                "description": "Siempre del vehículo que el chofer tiene en uso; no admite corrección de kilometraje.",
+                "operationId": "FuelLoadController_createMine",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateMyFuelLoadDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FuelLoadResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Importe, litros o kilometraje inválidos"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: delivery"
+                    },
+                    "404": {
+                        "description": "No tenés un vehículo en uso"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Registrar una carga de combustible (chofer)",
+                "tags": [
+                    "Fleet · Combustible"
+                ]
+            }
+        },
+        "/api/fleet/fuel-loads/{id}": {
+            "get": {
+                "operationId": "FuelLoadController_findOne",
                 "parameters": [
                     {
                         "name": "id",
                         "required": true,
                         "in": "path",
-                        "description": "Licencia UUID",
+                        "description": "Carga UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FuelLoadResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ver una carga de combustible (también la anulada)",
+                "tags": [
+                    "Fleet · Combustible"
+                ]
+            },
+            "patch": {
+                "description": "Revalida las mismas reglas que el alta y recalcula el kilometraje del vehículo y la anomalía de la carga.",
+                "operationId": "FuelLoadController_update",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Carga UUID",
                         "schema": {
                             "type": "string"
                         }
@@ -17144,7 +17121,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/UpdateLeaveDto"
+                                "$ref": "#/components/schemas/UpdateFuelLoadDto"
                             }
                         }
                     }
@@ -17155,13 +17132,13 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/LeaveResponseDto"
+                                    "$ref": "#/components/schemas/FuelLoadResponseDto"
                                 }
                             }
                         }
                     },
                     "400": {
-                        "description": "Fin anterior al inicio"
+                        "description": "Importe, litros o kilometraje inválidos"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -17170,10 +17147,10 @@
                         "description": "Requiere rol: admin, super_admin"
                     },
                     "404": {
-                        "description": "Licencia no encontrada"
+                        "description": "No existe o es de otra distribuidora"
                     },
                     "409": {
-                        "description": "No está solicitada, o el período se superpone con otra"
+                        "description": "La carga está anulada"
                     }
                 },
                 "security": [
@@ -17181,21 +17158,20 @@
                         "bearer": []
                     }
                 ],
-                "summary": "Modificar una licencia solicitada (CU-316)",
+                "summary": "Modificar una carga de combustible",
                 "tags": [
-                    "Personal · Licencias"
+                    "Fleet · Combustible"
                 ]
-            }
-        },
-        "/api/leaves/{id}/approve": {
-            "patch": {
-                "operationId": "LeaveController_approve",
+            },
+            "delete": {
+                "description": "Baja lógica: la carga se conserva, deja de contar en el consumo y el costo, y si era la última el kilometraje del vehículo vuelve al de la anterior.",
+                "operationId": "FuelLoadController_anular",
                 "parameters": [
                     {
                         "name": "id",
                         "required": true,
                         "in": "path",
-                        "description": "Licencia UUID",
+                        "description": "Carga UUID",
                         "schema": {
                             "type": "string"
                         }
@@ -17207,7 +17183,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/LeaveResponseDto"
+                                    "$ref": "#/components/schemas/MessageResponseDto"
                                 }
                             }
                         }
@@ -17219,10 +17195,10 @@
                         "description": "Requiere rol: admin, super_admin"
                     },
                     "404": {
-                        "description": "Licencia no encontrada"
+                        "description": "No existe o es de otra distribuidora"
                     },
                     "409": {
-                        "description": "No está solicitada"
+                        "description": "La carga ya estaba anulada"
                     }
                 },
                 "security": [
@@ -17230,21 +17206,230 @@
                         "bearer": []
                     }
                 ],
-                "summary": "Aprobar una solicitud de licencia (CU-192)",
+                "summary": "Anular una carga de combustible",
                 "tags": [
-                    "Personal · Licencias"
+                    "Fleet · Combustible"
                 ]
             }
         },
-        "/api/leaves/{id}/reject": {
-            "patch": {
-                "operationId": "LeaveController_reject",
+        "/api/fleet/fines": {
+            "post": {
+                "description": "Nace pendiente. Si no se indica el responsable, se deduce del chofer que tenía el vehículo en uso en el instante de la infracción.",
+                "operationId": "TrafficFineController_create",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateTrafficFineDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TrafficFineResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Dato obligatorio faltante o importe inválido"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Vehículo o empleado no encontrado"
+                    },
+                    "409": {
+                        "description": "La multa ya está registrada (misma jurisdicción y acta)"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Registrar una multa de tránsito",
+                "tags": [
+                    "Fleet · Multas"
+                ]
+            },
+            "get": {
+                "operationId": "TrafficFineController_findAll",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "maximum": 100,
+                            "default": 10,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 0,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "carId",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "employeeId",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "pending",
+                                "appealed",
+                                "paid",
+                                "voided"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "date",
+                            "nullable": true,
+                            "example": "2026-10-01",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "date",
+                            "nullable": true,
+                            "example": "2026-10-31",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TrafficFinePageDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Filtro inválido"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Consultar las multas de tránsito",
+                "tags": [
+                    "Fleet · Multas"
+                ]
+            }
+        },
+        "/api/fleet/fines/{id}": {
+            "get": {
+                "operationId": "TrafficFineController_findOne",
                 "parameters": [
                     {
                         "name": "id",
                         "required": true,
                         "in": "path",
-                        "description": "Licencia UUID",
+                        "description": "Multa UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TrafficFineResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ver una multa",
+                "tags": [
+                    "Fleet · Multas"
+                ]
+            },
+            "patch": {
+                "description": "Con `appeal: true` pasa de pendiente a apelada. Una multa pagada o anulada no se modifica.",
+                "operationId": "TrafficFineController_update",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Multa UUID",
                         "schema": {
                             "type": "string"
                         }
@@ -17255,7 +17440,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/RejectLeaveDto"
+                                "$ref": "#/components/schemas/UpdateTrafficFineDto"
                             }
                         }
                     }
@@ -17266,7 +17451,195 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/LeaveResponseDto"
+                                    "$ref": "#/components/schemas/TrafficFineResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Dato inválido"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "Pagada, anulada, ya apelada, o el acta pertenece a otra multa"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Modificar una multa o pasarla a apelada",
+                "tags": [
+                    "Fleet · Multas"
+                ]
+            }
+        },
+        "/api/fleet/fines/{id}/pay": {
+            "patch": {
+                "operationId": "TrafficFineController_pay",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Multa UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PayTrafficFineDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TrafficFineResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Fecha de pago futura o importe inválido"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "La multa no admite el pago (ya pagada o anulada)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Registrar el pago de una multa",
+                "tags": [
+                    "Fleet · Multas"
+                ]
+            }
+        },
+        "/api/fleet/fines/{id}/charge-to-employee": {
+            "patch": {
+                "description": "La asume el empleado y no cuenta como costo del vehículo. Una multa pagada también se imputa; una anulada no.",
+                "operationId": "TrafficFineController_chargeToEmployee",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Multa UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChargeTrafficFineDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TrafficFineResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "La multa no tiene responsable y no se indicó uno"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "La multa o el empleado no existen o son de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "La multa anulada no se puede imputar"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Imputar una multa al chofer",
+                "tags": [
+                    "Fleet · Multas"
+                ]
+            }
+        },
+        "/api/fleet/fines/{id}/void": {
+            "patch": {
+                "description": "Baja lógica con motivo obligatorio. Una multa pagada no se anula.",
+                "operationId": "TrafficFineController_void",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Multa UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/VoidTrafficFineDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TrafficFineResponseDto"
                                 }
                             }
                         }
@@ -17281,10 +17654,10 @@
                         "description": "Requiere rol: admin, super_admin"
                     },
                     "404": {
-                        "description": "Licencia no encontrada"
+                        "description": "No existe o es de otra distribuidora"
                     },
                     "409": {
-                        "description": "No está solicitada"
+                        "description": "La multa ya está pagada o anulada"
                     }
                 },
                 "security": [
@@ -17292,81 +17665,23 @@
                         "bearer": []
                     }
                 ],
-                "summary": "Rechazar una solicitud de licencia, con motivo (CU-318)",
+                "summary": "Anular una multa",
                 "tags": [
-                    "Personal · Licencias"
+                    "Fleet · Multas"
                 ]
             }
         },
-        "/api/leaves/{id}/cancel": {
-            "patch": {
-                "operationId": "LeaveController_cancel",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "required": true,
-                        "in": "path",
-                        "description": "Licencia UUID",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/LeaveResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: admin, super_admin"
-                    },
-                    "404": {
-                        "description": "Licencia no encontrada"
-                    },
-                    "409": {
-                        "description": "Ya estaba rechazada o cancelada, o ya terminó"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Cancelar una licencia que todavía no terminó (CU-317)",
-                "tags": [
-                    "Personal · Licencias"
-                ]
-            }
-        },
-        "/api/employees/{id}/attendance": {
+        "/api/fleet/accidents": {
             "post": {
-                "operationId": "AttendanceController_register",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "required": true,
-                        "in": "path",
-                        "description": "Empleado UUID",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
+                "description": "Nace denunciado. Con `vehicleUnusable` el vehículo pasa a fuera de servicio y se libera a su chofer; con `hazmatRelease` se avisa de inmediato a los administradores.",
+                "operationId": "VehicleAccidentController_create",
+                "parameters": [],
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/RegisterAttendanceDto"
+                                "$ref": "#/components/schemas/CreateVehicleAccidentDto"
                             }
                         }
                     }
@@ -17377,13 +17692,13 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/AttendanceResponseDto"
+                                    "$ref": "#/components/schemas/VehicleAccidentResponseDto"
                                 }
                             }
                         }
                     },
                     "400": {
-                        "description": "El egreso no es posterior al ingreso"
+                        "description": "Falta la fecha o la descripción, o el punto no es válido"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -17392,10 +17707,7 @@
                         "description": "Requiere rol: admin, super_admin"
                     },
                     "404": {
-                        "description": "Empleado no encontrado"
-                    },
-                    "409": {
-                        "description": "El empleado está egresado o ya tiene una jornada abierta"
+                        "description": "Vehículo o empleado no encontrado"
                     },
                     "422": {
                         "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
@@ -17406,16 +17718,13 @@
                         "bearer": []
                     }
                 ],
-                "summary": "Registrar la asistencia de un empleado desde el panel (CU-189)",
+                "summary": "Registrar un siniestro (administrador)",
                 "tags": [
-                    "Personal · Asistencia"
+                    "Fleet · Siniestros"
                 ]
-            }
-        },
-        "/api/attendance": {
+            },
             "get": {
-                "description": "Por día (`date`, por omisión hoy si no hay ningún filtro), por período (`from`/`to`), por empleado o sólo las jornadas abiertas (`open`). Informa cuántos están presentes hoy y cuántas jornadas de días anteriores quedaron sin cerrar.",
-                "operationId": "AttendanceController_findAll",
+                "operationId": "VehicleAccidentController_findAll",
                 "parameters": [
                     {
                         "name": "limit",
@@ -17428,23 +17737,35 @@
                         }
                     },
                     {
-                        "name": "page",
+                        "name": "offset",
                         "required": false,
                         "in": "query",
                         "schema": {
-                            "default": 1,
+                            "default": 0,
                             "type": "number"
                         }
                     },
                     {
-                        "name": "date",
+                        "name": "carId",
                         "required": false,
                         "in": "query",
                         "schema": {
-                            "format": "date",
-                            "nullable": true,
-                            "example": "2026-03-02",
+                            "format": "uuid",
                             "type": "string"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "reported",
+                                "under_review",
+                                "repairing",
+                                "closed"
+                            ]
                         }
                     },
                     {
@@ -17454,7 +17775,7 @@
                         "schema": {
                             "format": "date",
                             "nullable": true,
-                            "example": "2026-03-01",
+                            "example": "2026-10-01",
                             "type": "string"
                         }
                     },
@@ -17465,26 +17786,8 @@
                         "schema": {
                             "format": "date",
                             "nullable": true,
-                            "example": "2026-03-31",
+                            "example": "2026-10-31",
                             "type": "string"
-                        }
-                    },
-                    {
-                        "name": "employeeId",
-                        "required": false,
-                        "in": "query",
-                        "schema": {
-                            "format": "uuid",
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "open",
-                        "required": false,
-                        "in": "query",
-                        "description": "true: sólo las jornadas sin cerrar; false: sólo las cerradas",
-                        "schema": {
-                            "type": "boolean"
                         }
                     }
                 ],
@@ -17494,13 +17797,13 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/AttendancePageDto"
+                                    "$ref": "#/components/schemas/VehicleAccidentPageDto"
                                 }
                             }
                         }
                     },
                     "400": {
-                        "description": "Un filtro tiene un valor inválido"
+                        "description": "Filtro inválido"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -17514,21 +17817,122 @@
                         "bearer": []
                     }
                 ],
-                "summary": "Consultar la asistencia de los empleados (CU-314)",
+                "summary": "Consultar los siniestros",
                 "tags": [
-                    "Personal · Asistencia"
+                    "Fleet · Siniestros"
                 ]
             }
         },
-        "/api/attendance/{id}": {
-            "patch": {
-                "operationId": "AttendanceController_correct",
+        "/api/fleet/accidents/mine": {
+            "post": {
+                "description": "Siempre del vehículo que el chofer tiene en uso.",
+                "operationId": "VehicleAccidentController_createMine",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateMyVehicleAccidentDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VehicleAccidentResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta la fecha o la descripción, o el punto no es válido"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: delivery"
+                    },
+                    "404": {
+                        "description": "No tenés un vehículo en uso"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Registrar un siniestro (chofer)",
+                "tags": [
+                    "Fleet · Siniestros"
+                ]
+            }
+        },
+        "/api/fleet/accidents/{id}": {
+            "get": {
+                "operationId": "VehicleAccidentController_findOne",
                 "parameters": [
                     {
                         "name": "id",
                         "required": true,
                         "in": "path",
-                        "description": "Jornada UUID",
+                        "description": "Siniestro UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VehicleAccidentResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ver un siniestro",
+                "tags": [
+                    "Fleet · Siniestros"
+                ]
+            },
+            "patch": {
+                "description": "El estado sólo avanza al siguiente del ciclo: denunciado, en revisión, en reparación. El cierre es `PATCH …/close`. No devuelve el vehículo a la flota (eso es `POST /car/:id/reactivate`).",
+                "operationId": "VehicleAccidentController_update",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Siniestro UUID",
                         "schema": {
                             "type": "string"
                         }
@@ -17539,7 +17943,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/CorrectAttendanceDto"
+                                "$ref": "#/components/schemas/UpdateVehicleAccidentDto"
                             }
                         }
                     }
@@ -17550,13 +17954,13 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/AttendanceResponseDto"
+                                    "$ref": "#/components/schemas/VehicleAccidentResponseDto"
                                 }
                             }
                         }
                     },
                     "400": {
-                        "description": "Falta la nota, o el egreso no es posterior al ingreso"
+                        "description": "Dato inválido"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -17565,7 +17969,10 @@
                         "description": "Requiere rol: admin, super_admin"
                     },
                     "404": {
-                        "description": "Jornada no encontrada"
+                        "description": "No existe o es de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "Está cerrado, o el cambio de estado no respeta el ciclo"
                     }
                 },
                 "security": [
@@ -17573,46 +17980,112 @@
                         "bearer": []
                     }
                 ],
-                "summary": "Corregir el ingreso o el egreso de una jornada, con nota (CU-313)",
+                "summary": "Modificar un siniestro o avanzar su estado",
                 "tags": [
-                    "Personal · Asistencia"
+                    "Fleet · Siniestros"
                 ]
             }
         },
-        "/api/attendance/mine/check-in": {
-            "post": {
-                "description": "Idempotente: si ya tiene una jornada abierta de hoy marcada desde la app, la devuelve (200) en vez de abrir otra.",
-                "operationId": "AttendanceController_checkIn",
-                "parameters": [],
+        "/api/fleet/accidents/{id}/close": {
+            "patch": {
+                "description": "Asienta el costo de la reparación, el reintegro del seguro y la franquicia. Su costo neto entra en el costo del vehículo. No reactiva el vehículo.",
+                "operationId": "VehicleAccidentController_close",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Siniestro UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CloseVehicleAccidentDto"
+                            }
+                        }
+                    }
+                },
                 "responses": {
                     "200": {
-                        "description": "Ya tenía una jornada abierta de hoy desde la app",
+                        "description": "",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/AttendanceResponseDto"
+                                    "$ref": "#/components/schemas/VehicleAccidentResponseDto"
                                 }
                             }
                         }
                     },
+                    "400": {
+                        "description": "Algún importe es negativo"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "El siniestro ya está cerrado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Cerrar un siniestro",
+                "tags": [
+                    "Fleet · Siniestros"
+                ]
+            }
+        },
+        "/api/fleet/tires": {
+            "post": {
+                "description": "Nace en depósito, sin vehículo ni posición.",
+                "operationId": "TireController_create",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateTireDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
                     "201": {
                         "description": "",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/AttendanceResponseDto"
+                                    "$ref": "#/components/schemas/TireResponseDto"
                                 }
                             }
                         }
+                    },
+                    "400": {
+                        "description": "Dato obligatorio faltante o costo negativo"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
                     "403": {
-                        "description": "Requiere rol: delivery"
+                        "description": "Requiere rol: admin, super_admin"
                     },
                     "409": {
-                        "description": "La cuenta no está vinculada a un legajo activo, o hay una jornada abierta de otro día o cargada desde el panel"
+                        "description": "El neumático ya está registrado (número de serie)"
                     },
                     "422": {
                         "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
@@ -17623,63 +18096,63 @@
                         "bearer": []
                     }
                 ],
-                "summary": "El chofer inicia su jornada desde la app (CU-190)",
+                "summary": "Registrar un neumático",
                 "tags": [
-                    "Personal · Asistencia"
+                    "Fleet · Neumáticos"
                 ]
-            }
-        },
-        "/api/attendance/mine/check-out": {
-            "post": {
-                "operationId": "AttendanceController_checkOut",
-                "parameters": [],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/AttendanceResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: delivery"
-                    },
-                    "409": {
-                        "description": "La cuenta no está vinculada a un legajo activo, no hay jornada abierta, o la abierta es de un día anterior (se corrige desde el panel)"
-                    },
-                    "422": {
-                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "El chofer finaliza su jornada desde la app (CU-315)",
-                "tags": [
-                    "Personal · Asistencia"
-                ]
-            }
-        },
-        "/api/personnel/dashboard": {
+            },
             "get": {
-                "description": "Empleados activos por puesto, presentes hoy (jornada abierta), de licencia hoy (licencia aprobada que cubre el día argentino) y documentos por estado de vencimiento. Alimenta la tarjeta «Personal hoy» del inicio. Cuenta; no lista.",
-                "operationId": "PersonnelController_consultar",
-                "parameters": [],
+                "operationId": "TireController_findAll",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "maximum": 100,
+                            "default": 10,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 0,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "in_stock",
+                                "mounted",
+                                "retired"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "carId",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/PersonnelDashboardDto"
+                                    "$ref": "#/components/schemas/TirePageDto"
                                 }
                             }
                         }
@@ -17696,9 +18169,400 @@
                         "bearer": []
                     }
                 ],
-                "summary": "Consultar el tablero de personal (CU-194)",
+                "summary": "Listar los neumáticos",
                 "tags": [
-                    "Personal · Tablero"
+                    "Fleet · Neumáticos"
+                ]
+            }
+        },
+        "/api/fleet/tires/{id}": {
+            "get": {
+                "operationId": "TireController_findOne",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Neumático UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TireResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ver un neumático con su historial de movimientos",
+                "tags": [
+                    "Fleet · Neumáticos"
+                ]
+            }
+        },
+        "/api/fleet/tires/{id}/events": {
+            "post": {
+                "description": "Montaje (carId y position), desmontaje, rotación (position nueva), recapado o baja definitiva, siempre con el kilometraje del vehículo. El movimiento es un asiento que no se modifica.",
+                "operationId": "TireController_registerEvent",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Neumático UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateTireEventDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TireMovementResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta el vehículo o la posición, o el kilometraje es menor que el del montaje"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "El neumático o el vehículo no existen o son de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "Movimiento inválido para el estado del neumático, o posición ocupada"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Registrar un movimiento de un neumático",
+                "tags": [
+                    "Fleet · Neumáticos"
+                ]
+            }
+        },
+        "/api/cars/{carId}/fuel-efficiency": {
+            "get": {
+                "description": "Arma los tramos entre cargas de tanque lleno del rango y muestra, por tramo y en total, km, litros, km por litro, costo por km y las cargas anómalas. Con menos de dos cargas de tanque lleno: lista vacía y totales en cero.",
+                "operationId": "CarFleetController_consumo",
+                "parameters": [
+                    {
+                        "name": "carId",
+                        "required": true,
+                        "in": "path",
+                        "description": "Car UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "required": true,
+                        "in": "query",
+                        "schema": {
+                            "format": "date",
+                            "example": "2026-10-01",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "required": true,
+                        "in": "query",
+                        "schema": {
+                            "format": "date",
+                            "example": "2026-10-31",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FuelEfficiencyDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Fecha inválida o inicio posterior al fin"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Vehículo no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Consumo de combustible de un vehículo",
+                "tags": [
+                    "Fleet · Costos"
+                ]
+            }
+        },
+        "/api/cars/{carId}/costs": {
+            "get": {
+                "description": "Suma mantenimiento (sin seguros), seguros prorrateados por días, combustible, multas pagadas no imputadas y siniestros cerrados; con km, costo por km y evolución mensual.",
+                "operationId": "CarFleetController_costoDelVehiculo",
+                "parameters": [
+                    {
+                        "name": "carId",
+                        "required": true,
+                        "in": "path",
+                        "description": "Car UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "required": true,
+                        "in": "query",
+                        "schema": {
+                            "format": "date",
+                            "example": "2026-10-01",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "required": true,
+                        "in": "query",
+                        "schema": {
+                            "format": "date",
+                            "example": "2026-10-31",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CarCostDetailDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Fecha inválida o inicio posterior al fin"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Vehículo no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Costo total de un vehículo",
+                "tags": [
+                    "Fleet · Costos"
+                ]
+            }
+        },
+        "/api/fleet/costs": {
+            "get": {
+                "description": "Un renglón por vehículo con los rubros del costo total, km y costo por km, de mayor a menor costo por km. Un vehículo sin km va al final.",
+                "operationId": "CarFleetController_tablero",
+                "parameters": [
+                    {
+                        "name": "from",
+                        "required": true,
+                        "in": "query",
+                        "schema": {
+                            "format": "date",
+                            "example": "2026-10-01",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "required": true,
+                        "in": "query",
+                        "schema": {
+                            "format": "date",
+                            "example": "2026-10-31",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/FleetCostSummaryDto"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Fecha inválida o inicio posterior al fin"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Tablero de costos de la flota",
+                "tags": [
+                    "Fleet · Costos"
+                ]
+            }
+        },
+        "/api/cars/{carId}/tires": {
+            "get": {
+                "operationId": "CarFleetController_neumaticos",
+                "parameters": [
+                    {
+                        "name": "carId",
+                        "required": true,
+                        "in": "path",
+                        "description": "Car UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "maximum": 100,
+                            "default": 10,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 0,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "in_stock",
+                                "mounted",
+                                "retired"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TirePageDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Vehículo no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Neumáticos de un vehículo",
+                "tags": [
+                    "Fleet · Costos"
                 ]
             }
         }
@@ -19704,6 +20568,23 @@
                     "car_color": {
                         "type": "string",
                         "description": "Car color"
+                    },
+                    "fuel_type": {
+                        "type": "string",
+                        "enum": [
+                            "diesel",
+                            "gasoline",
+                            "cng",
+                            "lpg"
+                        ],
+                        "nullable": true,
+                        "description": "Combustible del vehículo; es el de las cargas que no indican otro. `null` (al editar) lo borra."
+                    },
+                    "tank_capacity_liters": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": 60,
+                        "description": "Capacidad del tanque en litros: una carga no puede superarla en más de un 5 %. `null` (al editar) la borra."
                     }
                 },
                 "required": [
@@ -19757,6 +20638,35 @@
                         "type": "string",
                         "nullable": true
                     },
+                    "fuel_type": {
+                        "type": "string",
+                        "enum": [
+                            "diesel",
+                            "gasoline",
+                            "cng",
+                            "lpg"
+                        ],
+                        "nullable": true
+                    },
+                    "tank_capacity_liters": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Litros"
+                    },
+                    "odometer_km": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Kilometraje vigente: el mayor entre las cargas de combustible y los cierres de mantenimiento"
+                    },
+                    "fleet_status": {
+                        "type": "string",
+                        "enum": [
+                            "active",
+                            "in_service",
+                            "grounded"
+                        ],
+                        "description": "`grounded` es fuera de servicio (se vuelve con CU-247)"
+                    },
                     "photoUrl": {
                         "type": "string",
                         "nullable": true,
@@ -19785,6 +20695,10 @@
                     "car_model",
                     "car_year",
                     "car_color",
+                    "fuel_type",
+                    "tank_capacity_liters",
+                    "odometer_km",
+                    "fleet_status",
                     "photoUrl",
                     "createdAt",
                     "updatedAt"
@@ -19825,6 +20739,23 @@
                     "car_color": {
                         "type": "string",
                         "description": "Car color"
+                    },
+                    "fuel_type": {
+                        "type": "string",
+                        "enum": [
+                            "diesel",
+                            "gasoline",
+                            "cng",
+                            "lpg"
+                        ],
+                        "nullable": true,
+                        "description": "Combustible del vehículo; es el de las cargas que no indican otro. `null` (al editar) lo borra."
+                    },
+                    "tank_capacity_liters": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": 60,
+                        "description": "Capacidad del tanque en litros: una carga no puede superarla en más de un 5 %. `null` (al editar) la borra."
                     }
                 }
             },
@@ -23579,10 +24510,9 @@
                         "type": "string",
                         "enum": [
                             "vehicle",
-                            "driver",
-                            "employee"
+                            "driver"
                         ],
-                        "description": "A qué aplica: al vehículo, al chofer (histórico: la licencia) o al empleado (personal)"
+                        "description": "A qué aplica: al vehículo o al chofer"
                     },
                     "trigger": {
                         "type": "string",
@@ -23623,31 +24553,10 @@
                         "enum": [
                             "insurance",
                             "vtv",
-                            "hazmat_vehicle_permit",
-                            "driver_license",
-                            "hazmat_driver_course",
-                            "psychophysical",
-                            "art_coverage",
-                            "service",
-                            "generic"
+                            "hazmat_vehicle_permit"
                         ],
-                        "description": "Tipo de documento: define el detalle que se pide al cargarlo. Sin él, la tarea no lleva detalle."
-                    },
-                    "appliesToCategories": {
-                        "type": "array",
-                        "description": "Categorías de puesto a las que aplica un plan de personal (sin indicar = todas)",
-                        "items": {
-                            "type": "string",
-                            "enum": [
-                                "driver",
-                                "helper",
-                                "warehouse",
-                                "administration",
-                                "sales",
-                                "management",
-                                "other"
-                            ]
-                        }
+                        "nullable": true,
+                        "description": "Qué documento es, si el sistema lo tiene que reconocer: `insurance` (el costo del vehículo prorratea su prima), `vtv` o `hazmat_vehicle_permit` (CU-197)"
                     },
                     "isActive": {
                         "type": "boolean",
@@ -23680,8 +24589,7 @@
                         "type": "string",
                         "enum": [
                             "vehicle",
-                            "driver",
-                            "employee"
+                            "driver"
                         ]
                     },
                     "trigger": {
@@ -23719,33 +24627,9 @@
                         "enum": [
                             "insurance",
                             "vtv",
-                            "hazmat_vehicle_permit",
-                            "driver_license",
-                            "hazmat_driver_course",
-                            "psychophysical",
-                            "art_coverage",
-                            "service",
-                            "generic"
+                            "hazmat_vehicle_permit"
                         ],
-                        "nullable": true,
-                        "description": "Qué formulario muestra el panel y qué forma de `details` valida el back"
-                    },
-                    "appliesToCategories": {
-                        "type": "array",
-                        "nullable": true,
-                        "description": "Categorías de puesto a las que aplica (null = todas)",
-                        "items": {
-                            "type": "string",
-                            "enum": [
-                                "driver",
-                                "helper",
-                                "warehouse",
-                                "administration",
-                                "sales",
-                                "management",
-                                "other"
-                            ]
-                        }
+                        "nullable": true
                     },
                     "isActive": {
                         "type": "boolean"
@@ -23763,7 +24647,6 @@
                     "criticality",
                     "carType",
                     "documentKind",
-                    "appliesToCategories",
                     "isActive"
                 ]
             },
@@ -23780,10 +24663,9 @@
                         "type": "string",
                         "enum": [
                             "vehicle",
-                            "driver",
-                            "employee"
+                            "driver"
                         ],
-                        "description": "A qué aplica: al vehículo, al chofer (histórico: la licencia) o al empleado (personal)"
+                        "description": "A qué aplica: al vehículo o al chofer"
                     },
                     "trigger": {
                         "type": "string",
@@ -23824,31 +24706,10 @@
                         "enum": [
                             "insurance",
                             "vtv",
-                            "hazmat_vehicle_permit",
-                            "driver_license",
-                            "hazmat_driver_course",
-                            "psychophysical",
-                            "art_coverage",
-                            "service",
-                            "generic"
+                            "hazmat_vehicle_permit"
                         ],
-                        "description": "Tipo de documento: define el detalle que se pide al cargarlo. Sin él, la tarea no lleva detalle."
-                    },
-                    "appliesToCategories": {
-                        "type": "array",
-                        "description": "Categorías de puesto a las que aplica un plan de personal (sin indicar = todas)",
-                        "items": {
-                            "type": "string",
-                            "enum": [
-                                "driver",
-                                "helper",
-                                "warehouse",
-                                "administration",
-                                "sales",
-                                "management",
-                                "other"
-                            ]
-                        }
+                        "nullable": true,
+                        "description": "Qué documento es, si el sistema lo tiene que reconocer: `insurance` (el costo del vehículo prorratea su prima), `vtv` o `hazmat_vehicle_permit` (CU-197)"
                     },
                     "isActive": {
                         "type": "boolean",
@@ -23873,16 +24734,22 @@
                         "format": "uuid",
                         "description": "Obligatorio si el plan es de chofer (subject: driver)"
                     },
-                    "employeeId": {
-                        "type": "string",
-                        "format": "uuid",
-                        "description": "Obligatorio si el plan es de personal (subject: employee): curso de mercancías peligrosas, psicofísico, ART (CU-183 a CU-185)"
-                    },
                     "dueAt": {
                         "type": "string",
                         "format": "date-time",
                         "example": "2026-12-31T00:00:00.000Z",
                         "description": "Fecha límite (vencimiento de la póliza, la VTV, la licencia)"
+                    },
+                    "validFrom": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2026-01-01T00:00:00.000Z",
+                        "description": "Inicio de la vigencia (póliza, habilitación). No puede ser posterior al vencimiento"
+                    },
+                    "cost": {
+                        "type": "number",
+                        "example": 185000,
+                        "description": "Importe de la tarea (la prima de la póliza, el costo del service). Entra en el costo del vehículo"
                     },
                     "dueKm": {
                         "type": "number",
@@ -23905,17 +24772,6 @@
                     },
                     "notes": {
                         "type": "string"
-                    },
-                    "details": {
-                        "type": "object",
-                        "additionalProperties": {
-                            "type": "string"
-                        },
-                        "example": {
-                            "certificateNumber": "123/26",
-                            "issuer": "CNRT"
-                        },
-                        "description": "Datos propios del tipo de documento (`plan.documentKind`): curso de mercancías peligrosas {certificateNumber, issuer}, psicofísico {examDate}, ART {insurer, policyNumber}. Los demás tipos no llevan detalle."
                     },
                     "scheduledAt": {
                         "type": "string",
@@ -23997,11 +24853,6 @@
                         "format": "uuid",
                         "nullable": true
                     },
-                    "employeeId": {
-                        "type": "string",
-                        "format": "uuid",
-                        "nullable": true
-                    },
                     "status": {
                         "type": "string",
                         "enum": [
@@ -24012,6 +24863,11 @@
                             "overdue",
                             "cancelled"
                         ]
+                    },
+                    "validFrom": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
                     },
                     "dueAt": {
                         "type": "string",
@@ -24056,14 +24912,6 @@
                         "type": "string",
                         "nullable": true
                     },
-                    "details": {
-                        "type": "object",
-                        "additionalProperties": {
-                            "type": "string"
-                        },
-                        "nullable": true,
-                        "description": "Datos propios del tipo de documento (según `plan.documentKind`)"
-                    },
                     "expirationStatus": {
                         "type": "string",
                         "enum": [
@@ -24096,8 +24944,8 @@
                     "distributorId",
                     "carId",
                     "deliveryId",
-                    "employeeId",
                     "status",
+                    "validFrom",
                     "dueAt",
                     "dueKm",
                     "scheduledAt",
@@ -24108,7 +24956,6 @@
                     "referenceNumber",
                     "category",
                     "notes",
-                    "details",
                     "expirationStatus",
                     "daysUntilDue",
                     "blocks"
@@ -24122,6 +24969,17 @@
                         "format": "date-time",
                         "example": "2026-12-31T00:00:00.000Z",
                         "description": "Fecha límite (vencimiento de la póliza, la VTV, la licencia)"
+                    },
+                    "validFrom": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2026-01-01T00:00:00.000Z",
+                        "description": "Inicio de la vigencia (póliza, habilitación). No puede ser posterior al vencimiento"
+                    },
+                    "cost": {
+                        "type": "number",
+                        "example": 185000,
+                        "description": "Importe de la tarea (la prima de la póliza, el costo del service). Entra en el costo del vehículo"
                     },
                     "dueKm": {
                         "type": "number",
@@ -24144,17 +25002,6 @@
                     },
                     "notes": {
                         "type": "string"
-                    },
-                    "details": {
-                        "type": "object",
-                        "additionalProperties": {
-                            "type": "string"
-                        },
-                        "example": {
-                            "certificateNumber": "123/26",
-                            "issuer": "CNRT"
-                        },
-                        "description": "Datos propios del tipo de documento (`plan.documentKind`): curso de mercancías peligrosas {certificateNumber, issuer}, psicofísico {examDate}, ART {insurer, policyNumber}. Los demás tipos no llevan detalle."
                     },
                     "scheduledAt": {
                         "type": "string",
@@ -24342,19 +25189,12 @@
                         "items": {
                             "$ref": "#/components/schemas/FleetDriverExpirationsDto"
                         }
-                    },
-                    "employees": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/FleetEmployeeExpirationsDto"
-                        }
                     }
                 },
                 "required": [
                     "withinDays",
                     "vehicles",
-                    "drivers",
-                    "employees"
+                    "drivers"
                 ]
             },
             "FleetVehicleDocumentsResponseDto": {
@@ -29006,221 +29846,181 @@
                     "paymentStatus"
                 ]
             },
-            "FleetEmployeeExpirationsDto": {
+            "CreateFuelLoadDto": {
                 "type": "object",
                 "properties": {
-                    "employeeId": {
+                    "carId": {
                         "type": "string",
-                        "format": "uuid"
+                        "format": "uuid",
+                        "description": "Vehículo de la distribuidora"
                     },
-                    "fullName": {
+                    "loadedAt": {
                         "type": "string",
-                        "example": "Ana Pérez"
+                        "format": "date-time",
+                        "description": "Cuándo se cargó; por omisión, ahora. No puede ser futura"
                     },
-                    "fileNumber": {
-                        "type": "string",
-                        "example": "0042"
-                    },
-                    "positionName": {
-                        "type": "string",
-                        "example": "Chofer"
-                    },
-                    "category": {
+                    "fuelType": {
                         "type": "string",
                         "enum": [
-                            "driver",
-                            "helper",
-                            "warehouse",
-                            "administration",
-                            "sales",
-                            "management",
-                            "other"
+                            "diesel",
+                            "gasoline",
+                            "cng",
+                            "lpg"
+                        ],
+                        "description": "Por omisión, el combustible del vehículo"
+                    },
+                    "liters": {
+                        "type": "number",
+                        "example": 42.5,
+                        "description": "Litros cargados"
+                    },
+                    "unitPrice": {
+                        "type": "number",
+                        "example": 1050.5,
+                        "description": "Precio por litro"
+                    },
+                    "totalAmount": {
+                        "type": "number",
+                        "example": 44646.25,
+                        "description": "Importe total; tiene que coincidir con litros × precio por litro, con una tolerancia del 1 %"
+                    },
+                    "odometerKm": {
+                        "type": "number",
+                        "example": 120350,
+                        "description": "Kilometraje del tablero"
+                    },
+                    "isFullTank": {
+                        "type": "boolean",
+                        "description": "El consumo se mide entre cargas de tanque lleno (por omisión, sí)"
+                    },
+                    "station": {
+                        "type": "string",
+                        "example": "YPF Ruta 12",
+                        "nullable": true
+                    },
+                    "paymentMethod": {
+                        "type": "string",
+                        "enum": [
+                            "cash_box",
+                            "driver_cash",
+                            "card",
+                            "fuel_account"
                         ]
                     },
-                    "isLocked": {
-                        "type": "boolean",
-                        "description": "Tiene una habilitación bloqueante vencida: queda inhabilitado para el despacho (CU-246)"
+                    "receiptNumber": {
+                        "type": "string",
+                        "example": "0001-00012345",
+                        "nullable": true
                     },
-                    "items": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/FleetExpirationEntryDto"
-                        }
+                    "notes": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "odometerCorrection": {
+                        "type": "boolean",
+                        "description": "Sólo el administrador: permite un kilometraje menor que el de la carga anterior. Exige `odometerCorrectionNote`"
+                    },
+                    "odometerCorrectionNote": {
+                        "type": "string",
+                        "description": "Por qué se fuerza el kilometraje (obligatoria con `odometerCorrection`)"
                     }
                 },
                 "required": [
-                    "employeeId",
-                    "fullName",
-                    "fileNumber",
-                    "positionName",
-                    "category",
-                    "isLocked",
-                    "items"
+                    "carId",
+                    "liters",
+                    "unitPrice",
+                    "totalAmount",
+                    "odometerKm",
+                    "paymentMethod"
                 ]
             },
-            "EmployeeDocumentsResponseDto": {
+            "FuelLoadResponseDto": {
                 "type": "object",
                 "properties": {
-                    "employeeId": {
+                    "fuelLoadId": {
                         "type": "string",
                         "format": "uuid"
                     },
-                    "isLocked": {
-                        "type": "boolean",
-                        "description": "Queda inhabilitado para el despacho por la misma regla que aplica el despacho (CU-246): legajo egresado, licencia aprobada que cubre hoy o documentación bloqueante vencida (incluida la licencia de conducir). No mira el vehículo en uso."
-                    },
-                    "lockReasons": {
-                        "example": [
-                            "Examen psicofísico: venció el 01/03/2026"
-                        ],
-                        "description": "Los motivos de la inhabilitación, en castellano",
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        }
-                    },
-                    "tasks": {
-                        "description": "Las tareas del empleado, con su estado de vencimiento (incluye la licencia de conducir de un chofer)",
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/FleetTaskResponseDto"
-                        }
-                    },
-                    "missingPlans": {
-                        "description": "Planes activos que le aplican por la categoría de su puesto y para los que no tiene ninguna tarea abierta",
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/FleetPlanResponseDto"
-                        }
-                    }
-                },
-                "required": [
-                    "employeeId",
-                    "isLocked",
-                    "lockReasons",
-                    "tasks",
-                    "missingPlans"
-                ]
-            },
-            "CreateLeaveDto": {
-                "type": "object",
-                "properties": {
-                    "type": {
-                        "type": "string",
-                        "enum": [
-                            "vacation",
-                            "sick",
-                            "work_accident",
-                            "study",
-                            "marriage",
-                            "birth",
-                            "bereavement",
-                            "unpaid",
-                            "suspension",
-                            "unjustified_absence",
-                            "other"
-                        ],
-                        "example": "vacation"
-                    },
-                    "startDate": {
-                        "type": "string",
-                        "example": "2026-12-01",
-                        "format": "date"
-                    },
-                    "endDate": {
-                        "type": "string",
-                        "example": "2026-12-14",
-                        "format": "date"
-                    },
-                    "reason": {
-                        "type": "string",
-                        "example": "Vacaciones de verano",
-                        "maxLength": 500
-                    }
-                },
-                "required": [
-                    "type",
-                    "startDate",
-                    "endDate"
-                ]
-            },
-            "LeaveResponseDto": {
-                "type": "object",
-                "properties": {
-                    "leaveId": {
+                    "distributorId": {
                         "type": "string",
                         "format": "uuid"
+                    },
+                    "carId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "carPatent": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "AB123CD"
                     },
                     "employeeId": {
                         "type": "string",
-                        "format": "uuid"
+                        "format": "uuid",
+                        "nullable": true
                     },
                     "employeeName": {
                         "type": "string",
-                        "example": "Ana Pérez"
+                        "nullable": true
                     },
-                    "employeeFileNumber": {
+                    "loadedAt": {
                         "type": "string",
-                        "example": "0042"
+                        "format": "date-time"
                     },
-                    "type": {
+                    "fuelType": {
                         "type": "string",
                         "enum": [
-                            "vacation",
-                            "sick",
-                            "work_accident",
-                            "study",
-                            "marriage",
-                            "birth",
-                            "bereavement",
-                            "unpaid",
-                            "suspension",
-                            "unjustified_absence",
-                            "other"
+                            "diesel",
+                            "gasoline",
+                            "cng",
+                            "lpg"
                         ]
                     },
-                    "startDate": {
+                    "liters": {
+                        "type": "number"
+                    },
+                    "unitPrice": {
+                        "type": "number"
+                    },
+                    "totalAmount": {
+                        "type": "number"
+                    },
+                    "odometerKm": {
+                        "type": "number"
+                    },
+                    "isFullTank": {
+                        "type": "boolean"
+                    },
+                    "station": {
                         "type": "string",
-                        "example": "2026-12-01",
-                        "format": "date"
+                        "nullable": true
                     },
-                    "endDate": {
-                        "type": "string",
-                        "example": "2026-12-14",
-                        "format": "date"
-                    },
-                    "days": {
-                        "type": "number",
-                        "description": "Días corridos, ambos extremos incluidos"
-                    },
-                    "status": {
+                    "paymentMethod": {
                         "type": "string",
                         "enum": [
-                            "requested",
-                            "approved",
-                            "rejected",
-                            "cancelled"
+                            "cash_box",
+                            "driver_cash",
+                            "card",
+                            "fuel_account"
                         ]
                     },
-                    "reason": {
+                    "receiptNumber": {
                         "type": "string",
                         "nullable": true
                     },
-                    "rejectionReason": {
+                    "anomaly": {
+                        "type": "boolean",
+                        "description": "El consumo del tramo se apartó más de un 25 % del habitual"
+                    },
+                    "notes": {
                         "type": "string",
                         "nullable": true
                     },
-                    "requestedByUserId": {
+                    "odometerCorrectionNote": {
                         "type": "string",
-                        "format": "uuid",
                         "nullable": true
                     },
-                    "decidedByUserId": {
-                        "type": "string",
-                        "format": "uuid",
-                        "nullable": true
-                    },
-                    "decidedAt": {
+                    "voidedAt": {
                         "type": "string",
                         "format": "date-time",
                         "nullable": true
@@ -29231,66 +30031,392 @@
                     }
                 },
                 "required": [
-                    "leaveId",
+                    "fuelLoadId",
+                    "distributorId",
+                    "carId",
+                    "carPatent",
                     "employeeId",
                     "employeeName",
-                    "employeeFileNumber",
-                    "type",
-                    "startDate",
-                    "endDate",
-                    "days",
-                    "status",
-                    "reason",
-                    "rejectionReason",
-                    "requestedByUserId",
-                    "decidedByUserId",
-                    "decidedAt",
+                    "loadedAt",
+                    "fuelType",
+                    "liters",
+                    "unitPrice",
+                    "totalAmount",
+                    "odometerKm",
+                    "isFullTank",
+                    "station",
+                    "paymentMethod",
+                    "receiptNumber",
+                    "anomaly",
+                    "notes",
+                    "odometerCorrectionNote",
+                    "voidedAt",
                     "createdAt"
                 ]
             },
-            "VacationBalanceDto": {
+            "CreateMyFuelLoadDto": {
                 "type": "object",
                 "properties": {
-                    "employeeId": {
+                    "loadedAt": {
                         "type": "string",
-                        "format": "uuid"
+                        "format": "date-time",
+                        "description": "Cuándo se cargó; por omisión, ahora. No puede ser futura"
                     },
-                    "year": {
-                        "type": "number",
-                        "example": 2026
+                    "fuelType": {
+                        "type": "string",
+                        "enum": [
+                            "diesel",
+                            "gasoline",
+                            "cng",
+                            "lpg"
+                        ],
+                        "description": "Por omisión, el combustible del vehículo"
                     },
-                    "entitledDays": {
+                    "liters": {
                         "type": "number",
-                        "description": "Días corridos que corresponden por la antigüedad al 31 de diciembre (14, 21, 28 o 35)"
+                        "example": 42.5,
+                        "description": "Litros cargados"
                     },
-                    "takenDays": {
+                    "unitPrice": {
                         "type": "number",
-                        "description": "Días de las licencias de vacaciones aprobadas que caen en el año"
+                        "example": 1050.5,
+                        "description": "Precio por litro"
                     },
-                    "balanceDays": {
+                    "totalAmount": {
                         "type": "number",
-                        "description": "entitledDays - takenDays (puede ser negativo)"
+                        "example": 44646.25,
+                        "description": "Importe total; tiene que coincidir con litros × precio por litro, con una tolerancia del 1 %"
+                    },
+                    "odometerKm": {
+                        "type": "number",
+                        "example": 120350,
+                        "description": "Kilometraje del tablero"
+                    },
+                    "isFullTank": {
+                        "type": "boolean",
+                        "description": "El consumo se mide entre cargas de tanque lleno (por omisión, sí)"
+                    },
+                    "station": {
+                        "type": "string",
+                        "example": "YPF Ruta 12",
+                        "nullable": true
+                    },
+                    "paymentMethod": {
+                        "type": "string",
+                        "enum": [
+                            "cash_box",
+                            "driver_cash",
+                            "card",
+                            "fuel_account"
+                        ]
+                    },
+                    "receiptNumber": {
+                        "type": "string",
+                        "example": "0001-00012345",
+                        "nullable": true
+                    },
+                    "notes": {
+                        "type": "string",
+                        "nullable": true
                     }
                 },
                 "required": [
-                    "employeeId",
-                    "year",
-                    "entitledDays",
-                    "takenDays",
-                    "balanceDays"
+                    "liters",
+                    "unitPrice",
+                    "totalAmount",
+                    "odometerKm",
+                    "paymentMethod"
                 ]
             },
-            "LeavePageDto": {
+            "FuelLoadPageDto": {
                 "type": "object",
                 "properties": {
                     "data": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/LeaveResponseDto"
+                            "$ref": "#/components/schemas/FuelLoadResponseDto"
                         }
                     },
                     "total": {
+                        "type": "number",
+                        "example": 12,
+                        "description": "Cargas vigentes que cumplen los filtros, sin paginar"
+                    },
+                    "totalLiters": {
+                        "type": "number",
+                        "example": 530.25,
+                        "description": "Litros de esas cargas"
+                    },
+                    "totalAmount": {
+                        "type": "number",
+                        "example": 556762.5,
+                        "description": "Importe de esas cargas"
+                    }
+                },
+                "required": [
+                    "data",
+                    "total",
+                    "totalLiters",
+                    "totalAmount"
+                ]
+            },
+            "UpdateFuelLoadDto": {
+                "type": "object",
+                "properties": {
+                    "loadedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Cuándo se cargó; por omisión, ahora. No puede ser futura"
+                    },
+                    "fuelType": {
+                        "type": "string",
+                        "enum": [
+                            "diesel",
+                            "gasoline",
+                            "cng",
+                            "lpg"
+                        ],
+                        "description": "Por omisión, el combustible del vehículo"
+                    },
+                    "liters": {
+                        "type": "number",
+                        "example": 42.5,
+                        "description": "Litros cargados"
+                    },
+                    "unitPrice": {
+                        "type": "number",
+                        "example": 1050.5,
+                        "description": "Precio por litro"
+                    },
+                    "totalAmount": {
+                        "type": "number",
+                        "example": 44646.25,
+                        "description": "Importe total; tiene que coincidir con litros × precio por litro, con una tolerancia del 1 %"
+                    },
+                    "odometerKm": {
+                        "type": "number",
+                        "example": 120350,
+                        "description": "Kilometraje del tablero"
+                    },
+                    "isFullTank": {
+                        "type": "boolean",
+                        "description": "El consumo se mide entre cargas de tanque lleno (por omisión, sí)"
+                    },
+                    "station": {
+                        "type": "string",
+                        "example": "YPF Ruta 12",
+                        "nullable": true
+                    },
+                    "paymentMethod": {
+                        "type": "string",
+                        "enum": [
+                            "cash_box",
+                            "driver_cash",
+                            "card",
+                            "fuel_account"
+                        ]
+                    },
+                    "receiptNumber": {
+                        "type": "string",
+                        "example": "0001-00012345",
+                        "nullable": true
+                    },
+                    "notes": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "odometerCorrection": {
+                        "type": "boolean",
+                        "description": "Sólo el administrador: permite un kilometraje menor que el de la carga anterior. Exige `odometerCorrectionNote`"
+                    },
+                    "odometerCorrectionNote": {
+                        "type": "string",
+                        "description": "Por qué se fuerza el kilometraje (obligatoria con `odometerCorrection`)"
+                    }
+                }
+            },
+            "CreateTrafficFineDto": {
+                "type": "object",
+                "properties": {
+                    "carId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "occurredAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Cuándo ocurrió la infracción"
+                    },
+                    "jurisdiction": {
+                        "type": "string",
+                        "example": "Municipalidad de Posadas",
+                        "maxLength": 80
+                    },
+                    "actNumber": {
+                        "type": "string",
+                        "example": "A-0012345",
+                        "maxLength": 40,
+                        "description": "Único por distribuidora y jurisdicción"
+                    },
+                    "infraction": {
+                        "type": "string",
+                        "example": "Exceso de velocidad"
+                    },
+                    "amount": {
+                        "type": "number",
+                        "example": 85000
+                    },
+                    "voluntaryPaymentAmount": {
+                        "type": "number",
+                        "example": 59500,
+                        "nullable": true,
+                        "description": "Importe con pago voluntario; no puede superar `amount`"
+                    },
+                    "dueDate": {
+                        "type": "string",
+                        "example": "2026-11-15",
+                        "format": "date",
+                        "nullable": true
+                    },
+                    "employeeId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Legajo responsable. Si falta, se deduce del chofer que tenía el vehículo en uso en el instante de la infracción"
+                    }
+                },
+                "required": [
+                    "carId",
+                    "occurredAt",
+                    "jurisdiction",
+                    "actNumber",
+                    "infraction",
+                    "amount"
+                ]
+            },
+            "TrafficFineResponseDto": {
+                "type": "object",
+                "properties": {
+                    "fineId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "distributorId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "carId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "carPatent": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "employeeId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "employeeName": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "occurredAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "jurisdiction": {
+                        "type": "string"
+                    },
+                    "actNumber": {
+                        "type": "string"
+                    },
+                    "infraction": {
+                        "type": "string"
+                    },
+                    "amount": {
                         "type": "number"
+                    },
+                    "voluntaryPaymentAmount": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "dueDate": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "2026-11-15"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "pending",
+                            "appealed",
+                            "paid",
+                            "voided"
+                        ]
+                    },
+                    "paidAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "paidAmount": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "chargedToEmployee": {
+                        "type": "boolean",
+                        "description": "La asume el chofer: no cuenta como costo del vehículo"
+                    },
+                    "voidReason": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "voidedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "fineId",
+                    "distributorId",
+                    "carId",
+                    "carPatent",
+                    "employeeId",
+                    "employeeName",
+                    "occurredAt",
+                    "jurisdiction",
+                    "actNumber",
+                    "infraction",
+                    "amount",
+                    "voluntaryPaymentAmount",
+                    "dueDate",
+                    "status",
+                    "paidAt",
+                    "paidAmount",
+                    "chargedToEmployee",
+                    "voidReason",
+                    "voidedAt",
+                    "createdAt"
+                ]
+            },
+            "TrafficFinePageDto": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TrafficFineResponseDto"
+                        }
+                    },
+                    "total": {
+                        "type": "number",
+                        "example": 4
                     }
                 },
                 "required": [
@@ -29298,293 +30424,996 @@
                     "total"
                 ]
             },
-            "UpdateLeaveDto": {
+            "UpdateTrafficFineDto": {
                 "type": "object",
                 "properties": {
-                    "type": {
+                    "occurredAt": {
                         "type": "string",
-                        "enum": [
-                            "vacation",
-                            "sick",
-                            "work_accident",
-                            "study",
-                            "marriage",
-                            "birth",
-                            "bereavement",
-                            "unpaid",
-                            "suspension",
-                            "unjustified_absence",
-                            "other"
-                        ],
-                        "example": "vacation"
+                        "format": "date-time",
+                        "description": "Cuándo ocurrió la infracción"
                     },
-                    "startDate": {
+                    "jurisdiction": {
                         "type": "string",
-                        "example": "2026-12-01",
-                        "format": "date"
+                        "example": "Municipalidad de Posadas",
+                        "maxLength": 80
                     },
-                    "endDate": {
+                    "actNumber": {
                         "type": "string",
-                        "example": "2026-12-14",
-                        "format": "date"
+                        "example": "A-0012345",
+                        "maxLength": 40,
+                        "description": "Único por distribuidora y jurisdicción"
                     },
-                    "reason": {
+                    "infraction": {
                         "type": "string",
-                        "example": "Vacaciones de verano",
-                        "maxLength": 500
+                        "example": "Exceso de velocidad"
+                    },
+                    "amount": {
+                        "type": "number",
+                        "example": 85000
+                    },
+                    "voluntaryPaymentAmount": {
+                        "type": "number",
+                        "example": 59500,
+                        "nullable": true,
+                        "description": "Importe con pago voluntario; no puede superar `amount`"
+                    },
+                    "dueDate": {
+                        "type": "string",
+                        "example": "2026-11-15",
+                        "format": "date",
+                        "nullable": true
+                    },
+                    "appeal": {
+                        "type": "boolean",
+                        "description": "Pasa la multa de pendiente a apelada"
                     }
                 }
             },
-            "RejectLeaveDto": {
+            "PayTrafficFineDto": {
+                "type": "object",
+                "properties": {
+                    "paidAt": {
+                        "type": "string",
+                        "example": "2026-10-20",
+                        "format": "date"
+                    },
+                    "paidAmount": {
+                        "type": "number",
+                        "example": 59500,
+                        "description": "Lo efectivamente pagado (suele ser el del pago voluntario)"
+                    }
+                },
+                "required": [
+                    "paidAt",
+                    "paidAmount"
+                ]
+            },
+            "ChargeTrafficFineDto": {
+                "type": "object",
+                "properties": {
+                    "employeeId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Legajo que asume la multa; por omisión, el responsable deducido al registrarla"
+                    }
+                }
+            },
+            "VoidTrafficFineDto": {
                 "type": "object",
                 "properties": {
                     "reason": {
                         "type": "string",
-                        "example": "Sin cobertura esa semana",
-                        "maxLength": 500
+                        "example": "Acta labrada a otro vehículo"
                     }
                 },
                 "required": [
                     "reason"
                 ]
             },
-            "RegisterAttendanceDto": {
+            "CreateVehicleAccidentDto": {
                 "type": "object",
                 "properties": {
-                    "checkInAt": {
-                        "type": "string",
-                        "format": "date-time",
-                        "example": "2026-03-02T11:00:00.000Z"
-                    },
-                    "checkOutAt": {
-                        "type": "string",
-                        "format": "date-time",
-                        "example": "2026-03-02T19:30:00.000Z",
-                        "description": "Si la jornada ya terminó. Sin egreso queda abierta."
-                    }
-                },
-                "required": [
-                    "checkInAt"
-                ]
-            },
-            "AttendanceResponseDto": {
-                "type": "object",
-                "properties": {
-                    "attendanceId": {
+                    "carId": {
                         "type": "string",
                         "format": "uuid"
+                    },
+                    "occurredAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Cuándo ocurrió"
+                    },
+                    "location": {
+                        "type": "string",
+                        "example": "-27.3671,-55.8961",
+                        "nullable": true,
+                        "description": "Punto en el mapa, como \"latitud,longitud\""
+                    },
+                    "address": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "Ruta 12 km 1340"
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "Choque trasero en la esquina de Bolívar y Colón"
+                    },
+                    "injuries": {
+                        "type": "boolean"
+                    },
+                    "thirdPartiesInvolved": {
+                        "type": "boolean"
+                    },
+                    "hazmatRelease": {
+                        "type": "boolean",
+                        "description": "Fuga o derrame de gas: avisa de inmediato a los administradores"
+                    },
+                    "policeReportNumber": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "insurerClaimNumber": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "vehicleUnusable": {
+                        "type": "boolean",
+                        "description": "Si quedó inutilizable, el vehículo pasa a fuera de servicio y se libera a su chofer"
                     },
                     "employeeId": {
                         "type": "string",
+                        "format": "uuid",
+                        "description": "Legajo de quien conducía; en el reporte del chofer es el suyo"
+                    }
+                },
+                "required": [
+                    "carId",
+                    "occurredAt",
+                    "description"
+                ]
+            },
+            "VehicleAccidentResponseDto": {
+                "type": "object",
+                "properties": {
+                    "accidentId": {
+                        "type": "string",
                         "format": "uuid"
                     },
-                    "employeeName": {
+                    "distributorId": {
                         "type": "string",
-                        "example": "Ana Pérez"
+                        "format": "uuid"
                     },
-                    "employeeFileNumber": {
+                    "carId": {
                         "type": "string",
-                        "example": "0042"
+                        "format": "uuid"
                     },
-                    "workDate": {
+                    "carPatent": {
                         "type": "string",
-                        "example": "2026-03-02",
-                        "format": "date"
-                    },
-                    "checkInAt": {
-                        "type": "string",
-                        "format": "date-time"
-                    },
-                    "checkOutAt": {
-                        "type": "string",
-                        "format": "date-time",
                         "nullable": true
                     },
-                    "isOpen": {
-                        "type": "boolean",
-                        "description": "Jornada sin cerrar"
-                    },
-                    "durationMinutes": {
-                        "type": "number",
-                        "nullable": true,
-                        "description": "Minutos trabajados; null mientras está abierta"
-                    },
-                    "source": {
-                        "type": "string",
-                        "enum": [
-                            "panel",
-                            "driver_app"
-                        ]
-                    },
-                    "recordedByUserId": {
+                    "employeeId": {
                         "type": "string",
                         "format": "uuid",
                         "nullable": true
                     },
-                    "notes": {
+                    "employeeName": {
                         "type": "string",
                         "nullable": true
+                    },
+                    "occurredAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "location": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "-27.3671,-55.8961"
+                    },
+                    "address": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "injuries": {
+                        "type": "boolean"
+                    },
+                    "thirdPartiesInvolved": {
+                        "type": "boolean"
+                    },
+                    "hazmatRelease": {
+                        "type": "boolean"
+                    },
+                    "policeReportNumber": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "insurerClaimNumber": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "reported",
+                            "under_review",
+                            "repairing",
+                            "closed"
+                        ]
+                    },
+                    "vehicleUnusable": {
+                        "type": "boolean"
+                    },
+                    "repairCost": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "insurerReimbursement": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "deductibleAmount": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "netCost": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Costo de reparación menos reintegro del seguro; sólo cerrado"
+                    },
+                    "closedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
                     }
                 },
                 "required": [
-                    "attendanceId",
+                    "accidentId",
+                    "distributorId",
+                    "carId",
+                    "carPatent",
                     "employeeId",
                     "employeeName",
-                    "employeeFileNumber",
-                    "workDate",
-                    "checkInAt",
-                    "checkOutAt",
-                    "isOpen",
-                    "durationMinutes",
-                    "source",
-                    "recordedByUserId",
-                    "notes"
+                    "occurredAt",
+                    "location",
+                    "address",
+                    "description",
+                    "injuries",
+                    "thirdPartiesInvolved",
+                    "hazmatRelease",
+                    "policeReportNumber",
+                    "insurerClaimNumber",
+                    "status",
+                    "vehicleUnusable",
+                    "repairCost",
+                    "insurerReimbursement",
+                    "deductibleAmount",
+                    "netCost",
+                    "closedAt",
+                    "createdAt"
                 ]
             },
-            "AttendancePageDto": {
+            "CreateMyVehicleAccidentDto": {
+                "type": "object",
+                "properties": {
+                    "occurredAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Cuándo ocurrió"
+                    },
+                    "location": {
+                        "type": "string",
+                        "example": "-27.3671,-55.8961",
+                        "nullable": true,
+                        "description": "Punto en el mapa, como \"latitud,longitud\""
+                    },
+                    "address": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "Ruta 12 km 1340"
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "Choque trasero en la esquina de Bolívar y Colón"
+                    },
+                    "injuries": {
+                        "type": "boolean"
+                    },
+                    "thirdPartiesInvolved": {
+                        "type": "boolean"
+                    },
+                    "hazmatRelease": {
+                        "type": "boolean",
+                        "description": "Fuga o derrame de gas: avisa de inmediato a los administradores"
+                    },
+                    "policeReportNumber": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "insurerClaimNumber": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "vehicleUnusable": {
+                        "type": "boolean",
+                        "description": "Si quedó inutilizable, el vehículo pasa a fuera de servicio y se libera a su chofer"
+                    }
+                },
+                "required": [
+                    "occurredAt",
+                    "description"
+                ]
+            },
+            "VehicleAccidentPageDto": {
                 "type": "object",
                 "properties": {
                     "data": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/AttendanceResponseDto"
+                            "$ref": "#/components/schemas/VehicleAccidentResponseDto"
                         }
                     },
                     "total": {
-                        "type": "number"
-                    },
-                    "presentToday": {
                         "type": "number",
-                        "description": "Empleados presentes hoy de la distribuidora: jornada abierta del día de hoy (no depende de los filtros)"
-                    },
-                    "staleOpen": {
-                        "type": "number",
-                        "description": "Jornadas de días anteriores que quedaron sin cerrar y esperan su corrección (no depende de los filtros)"
+                        "example": 3
                     }
                 },
                 "required": [
                     "data",
-                    "total",
-                    "presentToday",
-                    "staleOpen"
+                    "total"
                 ]
             },
-            "CorrectAttendanceDto": {
+            "UpdateVehicleAccidentDto": {
                 "type": "object",
                 "properties": {
-                    "checkInAt": {
+                    "occurredAt": {
                         "type": "string",
-                        "format": "date-time"
+                        "format": "date-time",
+                        "description": "Cuándo ocurrió"
                     },
-                    "checkOutAt": {
+                    "location": {
                         "type": "string",
-                        "format": "date-time"
+                        "example": "-27.3671,-55.8961",
+                        "nullable": true,
+                        "description": "Punto en el mapa, como \"latitud,longitud\""
                     },
-                    "notes": {
+                    "address": {
                         "type": "string",
-                        "example": "Olvidó marcar la salida",
-                        "maxLength": 500
+                        "nullable": true,
+                        "example": "Ruta 12 km 1340"
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "Choque trasero en la esquina de Bolívar y Colón"
+                    },
+                    "injuries": {
+                        "type": "boolean"
+                    },
+                    "thirdPartiesInvolved": {
+                        "type": "boolean"
+                    },
+                    "hazmatRelease": {
+                        "type": "boolean",
+                        "description": "Fuga o derrame de gas: avisa de inmediato a los administradores"
+                    },
+                    "policeReportNumber": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "insurerClaimNumber": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "under_review",
+                            "repairing"
+                        ],
+                        "description": "Sólo al estado siguiente del ciclo; el cierre es `PATCH …/close`"
+                    }
+                }
+            },
+            "CloseVehicleAccidentDto": {
+                "type": "object",
+                "properties": {
+                    "repairCost": {
+                        "type": "number",
+                        "example": 350000,
+                        "description": "Costo de la reparación"
+                    },
+                    "insurerReimbursement": {
+                        "type": "number",
+                        "example": 250000,
+                        "description": "Lo que reintegró el seguro"
+                    },
+                    "deductibleAmount": {
+                        "type": "number",
+                        "example": 50000,
+                        "description": "Franquicia que pagó la distribuidora"
                     }
                 },
                 "required": [
-                    "notes"
+                    "repairCost",
+                    "insurerReimbursement",
+                    "deductibleAmount"
                 ]
             },
-            "ActivePerPositionDto": {
+            "CreateTireDto": {
                 "type": "object",
                 "properties": {
-                    "positionId": {
+                    "serialNumber": {
+                        "type": "string",
+                        "example": "DOT-4K2L-2326",
+                        "maxLength": 60,
+                        "description": "Único por distribuidora"
+                    },
+                    "brand": {
+                        "type": "string",
+                        "example": "Pirelli",
+                        "maxLength": 60
+                    },
+                    "size": {
+                        "type": "string",
+                        "example": "215/75 R17.5",
+                        "maxLength": 40
+                    },
+                    "cost": {
+                        "type": "number",
+                        "example": 320000
+                    }
+                },
+                "required": [
+                    "serialNumber",
+                    "brand",
+                    "size",
+                    "cost"
+                ]
+            },
+            "TireEventResponseDto": {
+                "type": "object",
+                "properties": {
+                    "eventId": {
                         "type": "string",
                         "format": "uuid"
                     },
-                    "name": {
+                    "tireId": {
                         "type": "string",
-                        "example": "Chofer"
+                        "format": "uuid"
                     },
-                    "category": {
+                    "type": {
                         "type": "string",
                         "enum": [
-                            "driver",
-                            "helper",
-                            "warehouse",
-                            "administration",
-                            "sales",
-                            "management",
-                            "other"
+                            "mount",
+                            "unmount",
+                            "rotate",
+                            "retread",
+                            "retire"
                         ]
                     },
-                    "count": {
-                        "type": "number",
-                        "example": 6
-                    }
-                },
-                "required": [
-                    "positionId",
-                    "name",
-                    "category",
-                    "count"
-                ]
-            },
-            "DocumentsByStatusDto": {
-                "type": "object",
-                "properties": {
-                    "current": {
-                        "type": "number",
-                        "description": "Vigentes: falta más que la anticipación del plan"
-                    },
-                    "dueSoon": {
-                        "type": "number",
-                        "description": "Por vencer: dentro de la ventana de aviso"
-                    },
-                    "expired": {
-                        "type": "number",
-                        "description": "Vencidas"
-                    }
-                },
-                "required": [
-                    "current",
-                    "dueSoon",
-                    "expired"
-                ]
-            },
-            "PersonnelDashboardDto": {
-                "type": "object",
-                "properties": {
-                    "today": {
+                    "carId": {
                         "type": "string",
-                        "example": "2026-10-17",
-                        "format": "date",
-                        "description": "El día de hoy en Argentina"
+                        "format": "uuid",
+                        "nullable": true
                     },
-                    "totalActive": {
+                    "position": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "odometerKm": {
+                        "type": "number"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "eventId",
+                    "tireId",
+                    "type",
+                    "carId",
+                    "position",
+                    "odometerKm",
+                    "createdAt"
+                ]
+            },
+            "TireResponseDto": {
+                "type": "object",
+                "properties": {
+                    "tireId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "distributorId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "serialNumber": {
+                        "type": "string"
+                    },
+                    "brand": {
+                        "type": "string"
+                    },
+                    "size": {
+                        "type": "string"
+                    },
+                    "cost": {
+                        "type": "number"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "in_stock",
+                            "mounted",
+                            "retired"
+                        ]
+                    },
+                    "carId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "carPatent": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "position": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "DI"
+                    },
+                    "mountedOdometerKm": {
                         "type": "number",
-                        "description": "Total de empleados activos"
+                        "nullable": true
                     },
-                    "activeByPosition": {
+                    "kmTraveled": {
+                        "type": "number",
+                        "description": "Km de los montajes ya cerrados"
+                    },
+                    "retreadCount": {
+                        "type": "number"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "events": {
+                        "description": "Su historial, del más reciente al más antiguo (sólo al abrir un neumático)",
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/ActivePerPositionDto"
+                            "$ref": "#/components/schemas/TireEventResponseDto"
                         }
-                    },
-                    "presentToday": {
-                        "type": "number",
-                        "description": "Empleados con una jornada abierta"
-                    },
-                    "onLeaveToday": {
-                        "type": "number",
-                        "description": "Empleados con una licencia aprobada que cubre el día de hoy"
-                    },
-                    "documents": {
-                        "$ref": "#/components/schemas/DocumentsByStatusDto"
                     }
                 },
                 "required": [
-                    "today",
-                    "totalActive",
-                    "activeByPosition",
-                    "presentToday",
-                    "onLeaveToday",
-                    "documents"
+                    "tireId",
+                    "distributorId",
+                    "serialNumber",
+                    "brand",
+                    "size",
+                    "cost",
+                    "status",
+                    "carId",
+                    "carPatent",
+                    "position",
+                    "mountedOdometerKm",
+                    "kmTraveled",
+                    "retreadCount",
+                    "createdAt"
+                ]
+            },
+            "TirePageDto": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TireResponseDto"
+                        }
+                    },
+                    "total": {
+                        "type": "number",
+                        "example": 8
+                    }
+                },
+                "required": [
+                    "data",
+                    "total"
+                ]
+            },
+            "CreateTireEventDto": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "mount",
+                            "unmount",
+                            "rotate",
+                            "retread",
+                            "retire"
+                        ]
+                    },
+                    "odometerKm": {
+                        "type": "number",
+                        "example": 120350,
+                        "description": "Kilometraje del vehículo en el movimiento"
+                    },
+                    "carId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Vehículo; obligatorio en el montaje"
+                    },
+                    "position": {
+                        "type": "string",
+                        "example": "DI",
+                        "description": "Código corto de la posición (p. ej. DI = delantero izquierdo); obligatorio en el montaje y la rotación"
+                    }
+                },
+                "required": [
+                    "type",
+                    "odometerKm"
+                ]
+            },
+            "TireMovementResponseDto": {
+                "type": "object",
+                "properties": {
+                    "event": {
+                        "$ref": "#/components/schemas/TireEventResponseDto"
+                    },
+                    "tire": {
+                        "description": "El neumático ya en su estado nuevo",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/TireResponseDto"
+                            }
+                        ]
+                    }
+                },
+                "required": [
+                    "event",
+                    "tire"
+                ]
+            },
+            "FuelTrancheDto": {
+                "type": "object",
+                "properties": {
+                    "fromLoadId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "toLoadId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "fromKm": {
+                        "type": "number"
+                    },
+                    "toKm": {
+                        "type": "number"
+                    },
+                    "km": {
+                        "type": "number"
+                    },
+                    "liters": {
+                        "type": "number"
+                    },
+                    "amount": {
+                        "type": "number"
+                    },
+                    "kmPerLiter": {
+                        "type": "number",
+                        "description": "Rendimiento: km por litro"
+                    },
+                    "costPerKm": {
+                        "type": "number",
+                        "description": "Costo por km"
+                    }
+                },
+                "required": [
+                    "fromLoadId",
+                    "toLoadId",
+                    "fromKm",
+                    "toKm",
+                    "km",
+                    "liters",
+                    "amount",
+                    "kmPerLiter",
+                    "costPerKm"
+                ]
+            },
+            "FuelTotalsDto": {
+                "type": "object",
+                "properties": {
+                    "km": {
+                        "type": "number"
+                    },
+                    "liters": {
+                        "type": "number"
+                    },
+                    "amount": {
+                        "type": "number"
+                    },
+                    "kmPerLiter": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "costPerKm": {
+                        "type": "number",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "km",
+                    "liters",
+                    "amount",
+                    "kmPerLiter",
+                    "costPerKm"
+                ]
+            },
+            "FuelEfficiencyDto": {
+                "type": "object",
+                "properties": {
+                    "carId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "from": {
+                        "type": "string",
+                        "example": "2026-10-01"
+                    },
+                    "to": {
+                        "type": "string",
+                        "example": "2026-10-31"
+                    },
+                    "tranches": {
+                        "description": "Vacío si en el rango hay menos de dos cargas de tanque lleno",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/FuelTrancheDto"
+                        }
+                    },
+                    "totals": {
+                        "$ref": "#/components/schemas/FuelTotalsDto"
+                    },
+                    "anomalies": {
+                        "description": "Las cargas del rango marcadas como anómalas",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/FuelLoadResponseDto"
+                        }
+                    }
+                },
+                "required": [
+                    "carId",
+                    "from",
+                    "to",
+                    "tranches",
+                    "totals",
+                    "anomalies"
+                ]
+            },
+            "CostMonthDto": {
+                "type": "object",
+                "properties": {
+                    "month": {
+                        "type": "string",
+                        "example": "2026-10"
+                    },
+                    "maintenance": {
+                        "type": "number"
+                    },
+                    "insurance": {
+                        "type": "number"
+                    },
+                    "fuel": {
+                        "type": "number"
+                    },
+                    "fines": {
+                        "type": "number"
+                    },
+                    "accidents": {
+                        "type": "number"
+                    },
+                    "total": {
+                        "type": "number"
+                    }
+                },
+                "required": [
+                    "month",
+                    "maintenance",
+                    "insurance",
+                    "fuel",
+                    "fines",
+                    "accidents",
+                    "total"
+                ]
+            },
+            "CarCostDetailDto": {
+                "type": "object",
+                "properties": {
+                    "carId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "carPatent": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "carBrand": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "carModel": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "maintenance": {
+                        "type": "number",
+                        "description": "Tareas de mantenimiento hechas, sin los seguros"
+                    },
+                    "insurance": {
+                        "type": "number",
+                        "description": "Primas prorrateadas por los días del período"
+                    },
+                    "fuel": {
+                        "type": "number",
+                        "description": "Cargas de combustible vigentes"
+                    },
+                    "fines": {
+                        "type": "number",
+                        "description": "Multas pagadas que no se imputaron al chofer"
+                    },
+                    "accidents": {
+                        "type": "number",
+                        "description": "Siniestros cerrados: reparación menos reintegro del seguro"
+                    },
+                    "total": {
+                        "type": "number"
+                    },
+                    "insuranceEstimated": {
+                        "type": "boolean",
+                        "description": "Alguna póliza no tenía inicio de vigencia y se prorrateó con un año hacia atrás"
+                    },
+                    "km": {
+                        "type": "number",
+                        "description": "Kilómetros del período"
+                    },
+                    "kmSource": {
+                        "type": "string",
+                        "enum": [
+                            "usage_log",
+                            "odometer",
+                            "none"
+                        ],
+                        "description": "De dónde salen los km: el registro de uso diario, la diferencia de kilometraje entre cargas, o ninguno"
+                    },
+                    "costPerKm": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "`null` si no hubo km"
+                    },
+                    "from": {
+                        "type": "string",
+                        "example": "2026-10-01"
+                    },
+                    "to": {
+                        "type": "string",
+                        "example": "2026-10-31"
+                    },
+                    "monthly": {
+                        "description": "Evolución mensual del período",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CostMonthDto"
+                        }
+                    }
+                },
+                "required": [
+                    "carId",
+                    "carPatent",
+                    "carBrand",
+                    "carModel",
+                    "maintenance",
+                    "insurance",
+                    "fuel",
+                    "fines",
+                    "accidents",
+                    "total",
+                    "insuranceEstimated",
+                    "km",
+                    "kmSource",
+                    "costPerKm",
+                    "from",
+                    "to",
+                    "monthly"
+                ]
+            },
+            "FleetCostSummaryDto": {
+                "type": "object",
+                "properties": {
+                    "carId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "carPatent": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "carBrand": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "carModel": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "maintenance": {
+                        "type": "number",
+                        "description": "Tareas de mantenimiento hechas, sin los seguros"
+                    },
+                    "insurance": {
+                        "type": "number",
+                        "description": "Primas prorrateadas por los días del período"
+                    },
+                    "fuel": {
+                        "type": "number",
+                        "description": "Cargas de combustible vigentes"
+                    },
+                    "fines": {
+                        "type": "number",
+                        "description": "Multas pagadas que no se imputaron al chofer"
+                    },
+                    "accidents": {
+                        "type": "number",
+                        "description": "Siniestros cerrados: reparación menos reintegro del seguro"
+                    },
+                    "total": {
+                        "type": "number"
+                    },
+                    "insuranceEstimated": {
+                        "type": "boolean",
+                        "description": "Alguna póliza no tenía inicio de vigencia y se prorrateó con un año hacia atrás"
+                    },
+                    "km": {
+                        "type": "number",
+                        "description": "Kilómetros del período"
+                    },
+                    "kmSource": {
+                        "type": "string",
+                        "enum": [
+                            "usage_log",
+                            "odometer",
+                            "none"
+                        ],
+                        "description": "De dónde salen los km: el registro de uso diario, la diferencia de kilometraje entre cargas, o ninguno"
+                    },
+                    "costPerKm": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "`null` si no hubo km"
+                    }
+                },
+                "required": [
+                    "carId",
+                    "carPatent",
+                    "carBrand",
+                    "carModel",
+                    "maintenance",
+                    "insurance",
+                    "fuel",
+                    "fines",
+                    "accidents",
+                    "total",
+                    "insuranceEstimated",
+                    "km",
+                    "kmSource",
+                    "costPerKm"
                 ]
             }
         }

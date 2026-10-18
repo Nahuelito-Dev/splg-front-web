@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { GridPaginationModel } from '@mui/x-data-grid';
 import { useNavigate, useParams } from 'react-router-dom';
-import { PencilLine, Trash2 } from 'lucide-react';
+import { PencilLine, RotateCcw, Trash2 } from 'lucide-react';
 import {
   AuditHistoryLink,
   Badge,
@@ -22,8 +22,15 @@ import { useBackToList, usePermissions, useProfileTab } from '../../hooks';
 import { useCrumbLeaf } from '../../common/components';
 import { useCar, useDeleteCar } from '../../services/queries/cars';
 import { useCarAssignments } from '../../services/queries/fleet';
+import { useReactivateCar } from '../../services/queries/fleetExpense';
 import { confirm, notify } from '../../utils/notifications';
+import { CAR_FLEET_STATUS, labelOf } from '../../utils/statusLabels';
 import { FleetDocuments } from '../Fleet/components/FleetDocuments';
+import { CarAccidentsTab } from '../FleetExpense/components/CarAccidentsTab';
+import { CarCostsTab } from '../FleetExpense/components/CarCostsTab';
+import { CarFinesTab } from '../FleetExpense/components/CarFinesTab';
+import { CarFuelTab } from '../FleetExpense/components/CarFuelTab';
+import { CarTiresTab } from '../FleetExpense/components/CarTiresTab';
 import { VehicleAssignmentHistoryTable } from '../Fleet/components/VehicleAssignmentHistoryTable';
 import { CarFormModal } from './components/CarFormModal';
 import { CarSummary } from './components/CarSummary';
@@ -34,6 +41,11 @@ const TABS: ProfileTabItem[] = [
   { key: 'summary', label: 'Resumen' },
   { key: 'documents', label: 'Documentación' },
   { key: 'history', label: 'Historial de choferes' },
+  { key: 'fuel', label: 'Combustible' },
+  { key: 'fines', label: 'Multas' },
+  { key: 'accidents', label: 'Siniestros' },
+  { key: 'costs', label: 'Costos' },
+  { key: 'tires', label: 'Neumáticos' },
 ];
 
 export const CarDetails = () => {
@@ -43,6 +55,7 @@ export const CarDetails = () => {
   const { canWrite, writeHint, needsDistributor } = usePermissions();
   const { data: car, isPending, error, refetch } = useCar(id);
   const deleteCar = useDeleteCar();
+  const reactivate = useReactivateCar();
   const [editing, setEditing] = useState(false);
   const [tab, setTab] = useProfileTab(
     TABS.map((t) => t.key),
@@ -69,6 +82,20 @@ export const CarDetails = () => {
         notify.success('Vehículo dado de baja');
         navigate('/cars');
       },
+      onError: notify.error,
+    });
+  };
+
+  const handleReactivate = async () => {
+    if (!car) return;
+    const confirmed = await confirm({
+      title: '¿Reactivar el vehículo?',
+      text: 'Vuelve a la flota si el seguro, la VTV y la habilitación de mercancías peligrosas están vigentes. No se asigna a ningún chofer.',
+      confirmText: 'Reactivar',
+    });
+    if (!confirmed) return;
+    reactivate.mutate(car.car_id, {
+      onSuccess: () => notify.success('Vehículo reactivado'),
       onError: notify.error,
     });
   };
@@ -104,6 +131,18 @@ export const CarDetails = () => {
               >
                 Editar
               </Button>
+              {car.fleet_status === 'grounded' && (
+                <Button
+                  size="sm"
+                  icon={<RotateCcw />}
+                  disabled={!canWrite}
+                  title={writeHint}
+                  loading={reactivate.isPending}
+                  onClick={() => void handleReactivate()}
+                >
+                  Reactivar
+                </Button>
+              )}
               <Button
                 variant="danger"
                 size="sm"
@@ -144,7 +183,12 @@ export const CarDetails = () => {
             }
             title={title}
             subtitle={<span className="font-mono uppercase tracking-wide">{car.car_patent ?? 'Sin patente'}</span>}
-            badges={car.type_car ? <Badge label={{ text: car.type_car, tone: 'neutral' }} /> : undefined}
+            badges={
+              <>
+                {car.type_car && <Badge label={{ text: car.type_car, tone: 'neutral' }} />}
+                {car.fleet_status !== 'active' && <Badge label={labelOf(CAR_FLEET_STATUS, car.fleet_status)} />}
+              </>
+            }
             stats={stats}
           >
             <ProfileTabs tabs={TABS} value={tab} onChange={setTab} />
@@ -184,6 +228,29 @@ export const CarDetails = () => {
               />
             )}
           </ProfileTabPanel>
+          {[
+            ['fuel', <CarFuelTab key="fuel" car={car} canWrite={canWrite} writeHint={writeHint} />],
+            ['fines', <CarFinesTab key="fines" carId={car.car_id} canWrite={canWrite} writeHint={writeHint} />],
+            [
+              'accidents',
+              <CarAccidentsTab key="accidents" carId={car.car_id} canWrite={canWrite} writeHint={writeHint} />,
+            ],
+            ['costs', <CarCostsTab key="costs" carId={car.car_id} />],
+            ['tires', <CarTiresTab key="tires" carId={car.car_id} />],
+          ].map(([key, content]) => (
+            <ProfileTabPanel key={String(key)} tabKey={String(key)} value={tab}>
+              {needsDistributor ? (
+                <Card className="p-6">
+                  <EmptyState
+                    title="Elegí una distribuidora"
+                    description="Como administrador general, elegí una con «Ver como» para ver esta información."
+                  />
+                </Card>
+              ) : tab === key ? (
+                content
+              ) : null}
+            </ProfileTabPanel>
+          ))}
         </>
       )}
 

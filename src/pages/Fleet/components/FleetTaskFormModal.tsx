@@ -60,6 +60,8 @@ export const FleetTaskFormModal = ({ open, onClose, subject, ownerId, carType, t
     if (!open) return;
     reset({
       planId: task?.planId ?? '',
+      validFrom: task?.validFrom ? task.validFrom.slice(0, 10) : '',
+      cost: task?.cost ?? undefined,
       dueAt: task?.dueAt ? task.dueAt.slice(0, 10) : '',
       dueKm: task?.dueKm ?? undefined,
       provider: task?.provider ?? '',
@@ -93,6 +95,8 @@ export const FleetTaskFormModal = ({ open, onClose, subject, ownerId, carType, t
     if (task) {
       // Edición: un campo vacío LIMPIA el dato (la API lo acepta con `null`/`''`), no se omite.
       const changes: FleetTaskUpdateBody = {
+        validFrom: values.validFrom || null,
+        cost: values.cost ?? null,
         dueAt: values.dueAt || null,
         dueKm: values.dueKm ?? null,
         provider: values.provider ?? '',
@@ -106,6 +110,8 @@ export const FleetTaskFormModal = ({ open, onClose, subject, ownerId, carType, t
       createTask.mutate(
         {
           planId: values.planId,
+          validFrom: values.validFrom || undefined,
+          cost: values.cost,
           dueAt: values.dueAt || undefined,
           dueKm: values.dueKm,
           provider: values.provider,
@@ -165,9 +171,21 @@ export const FleetTaskFormModal = ({ open, onClose, subject, ownerId, carType, t
             </div>
           ))}
         <Input
+          label="Vigente desde"
+          type="date"
+          hint="Inicio de la vigencia (póliza, habilitación)."
+          error={errors.validFrom?.message}
+          {...register('validFrom')}
+        />
+        <Input
           label="Vence el"
           type="date"
-          hint={triggerHint(plan?.trigger)}
+          required={plan?.documentKind === 'hazmat_vehicle_permit'}
+          hint={
+            plan?.documentKind === 'hazmat_vehicle_permit'
+              ? 'La habilitación necesita su vencimiento: vencida, el vehículo queda inhabilitado.'
+              : triggerHint(plan?.trigger)
+          }
           error={errors.dueAt?.message}
           {...register('dueAt')}
         />
@@ -202,6 +220,15 @@ export const FleetTaskFormModal = ({ open, onClose, subject, ownerId, carType, t
             {...register('category')}
           />
         )}
+        <Input
+          label="Importe"
+          type="number"
+          step="0.01"
+          min={0}
+          hint="La prima de la póliza o lo que cuesta: entra en el costo del vehículo."
+          error={errors.cost?.message}
+          {...register('cost')}
+        />
         <Input label="Turno agendado" type="date" error={errors.scheduledAt?.message} {...register('scheduledAt')} />
         <div className="sm:col-span-2">
           <TextArea label="Notas" maxLength={2000} error={errors.notes?.message} {...register('notes')} />

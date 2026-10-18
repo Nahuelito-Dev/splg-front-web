@@ -15,6 +15,14 @@ export const CAR_TYPE_OPTIONS: SelectOption[] = [
 const optionalNumber = (schema: z.ZodNumber) =>
   z.preprocess((value) => (value === '' || value === undefined ? undefined : value), schema.optional());
 
+export const FUEL_TYPE_OPTIONS: SelectOption[] = [
+  { value: '', label: 'Sin definir' },
+  { value: 'diesel', label: 'Gasoil' },
+  { value: 'gasoline', label: 'Nafta' },
+  { value: 'cng', label: 'GNC' },
+  { value: 'lpg', label: 'GLP' },
+];
+
 export const carSchema = z.object({
   user_id: z.string().trim().min(1, 'Elegí un chofer'),
   type_car: z.string().min(1, 'Elegí el tipo de vehículo'),
@@ -40,6 +48,10 @@ export const carSchema = z.object({
       .max(new Date().getFullYear() + 1, 'Año inválido'),
   ),
   car_capacity: optionalNumber(z.coerce.number().positive('Tiene que ser mayor a cero')),
+  fuel_type: z.union([z.literal(''), z.enum(['diesel', 'gasoline', 'cng', 'lpg'])]),
+  tank_capacity_liters: optionalNumber(
+    z.coerce.number().min(1, 'Entre 1 y 9999 litros').max(9999, 'Entre 1 y 9999 litros'),
+  ),
 });
 
 export type CarFormValues = z.infer<typeof carSchema>;

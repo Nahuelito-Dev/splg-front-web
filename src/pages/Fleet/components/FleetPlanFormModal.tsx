@@ -21,7 +21,7 @@ const SUBJECT_OPTIONS = [
   { value: 'employee', label: 'Personal' },
 ];
 
-const DOCUMENT_KIND_OPTIONS = [
+const EMPLOYEE_DOCUMENT_KIND_OPTIONS = [
   { value: '', label: 'Sin detalle' },
   { value: 'hazmat_driver_course', label: 'Curso de mercancías peligrosas (certificado y emisor)' },
   { value: 'psychophysical', label: 'Examen psicofísico (fecha del examen)' },
@@ -40,13 +40,26 @@ const CRITICALITY_OPTIONS = [
   { value: 'non_blocking', label: 'No bloqueante' },
 ];
 
-/** El tipo de documento que el formulario sabe elegir; los de flota (seguro, VTV…) no se tocan desde acá. */
-const employeeDocumentKind = (kind: FleetPlan['documentKind'] | undefined): FleetPlanFormValues['documentKind'] =>
-  kind === 'hazmat_driver_course' || kind === 'psychophysical' || kind === 'art_coverage' || kind === 'generic'
-    ? kind
-    : '';
+/** El tipo de documento sólo viaja si es de los que corresponden al sujeto del plan. */
+const documentKindFor = (
+  subject: FleetPlanFormValues['subject'],
+  kind: FleetPlanFormValues['documentKind'],
+): Exclude<FleetPlanFormValues['documentKind'], ''> | null | undefined => {
+  const options = subject === 'employee' ? EMPLOYEE_DOCUMENT_KIND_OPTIONS : VEHICLE_DOCUMENT_KIND_OPTIONS;
+  const valid = kind !== '' && options.some((o) => o.value === kind);
+  if (subject === 'vehicle') return valid ? (kind as Exclude<typeof kind, ''>) : null;
+  if (subject === 'employee') return valid ? (kind as Exclude<typeof kind, ''>) : undefined;
+  return undefined;
+};
 
 /** Alta o edición de un plan de mantenimiento/habilitación (CU-105/140). */
+const VEHICLE_DOCUMENT_KIND_OPTIONS = [
+  { value: '', label: 'Otro' },
+  { value: 'insurance', label: 'Seguro del vehículo' },
+  { value: 'vtv', label: 'VTV' },
+  { value: 'hazmat_vehicle_permit', label: 'Habilitación de mercancías peligrosas' },
+];
+
 export const FleetPlanFormModal = ({ open, onClose, plan }: Props) => {
   const isEditing = Boolean(plan);
   const createPlan = useCreateFleetPlan();
@@ -72,7 +85,7 @@ export const FleetPlanFormModal = ({ open, onClose, plan }: Props) => {
       leadTimeDays: plan?.leadTimeDays ?? 30,
       criticality: plan?.criticality ?? 'blocking',
       carType: plan?.carType ?? '',
-      documentKind: employeeDocumentKind(plan?.documentKind),
+      documentKind: plan?.documentKind ?? '',
       appliesToCategories: plan?.appliesToCategories ?? [],
       isActive: plan?.isActive ?? true,
     });
@@ -98,7 +111,7 @@ export const FleetPlanFormModal = ({ open, onClose, plan }: Props) => {
       leadTimeDays: values.leadTimeDays,
       criticality: values.criticality,
       carType: values.subject === 'vehicle' ? values.carType : undefined,
-      documentKind: values.subject === 'employee' && values.documentKind ? values.documentKind : undefined,
+      documentKind: documentKindFor(values.subject, values.documentKind),
       appliesToCategories: values.subject === 'employee' ? values.appliesToCategories : undefined,
       isActive: values.isActive,
     };
@@ -188,7 +201,7 @@ export const FleetPlanFormModal = ({ open, onClose, plan }: Props) => {
             <div className="sm:col-span-2">
               <Select
                 label="Tipo de documento"
-                options={DOCUMENT_KIND_OPTIONS}
+                options={EMPLOYEE_DOCUMENT_KIND_OPTIONS}
                 hint="Define los datos que se piden al cargarlo."
                 error={errors.documentKind?.message}
                 {...register('documentKind')}
@@ -212,6 +225,15 @@ export const FleetPlanFormModal = ({ open, onClose, plan }: Props) => {
             maxLength={60}
             error={errors.carType?.message}
             {...register('carType')}
+          />
+        )}
+        {subject === 'vehicle' && (
+          <Select
+            label="Qué documento es"
+            options={VEHICLE_DOCUMENT_KIND_OPTIONS}
+            hint="El sistema reconoce el seguro (su prima entra en el costo del vehículo) y la habilitación de mercancías peligrosas."
+            error={errors.documentKind?.message}
+            {...register('documentKind')}
           />
         )}
       </form>

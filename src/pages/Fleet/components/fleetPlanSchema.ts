@@ -24,8 +24,18 @@ export const fleetPlanSchema = z
     leadTimeDays: z.coerce.number().int('Tiene que ser un número entero').nonnegative('No puede ser negativo'),
     criticality: z.enum(['blocking', 'non_blocking'], { message: 'Elegí la criticidad' }),
     carType: optionalText(60),
-    // Sólo para el personal (CU-183 a CU-185): qué formulario se muestra al cargarlo y a qué categorías de puesto aplica.
-    documentKind: z.enum(['', 'hazmat_driver_course', 'psychophysical', 'art_coverage', 'generic']),
+    // Qué documento es: para el personal (CU-183 a CU-185) define el formulario al cargarlo;
+    // para el vehículo (CU-197) lo reconoce el sistema (seguro, VTV, habilitación de mercancías peligrosas).
+    documentKind: z.enum([
+      '',
+      'hazmat_driver_course',
+      'psychophysical',
+      'art_coverage',
+      'generic',
+      'insurance',
+      'vtv',
+      'hazmat_vehicle_permit',
+    ]),
     appliesToCategories: z.array(
       z.enum(['driver', 'helper', 'warehouse', 'administration', 'sales', 'management', 'other']),
     ),

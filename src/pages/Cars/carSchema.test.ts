@@ -10,6 +10,7 @@ const valid = {
   car_color: 'Rojo',
   car_year: 2022,
   car_capacity: 50,
+  fuel_type: '',
 };
 
 describe('carSchema', () => {
@@ -55,5 +56,13 @@ describe('carSchema', () => {
     ['capacidad negativa', { car_capacity: -5 }],
   ])('rechaza %s', (_, cambio) => {
     expect(carSchema.safeParse({ ...valid, ...cambio }).success).toBe(false);
+  });
+
+  it('combustible y tanque: opcionales, con el tanque entre 1 y 9999 litros', () => {
+    expect(carSchema.safeParse({ ...valid, fuel_type: 'diesel', tank_capacity_liters: '60' }).success).toBe(true);
+    expect(carSchema.safeParse({ ...valid, fuel_type: 'agua' }).success).toBe(false);
+    expect(carSchema.safeParse({ ...valid, tank_capacity_liters: '0' }).success).toBe(false);
+    expect(carSchema.safeParse({ ...valid, tank_capacity_liters: '10000' }).success).toBe(false);
+    expect(carSchema.safeParse({ ...valid, tank_capacity_liters: '' }).success).toBe(true);
   });
 });
