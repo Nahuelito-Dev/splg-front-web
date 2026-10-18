@@ -38,6 +38,11 @@ const FleetPlans = lazyPage(() => import('../pages/Fleet/FleetPlans'), 'FleetPla
 const FleetPlanDetails = lazyPage(() => import('../pages/Fleet/FleetPlanDetails'), 'FleetPlanDetails');
 const FleetTasks = lazyPage(() => import('../pages/Fleet/FleetTasks'), 'FleetTasks');
 const FleetTaskDetail = lazyPage(() => import('../pages/Fleet/FleetTaskDetail'), 'FleetTaskDetail');
+const FuelLoads = lazyPage(() => import('../pages/FleetExpense/FuelLoads'), 'FuelLoads');
+const TrafficFines = lazyPage(() => import('../pages/FleetExpense/TrafficFines'), 'TrafficFines');
+const VehicleAccidents = lazyPage(() => import('../pages/FleetExpense/VehicleAccidents'), 'VehicleAccidents');
+const FleetCosts = lazyPage(() => import('../pages/FleetExpense/FleetCosts'), 'FleetCosts');
+const Tires = lazyPage(() => import('../pages/FleetExpense/Tires'), 'Tires');
 const Configuration = lazyPage(() => import('../pages/Configuration/Configuration'), 'Configuration');
 const DispatchSettings = lazyPage(() => import('../pages/Configuration/DispatchSettings'), 'DispatchSettings');
 const AutomaticProcesses = lazyPage(() => import('../pages/Configuration/AutomaticProcesses'), 'AutomaticProcesses');
@@ -186,6 +191,11 @@ export const DashboardRoutes = () => {
             <Route path="purchases/receipts" element={<PurchaseReceipts />} />
             <Route path="purchases/receipts/:id" element={<PurchaseReceiptDetails />} />
             <Route path="purchases/costs" element={<AverageCosts />} />
+            <Route path="fleet/fuel-loads" element={<FuelLoads />} />
+            <Route path="fleet/fines" element={<TrafficFines />} />
+            <Route path="fleet/accidents" element={<VehicleAccidents />} />
+            <Route path="fleet/costs" element={<FleetCosts />} />
+            <Route path="fleet/tires" element={<Tires />} />
             <Route path="truck-loads" element={<TruckLoads />} />
             <Route path="truck-loads/:id" element={<TruckLoadDetails />} />
           </Route>

@@ -1,7 +1,8 @@
 import { Card, DetailList, EntityPhoto, IdentityCell } from '../../../common/components/ui';
 import type { Car } from '../../../services/api/types';
 import { usePermissions } from '../../../hooks';
-import { formatDateTime } from '../../../utils/format';
+import { formatDateTime, formatNumber } from '../../../utils/format';
+import { CAR_FLEET_STATUS, FUEL_TYPE, labelOf } from '../../../utils/statusLabels';
 
 /** Pestaña "Resumen": todo lo que la API guarda de un vehículo (CarResponseDto). */
 export const CarSummary = ({ car }: { car: Car }) => {
@@ -38,6 +39,18 @@ export const CarSummary = ({ car }: { car: Car }) => {
           { label: 'Año', value: car.car_year ?? '—', mono: true },
           { label: 'Color', value: car.car_color ?? '—' },
           { label: 'Capacidad', value: car.car_capacity === null ? '—' : `${car.car_capacity} kg`, mono: true },
+          { label: 'Estado en la flota', value: labelOf(CAR_FLEET_STATUS, car.fleet_status).text },
+          {
+            label: 'Kilometraje',
+            value: car.odometer_km === null ? '—' : `${formatNumber(car.odometer_km)} km`,
+            mono: true,
+          },
+          { label: 'Combustible', value: car.fuel_type ? labelOf(FUEL_TYPE, car.fuel_type).text : '—' },
+          {
+            label: 'Tanque',
+            value: car.tank_capacity_liters === null ? '—' : `${formatNumber(car.tank_capacity_liters)} L`,
+            mono: true,
+          },
           { label: 'Alta', value: formatDateTime(car.createdAt) },
           { label: 'Última modificación', value: formatDateTime(car.updatedAt) },
         ]}

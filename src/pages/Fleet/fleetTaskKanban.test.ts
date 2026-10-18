@@ -11,6 +11,7 @@ const task = (patch: Partial<FleetTask>): FleetTask => ({
   employeeId: null,
   details: null,
   status: 'scheduled',
+  validFrom: null,
   dueAt: '2026-10-10T00:00:00.000Z',
   dueKm: null,
   scheduledAt: null,

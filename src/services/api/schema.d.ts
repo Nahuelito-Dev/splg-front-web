@@ -2282,8 +2282,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * CU-139 y CU-187: vencimientos de la flota y del personal en una pantalla
-     * @description Lo vencido y lo que vence dentro de `withinDays`, agrupado por vehículo, por chofer (histórico) y por empleado, con si están inhabilitados. `subject` y `category` acotan qué trae.
+     * CU-139: vencimientos de la flota en una pantalla
+     * @description Lo vencido y lo que vence dentro de `withinDays`, agrupado por vehículo y por chofer, con si están inhabilitados.
      */
     get: operations['FleetExpirationsController_find'];
     put?: never;
@@ -3993,203 +3993,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/employees/{id}/documents': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Documentación de un empleado: tarjetas, si queda inhabilitado y qué le falta cargar (CU-187)
-     * @description Las altas del curso de mercancías peligrosas, el psicofísico y la ART (CU-183 a CU-185) se hacen con `POST /fleet/tasks` indicando `employeeId`, el plan y el detalle.
-     */
-    get: operations['EmployeeDocumentsController_find'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/employees/{id}/leaves': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Registrar una licencia o ausencia: nace solicitada (CU-191) */
-    post: operations['LeaveController_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/employees/{id}/vacation-balance': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Consultar el saldo de vacaciones de un empleado (CU-193)
-     * @description Días que corresponden por antigüedad al 31/12 (LCT art. 150), días tomados (vacaciones aprobadas del año) y saldo. Se calcula en cada consulta.
-     */
-    get: operations['LeaveController_vacationBalance'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/leaves': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Consultar las licencias y la bandeja de pendientes (CU-319) */
-    get: operations['LeaveController_findAll'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/leaves/{id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /** Modificar una licencia solicitada (CU-316) */
-    patch: operations['LeaveController_update'];
-    trace?: never;
-  };
-  '/api/leaves/{id}/approve': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /** Aprobar una solicitud de licencia (CU-192) */
-    patch: operations['LeaveController_approve'];
-    trace?: never;
-  };
-  '/api/leaves/{id}/reject': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /** Rechazar una solicitud de licencia, con motivo (CU-318) */
-    patch: operations['LeaveController_reject'];
-    trace?: never;
-  };
-  '/api/leaves/{id}/cancel': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /** Cancelar una licencia que todavía no terminó (CU-317) */
-    patch: operations['LeaveController_cancel'];
-    trace?: never;
-  };
-  '/api/employees/{id}/attendance': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Registrar la asistencia de un empleado desde el panel (CU-189) */
-    post: operations['AttendanceController_register'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/attendance': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Consultar la asistencia de los empleados (CU-314)
-     * @description Por día (`date`, por omisión hoy si no hay ningún filtro), por período (`from`/`to`), por empleado o sólo las jornadas abiertas (`open`). Informa cuántos están presentes hoy y cuántas jornadas de días anteriores quedaron sin cerrar.
-     */
-    get: operations['AttendanceController_findAll'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/attendance/{id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /** Corregir el ingreso o el egreso de una jornada, con nota (CU-313) */
-    patch: operations['AttendanceController_correct'];
-    trace?: never;
-  };
-  '/api/attendance/mine/check-in': {
+  '/api/car/{id}/reactivate': {
     parameters: {
       query?: never;
       header?: never;
@@ -4199,17 +4003,41 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * El chofer inicia su jornada desde la app (CU-190)
-     * @description Idempotente: si ya tiene una jornada abierta de hoy marcada desde la app, la devuelve (200) en vez de abrir otra.
+     * Reactivar un vehículo fuera de servicio
+     * @description Lo pasa de `grounded` a `active` si el seguro, la VTV y la habilitación de mercancías peligrosas están vigentes. No lo asigna a ningún chofer.
      */
-    post: operations['AttendanceController_checkIn'];
+    post: operations['CarReactivationController_reactivar'];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  '/api/attendance/mine/check-out': {
+  '/api/fleet/fuel-loads': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Consultar las cargas de combustible vigentes
+     * @description Filtra por vehículo, chofer, rango de fechas y anomalía. Devuelve la página y el total de litros e importe de lo filtrado.
+     */
+    get: operations['FuelLoadController_findAll'];
+    put?: never;
+    /**
+     * Registrar una carga de combustible (administrador)
+     * @description Valida el importe contra litros × precio (±1 %), los litros contra el tanque (+5 %) y el kilometraje contra la última carga. Sube el kilometraje del vehículo y marca la carga como anómala si el consumo del tramo se aparta más de un 25 % del habitual (avisa a los administradores).
+     */
+    post: operations['FuelLoadController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/fleet/fuel-loads/mine': {
     parameters: {
       query?: never;
       header?: never;
@@ -4218,15 +4046,282 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** El chofer finaliza su jornada desde la app (CU-315) */
-    post: operations['AttendanceController_checkOut'];
+    /**
+     * Registrar una carga de combustible (chofer)
+     * @description Siempre del vehículo que el chofer tiene en uso; no admite corrección de kilometraje.
+     */
+    post: operations['FuelLoadController_createMine'];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  '/api/personnel/dashboard': {
+  '/api/fleet/fuel-loads/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Ver una carga de combustible (también la anulada) */
+    get: operations['FuelLoadController_findOne'];
+    put?: never;
+    post?: never;
+    /**
+     * Anular una carga de combustible
+     * @description Baja lógica: la carga se conserva, deja de contar en el consumo y el costo, y si era la última el kilometraje del vehículo vuelve al de la anterior.
+     */
+    delete: operations['FuelLoadController_anular'];
+    options?: never;
+    head?: never;
+    /**
+     * Modificar una carga de combustible
+     * @description Revalida las mismas reglas que el alta y recalcula el kilometraje del vehículo y la anomalía de la carga.
+     */
+    patch: operations['FuelLoadController_update'];
+    trace?: never;
+  };
+  '/api/fleet/fines': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Consultar las multas de tránsito */
+    get: operations['TrafficFineController_findAll'];
+    put?: never;
+    /**
+     * Registrar una multa de tránsito
+     * @description Nace pendiente. Si no se indica el responsable, se deduce del chofer que tenía el vehículo en uso en el instante de la infracción.
+     */
+    post: operations['TrafficFineController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/fleet/fines/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Ver una multa */
+    get: operations['TrafficFineController_findOne'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Modificar una multa o pasarla a apelada
+     * @description Con `appeal: true` pasa de pendiente a apelada. Una multa pagada o anulada no se modifica.
+     */
+    patch: operations['TrafficFineController_update'];
+    trace?: never;
+  };
+  '/api/fleet/fines/{id}/pay': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Registrar el pago de una multa */
+    patch: operations['TrafficFineController_pay'];
+    trace?: never;
+  };
+  '/api/fleet/fines/{id}/charge-to-employee': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Imputar una multa al chofer
+     * @description La asume el empleado y no cuenta como costo del vehículo. Una multa pagada también se imputa; una anulada no.
+     */
+    patch: operations['TrafficFineController_chargeToEmployee'];
+    trace?: never;
+  };
+  '/api/fleet/fines/{id}/void': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Anular una multa
+     * @description Baja lógica con motivo obligatorio. Una multa pagada no se anula.
+     */
+    patch: operations['TrafficFineController_void'];
+    trace?: never;
+  };
+  '/api/fleet/accidents': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Consultar los siniestros */
+    get: operations['VehicleAccidentController_findAll'];
+    put?: never;
+    /**
+     * Registrar un siniestro (administrador)
+     * @description Nace denunciado. Con `vehicleUnusable` el vehículo pasa a fuera de servicio y se libera a su chofer; con `hazmatRelease` se avisa de inmediato a los administradores.
+     */
+    post: operations['VehicleAccidentController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/fleet/accidents/mine': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Registrar un siniestro (chofer)
+     * @description Siempre del vehículo que el chofer tiene en uso.
+     */
+    post: operations['VehicleAccidentController_createMine'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/fleet/accidents/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Ver un siniestro */
+    get: operations['VehicleAccidentController_findOne'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Modificar un siniestro o avanzar su estado
+     * @description El estado sólo avanza al siguiente del ciclo: denunciado, en revisión, en reparación. El cierre es `PATCH …/close`. No devuelve el vehículo a la flota (eso es `POST /car/:id/reactivate`).
+     */
+    patch: operations['VehicleAccidentController_update'];
+    trace?: never;
+  };
+  '/api/fleet/accidents/{id}/close': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Cerrar un siniestro
+     * @description Asienta el costo de la reparación, el reintegro del seguro y la franquicia. Su costo neto entra en el costo del vehículo. No reactiva el vehículo.
+     */
+    patch: operations['VehicleAccidentController_close'];
+    trace?: never;
+  };
+  '/api/fleet/tires': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Listar los neumáticos */
+    get: operations['TireController_findAll'];
+    put?: never;
+    /**
+     * Registrar un neumático
+     * @description Nace en depósito, sin vehículo ni posición.
+     */
+    post: operations['TireController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/fleet/tires/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Ver un neumático con su historial de movimientos */
+    get: operations['TireController_findOne'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/fleet/tires/{id}/events': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Registrar un movimiento de un neumático
+     * @description Montaje (carId y position), desmontaje, rotación (position nueva), recapado o baja definitiva, siempre con el kilometraje del vehículo. El movimiento es un asiento que no se modifica.
+     */
+    post: operations['TireController_registerEvent'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/cars/{carId}/fuel-efficiency': {
     parameters: {
       query?: never;
       header?: never;
@@ -4234,10 +4329,67 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Consultar el tablero de personal (CU-194)
-     * @description Empleados activos por puesto, presentes hoy (jornada abierta), de licencia hoy (licencia aprobada que cubre el día argentino) y documentos por estado de vencimiento. Alimenta la tarjeta «Personal hoy» del inicio. Cuenta; no lista.
+     * Consumo de combustible de un vehículo
+     * @description Arma los tramos entre cargas de tanque lleno del rango y muestra, por tramo y en total, km, litros, km por litro, costo por km y las cargas anómalas. Con menos de dos cargas de tanque lleno: lista vacía y totales en cero.
      */
-    get: operations['PersonnelController_consultar'];
+    get: operations['CarFleetController_consumo'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/cars/{carId}/costs': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Costo total de un vehículo
+     * @description Suma mantenimiento (sin seguros), seguros prorrateados por días, combustible, multas pagadas no imputadas y siniestros cerrados; con km, costo por km y evolución mensual.
+     */
+    get: operations['CarFleetController_costoDelVehiculo'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/fleet/costs': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Tablero de costos de la flota
+     * @description Un renglón por vehículo con los rubros del costo total, km y costo por km, de mayor a menor costo por km. Un vehículo sin km va al final.
+     */
+    get: operations['CarFleetController_tablero'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/cars/{carId}/tires': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Neumáticos de un vehículo */
+    get: operations['CarFleetController_neumaticos'];
     put?: never;
     post?: never;
     delete?: never;
@@ -5073,6 +5225,16 @@ export interface components {
       car_year?: number;
       /** @description Car color */
       car_color?: string;
+      /**
+       * @description Combustible del vehículo; es el de las cargas que no indican otro. `null` (al editar) lo borra.
+       * @enum {string|null}
+       */
+      fuel_type?: 'diesel' | 'gasoline' | 'cng' | 'lpg' | null;
+      /**
+       * @description Capacidad del tanque en litros: una carga no puede superarla en más de un 5 %. `null` (al editar) la borra.
+       * @example 60
+       */
+      tank_capacity_liters?: number | null;
     };
     CarResponseDto: {
       /** Format: uuid */
@@ -5094,6 +5256,17 @@ export interface components {
       car_model: string | null;
       car_year: number | null;
       car_color: string | null;
+      /** @enum {string|null} */
+      fuel_type: 'diesel' | 'gasoline' | 'cng' | 'lpg' | null;
+      /** @description Litros */
+      tank_capacity_liters: number | null;
+      /** @description Kilometraje vigente: el mayor entre las cargas de combustible y los cierres de mantenimiento */
+      odometer_km: number | null;
+      /**
+       * @description `grounded` es fuera de servicio (se vuelve con CU-247)
+       * @enum {string}
+       */
+      fleet_status: 'active' | 'in_service' | 'grounded';
       /** @description URL firmada de la foto del vehículo (se abre sin token, vence); `null` si no tiene. */
       photoUrl: string | null;
       /** Format: date-time */
@@ -5119,6 +5292,16 @@ export interface components {
       car_year?: number;
       /** @description Car color */
       car_color?: string;
+      /**
+       * @description Combustible del vehículo; es el de las cargas que no indican otro. `null` (al editar) lo borra.
+       * @enum {string|null}
+       */
+      fuel_type?: 'diesel' | 'gasoline' | 'cng' | 'lpg' | null;
+      /**
+       * @description Capacidad del tanque en litros: una carga no puede superarla en más de un 5 %. `null` (al editar) la borra.
+       * @example 60
+       */
+      tank_capacity_liters?: number | null;
     };
     CarBorradoResponseDto: {
       /** @example Car deleted successfully */
@@ -6724,10 +6907,10 @@ export interface components {
       /** @example Seguro del vehículo */
       name: string;
       /**
-       * @description A qué aplica: al vehículo, al chofer (histórico: la licencia) o al empleado (personal)
+       * @description A qué aplica: al vehículo o al chofer
        * @enum {string}
        */
-      subject: 'vehicle' | 'driver' | 'employee';
+      subject: 'vehicle' | 'driver';
       /**
        * @description Qué dispara el vencimiento: una fecha fija, un intervalo de km o de tiempo
        * @enum {string}
@@ -6750,21 +6933,10 @@ export interface components {
       /** @description Tipo de vehículo al que aplica (null = todos) */
       carType?: string;
       /**
-       * @description Tipo de documento: define el detalle que se pide al cargarlo. Sin él, la tarea no lleva detalle.
-       * @enum {string}
+       * @description Qué documento es, si el sistema lo tiene que reconocer: `insurance` (el costo del vehículo prorratea su prima), `vtv` o `hazmat_vehicle_permit` (CU-197)
+       * @enum {string|null}
        */
-      documentKind?:
-        | 'insurance'
-        | 'vtv'
-        | 'hazmat_vehicle_permit'
-        | 'driver_license'
-        | 'hazmat_driver_course'
-        | 'psychophysical'
-        | 'art_coverage'
-        | 'service'
-        | 'generic';
-      /** @description Categorías de puesto a las que aplica un plan de personal (sin indicar = todas) */
-      appliesToCategories?: ('driver' | 'helper' | 'warehouse' | 'administration' | 'sales' | 'management' | 'other')[];
+      documentKind?: 'insurance' | 'vtv' | 'hazmat_vehicle_permit' | null;
       /** @default true */
       isActive: boolean;
     };
@@ -6775,7 +6947,7 @@ export interface components {
       distributorId: string;
       name: string;
       /** @enum {string} */
-      subject: 'vehicle' | 'driver' | 'employee';
+      subject: 'vehicle' | 'driver';
       /** @enum {string} */
       trigger: 'by_km' | 'by_time' | 'by_fixed_date';
       intervalKm: number | null;
@@ -6784,34 +6956,18 @@ export interface components {
       /** @enum {string} */
       criticality: 'blocking' | 'non_blocking';
       carType: string | null;
-      /**
-       * @description Qué formulario muestra el panel y qué forma de `details` valida el back
-       * @enum {string|null}
-       */
-      documentKind:
-        | 'insurance'
-        | 'vtv'
-        | 'hazmat_vehicle_permit'
-        | 'driver_license'
-        | 'hazmat_driver_course'
-        | 'psychophysical'
-        | 'art_coverage'
-        | 'service'
-        | 'generic'
-        | null;
-      /** @description Categorías de puesto a las que aplica (null = todas) */
-      appliesToCategories:
-        ('driver' | 'helper' | 'warehouse' | 'administration' | 'sales' | 'management' | 'other')[] | null;
+      /** @enum {string|null} */
+      documentKind: 'insurance' | 'vtv' | 'hazmat_vehicle_permit' | null;
       isActive: boolean;
     };
     UpdateFleetPlanDto: {
       /** @example Seguro del vehículo */
       name?: string;
       /**
-       * @description A qué aplica: al vehículo, al chofer (histórico: la licencia) o al empleado (personal)
+       * @description A qué aplica: al vehículo o al chofer
        * @enum {string}
        */
-      subject?: 'vehicle' | 'driver' | 'employee';
+      subject?: 'vehicle' | 'driver';
       /**
        * @description Qué dispara el vencimiento: una fecha fija, un intervalo de km o de tiempo
        * @enum {string}
@@ -6834,21 +6990,10 @@ export interface components {
       /** @description Tipo de vehículo al que aplica (null = todos) */
       carType?: string;
       /**
-       * @description Tipo de documento: define el detalle que se pide al cargarlo. Sin él, la tarea no lleva detalle.
-       * @enum {string}
+       * @description Qué documento es, si el sistema lo tiene que reconocer: `insurance` (el costo del vehículo prorratea su prima), `vtv` o `hazmat_vehicle_permit` (CU-197)
+       * @enum {string|null}
        */
-      documentKind?:
-        | 'insurance'
-        | 'vtv'
-        | 'hazmat_vehicle_permit'
-        | 'driver_license'
-        | 'hazmat_driver_course'
-        | 'psychophysical'
-        | 'art_coverage'
-        | 'service'
-        | 'generic';
-      /** @description Categorías de puesto a las que aplica un plan de personal (sin indicar = todas) */
-      appliesToCategories?: ('driver' | 'helper' | 'warehouse' | 'administration' | 'sales' | 'management' | 'other')[];
+      documentKind?: 'insurance' | 'vtv' | 'hazmat_vehicle_permit' | null;
       /** @default true */
       isActive: boolean;
     };
@@ -6866,16 +7011,22 @@ export interface components {
        */
       deliveryId?: string;
       /**
-       * Format: uuid
-       * @description Obligatorio si el plan es de personal (subject: employee): curso de mercancías peligrosas, psicofísico, ART (CU-183 a CU-185)
-       */
-      employeeId?: string;
-      /**
        * Format: date-time
        * @description Fecha límite (vencimiento de la póliza, la VTV, la licencia)
        * @example 2026-12-31T00:00:00.000Z
        */
       dueAt?: string;
+      /**
+       * Format: date-time
+       * @description Inicio de la vigencia (póliza, habilitación). No puede ser posterior al vencimiento
+       * @example 2026-01-01T00:00:00.000Z
+       */
+      validFrom?: string;
+      /**
+       * @description Importe de la tarea (la prima de la póliza, el costo del service). Entra en el costo del vehículo
+       * @example 185000
+       */
+      cost?: number;
       /** @description Km al que corresponde el próximo service */
       dueKm?: number;
       /**
@@ -6894,16 +7045,6 @@ export interface components {
        */
       category?: string;
       notes?: string;
-      /**
-       * @description Datos propios del tipo de documento (`plan.documentKind`): curso de mercancías peligrosas {certificateNumber, issuer}, psicofísico {examDate}, ART {insurer, policyNumber}. Los demás tipos no llevan detalle.
-       * @example {
-       *       "certificateNumber": "123/26",
-       *       "issuer": "CNRT"
-       *     }
-       */
-      details?: {
-        [key: string]: string;
-      };
       /**
        * Format: date-time
        * @description Cuándo está agendado el turno/trámite, si ya se sabe
@@ -6938,10 +7079,10 @@ export interface components {
       carId: string | null;
       /** Format: uuid */
       deliveryId: string | null;
-      /** Format: uuid */
-      employeeId: string | null;
       /** @enum {string} */
       status: 'forecast' | 'scheduled' | 'in_progress' | 'done' | 'overdue' | 'cancelled';
+      /** Format: date-time */
+      validFrom: string | null;
       /** Format: date-time */
       dueAt: string | null;
       dueKm: number | null;
@@ -6955,10 +7096,6 @@ export interface components {
       referenceNumber: string | null;
       category: string | null;
       notes: string | null;
-      /** @description Datos propios del tipo de documento (según `plan.documentKind`) */
-      details: {
-        [key: string]: string;
-      } | null;
       /**
        * @description null si no tiene fecha límite (p. ej. un service todavía sin fecha estimada) o si ya está cerrada/cancelada
        * @enum {string|null}
@@ -6977,6 +7114,17 @@ export interface components {
        * @example 2026-12-31T00:00:00.000Z
        */
       dueAt?: string;
+      /**
+       * Format: date-time
+       * @description Inicio de la vigencia (póliza, habilitación). No puede ser posterior al vencimiento
+       * @example 2026-01-01T00:00:00.000Z
+       */
+      validFrom?: string;
+      /**
+       * @description Importe de la tarea (la prima de la póliza, el costo del service). Entra en el costo del vehículo
+       * @example 185000
+       */
+      cost?: number;
       /** @description Km al que corresponde el próximo service */
       dueKm?: number;
       /**
@@ -6995,16 +7143,6 @@ export interface components {
        */
       category?: string;
       notes?: string;
-      /**
-       * @description Datos propios del tipo de documento (`plan.documentKind`): curso de mercancías peligrosas {certificateNumber, issuer}, psicofísico {examDate}, ART {insurer, policyNumber}. Los demás tipos no llevan detalle.
-       * @example {
-       *       "certificateNumber": "123/26",
-       *       "issuer": "CNRT"
-       *     }
-       */
-      details?: {
-        [key: string]: string;
-      };
       /**
        * Format: date-time
        * @description Cuándo está agendado el turno/trámite, si ya se sabe
@@ -7070,7 +7208,6 @@ export interface components {
       withinDays: number;
       vehicles: components['schemas']['FleetVehicleExpirationsDto'][];
       drivers: components['schemas']['FleetDriverExpirationsDto'][];
-      employees: components['schemas']['FleetEmployeeExpirationsDto'][];
     };
     FleetVehicleDocumentsResponseDto: {
       /** Format: uuid */
@@ -8877,255 +9014,648 @@ export interface components {
        */
       paymentStatus: 'unpaid' | 'paid';
     };
-    FleetEmployeeExpirationsDto: {
-      /** Format: uuid */
-      employeeId: string;
-      /** @example Ana Pérez */
-      fullName: string;
-      /** @example 0042 */
-      fileNumber: string;
-      /** @example Chofer */
-      positionName: string;
-      /** @enum {string} */
-      category: 'driver' | 'helper' | 'warehouse' | 'administration' | 'sales' | 'management' | 'other';
-      /** @description Tiene una habilitación bloqueante vencida: queda inhabilitado para el despacho (CU-246) */
-      isLocked: boolean;
-      items: components['schemas']['FleetExpirationEntryDto'][];
-    };
-    EmployeeDocumentsResponseDto: {
-      /** Format: uuid */
-      employeeId: string;
-      /** @description Queda inhabilitado para el despacho por la misma regla que aplica el despacho (CU-246): legajo egresado, licencia aprobada que cubre hoy o documentación bloqueante vencida (incluida la licencia de conducir). No mira el vehículo en uso. */
-      isLocked: boolean;
+    CreateFuelLoadDto: {
       /**
-       * @description Los motivos de la inhabilitación, en castellano
-       * @example [
-       *       "Examen psicofísico: venció el 01/03/2026"
-       *     ]
+       * Format: uuid
+       * @description Vehículo de la distribuidora
        */
-      lockReasons: string[];
-      /** @description Las tareas del empleado, con su estado de vencimiento (incluye la licencia de conducir de un chofer) */
-      tasks: components['schemas']['FleetTaskResponseDto'][];
-      /** @description Planes activos que le aplican por la categoría de su puesto y para los que no tiene ninguna tarea abierta */
-      missingPlans: components['schemas']['FleetPlanResponseDto'][];
-    };
-    CreateLeaveDto: {
+      carId: string;
       /**
-       * @example vacation
+       * Format: date-time
+       * @description Cuándo se cargó; por omisión, ahora. No puede ser futura
+       */
+      loadedAt?: string;
+      /**
+       * @description Por omisión, el combustible del vehículo
        * @enum {string}
        */
-      type:
-        | 'vacation'
-        | 'sick'
-        | 'work_accident'
-        | 'study'
-        | 'marriage'
-        | 'birth'
-        | 'bereavement'
-        | 'unpaid'
-        | 'suspension'
-        | 'unjustified_absence'
-        | 'other';
+      fuelType?: 'diesel' | 'gasoline' | 'cng' | 'lpg';
       /**
-       * Format: date
-       * @example 2026-12-01
+       * @description Litros cargados
+       * @example 42.5
        */
-      startDate: string;
+      liters: number;
       /**
-       * Format: date
-       * @example 2026-12-14
+       * @description Precio por litro
+       * @example 1050.5
        */
-      endDate: string;
-      /** @example Vacaciones de verano */
-      reason?: string;
+      unitPrice: number;
+      /**
+       * @description Importe total; tiene que coincidir con litros × precio por litro, con una tolerancia del 1 %
+       * @example 44646.25
+       */
+      totalAmount: number;
+      /**
+       * @description Kilometraje del tablero
+       * @example 120350
+       */
+      odometerKm: number;
+      /** @description El consumo se mide entre cargas de tanque lleno (por omisión, sí) */
+      isFullTank?: boolean;
+      /** @example YPF Ruta 12 */
+      station?: string | null;
+      /** @enum {string} */
+      paymentMethod: 'cash_box' | 'driver_cash' | 'card' | 'fuel_account';
+      /** @example 0001-00012345 */
+      receiptNumber?: string | null;
+      notes?: string | null;
+      /** @description Sólo el administrador: permite un kilometraje menor que el de la carga anterior. Exige `odometerCorrectionNote` */
+      odometerCorrection?: boolean;
+      /** @description Por qué se fuerza el kilometraje (obligatoria con `odometerCorrection`) */
+      odometerCorrectionNote?: string;
     };
-    LeaveResponseDto: {
+    FuelLoadResponseDto: {
       /** Format: uuid */
-      leaveId: string;
+      fuelLoadId: string;
       /** Format: uuid */
-      employeeId: string;
-      /** @example Ana Pérez */
-      employeeName: string;
-      /** @example 0042 */
-      employeeFileNumber: string;
-      /** @enum {string} */
-      type:
-        | 'vacation'
-        | 'sick'
-        | 'work_accident'
-        | 'study'
-        | 'marriage'
-        | 'birth'
-        | 'bereavement'
-        | 'unpaid'
-        | 'suspension'
-        | 'unjustified_absence'
-        | 'other';
-      /**
-       * Format: date
-       * @example 2026-12-01
-       */
-      startDate: string;
-      /**
-       * Format: date
-       * @example 2026-12-14
-       */
-      endDate: string;
-      /** @description Días corridos, ambos extremos incluidos */
-      days: number;
-      /** @enum {string} */
-      status: 'requested' | 'approved' | 'rejected' | 'cancelled';
-      reason: string | null;
-      rejectionReason: string | null;
+      distributorId: string;
       /** Format: uuid */
-      requestedByUserId: string | null;
+      carId: string;
+      /** @example AB123CD */
+      carPatent: string | null;
       /** Format: uuid */
-      decidedByUserId: string | null;
+      employeeId: string | null;
+      employeeName: string | null;
       /** Format: date-time */
-      decidedAt: string | null;
+      loadedAt: string;
+      /** @enum {string} */
+      fuelType: 'diesel' | 'gasoline' | 'cng' | 'lpg';
+      liters: number;
+      unitPrice: number;
+      totalAmount: number;
+      odometerKm: number;
+      isFullTank: boolean;
+      station: string | null;
+      /** @enum {string} */
+      paymentMethod: 'cash_box' | 'driver_cash' | 'card' | 'fuel_account';
+      receiptNumber: string | null;
+      /** @description El consumo del tramo se apartó más de un 25 % del habitual */
+      anomaly: boolean;
+      notes: string | null;
+      odometerCorrectionNote: string | null;
+      /** Format: date-time */
+      voidedAt: string | null;
       /** Format: date-time */
       createdAt: string;
     };
-    VacationBalanceDto: {
-      /** Format: uuid */
-      employeeId: string;
-      /** @example 2026 */
-      year: number;
-      /** @description Días corridos que corresponden por la antigüedad al 31 de diciembre (14, 21, 28 o 35) */
-      entitledDays: number;
-      /** @description Días de las licencias de vacaciones aprobadas que caen en el año */
-      takenDays: number;
-      /** @description entitledDays - takenDays (puede ser negativo) */
-      balanceDays: number;
-    };
-    LeavePageDto: {
-      data: components['schemas']['LeaveResponseDto'][];
-      total: number;
-    };
-    UpdateLeaveDto: {
+    CreateMyFuelLoadDto: {
       /**
-       * @example vacation
+       * Format: date-time
+       * @description Cuándo se cargó; por omisión, ahora. No puede ser futura
+       */
+      loadedAt?: string;
+      /**
+       * @description Por omisión, el combustible del vehículo
        * @enum {string}
        */
-      type?:
-        | 'vacation'
-        | 'sick'
-        | 'work_accident'
-        | 'study'
-        | 'marriage'
-        | 'birth'
-        | 'bereavement'
-        | 'unpaid'
-        | 'suspension'
-        | 'unjustified_absence'
-        | 'other';
+      fuelType?: 'diesel' | 'gasoline' | 'cng' | 'lpg';
       /**
-       * Format: date
-       * @example 2026-12-01
+       * @description Litros cargados
+       * @example 42.5
        */
-      startDate?: string;
+      liters: number;
       /**
-       * Format: date
-       * @example 2026-12-14
+       * @description Precio por litro
+       * @example 1050.5
        */
-      endDate?: string;
-      /** @example Vacaciones de verano */
-      reason?: string;
+      unitPrice: number;
+      /**
+       * @description Importe total; tiene que coincidir con litros × precio por litro, con una tolerancia del 1 %
+       * @example 44646.25
+       */
+      totalAmount: number;
+      /**
+       * @description Kilometraje del tablero
+       * @example 120350
+       */
+      odometerKm: number;
+      /** @description El consumo se mide entre cargas de tanque lleno (por omisión, sí) */
+      isFullTank?: boolean;
+      /** @example YPF Ruta 12 */
+      station?: string | null;
+      /** @enum {string} */
+      paymentMethod: 'cash_box' | 'driver_cash' | 'card' | 'fuel_account';
+      /** @example 0001-00012345 */
+      receiptNumber?: string | null;
+      notes?: string | null;
     };
-    RejectLeaveDto: {
-      /** @example Sin cobertura esa semana */
+    FuelLoadPageDto: {
+      data: components['schemas']['FuelLoadResponseDto'][];
+      /**
+       * @description Cargas vigentes que cumplen los filtros, sin paginar
+       * @example 12
+       */
+      total: number;
+      /**
+       * @description Litros de esas cargas
+       * @example 530.25
+       */
+      totalLiters: number;
+      /**
+       * @description Importe de esas cargas
+       * @example 556762.5
+       */
+      totalAmount: number;
+    };
+    UpdateFuelLoadDto: {
+      /**
+       * Format: date-time
+       * @description Cuándo se cargó; por omisión, ahora. No puede ser futura
+       */
+      loadedAt?: string;
+      /**
+       * @description Por omisión, el combustible del vehículo
+       * @enum {string}
+       */
+      fuelType?: 'diesel' | 'gasoline' | 'cng' | 'lpg';
+      /**
+       * @description Litros cargados
+       * @example 42.5
+       */
+      liters?: number;
+      /**
+       * @description Precio por litro
+       * @example 1050.5
+       */
+      unitPrice?: number;
+      /**
+       * @description Importe total; tiene que coincidir con litros × precio por litro, con una tolerancia del 1 %
+       * @example 44646.25
+       */
+      totalAmount?: number;
+      /**
+       * @description Kilometraje del tablero
+       * @example 120350
+       */
+      odometerKm?: number;
+      /** @description El consumo se mide entre cargas de tanque lleno (por omisión, sí) */
+      isFullTank?: boolean;
+      /** @example YPF Ruta 12 */
+      station?: string | null;
+      /** @enum {string} */
+      paymentMethod?: 'cash_box' | 'driver_cash' | 'card' | 'fuel_account';
+      /** @example 0001-00012345 */
+      receiptNumber?: string | null;
+      notes?: string | null;
+      /** @description Sólo el administrador: permite un kilometraje menor que el de la carga anterior. Exige `odometerCorrectionNote` */
+      odometerCorrection?: boolean;
+      /** @description Por qué se fuerza el kilometraje (obligatoria con `odometerCorrection`) */
+      odometerCorrectionNote?: string;
+    };
+    CreateTrafficFineDto: {
+      /** Format: uuid */
+      carId: string;
+      /**
+       * Format: date-time
+       * @description Cuándo ocurrió la infracción
+       */
+      occurredAt: string;
+      /** @example Municipalidad de Posadas */
+      jurisdiction: string;
+      /**
+       * @description Único por distribuidora y jurisdicción
+       * @example A-0012345
+       */
+      actNumber: string;
+      /** @example Exceso de velocidad */
+      infraction: string;
+      /** @example 85000 */
+      amount: number;
+      /**
+       * @description Importe con pago voluntario; no puede superar `amount`
+       * @example 59500
+       */
+      voluntaryPaymentAmount?: number | null;
+      /**
+       * Format: date
+       * @example 2026-11-15
+       */
+      dueDate?: string | null;
+      /**
+       * Format: uuid
+       * @description Legajo responsable. Si falta, se deduce del chofer que tenía el vehículo en uso en el instante de la infracción
+       */
+      employeeId?: string;
+    };
+    TrafficFineResponseDto: {
+      /** Format: uuid */
+      fineId: string;
+      /** Format: uuid */
+      distributorId: string;
+      /** Format: uuid */
+      carId: string;
+      carPatent: string | null;
+      /** Format: uuid */
+      employeeId: string | null;
+      employeeName: string | null;
+      /** Format: date-time */
+      occurredAt: string;
+      jurisdiction: string;
+      actNumber: string;
+      infraction: string;
+      amount: number;
+      voluntaryPaymentAmount: number | null;
+      /** @example 2026-11-15 */
+      dueDate: string | null;
+      /** @enum {string} */
+      status: 'pending' | 'appealed' | 'paid' | 'voided';
+      /** Format: date-time */
+      paidAt: string | null;
+      paidAmount: number | null;
+      /** @description La asume el chofer: no cuenta como costo del vehículo */
+      chargedToEmployee: boolean;
+      voidReason: string | null;
+      /** Format: date-time */
+      voidedAt: string | null;
+      /** Format: date-time */
+      createdAt: string;
+    };
+    TrafficFinePageDto: {
+      data: components['schemas']['TrafficFineResponseDto'][];
+      /** @example 4 */
+      total: number;
+    };
+    UpdateTrafficFineDto: {
+      /**
+       * Format: date-time
+       * @description Cuándo ocurrió la infracción
+       */
+      occurredAt?: string;
+      /** @example Municipalidad de Posadas */
+      jurisdiction?: string;
+      /**
+       * @description Único por distribuidora y jurisdicción
+       * @example A-0012345
+       */
+      actNumber?: string;
+      /** @example Exceso de velocidad */
+      infraction?: string;
+      /** @example 85000 */
+      amount?: number;
+      /**
+       * @description Importe con pago voluntario; no puede superar `amount`
+       * @example 59500
+       */
+      voluntaryPaymentAmount?: number | null;
+      /**
+       * Format: date
+       * @example 2026-11-15
+       */
+      dueDate?: string | null;
+      /** @description Pasa la multa de pendiente a apelada */
+      appeal?: boolean;
+    };
+    PayTrafficFineDto: {
+      /**
+       * Format: date
+       * @example 2026-10-20
+       */
+      paidAt: string;
+      /**
+       * @description Lo efectivamente pagado (suele ser el del pago voluntario)
+       * @example 59500
+       */
+      paidAmount: number;
+    };
+    ChargeTrafficFineDto: {
+      /**
+       * Format: uuid
+       * @description Legajo que asume la multa; por omisión, el responsable deducido al registrarla
+       */
+      employeeId?: string;
+    };
+    VoidTrafficFineDto: {
+      /** @example Acta labrada a otro vehículo */
       reason: string;
     };
-    RegisterAttendanceDto: {
+    CreateVehicleAccidentDto: {
+      /** Format: uuid */
+      carId: string;
       /**
        * Format: date-time
-       * @example 2026-03-02T11:00:00.000Z
+       * @description Cuándo ocurrió
        */
-      checkInAt: string;
+      occurredAt: string;
       /**
-       * Format: date-time
-       * @description Si la jornada ya terminó. Sin egreso queda abierta.
-       * @example 2026-03-02T19:30:00.000Z
+       * @description Punto en el mapa, como "latitud,longitud"
+       * @example -27.3671,-55.8961
        */
-      checkOutAt?: string;
+      location?: string | null;
+      /** @example Ruta 12 km 1340 */
+      address?: string | null;
+      /** @example Choque trasero en la esquina de Bolívar y Colón */
+      description: string;
+      injuries?: boolean;
+      thirdPartiesInvolved?: boolean;
+      /** @description Fuga o derrame de gas: avisa de inmediato a los administradores */
+      hazmatRelease?: boolean;
+      policeReportNumber?: string | null;
+      insurerClaimNumber?: string | null;
+      /** @description Si quedó inutilizable, el vehículo pasa a fuera de servicio y se libera a su chofer */
+      vehicleUnusable?: boolean;
+      /**
+       * Format: uuid
+       * @description Legajo de quien conducía; en el reporte del chofer es el suyo
+       */
+      employeeId?: string;
     };
-    AttendanceResponseDto: {
+    VehicleAccidentResponseDto: {
       /** Format: uuid */
-      attendanceId: string;
+      accidentId: string;
       /** Format: uuid */
-      employeeId: string;
-      /** @example Ana Pérez */
-      employeeName: string;
-      /** @example 0042 */
-      employeeFileNumber: string;
-      /**
-       * Format: date
-       * @example 2026-03-02
-       */
-      workDate: string;
+      distributorId: string;
+      /** Format: uuid */
+      carId: string;
+      carPatent: string | null;
+      /** Format: uuid */
+      employeeId: string | null;
+      employeeName: string | null;
       /** Format: date-time */
-      checkInAt: string;
-      /** Format: date-time */
-      checkOutAt: string | null;
-      /** @description Jornada sin cerrar */
-      isOpen: boolean;
-      /** @description Minutos trabajados; null mientras está abierta */
-      durationMinutes: number | null;
+      occurredAt: string;
+      /** @example -27.3671,-55.8961 */
+      location: string | null;
+      address: string | null;
+      description: string;
+      injuries: boolean;
+      thirdPartiesInvolved: boolean;
+      hazmatRelease: boolean;
+      policeReportNumber: string | null;
+      insurerClaimNumber: string | null;
       /** @enum {string} */
-      source: 'panel' | 'driver_app';
-      /** Format: uuid */
-      recordedByUserId: string | null;
-      notes: string | null;
+      status: 'reported' | 'under_review' | 'repairing' | 'closed';
+      vehicleUnusable: boolean;
+      repairCost: number | null;
+      insurerReimbursement: number | null;
+      deductibleAmount: number | null;
+      /** @description Costo de reparación menos reintegro del seguro; sólo cerrado */
+      netCost: number | null;
+      /** Format: date-time */
+      closedAt: string | null;
+      /** Format: date-time */
+      createdAt: string;
     };
-    AttendancePageDto: {
-      data: components['schemas']['AttendanceResponseDto'][];
+    CreateMyVehicleAccidentDto: {
+      /**
+       * Format: date-time
+       * @description Cuándo ocurrió
+       */
+      occurredAt: string;
+      /**
+       * @description Punto en el mapa, como "latitud,longitud"
+       * @example -27.3671,-55.8961
+       */
+      location?: string | null;
+      /** @example Ruta 12 km 1340 */
+      address?: string | null;
+      /** @example Choque trasero en la esquina de Bolívar y Colón */
+      description: string;
+      injuries?: boolean;
+      thirdPartiesInvolved?: boolean;
+      /** @description Fuga o derrame de gas: avisa de inmediato a los administradores */
+      hazmatRelease?: boolean;
+      policeReportNumber?: string | null;
+      insurerClaimNumber?: string | null;
+      /** @description Si quedó inutilizable, el vehículo pasa a fuera de servicio y se libera a su chofer */
+      vehicleUnusable?: boolean;
+    };
+    VehicleAccidentPageDto: {
+      data: components['schemas']['VehicleAccidentResponseDto'][];
+      /** @example 3 */
       total: number;
-      /** @description Empleados presentes hoy de la distribuidora: jornada abierta del día de hoy (no depende de los filtros) */
-      presentToday: number;
-      /** @description Jornadas de días anteriores que quedaron sin cerrar y esperan su corrección (no depende de los filtros) */
-      staleOpen: number;
     };
-    CorrectAttendanceDto: {
-      /** Format: date-time */
-      checkInAt?: string;
-      /** Format: date-time */
-      checkOutAt?: string;
-      /** @example Olvidó marcar la salida */
-      notes: string;
-    };
-    ActivePerPositionDto: {
-      /** Format: uuid */
-      positionId: string;
-      /** @example Chofer */
-      name: string;
-      /** @enum {string} */
-      category: 'driver' | 'helper' | 'warehouse' | 'administration' | 'sales' | 'management' | 'other';
-      /** @example 6 */
-      count: number;
-    };
-    DocumentsByStatusDto: {
-      /** @description Vigentes: falta más que la anticipación del plan */
-      current: number;
-      /** @description Por vencer: dentro de la ventana de aviso */
-      dueSoon: number;
-      /** @description Vencidas */
-      expired: number;
-    };
-    PersonnelDashboardDto: {
+    UpdateVehicleAccidentDto: {
       /**
-       * Format: date
-       * @description El día de hoy en Argentina
-       * @example 2026-10-17
+       * Format: date-time
+       * @description Cuándo ocurrió
        */
-      today: string;
-      /** @description Total de empleados activos */
-      totalActive: number;
-      activeByPosition: components['schemas']['ActivePerPositionDto'][];
-      /** @description Empleados con una jornada abierta */
-      presentToday: number;
-      /** @description Empleados con una licencia aprobada que cubre el día de hoy */
-      onLeaveToday: number;
-      documents: components['schemas']['DocumentsByStatusDto'];
+      occurredAt?: string;
+      /**
+       * @description Punto en el mapa, como "latitud,longitud"
+       * @example -27.3671,-55.8961
+       */
+      location?: string | null;
+      /** @example Ruta 12 km 1340 */
+      address?: string | null;
+      /** @example Choque trasero en la esquina de Bolívar y Colón */
+      description?: string;
+      injuries?: boolean;
+      thirdPartiesInvolved?: boolean;
+      /** @description Fuga o derrame de gas: avisa de inmediato a los administradores */
+      hazmatRelease?: boolean;
+      policeReportNumber?: string | null;
+      insurerClaimNumber?: string | null;
+      /**
+       * @description Sólo al estado siguiente del ciclo; el cierre es `PATCH …/close`
+       * @enum {string}
+       */
+      status?: 'under_review' | 'repairing';
+    };
+    CloseVehicleAccidentDto: {
+      /**
+       * @description Costo de la reparación
+       * @example 350000
+       */
+      repairCost: number;
+      /**
+       * @description Lo que reintegró el seguro
+       * @example 250000
+       */
+      insurerReimbursement: number;
+      /**
+       * @description Franquicia que pagó la distribuidora
+       * @example 50000
+       */
+      deductibleAmount: number;
+    };
+    CreateTireDto: {
+      /**
+       * @description Único por distribuidora
+       * @example DOT-4K2L-2326
+       */
+      serialNumber: string;
+      /** @example Pirelli */
+      brand: string;
+      /** @example 215/75 R17.5 */
+      size: string;
+      /** @example 320000 */
+      cost: number;
+    };
+    TireEventResponseDto: {
+      /** Format: uuid */
+      eventId: string;
+      /** Format: uuid */
+      tireId: string;
+      /** @enum {string} */
+      type: 'mount' | 'unmount' | 'rotate' | 'retread' | 'retire';
+      /** Format: uuid */
+      carId: string | null;
+      position: string | null;
+      odometerKm: number;
+      /** Format: date-time */
+      createdAt: string;
+    };
+    TireResponseDto: {
+      /** Format: uuid */
+      tireId: string;
+      /** Format: uuid */
+      distributorId: string;
+      serialNumber: string;
+      brand: string;
+      size: string;
+      cost: number;
+      /** @enum {string} */
+      status: 'in_stock' | 'mounted' | 'retired';
+      /** Format: uuid */
+      carId: string | null;
+      carPatent: string | null;
+      /** @example DI */
+      position: string | null;
+      mountedOdometerKm: number | null;
+      /** @description Km de los montajes ya cerrados */
+      kmTraveled: number;
+      retreadCount: number;
+      /** Format: date-time */
+      createdAt: string;
+      /** @description Su historial, del más reciente al más antiguo (sólo al abrir un neumático) */
+      events?: components['schemas']['TireEventResponseDto'][];
+    };
+    TirePageDto: {
+      data: components['schemas']['TireResponseDto'][];
+      /** @example 8 */
+      total: number;
+    };
+    CreateTireEventDto: {
+      /** @enum {string} */
+      type: 'mount' | 'unmount' | 'rotate' | 'retread' | 'retire';
+      /**
+       * @description Kilometraje del vehículo en el movimiento
+       * @example 120350
+       */
+      odometerKm: number;
+      /**
+       * Format: uuid
+       * @description Vehículo; obligatorio en el montaje
+       */
+      carId?: string;
+      /**
+       * @description Código corto de la posición (p. ej. DI = delantero izquierdo); obligatorio en el montaje y la rotación
+       * @example DI
+       */
+      position?: string;
+    };
+    TireMovementResponseDto: {
+      event: components['schemas']['TireEventResponseDto'];
+      /** @description El neumático ya en su estado nuevo */
+      tire: components['schemas']['TireResponseDto'];
+    };
+    FuelTrancheDto: {
+      /** Format: uuid */
+      fromLoadId: string;
+      /** Format: uuid */
+      toLoadId: string;
+      fromKm: number;
+      toKm: number;
+      km: number;
+      liters: number;
+      amount: number;
+      /** @description Rendimiento: km por litro */
+      kmPerLiter: number;
+      /** @description Costo por km */
+      costPerKm: number;
+    };
+    FuelTotalsDto: {
+      km: number;
+      liters: number;
+      amount: number;
+      kmPerLiter: number | null;
+      costPerKm: number | null;
+    };
+    FuelEfficiencyDto: {
+      /** Format: uuid */
+      carId: string;
+      /** @example 2026-10-01 */
+      from: string;
+      /** @example 2026-10-31 */
+      to: string;
+      /** @description Vacío si en el rango hay menos de dos cargas de tanque lleno */
+      tranches: components['schemas']['FuelTrancheDto'][];
+      totals: components['schemas']['FuelTotalsDto'];
+      /** @description Las cargas del rango marcadas como anómalas */
+      anomalies: components['schemas']['FuelLoadResponseDto'][];
+    };
+    CostMonthDto: {
+      /** @example 2026-10 */
+      month: string;
+      maintenance: number;
+      insurance: number;
+      fuel: number;
+      fines: number;
+      accidents: number;
+      total: number;
+    };
+    CarCostDetailDto: {
+      /** Format: uuid */
+      carId: string;
+      carPatent: string | null;
+      carBrand: string | null;
+      carModel: string | null;
+      /** @description Tareas de mantenimiento hechas, sin los seguros */
+      maintenance: number;
+      /** @description Primas prorrateadas por los días del período */
+      insurance: number;
+      /** @description Cargas de combustible vigentes */
+      fuel: number;
+      /** @description Multas pagadas que no se imputaron al chofer */
+      fines: number;
+      /** @description Siniestros cerrados: reparación menos reintegro del seguro */
+      accidents: number;
+      total: number;
+      /** @description Alguna póliza no tenía inicio de vigencia y se prorrateó con un año hacia atrás */
+      insuranceEstimated: boolean;
+      /** @description Kilómetros del período */
+      km: number;
+      /**
+       * @description De dónde salen los km: el registro de uso diario, la diferencia de kilometraje entre cargas, o ninguno
+       * @enum {string}
+       */
+      kmSource: 'usage_log' | 'odometer' | 'none';
+      /** @description `null` si no hubo km */
+      costPerKm: number | null;
+      /** @example 2026-10-01 */
+      from: string;
+      /** @example 2026-10-31 */
+      to: string;
+      /** @description Evolución mensual del período */
+      monthly: components['schemas']['CostMonthDto'][];
+    };
+    FleetCostSummaryDto: {
+      /** Format: uuid */
+      carId: string;
+      carPatent: string | null;
+      carBrand: string | null;
+      carModel: string | null;
+      /** @description Tareas de mantenimiento hechas, sin los seguros */
+      maintenance: number;
+      /** @description Primas prorrateadas por los días del período */
+      insurance: number;
+      /** @description Cargas de combustible vigentes */
+      fuel: number;
+      /** @description Multas pagadas que no se imputaron al chofer */
+      fines: number;
+      /** @description Siniestros cerrados: reparación menos reintegro del seguro */
+      accidents: number;
+      total: number;
+      /** @description Alguna póliza no tenía inicio de vigencia y se prorrateó con un año hacia atrás */
+      insuranceEstimated: boolean;
+      /** @description Kilómetros del período */
+      km: number;
+      /**
+       * @description De dónde salen los km: el registro de uso diario, la diferencia de kilometraje entre cargas, o ninguno
+       * @enum {string}
+       */
+      kmSource: 'usage_log' | 'odometer' | 'none';
+      /** @description `null` si no hubo km */
+      costPerKm: number | null;
     };
   };
   responses: never;
@@ -13239,9 +13769,9 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        ownerType: components['schemas']['AttachmentOwnerType'];
         /** @description UUID del dueño */
         ownerId: string;
+        ownerType: components['schemas']['AttachmentOwnerType'];
       };
       cookie?: never;
     };
@@ -13290,9 +13820,9 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        ownerType: components['schemas']['AttachmentOwnerType'];
         /** @description UUID del dueño */
         ownerId: string;
+        ownerType: components['schemas']['AttachmentOwnerType'];
       };
       cookie?: never;
     };
@@ -16875,7 +17405,7 @@ export interface operations {
   FleetPlanController_findAll: {
     parameters: {
       query?: {
-        subject?: 'vehicle' | 'driver' | 'employee';
+        subject?: 'vehicle' | 'driver';
         /** @description Sin este filtro trae activos e inactivos */
         isActive?: boolean;
       };
@@ -17060,7 +17590,6 @@ export interface operations {
         term?: string;
         carId?: string;
         deliveryId?: string;
-        employeeId?: string;
         /** @description Sólo las tareas de este plan */
         planId?: string;
         status?: 'forecast' | 'scheduled' | 'in_progress' | 'done' | 'overdue' | 'cancelled';
@@ -17586,10 +18115,6 @@ export interface operations {
       query?: {
         /** @description Ventana en días: trae lo vencido y lo que vence dentro de esta cantidad de días */
         withinDays?: number;
-        /** @description `vehicle`: sólo vehículos y choferes (CU-139); `employee`: sólo personal (CU-187). Sin indicar, todo. */
-        subject?: 'vehicle' | 'employee';
-        /** @description Filtra el personal por la categoría de su puesto (CU-187) */
-        category?: 'driver' | 'helper' | 'warehouse' | 'administration' | 'sales' | 'management' | 'other';
       };
       header?: never;
       path?: never;
@@ -23244,12 +23769,12 @@ export interface operations {
       };
     };
   };
-  EmployeeDocumentsController_find: {
+  CarReactivationController_reactivar: {
     parameters: {
       query?: never;
       header?: never;
       path: {
-        /** @description Empleado UUID */
+        /** @description Car UUID */
         id: string;
       };
       cookie?: never;
@@ -23261,57 +23786,10 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['EmployeeDocumentsResponseDto'];
+          'application/json': components['schemas']['CarResponseDto'];
         };
       };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Empleado no encontrado */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  LeaveController_create: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Empleado UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CreateLeaveDto'];
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['LeaveResponseDto'];
-        };
-      };
-      /** @description Datos inválidos o fin anterior al inicio */
+      /** @description Hay documentación bloqueante vencida: el detalle dice cuál */
       400: {
         headers: {
           [name: string]: unknown;
@@ -23332,14 +23810,440 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Empleado no encontrado */
+      /** @description Vehículo no encontrado */
       404: {
         headers: {
           [name: string]: unknown;
         };
         content?: never;
       };
-      /** @description El empleado está egresado, o el período se superpone con otra licencia solicitada o aprobada */
+      /** @description El vehículo no está fuera de servicio */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FuelLoadController_findAll: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+        carId?: string;
+        /** @description Legajo de quien cargó */
+        employeeId?: string;
+        from?: string | null;
+        to?: string | null;
+        /** @description Sólo las marcadas como anómalas (o sólo las que no) */
+        anomaly?: boolean;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FuelLoadPageDto'];
+        };
+      };
+      /** @description Filtro inválido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FuelLoadController_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateFuelLoadDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FuelLoadResponseDto'];
+        };
+      };
+      /** @description Importe, litros o kilometraje inválidos; falta el combustible del vehículo */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Vehículo no encontrado */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FuelLoadController_createMine: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateMyFuelLoadDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FuelLoadResponseDto'];
+        };
+      };
+      /** @description Importe, litros o kilometraje inválidos */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: delivery */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No tenés un vehículo en uso */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FuelLoadController_findOne: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Carga UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FuelLoadResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FuelLoadController_anular: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Carga UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MessageResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La carga ya estaba anulada */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FuelLoadController_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Carga UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateFuelLoadDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FuelLoadResponseDto'];
+        };
+      };
+      /** @description Importe, litros o kilometraje inválidos */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La carga está anulada */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TrafficFineController_findAll: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+        carId?: string;
+        employeeId?: string;
+        status?: 'pending' | 'appealed' | 'paid' | 'voided';
+        from?: string | null;
+        to?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TrafficFinePageDto'];
+        };
+      };
+      /** @description Filtro inválido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TrafficFineController_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateTrafficFineDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TrafficFineResponseDto'];
+        };
+      };
+      /** @description Dato obligatorio faltante o importe inválido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Vehículo o empleado no encontrado */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La multa ya está registrada (misma jurisdicción y acta) */
       409: {
         headers: {
           [name: string]: unknown;
@@ -23355,15 +24259,12 @@ export interface operations {
       };
     };
   };
-  LeaveController_vacationBalance: {
+  TrafficFineController_findOne: {
     parameters: {
-      query?: {
-        /** @description Por omisión, el año actual */
-        year?: number;
-      };
+      query?: never;
       header?: never;
       path: {
-        /** @description Empleado UUID */
+        /** @description Multa UUID */
         id: string;
       };
       cookie?: never;
@@ -23375,15 +24276,8 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['VacationBalanceDto'];
+          'application/json': components['schemas']['TrafficFineResponseDto'];
         };
-      };
-      /** @description Año inválido */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
       };
       /** @description Sin token o token inválido */
       401: {
@@ -23399,7 +24293,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Empleado no encontrado */
+      /** @description No existe o es de otra distribuidora */
       404: {
         headers: {
           [name: string]: unknown;
@@ -23408,78 +24302,19 @@ export interface operations {
       };
     };
   };
-  LeaveController_findAll: {
-    parameters: {
-      query?: {
-        limit?: number;
-        page?: number;
-        status?: 'requested' | 'approved' | 'rejected' | 'cancelled';
-        type?:
-          | 'vacation'
-          | 'sick'
-          | 'work_accident'
-          | 'study'
-          | 'marriage'
-          | 'birth'
-          | 'bereavement'
-          | 'unpaid'
-          | 'suspension'
-          | 'unjustified_absence'
-          | 'other';
-        employeeId?: string;
-        from?: string | null;
-        to?: string | null;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['LeavePageDto'];
-        };
-      };
-      /** @description Un filtro tiene un valor inválido */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  LeaveController_update: {
+  TrafficFineController_update: {
     parameters: {
       query?: never;
       header?: never;
       path: {
-        /** @description Licencia UUID */
+        /** @description Multa UUID */
         id: string;
       };
       cookie?: never;
     };
     requestBody: {
       content: {
-        'application/json': components['schemas']['UpdateLeaveDto'];
+        'application/json': components['schemas']['UpdateTrafficFineDto'];
       };
     };
     responses: {
@@ -23488,10 +24323,10 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['LeaveResponseDto'];
+          'application/json': components['schemas']['TrafficFineResponseDto'];
         };
       };
-      /** @description Fin anterior al inicio */
+      /** @description Dato inválido */
       400: {
         headers: {
           [name: string]: unknown;
@@ -23512,14 +24347,14 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Licencia no encontrada */
+      /** @description No existe o es de otra distribuidora */
       404: {
         headers: {
           [name: string]: unknown;
         };
         content?: never;
       };
-      /** @description No está solicitada, o el período se superpone con otra */
+      /** @description Pagada, anulada, ya apelada, o el acta pertenece a otra multa */
       409: {
         headers: {
           [name: string]: unknown;
@@ -23528,25 +24363,36 @@ export interface operations {
       };
     };
   };
-  LeaveController_approve: {
+  TrafficFineController_pay: {
     parameters: {
       query?: never;
       header?: never;
       path: {
-        /** @description Licencia UUID */
+        /** @description Multa UUID */
         id: string;
       };
       cookie?: never;
     };
-    requestBody?: never;
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PayTrafficFineDto'];
+      };
+    };
     responses: {
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['LeaveResponseDto'];
+          'application/json': components['schemas']['TrafficFineResponseDto'];
         };
+      };
+      /** @description Fecha de pago futura o importe inválido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Sin token o token inválido */
       401: {
@@ -23562,14 +24408,14 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Licencia no encontrada */
+      /** @description No existe o es de otra distribuidora */
       404: {
         headers: {
           [name: string]: unknown;
         };
         content?: never;
       };
-      /** @description No está solicitada */
+      /** @description La multa no admite el pago (ya pagada o anulada) */
       409: {
         headers: {
           [name: string]: unknown;
@@ -23578,19 +24424,19 @@ export interface operations {
       };
     };
   };
-  LeaveController_reject: {
+  TrafficFineController_chargeToEmployee: {
     parameters: {
       query?: never;
       header?: never;
       path: {
-        /** @description Licencia UUID */
+        /** @description Multa UUID */
         id: string;
       };
       cookie?: never;
     };
     requestBody: {
       content: {
-        'application/json': components['schemas']['RejectLeaveDto'];
+        'application/json': components['schemas']['ChargeTrafficFineDto'];
       };
     };
     responses: {
@@ -23599,7 +24445,68 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['LeaveResponseDto'];
+          'application/json': components['schemas']['TrafficFineResponseDto'];
+        };
+      };
+      /** @description La multa no tiene responsable y no se indicó uno */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La multa o el empleado no existen o son de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La multa anulada no se puede imputar */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TrafficFineController_void: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Multa UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['VoidTrafficFineDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TrafficFineResponseDto'];
         };
       };
       /** @description Falta el motivo */
@@ -23623,14 +24530,14 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Licencia no encontrada */
+      /** @description No existe o es de otra distribuidora */
       404: {
         headers: {
           [name: string]: unknown;
         };
         content?: never;
       };
-      /** @description No está solicitada */
+      /** @description La multa ya está pagada o anulada */
       409: {
         headers: {
           [name: string]: unknown;
@@ -23639,135 +24546,15 @@ export interface operations {
       };
     };
   };
-  LeaveController_cancel: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Licencia UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['LeaveResponseDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Licencia no encontrada */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Ya estaba rechazada o cancelada, o ya terminó */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  AttendanceController_register: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Empleado UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['RegisterAttendanceDto'];
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['AttendanceResponseDto'];
-        };
-      };
-      /** @description El egreso no es posterior al ingreso */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Empleado no encontrado */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description El empleado está egresado o ya tiene una jornada abierta */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  AttendanceController_findAll: {
+  VehicleAccidentController_findAll: {
     parameters: {
       query?: {
         limit?: number;
-        page?: number;
-        date?: string | null;
+        offset?: number;
+        carId?: string;
+        status?: 'reported' | 'under_review' | 'repairing' | 'closed';
         from?: string | null;
         to?: string | null;
-        employeeId?: string;
-        /** @description true: sólo las jornadas sin cerrar; false: sólo las cerradas */
-        open?: boolean;
       };
       header?: never;
       path?: never;
@@ -23780,10 +24567,10 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['AttendancePageDto'];
+          'application/json': components['schemas']['VehicleAccidentPageDto'];
         };
       };
-      /** @description Un filtro tiene un valor inválido */
+      /** @description Filtro inválido */
       400: {
         headers: {
           [name: string]: unknown;
@@ -23806,31 +24593,28 @@ export interface operations {
       };
     };
   };
-  AttendanceController_correct: {
+  VehicleAccidentController_create: {
     parameters: {
       query?: never;
       header?: never;
-      path: {
-        /** @description Jornada UUID */
-        id: string;
-      };
+      path?: never;
       cookie?: never;
     };
     requestBody: {
       content: {
-        'application/json': components['schemas']['CorrectAttendanceDto'];
+        'application/json': components['schemas']['CreateVehicleAccidentDto'];
       };
     };
     responses: {
-      200: {
+      201: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['AttendanceResponseDto'];
+          'application/json': components['schemas']['VehicleAccidentResponseDto'];
         };
       };
-      /** @description Falta la nota, o el egreso no es posterior al ingreso */
+      /** @description Falta la fecha o la descripción, o el punto no es válido */
       400: {
         headers: {
           [name: string]: unknown;
@@ -23851,7 +24635,115 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Jornada no encontrada */
+      /** @description Vehículo o empleado no encontrado */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  VehicleAccidentController_createMine: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateMyVehicleAccidentDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['VehicleAccidentResponseDto'];
+        };
+      };
+      /** @description Falta la fecha o la descripción, o el punto no es válido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: delivery */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No tenés un vehículo en uso */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  VehicleAccidentController_findOne: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Siniestro UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['VehicleAccidentResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
       404: {
         headers: {
           [name: string]: unknown;
@@ -23860,31 +24752,36 @@ export interface operations {
       };
     };
   };
-  AttendanceController_checkIn: {
+  VehicleAccidentController_update: {
     parameters: {
       query?: never;
       header?: never;
-      path?: never;
+      path: {
+        /** @description Siniestro UUID */
+        id: string;
+      };
       cookie?: never;
     };
-    requestBody?: never;
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateVehicleAccidentDto'];
+      };
+    };
     responses: {
-      /** @description Ya tenía una jornada abierta de hoy desde la app */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['AttendanceResponseDto'];
+          'application/json': components['schemas']['VehicleAccidentResponseDto'];
         };
       };
-      201: {
+      /** @description Dato inválido */
+      400: {
         headers: {
           [name: string]: unknown;
         };
-        content: {
-          'application/json': components['schemas']['AttendanceResponseDto'];
-        };
+        content?: never;
       };
       /** @description Sin token o token inválido */
       401: {
@@ -23893,22 +24790,22 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: delivery */
+      /** @description Requiere rol: admin, super_admin */
       403: {
         headers: {
           [name: string]: unknown;
         };
         content?: never;
       };
-      /** @description La cuenta no está vinculada a un legajo activo, o hay una jornada abierta de otro día o cargada desde el panel */
-      409: {
+      /** @description No existe o es de otra distribuidora */
+      404: {
         headers: {
           [name: string]: unknown;
         };
         content?: never;
       };
-      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
-      422: {
+      /** @description Está cerrado, o el cambio de estado no respeta el ciclo */
+      409: {
         headers: {
           [name: string]: unknown;
         };
@@ -23916,22 +24813,36 @@ export interface operations {
       };
     };
   };
-  AttendanceController_checkOut: {
+  VehicleAccidentController_close: {
     parameters: {
       query?: never;
       header?: never;
-      path?: never;
+      path: {
+        /** @description Siniestro UUID */
+        id: string;
+      };
       cookie?: never;
     };
-    requestBody?: never;
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CloseVehicleAccidentDto'];
+      };
+    };
     responses: {
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['AttendanceResponseDto'];
+          'application/json': components['schemas']['VehicleAccidentResponseDto'];
         };
+      };
+      /** @description Algún importe es negativo */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Sin token o token inválido */
       401: {
@@ -23940,22 +24851,22 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: delivery */
+      /** @description Requiere rol: admin, super_admin */
       403: {
         headers: {
           [name: string]: unknown;
         };
         content?: never;
       };
-      /** @description La cuenta no está vinculada a un legajo activo, no hay jornada abierta, o la abierta es de un día anterior (se corrige desde el panel) */
-      409: {
+      /** @description No existe o es de otra distribuidora */
+      404: {
         headers: {
           [name: string]: unknown;
         };
         content?: never;
       };
-      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
-      422: {
+      /** @description El siniestro ya está cerrado */
+      409: {
         headers: {
           [name: string]: unknown;
         };
@@ -23963,9 +24874,14 @@ export interface operations {
       };
     };
   };
-  PersonnelController_consultar: {
+  TireController_findAll: {
     parameters: {
-      query?: never;
+      query?: {
+        limit?: number;
+        offset?: number;
+        status?: 'in_stock' | 'mounted' | 'retired';
+        carId?: string;
+      };
       header?: never;
       path?: never;
       cookie?: never;
@@ -23977,7 +24893,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['PersonnelDashboardDto'];
+          'application/json': components['schemas']['TirePageDto'];
         };
       };
       /** @description Sin token o token inválido */
@@ -23989,6 +24905,371 @@ export interface operations {
       };
       /** @description Requiere rol: admin, super_admin */
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TireController_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateTireDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TireResponseDto'];
+        };
+      };
+      /** @description Dato obligatorio faltante o costo negativo */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El neumático ya está registrado (número de serie) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TireController_findOne: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Neumático UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TireResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TireController_registerEvent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Neumático UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateTireEventDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TireMovementResponseDto'];
+        };
+      };
+      /** @description Falta el vehículo o la posición, o el kilometraje es menor que el del montaje */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El neumático o el vehículo no existen o son de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Movimiento inválido para el estado del neumático, o posición ocupada */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CarFleetController_consumo: {
+    parameters: {
+      query: {
+        from: string;
+        to: string;
+      };
+      header?: never;
+      path: {
+        /** @description Car UUID */
+        carId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FuelEfficiencyDto'];
+        };
+      };
+      /** @description Fecha inválida o inicio posterior al fin */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Vehículo no encontrado */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CarFleetController_costoDelVehiculo: {
+    parameters: {
+      query: {
+        from: string;
+        to: string;
+      };
+      header?: never;
+      path: {
+        /** @description Car UUID */
+        carId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CarCostDetailDto'];
+        };
+      };
+      /** @description Fecha inválida o inicio posterior al fin */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Vehículo no encontrado */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CarFleetController_tablero: {
+    parameters: {
+      query: {
+        from: string;
+        to: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FleetCostSummaryDto'][];
+        };
+      };
+      /** @description Fecha inválida o inicio posterior al fin */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CarFleetController_neumaticos: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+        status?: 'in_stock' | 'mounted' | 'retired';
+      };
+      header?: never;
+      path: {
+        /** @description Car UUID */
+        carId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TirePageDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Vehículo no encontrado */
+      404: {
         headers: {
           [name: string]: unknown;
         };
