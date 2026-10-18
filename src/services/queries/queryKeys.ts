@@ -34,6 +34,7 @@ export const queryKeys = {
   orders: resource('orders'),
   personnel: resource('personnel'),
   ratings: resource('ratings'),
+  refunds: resource('refunds'),
   reports: resource('reports'),
   purchaseOrders: resource('purchaseOrders'),
   purchaseReceipts: resource('purchaseReceipts'),

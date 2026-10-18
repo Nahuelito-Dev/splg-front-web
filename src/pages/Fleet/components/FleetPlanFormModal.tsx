@@ -47,8 +47,8 @@ const documentKindFor = (
 ): Exclude<FleetPlanFormValues['documentKind'], ''> | null | undefined => {
   const options = subject === 'employee' ? EMPLOYEE_DOCUMENT_KIND_OPTIONS : VEHICLE_DOCUMENT_KIND_OPTIONS;
   const valid = kind !== '' && options.some((o) => o.value === kind);
-  if (subject === 'vehicle') return valid ? (kind as Exclude<typeof kind, ''>) : null;
-  if (subject === 'employee') return valid ? (kind as Exclude<typeof kind, ''>) : undefined;
+  if (subject === 'vehicle') return valid ? kind : null;
+  if (subject === 'employee') return valid ? kind : undefined;
   return undefined;
 };
 
@@ -58,6 +58,7 @@ const VEHICLE_DOCUMENT_KIND_OPTIONS = [
   { value: 'insurance', label: 'Seguro del vehículo' },
   { value: 'vtv', label: 'VTV' },
   { value: 'hazmat_vehicle_permit', label: 'Habilitación de mercancías peligrosas' },
+  { value: 'service', label: 'Service o mantenimiento' },
 ];
 
 export const FleetPlanFormModal = ({ open, onClose, plan }: Props) => {

@@ -7,6 +7,7 @@ import {
   confirmOrderDelivery,
   confirmTransfer,
   createOrder,
+  getDeliveryOptions,
   getOrder,
   getOrderDeliveryCode,
   getOrderStatusHistory,
@@ -318,3 +319,11 @@ export const useConfirmTransfer = () => {
     onSettled: () => invalidateAfterPayment(queryClient),
   });
 };
+
+/** Modalidades de entrega de una dirección (CU-148). Sólo se consulta con cliente y dirección elegidos. */
+export const useDeliveryOptions = (addressId: string | undefined, customerId: string | undefined) =>
+  useQuery({
+    queryKey: [...keys.all, 'delivery-options', addressId ?? '', customerId ?? ''] as const,
+    queryFn: () => getDeliveryOptions(addressId ?? '', customerId ?? ''),
+    enabled: Boolean(addressId && customerId),
+  });

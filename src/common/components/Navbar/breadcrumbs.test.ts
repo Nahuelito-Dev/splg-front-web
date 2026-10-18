@@ -9,6 +9,8 @@ describe('buildBreadcrumbs', () => {
   it('las pantallas de parámetros de M1 cuelgan del menú de Configuración', () => {
     expect(buildBreadcrumbs('/settings/dispatch').at(-1)).toEqual({ label: 'Parámetros del despacho' });
     expect(buildBreadcrumbs('/settings/scheduled-tasks').at(-1)).toEqual({ label: 'Tareas programadas' });
+    expect(buildBreadcrumbs('/settings/express').at(-1)).toEqual({ label: 'Compra express' });
+    expect(buildBreadcrumbs('/refunds').at(-1)).toEqual({ label: 'Reintegros' });
   });
 
   it('el detalle lleva a la lista y termina en «Detalle»', () => {

@@ -57,33 +57,13 @@ describe('buildProcessSchema', () => {
   it('acepta decimales donde el campo es numérico', () => {
     const radio = buildProcessSchema(
       config({
-        process: 'express_dispatch',
-        fields: [field('maxRadiusKm', { type: 'number', min: 0.5, max: 50, default: 5 })],
-        params: { maxRadiusKm: 5 },
+        process: 'route_batching',
+        fields: [field('groupingRadiusKm', { type: 'number', min: 0.5, max: 50, default: 3 })],
+        params: { groupingRadiusKm: 3 },
       }),
     );
-    expect(radio.safeParse({ maxRadiusKm: '2.5' }).success).toBe(true);
-    expect(radio.safeParse({ maxRadiusKm: '0.1' }).success).toBe(false);
-  });
-
-  it('express: el fin del horario tiene que ser posterior al inicio', () => {
-    const express = buildProcessSchema(
-      config({
-        process: 'express_dispatch',
-        fields: [
-          field('serviceStartHour', { min: 0, max: 23, default: 8 }),
-          field('serviceEndHour', { min: 1, max: 24, default: 20 }),
-        ],
-        params: { serviceStartHour: 8, serviceEndHour: 20 },
-      }),
-    );
-    const malo = express.safeParse({ serviceStartHour: '20', serviceEndHour: '10' });
-    expect(malo.success).toBe(false);
-    if (!malo.success) {
-      expect(malo.error.issues[0]?.path).toEqual(['serviceEndHour']);
-      expect(malo.error.issues[0]?.message).toBe('Tiene que ser posterior al inicio del servicio');
-    }
-    expect(express.safeParse({ serviceStartHour: '9', serviceEndHour: '18' }).success).toBe(true);
+    expect(radio.safeParse({ groupingRadiusKm: '2.5' }).success).toBe(true);
+    expect(radio.safeParse({ groupingRadiusKm: '0.1' }).success).toBe(false);
   });
 });
 

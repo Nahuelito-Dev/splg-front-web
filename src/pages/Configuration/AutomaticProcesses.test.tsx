@@ -53,14 +53,14 @@ const processes = (over: Record<string, unknown> = {}) => [
     ...over,
   },
   {
-    process: 'express_dispatch',
-    title: 'Despacho express',
-    description: 'Compra express en moto.',
+    process: 'route_batching',
+    title: 'Agrupación por recorrido',
+    description: 'Agrupa pedidos programados cercanos.',
     fields: [
-      field('serviceStartHour', 'Inicio del servicio', { min: 0, max: 23, default: 8, unit: 'h' }),
-      field('serviceEndHour', 'Fin del servicio', { min: 1, max: 24, default: 20, unit: 'h' }),
+      field('maxBatchSize', 'Pedidos por lote', { min: 2, max: 20, default: 4 }),
+      field('groupingRadiusKm', 'Radio de agrupación', { type: 'number', min: 0.5, max: 50, default: 3, unit: 'km' }),
     ],
-    params: { serviceStartHour: 8, serviceEndHour: 20 },
+    params: { maxBatchSize: 5, groupingRadiusKm: 3 },
     isDefault: false,
     updatedAt: '2026-10-15T12:00:00.000Z',
     updatedByUserId: 'user-1',
@@ -91,7 +91,7 @@ describe('AutomaticProcesses', () => {
   it('lista los procesos con su estado', () => {
     setup();
     expect(screen.getByRole('heading', { name: 'Anticipación de recompra' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Despacho express' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Agrupación por recorrido' })).toBeInTheDocument();
     expect(screen.getByText('Valores por defecto')).toBeInTheDocument();
     expect(screen.getByText('Configurado')).toBeInTheDocument();
   });
@@ -147,14 +147,6 @@ describe('AutomaticProcesses', () => {
     expect(save()).toBeDisabled();
   });
 
-  it('despacho express: un fin de horario anterior al inicio se marca en el campo', async () => {
-    setup();
-    open('Configurar Despacho express');
-    fireEvent.change(await screen.findByLabelText('Fin del servicio'), { target: { value: '5' } });
-    expect(await screen.findByText('Tiene que ser posterior al inicio del servicio')).toBeInTheDocument();
-    expect(save()).toBeDisabled();
-  });
-
   it('muestra el mensaje del back cuando el guardado falla', async () => {
     const update = setup();
     open('Configurar Anticipación de recompra');
@@ -169,16 +161,16 @@ describe('AutomaticProcesses', () => {
 
   it('restablecer pide confirmación y manda un cuerpo vacío', async () => {
     const update = setup();
-    open('Configurar Despacho express');
+    open('Configurar Agrupación por recorrido');
     fireEvent.click(await screen.findByRole('button', { name: 'Restablecer valores por defecto' }));
     await waitFor(() => expect(update.mutate).toHaveBeenCalled());
-    expect(update.mutate.mock.calls[0]?.[0]).toEqual({ process: 'express_dispatch', body: {} });
+    expect(update.mutate.mock.calls[0]?.[0]).toEqual({ process: 'route_batching', body: {} });
   });
 
   it('si no se confirma el restablecimiento no manda nada', async () => {
     confirmed.value = false;
     const update = setup();
-    open('Configurar Despacho express');
+    open('Configurar Agrupación por recorrido');
     fireEvent.click(await screen.findByRole('button', { name: 'Restablecer valores por defecto' }));
     await new Promise((r) => setTimeout(r, 20));
     expect(update.mutate).not.toHaveBeenCalled();

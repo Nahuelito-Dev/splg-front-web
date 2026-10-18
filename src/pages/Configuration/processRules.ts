@@ -24,28 +24,9 @@ const fieldSchema = (field: ProcessConfigField) =>
     if (!valid) ctx.addIssue({ code: z.ZodIssueCode.custom, message: rangeMessage(field) });
   });
 
-/**
- * El horario del servicio express: el fin tiene que ser posterior al inicio (es la única regla que cruza campos, la
- * misma que valida el back).
- */
-const crossRules = (process: string, values: ProcessFormValues, ctx: z.RefinementCtx) => {
-  if (process !== 'express_dispatch') return;
-  const start = Number(values.serviceStartHour);
-  const end = Number(values.serviceEndHour);
-  if (Number.isFinite(start) && Number.isFinite(end) && end <= start) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ['serviceEndHour'],
-      message: 'Tiene que ser posterior al inicio del servicio',
-    });
-  }
-};
-
 /** Esquema de zod armado con el esquema que publica el back para ese proceso (rango y tipo de cada campo). */
 export const buildProcessSchema = (config: ProcessConfig) =>
-  z
-    .object(Object.fromEntries(config.fields.map((f) => [f.key, fieldSchema(f)])))
-    .superRefine((values, ctx) => crossRules(config.process, values as ProcessFormValues, ctx));
+  z.object(Object.fromEntries(config.fields.map((f) => [f.key, fieldSchema(f)])));
 
 /**
  * Lo que se manda: sólo los parámetros que difieren del valor por omisión, así los que la persona no tocó siguen

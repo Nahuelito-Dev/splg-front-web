@@ -7,9 +7,10 @@ import { useFindCustomerByUserId } from '../../../../services/queries/customers'
 import { useUser } from '../../../../services/queries/users';
 import { formatCurrency, formatDateTime, formatDay } from '../../../../utils/format';
 import { notify } from '../../../../utils/notifications';
-import { labelOf, PAYMENT_METHOD, paymentStatusLabel } from '../../../../utils/statusLabels';
+import { DELIVERY_MODE, labelOf, PAYMENT_METHOD, paymentStatusLabel } from '../../../../utils/statusLabels';
 import { isClosed } from '../orderStatus';
 import { OrderMiniMap } from './OrderMiniMap';
+import { OrderRefunds } from './OrderRefunds';
 import { orderCoordinates } from './orderLocation';
 
 const Section = ({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) => (
@@ -86,6 +87,17 @@ const DeliverySection = ({ order }: { order: Order }) => {
         </div>
       )}
       <dl className="mt-3 space-y-1.5">
+        <Row label="Modalidad">
+          <Badge label={labelOf(DELIVERY_MODE, order.deliveryMode)} />
+        </Row>
+        {order.expressSurchargeAmount > 0 && (
+          <Row label="Recargo express">
+            {order.deliveryMode === 'express'
+              ? formatCurrency(order.expressSurchargeAmount)
+              : `${formatCurrency(order.expressSurchargeAmount)} (descontado)`}
+          </Row>
+        )}
+        {order.expressDegradedAt && <Row label="Pasó a reparto común">{formatDateTime(order.expressDegradedAt)}</Row>}
         {order.scheduledDate && <Row label="Agendado">{formatDay(order.scheduledDate)}</Row>}
         {windowText && <Row label="Franja">{windowText}</Row>}
         {zone && <Row label="Zona">{zone.name}</Row>}
@@ -246,13 +258,14 @@ const PaymentSection = ({ order }: { order: Order }) => (
         {order.paymentResolutionNote}
       </p>
     )}
-    {order.status === 'cancelled' && order.paymentStatus === 'paid' && (
+    {order.status === 'cancelled' && order.paymentStatus === 'paid' && order.paymentMethodDetail !== 'mercadopago' && (
       <p role="status" className="mt-3 rounded-lg border border-warn/30 bg-warn-soft p-2 text-xs text-warn">
         <span className="font-semibold">Reintegro pendiente: </span>
-        el pedido se cobró y después se canceló. El sistema no gestiona la devolución: la hace la distribuidora por
-        fuera.
+        el pedido se cobró y después se canceló. Este medio de pago no pasa por una pasarela: la devolución la hace la
+        distribuidora por fuera.
       </p>
     )}
+    <OrderRefunds order={order} />
     {order.payment_method === 'online' && order.payment_url && !isClosed(order.status) && (
       <PaymentLink url={order.payment_url} />
     )}

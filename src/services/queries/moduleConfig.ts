@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   getDispatchConfig,
+  getExpressConfig,
+  putExpressConfig,
   getScheduledTasksConfig,
   listProcessConfigs,
   putDispatchConfig,
@@ -8,7 +10,7 @@ import {
   putScheduledTasksConfig,
   type ProcessConfigBody,
 } from '../api/moduleConfig';
-import type { DispatchConfigBody, ProcessConfig, ScheduledTasksConfigBody } from '../api/types';
+import type { DispatchConfigBody, ExpressConfigBody, ProcessConfig, ScheduledTasksConfigBody } from '../api/types';
 import { queryKeys } from './queryKeys';
 
 const keys = queryKeys.moduleConfig;
@@ -54,6 +56,19 @@ export const useUpdateProcessConfig = () => {
       queryClient.setQueryData(keys.list({ kind: 'processes' }), (current: ProcessConfig[] | undefined) =>
         current?.map((p) => (p.process === saved.process ? saved : p)),
       );
+    },
+  });
+};
+
+export const useExpressConfig = ({ enabled = true }: Options = {}) =>
+  useQuery({ queryKey: keys.detail('express_dispatch'), queryFn: getExpressConfig, enabled });
+
+export const useUpdateExpressConfig = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: ExpressConfigBody) => putExpressConfig(body),
+    onSuccess: (saved) => {
+      queryClient.setQueryData(keys.detail('express_dispatch'), saved);
     },
   });
 };
