@@ -18,7 +18,13 @@ import type { Refund } from '../../services/api/types';
 import { useRefunds, useRetryOrderRefunds } from '../../services/queries/refunds';
 import { formatCurrency, formatDateTime, formatShortId } from '../../utils/format';
 import { notify } from '../../utils/notifications';
+import { STALE_PENDING_MS } from '../Orders/components/details/refundsAvailability';
 import { REFUND_KIND, REFUND_STATUS, labelOf } from '../../utils/statusLabels';
+
+/** Falló, o quedó en curso hace rato (el back la retoma solo, pero el admin puede adelantarse). */
+const retryable = (refund: Refund): boolean =>
+  refund.status === 'failed' ||
+  (refund.status === 'pending' && Date.now() - Date.parse(refund.updatedAt) > STALE_PENDING_MS);
 
 const TABS = [
   { id: 'failed', label: 'Pendientes de reintento' },
@@ -104,7 +110,7 @@ export const Refunds = () => {
         align: 'right',
         renderCell: ({ row }) => (
           <div className="flex items-center justify-end gap-2" onClick={(event) => event.stopPropagation()}>
-            {row.status === 'failed' && (
+            {retryable(row) && (
               <Button
                 size="sm"
                 icon={<RotateCw />}
@@ -179,7 +185,7 @@ export const Refunds = () => {
                   <p className="break-words text-xs text-danger">{row.errorMessage}</p>
                 )}
                 <div className="flex flex-wrap gap-2">
-                  {row.status === 'failed' && (
+                  {retryable(row) && (
                     <Button
                       size="sm"
                       icon={<RotateCw />}

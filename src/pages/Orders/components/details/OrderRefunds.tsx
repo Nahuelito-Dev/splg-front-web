@@ -5,7 +5,7 @@ import type { Order } from '../../../../services/api/types';
 import { useOrderRefunds, useRetryOrderRefunds } from '../../../../services/queries/refunds';
 import { formatCurrency, formatDateTime } from '../../../../utils/format';
 import { notify } from '../../../../utils/notifications';
-import { mayHaveRefunds } from './refundsAvailability';
+import { canRetryRefunds, mayHaveRefunds } from './refundsAvailability';
 import { REFUND_KIND, REFUND_STATUS, labelOf } from '../../../../utils/statusLabels';
 
 /** Las devoluciones del pedido (CU-168) y, si alguna falló, el botón para reintentarla. */
@@ -22,12 +22,14 @@ export const OrderRefunds = ({ order }: { order: Order }) => {
       </p>
     );
   }
-  if (!data || data.length === 0) return null;
-  const failed = data.some((refund) => refund.status === 'failed');
+  if (!data) return null;
+  const canRetry = canRetryRefunds(order, data);
+  if (data.length === 0 && !canRetry) return null;
 
   return (
     <div className="mt-3 rounded-lg border border-outline p-3" aria-label="Reintegros del pedido">
       <p className="text-xs font-semibold uppercase tracking-wide text-muted">Reintegros</p>
+      {data.length === 0 && <p className="mt-2 text-xs text-muted">Todavía no se pidió la devolución.</p>}
       <ul className="mt-2 space-y-2">
         {data.map((refund) => (
           <li key={refund.refundId} className="text-[13px]">
@@ -40,13 +42,14 @@ export const OrderRefunds = ({ order }: { order: Order }) => {
             {refund.status === 'succeeded' && refund.refundedAt && (
               <p className="text-xs text-muted">Devuelto el {formatDateTime(refund.refundedAt)}</p>
             )}
+            {refund.status === 'pending' && <p className="text-xs text-muted">En curso: si tarda, reintentala.</p>}
             {refund.status === 'failed' && refund.errorMessage && (
               <p className="break-words text-xs text-danger">{refund.errorMessage}</p>
             )}
           </li>
         ))}
       </ul>
-      {failed && (
+      {canRetry && (
         <Button
           size="sm"
           className="mt-3"

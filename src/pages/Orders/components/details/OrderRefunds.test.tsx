@@ -73,4 +73,20 @@ describe('OrderRefunds', () => {
     render(<OrderRefunds order={order()} />);
     expect(screen.getByRole('alert')).toBeInTheDocument();
   });
+
+  it('cancelado y cobrado por MercadoPago sin ninguna fila: avisa y ofrece reintentar', () => {
+    state.refunds = ok([]);
+    state.retry = mutation();
+    render(<OrderRefunds order={order({ status: 'cancelled', paymentStatus: 'paid' })} />);
+    expect(screen.getByText('Todavía no se pidió la devolución.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar devolución' }));
+    expect((state.retry as ReturnType<typeof mutation>).mutate.mock.calls[0][0]).toBe('o-1');
+  });
+
+  it('una pendiente vieja se puede reintentar', () => {
+    state.refunds = ok([refund({ status: 'pending', errorMessage: null, updatedAt: '2020-01-01T00:00:00.000Z' })]);
+    state.retry = mutation();
+    render(<OrderRefunds order={order()} />);
+    expect(screen.getByRole('button', { name: 'Reintentar devolución' })).toBeInTheDocument();
+  });
 });
