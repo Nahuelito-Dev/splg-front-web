@@ -4652,20 +4652,20 @@
                 "operationId": "AttachmentController_upload",
                 "parameters": [
                     {
+                        "name": "ownerType",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "$ref": "#/components/schemas/AttachmentOwnerType"
+                        }
+                    },
+                    {
                         "name": "ownerId",
                         "required": true,
                         "in": "path",
                         "description": "UUID del dueño",
                         "schema": {
                             "type": "string"
-                        }
-                    },
-                    {
-                        "name": "ownerType",
-                        "required": true,
-                        "in": "path",
-                        "schema": {
-                            "$ref": "#/components/schemas/AttachmentOwnerType"
                         }
                     }
                 ],
@@ -4739,20 +4739,20 @@
                 "operationId": "AttachmentController_list",
                 "parameters": [
                     {
+                        "name": "ownerType",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "$ref": "#/components/schemas/AttachmentOwnerType"
+                        }
+                    },
+                    {
                         "name": "ownerId",
                         "required": true,
                         "in": "path",
                         "description": "UUID del dueño",
                         "schema": {
                             "type": "string"
-                        }
-                    },
-                    {
-                        "name": "ownerType",
-                        "required": true,
-                        "in": "path",
-                        "schema": {
-                            "$ref": "#/components/schemas/AttachmentOwnerType"
                         }
                     }
                 ],
@@ -4898,6 +4898,618 @@
                 "summary": "Borrar un adjunto",
                 "tags": [
                     "Attachments"
+                ]
+            }
+        },
+        "/api/customers/me/consumption": {
+            "get": {
+                "operationId": "ConsumptionController_obtener",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConsumptionResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: customer"
+                    },
+                    "404": {
+                        "description": "El usuario no tiene ficha de cliente"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Consumo declarado y recompra estimada del cliente",
+                "tags": [
+                    "Customers"
+                ]
+            },
+            "patch": {
+                "description": "Convierte la declaración a kg por mes con el peso del tipo de garrafa, valida el rango (5 a 500 kg por mes) y recalcula la fecha estimada de recompra desde la última compra entregada (o desde ahora si nunca compró). Fuera de rango responde 400 y pide confirmar con `confirmOutOfRange: true`.",
+                "operationId": "ConsumptionController_actualizar",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateConsumptionDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConsumptionResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Valor fuera de rango sin confirmar, tipo de garrafa inexistente o dado de baja, o falta el tipo de garrafa habitual"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: customer"
+                    },
+                    "404": {
+                        "description": "El usuario no tiene ficha de cliente"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Modificar el consumo promedio declarado (CU-144)",
+                "tags": [
+                    "Customers"
+                ]
+            }
+        },
+        "/api/gascylinder": {
+            "post": {
+                "operationId": "GasCylinderController_create",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateGasCylinderDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GasCylinderResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Datos inválidos o tipo repetido"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Create a new gas cylinder type",
+                "tags": [
+                    "Gas Cylinders"
+                ]
+            },
+            "get": {
+                "description": "Público. Con sesión iniciada se acota a la distribuidora del usuario (la del admin, o el header `X-Distributor` del super admin y del cliente); sin sesión, a `?distributor=` o a la distribuidora por defecto.",
+                "operationId": "GasCylinderController_findAll",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "maximum": 100,
+                            "default": 10,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 0,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 1,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "term",
+                        "required": false,
+                        "in": "query",
+                        "description": "Texto a buscar",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "distributor",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "example": "demo",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CatalogoDto"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Get all gas cylinders with pagination",
+                "tags": [
+                    "Gas Cylinders"
+                ]
+            }
+        },
+        "/api/gascylinder/{id}": {
+            "get": {
+                "operationId": "GasCylinderController_findOne",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Gas cylinder UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GasCylinderResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "404": {
+                        "description": "Gas cylinder not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Get gas cylinder by ID",
+                "tags": [
+                    "Gas Cylinders"
+                ]
+            },
+            "patch": {
+                "operationId": "GasCylinderController_update",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Gas cylinder UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateGasCylinderDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GasCylinderResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Datos inválidos (p. ej.: weight debe ser mayor que 0; price debe ser mayor que 0)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Update gas cylinder by ID",
+                "tags": [
+                    "Gas Cylinders"
+                ]
+            },
+            "delete": {
+                "operationId": "GasCylinderController_remove",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Gas cylinder UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BajaDeProductoDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Delete (deactivate) gas cylinder by ID",
+                "tags": [
+                    "Gas Cylinders"
+                ]
+            }
+        },
+        "/api/gascylinder/type/{type}": {
+            "get": {
+                "operationId": "GasCylinderController_findByType",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "required": true,
+                        "in": "path",
+                        "description": "Gas cylinder type (10kg, 15kg, etc)",
+                        "schema": {
+                            "example": "10kg",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GasCylinderResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "404": {
+                        "description": "No hay un producto activo de ese tipo"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Get gas cylinder by type",
+                "tags": [
+                    "Gas Cylinders"
+                ]
+            }
+        },
+        "/api/gascylinder/available/list": {
+            "get": {
+                "description": "Público. Con sesión iniciada se acota a la distribuidora del usuario; sin sesión, a `?distributor=` o a la distribuidora por defecto.",
+                "operationId": "GasCylinderController_getAvailableCylinders",
+                "parameters": [
+                    {
+                        "name": "distributor",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "example": "demo",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DisponiblesDto"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Get all available gas cylinders",
+                "tags": [
+                    "Gas Cylinders"
+                ]
+            }
+        },
+        "/api/gascylinder/{id}/photo": {
+            "put": {
+                "description": "Multipart, campo `file`: JPG, PNG o WEBP de hasta 5 MB (el tipo se valida por el contenido, no por el header). Si ya tenía foto, la anterior se borra del bucket. Aparece como `photoUrl` en el catálogo que ven las apps.",
+                "operationId": "GasCylinderController_uploadPhoto",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Gas cylinder UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "required": [
+                                    "file"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GasCylinderResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta la foto o está vacía"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    },
+                    "413": {
+                        "description": "La foto supera los 5 MB"
+                    },
+                    "415": {
+                        "description": "No es JPG, PNG ni WEBP (o el contenido no coincide)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Subir o reemplazar la imagen del producto",
+                "tags": [
+                    "Gas Cylinders"
+                ]
+            },
+            "delete": {
+                "description": "Quita la referencia (el objeto se borra del bucket en segundo plano); no da de baja el producto.",
+                "operationId": "GasCylinderController_removePhoto",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Gas cylinder UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GasCylinderResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Sacar la imagen del producto",
+                "tags": [
+                    "Gas Cylinders"
+                ]
+            },
+            "get": {
+                "description": "Por defecto redirige (302) a la URL firmada de S3. Con `?modo=url` devuelve `{ url, expiresAt, requiresAuth }` en JSON, sin redirect; si no tiene foto, `url: null`.",
+                "operationId": "GasCylinderController_getPhoto",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Gas cylinder UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "modo",
+                        "required": false,
+                        "in": "query",
+                        "description": "`url` devuelve `{ url, expiresAt, requiresAuth }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada de S3).",
+                        "schema": {
+                            "$ref": "#/components/schemas/DownloadMode"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PhotoLinkResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora; sin `modo`, también si no tiene foto"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ver la imagen del producto",
+                "tags": [
+                    "Gas Cylinders"
                 ]
             }
         },
@@ -6719,16 +7331,113 @@
                 ]
             }
         },
-        "/api/gascylinder": {
+        "/api/cart": {
+            "get": {
+                "description": "Total calculado sobre los precios vigentes del catálogo; cada ítem informa la diferencia con el precio guardado. Sin carrito, responde uno vacío. Un tipo dado de baja se marca `available: false` y no suma.",
+                "operationId": "CartController_consultar",
+                "parameters": [
+                    {
+                        "name": "X-Distributor",
+                        "in": "header",
+                        "description": "Slug o id de la distribuidora del carrito",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CartResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: customer"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Consultar el carrito (CU-125)",
+                "tags": [
+                    "Cart"
+                ]
+            },
+            "delete": {
+                "description": "Sin carrito no hace nada y responde uno vacío.",
+                "operationId": "CartController_vaciar",
+                "parameters": [
+                    {
+                        "name": "X-Distributor",
+                        "in": "header",
+                        "description": "Slug o id de la distribuidora del carrito",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CartResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: customer"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Vaciar el carrito (CU-126)",
+                "tags": [
+                    "Cart"
+                ]
+            }
+        },
+        "/api/cart/items": {
             "post": {
-                "operationId": "GasCylinderController_create",
-                "parameters": [],
+                "description": "Si el tipo de garrafa ya está en el carrito suma la cantidad. Guarda el precio vigente como referencia.",
+                "operationId": "CartController_agregar",
+                "parameters": [
+                    {
+                        "name": "X-Distributor",
+                        "in": "header",
+                        "description": "Slug o id de la distribuidora del carrito",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/CreateGasCylinderDto"
+                                "$ref": "#/components/schemas/AddCartItemDto"
                             }
                         }
                     }
@@ -6739,95 +7448,22 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/GasCylinderResponseDto"
+                                    "$ref": "#/components/schemas/CartResponseDto"
                                 }
                             }
                         }
                     },
                     "400": {
-                        "description": "Datos inválidos o tipo repetido"
+                        "description": "Cantidad inválida (no entera o no positiva) o que supera el máximo por ítem"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
                     "403": {
-                        "description": "Requiere rol: admin, super_admin"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
+                        "description": "Requiere rol: customer"
                     },
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Create a new gas cylinder type",
-                "tags": [
-                    "Gas Cylinders"
-                ]
-            },
-            "get": {
-                "description": "Público. Con sesión iniciada se acota a la distribuidora del usuario (la del admin, o el header `X-Distributor` del super admin y del cliente); sin sesión, a `?distributor=` o a la distribuidora por defecto.",
-                "operationId": "GasCylinderController_findAll",
-                "parameters": [
-                    {
-                        "name": "limit",
-                        "required": false,
-                        "in": "query",
-                        "schema": {
-                            "maximum": 100,
-                            "default": 10,
-                            "type": "number"
-                        }
-                    },
-                    {
-                        "name": "offset",
-                        "required": false,
-                        "in": "query",
-                        "schema": {
-                            "default": 0,
-                            "type": "number"
-                        }
-                    },
-                    {
-                        "name": "page",
-                        "required": false,
-                        "in": "query",
-                        "schema": {
-                            "default": 1,
-                            "type": "number"
-                        }
-                    },
-                    {
-                        "name": "term",
-                        "required": false,
-                        "in": "query",
-                        "description": "Texto a buscar",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "distributor",
-                        "required": false,
-                        "in": "query",
-                        "schema": {
-                            "example": "demo",
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/CatalogoDto"
-                                }
-                            }
-                        }
+                    "404": {
+                        "description": "El tipo de garrafa no existe, está dado de baja o es de otra distribuidora"
                     }
                 },
                 "security": [
@@ -6835,63 +7471,31 @@
                         "bearer": []
                     }
                 ],
-                "summary": "Get all gas cylinders with pagination",
+                "summary": "Agregar un ítem al carrito (CU-122)",
                 "tags": [
-                    "Gas Cylinders"
+                    "Cart"
                 ]
             }
         },
-        "/api/gascylinder/{id}": {
-            "get": {
-                "operationId": "GasCylinderController_findOne",
+        "/api/cart/items/{itemId}": {
+            "patch": {
+                "operationId": "CartController_cambiarCantidad",
                 "parameters": [
                     {
-                        "name": "id",
+                        "name": "X-Distributor",
+                        "in": "header",
+                        "description": "Slug o id de la distribuidora del carrito",
                         "required": true,
-                        "in": "path",
-                        "description": "Gas cylinder UUID",
                         "schema": {
                             "type": "string"
                         }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/GasCylinderResponseDto"
-                                }
-                            }
-                        }
                     },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "404": {
-                        "description": "Gas cylinder not found"
-                    }
-                },
-                "security": [
                     {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Get gas cylinder by ID",
-                "tags": [
-                    "Gas Cylinders"
-                ]
-            },
-            "patch": {
-                "operationId": "GasCylinderController_update",
-                "parameters": [
-                    {
-                        "name": "id",
+                        "name": "itemId",
                         "required": true,
                         "in": "path",
-                        "description": "Gas cylinder UUID",
                         "schema": {
+                            "format": "uuid",
                             "type": "string"
                         }
                     }
@@ -6901,7 +7505,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/UpdateGasCylinderDto"
+                                "$ref": "#/components/schemas/UpdateCartItemDto"
                             }
                         }
                     }
@@ -6912,46 +7516,52 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/GasCylinderResponseDto"
+                                    "$ref": "#/components/schemas/CartResponseDto"
                                 }
                             }
                         }
                     },
                     "400": {
-                        "description": "Datos inválidos (p. ej.: weight debe ser mayor que 0; price debe ser mayor que 0)"
+                        "description": "Cantidad cero, negativa o no entera: para dejarlo en cero hay que quitar el ítem"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
                     "403": {
-                        "description": "Requiere rol: admin, super_admin"
+                        "description": "Requiere rol: customer"
                     },
                     "404": {
-                        "description": "No existe o es de otra distribuidora"
+                        "description": "El ítem no está en el carrito del cliente"
                     }
                 },
                 "security": [
                     {
                         "bearer": []
-                    },
-                    {
-                        "bearer": []
                     }
                 ],
-                "summary": "Update gas cylinder by ID",
+                "summary": "Modificar la cantidad de un ítem (CU-123)",
                 "tags": [
-                    "Gas Cylinders"
+                    "Cart"
                 ]
             },
             "delete": {
-                "operationId": "GasCylinderController_remove",
+                "operationId": "CartController_quitar",
                 "parameters": [
                     {
-                        "name": "id",
+                        "name": "X-Distributor",
+                        "in": "header",
+                        "description": "Slug o id de la distribuidora del carrito",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "itemId",
                         "required": true,
                         "in": "path",
-                        "description": "Gas cylinder UUID",
                         "schema": {
+                            "format": "uuid",
                             "type": "string"
                         }
                     }
@@ -6962,7 +7572,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/BajaDeProductoDto"
+                                    "$ref": "#/components/schemas/CartResponseDto"
                                 }
                             }
                         }
@@ -6971,57 +7581,10 @@
                         "description": "Sin token o token inválido"
                     },
                     "403": {
-                        "description": "Requiere rol: admin, super_admin"
+                        "description": "Requiere rol: customer"
                     },
                     "404": {
-                        "description": "No existe o es de otra distribuidora"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    },
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Delete (deactivate) gas cylinder by ID",
-                "tags": [
-                    "Gas Cylinders"
-                ]
-            }
-        },
-        "/api/gascylinder/type/{type}": {
-            "get": {
-                "operationId": "GasCylinderController_findByType",
-                "parameters": [
-                    {
-                        "name": "type",
-                        "required": true,
-                        "in": "path",
-                        "description": "Gas cylinder type (10kg, 15kg, etc)",
-                        "schema": {
-                            "example": "10kg",
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/GasCylinderResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "404": {
-                        "description": "No hay un producto activo de ese tipo"
+                        "description": "El ítem no está en el carrito del cliente"
                     }
                 },
                 "security": [
@@ -7029,221 +7592,9 @@
                         "bearer": []
                     }
                 ],
-                "summary": "Get gas cylinder by type",
+                "summary": "Quitar un ítem del carrito (CU-124)",
                 "tags": [
-                    "Gas Cylinders"
-                ]
-            }
-        },
-        "/api/gascylinder/available/list": {
-            "get": {
-                "description": "Público. Con sesión iniciada se acota a la distribuidora del usuario; sin sesión, a `?distributor=` o a la distribuidora por defecto.",
-                "operationId": "GasCylinderController_getAvailableCylinders",
-                "parameters": [
-                    {
-                        "name": "distributor",
-                        "required": false,
-                        "in": "query",
-                        "schema": {
-                            "example": "demo",
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/DisponiblesDto"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Get all available gas cylinders",
-                "tags": [
-                    "Gas Cylinders"
-                ]
-            }
-        },
-        "/api/gascylinder/{id}/photo": {
-            "put": {
-                "description": "Multipart, campo `file`: JPG, PNG o WEBP de hasta 5 MB (el tipo se valida por el contenido, no por el header). Si ya tenía foto, la anterior se borra del bucket. Aparece como `photoUrl` en el catálogo que ven las apps.",
-                "operationId": "GasCylinderController_uploadPhoto",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "required": true,
-                        "in": "path",
-                        "description": "Gas cylinder UUID",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "multipart/form-data": {
-                            "schema": {
-                                "type": "object",
-                                "properties": {
-                                    "file": {
-                                        "type": "string",
-                                        "format": "binary"
-                                    }
-                                },
-                                "required": [
-                                    "file"
-                                ]
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/GasCylinderResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Falta la foto o está vacía"
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: admin, super_admin"
-                    },
-                    "404": {
-                        "description": "No existe o es de otra distribuidora"
-                    },
-                    "413": {
-                        "description": "La foto supera los 5 MB"
-                    },
-                    "415": {
-                        "description": "No es JPG, PNG ni WEBP (o el contenido no coincide)"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    },
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Subir o reemplazar la imagen del producto",
-                "tags": [
-                    "Gas Cylinders"
-                ]
-            },
-            "delete": {
-                "description": "Quita la referencia (el objeto se borra del bucket en segundo plano); no da de baja el producto.",
-                "operationId": "GasCylinderController_removePhoto",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "required": true,
-                        "in": "path",
-                        "description": "Gas cylinder UUID",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/GasCylinderResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: admin, super_admin"
-                    },
-                    "404": {
-                        "description": "No existe o es de otra distribuidora"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    },
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Sacar la imagen del producto",
-                "tags": [
-                    "Gas Cylinders"
-                ]
-            },
-            "get": {
-                "description": "Por defecto redirige (302) a la URL firmada de S3. Con `?modo=url` devuelve `{ url, expiresAt, requiresAuth }` en JSON, sin redirect; si no tiene foto, `url: null`.",
-                "operationId": "GasCylinderController_getPhoto",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "required": true,
-                        "in": "path",
-                        "description": "Gas cylinder UUID",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "modo",
-                        "required": false,
-                        "in": "query",
-                        "description": "`url` devuelve `{ url, expiresAt, requiresAuth }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada de S3).",
-                        "schema": {
-                            "$ref": "#/components/schemas/DownloadMode"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/PhotoLinkResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "No existe o es de otra distribuidora; sin `modo`, también si no tiene foto"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Ver la imagen del producto",
-                "tags": [
-                    "Gas Cylinders"
+                    "Cart"
                 ]
             }
         },
@@ -8391,6 +8742,129 @@
                 ]
             }
         },
+        "/api/cylinders/vigencia/proximos-a-vencer": {
+            "get": {
+                "description": "Separa los ya vencidos, los que vencen dentro de la ventana de `days` días (default 30) y los sin revisión registrada, que no tienen fecha con la cual comparar. Cada grupo va ordenado por vencimiento, del más urgente al menos, y se pagina por separado con `limit` (default 100, máx. 500) y `offset`; `totals` trae el total de cada grupo. No incluye envases dados de baja.",
+                "operationId": "CylinderController_expiring",
+                "parameters": [
+                    {
+                        "name": "days",
+                        "required": false,
+                        "in": "query",
+                        "description": "Ventana en días: los que vencen de hoy a hoy + `days`.",
+                        "schema": {
+                            "minimum": 1,
+                            "maximum": 365,
+                            "default": 30,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "description": "Tamaño de página de cada grupo.",
+                        "schema": {
+                            "maximum": 500,
+                            "default": 100,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 0,
+                            "type": "number"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ExpiringCylindersResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "`days` o la paginación fuera de rango"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Envases próximos a vencer (CU-134)",
+                "tags": [
+                    "Cylinders"
+                ]
+            }
+        },
+        "/api/cylinders/vigencia/serial/{serial}": {
+            "get": {
+                "description": "Lo que se escanea: el serial grabado en el envase. El serial es único por distribuidora, así que el super admin tiene que elegir una con `X-Distributor` (400 si no).",
+                "operationId": "CylinderController_vigenciaBySerial",
+                "parameters": [
+                    {
+                        "name": "serial",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "example": "SN-000123",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CylinderVigenciaResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Envase no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Vigencia de un envase por número de serie (CU-133)",
+                "tags": [
+                    "Cylinders"
+                ]
+            }
+        },
         "/api/cylinders/{id}": {
             "get": {
                 "operationId": "CylinderController_findOne",
@@ -8499,6 +8973,122 @@
                     }
                 ],
                 "summary": "Editar datos maestros del envase (no el estado)",
+                "tags": [
+                    "Cylinders"
+                ]
+            }
+        },
+        "/api/cylinders/{id}/vigencia": {
+            "get": {
+                "description": "Fabricación, última revisión, vencimiento, días que faltan e historial de revisiones. `status`: `valid`, `expired` o `unverified` (sin revisión registrada: no es lo mismo que vencido y no bloquea el despacho).",
+                "operationId": "CylinderController_getVigencia",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Cylinder UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CylinderVigenciaResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Envase no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Vigencia de un envase (CU-133)",
+                "tags": [
+                    "Cylinders"
+                ]
+            }
+        },
+        "/api/cylinders/{id}/inspections": {
+            "post": {
+                "description": "Guarda la revisión en el historial y copia la última fecha y el vencimiento en la ficha. Un resultado `rejected` deja el vencimiento en la fecha de la revisión: el envase queda alcanzado por el bloqueo del despacho. Si está en poder de un cliente o en reparto no se lo saca de circulación: `withdrawalPending` lo marca para retirar.",
+                "operationId": "CylinderController_registerInspection",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Cylinder UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RegisterInspectionDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CylinderVigenciaResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Fecha de revisión futura, vencimiento faltante o no posterior a la revisión"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Envase no encontrado"
+                    },
+                    "409": {
+                        "description": "El envase está dado de baja"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Registrar la revisión periódica de un envase (CU-132)",
                 "tags": [
                     "Cylinders"
                 ]
@@ -16550,245 +17140,6 @@
                     "Compras · Recepciones"
                 ]
             }
-        },
-        "/api/cylinders/vigencia/proximos-a-vencer": {
-            "get": {
-                "description": "Separa los ya vencidos, los que vencen dentro de la ventana de `days` días (default 30) y los sin revisión registrada, que no tienen fecha con la cual comparar. Cada grupo va ordenado por vencimiento, del más urgente al menos, y se pagina por separado con `limit` (default 100, máx. 500) y `offset`; `totals` trae el total de cada grupo. No incluye envases dados de baja.",
-                "operationId": "CylinderController_expiring",
-                "parameters": [
-                    {
-                        "name": "days",
-                        "required": false,
-                        "in": "query",
-                        "description": "Ventana en días: los que vencen de hoy a hoy + `days`.",
-                        "schema": {
-                            "minimum": 1,
-                            "maximum": 365,
-                            "default": 30,
-                            "type": "number"
-                        }
-                    },
-                    {
-                        "name": "limit",
-                        "required": false,
-                        "in": "query",
-                        "description": "Tamaño de página de cada grupo.",
-                        "schema": {
-                            "maximum": 500,
-                            "default": 100,
-                            "type": "number"
-                        }
-                    },
-                    {
-                        "name": "offset",
-                        "required": false,
-                        "in": "query",
-                        "schema": {
-                            "default": 0,
-                            "type": "number"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ExpiringCylindersResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "`days` o la paginación fuera de rango"
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: admin, super_admin"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    },
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Envases próximos a vencer (CU-134)",
-                "tags": [
-                    "Cylinders"
-                ]
-            }
-        },
-        "/api/cylinders/vigencia/serial/{serial}": {
-            "get": {
-                "description": "Lo que se escanea: el serial grabado en el envase. El serial es único por distribuidora, así que el super admin tiene que elegir una con `X-Distributor` (400 si no).",
-                "operationId": "CylinderController_vigenciaBySerial",
-                "parameters": [
-                    {
-                        "name": "serial",
-                        "required": true,
-                        "in": "path",
-                        "schema": {
-                            "example": "SN-000123",
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/CylinderVigenciaResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: admin, super_admin"
-                    },
-                    "404": {
-                        "description": "Envase no encontrado"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    },
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Vigencia de un envase por número de serie (CU-133)",
-                "tags": [
-                    "Cylinders"
-                ]
-            }
-        },
-        "/api/cylinders/{id}/vigencia": {
-            "get": {
-                "description": "Fabricación, última revisión, vencimiento, días que faltan e historial de revisiones. `status`: `valid`, `expired` o `unverified` (sin revisión registrada: no es lo mismo que vencido y no bloquea el despacho).",
-                "operationId": "CylinderController_getVigencia",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "required": true,
-                        "in": "path",
-                        "description": "Cylinder UUID",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/CylinderVigenciaResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: admin, super_admin"
-                    },
-                    "404": {
-                        "description": "Envase no encontrado"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    },
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Vigencia de un envase (CU-133)",
-                "tags": [
-                    "Cylinders"
-                ]
-            }
-        },
-        "/api/cylinders/{id}/inspections": {
-            "post": {
-                "description": "Guarda la revisión en el historial y copia la última fecha y el vencimiento en la ficha. Un resultado `rejected` deja el vencimiento en la fecha de la revisión: el envase queda alcanzado por el bloqueo del despacho. Si está en poder de un cliente o en reparto no se lo saca de circulación: `withdrawalPending` lo marca para retirar.",
-                "operationId": "CylinderController_registerInspection",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "required": true,
-                        "in": "path",
-                        "description": "Cylinder UUID",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/RegisterInspectionDto"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "201": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/CylinderVigenciaResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Fecha de revisión futura, vencimiento faltante o no posterior a la revisión"
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: admin, super_admin"
-                    },
-                    "404": {
-                        "description": "Envase no encontrado"
-                    },
-                    "409": {
-                        "description": "El envase está dado de baja"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    },
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Registrar la revisión periódica de un envase (CU-132)",
-                "tags": [
-                    "Cylinders"
-                ]
-            }
         }
     },
     "info": {
@@ -16955,6 +17306,30 @@
                         "format": "date-time",
                         "nullable": true
                     },
+                    "avgMonthlyConsumptionKg": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": 20,
+                        "description": "Consumo promedio declarado por el cliente, en kg por mes"
+                    },
+                    "declaredCylinderTypeId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true,
+                        "description": "Id del tipo de garrafa habitual que declaró el cliente"
+                    },
+                    "declaredCylinderType": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "10kg",
+                        "description": "Tipo de garrafa habitual que declaró el cliente"
+                    },
+                    "nextRepurchaseEstimateAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "Fecha estimada de su próxima recompra"
+                    },
                     "user": {
                         "$ref": "#/components/schemas/UserResponseDto"
                     }
@@ -16964,7 +17339,11 @@
                     "user_id",
                     "lat_lang",
                     "createdAt",
-                    "deletedAt"
+                    "deletedAt",
+                    "avgMonthlyConsumptionKg",
+                    "declaredCylinderTypeId",
+                    "declaredCylinderType",
+                    "nextRepurchaseEstimateAt"
                 ]
             },
             "UserResponseDto": {
@@ -17517,6 +17896,30 @@
                     }
                 }
             },
+            "DeclareConsumptionDto": {
+                "type": "object",
+                "properties": {
+                    "cylinderTypeId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Tipo de garrafa habitual (del catálogo de una distribuidora)"
+                    },
+                    "quantityPerMonth": {
+                        "type": "number",
+                        "example": 2,
+                        "description": "Garrafas de ese tipo que consume por mes (admite decimales)"
+                    },
+                    "confirmOutOfRange": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "true para aceptar un consumo fuera del rango razonable (5 a 500 kg por mes) después de que el sistema pidió confirmación"
+                    }
+                },
+                "required": [
+                    "cylinderTypeId",
+                    "quantityPerMonth"
+                ]
+            },
             "RegistrarClienteDto": {
                 "type": "object",
                 "properties": {
@@ -17544,6 +17947,14 @@
                     "notification_token": {
                         "type": "string",
                         "description": "Token FCM del dispositivo"
+                    },
+                    "consumption": {
+                        "description": "Cliente: consumo promedio mensual (CU-143). Si se omite, el registro sigue igual y el dato queda vacío",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/DeclareConsumptionDto"
+                            }
+                        ]
                     }
                 },
                 "required": [
@@ -17626,6 +18037,14 @@
                     "notification_token": {
                         "type": "string",
                         "description": "Token FCM del dispositivo"
+                    },
+                    "consumption": {
+                        "description": "Cliente: consumo promedio mensual (CU-143). Si se omite, el registro sigue igual y el dato queda vacío",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/DeclareConsumptionDto"
+                            }
+                        ]
                     },
                     "rol": {
                         "type": "string",
@@ -19034,6 +19453,301 @@
                     "requiresAuth"
                 ]
             },
+            "ConsumptionResponseDto": {
+                "type": "object",
+                "properties": {
+                    "cylinderTypeId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true,
+                        "description": "Tipo de garrafa habitual; null si el cliente no declaró"
+                    },
+                    "cylinderType": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "10kg"
+                    },
+                    "avgMonthlyConsumptionKg": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": 20,
+                        "description": "Consumo declarado en kilos por mes; null si no declaró"
+                    },
+                    "nextRepurchaseEstimateAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "Fecha estimada de la próxima recompra"
+                    }
+                },
+                "required": [
+                    "cylinderTypeId",
+                    "cylinderType",
+                    "avgMonthlyConsumptionKg",
+                    "nextRepurchaseEstimateAt"
+                ]
+            },
+            "UpdateConsumptionDto": {
+                "type": "object",
+                "properties": {
+                    "confirmOutOfRange": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "true para aceptar un consumo fuera del rango razonable (5 a 500 kg por mes) después de que el sistema pidió confirmación"
+                    },
+                    "cylinderTypeId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Tipo de garrafa habitual. Obligatorio si el cliente nunca declaró uno"
+                    },
+                    "quantityPerMonth": {
+                        "type": "number",
+                        "example": 2,
+                        "description": "Garrafas de ese tipo por mes (0,01 a 1000, hasta 2 decimales). Si se omite, se manda `cylinderTypeId` y se mantiene el consumo en kg por mes"
+                    }
+                }
+            },
+            "PromocionDto": {
+                "type": "object",
+                "properties": {
+                    "quantity": {
+                        "type": "number",
+                        "description": "Unidades desde las que aplica",
+                        "example": 3
+                    },
+                    "discountPercentage": {
+                        "type": "number",
+                        "description": "Descuento, en porcentaje",
+                        "example": 10
+                    }
+                },
+                "required": [
+                    "quantity",
+                    "discountPercentage"
+                ]
+            },
+            "CreateGasCylinderDto": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "description": "Tipo de garrafa (10, 15, 45 kg)"
+                    },
+                    "weight": {
+                        "type": "number",
+                        "description": "Peso en kg"
+                    },
+                    "price": {
+                        "type": "number",
+                        "description": "Precio unitario"
+                    },
+                    "stock": {
+                        "type": "number",
+                        "description": "Stock vendible inicial: se registra como físico del depósito predeterminado. En la edición (PATCH /gascylinder/{id}) no se admite: responde 400; el stock cambia con PATCH /gascylinder/{id}/stock."
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Descripción"
+                    },
+                    "promotions": {
+                        "description": "Promociones por cantidad (ej: 3 unidades 10% off)",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PromocionDto"
+                        }
+                    }
+                },
+                "required": [
+                    "type",
+                    "weight",
+                    "price"
+                ]
+            },
+            "GasCylinderResponseDto": {
+                "type": "object",
+                "properties": {
+                    "gas_cylinder_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "distributor_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "type": {
+                        "type": "string",
+                        "example": "10kg"
+                    },
+                    "weight": {
+                        "type": "number"
+                    },
+                    "price": {
+                        "type": "number"
+                    },
+                    "stock": {
+                        "type": "number"
+                    },
+                    "description": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "isActive": {
+                        "type": "boolean"
+                    },
+                    "photoUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "URL firmada de la imagen del producto (se abre sin token, vence); `null` si no tiene."
+                    },
+                    "promotions": {
+                        "nullable": true,
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PromocionDto"
+                        }
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "gas_cylinder_id",
+                    "distributor_id",
+                    "type",
+                    "weight",
+                    "price",
+                    "stock",
+                    "description",
+                    "isActive",
+                    "photoUrl",
+                    "promotions",
+                    "createdAt",
+                    "updatedAt"
+                ]
+            },
+            "CatalogoDto": {
+                "type": "object",
+                "properties": {
+                    "gasCylinders": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/GasCylinderResponseDto"
+                        }
+                    },
+                    "total": {
+                        "type": "number"
+                    },
+                    "limit": {
+                        "type": "number"
+                    },
+                    "offset": {
+                        "type": "number"
+                    }
+                },
+                "required": [
+                    "gasCylinders",
+                    "total",
+                    "limit",
+                    "offset"
+                ]
+            },
+            "MedioDePagoDto": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "example": "Efectivo"
+                    },
+                    "key": {
+                        "type": "string",
+                        "example": "CASH"
+                    },
+                    "surcharge": {
+                        "type": "number",
+                        "example": 0
+                    }
+                },
+                "required": [
+                    "name",
+                    "key",
+                    "surcharge"
+                ]
+            },
+            "DisponiblesDto": {
+                "type": "object",
+                "properties": {
+                    "products": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/GasCylinderResponseDto"
+                        }
+                    },
+                    "paymentMethods": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/MedioDePagoDto"
+                        }
+                    }
+                },
+                "required": [
+                    "products",
+                    "paymentMethods"
+                ]
+            },
+            "UpdateGasCylinderDto": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "description": "Tipo de garrafa (10, 15, 45 kg)"
+                    },
+                    "weight": {
+                        "type": "number",
+                        "description": "Peso en kg"
+                    },
+                    "price": {
+                        "type": "number",
+                        "description": "Precio unitario"
+                    },
+                    "stock": {
+                        "type": "number",
+                        "description": "Stock vendible inicial: se registra como físico del depósito predeterminado. En la edición (PATCH /gascylinder/{id}) no se admite: responde 400; el stock cambia con PATCH /gascylinder/{id}/stock."
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Descripción"
+                    },
+                    "promotions": {
+                        "description": "Promociones por cantidad (ej: 3 unidades 10% off)",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PromocionDto"
+                        }
+                    }
+                }
+            },
+            "BajaDeProductoDto": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "example": "Gas cylinder deactivated successfully"
+                    },
+                    "gasCylinderId": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                },
+                "required": [
+                    "message",
+                    "gasCylinderId"
+                ]
+            },
             "TokenValidoResponseDto": {
                 "type": "object",
                 "properties": {
@@ -19172,11 +19886,15 @@
                         "description": "ID de la dirección de entrega"
                     },
                     "items": {
-                        "description": "Ítems del pedido",
+                        "description": "Ítems del pedido. Obligatorio salvo con `fromCart: true`, que los toma del carrito (con ambos, 400)",
                         "type": "array",
                         "items": {
                             "$ref": "#/components/schemas/OrderItemDto"
                         }
+                    },
+                    "fromCart": {
+                        "type": "boolean",
+                        "description": "Checkout del carrito (CU-126): los ítems salen del carrito del cliente en la distribuidora del header `X-Distributor`, se cobra el precio vigente del catálogo y el carrito se vacía en la misma transacción que el pedido. Sin `items` en el cuerpo. Sólo el cliente; carrito vacío o con productos dados de baja es 400."
                     },
                     "paymentMethod": {
                         "type": "string",
@@ -19217,7 +19935,6 @@
                 "required": [
                     "customerId",
                     "addressId",
-                    "items",
                     "paymentMethod"
                 ]
             },
@@ -19759,13 +20476,6 @@
             "QuoteOrderDto": {
                 "type": "object",
                 "properties": {
-                    "items": {
-                        "description": "Ítems del pedido",
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/OrderItemDto"
-                        }
-                    },
                     "paymentMethod": {
                         "type": "string",
                         "description": "Método de pago",
@@ -19783,6 +20493,17 @@
                     "addressId": {
                         "type": "string",
                         "description": "ID de la dirección de entrega"
+                    },
+                    "items": {
+                        "description": "Ítems del pedido. Obligatorio salvo con `fromCart: true`, que los toma del carrito (con ambos, 400)",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/OrderItemDto"
+                        }
+                    },
+                    "fromCart": {
+                        "type": "boolean",
+                        "description": "Checkout del carrito (CU-126): los ítems salen del carrito del cliente en la distribuidora del header `X-Distributor`, se cobra el precio vigente del catálogo y el carrito se vacía en la misma transacción que el pedido. Sin `items` en el cuerpo. Sólo el cliente; carrito vacío o con productos dados de baja es 400."
                     },
                     "notes": {
                         "type": "string",
@@ -19816,7 +20537,6 @@
                     }
                 },
                 "required": [
-                    "items",
                     "paymentMethod"
                 ]
             },
@@ -20859,70 +21579,14 @@
                     "sales"
                 ]
             },
-            "PromocionDto": {
+            "CartItemResponseDto": {
                 "type": "object",
                 "properties": {
-                    "quantity": {
-                        "type": "number",
-                        "description": "Unidades desde las que aplica",
-                        "example": 3
-                    },
-                    "discountPercentage": {
-                        "type": "number",
-                        "description": "Descuento, en porcentaje",
-                        "example": 10
-                    }
-                },
-                "required": [
-                    "quantity",
-                    "discountPercentage"
-                ]
-            },
-            "CreateGasCylinderDto": {
-                "type": "object",
-                "properties": {
-                    "type": {
-                        "type": "string",
-                        "description": "Tipo de garrafa (10, 15, 45 kg)"
-                    },
-                    "weight": {
-                        "type": "number",
-                        "description": "Peso en kg"
-                    },
-                    "price": {
-                        "type": "number",
-                        "description": "Precio unitario"
-                    },
-                    "stock": {
-                        "type": "number",
-                        "description": "Stock vendible inicial: se registra como físico del depósito predeterminado. En la edición (PATCH /gascylinder/{id}) no se admite: responde 400; el stock cambia con PATCH /gascylinder/{id}/stock."
-                    },
-                    "description": {
-                        "type": "string",
-                        "description": "Descripción"
-                    },
-                    "promotions": {
-                        "description": "Promociones por cantidad (ej: 3 unidades 10% off)",
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/PromocionDto"
-                        }
-                    }
-                },
-                "required": [
-                    "type",
-                    "weight",
-                    "price"
-                ]
-            },
-            "GasCylinderResponseDto": {
-                "type": "object",
-                "properties": {
-                    "gas_cylinder_id": {
+                    "cartItemId": {
                         "type": "string",
                         "format": "uuid"
                     },
-                    "distributor_id": {
+                    "gasCylinderId": {
                         "type": "string",
                         "format": "uuid"
                     },
@@ -20930,174 +21594,139 @@
                         "type": "string",
                         "example": "10kg"
                     },
-                    "weight": {
-                        "type": "number"
+                    "quantity": {
+                        "type": "number",
+                        "example": 2
                     },
-                    "price": {
-                        "type": "number"
+                    "savedUnitPrice": {
+                        "type": "number",
+                        "example": 1000,
+                        "description": "Precio que vio el cliente al agregar el ítem"
                     },
-                    "stock": {
-                        "type": "number"
+                    "currentUnitPrice": {
+                        "type": "number",
+                        "example": 1100,
+                        "description": "Precio vigente del catálogo"
                     },
-                    "description": {
+                    "priceDifference": {
+                        "type": "number",
+                        "example": 100,
+                        "description": "Vigente menos guardado: positivo si subió, negativo si bajó, 0 si no cambió"
+                    },
+                    "subtotal": {
+                        "type": "number",
+                        "example": 2200,
+                        "description": "Cantidad por precio vigente. 0 si el tipo ya no está disponible"
+                    },
+                    "available": {
+                        "type": "boolean",
+                        "description": "false si el tipo de garrafa se dio de baja después de agregarlo: se muestra pero no suma al total"
+                    },
+                    "hasEnoughStock": {
+                        "type": "boolean",
+                        "description": "false si el stock vendible no alcanza para la cantidad. El carrito no reserva stock: se controla al crear el pedido"
+                    }
+                },
+                "required": [
+                    "cartItemId",
+                    "gasCylinderId",
+                    "type",
+                    "quantity",
+                    "savedUnitPrice",
+                    "currentUnitPrice",
+                    "priceDifference",
+                    "subtotal",
+                    "available",
+                    "hasEnoughStock"
+                ]
+            },
+            "CartResponseDto": {
+                "type": "object",
+                "properties": {
+                    "cartId": {
                         "type": "string",
-                        "nullable": true
+                        "format": "uuid",
+                        "nullable": true,
+                        "description": "null si el cliente todavía no tiene carrito (se ve vacío)"
                     },
-                    "isActive": {
-                        "type": "boolean"
-                    },
-                    "photoUrl": {
+                    "distributorId": {
                         "type": "string",
-                        "nullable": true,
-                        "description": "URL firmada de la imagen del producto (se abre sin token, vence); `null` si no tiene."
+                        "format": "uuid"
                     },
-                    "promotions": {
-                        "nullable": true,
+                    "items": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/PromocionDto"
+                            "$ref": "#/components/schemas/CartItemResponseDto"
                         }
                     },
-                    "createdAt": {
-                        "type": "string",
-                        "format": "date-time"
+                    "totalUnits": {
+                        "type": "number",
+                        "description": "Unidades de los ítems disponibles"
+                    },
+                    "total": {
+                        "type": "number",
+                        "example": 2200,
+                        "description": "Suma de los subtotales sobre los precios vigentes"
+                    },
+                    "hasPriceChanges": {
+                        "type": "boolean",
+                        "description": "Algún ítem tiene un precio distinto al guardado"
+                    },
+                    "hasUnavailableItems": {
+                        "type": "boolean",
+                        "description": "Algún ítem ya no está disponible"
                     },
                     "updatedAt": {
                         "type": "string",
-                        "format": "date-time"
+                        "format": "date-time",
+                        "nullable": true
                     }
                 },
                 "required": [
-                    "gas_cylinder_id",
-                    "distributor_id",
-                    "type",
-                    "weight",
-                    "price",
-                    "stock",
-                    "description",
-                    "isActive",
-                    "photoUrl",
-                    "promotions",
-                    "createdAt",
+                    "cartId",
+                    "distributorId",
+                    "items",
+                    "totalUnits",
+                    "total",
+                    "hasPriceChanges",
+                    "hasUnavailableItems",
                     "updatedAt"
                 ]
             },
-            "CatalogoDto": {
+            "AddCartItemDto": {
                 "type": "object",
                 "properties": {
-                    "gasCylinders": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/GasCylinderResponseDto"
-                        }
-                    },
-                    "total": {
-                        "type": "number"
-                    },
-                    "limit": {
-                        "type": "number"
-                    },
-                    "offset": {
-                        "type": "number"
-                    }
-                },
-                "required": [
-                    "gasCylinders",
-                    "total",
-                    "limit",
-                    "offset"
-                ]
-            },
-            "MedioDePagoDto": {
-                "type": "object",
-                "properties": {
-                    "name": {
-                        "type": "string",
-                        "example": "Efectivo"
-                    },
-                    "key": {
-                        "type": "string",
-                        "example": "CASH"
-                    },
-                    "surcharge": {
-                        "type": "number",
-                        "example": 0
-                    }
-                },
-                "required": [
-                    "name",
-                    "key",
-                    "surcharge"
-                ]
-            },
-            "DisponiblesDto": {
-                "type": "object",
-                "properties": {
-                    "products": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/GasCylinderResponseDto"
-                        }
-                    },
-                    "paymentMethods": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/MedioDePagoDto"
-                        }
-                    }
-                },
-                "required": [
-                    "products",
-                    "paymentMethods"
-                ]
-            },
-            "UpdateGasCylinderDto": {
-                "type": "object",
-                "properties": {
-                    "type": {
-                        "type": "string",
-                        "description": "Tipo de garrafa (10, 15, 45 kg)"
-                    },
-                    "weight": {
-                        "type": "number",
-                        "description": "Peso en kg"
-                    },
-                    "price": {
-                        "type": "number",
-                        "description": "Precio unitario"
-                    },
-                    "stock": {
-                        "type": "number",
-                        "description": "Stock vendible inicial: se registra como físico del depósito predeterminado. En la edición (PATCH /gascylinder/{id}) no se admite: responde 400; el stock cambia con PATCH /gascylinder/{id}/stock."
-                    },
-                    "description": {
-                        "type": "string",
-                        "description": "Descripción"
-                    },
-                    "promotions": {
-                        "description": "Promociones por cantidad (ej: 3 unidades 10% off)",
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/PromocionDto"
-                        }
-                    }
-                }
-            },
-            "BajaDeProductoDto": {
-                "type": "object",
-                "properties": {
-                    "message": {
-                        "type": "string",
-                        "example": "Gas cylinder deactivated successfully"
-                    },
                     "gasCylinderId": {
                         "type": "string",
-                        "format": "uuid"
+                        "format": "uuid",
+                        "description": "Tipo de garrafa del catálogo de la distribuidora"
+                    },
+                    "quantity": {
+                        "type": "number",
+                        "example": 2,
+                        "minimum": 1,
+                        "maximum": 999,
+                        "description": "Entero positivo. Si el tipo ya está en el carrito, se suma a lo que tenía"
                     }
                 },
                 "required": [
-                    "message",
-                    "gasCylinderId"
+                    "gasCylinderId",
+                    "quantity"
+                ]
+            },
+            "UpdateCartItemDto": {
+                "type": "object",
+                "properties": {
+                    "quantity": {
+                        "type": "number",
+                        "example": 3,
+                        "minimum": 1,
+                        "maximum": 999,
+                        "description": "Cantidad nueva (reemplaza a la anterior). Para dejarlo en cero hay que quitar el ítem"
+                    }
+                },
+                "required": [
+                    "quantity"
                 ]
             },
             "CreateUserAddressDto": {

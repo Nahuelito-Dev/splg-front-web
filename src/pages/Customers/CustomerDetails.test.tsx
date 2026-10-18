@@ -74,6 +74,9 @@ vi.mock('../../services/queries/userAddresses', () => ({
   useUserAddresses: () => ({ data: [{ address_id: 'a-1' }, { address_id: 'a-2' }], isPending: false }),
   useDefaultUserAddress: () => ({ data: undefined, isPending: false, error: null }),
 }));
+vi.mock('../../services/queries/gasCylinders', () => ({
+  useGasCylinderTypes: () => ({ data: { rows: [], total: 0 }, isPending: false }),
+}));
 vi.mock('../../services/queries/claims', () => {
   const mutation = { mutate: vi.fn(), isPending: false };
   return {
