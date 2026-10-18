@@ -41,6 +41,9 @@ vi.mock('../../hooks', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   usePermissions: () => ({ canManageCustomerAccounts: true, canOperate: true, operateHint: undefined }),
 }));
+vi.mock('../../services/queries/finance', () => ({
+  useCustomerAccountOf: () => ({ data: undefined, isPending: true }),
+}));
 vi.mock('../../services/queries/photos', () => ({
   useUploadPhoto: () => ({ mutate: vi.fn(), isPending: false }),
   useRemovePhoto: () => ({ mutate: vi.fn(), isPending: false }),

@@ -79,6 +79,28 @@ const Transfers = lazyPage(() => import('../pages/Stock/Transfers'), 'Transfers'
 const Movements = lazyPage(() => import('../pages/Stock/Movements'), 'Movements');
 const Thresholds = lazyPage(() => import('../pages/Stock/Thresholds'), 'Thresholds');
 const Reconciliation = lazyPage(() => import('../pages/Stock/Reconciliation'), 'Reconciliation');
+const FinanceDashboard = lazyPage(() => import('../pages/Finance/FinanceDashboard'), 'FinanceDashboard');
+const CashBoxes = lazyPage(() => import('../pages/Finance/CashBoxes'), 'CashBoxes');
+const CashMovements = lazyPage(() => import('../pages/Finance/CashMovements'), 'CashMovements');
+const CashCategories = lazyPage(() => import('../pages/Finance/CashCategories'), 'CashCategories');
+const DriverSettlements = lazyPage(() => import('../pages/Finance/DriverSettlements'), 'DriverSettlements');
+const DriverSettlementDetails = lazyPage(
+  () => import('../pages/Finance/DriverSettlementDetails'),
+  'DriverSettlementDetails',
+);
+const CustomerAccounts = lazyPage(() => import('../pages/Finance/CustomerAccounts'), 'CustomerAccounts');
+const CustomerAging = lazyPage(() => import('../pages/Finance/CustomerAging'), 'CustomerAging');
+const CustomerAccountDetails = lazyPage(
+  () => import('../pages/Finance/CustomerAccountDetails'),
+  'CustomerAccountDetails',
+);
+const Commissions = lazyPage(() => import('../pages/Finance/Commissions'), 'Commissions');
+const CommissionRules = lazyPage(() => import('../pages/Finance/CommissionRules'), 'CommissionRules');
+const DriverLiquidations = lazyPage(() => import('../pages/Finance/DriverLiquidations'), 'DriverLiquidations');
+const DriverLiquidationDetails = lazyPage(
+  () => import('../pages/Finance/DriverLiquidationDetails'),
+  'DriverLiquidationDetails',
+);
 const Suppliers = lazyPage(() => import('../pages/Purchases/Suppliers'), 'Suppliers');
 const SupplierDetails = lazyPage(() => import('../pages/Purchases/SupplierDetails'), 'SupplierDetails');
 const PurchaseOrders = lazyPage(() => import('../pages/Purchases/PurchaseOrders'), 'PurchaseOrders');
@@ -200,6 +222,19 @@ export const DashboardRoutes = () => {
             <Route path="fleet/accidents" element={<VehicleAccidents />} />
             <Route path="fleet/costs" element={<FleetCosts />} />
             <Route path="fleet/tires" element={<Tires />} />
+            <Route path="finance" element={<FinanceDashboard />} />
+            <Route path="finance/boxes" element={<CashBoxes />} />
+            <Route path="finance/movements" element={<CashMovements />} />
+            <Route path="finance/categories" element={<CashCategories />} />
+            <Route path="finance/settlements" element={<DriverSettlements />} />
+            <Route path="finance/settlements/:id" element={<DriverSettlementDetails />} />
+            <Route path="finance/accounts" element={<CustomerAccounts />} />
+            <Route path="finance/accounts/aging" element={<CustomerAging />} />
+            <Route path="finance/accounts/:id" element={<CustomerAccountDetails />} />
+            <Route path="finance/commissions" element={<Commissions />} />
+            <Route path="finance/commission-rules" element={<CommissionRules />} />
+            <Route path="finance/liquidations" element={<DriverLiquidations />} />
+            <Route path="finance/liquidations/:id" element={<DriverLiquidationDetails />} />
             <Route path="truck-loads" element={<TruckLoads />} />
             <Route path="truck-loads/:id" element={<TruckLoadDetails />} />
           </Route>

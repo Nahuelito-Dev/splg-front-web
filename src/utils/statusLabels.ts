@@ -3,6 +3,16 @@ import type {
   AsientoDeAuditoria,
   Attendance,
   Car,
+  CashBox,
+  CashCategory,
+  CashMovement,
+  CashSession,
+  CommissionEntry,
+  CommissionRule,
+  CustomerAccount,
+  CustomerEntry,
+  DriverLiquidation,
+  DriverSettlement,
   Claim,
   Cylinder,
   CylinderInspection,
@@ -70,6 +80,7 @@ export const PAYMENT_METHOD: LabelMap<OrderRecord['paymentMethod']> = {
   cash: { text: 'Efectivo', tone: 'neutral' },
   mercadopago: { text: 'MercadoPago', tone: 'info' },
   transfer: { text: 'Transferencia', tone: 'accent' },
+  account: { text: 'Cuenta corriente', tone: 'info' },
 };
 
 /** Estado del cobro de un pedido (`paymentStatus`). En efectivo arranca `pending` hasta que el chofer confirma. */
@@ -430,3 +441,101 @@ export const driverStatus = (driver: Pick<Delivery, 'validated' | 'isEnabled' | 
 /** Si una fila de `vehicle-history`/`assignments` es la asignación abierta o ya se liberó. */
 export const vehicleAssignmentStatus = (releasedAt: string | null): Label =>
   releasedAt ? { text: 'Liberado', tone: 'neutral' } : { text: 'En uso', tone: 'success' };
+
+// ── Finanzas ────────────────────────────────────────────────────────────────
+
+export const CASH_BOX_KIND: LabelMap<CashBox['kind']> = {
+  cash: { text: 'Efectivo', tone: 'success' },
+  bank: { text: 'Banco', tone: 'info' },
+  wallet: { text: 'Billetera', tone: 'accent' },
+};
+
+export const CASH_SESSION_STATUS: LabelMap<CashSession['status']> = {
+  open: { text: 'Abierta', tone: 'success' },
+  closed: { text: 'Cerrada', tone: 'neutral' },
+};
+
+export const CASH_DIRECTION: LabelMap<CashMovement['direction']> = {
+  in: { text: 'Entrada', tone: 'success' },
+  out: { text: 'Salida', tone: 'danger' },
+};
+
+export const CATEGORY_DIRECTION: LabelMap<CashCategory['direction']> = {
+  income: { text: 'Ingreso', tone: 'success' },
+  expense: { text: 'Gasto', tone: 'danger' },
+};
+
+export const CASH_METHOD: LabelMap<CashMovement['method']> = {
+  cash: { text: 'Efectivo', tone: 'neutral' },
+  transfer: { text: 'Transferencia', tone: 'accent' },
+  card: { text: 'Tarjeta', tone: 'info' },
+  mercadopago: { text: 'MercadoPago', tone: 'info' },
+  check: { text: 'Cheque', tone: 'neutral' },
+};
+
+export const CASH_REFERENCE: LabelMap<CashMovement['referenceType']> = {
+  manual: { text: 'Manual', tone: 'neutral' },
+  session_opening: { text: 'Apertura de caja', tone: 'info' },
+  session_closing: { text: 'Cierre de caja', tone: 'info' },
+  driver_settlement: { text: 'Rendición', tone: 'primary' },
+  customer_payment: { text: 'Cobro de cuenta', tone: 'primary' },
+  purchase_receipt: { text: 'Compra', tone: 'neutral' },
+  fuel_load: { text: 'Combustible', tone: 'neutral' },
+  traffic_fine: { text: 'Multa', tone: 'neutral' },
+  driver_liquidation: { text: 'Liquidación', tone: 'primary' },
+  box_transfer: { text: 'Transferencia entre cajas', tone: 'accent' },
+  reversal: { text: 'Anulación', tone: 'warn' },
+};
+
+export const SETTLEMENT_STATUS: LabelMap<DriverSettlement['status']> = {
+  open: { text: 'Abierta', tone: 'warn' },
+  submitted: { text: 'Presentada', tone: 'info' },
+  approved: { text: 'Aprobada', tone: 'success' },
+};
+
+export const DIFFERENCE_RESOLUTION: LabelMap<NonNullable<DriverSettlement['differenceResolution']>> = {
+  none: { text: 'Sin diferencia', tone: 'neutral' },
+  absorbed: { text: 'Absorbida', tone: 'neutral' },
+  charged_to_driver: { text: 'A cargo del chofer', tone: 'warn' },
+};
+
+export const ACCOUNT_STATUS: LabelMap<CustomerAccount['status']> = {
+  active: { text: 'Activa', tone: 'success' },
+  blocked: { text: 'Bloqueada', tone: 'warn' },
+  closed: { text: 'Cerrada', tone: 'neutral' },
+};
+
+export const TAX_CONDITION: LabelMap<CustomerAccount['taxCondition']> = {
+  registered: { text: 'Responsable inscripto', tone: 'neutral' },
+  monotax: { text: 'Monotributo', tone: 'neutral' },
+  exempt: { text: 'Exento', tone: 'neutral' },
+  final_consumer: { text: 'Consumidor final', tone: 'neutral' },
+};
+
+export const CUSTOMER_ENTRY_TYPE: LabelMap<CustomerEntry['type']> = {
+  sale_charge: { text: 'Venta', tone: 'danger' },
+  payment: { text: 'Pago', tone: 'success' },
+  credit_note: { text: 'Nota de crédito', tone: 'success' },
+  debit_note: { text: 'Nota de débito', tone: 'danger' },
+};
+
+export const COMMISSION_BASIS: LabelMap<CommissionRule['basis']> = {
+  per_unit: { text: 'Por garrafa', tone: 'neutral' },
+  per_order: { text: 'Por pedido', tone: 'neutral' },
+  percent_of_total: { text: '% del subtotal', tone: 'neutral' },
+};
+
+export const COMMISSION_ENTRY_TYPE: LabelMap<CommissionEntry['type']> = {
+  delivery_commission: { text: 'Comisión por entrega', tone: 'success' },
+  settlement_shortage: { text: 'Faltante de rendición', tone: 'danger' },
+  traffic_fine: { text: 'Multa', tone: 'danger' },
+  adjustment: { text: 'Ajuste', tone: 'warn' },
+  legacy_balance: { text: 'Saldo heredado', tone: 'neutral' },
+};
+
+export const LIQUIDATION_STATUS: LabelMap<DriverLiquidation['status']> = {
+  draft: { text: 'Borrador', tone: 'warn' },
+  approved: { text: 'Aprobada', tone: 'info' },
+  paid: { text: 'Pagada', tone: 'success' },
+  voided: { text: 'Anulada', tone: 'neutral' },
+};

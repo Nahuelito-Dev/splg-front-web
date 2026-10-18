@@ -32,6 +32,7 @@ import { CylinderLinksCard } from '../PhysicalCylinders/components/CylinderLinks
 import { CYLINDER_CARD_LIMIT } from '../PhysicalCylinders/cylinderFilters';
 import { UserRatingsTab } from '../Ratings/components/UserRatingsTab';
 import { roleLabel } from '../Users/roleLabel';
+import { CustomerAccountAction } from '../Finance/components/CustomerAccountAction';
 import { CustomerFormModal } from './components/CustomerFormModal';
 import { CustomerAddresses } from './components/details/CustomerAddresses';
 import { CustomerClaims } from './components/details/CustomerClaims';
@@ -121,6 +122,7 @@ export const CustomerDetails = () => {
           customer && (
             <>
               <AuditHistoryLink entity="Customer" recordId={customer.customer_id} />
+              <CustomerAccountAction userId={customer.user_id} name={customer.user?.full_name ?? ''} />
               {canManageCustomerAccounts && (
                 <>
                   <Button variant="secondary" size="sm" icon={<PencilLine />} onClick={() => setEditing(true)}>

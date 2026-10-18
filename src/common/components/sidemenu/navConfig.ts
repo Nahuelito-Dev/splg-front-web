@@ -45,6 +45,10 @@ import {
   Truck,
   UserRound,
   Users,
+  Landmark,
+  Percent,
+  Tags,
+  Wallet,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -117,6 +121,20 @@ export const NAV_SECTIONS: NavSection[] = [
       { title: 'Recepciones', path: '/purchases/receipts', icon: PackageCheck },
       { title: 'Costo promedio', path: '/purchases/costs', icon: Coins },
       { title: 'Cargas del camión', path: '/truck-loads', icon: Truck },
+    ],
+  },
+  {
+    title: 'Finanzas',
+    items: [
+      { title: 'Tablero', path: '/finance', icon: Gauge },
+      { title: 'Cajas', path: '/finance/boxes', icon: Wallet },
+      { title: 'Movimientos', path: '/finance/movements', icon: BookOpen },
+      { title: 'Categorías', path: '/finance/categories', icon: Tags },
+      { title: 'Rendiciones', path: '/finance/settlements', icon: HandCoins },
+      { title: 'Cuentas corrientes', path: '/finance/accounts', icon: Landmark },
+      { title: 'Comisiones', path: '/finance/commissions', icon: Percent },
+      { title: 'Reglas de comisión', path: '/finance/commission-rules', icon: SlidersHorizontal },
+      { title: 'Liquidaciones', path: '/finance/liquidations', icon: ReceiptText },
     ],
   },
   {

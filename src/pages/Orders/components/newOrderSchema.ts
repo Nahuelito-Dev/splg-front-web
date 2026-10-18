@@ -13,7 +13,7 @@ export const newOrderSchema = z.object({
   addressId: z.string().trim().min(1, 'Elegí una dirección de entrega'),
   items: z.array(orderItemSchema).min(1, 'Agregá al menos un ítem'),
   deliveryMode: z.enum(['standard', 'express']),
-  paymentMethod: z.enum(['cash', 'mercadopago', 'transfer'], { message: 'Elegí un método de pago' }),
+  paymentMethod: z.enum(['cash', 'mercadopago', 'transfer', 'account'], { message: 'Elegí un método de pago' }),
   notes: z
     .string()
     .trim()
