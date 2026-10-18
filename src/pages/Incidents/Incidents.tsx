@@ -17,7 +17,7 @@ import {
   type TabItem,
 } from '../../common/components/ui';
 import { usePermissions, useUrlParams } from '../../hooks';
-import { useIncidents } from '../../services/queries/incidents';
+import { useIncident, useIncidents } from '../../services/queries/incidents';
 import type { Incident } from '../../services/api/types';
 import { INCIDENT_STATUS, INCIDENT_TYPE, labelOf } from '../../utils/statusLabels';
 import { CreateIncidentModal } from './components/CreateIncidentModal';
@@ -68,7 +68,9 @@ export const Incidents = () => {
   const all = useMemo(() => incidents ?? [], [incidents]);
   const counts = useMemo(() => countIncidentsByStatus(all), [all]);
   const rows = useMemo(() => filterIncidents(all, { status, type, term }), [all, status, type, term]);
-  const selected = all.find((incident) => incident.incident_id === selectedId) ?? null;
+  // La ficha viene de GET /incidents/:id (con pedido y cliente al día); mientras carga se muestra la fila del listado.
+  const detail = useIncident(selectedId);
+  const selected = detail.data ?? all.find((incident) => incident.incident_id === selectedId) ?? null;
 
   const tabs: TabItem[] = [
     { id: 'all', label: 'Todas', count: counts.all },

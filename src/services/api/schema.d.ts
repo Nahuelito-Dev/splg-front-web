@@ -1731,7 +1731,7 @@ export interface paths {
     head?: never;
     /**
      * Resolver un cobro en efectivo impago
-     * @description Cierra un pedido con `paymentStatus: unpaid`: `resolution: paid` (el cliente pagó después) o `resolution: written_off` (se da por perdido). Exige `note` con el motivo; quedan registrados quién y cuándo (`paymentResolvedBy`, `paymentResolvedAt`, `paymentResolutionNote`) y la auditoría; `paymentConfirmedAt/By` se llenan sólo con `paid` (una pérdida no es un cobro). En la misma transacción cierra la incidencia `unpaid_collection` del pedido (`resolved`, con la misma nota). Repetir la resolución (mismo admin u otro) es idempotente: no toca la nota ni la incidencia y responde 200 con `alreadyResolved: true`; si cambió algo, `false`.
+     * @description Cierra un pedido con `paymentStatus: unpaid`: `resolution: paid` (el cliente pagó después) o `resolution: written_off` (se da por perdido). Exige `note` con el motivo; quedan registrados quién y cuándo (`paymentResolvedBy`, `paymentResolvedAt`, `paymentResolutionNote`) y la auditoría; `paymentConfirmedAt/By` se llenan sólo con `paid` (una pérdida no es un cobro). Con `paid`, `cashBoxId` es la caja de efectivo donde entra lo cobrado (obligatoria si la distribuidora tiene alguna) y se asienta en la misma transacción. En la misma transacción cierra la incidencia `unpaid_collection` del pedido (`resolved`, con la misma nota). Repetir la resolución (mismo admin u otro) es idempotente: no toca la nota ni la incidencia y responde 200 con `alreadyResolved: true`; si cambió algo, `false`.
      */
     patch: operations['OrderController_resolveUnpaid'];
     trace?: never;
@@ -1751,7 +1751,7 @@ export interface paths {
     head?: never;
     /**
      * El admin registra el cobro en efectivo de un pedido entregado
-     * @description Para el efectivo que el chofer no confirmó (no lo hizo, ya no está). Sólo pedidos `delivered` en efectivo con el pago `pending`: pasa a `paid` y registra `paymentConfirmedBy` (el admin), `paymentResolvedBy/At` y el motivo en `paymentResolutionNote`. `reason` es obligatorio (10 a 500 caracteres) y queda en el historial de estados y en la auditoría. Repetirlo sobre un pedido ya `paid` devuelve el pedido tal cual. Si el pago ya se informó como impago responde 409 (se resuelve con `resolve-unpaid`). `X-Distributor` es obligatorio para el super admin.
+     * @description Para el efectivo que el chofer no confirmó (no lo hizo, ya no está). Sólo pedidos `delivered` en efectivo con el pago `pending`: pasa a `paid` y registra `paymentConfirmedBy` (el admin), `paymentResolvedBy/At` y el motivo en `paymentResolutionNote`. `reason` es obligatorio (10 a 500 caracteres) y queda en el historial de estados y en la auditoría. `cashBoxId` es la caja donde entra el efectivo: obligatoria si la distribuidora tiene alguna caja activa; asienta en la misma transacción una entrada de caja de efectivo por el saldo a cobrar (total menos la seña paga; categoría de sistema `order_payment`, referencia al pedido). Si la rendición del chofer ya tomó el pedido, 409. Repetirlo sobre un pedido ya `paid` devuelve el pedido tal cual y no asienta otra vez. Si el pago ya se informó como impago responde 409 (se resuelve con `resolve-unpaid`). `X-Distributor` es obligatorio para el super admin.
      */
     patch: operations['OrderController_registerCash'];
     trace?: never;
@@ -2535,6 +2535,26 @@ export interface paths {
      * @description Vuelve a pedir a la pasarela las devoluciones que fallaron (y crea la del pedido cancelado si nunca se pidió). La clave de idempotencia de cada devolución viaja a la pasarela: repetir no devuelve el dinero dos veces. Una devolución que sigue fallando queda `failed` con su error (la respuesta es 200 igual). Si la pasarela informa que el pago ya estaba devuelto, se marca como reintegrada sin repetir la solicitud.
      */
     post: operations['RefundsController_reintentar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/orders/{id}/refunds/mine': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Mis devoluciones de un pedido
+     * @description Las devoluciones del pago del pedido, de la más vieja a la más nueva: vacío si no hubo ninguna (pago en efectivo o transferencia, o sin cancelar). El pedido tiene que ser del cliente que consulta.
+     */
+    get: operations['MyRefundsController_delPedido'];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -5336,6 +5356,26 @@ export interface paths {
     patch: operations['AttendanceController_correct'];
     trace?: never;
   };
+  '/api/attendance/mine/current': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * La jornada abierta del chofer (CU-190, CU-315)
+     * @description La app la consulta al abrir para saber si ya marcó el inicio. Si la abierta es de un día anterior, finalizarla desde la app responde 409: se corrige desde el panel.
+     */
+    get: operations['AttendanceController_current'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/attendance/mine/check-in': {
     parameters: {
       query?: never;
@@ -7587,6 +7627,11 @@ export interface components {
        * @example El cliente transfirió el lunes
        */
       note: string;
+      /**
+       * Format: uuid
+       * @description Caja de EFECTIVO donde entra lo cobrado. Obligatoria si la distribuidora tiene alguna caja de efectivo activa (400 si falta o si la caja no es de efectivo); la de otra distribuidora es 404 y una que exige sesión sin sesión abierta, 409. Se asienta una entrada por el saldo a cobrar (total menos la seña ya paga; si es 0 no se asienta), con categoría de sistema `order_payment`. Si la rendición del chofer ya tomó el pedido, 409. Sólo aplica con `resolution: paid`; con `written_off` no se usa.
+       */
+      cashBoxId?: string;
     };
     ResolveUnpaidResponseDto: {
       /** Format: uuid */
@@ -7703,12 +7748,17 @@ export interface components {
        */
       alreadyResolved: boolean;
     };
-    MotivoDeCobroDto: {
+    RegisterCashDto: {
       /**
        * @description Por qué lo registra el administrador y no el chofer (10 a 500 caracteres). Queda en el pedido, en el historial de estados y en la auditoría.
        * @example El chofer fue dado de baja antes de rendir el efectivo
        */
       reason: string;
+      /**
+       * Format: uuid
+       * @description Caja de EFECTIVO donde entra lo cobrado. Obligatoria si la distribuidora tiene alguna caja de efectivo activa (400 si falta o si la caja no es de efectivo); la de otra distribuidora es 404 y una que exige sesión sin sesión abierta, 409. Se asienta una entrada por el saldo a cobrar (total menos la seña ya paga; si es 0 no se asienta), con categoría de sistema `order_payment`. Si la rendición del chofer ya tomó el pedido, 409.
+       */
+      cashBoxId?: string;
     };
     ConfirmTransferDto: {
       /**
@@ -8692,6 +8742,27 @@ export interface components {
       /** @example 0 */
       offset: number;
     };
+    MyRefundResponseDto: {
+      /**
+       * @description `full`: lo que faltaba devolver del pago (el pedido se canceló); `express_surcharge`: sólo el recargo express
+       * @enum {string}
+       */
+      kind: 'full' | 'express_surcharge';
+      /** @example 1500 */
+      amount: number;
+      /**
+       * @description `pending`: en trámite; `succeeded`: acreditada; `failed`: la pasarela la rechazó y todavía no se acreditó; la distribuidora la está revisando
+       * @enum {string}
+       */
+      status: 'pending' | 'succeeded' | 'failed';
+      /** Format: date-time */
+      requestedAt: string;
+      /**
+       * Format: date-time
+       * @description Cuándo se acreditó; `null` si todavía no
+       */
+      completedAt: string | null;
+    };
     CustomerAccountResponseDto: {
       accountId: string;
       customerUserId: string;
@@ -9054,7 +9125,8 @@ export interface components {
         | 'traffic_fine'
         | 'driver_liquidation'
         | 'box_transfer'
-        | 'reversal';
+        | 'reversal'
+        | 'order_payment';
       referenceId: string | null;
       /** @description Si es una anulación, el movimiento que anula */
       reversesMovementId: string | null;
@@ -9171,6 +9243,7 @@ export interface components {
         | 'purchase'
         | 'fuel'
         | 'traffic_fine'
+        | 'order_payment'
         | null;
       isActive: boolean;
       /** Format: date-time */
@@ -11300,6 +11373,13 @@ export interface components {
       paymentStatus: 'pending' | 'paid' | 'failed' | 'unpaid' | 'written_off';
       /** @description Incidencia de tipo `unpaid_collection` abierta por el impago (la misma si se repite la llamada) */
       incident: components['schemas']['IncidentResponseDto'];
+    };
+    MotivoDeCobroDto: {
+      /**
+       * @description Por qué lo registra el administrador y no el chofer (10 a 500 caracteres). Queda en el pedido, en el historial de estados y en la auditoría.
+       * @example El chofer fue dado de baja antes de rendir el efectivo
+       */
+      reason: string;
     };
     CreateFuelLoadDto: {
       /**
@@ -19198,7 +19278,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        'application/json': components['schemas']['MotivoDeCobroDto'];
+        'application/json': components['schemas']['RegisterCashDto'];
       };
     };
     responses: {
@@ -21812,6 +21892,48 @@ export interface operations {
       };
     };
   };
+  MyRefundsController_delPedido: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MyRefundResponseDto'][];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El pedido no existe o es de otro cliente */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   CustomerAccountController_findAll: {
     parameters: {
       query?: {
@@ -22716,7 +22838,8 @@ export interface operations {
           | 'traffic_fine'
           | 'driver_liquidation'
           | 'box_transfer'
-          | 'reversal';
+          | 'reversal'
+          | 'order_payment';
         from?: string | null;
         to?: string | null;
       };
@@ -23063,7 +23186,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description Requiere rol: admin, super_admin, delivery */
       403: {
         headers: {
           [name: string]: unknown;
@@ -31571,6 +31694,46 @@ export interface operations {
       };
       /** @description Jornada no encontrada */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AttendanceController_current: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AttendanceResponseDto'];
+        };
+      };
+      /** @description No tiene una jornada abierta, o su cuenta no está vinculada a un legajo */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: delivery */
+      403: {
         headers: {
           [name: string]: unknown;
         };

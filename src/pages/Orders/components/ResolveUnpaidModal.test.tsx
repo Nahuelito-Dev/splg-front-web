@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 interface MutateVars {
   id: string;
-  body: { resolution: string; note: string };
+  body: { resolution: string; note: string; cashBoxId?: string };
   idempotencyKey: string;
 }
 interface MutateOptions {
@@ -12,11 +12,17 @@ interface MutateOptions {
 }
 const pending = vi.hoisted(() => ({ value: false }));
 const mutate = vi.hoisted(() => vi.fn<[MutateVars, MutateOptions], void>());
+const boxes = vi.hoisted(() => ({
+  value: [{ cashBoxId: 'caja-1', name: 'Caja central' }] as { cashBoxId: string; name: string }[],
+}));
 const notifySuccess = vi.hoisted(() => vi.fn());
 const notifyError = vi.hoisted(() => vi.fn());
 const notifyInfo = vi.hoisted(() => vi.fn());
 
 vi.mock('../../../services/queries/orders', () => ({ useResolveUnpaid: () => ({ mutate, isPending: pending.value }) }));
+vi.mock('../../../services/queries/finance', () => ({
+  useCashBoxes: () => ({ data: { data: boxes.value }, isPending: false, isError: false }),
+}));
 vi.mock('../../../utils/notifications', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   notify: { success: notifySuccess, error: notifyError, info: notifyInfo },
@@ -27,10 +33,13 @@ import { ResolveUnpaidModal } from './ResolveUnpaidModal';
 const ORDER = { order_id: 'aaaaaaaa-1111', total_amount: 12500 };
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+const pickBox = () => fireEvent.change(screen.getByRole('combobox', { name: /Caja/ }), { target: { value: 'caja-1' } });
+
 const renderModal = (onClose = vi.fn()) => render(<ResolveUnpaidModal open onClose={onClose} order={ORDER} />);
 
 beforeEach(() => {
   pending.value = false;
+  boxes.value = [{ cashBoxId: 'caja-1', name: 'Caja central' }];
   mutate.mockReset();
   notifySuccess.mockReset();
   notifyError.mockReset();
@@ -61,18 +70,44 @@ describe('ResolveUnpaidModal', () => {
     const onClose = vi.fn();
     renderModal(onClose);
     fireEvent.click(screen.getByRole('radio', { name: /Lo cobramos después/ }));
+    pickBox();
     fireEvent.change(screen.getByLabelText(/Nota/), { target: { value: ' Transfirió al día siguiente ' } });
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar cobro' }));
 
     const [vars, options] = mutate.mock.calls[0];
     expect(vars).toMatchObject({
       id: 'aaaaaaaa-1111',
-      body: { resolution: 'paid', note: 'Transfirió al día siguiente' },
+      body: { resolution: 'paid', note: 'Transfirió al día siguiente', cashBoxId: 'caja-1' },
     });
     expect(vars.idempotencyKey).toMatch(UUID);
     options.onSuccess({ alreadyResolved: false });
     expect(notifySuccess).toHaveBeenCalledWith('Cobro registrado');
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('«Lo cobramos después» con cajas pide elegir una y no manda sin ella', () => {
+    renderModal();
+    fireEvent.click(screen.getByRole('radio', { name: /Lo cobramos después/ }));
+    fireEvent.change(screen.getByLabelText(/Nota/), { target: { value: 'Pagó' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar cobro' }));
+    expect(screen.getByText('Elegí la caja donde entra el efectivo')).toBeInTheDocument();
+    expect(mutate).not.toHaveBeenCalled();
+  });
+
+  it('sin cajas en la distribuidora no hay selector y cobra sin cashBoxId', () => {
+    boxes.value = [];
+    renderModal();
+    fireEvent.click(screen.getByRole('radio', { name: /Lo cobramos después/ }));
+    expect(screen.queryByRole('combobox', { name: /Caja/ })).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/Nota/), { target: { value: 'Pagó' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar cobro' }));
+    expect(mutate.mock.calls[0][0].body).toEqual({ resolution: 'paid', note: 'Pagó' });
+  });
+
+  it('«Dar por perdido» no pide ni manda caja', () => {
+    renderModal();
+    fireEvent.click(screen.getByRole('radio', { name: /Dar por perdido/ }));
+    expect(screen.queryByRole('combobox', { name: /Caja/ })).not.toBeInTheDocument();
   });
 
   it('«Dar por perdido» cambia el botón y manda written_off', () => {
@@ -86,6 +121,7 @@ describe('ResolveUnpaidModal', () => {
   it('un reintento del mismo envío reusa la clave; cambiar lo que se manda la renueva', () => {
     renderModal();
     fireEvent.click(screen.getByRole('radio', { name: /Lo cobramos después/ }));
+    pickBox();
     fireEvent.change(screen.getByLabelText(/Nota/), { target: { value: 'Pagó' } });
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar cobro' }));
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar cobro' }));
@@ -100,6 +136,7 @@ describe('ResolveUnpaidModal', () => {
     const onClose = vi.fn();
     renderModal(onClose);
     fireEvent.click(screen.getByRole('radio', { name: /Lo cobramos después/ }));
+    pickBox();
     fireEvent.change(screen.getByLabelText(/Nota/), { target: { value: 'Pagó' } });
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar cobro' }));
     const error = new Error('El pedido no tiene el pago informado como impago');
@@ -112,6 +149,7 @@ describe('ResolveUnpaidModal', () => {
     pending.value = true;
     renderModal();
     fireEvent.click(screen.getByRole('radio', { name: /Lo cobramos después/ }));
+    pickBox();
     fireEvent.change(screen.getByLabelText(/Nota/), { target: { value: 'Pagó' } });
     const button = screen.getByRole('button', { name: 'Confirmar cobro' });
     expect(button).toBeDisabled();
@@ -123,6 +161,7 @@ describe('ResolveUnpaidModal', () => {
     const onClose = vi.fn();
     renderModal(onClose);
     fireEvent.click(screen.getByRole('radio', { name: /Lo cobramos después/ }));
+    pickBox();
     fireEvent.change(screen.getByLabelText(/Nota/), { target: { value: 'Pagó' } });
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar cobro' }));
     mutate.mock.calls[0][1].onSuccess({ alreadyResolved: true });

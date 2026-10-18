@@ -7,6 +7,12 @@ export const listIncidents = async (): Promise<Incident[]> => {
   return data;
 };
 
+/** GET /incidents/:id: la ficha de la incidencia, con su pedido y el cliente. 404 si no existe o es de otra empresa. */
+export const getIncident = async (id: string): Promise<Incident> => {
+  const { data } = await http.get<Incident>(`/incidents/${id}`);
+  return data;
+};
+
 /**
  * POST /incidents: normalmente la carga el chofer durante el reparto, pero
  * la API también deja al admin y al super_admin (soporte que la registra

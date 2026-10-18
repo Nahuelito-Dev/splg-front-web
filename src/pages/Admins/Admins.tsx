@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
 import {
@@ -13,9 +13,12 @@ import {
 } from '../../common/components/ui';
 import { useDebounce, usePermissions } from '../../hooks';
 import { useAdmins, useFindAdminByTerm } from '../../services/queries/admins';
+import type { Admin } from '../../services/api/types';
 import { roleLabel } from '../Users/roleLabel';
 import { AdminsTable } from './components/AdminsTable';
 import { CreateAdminModal } from './components/CreateAdminModal';
+import { EditAdminModal } from './components/EditAdminModal';
+import { useAdminManagement } from './useAdminManagement';
 
 /** CU-088: resultado puntual de `GET /admin/term/:term` (id o correo), distinto a la fila de la tabla. */
 const SearchResult = ({ term }: { term: string }) => {
@@ -40,6 +43,9 @@ const SearchResult = ({ term }: { term: string }) => {
 export const Admins = () => {
   const { isSuperAdmin } = usePermissions();
   const [createOpen, setCreateOpen] = useState(false);
+  const [editing, setEditing] = useState<Admin | null>(null);
+  const { stateOf, remove, blockedReason } = useAdminManagement();
+  const handleDelete = useCallback((admin: Admin) => void remove(admin), [remove]);
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search.trim());
   const { data: admins, isLoading, isFetching, error, refetch } = useAdmins();
@@ -72,10 +78,18 @@ export const Admins = () => {
         ) : error ? (
           <ErrorState error={error} resource="Los administradores" onRetry={() => void refetch()} />
         ) : (
-          <AdminsTable rows={admins ?? []} loading={isFetching} />
+          <AdminsTable
+            rows={admins ?? []}
+            loading={isFetching}
+            stateOf={stateOf}
+            blockedReason={blockedReason}
+            onEdit={setEditing}
+            onDelete={handleDelete}
+          />
         )}
       </Card>
 
+      <EditAdminModal admin={editing} onClose={() => setEditing(null)} />
       <CreateAdminModal open={createOpen} onClose={() => setCreateOpen(false)} isSuperAdmin={isSuperAdmin} />
     </div>
   );

@@ -42,7 +42,9 @@ vi.mock('../../services/queries/photos', () => ({
     retry: vi.fn(),
   }),
 }));
+const detail = vi.hoisted(() => ({ id: '', data: undefined as unknown }));
 vi.mock('../../services/queries/incidents', () => ({
+  useIncident: (id: string | null) => ({ data: id === detail.id ? detail.data : undefined }),
   useIncidents: () => ({ data: INCIDENTS, isLoading: false, isFetching: false }),
   useResolveIncident: () => ({ mutate: vi.fn(), isPending: false }),
   useUpdateIncident: () => ({ mutate: vi.fn(), isPending: false }),
@@ -54,7 +56,11 @@ vi.mock('./components/CreateIncidentModal', () => ({ CreateIncidentModal: () => 
 
 import { Incidents } from './Incidents';
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  detail.id = '';
+  detail.data = undefined;
+});
 
 const Search = () => <output data-testid="search">{useLocation().search}</output>;
 const renderPage = (url = '/incidents') =>
@@ -94,5 +100,24 @@ describe('Incidents', () => {
     const dialog = screen.getByRole('dialog', { name: 'Resolver incidencia' });
     expect(dialog).toHaveAttribute('aria-modal', 'true');
     expect(within(dialog).getByRole('button', { name: 'Marcar como resuelta' })).toBeEnabled();
+  });
+
+  it('el panel lateral muestra la ficha de GET /incidents/:id (pedido y cliente al día)', () => {
+    detail.id = 'i1';
+    detail.data = incident('i1', 'open', 'damaged', 'Ana Pérez (ficha)');
+    renderPage();
+    fireEvent.click(screen.getByText('Ana Pérez'));
+    const dialog = screen.getByRole('dialog', { name: 'Resolver incidencia' });
+    expect(within(dialog).getByText('Ana Pérez (ficha)')).toBeInTheDocument();
+  });
+
+  it('la ficha de una incidencia no se aplica a otra fila', () => {
+    detail.id = 'i1';
+    detail.data = incident('i1', 'open', 'damaged', 'Ana Pérez (ficha)');
+    renderPage();
+    fireEvent.click(screen.getByText('Carla Ruiz'));
+    const dialog = screen.getByRole('dialog', { name: 'Resolver incidencia' });
+    expect(within(dialog).getByText('Carla Ruiz')).toBeInTheDocument();
+    expect(within(dialog).queryByText('Ana Pérez (ficha)')).not.toBeInTheDocument();
   });
 });

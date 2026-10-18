@@ -4,14 +4,19 @@ import { useNavigate } from 'react-router-dom';
 import { Badge, DataTable, EmptyState, IdentityCell, RowActions } from '../../../common/components/ui';
 import type { Admin } from '../../../services/api/types';
 import { roleLabel } from '../../Users/roleLabel';
+import type { Manageable } from '../adminAccess';
 
 interface Props {
   rows: Admin[];
   loading: boolean;
+  stateOf: (admin: Admin) => Manageable;
+  blockedReason: string;
+  onEdit: (admin: Admin) => void;
+  onDelete: (admin: Admin) => void;
 }
 
-/** Administradores: «Ver» abre su ficha; la cuenta (editar, bloquear, dar de baja) se gestiona desde la ficha del usuario. */
-export const AdminsTable = ({ rows, loading }: Props) => {
+/** Administradores: «Ver» abre su ficha; editar y dar de baja según lo que la sesión puede sobre cada uno. */
+export const AdminsTable = ({ rows, loading, stateOf, blockedReason, onEdit, onDelete }: Props) => {
   const navigate = useNavigate();
   const columns = useMemo<GridColDef<Admin>[]>(
     () => [
@@ -54,18 +59,26 @@ export const AdminsTable = ({ rows, loading }: Props) => {
       {
         field: 'actions',
         headerName: '',
-        width: 64,
+        width: 130,
         sortable: false,
         align: 'right',
-        renderCell: ({ row }) => (
-          <RowActions
-            rowLabel={row.user?.full_name ?? 'administrador'}
-            onView={() => navigate(`/admins/${row.admin_id}`)}
-          />
-        ),
+        renderCell: ({ row }) => {
+          const state = stateOf(row);
+          return (
+            <RowActions
+              rowLabel={row.user?.full_name ?? 'administrador'}
+              onView={() => navigate(`/admins/${row.admin_id}`)}
+              onEdit={state.edit === 'hidden' ? undefined : () => onEdit(row)}
+              editBlockedReason={state.edit === 'needs-distributor' ? blockedReason : undefined}
+              onDelete={state.remove === 'hidden' ? undefined : () => onDelete(row)}
+              deleteBlockedReason={state.remove === 'needs-distributor' ? blockedReason : undefined}
+              deleteLabel="Dar de baja a"
+            />
+          );
+        },
       },
     ],
-    [navigate],
+    [navigate, stateOf, blockedReason, onEdit, onDelete],
   );
 
   return (

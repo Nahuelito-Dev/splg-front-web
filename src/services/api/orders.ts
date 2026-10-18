@@ -13,7 +13,10 @@ import type {
   Order,
   OrderStatusHistoryEntry,
   PaginatedOrders,
+  Quote,
+  QuoteOrderBody,
   ResolveUnpaid,
+  RegisterCashBody,
   ResolveUnpaidBody,
   UnpaidCash,
   UpdateOrderBody,
@@ -169,6 +172,16 @@ export const createOrder = async (body: CreateOrderBody): Promise<Order> => {
   return data;
 };
 
+/**
+ * POST /orders/quote: el desglose que cobrará el alta con el mismo cuerpo (renglones con promoción por volumen,
+ * subtotal, recargos de zona, medio de pago y express, y total). No escribe nada ni reserva stock; rechaza lo que el
+ * alta rechazaría (sin stock, fuera de cobertura).
+ */
+export const quoteOrder = async (body: QuoteOrderBody): Promise<Quote> => {
+  const { data } = await http.post<Quote>('/orders/quote', body);
+  return data;
+};
+
 /** GET /orders/delivery/:deliveryId — el historial de pedidos de un chofer (CU-081). Lo usa Choferes. */
 export const listDeliveryOrders = async (deliveryId: string, params: PageParams): Promise<PaginatedOrders> => {
   const { data } = await http.get<PaginatedOrders>(`/orders/delivery/${deliveryId}`, { params: toQuery(params) });
@@ -193,12 +206,13 @@ export const resolveUnpaidOrder = async (
 
 /**
  * PATCH /orders/:id/payment/register-cash: el admin registra que cobró el efectivo de un pedido entregado cuyo chofer
- * no lo confirmó. `reason` (10 a 500 caracteres) queda en el pedido, en el historial y en la auditoría. 400 si el
+ * no lo confirmó. `reason` (10 a 500 caracteres) queda en el pedido, en el historial y en la auditoría. `cashBoxId` es la caja
+ * donde entra el efectivo (obligatoria si la distribuidora tiene cajas activas). 400 si el
  * pedido no está entregado o no es en efectivo; 409 si el pago ya se informó como impago. Repetirlo es un no-op.
  */
 export const registerCashPayment = async (
   id: string,
-  body: MotivoDeCobroBody,
+  body: RegisterCashBody,
   idempotencyKey: string,
 ): Promise<Order> => {
   const { data } = await http.patch<Order>(`/orders/${id}/payment/register-cash`, body, {

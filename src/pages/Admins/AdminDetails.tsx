@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { UserCog } from 'lucide-react';
+import { Pencil, Trash2, UserCog } from 'lucide-react';
 import {
   AuditHistoryLink,
   Avatar,
@@ -17,16 +18,23 @@ import { useBackToList } from '../../hooks';
 import { useAdmin } from '../../services/queries/admins';
 import { formatDateTime } from '../../utils/format';
 import { roleLabel } from '../Users/roleLabel';
+import { EditAdminModal } from './components/EditAdminModal';
+import { useAdminManagement } from './useAdminManagement';
 
 /**
- * La ficha de un administrador (`GET /admin/:id`): su cuenta, su rol y su empresa. La API no tiene edición ni baja
- * de «admin» como recurso: la cuenta (datos, bloqueo, baja) se administra desde la ficha del usuario.
+ * La ficha de un administrador (`GET /admin/:id`): su cuenta, su rol y su empresa. Se edita (nombre y teléfono) y se da
+ * de baja desde acá; el bloqueo y el correo se administran desde la ficha del usuario.
  */
 export const AdminDetails = () => {
   const { id } = useParams<{ id: string }>();
   const goBack = useBackToList('/admins');
-  const { data: admin, isPending, error, refetch } = useAdmin(id);
+  // Tras la baja la ficha ya no existe: no se vuelve a pedir mientras se navega a la lista.
+  const [removed, setRemoved] = useState(false);
+  const { data: admin, isPending, error, refetch } = useAdmin(removed ? undefined : id);
   useCrumbLeaf(admin?.user?.full_name ?? undefined, goBack);
+  const [editing, setEditing] = useState(false);
+  const { stateOf, remove, blockedReason } = useAdminManagement();
+  const state = admin ? stateOf(admin) : null;
 
   return (
     <div className="mx-auto max-w-4xl p-4 md:p-8">
@@ -36,6 +44,33 @@ export const AdminDetails = () => {
           admin && (
             <>
               <AuditHistoryLink entity="Admin" recordId={admin.admin_id} />
+              {state && state.edit !== 'hidden' && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={<Pencil />}
+                  blockedReason={state.edit === 'needs-distributor' ? blockedReason : undefined}
+                  onClick={() => setEditing(true)}
+                >
+                  Editar
+                </Button>
+              )}
+              {state && state.remove !== 'hidden' && (
+                <Button
+                  variant="danger"
+                  size="sm"
+                  icon={<Trash2 />}
+                  blockedReason={state.remove === 'needs-distributor' ? blockedReason : undefined}
+                  onClick={() =>
+                    void remove(admin, () => {
+                      setRemoved(true);
+                      goBack();
+                    })
+                  }
+                >
+                  Dar de baja
+                </Button>
+              )}
               <Link to={`/users/details/${admin.user_id}`}>
                 <Button variant="secondary" size="sm" icon={<UserCog />}>
                   Administrar la cuenta
@@ -81,6 +116,7 @@ export const AdminDetails = () => {
           />
         </Card>
       )}
+      <EditAdminModal admin={editing ? (admin ?? null) : null} onClose={() => setEditing(false)} />
     </div>
   );
 };

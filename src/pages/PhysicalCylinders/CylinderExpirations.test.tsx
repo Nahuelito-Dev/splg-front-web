@@ -9,6 +9,8 @@ vi.mock('../../services/queries/physicalCylinders', () => ({
   useExpiringCylinders: (days: number) => expiring(days) as unknown,
 }));
 
+vi.mock('./components/SerialLookupCard', () => ({ SerialLookupCard: () => null }));
+
 import { CylinderExpirations } from './CylinderExpirations';
 
 const item = (serial: string, status: 'valid' | 'expired' | 'unverified', daysRemaining: number | null) => ({

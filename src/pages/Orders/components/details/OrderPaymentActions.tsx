@@ -10,6 +10,8 @@ import {
   useRegisterUnpaidPayment,
 } from '../../../../services/queries/orders';
 import { notify } from '../../../../utils/notifications';
+import { CashBoxField } from '../CashBoxField';
+import { useOrderCashBoxes } from '../useOrderCashBoxes';
 import {
   canConfirmTransferReceived,
   canMarkTransferNotReceived,
@@ -29,17 +31,19 @@ interface Props {
 /**
  * Los cobros manuales del administrador sobre un pedido entregado: efectivo cobrado o impago, y la transferencia
  * recibida o no recibida. Cada uno pide un motivo (10 a 500 caracteres) que queda en el pedido, en el historial y en
- * la auditoría. Lo que el estado del pedido no admite no se ofrece.
+ * la auditoría; el efectivo cobrado además entra a la caja que se elige. Lo que el estado del pedido no admite no se ofrece.
  */
 export const OrderPaymentActions = ({ order }: Props) => {
   const { canOperate, operateHint } = usePermissions();
   const [modal, setModal] = useState<PaymentModal | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [cashBoxId, setCashBoxId] = useState('');
   // `isPending` llega en el render siguiente: un segundo click inmediato lo pasaría de largo.
   const submitting = useRef(false);
   const registerCash = useRegisterCashPayment();
   const registerUnpaid = useRegisterUnpaidPayment();
   const confirmTransfer = useConfirmTransfer();
+  const cashBoxes = useOrderCashBoxes(modal === 'cash');
 
   const cashOutcome = canRegisterCashOutcome(order);
   const received = canConfirmTransferReceived(order);
@@ -51,6 +55,7 @@ export const OrderPaymentActions = ({ order }: Props) => {
   const pending = registerCash.isPending || registerUnpaid.isPending || confirmTransfer.isPending;
   const open = (next: PaymentModal) => {
     setServerError(null);
+    setCashBoxId('');
     setModal(next);
   };
   const close = () => {
@@ -76,11 +81,16 @@ export const OrderPaymentActions = ({ order }: Props) => {
 
   const submit = (reason: string) => {
     if (submitting.current) return;
+    if (modal === 'cash') {
+      if (cashBoxes.loading) return setServerError('Se están cargando las cajas: probá de nuevo en un momento');
+      if (cashBoxes.failed) return setServerError('No se pudieron cargar las cajas: cerrá y volvé a abrir el diálogo');
+      if (cashBoxes.required && !cashBoxId) return setServerError('Elegí la caja donde entra el efectivo');
+    }
     submitting.current = true;
     const id = order.order_id;
     if (modal === 'cash') {
       registerCash.mutate(
-        { id, body: { reason }, scope: `order:${id}:register-cash` },
+        { id, body: { reason, cashBoxId: cashBoxId || undefined }, scope: `order:${id}:register-cash` },
         done(
           'Cobro en efectivo registrado',
           'El pedido ya estaba cobrado: no se registró tu motivo',
@@ -193,7 +203,18 @@ export const OrderPaymentActions = ({ order }: Props) => {
         reasonHint={paymentReasonCounter}
         serverError={serverError}
         onReasonChange={() => setServerError(null)}
-      />
+      >
+        {modal === 'cash' && (
+          <CashBoxField
+            boxes={cashBoxes.boxes}
+            value={cashBoxId}
+            onChange={(id) => {
+              setCashBoxId(id);
+              setServerError(null);
+            }}
+          />
+        )}
+      </ReasonModal>
     </>
   );
 };

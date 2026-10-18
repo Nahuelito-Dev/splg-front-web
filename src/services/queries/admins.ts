@@ -1,12 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createAdmin,
+  deleteAdmin,
   findAdminByTerm,
   getAdmin,
   listAdmins,
+  updateAdmin,
   type AdminAccountFields,
   type AdminRole,
 } from '../api/admins';
+import type { UpdateAdminBody } from '../api/types';
 import { queryKeys } from './queryKeys';
 
 const keys = queryKeys.admins;
@@ -34,5 +37,25 @@ export const useCreateAdmin = () => {
   return useMutation({
     mutationFn: ({ role, account }: { role: AdminRole; account: AdminAccountFields }) => createAdmin(role, account),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
+  });
+};
+
+export const useUpdateAdmin = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: UpdateAdminBody }) => updateAdmin(id, body),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
+  });
+};
+
+export const useDeleteAdmin = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteAdmin(id),
+    // La ficha del dado de baja ya no existe: se saca del caché antes de invalidar para que no se vuelva a pedir (404).
+    onSuccess: (_message, id) => {
+      queryClient.removeQueries({ queryKey: keys.detail(id) });
+      void queryClient.invalidateQueries({ queryKey: keys.all });
+    },
   });
 };

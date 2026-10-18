@@ -1,11 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createIncident, listIncidents, resolveIncident, updateIncident } from '../api/incidents';
+import { createIncident, getIncident, listIncidents, resolveIncident, updateIncident } from '../api/incidents';
 import type { CreateIncidentBody, ResolveIncidentBody, UpdateIncidentBody } from '../api/types';
 import { queryKeys } from './queryKeys';
 
 const keys = queryKeys.incidents;
 
 export const useIncidents = () => useQuery({ queryKey: keys.all, queryFn: listIncidents });
+
+export const useIncident = (id: string | null | undefined) =>
+  useQuery({ queryKey: keys.detail(id ?? ''), queryFn: () => getIncident(id ?? ''), enabled: Boolean(id) });
 
 export const useCreateIncident = () => {
   const queryClient = useQueryClient();
