@@ -27,6 +27,14 @@ export const listGasCylinders = async (params: PageParams, search?: string): Pro
   return { rows: data.gasCylinders, total: data.total };
 };
 
+/** GET /gascylinder/inactive: los productos dados de baja de la distribuidora (CU-269); mismo formato que el catálogo. */
+export const listInactiveGasCylinders = async (params: PageParams, search?: string): Promise<Page<GasCylinder>> => {
+  const { data } = await http.get<Catalogo>('/gascylinder/inactive', {
+    params: { ...toQuery(params), term: search || undefined },
+  });
+  return { rows: data.gasCylinders, total: data.total };
+};
+
 /** GET /gascylinder/:id */
 export const getGasCylinder = async (id: string): Promise<GasCylinder> => {
   const { data } = await http.get<GasCylinder>(`/gascylinder/${id}`);
@@ -68,5 +76,11 @@ export const updateGasCylinderStock = async (id: string, body: UpdateStockBody, 
 /** DELETE /gascylinder/:id: baja lógica (deja de listarse en la app). */
 export const deleteGasCylinder = async (id: string): Promise<BajaDeProducto> => {
   const { data } = await http.delete<BajaDeProducto>(`/gascylinder/${id}`);
+  return data;
+};
+
+/** PATCH /gascylinder/:id/reactivate: devuelve el producto al catálogo con su stock y promociones (CU-268). */
+export const reactivateGasCylinder = async (id: string): Promise<GasCylinder> => {
+  const { data } = await http.patch<GasCylinder>(`/gascylinder/${id}/reactivate`);
   return data;
 };

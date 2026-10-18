@@ -17140,6 +17140,442 @@
                     "Compras · Recepciones"
                 ]
             }
+        },
+        "/api/gascylinder/inactive": {
+            "get": {
+                "description": "CU-269. El catálogo (`GET /gascylinder`) sólo muestra los activos; éste lista los dados de baja de la distribuidora del administrador (la del header `X-Distributor` para el super admin), con la misma paginación y búsqueda (`term`).",
+                "operationId": "GasCylinderController_findInactive",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "maximum": 100,
+                            "default": 10,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 0,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 1,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "term",
+                        "required": false,
+                        "in": "query",
+                        "description": "Texto a buscar",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CatalogoDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\")"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Productos dados de baja de la distribuidora",
+                "tags": [
+                    "Gas Cylinders"
+                ]
+            }
+        },
+        "/api/gascylinder/{id}/reactivate": {
+            "patch": {
+                "description": "CU-268. Devuelve el producto al catálogo con su stock y sus promociones intactos. No invierte el estado: siempre lo deja activo, así que reactivar uno que ya estaba activo responde igual, con el producto sin cambios. Es una operación propia: enviar `isActive` en `PATCH /gascylinder/{id}` se rechaza.",
+                "operationId": "GasCylinderController_reactivate",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Gas cylinder UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GasCylinderResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\")"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora (no se distingue)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Reactivar un producto dado de baja",
+                "tags": [
+                    "Gas Cylinders"
+                ]
+            }
+        },
+        "/api/module-config/processes": {
+            "get": {
+                "description": "Los cinco procesos de CU-172 (planificador de flota, recompra, agrupación por recorrido, recuperación de envases y despacho express), cada uno con su esquema (rango y valor por omisión de cada parámetro) y los valores vigentes. El despacho y las tareas programadas tienen su propia ruta.",
+                "operationId": "ModuleConfigController_getProcesses",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ProcessConfigResponseDto"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\") o cuerpo fuera de los límites (detalle por campo)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Los procesos automáticos configurables con sus parámetros vigentes",
+                "tags": [
+                    "Configuración · Parámetros por distribuidora"
+                ]
+            }
+        },
+        "/api/module-config/{process}": {
+            "get": {
+                "description": "Los parámetros de la distribuidora o, si no configuró ninguno, los de omisión (`isDefault: true`).",
+                "operationId": "ModuleConfigController_getProcess",
+                "parameters": [
+                    {
+                        "name": "process",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "enum": [
+                                "fleet_planner",
+                                "repurchase",
+                                "route_batching",
+                                "cylinder_recovery",
+                                "express_dispatch"
+                            ],
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProcessConfigResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\") o cuerpo fuera de los límites (detalle por campo)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "El proceso no es uno de los cinco configurables"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Parámetros vigentes de un proceso automático",
+                "tags": [
+                    "Configuración · Parámetros por distribuidora"
+                ]
+            },
+            "put": {
+                "description": "Reemplaza la configuración: se guarda sólo lo que viene y lo demás toma su valor por omisión (`{}` restablece los valores por omisión, igual que en el despacho y las tareas programadas). Cada proceso valida con su propio esquema (`GET /module-config/processes`): un parámetro desconocido, de otro tipo o fuera de rango responde 400 con el campo. Los valores los leen los módulos M2 a M5 y la compra express cuando se construyan: hoy se guardan y se validan, pero ningún proceso los consume todavía. Cuando lo hagan, rigen desde la siguiente ejecución; las que están en curso no se interrumpen.",
+                "operationId": "ModuleConfigController_putProcess",
+                "parameters": [
+                    {
+                        "name": "process",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "enum": [
+                                "fleet_planner",
+                                "repurchase",
+                                "route_batching",
+                                "cylinder_recovery",
+                                "express_dispatch"
+                            ],
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": {
+                                    "type": "number"
+                                },
+                                "example": {
+                                    "anticipationDays": 5,
+                                    "invitationTtlHours": 48
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProcessConfigResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\") o cuerpo fuera de los límites (detalle por campo)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "El proceso no es uno de los cinco configurables"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Cambiar los parámetros de un proceso automático",
+                "tags": [
+                    "Configuración · Parámetros por distribuidora"
+                ]
+            }
+        },
+        "/api/orders/{id}/address": {
+            "patch": {
+                "description": "CU-127. Sólo el CLIENTE DUEÑO (uno ajeno es 404), con el pedido pendiente o aceptado. La dirección nueva tiene que ser otra de las suyas y caer dentro de una zona de cobertura de la distribuidora del pedido. El recargo de la zona nueva se compara con el del pedido: en pago en línea (MercadoPago o transferencia) el importe ya está definido, así que si cambia responde 409 y el cliente debe cancelar y pedir de nuevo; en efectivo se recalcula el total. Actualiza el punto de entrega y deja el cambio asentado (dirección anterior, autor y motivo) en el historial de estados. Avisa al chofer asignado (`order:address-changed`) y al panel; si el pedido está pendiente, vence las ofertas vivas y vuelve a ofrecerlo. Idempotente vía `Idempotency-Key`.",
+                "operationId": "OrderController_changeAddress",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Order UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChangeOrderAddressDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrderResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "La dirección nueva es la actual, o queda fuera de la zona de cobertura («La dirección está fuera de la zona de cobertura de la distribuidora»)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: customer"
+                    },
+                    "404": {
+                        "description": "Pedido ajeno o inexistente, o dirección que no es del cliente"
+                    },
+                    "409": {
+                        "description": "El pedido ya salió o fue entregado, no está pendiente/aceptado, o es de pago en línea y el recargo de la zona nueva es distinto"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Cambiar la dirección de entrega de un pedido (cliente)",
+                "tags": [
+                    "Orders"
+                ]
+            }
+        },
+        "/api/orders/{id}/receiver": {
+            "patch": {
+                "description": "CU-128. Sólo el CLIENTE DUEÑO (uno ajeno es 404), mientras el pedido no esté entregado ni cancelado (409). Guarda nombre, documento y relación de quien recibe; la respuesta del pedido los expone como `receiver` sólo al cliente dueño, al chofer asignado y al administrador de la distribuidora. Son datos de un tercero: se anulan solos al vencer el plazo de reclamo (30 días desde la entrega o cancelación; con un reclamo abierto, hasta que se cierre) y ningún dato de quien recibe entra en la auditoría. Idempotente vía `Idempotency-Key`.",
+                "operationId": "OrderController_setReceiver",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Order UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SetOrderReceiverDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrderResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Datos inválidos (p. ej.: formato de documento)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: customer"
+                    },
+                    "404": {
+                        "description": "Pedido ajeno o inexistente"
+                    },
+                    "409": {
+                        "description": "El pedido ya fue entregado o está cancelado"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Indicar quién recibe el pedido (cliente)",
+                "tags": [
+                    "Orders"
+                ]
+            }
         }
     },
     "info": {
@@ -19930,6 +20366,14 @@
                     "depositAmount": {
                         "type": "number",
                         "description": "Monto de la seña de la reserva (obligatorio si isReservation)."
+                    },
+                    "receiver": {
+                        "description": "Quién va a recibir el pedido (CU-128): mismas reglas que `PATCH /orders/:id/receiver`.",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/SetOrderReceiverDto"
+                            }
+                        ]
                     }
                 },
                 "required": [
@@ -20384,6 +20828,14 @@
                             }
                         ]
                     },
+                    "receiver": {
+                        "nullable": true,
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ReceiverDeOrderDto"
+                            }
+                        ]
+                    },
                     "cancellation_reason": {
                         "type": "string",
                         "nullable": true
@@ -20463,6 +20915,7 @@
                     "requested_delivery_date",
                     "order_items",
                     "customer",
+                    "receiver",
                     "cancellation_reason",
                     "accepted_at",
                     "on_the_way_at",
@@ -21205,6 +21658,14 @@
                             }
                         ]
                     },
+                    "receiver": {
+                        "nullable": true,
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ReceiverDeOrderDto"
+                            }
+                        ]
+                    },
                     "cancellation_reason": {
                         "type": "string",
                         "nullable": true
@@ -21289,6 +21750,7 @@
                     "requested_delivery_date",
                     "order_items",
                     "customer",
+                    "receiver",
                     "cancellation_reason",
                     "accepted_at",
                     "on_the_way_at",
@@ -28572,6 +29034,189 @@
                 },
                 "required": [
                     "paymentStatus"
+                ]
+            },
+            "ChangeOrderAddressDto": {
+                "type": "object",
+                "properties": {
+                    "addressId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Otra de las direcciones registradas del cliente"
+                    },
+                    "reason": {
+                        "type": "string",
+                        "maxLength": 500,
+                        "example": "Me mudé temporalmente a lo de mi mamá",
+                        "description": "Motivo del cambio; queda asentado con la dirección anterior"
+                    }
+                },
+                "required": [
+                    "addressId"
+                ]
+            },
+            "ProcessConfigFieldDto": {
+                "type": "object",
+                "properties": {
+                    "key": {
+                        "type": "string",
+                        "example": "anticipationDays"
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "integer",
+                            "number"
+                        ]
+                    },
+                    "min": {
+                        "type": "number",
+                        "example": 1
+                    },
+                    "max": {
+                        "type": "number",
+                        "example": 30
+                    },
+                    "default": {
+                        "type": "number",
+                        "example": 3
+                    },
+                    "unit": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "días"
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "Anticipación con que se envía la invitación a reponer"
+                    }
+                },
+                "required": [
+                    "key",
+                    "type",
+                    "min",
+                    "max",
+                    "default",
+                    "unit",
+                    "description"
+                ]
+            },
+            "ProcessConfigResponseDto": {
+                "type": "object",
+                "properties": {
+                    "process": {
+                        "type": "string",
+                        "enum": [
+                            "fleet_planner",
+                            "repurchase",
+                            "route_batching",
+                            "cylinder_recovery",
+                            "express_dispatch"
+                        ],
+                        "example": "repurchase"
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "Anticipación de recompra"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "fields": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ProcessConfigFieldDto"
+                        }
+                    },
+                    "params": {
+                        "type": "object",
+                        "description": "Valor efectivo de cada parámetro (el de la distribuidora o, si no lo configuró, el de omisión)",
+                        "additionalProperties": {
+                            "type": "number"
+                        },
+                        "example": {
+                            "minOrders": 3,
+                            "anticipationDays": 3
+                        }
+                    },
+                    "isDefault": {
+                        "type": "boolean",
+                        "description": "true si rigen los valores por omisión (nada configurado o todo coincide con ellos)"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "Cuándo se modificó por última vez (null si nunca)"
+                    },
+                    "updatedByUserId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true,
+                        "description": "Usuario que la modificó por última vez (null si nunca)"
+                    }
+                },
+                "required": [
+                    "process",
+                    "title",
+                    "description",
+                    "fields",
+                    "params",
+                    "isDefault",
+                    "updatedAt",
+                    "updatedByUserId"
+                ]
+            },
+            "ReceiverDeOrderDto": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "María Gómez"
+                    },
+                    "document": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "30123456"
+                    },
+                    "relationship": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "vecina"
+                    }
+                },
+                "required": [
+                    "name",
+                    "document",
+                    "relationship"
+                ]
+            },
+            "SetOrderReceiverDto": {
+                "type": "object",
+                "properties": {
+                    "receiverName": {
+                        "type": "string",
+                        "maxLength": 120,
+                        "example": "María Gómez"
+                    },
+                    "receiverDocument": {
+                        "type": "string",
+                        "maxLength": 20,
+                        "example": "30123456",
+                        "description": "DNI, CUIT/CUIL o pasaporte (6 a 15 letras o dígitos, con al menos un dígito). Puede venir con puntos o guiones: se guarda sin ellos. Dato personal de un tercero: no se guarda en el registro de auditoría."
+                    },
+                    "receiverRelationship": {
+                        "type": "string",
+                        "maxLength": 40,
+                        "example": "vecina",
+                        "description": "Relación con el cliente: familiar, encargado, vecino..."
+                    }
+                },
+                "required": [
+                    "receiverName",
+                    "receiverDocument",
+                    "receiverRelationship"
                 ]
             }
         }

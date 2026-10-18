@@ -38,6 +38,7 @@ const FleetTasks = lazyPage(() => import('../pages/Fleet/FleetTasks'), 'FleetTas
 const FleetTaskDetail = lazyPage(() => import('../pages/Fleet/FleetTaskDetail'), 'FleetTaskDetail');
 const Configuration = lazyPage(() => import('../pages/Configuration/Configuration'), 'Configuration');
 const DispatchSettings = lazyPage(() => import('../pages/Configuration/DispatchSettings'), 'DispatchSettings');
+const AutomaticProcesses = lazyPage(() => import('../pages/Configuration/AutomaticProcesses'), 'AutomaticProcesses');
 const ScheduledTasksSettings = lazyPage(
   () => import('../pages/Configuration/ScheduledTasksSettings'),
   'ScheduledTasksSettings',
@@ -148,6 +149,7 @@ export const DashboardRoutes = () => {
           <Route path="settings" element={<Configuration />} />
           <Route path="settings/dispatch" element={<DispatchSettings />} />
           <Route path="settings/scheduled-tasks" element={<ScheduledTasksSettings />} />
+          <Route path="settings/automatic-processes" element={<AutomaticProcesses />} />
 
           {/* Documentación de la flota: vencimientos (CU-139), planes (CU-105/140) y tareas */}
           <Route path="fleet/expirations" element={<FleetExpirations />} />

@@ -157,3 +157,20 @@ describe('OrderSideCards: reintegro pendiente', () => {
     expect(screen.queryByText(/Reintegro pendiente/)).toBeNull();
   });
 });
+
+describe('OrderSideCards: quién recibe', () => {
+  it('muestra nombre, documento y relación cuando el cliente los indicó', () => {
+    renderCards(
+      order({ receiver: { name: 'María Gómez', document: '30123456', relationship: 'vecina' } } as Partial<Order>),
+    );
+    expect(screen.getByText('Quién recibe')).toBeInTheDocument();
+    expect(screen.getByText('María Gómez')).toBeInTheDocument();
+    expect(screen.getByText('30123456')).toBeInTheDocument();
+    expect(screen.getByText('vecina')).toBeInTheDocument();
+  });
+
+  it('sin datos (o ya anulados por el plazo de reclamo) no dibuja la sección', () => {
+    renderCards(order({ receiver: null } as Partial<Order>));
+    expect(screen.queryByText('Quién recibe')).not.toBeInTheDocument();
+  });
+});

@@ -1,5 +1,6 @@
 import {
   ArrowLeftRight,
+  Bot,
   BookOpen,
   Boxes,
   Building2,
@@ -112,6 +113,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { title: 'Configuración', path: '/settings', icon: Settings },
       { title: 'Parámetros del despacho', path: '/settings/dispatch', icon: SlidersHorizontal },
       { title: 'Tareas programadas', path: '/settings/scheduled-tasks', icon: Timer },
+      { title: 'Procesos automáticos', path: '/settings/automatic-processes', icon: Bot },
     ],
   },
   {

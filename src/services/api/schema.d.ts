@@ -4076,6 +4076,130 @@ export interface paths {
     patch: operations['PurchaseReceiptController_paymentStatus'];
     trace?: never;
   };
+  '/api/gascylinder/inactive': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Productos dados de baja de la distribuidora
+     * @description CU-269. El catálogo (`GET /gascylinder`) sólo muestra los activos; éste lista los dados de baja de la distribuidora del administrador (la del header `X-Distributor` para el super admin), con la misma paginación y búsqueda (`term`).
+     */
+    get: operations['GasCylinderController_findInactive'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/gascylinder/{id}/reactivate': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Reactivar un producto dado de baja
+     * @description CU-268. Devuelve el producto al catálogo con su stock y sus promociones intactos. No invierte el estado: siempre lo deja activo, así que reactivar uno que ya estaba activo responde igual, con el producto sin cambios. Es una operación propia: enviar `isActive` en `PATCH /gascylinder/{id}` se rechaza.
+     */
+    patch: operations['GasCylinderController_reactivate'];
+    trace?: never;
+  };
+  '/api/module-config/processes': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Los procesos automáticos configurables con sus parámetros vigentes
+     * @description Los cinco procesos de CU-172 (planificador de flota, recompra, agrupación por recorrido, recuperación de envases y despacho express), cada uno con su esquema (rango y valor por omisión de cada parámetro) y los valores vigentes. El despacho y las tareas programadas tienen su propia ruta.
+     */
+    get: operations['ModuleConfigController_getProcesses'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/module-config/{process}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Parámetros vigentes de un proceso automático
+     * @description Los parámetros de la distribuidora o, si no configuró ninguno, los de omisión (`isDefault: true`).
+     */
+    get: operations['ModuleConfigController_getProcess'];
+    /**
+     * Cambiar los parámetros de un proceso automático
+     * @description Reemplaza la configuración: se guarda sólo lo que viene y lo demás toma su valor por omisión (`{}` restablece los valores por omisión, igual que en el despacho y las tareas programadas). Cada proceso valida con su propio esquema (`GET /module-config/processes`): un parámetro desconocido, de otro tipo o fuera de rango responde 400 con el campo. Los valores los leen los módulos M2 a M5 y la compra express cuando se construyan: hoy se guardan y se validan, pero ningún proceso los consume todavía. Cuando lo hagan, rigen desde la siguiente ejecución; las que están en curso no se interrumpen.
+     */
+    put: operations['ModuleConfigController_putProcess'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/orders/{id}/address': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Cambiar la dirección de entrega de un pedido (cliente)
+     * @description CU-127. Sólo el CLIENTE DUEÑO (uno ajeno es 404), con el pedido pendiente o aceptado. La dirección nueva tiene que ser otra de las suyas y caer dentro de una zona de cobertura de la distribuidora del pedido. El recargo de la zona nueva se compara con el del pedido: en pago en línea (MercadoPago o transferencia) el importe ya está definido, así que si cambia responde 409 y el cliente debe cancelar y pedir de nuevo; en efectivo se recalcula el total. Actualiza el punto de entrega y deja el cambio asentado (dirección anterior, autor y motivo) en el historial de estados. Avisa al chofer asignado (`order:address-changed`) y al panel; si el pedido está pendiente, vence las ofertas vivas y vuelve a ofrecerlo. Idempotente vía `Idempotency-Key`.
+     */
+    patch: operations['OrderController_changeAddress'];
+    trace?: never;
+  };
+  '/api/orders/{id}/receiver': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Indicar quién recibe el pedido (cliente)
+     * @description CU-128. Sólo el CLIENTE DUEÑO (uno ajeno es 404), mientras el pedido no esté entregado ni cancelado (409). Guarda nombre, documento y relación de quien recibe; la respuesta del pedido los expone como `receiver` sólo al cliente dueño, al chofer asignado y al administrador de la distribuidora. Son datos de un tercero: se anulan solos al vencer el plazo de reclamo (30 días desde la entrega o cancelación; con un reclamo abierto, hasta que se cierre) y ningún dato de quien recibe entra en la auditoría. Idempotente vía `Idempotency-Key`.
+     */
+    patch: operations['OrderController_setReceiver'];
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -5237,6 +5361,8 @@ export interface components {
       isReservation?: boolean;
       /** @description Monto de la seña de la reserva (obligatorio si isReservation). */
       depositAmount?: number;
+      /** @description Quién va a recibir el pedido (CU-128): mismas reglas que `PATCH /orders/:id/receiver`. */
+      receiver?: components['schemas']['SetOrderReceiverDto'];
     };
     AddressResponseDto: {
       /** Format: uuid */
@@ -5424,6 +5550,7 @@ export interface components {
       /** @example 22600 */
       remainingBalance?: number;
       customer: components['schemas']['CustomerDeOrderDto'] | null;
+      receiver: components['schemas']['ReceiverDeOrderDto'] | null;
       cancellation_reason: string | null;
       /** Format: date-time */
       accepted_at: string | null;
@@ -5758,6 +5885,7 @@ export interface components {
       /** @example 22600 */
       remainingBalance?: number;
       customer: components['schemas']['CustomerDeOrderDto'] | null;
+      receiver: components['schemas']['ReceiverDeOrderDto'] | null;
       cancellation_reason: string | null;
       /** Format: date-time */
       accepted_at: string | null;
@@ -8781,6 +8909,89 @@ export interface components {
        * @enum {string}
        */
       paymentStatus: 'unpaid' | 'paid';
+    };
+    ChangeOrderAddressDto: {
+      /**
+       * Format: uuid
+       * @description Otra de las direcciones registradas del cliente
+       */
+      addressId: string;
+      /**
+       * @description Motivo del cambio; queda asentado con la dirección anterior
+       * @example Me mudé temporalmente a lo de mi mamá
+       */
+      reason?: string;
+    };
+    ProcessConfigFieldDto: {
+      /** @example anticipationDays */
+      key: string;
+      /** @enum {string} */
+      type: 'integer' | 'number';
+      /** @example 1 */
+      min: number;
+      /** @example 30 */
+      max: number;
+      /** @example 3 */
+      default: number;
+      /** @example días */
+      unit: string | null;
+      /** @example Anticipación con que se envía la invitación a reponer */
+      description: string;
+    };
+    ProcessConfigResponseDto: {
+      /**
+       * @example repurchase
+       * @enum {string}
+       */
+      process: 'fleet_planner' | 'repurchase' | 'route_batching' | 'cylinder_recovery' | 'express_dispatch';
+      /** @example Anticipación de recompra */
+      title: string;
+      description: string;
+      fields: components['schemas']['ProcessConfigFieldDto'][];
+      /**
+       * @description Valor efectivo de cada parámetro (el de la distribuidora o, si no lo configuró, el de omisión)
+       * @example {
+       *       "minOrders": 3,
+       *       "anticipationDays": 3
+       *     }
+       */
+      params: {
+        [key: string]: number;
+      };
+      /** @description true si rigen los valores por omisión (nada configurado o todo coincide con ellos) */
+      isDefault: boolean;
+      /**
+       * Format: date-time
+       * @description Cuándo se modificó por última vez (null si nunca)
+       */
+      updatedAt: string | null;
+      /**
+       * Format: uuid
+       * @description Usuario que la modificó por última vez (null si nunca)
+       */
+      updatedByUserId: string | null;
+    };
+    ReceiverDeOrderDto: {
+      /** @example María Gómez */
+      name: string | null;
+      /** @example 30123456 */
+      document: string | null;
+      /** @example vecina */
+      relationship: string | null;
+    };
+    SetOrderReceiverDto: {
+      /** @example María Gómez */
+      receiverName: string;
+      /**
+       * @description DNI, CUIT/CUIL o pasaporte (6 a 15 letras o dígitos, con al menos un dígito). Puede venir con puntos o guiones: se guarda sin ellos. Dato personal de un tercero: no se guarda en el registro de auditoría.
+       * @example 30123456
+       */
+      receiverDocument: string;
+      /**
+       * @description Relación con el cliente: familiar, encargado, vecino...
+       * @example vecina
+       */
+      receiverRelationship: string;
     };
   };
   responses: never;
@@ -23205,6 +23416,382 @@ export interface operations {
       };
       /** @description No existe o es de otra distribuidora */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  GasCylinderController_findInactive: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+        page?: number;
+        /** @description Texto a buscar */
+        term?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CatalogoDto'];
+        };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  GasCylinderController_reactivate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Gas cylinder UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GasCylinderResponseDto'];
+        };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora (no se distingue) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ModuleConfigController_getProcesses: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProcessConfigResponseDto'][];
+        };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") o cuerpo fuera de los límites (detalle por campo) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ModuleConfigController_getProcess: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        process: 'fleet_planner' | 'repurchase' | 'route_batching' | 'cylinder_recovery' | 'express_dispatch';
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProcessConfigResponseDto'];
+        };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") o cuerpo fuera de los límites (detalle por campo) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El proceso no es uno de los cinco configurables */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ModuleConfigController_putProcess: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        process: 'fleet_planner' | 'repurchase' | 'route_batching' | 'cylinder_recovery' | 'express_dispatch';
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          [key: string]: number;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProcessConfigResponseDto'];
+        };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") o cuerpo fuera de los límites (detalle por campo) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El proceso no es uno de los cinco configurables */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  OrderController_changeAddress: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Order UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ChangeOrderAddressDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['OrderResponseDto'];
+        };
+      };
+      /** @description La dirección nueva es la actual, o queda fuera de la zona de cobertura («La dirección está fuera de la zona de cobertura de la distribuidora») */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Pedido ajeno o inexistente, o dirección que no es del cliente */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El pedido ya salió o fue entregado, no está pendiente/aceptado, o es de pago en línea y el recargo de la zona nueva es distinto */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  OrderController_setReceiver: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Order UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SetOrderReceiverDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['OrderResponseDto'];
+        };
+      };
+      /** @description Datos inválidos (p. ej.: formato de documento) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Pedido ajeno o inexistente */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El pedido ya fue entregado o está cancelado */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
         headers: {
           [name: string]: unknown;
         };

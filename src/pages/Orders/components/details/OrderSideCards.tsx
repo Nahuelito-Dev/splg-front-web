@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { CircleUser, Copy, ExternalLink, MapPin, Truck, Wallet } from 'lucide-react';
+import { CircleUser, Copy, ExternalLink, MapPin, Truck, UserCheck, Wallet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Avatar, Badge, Button, Card, UserRefLink } from '../../../../common/components/ui';
 import type { Order } from '../../../../services/api/types';
@@ -98,6 +98,21 @@ const DeliverySection = ({ order }: { order: Order }) => {
         <p className="mt-2 rounded-lg bg-surface-hover p-2 text-xs text-muted">{order.delivery_notes}</p>
       )}
       {order.customer_notes && <p className="mt-2 text-xs text-muted">Nota del cliente: {order.customer_notes}</p>}
+    </Section>
+  );
+};
+
+/** Quién va a recibir el pedido (CU-128); sólo se dibuja si el cliente lo indicó y el plazo de reclamo no venció. */
+const ReceiverSection = ({ order }: { order: Order }) => {
+  const receiver = order.receiver;
+  if (!receiver) return null;
+  return (
+    <Section icon={<UserCheck {...iconProps} />} title="Quién recibe">
+      <dl className="space-y-1.5">
+        <Row label="Nombre">{receiver.name ?? '—'}</Row>
+        <Row label="Documento">{receiver.document ?? '—'}</Row>
+        <Row label="Relación">{receiver.relationship ?? '—'}</Row>
+      </dl>
     </Section>
   );
 };
@@ -244,11 +259,12 @@ const PaymentSection = ({ order }: { order: Order }) => (
   </Section>
 );
 
-/** Las tarjetas laterales de la ficha: cliente, entrega con mapa, chofer y pago. */
+/** Las tarjetas laterales de la ficha: cliente, entrega con mapa, quién recibe, chofer y pago. */
 export const OrderSideCards = ({ order }: { order: Order }) => (
   <Card className="divide-y divide-dashed divide-outline">
     <CustomerSection order={order} />
     <DeliverySection order={order} />
+    <ReceiverSection order={order} />
     <DriverSection order={order} />
     <PaymentSection order={order} />
   </Card>

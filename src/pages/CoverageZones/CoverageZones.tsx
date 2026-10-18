@@ -15,6 +15,10 @@ export const CoverageZones = () => {
   const { canWrite, writeHint, needsDistributor } = usePermissions();
   const { data, isPending, isError, error, refetch } = useCoverageZones({ enabled: !needsDistributor });
   const zones = data?.rows ?? [];
+  // Con zonas cargadas pero ninguna activa y vigente, la distribuidora no cubre nada (CU-151).
+  const noActiveZones =
+    zones.length > 0 &&
+    !zones.some((zone) => zone.isActive && (!zone.validUntil || new Date(zone.validUntil).getTime() > Date.now()));
   const updateZone = useUpdateCoverageZone();
   const deleteZone = useDeleteCoverageZone();
 
@@ -127,6 +131,19 @@ export const CoverageZones = () => {
           </Button>
         }
       />
+
+      {noActiveZones && (
+        <div
+          role="alert"
+          className="mb-6 rounded-[10px] border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-ink"
+        >
+          <p className="font-semibold">La distribuidora no tiene zonas de cobertura activas ni vigentes</p>
+          <p className="mt-1 text-muted">
+            Mientras no haya una, ninguna dirección está cubierta y no se aceptan pedidos nuevos. Activá una zona (con
+            una fecha de fin futura) o creá una nueva.
+          </p>
+        </div>
+      )}
 
       <Card className="mb-6 p-0">
         <ZoneList

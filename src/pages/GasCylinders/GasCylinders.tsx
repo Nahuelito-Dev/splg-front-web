@@ -20,6 +20,8 @@ import {
   useGasCylinderByType,
   useGasCylinders,
   useGasCylinderTypes,
+  useInactiveGasCylinders,
+  useReactivateGasCylinder,
 } from '../../services/queries/gasCylinders';
 import { confirm, notify } from '../../utils/notifications';
 import { CylinderFormModal } from './components/CylinderFormModal';
@@ -35,12 +37,16 @@ export const GasCylinders = () => {
   const [stockTarget, setStockTarget] = useState<GasCylinder | null>(null);
 
   // Los filtros viven en la URL: al volver de una ficha o recargar, el catálogo queda como estaba.
-  const [{ q: search, type: typeFilterChoice, available: availableParam }, setFilters] = useUrlParams({
-    q: '',
-    type: ALL_TYPES,
-    available: '',
-  });
-  const onlyAvailable = availableParam === '1';
+  const [{ q: search, type: typeFilterChoice, available: availableParam, inactive: inactiveParam }, setFilters] =
+    useUrlParams({
+      q: '',
+      type: ALL_TYPES,
+      available: '',
+      inactive: '',
+    });
+  // «Dados de baja» (CU-269) es otra vista del catálogo: no se combina con el tipo exacto ni con «sólo disponibles».
+  const onlyInactive = inactiveParam === '1';
+  const onlyAvailable = availableParam === '1' && !onlyInactive;
   const debouncedSearch = useDebounce(search.trim());
 
   // El combo sale del catálogo completo (con o sin stock): una garrafa agotada también se filtra.
@@ -48,7 +54,7 @@ export const GasCylinders = () => {
   const typeOptions = useMemo(() => buildTypeOptions(types.data?.rows ?? []), [types.data]);
   // Si el tipo elegido desapareció del catálogo, el filtro vuelve solo a "todos".
   const typeFilter = types.data ? resolveTypeFilter(typeFilterChoice, typeOptions) : typeFilterChoice;
-  const typeSelected = typeFilter !== ALL_TYPES;
+  const typeSelected = typeFilter !== ALL_TYPES && !onlyInactive;
 
   // Lo que la app del cliente puede pedir ahora (activo y con stock) para el interruptor "Sólo disponibles".
   const available = useAvailableGasCylinders();
@@ -56,6 +62,7 @@ export const GasCylinders = () => {
 
   const catalog = useGasCylinders(pagination, debouncedSearch);
   const byType = useGasCylinderByType(typeSelected ? typeFilter : undefined);
+  const inactive = useInactiveGasCylinders(pagination, debouncedSearch, onlyInactive);
 
   const filteredAvailable = useMemo(() => {
     const term = debouncedSearch.toLowerCase();
@@ -66,18 +73,20 @@ export const GasCylinders = () => {
       : availableProducts;
   }, [availableProducts, debouncedSearch]);
 
-  const active = typeSelected ? byType : onlyAvailable ? available : catalog;
-  const data = typeSelected
-    ? { rows: byType.data ? [byType.data] : [], total: byType.data ? 1 : 0 }
-    : onlyAvailable
-      ? {
-          rows: filteredAvailable.slice(
-            pagination.page * pagination.pageSize,
-            (pagination.page + 1) * pagination.pageSize,
-          ),
-          total: filteredAvailable.length,
-        }
-      : catalog.data;
+  const active = onlyInactive ? inactive : typeSelected ? byType : onlyAvailable ? available : catalog;
+  const data = onlyInactive
+    ? inactive.data
+    : typeSelected
+      ? { rows: byType.data ? [byType.data] : [], total: byType.data ? 1 : 0 }
+      : onlyAvailable
+        ? {
+            rows: filteredAvailable.slice(
+              pagination.page * pagination.pageSize,
+              (pagination.page + 1) * pagination.pageSize,
+            ),
+            total: filteredAvailable.length,
+          }
+        : catalog.data;
   const isFetching = active.isFetching;
   const loadFailed = active.isError;
   const firstLoad = !data && active.isPending;
@@ -95,7 +104,7 @@ export const GasCylinders = () => {
 
   const selectType = (value: string) => {
     // El tipo exacto ignora búsqueda y disponibles: no se dejan valores que no aplican.
-    setFilters(value === ALL_TYPES ? { type: value } : { type: value, q: '', available: '' });
+    setFilters(value === ALL_TYPES ? { type: value } : { type: value, q: '', available: '', inactive: '' });
     setPagination((p) => ({ ...p, page: 0 }));
   };
 
@@ -104,16 +113,18 @@ export const GasCylinders = () => {
   if (typeSelected)
     chips.push({ key: 'type', label: typeOptions.find((o) => o.value === typeFilter)?.label ?? typeFilter });
   if (onlyAvailable) chips.push({ key: 'available', label: 'Sólo disponibles' });
+  if (onlyInactive) chips.push({ key: 'inactive', label: 'Dados de baja' });
   const removeChip = (key: string) => {
     setFilters({ [key]: key === 'type' ? ALL_TYPES : '' });
     setPagination((p) => ({ ...p, page: 0 }));
   };
   const clearAll = () => {
-    setFilters({ q: '', type: ALL_TYPES, available: '' });
+    setFilters({ q: '', type: ALL_TYPES, available: '', inactive: '' });
     setPagination((p) => ({ ...p, page: 0 }));
   };
 
   const deleteCylinder = useDeleteGasCylinder();
+  const reactivateCylinder = useReactivateGasCylinder();
   const { canWrite, writeHint } = usePermissions();
 
   const handleDelete = async (cylinder: GasCylinder) => {
@@ -126,6 +137,19 @@ export const GasCylinders = () => {
     if (!confirmed) return;
     deleteCylinder.mutate(cylinder.gas_cylinder_id, {
       onSuccess: () => notify.success('Producto desactivado'),
+      onError: notify.error,
+    });
+  };
+
+  const handleReactivate = async (cylinder: GasCylinder) => {
+    const confirmed = await confirm({
+      title: '¿Reactivar producto?',
+      text: `"${cylinder.type}" vuelve al catálogo de la app con su stock y sus promociones.`,
+      confirmText: 'Reactivar',
+    });
+    if (!confirmed) return;
+    reactivateCylinder.mutate(cylinder.gas_cylinder_id, {
+      onSuccess: () => notify.success('Producto reactivado'),
       onError: notify.error,
     });
   };
@@ -173,8 +197,14 @@ export const GasCylinders = () => {
             <div className="flex items-center gap-2 pb-2.5">
               <Switch
                 checked={onlyAvailable}
-                disabled={typeSelected}
-                title={typeSelected ? 'No aplica: elegiste un tipo exacto' : undefined}
+                disabled={typeSelected || onlyInactive}
+                title={
+                  typeSelected
+                    ? 'No aplica: elegiste un tipo exacto'
+                    : onlyInactive
+                      ? 'No aplica: estás viendo los productos dados de baja'
+                      : undefined
+                }
                 label="Mostrar sólo las garrafas disponibles para la app"
                 onChange={(checked) => {
                   setFilters({ available: checked ? '1' : '' });
@@ -182,6 +212,15 @@ export const GasCylinders = () => {
                 }}
               />
               <span className="text-sm text-ink">Sólo disponibles</span>
+              <Switch
+                checked={onlyInactive}
+                label="Mostrar los productos dados de baja"
+                onChange={(checked) => {
+                  setFilters(checked ? { inactive: '1', type: ALL_TYPES, available: '' } : { inactive: '' });
+                  setPagination((p) => ({ ...p, page: 0 }));
+                }}
+              />
+              <span className="text-sm text-ink">Dados de baja</span>
             </div>
           </div>
           {chips.length > 0 && !loadFailed && data ? (
@@ -213,12 +252,14 @@ export const GasCylinders = () => {
             rows={data?.rows ?? []}
             total={data?.total ?? 0}
             loading={isFetching || firstLoad}
-            filtered={chips.length > 0}
+            filtered={chips.length > 0 && !(onlyInactive && chips.length === 1)}
+            inactive={onlyInactive}
             pagination={pagination}
             onPaginationChange={setPagination}
             onEdit={canWrite ? (cylinder) => setForm({ open: true, cylinder }) : undefined}
             onAdjustStock={canWrite ? setStockTarget : undefined}
             onDelete={canWrite ? (cylinder) => void handleDelete(cylinder) : undefined}
+            onReactivate={canWrite ? (cylinder) => void handleReactivate(cylinder) : undefined}
           />
         )}
       </Card>

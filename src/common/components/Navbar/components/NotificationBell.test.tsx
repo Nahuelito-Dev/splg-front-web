@@ -193,3 +193,25 @@ describe('NotificationBell: cylinder:dispatch-blocked', () => {
     expect(screen.getByRole('button', { name: /1 sin leer/ })).toBeInTheDocument();
   });
 });
+
+describe('NotificationBell: coverage:no-active-zones', () => {
+  it('avisa que la distribuidora se quedó sin zonas activas y refresca las zonas', () => {
+    const spy = setup();
+    act(() => {
+      handlers.get('coverage:no-active-zones')?.({ distributorId: 'd1', zoneIds: ['z1'], at: '2026-10-17T12:00:00Z' });
+    });
+    const keys = spy.mock.calls.map(([filters]) => (filters?.queryKey as string[])[0]);
+    expect(keys).toContain('coverageZones');
+    fireEvent.click(screen.getByRole('button', { name: /1 sin leer/ }));
+    expect(screen.getByText('Sin zonas de cobertura activas: no se aceptan pedidos nuevos')).toBeInTheDocument();
+  });
+
+  it('ignora el de otra distribuidora', () => {
+    scope.viewing = 'd-elegida';
+    setup();
+    act(() => {
+      handlers.get('coverage:no-active-zones')?.({ distributorId: 'otra', zoneIds: ['z1'] });
+    });
+    expect(screen.queryByRole('button', { name: /sin leer/ })).not.toBeInTheDocument();
+  });
+});

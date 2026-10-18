@@ -21,6 +21,8 @@ export const ORDER_SOCKET_EVENTS = {
   CANCELLED: 'order:cancelled',
   RELEASED: 'order:pending',
   ASSIGNMENT_DECLINED: 'order:assignment-declined',
+  // El cliente cambió la dirección de entrega (CU-127): la ficha y las listas se refrescan.
+  ADDRESS_CHANGED: 'order:address-changed',
 } as const;
 
 export type OrderSocketEventName = (typeof ORDER_SOCKET_EVENTS)[keyof typeof ORDER_SOCKET_EVENTS];
@@ -33,6 +35,19 @@ export type NoDriversReason = 'no_drivers_in_range' | 'all_drivers_exhausted' | 
  * tiene candidatos (una sola vez por agotamiento).
  */
 export const NO_DRIVERS_EVENT = 'order:no-drivers';
+
+/**
+ * Evento que emite el barrido de zonas vencidas (CU-151) a los admins de la distribuidora cuando apaga su última
+ * zona de cobertura activa: desde ese momento no cubre ninguna dirección.
+ */
+export const NO_ACTIVE_ZONES_EVENT = 'coverage:no-active-zones';
+
+/** Payload de NO_ACTIVE_ZONES_EVENT. */
+export interface NoActiveZonesPayload {
+  distributorId?: string | null;
+  zoneIds: string[];
+  at?: string;
+}
 
 /** Payload de NO_DRIVERS_EVENT. */
 export interface NoDriversPayload {
