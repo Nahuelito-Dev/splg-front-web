@@ -89,6 +89,15 @@ export const getCylinderHistory = async (id: string): Promise<CylinderMovement[]
   return data;
 };
 
+/**
+ * GET /cylinders/vigencia/serial/:serial (CU-133): la vigencia a partir del número de serie grabado en el envase. El
+ * serial es único por distribuidora: el administrador general necesita una elegida (400 si no). 404 si no existe.
+ */
+export const getCylinderVigenciaBySerial = async (serial: string): Promise<CylinderVigencia> => {
+  const { data } = await http.get<CylinderVigencia>(`/cylinders/vigencia/serial/${encodeURIComponent(serial)}`);
+  return data;
+};
+
 /** GET /cylinders/:id/vigencia: fabricación, última revisión, vencimiento, días que faltan e historial de revisiones. */
 export const getCylinderVigencia = async (id: string): Promise<CylinderVigencia> => {
   const { data } = await http.get<CylinderVigencia>(`/cylinders/${id}/vigencia`);

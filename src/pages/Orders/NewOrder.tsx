@@ -13,6 +13,8 @@ import { formatCurrency } from '../../utils/format';
 import { PAYMENT_METHOD } from '../../utils/statusLabels';
 import { CustomerPicker } from './components/CustomerPicker';
 import { NewOrderItems } from './components/NewOrderItems';
+import { OrderQuoteCard } from './components/OrderQuoteCard';
+import { buildQuoteBody, quoteHint } from './components/orderQuote';
 import { newOrderSchema, type NewOrderValues } from './components/newOrderSchema';
 
 const PAYMENT_OPTIONS = Object.entries(PAYMENT_METHOD).map(([value, label]) => ({ value, label: label.text }));
@@ -57,6 +59,10 @@ export const NewOrder = () => {
   useEffect(() => {
     if (deliveryMode === 'express' && express && !express.available) setValue('deliveryMode', 'standard');
   }, [deliveryMode, express, setValue]);
+  const formValues = watch();
+  // Sin distribuidora elegida el alta no se puede mandar: tampoco se cotiza (la API contestaría 400).
+  const quoteBody = canWrite ? buildQuoteBody(formValues) : null;
+  const quoteBlocker = canWrite ? quoteHint(formValues) : writeHint;
   const onAccount = watch('paymentMethod') === 'account';
   const accountHint = !onAccount
     ? undefined
@@ -174,6 +180,8 @@ export const NewOrder = () => {
             <TextArea label="Notas" maxLength={500} error={errors.notes?.message} {...register('notes')} />
           </div>
         </Card>
+
+        <OrderQuoteCard body={quoteBody} hint={quoteBlocker ?? ''} />
 
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={() => navigate('/orders')}>

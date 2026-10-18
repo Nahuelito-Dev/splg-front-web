@@ -3,6 +3,7 @@ import { Card, EmptyState, ErrorState, ListSkeleton, PageHeader, Select } from '
 import { FROM_LIST_STATE, useUrlParams } from '../../hooks';
 import type { CylinderVencimiento } from '../../services/api/types';
 import { useExpiringCylinders } from '../../services/queries/physicalCylinders';
+import { SerialLookupCard } from './components/SerialLookupCard';
 import { ExpiringCylindersTable } from './components/ExpiringCylindersTable';
 import { WINDOW_DAYS, windowDaysOf } from './inspection';
 
@@ -62,6 +63,7 @@ export const CylinderExpirations = () => {
           />
         }
       />
+      <SerialLookupCard />
       {isPending ? (
         <ListSkeleton />
       ) : error || !data ? (

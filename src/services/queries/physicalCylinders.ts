@@ -5,6 +5,7 @@ import {
   getCylinder,
   getCylinderHistory,
   getCylinderVigencia,
+  getCylinderVigenciaBySerial,
   listCylinders,
   listExpiringCylinders,
   registerInspection,
@@ -93,6 +94,10 @@ export const useCylinderVigencia = (id: string | undefined) =>
     queryFn: () => getCylinderVigencia(id ?? ''),
     enabled: Boolean(id),
   });
+
+/** Se dispara a demanda (el admin escribe el serial y busca), no como una consulta que corre sola. */
+export const useFindCylinderBySerial = () =>
+  useMutation({ mutationFn: (serial: string) => getCylinderVigenciaBySerial(serial) });
 
 /** Lo máximo que la API devuelve por grupo en una página; `totals` dice si hay más. */
 const EXPIRING_PAGE = 500;

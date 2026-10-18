@@ -11,6 +11,7 @@ const api = vi.hoisted(() => ({
   registerUnpaidPayment: vi.fn(),
   confirmTransfer: vi.fn(),
 }));
+const finance = vi.hoisted(() => ({ listCashBoxes: vi.fn() }));
 const notify = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }));
 vi.mock('../../../../hooks', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
@@ -19,6 +20,10 @@ vi.mock('../../../../hooks', async (importOriginal) => ({
 vi.mock('../../../../services/api/orders', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   ...api,
+}));
+vi.mock('../../../../services/api/finance', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  ...finance,
 }));
 vi.mock('../../../../utils/notifications', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
@@ -43,6 +48,9 @@ beforeEach(() => {
     .mockImplementation((_id: string, body: { reason: string }) =>
       Promise.resolve({ incident: { description: `informado: ${body.reason}` } }),
     );
+  finance.listCashBoxes
+    .mockReset()
+    .mockResolvedValue({ data: [{ cashBoxId: 'caja-1', name: 'Caja central' }], total: 1 });
   notify.success.mockClear();
   notify.info.mockClear();
 });
@@ -63,6 +71,11 @@ const renderActions = (over: Partial<Order>) =>
       <OrderPaymentActions order={order(over)} />
     </QueryClientProvider>,
   );
+
+const pickBox = async () => {
+  await screen.findByRole('option', { name: 'Caja central' });
+  fireEvent.change(screen.getByRole('combobox', { name: /Caja/ }), { target: { value: 'caja-1' } });
+};
 
 const writeReason = (value = REASON) =>
   fireEvent.change(screen.getByRole('textbox', { name: /Motivo/ }), { target: { value } });
@@ -132,11 +145,47 @@ describe('OrderPaymentActions: envío', () => {
     expect(screen.getByRole('button', { name: 'Registrar cobro' })).toHaveAttribute('aria-disabled', 'true');
 
     writeReason();
+    await pickBox();
     fireEvent.click(screen.getByRole('button', { name: 'Registrar cobro' }));
     await waitFor(() =>
-      expect(api.registerCashPayment).toHaveBeenCalledWith('abcdef123456', { reason: REASON }, expect.any(String)),
+      expect(api.registerCashPayment).toHaveBeenCalledWith(
+        'abcdef123456',
+        { reason: REASON, cashBoxId: 'caja-1' },
+        expect.any(String),
+      ),
     );
     await waitFor(() => expect(notify.success).toHaveBeenCalledWith('Cobro en efectivo registrado'));
+  });
+
+  it('sólo ofrece cajas de efectivo', async () => {
+    renderActions({});
+    fireEvent.click(screen.getByRole('button', { name: 'Registrar cobro en efectivo' }));
+    await screen.findByRole('option', { name: 'Caja central' });
+    expect(finance.listCashBoxes).toHaveBeenCalledWith(expect.anything(), { kind: 'cash' });
+  });
+
+  it('con cajas en la distribuidora, sin elegir una no manda nada y lo dice', async () => {
+    renderActions({});
+    fireEvent.click(screen.getByRole('button', { name: 'Registrar cobro en efectivo' }));
+    await screen.findByRole('option', { name: 'Caja central' });
+    writeReason();
+    fireEvent.click(screen.getByRole('button', { name: 'Registrar cobro' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Elegí la caja donde entra el efectivo');
+    expect(api.registerCashPayment).not.toHaveBeenCalled();
+  });
+
+  it('sin cajas en la distribuidora no pide caja y cobra sin cashBoxId', async () => {
+    finance.listCashBoxes.mockResolvedValue({ data: [], total: 0 });
+    renderActions({});
+    fireEvent.click(screen.getByRole('button', { name: 'Registrar cobro en efectivo' }));
+    await waitFor(() => expect(finance.listCashBoxes).toHaveBeenCalled());
+    writeReason();
+    expect(screen.queryByRole('combobox', { name: /Caja/ })).not.toBeInTheDocument();
+    // Mientras las cajas cargan el envío espera: se reintenta hasta que la lista (vacía) llega.
+    await waitFor(() => {
+      fireEvent.click(screen.getByRole('button', { name: 'Registrar cobro' }));
+      expect(api.registerCashPayment).toHaveBeenCalledWith('abcdef123456', { reason: REASON }, expect.any(String));
+    });
   });
 
   it('registrar impago manda reason', async () => {
@@ -194,6 +243,7 @@ describe('OrderPaymentActions: envío', () => {
     renderActions({});
     fireEvent.click(screen.getByRole('button', { name: 'Registrar cobro en efectivo' }));
     writeReason();
+    await pickBox();
     const submit = screen.getByRole('button', { name: 'Registrar cobro' });
     fireEvent.click(submit);
     fireEvent.click(submit);
@@ -208,6 +258,7 @@ describe('OrderPaymentActions: envío', () => {
     renderActions({});
     fireEvent.click(screen.getByRole('button', { name: 'Registrar cobro en efectivo' }));
     writeReason();
+    await pickBox();
     fireEvent.click(screen.getByRole('button', { name: 'Registrar cobro' }));
     await waitFor(() =>
       expect(notify.info).toHaveBeenCalledWith('El pedido ya estaba cobrado: no se registró tu motivo'),

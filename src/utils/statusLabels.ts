@@ -479,6 +479,7 @@ export const CASH_REFERENCE: LabelMap<CashMovement['referenceType']> = {
   session_closing: { text: 'Cierre de caja', tone: 'info' },
   driver_settlement: { text: 'Rendición', tone: 'primary' },
   customer_payment: { text: 'Cobro de cuenta', tone: 'primary' },
+  order_payment: { text: 'Cobro de pedido', tone: 'primary' },
   purchase_receipt: { text: 'Compra', tone: 'neutral' },
   fuel_load: { text: 'Combustible', tone: 'neutral' },
   traffic_fine: { text: 'Multa', tone: 'neutral' },

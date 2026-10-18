@@ -19,11 +19,16 @@ interface Props {
   errors: FieldErrors<NewOrderValues>;
 }
 
-/** Los renglones del pedido: garrafa, cantidad y precio (se completa con el del catálogo, editable). */
+/** Los renglones del pedido: garrafa, cantidad y precio (sólo lectura: el back cobra siempre el de catálogo, con su promoción por volumen). */
 export const NewOrderItems = ({ control, register, setValue, errors }: Props) => {
   const { data: catalog } = useGasCylinders({ page: 0, pageSize: 100 });
   const { fields, append, remove } = useFieldArray({ control, name: 'items' });
+
   const items = useWatch({ control, name: 'items' });
+  const priceOf = (id: string | undefined): string => {
+    const picked = catalog?.rows.find((c) => c.gas_cylinder_id === id);
+    return picked ? formatCurrency(picked.price) : '';
+  };
 
   const cylinderOptions = [
     { value: '', label: 'Elegí una garrafa' },
@@ -31,11 +36,6 @@ export const NewOrderItems = ({ control, register, setValue, errors }: Props) =>
       .filter((c) => c.isActive)
       .map((c) => ({ value: c.gas_cylinder_id, label: `${c.type} — ${formatCurrency(c.price)}` })) ?? []),
   ];
-
-  const total = (items ?? []).reduce(
-    (sum, item) => sum + (Number(item?.quantity) || 0) * (Number(item?.unitPrice) || 0),
-    0,
-  );
 
   return (
     <div className="space-y-3">
@@ -84,11 +84,10 @@ export const NewOrderItems = ({ control, register, setValue, errors }: Props) =>
               <div className="w-32">
                 <Input
                   label="Precio unitario"
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  error={errors.items?.[index]?.unitPrice?.message}
-                  {...register(`items.${index}.unitPrice`)}
+                  readOnly
+                  tabIndex={-1}
+                  value={priceOf(items?.[index]?.gasCylinderId)}
+                  placeholder="—"
                 />
               </div>
               <div className="pb-1">
@@ -104,8 +103,6 @@ export const NewOrderItems = ({ control, register, setValue, errors }: Props) =>
           {errors.items.message}
         </p>
       )}
-
-      {fields.length > 0 && <p className="text-right text-sm font-semibold text-ink">Total: {formatCurrency(total)}</p>}
     </div>
   );
 };

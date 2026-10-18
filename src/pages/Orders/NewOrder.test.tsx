@@ -9,9 +9,14 @@ vi.mock('../../hooks', async (importOriginal) => ({
   usePermissions: permissions,
 }));
 const deliveryOptions = vi.hoisted(() => ({ data: undefined as unknown }));
+const quote = vi.hoisted(() => ({ data: undefined as unknown, body: vi.fn() }));
 vi.mock('../../services/queries/orders', () => ({
   useCreateOrder: () => ({ mutate: createOrder, isPending: false }),
   useDeliveryOptions: () => ({ data: deliveryOptions.data }),
+  useOrderQuote: (body: unknown) => {
+    quote.body(body);
+    return { data: quote.data, error: null, isFetching: false, stale: false };
+  },
 }));
 vi.mock('../../services/queries/finance', () => ({
   useCustomerAccountOf: () => ({ data: null, isPending: false }),
@@ -43,6 +48,8 @@ afterEach(() => {
   cleanup();
   createOrder.mockReset();
   deliveryOptions.data = undefined;
+  quote.data = undefined;
+  quote.body.mockReset();
 });
 
 const WRITE_HINT = 'Elegí una distribuidora con «Ver como» para crear';
@@ -135,6 +142,49 @@ describe('NewOrder: administrador general sin distribuidora elegida', () => {
         expect.objectContaining({ deliveryMode: 'standard' }),
         expect.anything(),
       );
+    });
+  });
+
+  describe('cotización del back', () => {
+    it('antes de elegir cliente, dirección e ítems no cotiza y lo explica', () => {
+      permissions.mockReturnValue({ canWrite: true, writeHint: undefined });
+      renderPage();
+      expect(screen.getByText(/Elegí un cliente/)).toBeInTheDocument();
+      expect(quote.body).toHaveBeenLastCalledWith(null);
+    });
+
+    it('con todo cargado cotiza con la modalidad y el pago elegidos y muestra los recargos y el total del back', () => {
+      permissions.mockReturnValue({ canWrite: true, writeHint: undefined });
+      quote.data = {
+        items: [{ gasCylinderId: 'g-1', title: 'Garrafa 10kg', quantity: 1, unitPrice: 100, subtotal: 100 }],
+        subtotal: 100,
+        zone: { name: 'Zona norte' },
+        zoneSurcharge: 5,
+        paymentSurcharge: 10,
+        expressSurcharge: 0,
+        total: 115,
+      };
+      renderPage();
+      fillForm();
+      fireEvent.change(screen.getByLabelText('Método de pago'), { target: { value: 'transfer' } });
+      expect(quote.body).toHaveBeenLastCalledWith({
+        customerId: 'u-1',
+        addressId: 'a-1',
+        paymentMethod: 'transfer',
+        deliveryMode: 'standard',
+        items: [{ gasCylinderId: 'g-1', quantity: 1, unitPrice: 100 }],
+      });
+      expect(screen.getByText('Recargo de zona (Zona norte)')).toBeInTheDocument();
+      expect(screen.getByText('Recargo por medio de pago')).toBeInTheDocument();
+      expect(screen.queryByText('Recargo express')).not.toBeInTheDocument();
+      expect(screen.getByText('Total').nextElementSibling).toHaveTextContent('115');
+    });
+    it('sin distribuidora elegida no cotiza y muestra el aviso', () => {
+      permissions.mockReturnValue({ canWrite: false, writeHint: WRITE_HINT });
+      renderPage();
+      fillForm();
+      expect(quote.body).toHaveBeenLastCalledWith(null);
+      expect(screen.getAllByText(WRITE_HINT).length).toBeGreaterThan(0);
     });
   });
 });

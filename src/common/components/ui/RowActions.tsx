@@ -23,6 +23,8 @@ interface Props {
   editBlockedReason?: string;
   /** Baja lógica: el que llama pide la confirmación antes de dar de baja. */
   onDelete?: () => void;
+  /** Igual que `editBlockedReason`, para la baja: el botón se ve apagado y el motivo va en su nombre accesible. */
+  deleteBlockedReason?: string;
   /** Texto de la baja según la pantalla ("Eliminar", "Dar de baja", "Desactivar"). */
   deleteLabel?: string;
   /** Lo demás va en el menú ⋯ al final de la fila. Sin acciones, no hay menú. */
@@ -40,6 +42,7 @@ export const RowActions = ({
   onEdit,
   editBlockedReason,
   onDelete,
+  deleteBlockedReason,
   deleteLabel = 'Eliminar',
   actions = [],
 }: Props) => {
@@ -59,8 +62,18 @@ export const RowActions = ({
           onClick={() => undefined}
         />
       )}
-      {onDelete && (
+      {onDelete && !deleteBlockedReason && (
         <IconButton label={`${deleteLabel} ${rowLabel}`} icon={<Trash2 />} tone="danger" onClick={onDelete} />
+      )}
+      {deleteBlockedReason && (
+        <IconButton
+          label={`${deleteLabel} ${rowLabel} (no disponible: ${deleteBlockedReason})`}
+          icon={<Trash2 />}
+          tone="danger"
+          aria-disabled="true"
+          className="cursor-not-allowed opacity-50"
+          onClick={() => undefined}
+        />
       )}
       {actions.length > 0 && (
         <>

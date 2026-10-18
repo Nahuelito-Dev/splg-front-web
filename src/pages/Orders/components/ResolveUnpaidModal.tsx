@@ -5,6 +5,8 @@ import type { ResolveUnpaidBody } from '../../../services/api/types';
 import { useResolveUnpaid } from '../../../services/queries/orders';
 import { formatCurrency, formatShortId } from '../../../utils/format';
 import { notify } from '../../../utils/notifications';
+import { CashBoxField } from './CashBoxField';
+import { useOrderCashBoxes } from './useOrderCashBoxes';
 
 type Resolution = ResolveUnpaidBody['resolution'];
 
@@ -38,13 +40,16 @@ export const ResolveUnpaidModal = ({ open, onClose, order }: Props) => {
   const [resolution, setResolution] = useState<Resolution | null>(null);
   const [note, setNote] = useState('');
   const [touched, setTouched] = useState(false);
+  const [cashBoxId, setCashBoxId] = useState('');
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
+  const cashBoxes = useOrderCashBoxes(open && resolution === 'paid');
 
   useEffect(() => {
     if (open) {
       setResolution(null);
       setNote('');
       setTouched(false);
+      setCashBoxId('');
       setIdempotencyKey(crypto.randomUUID());
     }
   }, [open]);
@@ -53,11 +58,23 @@ export const ResolveUnpaidModal = ({ open, onClose, order }: Props) => {
   const resolutionError = touched && !resolution ? 'Elegí cómo se resolvió' : undefined;
   const noteError = touched && !trimmed ? 'Escribí la nota: queda registrada con el cobro' : undefined;
 
+  const needsBox = resolution === 'paid' && cashBoxes.required;
+  const boxError = touched && needsBox && !cashBoxId ? 'Elegí la caja donde entra el efectivo' : undefined;
+
   const submit = () => {
     setTouched(true);
     if (!order || !resolution || !trimmed) return;
+    if (resolution === 'paid' && (cashBoxes.loading || cashBoxes.failed)) {
+      notify.error(new Error('No se pudieron cargar las cajas: cerrá y volvé a abrir el diálogo'));
+      return;
+    }
+    if (needsBox && !cashBoxId) return;
     resolve.mutate(
-      { id: order.order_id, body: { resolution, note: trimmed }, idempotencyKey },
+      {
+        id: order.order_id,
+        body: { resolution, note: trimmed, cashBoxId: resolution === 'paid' && cashBoxId ? cashBoxId : undefined },
+        idempotencyKey,
+      },
       {
         onSuccess: (result) => {
           if (result.alreadyResolved) notify.info('Otro administrador ya lo había resuelto: no se cambió nada');
@@ -129,6 +146,17 @@ export const ResolveUnpaidModal = ({ open, onClose, order }: Props) => {
             </p>
           )}
         </fieldset>
+        {resolution === 'paid' && (
+          <CashBoxField
+            boxes={cashBoxes.boxes}
+            value={cashBoxId}
+            onChange={(id) => {
+              setCashBoxId(id);
+              setIdempotencyKey(crypto.randomUUID());
+            }}
+            error={boxError}
+          />
+        )}
         <TextArea
           label="Nota"
           required

@@ -1,4 +1,5 @@
-import { keepPreviousData, useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, skipToken, useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 import { listActiveDeliveries } from '../api/deliveries';
 import type { PageParams } from '../api/httpClient';
 import {
@@ -15,6 +16,7 @@ import {
   listOrderIncidents,
   listOrders,
   notifyOrderArrival,
+  quoteOrder,
   registerCashPayment,
   registerUnpaidPayment,
   resolveUnpaidOrder,
@@ -29,6 +31,8 @@ import type {
   CreateOrderBody,
   MotivoDeCobroBody,
   Order,
+  QuoteOrderBody,
+  RegisterCashBody,
   ResolveUnpaidBody,
   UpdateOrderBody,
   UpdateOrderStatusBody,
@@ -274,17 +278,23 @@ export const useResolveUnpaid = () => {
         queryClient.invalidateQueries({ queryKey: queryKeys.incidents.all }),
         queryClient.invalidateQueries({ queryKey: queryKeys.reports.all }),
         queryClient.invalidateQueries({ queryKey: queryKeys.stats.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.cashBoxes.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.cashMovements.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.finance.all }),
       ]),
   });
 };
 
-/** Un cobro manual cambia el pago del pedido y, según el caso, la incidencia de impago, los reportes y las ventas. */
+/** Un cobro manual cambia el pago del pedido y, según el caso, la incidencia de impago, los reportes, las ventas y la caja. */
 const invalidateAfterPayment = (queryClient: ReturnType<typeof useQueryClient>) =>
   Promise.all([
     queryClient.invalidateQueries({ queryKey: keys.all }),
     queryClient.invalidateQueries({ queryKey: queryKeys.incidents.all }),
     queryClient.invalidateQueries({ queryKey: queryKeys.reports.all }),
     queryClient.invalidateQueries({ queryKey: queryKeys.stats.all }),
+    queryClient.invalidateQueries({ queryKey: queryKeys.cashBoxes.all }),
+    queryClient.invalidateQueries({ queryKey: queryKeys.cashMovements.all }),
+    queryClient.invalidateQueries({ queryKey: queryKeys.finance.all }),
   ]);
 
 /**
@@ -294,7 +304,7 @@ const invalidateAfterPayment = (queryClient: ReturnType<typeof useQueryClient>) 
 export const useRegisterCashPayment = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, body, scope }: { id: string; body: MotivoDeCobroBody; scope: string }) =>
+    mutationFn: ({ id, body, scope }: { id: string; body: RegisterCashBody; scope: string }) =>
       runIntent(queryClient, scope, { id, body }, (key) => registerCashPayment(id, body, key)),
     onSettled: () => invalidateAfterPayment(queryClient),
   });
@@ -327,3 +337,28 @@ export const useDeliveryOptions = (addressId: string | undefined, customerId: st
     queryFn: () => getDeliveryOptions(addressId ?? '', customerId ?? ''),
     enabled: Boolean(addressId && customerId),
   });
+
+const QUOTE_DELAY = 400;
+
+/**
+ * Cotización del back para el alta telefónica (`POST /orders/quote`). Con `null` no consulta. Espera a que el cuerpo
+ * deje de cambiar antes de pedir; `stale` avisa que lo mostrado todavía es de un cuerpo anterior.
+ */
+export const useOrderQuote = (body: QuoteOrderBody | null) => {
+  const key = JSON.stringify(body);
+  const [settled, setSettled] = useState(body);
+  useEffect(() => {
+    const id = setTimeout(() => setSettled(body), QUOTE_DELAY);
+    return () => clearTimeout(id);
+    // `body` es un objeto nuevo en cada render: el contenido (`key`) es lo que decide cuándo se vuelve a cotizar.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+  const query = useQuery({
+    queryKey: [...keys.all, 'quote', JSON.stringify(settled)] as const,
+    queryFn: settled ? () => quoteOrder(settled) : skipToken,
+    placeholderData: keepPreviousData,
+    retry: false,
+    staleTime: 0,
+  });
+  return { ...query, stale: JSON.stringify(settled) !== key };
+};

@@ -1,6 +1,6 @@
 import { http } from './httpClient';
 import { registerUser, type AccountFields } from './registration';
-import type { Admin, AdminVista, User } from './types';
+import type { Admin, AdminVista, Message, UpdateAdminBody, User } from './types';
 
 /**
  * GET /admin: los administradores. Con `distributorId`, los de esa empresa (el administrador general
@@ -30,3 +30,21 @@ export type AdminAccountFields = AccountFields & { distributorId?: string };
 
 /** Alta de un admin: POST /users con rol admin o super_admin. */
 export const createAdmin = (role: AdminRole, account: AdminAccountFields): Promise<User> => registerUser(role, account);
+
+/**
+ * PATCH /admin/:id: nombre y teléfono del administrador (el correo y el bloqueo van por otras rutas). 403 si un admin de
+ * empresa se edita a sí mismo, 404 si es de otra empresa o un super admin, 409 si el teléfono ya lo usa otra cuenta.
+ */
+export const updateAdmin = async (id: string, body: UpdateAdminBody): Promise<Admin> => {
+  const { data } = await http.patch<Admin>(`/admin/${id}`, body);
+  return data;
+};
+
+/**
+ * DELETE /admin/:id: baja lógica del administrador (deshabilita su cuenta de acceso; nada se borra). 403 si es uno
+ * mismo, 409 si es el último administrador activo de la empresa o el último super admin.
+ */
+export const deleteAdmin = async (id: string): Promise<Message> => {
+  const { data } = await http.delete<Message>(`/admin/${id}`);
+  return data;
+};
