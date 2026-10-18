@@ -4,6 +4,7 @@ const currency = new Intl.NumberFormat('es-AR', { style: 'currency', currency: '
 const number = new Intl.NumberFormat('es-AR');
 const dateOnly = new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium' });
 const dateTime = new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium', timeStyle: 'short' });
+const timeOnly = new Intl.DateTimeFormat('es-AR', { hour: '2-digit', minute: '2-digit' });
 
 type DateInput = string | number | Date | null | undefined;
 
@@ -32,6 +33,12 @@ export const formatDate = (value: DateInput): string => {
 export const formatDateTime = (value: DateInput): string => {
   const date = value === null || value === undefined ? null : toDate(value);
   return date ? dateTime.format(date) : '—';
+};
+
+/** 18:45 */
+export const formatTime = (value: DateInput): string => {
+  const date = value === null || value === undefined ? null : toDate(value);
+  return date ? timeOnly.format(date) : '—';
 };
 
 /**

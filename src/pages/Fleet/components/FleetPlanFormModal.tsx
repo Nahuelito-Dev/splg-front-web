@@ -1,10 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, Input, Modal, Select } from '../../../common/components/ui';
+import { Button, Checkbox, Input, Modal, Select } from '../../../common/components/ui';
 import type { FleetPlan } from '../../../services/api/types';
 import { useCreateFleetPlan, useUpdateFleetPlan } from '../../../services/queries/fleet';
 import { notify } from '../../../utils/notifications';
+import { POSITION_CATEGORY_LABELS } from '../../Employees/employeeLabels';
 import { fleetPlanSchema, type FleetPlanFormValues } from './fleetPlanSchema';
 
 interface Props {
@@ -17,6 +18,15 @@ interface Props {
 const SUBJECT_OPTIONS = [
   { value: 'vehicle', label: 'Vehículo' },
   { value: 'driver', label: 'Chofer' },
+  { value: 'employee', label: 'Personal' },
+];
+
+const DOCUMENT_KIND_OPTIONS = [
+  { value: '', label: 'Sin detalle' },
+  { value: 'hazmat_driver_course', label: 'Curso de mercancías peligrosas (certificado y emisor)' },
+  { value: 'psychophysical', label: 'Examen psicofísico (fecha del examen)' },
+  { value: 'art_coverage', label: 'Alta en la ART (aseguradora y póliza)' },
+  { value: 'generic', label: 'Genérico' },
 ];
 
 const TRIGGER_OPTIONS = [
@@ -29,6 +39,12 @@ const CRITICALITY_OPTIONS = [
   { value: 'blocking', label: 'Bloqueante' },
   { value: 'non_blocking', label: 'No bloqueante' },
 ];
+
+/** El tipo de documento que el formulario sabe elegir; los de flota (seguro, VTV…) no se tocan desde acá. */
+const employeeDocumentKind = (kind: FleetPlan['documentKind'] | undefined): FleetPlanFormValues['documentKind'] =>
+  kind === 'hazmat_driver_course' || kind === 'psychophysical' || kind === 'art_coverage' || kind === 'generic'
+    ? kind
+    : '';
 
 /** Alta o edición de un plan de mantenimiento/habilitación (CU-105/140). */
 export const FleetPlanFormModal = ({ open, onClose, plan }: Props) => {
@@ -56,6 +72,8 @@ export const FleetPlanFormModal = ({ open, onClose, plan }: Props) => {
       leadTimeDays: plan?.leadTimeDays ?? 30,
       criticality: plan?.criticality ?? 'blocking',
       carType: plan?.carType ?? '',
+      documentKind: employeeDocumentKind(plan?.documentKind),
+      appliesToCategories: plan?.appliesToCategories ?? [],
       isActive: plan?.isActive ?? true,
     });
   }, [open, plan, reset]);
@@ -80,6 +98,8 @@ export const FleetPlanFormModal = ({ open, onClose, plan }: Props) => {
       leadTimeDays: values.leadTimeDays,
       criticality: values.criticality,
       carType: values.subject === 'vehicle' ? values.carType : undefined,
+      documentKind: values.subject === 'employee' && values.documentKind ? values.documentKind : undefined,
+      appliesToCategories: values.subject === 'employee' ? values.appliesToCategories : undefined,
       isActive: values.isActive,
     };
     if (plan) {
@@ -163,6 +183,28 @@ export const FleetPlanFormModal = ({ open, onClose, plan }: Props) => {
           error={errors.criticality?.message}
           {...register('criticality')}
         />
+        {subject === 'employee' && (
+          <>
+            <div className="sm:col-span-2">
+              <Select
+                label="Tipo de documento"
+                options={DOCUMENT_KIND_OPTIONS}
+                hint="Define los datos que se piden al cargarlo."
+                error={errors.documentKind?.message}
+                {...register('documentKind')}
+              />
+            </div>
+            <fieldset className="sm:col-span-2">
+              <legend className="text-sm font-medium text-ink">Aplica a los puestos de categoría</legend>
+              <p className="mb-2 text-xs text-muted">Sin elegir ninguna, aplica a todo el personal.</p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {Object.entries(POSITION_CATEGORY_LABELS).map(([value, label]) => (
+                  <Checkbox key={value} label={label} value={value} {...register('appliesToCategories')} />
+                ))}
+              </div>
+            </fieldset>
+          </>
+        )}
         {subject === 'vehicle' && (
           <Input
             label="Tipo de vehículo"

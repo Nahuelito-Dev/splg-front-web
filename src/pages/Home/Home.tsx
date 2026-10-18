@@ -3,6 +3,7 @@ import { ActivityCard } from './views/ActivityCard';
 import { DistributionCard } from './views/DistributionCard';
 import { KpiRow } from './views/KpiRow';
 import { OperationCard } from './views/OperationCard';
+import { PersonnelCard } from './views/PersonnelCard';
 import { SalesAreaCard } from './views/SalesAreaCard';
 import { StatusDonutCard } from './views/StatusDonutCard';
 import { StockCard } from './views/StockCard';
@@ -27,6 +28,7 @@ export const Home = () => (
       <div className="grid content-start gap-3.5 lg:col-span-2 xl:col-span-1">
         <StockCard />
         <OperationCard />
+        <PersonnelCard />
       </div>
     </div>
   </div>

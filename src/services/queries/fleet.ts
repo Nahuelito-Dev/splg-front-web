@@ -22,6 +22,7 @@ import {
   updateFleetPlan,
   updateFleetTask,
   uploadFleetTaskAttachment,
+  type FleetExpirationFilters,
   type FleetPlanFilters,
   type FleetTaskFilters,
   type FleetTaskUpdateBody,
@@ -79,10 +80,10 @@ export const useFleetPlan = (id: string | undefined, enabled = true) =>
  * Lo vencido y lo que vence dentro de `withinDays` (CU-139), agrupado por vehículo y por
  * chofer. `enabled` en `false` la apaga (un super_admin sin "Ver como": la API la rechaza).
  */
-export const useFleetExpirations = (withinDays: number, enabled = true) =>
+export const useFleetExpirations = (withinDays: number, enabled = true, filters: FleetExpirationFilters = {}) =>
   useQuery({
-    queryKey: keys.detail(`expirations:${withinDays}`),
-    queryFn: () => getFleetExpirations(withinDays),
+    queryKey: keys.detail(`expirations:${withinDays}:${filters.subject ?? ''}:${filters.category ?? ''}`),
+    queryFn: () => getFleetExpirations(withinDays, filters),
     enabled,
   });
 

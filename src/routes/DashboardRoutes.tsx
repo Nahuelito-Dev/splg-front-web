@@ -18,6 +18,8 @@ const CustomerDetails = lazyPage(() => import('../pages/Customers/CustomerDetail
 const Employees = lazyPage(() => import('../pages/Employees/Employees'), 'Employees');
 const JobPositions = lazyPage(() => import('../pages/Employees/JobPositions'), 'JobPositions');
 const EmployeeDetails = lazyPage(() => import('../pages/Employees/EmployeeDetails'), 'EmployeeDetails');
+const Attendance = lazyPage(() => import('../pages/Attendance/Attendance'), 'Attendance');
+const Leaves = lazyPage(() => import('../pages/Leaves/Leaves'), 'Leaves');
 const Addresses = lazyPage(() => import('../pages/Addresses/Addresses'), 'Addresses');
 const GasCylinders = lazyPage(() => import('../pages/GasCylinders/GasCylinders'), 'GasCylinders');
 const GasCylinderDetails = lazyPage(() => import('../pages/GasCylinders/GasCylinderDetails'), 'GasCylinderDetails');
@@ -138,6 +140,8 @@ export const DashboardRoutes = () => {
           <Route path="employees" element={<Employees />} />
           <Route path="employees/details/:id" element={<EmployeeDetails />} />
           <Route path="employees/positions" element={<JobPositions />} />
+          <Route path="attendance" element={<Attendance />} />
+          <Route path="leaves" element={<Leaves />} />
 
           {/* 5. Repartidores (Deliveries) */}
           <Route path="deliveries" element={<Deliveries />} />

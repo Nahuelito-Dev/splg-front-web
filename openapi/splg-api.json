@@ -4901,618 +4901,6 @@
                 ]
             }
         },
-        "/api/customers/me/consumption": {
-            "get": {
-                "operationId": "ConsumptionController_obtener",
-                "parameters": [],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ConsumptionResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: customer"
-                    },
-                    "404": {
-                        "description": "El usuario no tiene ficha de cliente"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Consumo declarado y recompra estimada del cliente",
-                "tags": [
-                    "Customers"
-                ]
-            },
-            "patch": {
-                "description": "Convierte la declaración a kg por mes con el peso del tipo de garrafa, valida el rango (5 a 500 kg por mes) y recalcula la fecha estimada de recompra desde la última compra entregada (o desde ahora si nunca compró). Fuera de rango responde 400 y pide confirmar con `confirmOutOfRange: true`.",
-                "operationId": "ConsumptionController_actualizar",
-                "parameters": [],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/UpdateConsumptionDto"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ConsumptionResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Valor fuera de rango sin confirmar, tipo de garrafa inexistente o dado de baja, o falta el tipo de garrafa habitual"
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: customer"
-                    },
-                    "404": {
-                        "description": "El usuario no tiene ficha de cliente"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Modificar el consumo promedio declarado (CU-144)",
-                "tags": [
-                    "Customers"
-                ]
-            }
-        },
-        "/api/gascylinder": {
-            "post": {
-                "operationId": "GasCylinderController_create",
-                "parameters": [],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/CreateGasCylinderDto"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "201": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/GasCylinderResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Datos inválidos o tipo repetido"
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: admin, super_admin"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    },
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Create a new gas cylinder type",
-                "tags": [
-                    "Gas Cylinders"
-                ]
-            },
-            "get": {
-                "description": "Público. Con sesión iniciada se acota a la distribuidora del usuario (la del admin, o el header `X-Distributor` del super admin y del cliente); sin sesión, a `?distributor=` o a la distribuidora por defecto.",
-                "operationId": "GasCylinderController_findAll",
-                "parameters": [
-                    {
-                        "name": "limit",
-                        "required": false,
-                        "in": "query",
-                        "schema": {
-                            "maximum": 100,
-                            "default": 10,
-                            "type": "number"
-                        }
-                    },
-                    {
-                        "name": "offset",
-                        "required": false,
-                        "in": "query",
-                        "schema": {
-                            "default": 0,
-                            "type": "number"
-                        }
-                    },
-                    {
-                        "name": "page",
-                        "required": false,
-                        "in": "query",
-                        "schema": {
-                            "default": 1,
-                            "type": "number"
-                        }
-                    },
-                    {
-                        "name": "term",
-                        "required": false,
-                        "in": "query",
-                        "description": "Texto a buscar",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "distributor",
-                        "required": false,
-                        "in": "query",
-                        "schema": {
-                            "example": "demo",
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/CatalogoDto"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Get all gas cylinders with pagination",
-                "tags": [
-                    "Gas Cylinders"
-                ]
-            }
-        },
-        "/api/gascylinder/{id}": {
-            "get": {
-                "operationId": "GasCylinderController_findOne",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "required": true,
-                        "in": "path",
-                        "description": "Gas cylinder UUID",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/GasCylinderResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "404": {
-                        "description": "Gas cylinder not found"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Get gas cylinder by ID",
-                "tags": [
-                    "Gas Cylinders"
-                ]
-            },
-            "patch": {
-                "operationId": "GasCylinderController_update",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "required": true,
-                        "in": "path",
-                        "description": "Gas cylinder UUID",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/UpdateGasCylinderDto"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/GasCylinderResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Datos inválidos (p. ej.: weight debe ser mayor que 0; price debe ser mayor que 0)"
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: admin, super_admin"
-                    },
-                    "404": {
-                        "description": "No existe o es de otra distribuidora"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    },
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Update gas cylinder by ID",
-                "tags": [
-                    "Gas Cylinders"
-                ]
-            },
-            "delete": {
-                "operationId": "GasCylinderController_remove",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "required": true,
-                        "in": "path",
-                        "description": "Gas cylinder UUID",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/BajaDeProductoDto"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: admin, super_admin"
-                    },
-                    "404": {
-                        "description": "No existe o es de otra distribuidora"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    },
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Delete (deactivate) gas cylinder by ID",
-                "tags": [
-                    "Gas Cylinders"
-                ]
-            }
-        },
-        "/api/gascylinder/type/{type}": {
-            "get": {
-                "operationId": "GasCylinderController_findByType",
-                "parameters": [
-                    {
-                        "name": "type",
-                        "required": true,
-                        "in": "path",
-                        "description": "Gas cylinder type (10kg, 15kg, etc)",
-                        "schema": {
-                            "example": "10kg",
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/GasCylinderResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "404": {
-                        "description": "No hay un producto activo de ese tipo"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Get gas cylinder by type",
-                "tags": [
-                    "Gas Cylinders"
-                ]
-            }
-        },
-        "/api/gascylinder/available/list": {
-            "get": {
-                "description": "Público. Con sesión iniciada se acota a la distribuidora del usuario; sin sesión, a `?distributor=` o a la distribuidora por defecto.",
-                "operationId": "GasCylinderController_getAvailableCylinders",
-                "parameters": [
-                    {
-                        "name": "distributor",
-                        "required": false,
-                        "in": "query",
-                        "schema": {
-                            "example": "demo",
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/DisponiblesDto"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Get all available gas cylinders",
-                "tags": [
-                    "Gas Cylinders"
-                ]
-            }
-        },
-        "/api/gascylinder/{id}/photo": {
-            "put": {
-                "description": "Multipart, campo `file`: JPG, PNG o WEBP de hasta 5 MB (el tipo se valida por el contenido, no por el header). Si ya tenía foto, la anterior se borra del bucket. Aparece como `photoUrl` en el catálogo que ven las apps.",
-                "operationId": "GasCylinderController_uploadPhoto",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "required": true,
-                        "in": "path",
-                        "description": "Gas cylinder UUID",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "multipart/form-data": {
-                            "schema": {
-                                "type": "object",
-                                "properties": {
-                                    "file": {
-                                        "type": "string",
-                                        "format": "binary"
-                                    }
-                                },
-                                "required": [
-                                    "file"
-                                ]
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/GasCylinderResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Falta la foto o está vacía"
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: admin, super_admin"
-                    },
-                    "404": {
-                        "description": "No existe o es de otra distribuidora"
-                    },
-                    "413": {
-                        "description": "La foto supera los 5 MB"
-                    },
-                    "415": {
-                        "description": "No es JPG, PNG ni WEBP (o el contenido no coincide)"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    },
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Subir o reemplazar la imagen del producto",
-                "tags": [
-                    "Gas Cylinders"
-                ]
-            },
-            "delete": {
-                "description": "Quita la referencia (el objeto se borra del bucket en segundo plano); no da de baja el producto.",
-                "operationId": "GasCylinderController_removePhoto",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "required": true,
-                        "in": "path",
-                        "description": "Gas cylinder UUID",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/GasCylinderResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: admin, super_admin"
-                    },
-                    "404": {
-                        "description": "No existe o es de otra distribuidora"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    },
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Sacar la imagen del producto",
-                "tags": [
-                    "Gas Cylinders"
-                ]
-            },
-            "get": {
-                "description": "Por defecto redirige (302) a la URL firmada de S3. Con `?modo=url` devuelve `{ url, expiresAt, requiresAuth }` en JSON, sin redirect; si no tiene foto, `url: null`.",
-                "operationId": "GasCylinderController_getPhoto",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "required": true,
-                        "in": "path",
-                        "description": "Gas cylinder UUID",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "modo",
-                        "required": false,
-                        "in": "query",
-                        "description": "`url` devuelve `{ url, expiresAt, requiresAuth }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada de S3).",
-                        "schema": {
-                            "$ref": "#/components/schemas/DownloadMode"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/PhotoLinkResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "No existe o es de otra distribuidora; sin `modo`, también si no tiene foto"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Ver la imagen del producto",
-                "tags": [
-                    "Gas Cylinders"
-                ]
-            }
-        },
         "/api/auth": {
             "post": {
                 "description": "Si la petición llega acá, el guard ya validó el token y la cuenta.",
@@ -7331,113 +6719,16 @@
                 ]
             }
         },
-        "/api/cart": {
-            "get": {
-                "description": "Total calculado sobre los precios vigentes del catálogo; cada ítem informa la diferencia con el precio guardado. Sin carrito, responde uno vacío. Un tipo dado de baja se marca `available: false` y no suma.",
-                "operationId": "CartController_consultar",
-                "parameters": [
-                    {
-                        "name": "X-Distributor",
-                        "in": "header",
-                        "description": "Slug o id de la distribuidora del carrito",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/CartResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: customer"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Consultar el carrito (CU-125)",
-                "tags": [
-                    "Cart"
-                ]
-            },
-            "delete": {
-                "description": "Sin carrito no hace nada y responde uno vacío.",
-                "operationId": "CartController_vaciar",
-                "parameters": [
-                    {
-                        "name": "X-Distributor",
-                        "in": "header",
-                        "description": "Slug o id de la distribuidora del carrito",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/CartResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: customer"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Vaciar el carrito (CU-126)",
-                "tags": [
-                    "Cart"
-                ]
-            }
-        },
-        "/api/cart/items": {
+        "/api/gascylinder": {
             "post": {
-                "description": "Si el tipo de garrafa ya está en el carrito suma la cantidad. Guarda el precio vigente como referencia.",
-                "operationId": "CartController_agregar",
-                "parameters": [
-                    {
-                        "name": "X-Distributor",
-                        "in": "header",
-                        "description": "Slug o id de la distribuidora del carrito",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
+                "operationId": "GasCylinderController_create",
+                "parameters": [],
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/AddCartItemDto"
+                                "$ref": "#/components/schemas/CreateGasCylinderDto"
                             }
                         }
                     }
@@ -7448,22 +6739,95 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/CartResponseDto"
+                                    "$ref": "#/components/schemas/GasCylinderResponseDto"
                                 }
                             }
                         }
                     },
                     "400": {
-                        "description": "Cantidad inválida (no entera o no positiva) o que supera el máximo por ítem"
+                        "description": "Datos inválidos o tipo repetido"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
                     "403": {
-                        "description": "Requiere rol: customer"
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
                     },
-                    "404": {
-                        "description": "El tipo de garrafa no existe, está dado de baja o es de otra distribuidora"
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Create a new gas cylinder type",
+                "tags": [
+                    "Gas Cylinders"
+                ]
+            },
+            "get": {
+                "description": "Público. Con sesión iniciada se acota a la distribuidora del usuario (la del admin, o el header `X-Distributor` del super admin y del cliente); sin sesión, a `?distributor=` o a la distribuidora por defecto.",
+                "operationId": "GasCylinderController_findAll",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "maximum": 100,
+                            "default": 10,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 0,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 1,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "term",
+                        "required": false,
+                        "in": "query",
+                        "description": "Texto a buscar",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "distributor",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "example": "demo",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CatalogoDto"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": [
@@ -7471,31 +6835,63 @@
                         "bearer": []
                     }
                 ],
-                "summary": "Agregar un ítem al carrito (CU-122)",
+                "summary": "Get all gas cylinders with pagination",
                 "tags": [
-                    "Cart"
+                    "Gas Cylinders"
                 ]
             }
         },
-        "/api/cart/items/{itemId}": {
-            "patch": {
-                "operationId": "CartController_cambiarCantidad",
+        "/api/gascylinder/{id}": {
+            "get": {
+                "operationId": "GasCylinderController_findOne",
                 "parameters": [
                     {
-                        "name": "X-Distributor",
-                        "in": "header",
-                        "description": "Slug o id de la distribuidora del carrito",
+                        "name": "id",
                         "required": true,
+                        "in": "path",
+                        "description": "Gas cylinder UUID",
                         "schema": {
                             "type": "string"
                         }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GasCylinderResponseDto"
+                                }
+                            }
+                        }
                     },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "404": {
+                        "description": "Gas cylinder not found"
+                    }
+                },
+                "security": [
                     {
-                        "name": "itemId",
+                        "bearer": []
+                    }
+                ],
+                "summary": "Get gas cylinder by ID",
+                "tags": [
+                    "Gas Cylinders"
+                ]
+            },
+            "patch": {
+                "operationId": "GasCylinderController_update",
+                "parameters": [
+                    {
+                        "name": "id",
                         "required": true,
                         "in": "path",
+                        "description": "Gas cylinder UUID",
                         "schema": {
-                            "format": "uuid",
                             "type": "string"
                         }
                     }
@@ -7505,7 +6901,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/UpdateCartItemDto"
+                                "$ref": "#/components/schemas/UpdateGasCylinderDto"
                             }
                         }
                     }
@@ -7516,52 +6912,46 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/CartResponseDto"
+                                    "$ref": "#/components/schemas/GasCylinderResponseDto"
                                 }
                             }
                         }
                     },
                     "400": {
-                        "description": "Cantidad cero, negativa o no entera: para dejarlo en cero hay que quitar el ítem"
+                        "description": "Datos inválidos (p. ej.: weight debe ser mayor que 0; price debe ser mayor que 0)"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
                     "403": {
-                        "description": "Requiere rol: customer"
+                        "description": "Requiere rol: admin, super_admin"
                     },
                     "404": {
-                        "description": "El ítem no está en el carrito del cliente"
+                        "description": "No existe o es de otra distribuidora"
                     }
                 },
                 "security": [
                     {
                         "bearer": []
+                    },
+                    {
+                        "bearer": []
                     }
                 ],
-                "summary": "Modificar la cantidad de un ítem (CU-123)",
+                "summary": "Update gas cylinder by ID",
                 "tags": [
-                    "Cart"
+                    "Gas Cylinders"
                 ]
             },
             "delete": {
-                "operationId": "CartController_quitar",
+                "operationId": "GasCylinderController_remove",
                 "parameters": [
                     {
-                        "name": "X-Distributor",
-                        "in": "header",
-                        "description": "Slug o id de la distribuidora del carrito",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "itemId",
+                        "name": "id",
                         "required": true,
                         "in": "path",
+                        "description": "Gas cylinder UUID",
                         "schema": {
-                            "format": "uuid",
                             "type": "string"
                         }
                     }
@@ -7572,7 +6962,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/CartResponseDto"
+                                    "$ref": "#/components/schemas/BajaDeProductoDto"
                                 }
                             }
                         }
@@ -7581,10 +6971,57 @@
                         "description": "Sin token o token inválido"
                     },
                     "403": {
-                        "description": "Requiere rol: customer"
+                        "description": "Requiere rol: admin, super_admin"
                     },
                     "404": {
-                        "description": "El ítem no está en el carrito del cliente"
+                        "description": "No existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Delete (deactivate) gas cylinder by ID",
+                "tags": [
+                    "Gas Cylinders"
+                ]
+            }
+        },
+        "/api/gascylinder/type/{type}": {
+            "get": {
+                "operationId": "GasCylinderController_findByType",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "required": true,
+                        "in": "path",
+                        "description": "Gas cylinder type (10kg, 15kg, etc)",
+                        "schema": {
+                            "example": "10kg",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GasCylinderResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "404": {
+                        "description": "No hay un producto activo de ese tipo"
                     }
                 },
                 "security": [
@@ -7592,9 +7029,221 @@
                         "bearer": []
                     }
                 ],
-                "summary": "Quitar un ítem del carrito (CU-124)",
+                "summary": "Get gas cylinder by type",
                 "tags": [
-                    "Cart"
+                    "Gas Cylinders"
+                ]
+            }
+        },
+        "/api/gascylinder/available/list": {
+            "get": {
+                "description": "Público. Con sesión iniciada se acota a la distribuidora del usuario; sin sesión, a `?distributor=` o a la distribuidora por defecto.",
+                "operationId": "GasCylinderController_getAvailableCylinders",
+                "parameters": [
+                    {
+                        "name": "distributor",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "example": "demo",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DisponiblesDto"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Get all available gas cylinders",
+                "tags": [
+                    "Gas Cylinders"
+                ]
+            }
+        },
+        "/api/gascylinder/{id}/photo": {
+            "put": {
+                "description": "Multipart, campo `file`: JPG, PNG o WEBP de hasta 5 MB (el tipo se valida por el contenido, no por el header). Si ya tenía foto, la anterior se borra del bucket. Aparece como `photoUrl` en el catálogo que ven las apps.",
+                "operationId": "GasCylinderController_uploadPhoto",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Gas cylinder UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "required": [
+                                    "file"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GasCylinderResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta la foto o está vacía"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    },
+                    "413": {
+                        "description": "La foto supera los 5 MB"
+                    },
+                    "415": {
+                        "description": "No es JPG, PNG ni WEBP (o el contenido no coincide)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Subir o reemplazar la imagen del producto",
+                "tags": [
+                    "Gas Cylinders"
+                ]
+            },
+            "delete": {
+                "description": "Quita la referencia (el objeto se borra del bucket en segundo plano); no da de baja el producto.",
+                "operationId": "GasCylinderController_removePhoto",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Gas cylinder UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GasCylinderResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Sacar la imagen del producto",
+                "tags": [
+                    "Gas Cylinders"
+                ]
+            },
+            "get": {
+                "description": "Por defecto redirige (302) a la URL firmada de S3. Con `?modo=url` devuelve `{ url, expiresAt, requiresAuth }` en JSON, sin redirect; si no tiene foto, `url: null`.",
+                "operationId": "GasCylinderController_getPhoto",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Gas cylinder UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "modo",
+                        "required": false,
+                        "in": "query",
+                        "description": "`url` devuelve `{ url, expiresAt, requiresAuth }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada de S3).",
+                        "schema": {
+                            "$ref": "#/components/schemas/DownloadMode"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PhotoLinkResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora; sin `modo`, también si no tiene foto"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ver la imagen del producto",
+                "tags": [
+                    "Gas Cylinders"
                 ]
             }
         },
@@ -8742,129 +8391,6 @@
                 ]
             }
         },
-        "/api/cylinders/vigencia/proximos-a-vencer": {
-            "get": {
-                "description": "Separa los ya vencidos, los que vencen dentro de la ventana de `days` días (default 30) y los sin revisión registrada, que no tienen fecha con la cual comparar. Cada grupo va ordenado por vencimiento, del más urgente al menos, y se pagina por separado con `limit` (default 100, máx. 500) y `offset`; `totals` trae el total de cada grupo. No incluye envases dados de baja.",
-                "operationId": "CylinderController_expiring",
-                "parameters": [
-                    {
-                        "name": "days",
-                        "required": false,
-                        "in": "query",
-                        "description": "Ventana en días: los que vencen de hoy a hoy + `days`.",
-                        "schema": {
-                            "minimum": 1,
-                            "maximum": 365,
-                            "default": 30,
-                            "type": "number"
-                        }
-                    },
-                    {
-                        "name": "limit",
-                        "required": false,
-                        "in": "query",
-                        "description": "Tamaño de página de cada grupo.",
-                        "schema": {
-                            "maximum": 500,
-                            "default": 100,
-                            "type": "number"
-                        }
-                    },
-                    {
-                        "name": "offset",
-                        "required": false,
-                        "in": "query",
-                        "schema": {
-                            "default": 0,
-                            "type": "number"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ExpiringCylindersResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "`days` o la paginación fuera de rango"
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: admin, super_admin"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    },
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Envases próximos a vencer (CU-134)",
-                "tags": [
-                    "Cylinders"
-                ]
-            }
-        },
-        "/api/cylinders/vigencia/serial/{serial}": {
-            "get": {
-                "description": "Lo que se escanea: el serial grabado en el envase. El serial es único por distribuidora, así que el super admin tiene que elegir una con `X-Distributor` (400 si no).",
-                "operationId": "CylinderController_vigenciaBySerial",
-                "parameters": [
-                    {
-                        "name": "serial",
-                        "required": true,
-                        "in": "path",
-                        "schema": {
-                            "example": "SN-000123",
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/CylinderVigenciaResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: admin, super_admin"
-                    },
-                    "404": {
-                        "description": "Envase no encontrado"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    },
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Vigencia de un envase por número de serie (CU-133)",
-                "tags": [
-                    "Cylinders"
-                ]
-            }
-        },
         "/api/cylinders/{id}": {
             "get": {
                 "operationId": "CylinderController_findOne",
@@ -8973,122 +8499,6 @@
                     }
                 ],
                 "summary": "Editar datos maestros del envase (no el estado)",
-                "tags": [
-                    "Cylinders"
-                ]
-            }
-        },
-        "/api/cylinders/{id}/vigencia": {
-            "get": {
-                "description": "Fabricación, última revisión, vencimiento, días que faltan e historial de revisiones. `status`: `valid`, `expired` o `unverified` (sin revisión registrada: no es lo mismo que vencido y no bloquea el despacho).",
-                "operationId": "CylinderController_getVigencia",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "required": true,
-                        "in": "path",
-                        "description": "Cylinder UUID",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/CylinderVigenciaResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: admin, super_admin"
-                    },
-                    "404": {
-                        "description": "Envase no encontrado"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    },
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Vigencia de un envase (CU-133)",
-                "tags": [
-                    "Cylinders"
-                ]
-            }
-        },
-        "/api/cylinders/{id}/inspections": {
-            "post": {
-                "description": "Guarda la revisión en el historial y copia la última fecha y el vencimiento en la ficha. Un resultado `rejected` deja el vencimiento en la fecha de la revisión: el envase queda alcanzado por el bloqueo del despacho. Si está en poder de un cliente o en reparto no se lo saca de circulación: `withdrawalPending` lo marca para retirar.",
-                "operationId": "CylinderController_registerInspection",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "required": true,
-                        "in": "path",
-                        "description": "Cylinder UUID",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/RegisterInspectionDto"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "201": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/CylinderVigenciaResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Fecha de revisión futura, vencimiento faltante o no posterior a la revisión"
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: admin, super_admin"
-                    },
-                    "404": {
-                        "description": "Envase no encontrado"
-                    },
-                    "409": {
-                        "description": "El envase está dado de baja"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    },
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Registrar la revisión periódica de un envase (CU-132)",
                 "tags": [
                     "Cylinders"
                 ]
@@ -9653,7 +9063,8 @@
                             "type": "string",
                             "enum": [
                                 "vehicle",
-                                "driver"
+                                "driver",
+                                "employee"
                             ]
                         }
                     },
@@ -9904,6 +9315,15 @@
                     },
                     {
                         "name": "deliveryId",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "employeeId",
                         "required": false,
                         "in": "query",
                         "schema": {
@@ -10442,7 +9862,7 @@
         },
         "/api/fleet/expirations": {
             "get": {
-                "description": "Lo vencido y lo que vence dentro de `withinDays`, agrupado por vehículo y por chofer, con si están inhabilitados.",
+                "description": "Lo vencido y lo que vence dentro de `withinDays`, agrupado por vehículo, por chofer (histórico) y por empleado, con si están inhabilitados. `subject` y `category` acotan qué trae.",
                 "operationId": "FleetExpirationsController_find",
                 "parameters": [
                     {
@@ -10455,6 +9875,37 @@
                             "maximum": 365,
                             "default": 30,
                             "type": "number"
+                        }
+                    },
+                    {
+                        "name": "subject",
+                        "required": false,
+                        "in": "query",
+                        "description": "`vehicle`: sólo vehículos y choferes (CU-139); `employee`: sólo personal (CU-187). Sin indicar, todo.",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "vehicle",
+                                "employee"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "category",
+                        "required": false,
+                        "in": "query",
+                        "description": "Filtra el personal por la categoría de su puesto (CU-187)",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "driver",
+                                "helper",
+                                "warehouse",
+                                "administration",
+                                "sales",
+                                "management",
+                                "other"
+                            ]
                         }
                     }
                 ],
@@ -10481,7 +9932,7 @@
                         "bearer": []
                     }
                 ],
-                "summary": "CU-139: vencimientos de la flota en una pantalla",
+                "summary": "CU-139 y CU-187: vencimientos de la flota y del personal en una pantalla",
                 "tags": [
                     "Fleet · Expirations"
                 ]
@@ -17141,18 +16592,31 @@
                 ]
             }
         },
-        "/api/gascylinder/inactive": {
+        "/api/cylinders/vigencia/proximos-a-vencer": {
             "get": {
-                "description": "CU-269. El catálogo (`GET /gascylinder`) sólo muestra los activos; éste lista los dados de baja de la distribuidora del administrador (la del header `X-Distributor` para el super admin), con la misma paginación y búsqueda (`term`).",
-                "operationId": "GasCylinderController_findInactive",
+                "description": "Separa los ya vencidos, los que vencen dentro de la ventana de `days` días (default 30) y los sin revisión registrada, que no tienen fecha con la cual comparar. Cada grupo va ordenado por vencimiento, del más urgente al menos, y se pagina por separado con `limit` (default 100, máx. 500) y `offset`; `totals` trae el total de cada grupo. No incluye envases dados de baja.",
+                "operationId": "CylinderController_expiring",
                 "parameters": [
+                    {
+                        "name": "days",
+                        "required": false,
+                        "in": "query",
+                        "description": "Ventana en días: los que vencen de hoy a hoy + `days`.",
+                        "schema": {
+                            "minimum": 1,
+                            "maximum": 365,
+                            "default": 30,
+                            "type": "number"
+                        }
+                    },
                     {
                         "name": "limit",
                         "required": false,
                         "in": "query",
+                        "description": "Tamaño de página de cada grupo.",
                         "schema": {
-                            "maximum": 100,
-                            "default": 10,
+                            "maximum": 500,
+                            "default": 100,
                             "type": "number"
                         }
                     },
@@ -17162,6 +16626,394 @@
                         "in": "query",
                         "schema": {
                             "default": 0,
+                            "type": "number"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ExpiringCylindersResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "`days` o la paginación fuera de rango"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Envases próximos a vencer (CU-134)",
+                "tags": [
+                    "Cylinders"
+                ]
+            }
+        },
+        "/api/cylinders/vigencia/serial/{serial}": {
+            "get": {
+                "description": "Lo que se escanea: el serial grabado en el envase. El serial es único por distribuidora, así que el super admin tiene que elegir una con `X-Distributor` (400 si no).",
+                "operationId": "CylinderController_vigenciaBySerial",
+                "parameters": [
+                    {
+                        "name": "serial",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "example": "SN-000123",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CylinderVigenciaResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Envase no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Vigencia de un envase por número de serie (CU-133)",
+                "tags": [
+                    "Cylinders"
+                ]
+            }
+        },
+        "/api/cylinders/{id}/vigencia": {
+            "get": {
+                "description": "Fabricación, última revisión, vencimiento, días que faltan e historial de revisiones. `status`: `valid`, `expired` o `unverified` (sin revisión registrada: no es lo mismo que vencido y no bloquea el despacho).",
+                "operationId": "CylinderController_getVigencia",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Cylinder UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CylinderVigenciaResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Envase no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Vigencia de un envase (CU-133)",
+                "tags": [
+                    "Cylinders"
+                ]
+            }
+        },
+        "/api/cylinders/{id}/inspections": {
+            "post": {
+                "description": "Guarda la revisión en el historial y copia la última fecha y el vencimiento en la ficha. Un resultado `rejected` deja el vencimiento en la fecha de la revisión: el envase queda alcanzado por el bloqueo del despacho. Si está en poder de un cliente o en reparto no se lo saca de circulación: `withdrawalPending` lo marca para retirar.",
+                "operationId": "CylinderController_registerInspection",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Cylinder UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RegisterInspectionDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CylinderVigenciaResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Fecha de revisión futura, vencimiento faltante o no posterior a la revisión"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Envase no encontrado"
+                    },
+                    "409": {
+                        "description": "El envase está dado de baja"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Registrar la revisión periódica de un envase (CU-132)",
+                "tags": [
+                    "Cylinders"
+                ]
+            }
+        },
+        "/api/employees/{id}/documents": {
+            "get": {
+                "description": "Las altas del curso de mercancías peligrosas, el psicofísico y la ART (CU-183 a CU-185) se hacen con `POST /fleet/tasks` indicando `employeeId`, el plan y el detalle.",
+                "operationId": "EmployeeDocumentsController_find",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Empleado UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/EmployeeDocumentsResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Empleado no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Documentación de un empleado: tarjetas, si queda inhabilitado y qué le falta cargar (CU-187)",
+                "tags": [
+                    "Personal · Documentación"
+                ]
+            }
+        },
+        "/api/employees/{id}/leaves": {
+            "post": {
+                "operationId": "LeaveController_create",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Empleado UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateLeaveDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LeaveResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Datos inválidos o fin anterior al inicio"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Empleado no encontrado"
+                    },
+                    "409": {
+                        "description": "El empleado está egresado, o el período se superpone con otra licencia solicitada o aprobada"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Registrar una licencia o ausencia: nace solicitada (CU-191)",
+                "tags": [
+                    "Personal · Licencias"
+                ]
+            }
+        },
+        "/api/employees/{id}/vacation-balance": {
+            "get": {
+                "description": "Días que corresponden por antigüedad al 31/12 (LCT art. 150), días tomados (vacaciones aprobadas del año) y saldo. Se calcula en cada consulta.",
+                "operationId": "LeaveController_vacationBalance",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Empleado UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "year",
+                        "required": false,
+                        "in": "query",
+                        "description": "Por omisión, el año actual",
+                        "schema": {
+                            "example": 2026,
+                            "type": "number"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VacationBalanceDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Año inválido"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Empleado no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Consultar el saldo de vacaciones de un empleado (CU-193)",
+                "tags": [
+                    "Personal · Licencias"
+                ]
+            }
+        },
+        "/api/leaves": {
+            "get": {
+                "operationId": "LeaveController_findAll",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "maximum": 100,
+                            "default": 10,
                             "type": "number"
                         }
                     },
@@ -17175,11 +17027,68 @@
                         }
                     },
                     {
-                        "name": "term",
+                        "name": "status",
                         "required": false,
                         "in": "query",
-                        "description": "Texto a buscar",
                         "schema": {
+                            "type": "string",
+                            "enum": [
+                                "requested",
+                                "approved",
+                                "rejected",
+                                "cancelled"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "type",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "vacation",
+                                "sick",
+                                "work_accident",
+                                "study",
+                                "marriage",
+                                "birth",
+                                "bereavement",
+                                "unpaid",
+                                "suspension",
+                                "unjustified_absence",
+                                "other"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "employeeId",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "date",
+                            "nullable": true,
+                            "example": "2026-12-01",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "date",
+                            "nullable": true,
+                            "example": "2026-12-31",
                             "type": "string"
                         }
                     }
@@ -17190,13 +17099,13 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/CatalogoDto"
+                                    "$ref": "#/components/schemas/LeavePageDto"
                                 }
                             }
                         }
                     },
                     "400": {
-                        "description": "Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\")"
+                        "description": "Un filtro tiene un valor inválido"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -17208,45 +17117,51 @@
                 "security": [
                     {
                         "bearer": []
-                    },
-                    {
-                        "bearer": []
                     }
                 ],
-                "summary": "Productos dados de baja de la distribuidora",
+                "summary": "Consultar las licencias y la bandeja de pendientes (CU-319)",
                 "tags": [
-                    "Gas Cylinders"
+                    "Personal · Licencias"
                 ]
             }
         },
-        "/api/gascylinder/{id}/reactivate": {
+        "/api/leaves/{id}": {
             "patch": {
-                "description": "CU-268. Devuelve el producto al catálogo con su stock y sus promociones intactos. No invierte el estado: siempre lo deja activo, así que reactivar uno que ya estaba activo responde igual, con el producto sin cambios. Es una operación propia: enviar `isActive` en `PATCH /gascylinder/{id}` se rechaza.",
-                "operationId": "GasCylinderController_reactivate",
+                "operationId": "LeaveController_update",
                 "parameters": [
                     {
                         "name": "id",
                         "required": true,
                         "in": "path",
-                        "description": "Gas cylinder UUID",
+                        "description": "Licencia UUID",
                         "schema": {
                             "type": "string"
                         }
                     }
                 ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateLeaveDto"
+                            }
+                        }
+                    }
+                },
                 "responses": {
                     "200": {
                         "description": "",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/GasCylinderResponseDto"
+                                    "$ref": "#/components/schemas/LeaveResponseDto"
                                 }
                             }
                         }
                     },
                     "400": {
-                        "description": "Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\")"
+                        "description": "Fin anterior al inicio"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -17255,27 +17170,468 @@
                         "description": "Requiere rol: admin, super_admin"
                     },
                     "404": {
-                        "description": "No existe o es de otra distribuidora (no se distingue)"
+                        "description": "Licencia no encontrada"
+                    },
+                    "409": {
+                        "description": "No está solicitada, o el período se superpone con otra"
                     }
                 },
                 "security": [
                     {
                         "bearer": []
+                    }
+                ],
+                "summary": "Modificar una licencia solicitada (CU-316)",
+                "tags": [
+                    "Personal · Licencias"
+                ]
+            }
+        },
+        "/api/leaves/{id}/approve": {
+            "patch": {
+                "operationId": "LeaveController_approve",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Licencia UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LeaveResponseDto"
+                                }
+                            }
+                        }
                     },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Licencia no encontrada"
+                    },
+                    "409": {
+                        "description": "No está solicitada"
+                    }
+                },
+                "security": [
                     {
                         "bearer": []
                     }
                 ],
-                "summary": "Reactivar un producto dado de baja",
+                "summary": "Aprobar una solicitud de licencia (CU-192)",
                 "tags": [
-                    "Gas Cylinders"
+                    "Personal · Licencias"
                 ]
             }
         },
-        "/api/module-config/processes": {
+        "/api/leaves/{id}/reject": {
+            "patch": {
+                "operationId": "LeaveController_reject",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Licencia UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RejectLeaveDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LeaveResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta el motivo"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Licencia no encontrada"
+                    },
+                    "409": {
+                        "description": "No está solicitada"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Rechazar una solicitud de licencia, con motivo (CU-318)",
+                "tags": [
+                    "Personal · Licencias"
+                ]
+            }
+        },
+        "/api/leaves/{id}/cancel": {
+            "patch": {
+                "operationId": "LeaveController_cancel",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Licencia UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LeaveResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Licencia no encontrada"
+                    },
+                    "409": {
+                        "description": "Ya estaba rechazada o cancelada, o ya terminó"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Cancelar una licencia que todavía no terminó (CU-317)",
+                "tags": [
+                    "Personal · Licencias"
+                ]
+            }
+        },
+        "/api/employees/{id}/attendance": {
+            "post": {
+                "operationId": "AttendanceController_register",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Empleado UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RegisterAttendanceDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AttendanceResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "El egreso no es posterior al ingreso"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Empleado no encontrado"
+                    },
+                    "409": {
+                        "description": "El empleado está egresado o ya tiene una jornada abierta"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Registrar la asistencia de un empleado desde el panel (CU-189)",
+                "tags": [
+                    "Personal · Asistencia"
+                ]
+            }
+        },
+        "/api/attendance": {
             "get": {
-                "description": "Los cinco procesos de CU-172 (planificador de flota, recompra, agrupación por recorrido, recuperación de envases y despacho express), cada uno con su esquema (rango y valor por omisión de cada parámetro) y los valores vigentes. El despacho y las tareas programadas tienen su propia ruta.",
-                "operationId": "ModuleConfigController_getProcesses",
+                "description": "Por día (`date`, por omisión hoy si no hay ningún filtro), por período (`from`/`to`), por empleado o sólo las jornadas abiertas (`open`). Informa cuántos están presentes hoy y cuántas jornadas de días anteriores quedaron sin cerrar.",
+                "operationId": "AttendanceController_findAll",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "maximum": 100,
+                            "default": 10,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 1,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "date",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "date",
+                            "nullable": true,
+                            "example": "2026-03-02",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "date",
+                            "nullable": true,
+                            "example": "2026-03-01",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "date",
+                            "nullable": true,
+                            "example": "2026-03-31",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "employeeId",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "open",
+                        "required": false,
+                        "in": "query",
+                        "description": "true: sólo las jornadas sin cerrar; false: sólo las cerradas",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AttendancePageDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Un filtro tiene un valor inválido"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Consultar la asistencia de los empleados (CU-314)",
+                "tags": [
+                    "Personal · Asistencia"
+                ]
+            }
+        },
+        "/api/attendance/{id}": {
+            "patch": {
+                "operationId": "AttendanceController_correct",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Jornada UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CorrectAttendanceDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AttendanceResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta la nota, o el egreso no es posterior al ingreso"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Jornada no encontrada"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Corregir el ingreso o el egreso de una jornada, con nota (CU-313)",
+                "tags": [
+                    "Personal · Asistencia"
+                ]
+            }
+        },
+        "/api/attendance/mine/check-in": {
+            "post": {
+                "description": "Idempotente: si ya tiene una jornada abierta de hoy marcada desde la app, la devuelve (200) en vez de abrir otra.",
+                "operationId": "AttendanceController_checkIn",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Ya tenía una jornada abierta de hoy desde la app",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AttendanceResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AttendanceResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: delivery"
+                    },
+                    "409": {
+                        "description": "La cuenta no está vinculada a un legajo activo, o hay una jornada abierta de otro día o cargada desde el panel"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "El chofer inicia su jornada desde la app (CU-190)",
+                "tags": [
+                    "Personal · Asistencia"
+                ]
+            }
+        },
+        "/api/attendance/mine/check-out": {
+            "post": {
+                "operationId": "AttendanceController_checkOut",
                 "parameters": [],
                 "responses": {
                     "200": {
@@ -17283,22 +17639,22 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/ProcessConfigResponseDto"
-                                    }
+                                    "$ref": "#/components/schemas/AttendanceResponseDto"
                                 }
                             }
                         }
-                    },
-                    "400": {
-                        "description": "Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\") o cuerpo fuera de los límites (detalle por campo)"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
                     "403": {
-                        "description": "Requiere rol: admin, super_admin"
+                        "description": "Requiere rol: delivery"
+                    },
+                    "409": {
+                        "description": "La cuenta no está vinculada a un legajo activo, no hay jornada abierta, o la abierta es de un día anterior (se corrige desde el panel)"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
                     }
                 },
                 "security": [
@@ -17306,55 +17662,33 @@
                         "bearer": []
                     }
                 ],
-                "summary": "Los procesos automáticos configurables con sus parámetros vigentes",
+                "summary": "El chofer finaliza su jornada desde la app (CU-315)",
                 "tags": [
-                    "Configuración · Parámetros por distribuidora"
+                    "Personal · Asistencia"
                 ]
             }
         },
-        "/api/module-config/{process}": {
+        "/api/personnel/dashboard": {
             "get": {
-                "description": "Los parámetros de la distribuidora o, si no configuró ninguno, los de omisión (`isDefault: true`).",
-                "operationId": "ModuleConfigController_getProcess",
-                "parameters": [
-                    {
-                        "name": "process",
-                        "required": true,
-                        "in": "path",
-                        "schema": {
-                            "enum": [
-                                "fleet_planner",
-                                "repurchase",
-                                "route_batching",
-                                "cylinder_recovery",
-                                "express_dispatch"
-                            ],
-                            "type": "string"
-                        }
-                    }
-                ],
+                "description": "Empleados activos por puesto, presentes hoy (jornada abierta), de licencia hoy (licencia aprobada que cubre el día argentino) y documentos por estado de vencimiento. Alimenta la tarjeta «Personal hoy» del inicio. Cuenta; no lista.",
+                "operationId": "PersonnelController_consultar",
+                "parameters": [],
                 "responses": {
                     "200": {
                         "description": "",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ProcessConfigResponseDto"
+                                    "$ref": "#/components/schemas/PersonnelDashboardDto"
                                 }
                             }
                         }
-                    },
-                    "400": {
-                        "description": "Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\") o cuerpo fuera de los límites (detalle por campo)"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
                     "403": {
                         "description": "Requiere rol: admin, super_admin"
-                    },
-                    "404": {
-                        "description": "El proceso no es uno de los cinco configurables"
                     }
                 },
                 "security": [
@@ -17362,218 +17696,9 @@
                         "bearer": []
                     }
                 ],
-                "summary": "Parámetros vigentes de un proceso automático",
+                "summary": "Consultar el tablero de personal (CU-194)",
                 "tags": [
-                    "Configuración · Parámetros por distribuidora"
-                ]
-            },
-            "put": {
-                "description": "Reemplaza la configuración: se guarda sólo lo que viene y lo demás toma su valor por omisión (`{}` restablece los valores por omisión, igual que en el despacho y las tareas programadas). Cada proceso valida con su propio esquema (`GET /module-config/processes`): un parámetro desconocido, de otro tipo o fuera de rango responde 400 con el campo. Los valores los leen los módulos M2 a M5 y la compra express cuando se construyan: hoy se guardan y se validan, pero ningún proceso los consume todavía. Cuando lo hagan, rigen desde la siguiente ejecución; las que están en curso no se interrumpen.",
-                "operationId": "ModuleConfigController_putProcess",
-                "parameters": [
-                    {
-                        "name": "process",
-                        "required": true,
-                        "in": "path",
-                        "schema": {
-                            "enum": [
-                                "fleet_planner",
-                                "repurchase",
-                                "route_batching",
-                                "cylinder_recovery",
-                                "express_dispatch"
-                            ],
-                            "type": "string"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "type": "object",
-                                "additionalProperties": {
-                                    "type": "number"
-                                },
-                                "example": {
-                                    "anticipationDays": 5,
-                                    "invitationTtlHours": 48
-                                }
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ProcessConfigResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\") o cuerpo fuera de los límites (detalle por campo)"
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: admin, super_admin"
-                    },
-                    "404": {
-                        "description": "El proceso no es uno de los cinco configurables"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Cambiar los parámetros de un proceso automático",
-                "tags": [
-                    "Configuración · Parámetros por distribuidora"
-                ]
-            }
-        },
-        "/api/orders/{id}/address": {
-            "patch": {
-                "description": "CU-127. Sólo el CLIENTE DUEÑO (uno ajeno es 404), con el pedido pendiente o aceptado. La dirección nueva tiene que ser otra de las suyas y caer dentro de una zona de cobertura de la distribuidora del pedido. El recargo de la zona nueva se compara con el del pedido: en pago en línea (MercadoPago o transferencia) el importe ya está definido, así que si cambia responde 409 y el cliente debe cancelar y pedir de nuevo; en efectivo se recalcula el total. Actualiza el punto de entrega y deja el cambio asentado (dirección anterior, autor y motivo) en el historial de estados. Avisa al chofer asignado (`order:address-changed`) y al panel; si el pedido está pendiente, vence las ofertas vivas y vuelve a ofrecerlo. Idempotente vía `Idempotency-Key`.",
-                "operationId": "OrderController_changeAddress",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "required": true,
-                        "in": "path",
-                        "description": "Order UUID",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/ChangeOrderAddressDto"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/OrderResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "La dirección nueva es la actual, o queda fuera de la zona de cobertura («La dirección está fuera de la zona de cobertura de la distribuidora»)"
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: customer"
-                    },
-                    "404": {
-                        "description": "Pedido ajeno o inexistente, o dirección que no es del cliente"
-                    },
-                    "409": {
-                        "description": "El pedido ya salió o fue entregado, no está pendiente/aceptado, o es de pago en línea y el recargo de la zona nueva es distinto"
-                    },
-                    "422": {
-                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    },
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Cambiar la dirección de entrega de un pedido (cliente)",
-                "tags": [
-                    "Orders"
-                ]
-            }
-        },
-        "/api/orders/{id}/receiver": {
-            "patch": {
-                "description": "CU-128. Sólo el CLIENTE DUEÑO (uno ajeno es 404), mientras el pedido no esté entregado ni cancelado (409). Guarda nombre, documento y relación de quien recibe; la respuesta del pedido los expone como `receiver` sólo al cliente dueño, al chofer asignado y al administrador de la distribuidora. Son datos de un tercero: se anulan solos al vencer el plazo de reclamo (30 días desde la entrega o cancelación; con un reclamo abierto, hasta que se cierre) y ningún dato de quien recibe entra en la auditoría. Idempotente vía `Idempotency-Key`.",
-                "operationId": "OrderController_setReceiver",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "required": true,
-                        "in": "path",
-                        "description": "Order UUID",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/SetOrderReceiverDto"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/OrderResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Datos inválidos (p. ej.: formato de documento)"
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: customer"
-                    },
-                    "404": {
-                        "description": "Pedido ajeno o inexistente"
-                    },
-                    "409": {
-                        "description": "El pedido ya fue entregado o está cancelado"
-                    },
-                    "422": {
-                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    },
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Indicar quién recibe el pedido (cliente)",
-                "tags": [
-                    "Orders"
+                    "Personal · Tablero"
                 ]
             }
         }
@@ -17742,30 +17867,6 @@
                         "format": "date-time",
                         "nullable": true
                     },
-                    "avgMonthlyConsumptionKg": {
-                        "type": "number",
-                        "nullable": true,
-                        "example": 20,
-                        "description": "Consumo promedio declarado por el cliente, en kg por mes"
-                    },
-                    "declaredCylinderTypeId": {
-                        "type": "string",
-                        "format": "uuid",
-                        "nullable": true,
-                        "description": "Id del tipo de garrafa habitual que declaró el cliente"
-                    },
-                    "declaredCylinderType": {
-                        "type": "string",
-                        "nullable": true,
-                        "example": "10kg",
-                        "description": "Tipo de garrafa habitual que declaró el cliente"
-                    },
-                    "nextRepurchaseEstimateAt": {
-                        "type": "string",
-                        "format": "date-time",
-                        "nullable": true,
-                        "description": "Fecha estimada de su próxima recompra"
-                    },
                     "user": {
                         "$ref": "#/components/schemas/UserResponseDto"
                     }
@@ -17775,11 +17876,7 @@
                     "user_id",
                     "lat_lang",
                     "createdAt",
-                    "deletedAt",
-                    "avgMonthlyConsumptionKg",
-                    "declaredCylinderTypeId",
-                    "declaredCylinderType",
-                    "nextRepurchaseEstimateAt"
+                    "deletedAt"
                 ]
             },
             "UserResponseDto": {
@@ -18332,30 +18429,6 @@
                     }
                 }
             },
-            "DeclareConsumptionDto": {
-                "type": "object",
-                "properties": {
-                    "cylinderTypeId": {
-                        "type": "string",
-                        "format": "uuid",
-                        "description": "Tipo de garrafa habitual (del catálogo de una distribuidora)"
-                    },
-                    "quantityPerMonth": {
-                        "type": "number",
-                        "example": 2,
-                        "description": "Garrafas de ese tipo que consume por mes (admite decimales)"
-                    },
-                    "confirmOutOfRange": {
-                        "type": "boolean",
-                        "default": false,
-                        "description": "true para aceptar un consumo fuera del rango razonable (5 a 500 kg por mes) después de que el sistema pidió confirmación"
-                    }
-                },
-                "required": [
-                    "cylinderTypeId",
-                    "quantityPerMonth"
-                ]
-            },
             "RegistrarClienteDto": {
                 "type": "object",
                 "properties": {
@@ -18383,14 +18456,6 @@
                     "notification_token": {
                         "type": "string",
                         "description": "Token FCM del dispositivo"
-                    },
-                    "consumption": {
-                        "description": "Cliente: consumo promedio mensual (CU-143). Si se omite, el registro sigue igual y el dato queda vacío",
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/DeclareConsumptionDto"
-                            }
-                        ]
                     }
                 },
                 "required": [
@@ -18473,14 +18538,6 @@
                     "notification_token": {
                         "type": "string",
                         "description": "Token FCM del dispositivo"
-                    },
-                    "consumption": {
-                        "description": "Cliente: consumo promedio mensual (CU-143). Si se omite, el registro sigue igual y el dato queda vacío",
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/DeclareConsumptionDto"
-                            }
-                        ]
                     },
                     "rol": {
                         "type": "string",
@@ -19889,301 +19946,6 @@
                     "requiresAuth"
                 ]
             },
-            "ConsumptionResponseDto": {
-                "type": "object",
-                "properties": {
-                    "cylinderTypeId": {
-                        "type": "string",
-                        "format": "uuid",
-                        "nullable": true,
-                        "description": "Tipo de garrafa habitual; null si el cliente no declaró"
-                    },
-                    "cylinderType": {
-                        "type": "string",
-                        "nullable": true,
-                        "example": "10kg"
-                    },
-                    "avgMonthlyConsumptionKg": {
-                        "type": "number",
-                        "nullable": true,
-                        "example": 20,
-                        "description": "Consumo declarado en kilos por mes; null si no declaró"
-                    },
-                    "nextRepurchaseEstimateAt": {
-                        "type": "string",
-                        "format": "date-time",
-                        "nullable": true,
-                        "description": "Fecha estimada de la próxima recompra"
-                    }
-                },
-                "required": [
-                    "cylinderTypeId",
-                    "cylinderType",
-                    "avgMonthlyConsumptionKg",
-                    "nextRepurchaseEstimateAt"
-                ]
-            },
-            "UpdateConsumptionDto": {
-                "type": "object",
-                "properties": {
-                    "confirmOutOfRange": {
-                        "type": "boolean",
-                        "default": false,
-                        "description": "true para aceptar un consumo fuera del rango razonable (5 a 500 kg por mes) después de que el sistema pidió confirmación"
-                    },
-                    "cylinderTypeId": {
-                        "type": "string",
-                        "format": "uuid",
-                        "description": "Tipo de garrafa habitual. Obligatorio si el cliente nunca declaró uno"
-                    },
-                    "quantityPerMonth": {
-                        "type": "number",
-                        "example": 2,
-                        "description": "Garrafas de ese tipo por mes (0,01 a 1000, hasta 2 decimales). Si se omite, se manda `cylinderTypeId` y se mantiene el consumo en kg por mes"
-                    }
-                }
-            },
-            "PromocionDto": {
-                "type": "object",
-                "properties": {
-                    "quantity": {
-                        "type": "number",
-                        "description": "Unidades desde las que aplica",
-                        "example": 3
-                    },
-                    "discountPercentage": {
-                        "type": "number",
-                        "description": "Descuento, en porcentaje",
-                        "example": 10
-                    }
-                },
-                "required": [
-                    "quantity",
-                    "discountPercentage"
-                ]
-            },
-            "CreateGasCylinderDto": {
-                "type": "object",
-                "properties": {
-                    "type": {
-                        "type": "string",
-                        "description": "Tipo de garrafa (10, 15, 45 kg)"
-                    },
-                    "weight": {
-                        "type": "number",
-                        "description": "Peso en kg"
-                    },
-                    "price": {
-                        "type": "number",
-                        "description": "Precio unitario"
-                    },
-                    "stock": {
-                        "type": "number",
-                        "description": "Stock vendible inicial: se registra como físico del depósito predeterminado. En la edición (PATCH /gascylinder/{id}) no se admite: responde 400; el stock cambia con PATCH /gascylinder/{id}/stock."
-                    },
-                    "description": {
-                        "type": "string",
-                        "description": "Descripción"
-                    },
-                    "promotions": {
-                        "description": "Promociones por cantidad (ej: 3 unidades 10% off)",
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/PromocionDto"
-                        }
-                    }
-                },
-                "required": [
-                    "type",
-                    "weight",
-                    "price"
-                ]
-            },
-            "GasCylinderResponseDto": {
-                "type": "object",
-                "properties": {
-                    "gas_cylinder_id": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "distributor_id": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "type": {
-                        "type": "string",
-                        "example": "10kg"
-                    },
-                    "weight": {
-                        "type": "number"
-                    },
-                    "price": {
-                        "type": "number"
-                    },
-                    "stock": {
-                        "type": "number"
-                    },
-                    "description": {
-                        "type": "string",
-                        "nullable": true
-                    },
-                    "isActive": {
-                        "type": "boolean"
-                    },
-                    "photoUrl": {
-                        "type": "string",
-                        "nullable": true,
-                        "description": "URL firmada de la imagen del producto (se abre sin token, vence); `null` si no tiene."
-                    },
-                    "promotions": {
-                        "nullable": true,
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/PromocionDto"
-                        }
-                    },
-                    "createdAt": {
-                        "type": "string",
-                        "format": "date-time"
-                    },
-                    "updatedAt": {
-                        "type": "string",
-                        "format": "date-time"
-                    }
-                },
-                "required": [
-                    "gas_cylinder_id",
-                    "distributor_id",
-                    "type",
-                    "weight",
-                    "price",
-                    "stock",
-                    "description",
-                    "isActive",
-                    "photoUrl",
-                    "promotions",
-                    "createdAt",
-                    "updatedAt"
-                ]
-            },
-            "CatalogoDto": {
-                "type": "object",
-                "properties": {
-                    "gasCylinders": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/GasCylinderResponseDto"
-                        }
-                    },
-                    "total": {
-                        "type": "number"
-                    },
-                    "limit": {
-                        "type": "number"
-                    },
-                    "offset": {
-                        "type": "number"
-                    }
-                },
-                "required": [
-                    "gasCylinders",
-                    "total",
-                    "limit",
-                    "offset"
-                ]
-            },
-            "MedioDePagoDto": {
-                "type": "object",
-                "properties": {
-                    "name": {
-                        "type": "string",
-                        "example": "Efectivo"
-                    },
-                    "key": {
-                        "type": "string",
-                        "example": "CASH"
-                    },
-                    "surcharge": {
-                        "type": "number",
-                        "example": 0
-                    }
-                },
-                "required": [
-                    "name",
-                    "key",
-                    "surcharge"
-                ]
-            },
-            "DisponiblesDto": {
-                "type": "object",
-                "properties": {
-                    "products": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/GasCylinderResponseDto"
-                        }
-                    },
-                    "paymentMethods": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/MedioDePagoDto"
-                        }
-                    }
-                },
-                "required": [
-                    "products",
-                    "paymentMethods"
-                ]
-            },
-            "UpdateGasCylinderDto": {
-                "type": "object",
-                "properties": {
-                    "type": {
-                        "type": "string",
-                        "description": "Tipo de garrafa (10, 15, 45 kg)"
-                    },
-                    "weight": {
-                        "type": "number",
-                        "description": "Peso en kg"
-                    },
-                    "price": {
-                        "type": "number",
-                        "description": "Precio unitario"
-                    },
-                    "stock": {
-                        "type": "number",
-                        "description": "Stock vendible inicial: se registra como físico del depósito predeterminado. En la edición (PATCH /gascylinder/{id}) no se admite: responde 400; el stock cambia con PATCH /gascylinder/{id}/stock."
-                    },
-                    "description": {
-                        "type": "string",
-                        "description": "Descripción"
-                    },
-                    "promotions": {
-                        "description": "Promociones por cantidad (ej: 3 unidades 10% off)",
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/PromocionDto"
-                        }
-                    }
-                }
-            },
-            "BajaDeProductoDto": {
-                "type": "object",
-                "properties": {
-                    "message": {
-                        "type": "string",
-                        "example": "Gas cylinder deactivated successfully"
-                    },
-                    "gasCylinderId": {
-                        "type": "string",
-                        "format": "uuid"
-                    }
-                },
-                "required": [
-                    "message",
-                    "gasCylinderId"
-                ]
-            },
             "TokenValidoResponseDto": {
                 "type": "object",
                 "properties": {
@@ -20322,15 +20084,11 @@
                         "description": "ID de la dirección de entrega"
                     },
                     "items": {
-                        "description": "Ítems del pedido. Obligatorio salvo con `fromCart: true`, que los toma del carrito (con ambos, 400)",
+                        "description": "Ítems del pedido",
                         "type": "array",
                         "items": {
                             "$ref": "#/components/schemas/OrderItemDto"
                         }
-                    },
-                    "fromCart": {
-                        "type": "boolean",
-                        "description": "Checkout del carrito (CU-126): los ítems salen del carrito del cliente en la distribuidora del header `X-Distributor`, se cobra el precio vigente del catálogo y el carrito se vacía en la misma transacción que el pedido. Sin `items` en el cuerpo. Sólo el cliente; carrito vacío o con productos dados de baja es 400."
                     },
                     "paymentMethod": {
                         "type": "string",
@@ -20366,19 +20124,12 @@
                     "depositAmount": {
                         "type": "number",
                         "description": "Monto de la seña de la reserva (obligatorio si isReservation)."
-                    },
-                    "receiver": {
-                        "description": "Quién va a recibir el pedido (CU-128): mismas reglas que `PATCH /orders/:id/receiver`.",
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/SetOrderReceiverDto"
-                            }
-                        ]
                     }
                 },
                 "required": [
                     "customerId",
                     "addressId",
+                    "items",
                     "paymentMethod"
                 ]
             },
@@ -20828,14 +20579,6 @@
                             }
                         ]
                     },
-                    "receiver": {
-                        "nullable": true,
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/ReceiverDeOrderDto"
-                            }
-                        ]
-                    },
                     "cancellation_reason": {
                         "type": "string",
                         "nullable": true
@@ -20915,7 +20658,6 @@
                     "requested_delivery_date",
                     "order_items",
                     "customer",
-                    "receiver",
                     "cancellation_reason",
                     "accepted_at",
                     "on_the_way_at",
@@ -20929,6 +20671,13 @@
             "QuoteOrderDto": {
                 "type": "object",
                 "properties": {
+                    "items": {
+                        "description": "Ítems del pedido",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/OrderItemDto"
+                        }
+                    },
                     "paymentMethod": {
                         "type": "string",
                         "description": "Método de pago",
@@ -20946,17 +20695,6 @@
                     "addressId": {
                         "type": "string",
                         "description": "ID de la dirección de entrega"
-                    },
-                    "items": {
-                        "description": "Ítems del pedido. Obligatorio salvo con `fromCart: true`, que los toma del carrito (con ambos, 400)",
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/OrderItemDto"
-                        }
-                    },
-                    "fromCart": {
-                        "type": "boolean",
-                        "description": "Checkout del carrito (CU-126): los ítems salen del carrito del cliente en la distribuidora del header `X-Distributor`, se cobra el precio vigente del catálogo y el carrito se vacía en la misma transacción que el pedido. Sin `items` en el cuerpo. Sólo el cliente; carrito vacío o con productos dados de baja es 400."
                     },
                     "notes": {
                         "type": "string",
@@ -20990,6 +20728,7 @@
                     }
                 },
                 "required": [
+                    "items",
                     "paymentMethod"
                 ]
             },
@@ -21658,14 +21397,6 @@
                             }
                         ]
                     },
-                    "receiver": {
-                        "nullable": true,
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/ReceiverDeOrderDto"
-                            }
-                        ]
-                    },
                     "cancellation_reason": {
                         "type": "string",
                         "nullable": true
@@ -21750,7 +21481,6 @@
                     "requested_delivery_date",
                     "order_items",
                     "customer",
-                    "receiver",
                     "cancellation_reason",
                     "accepted_at",
                     "on_the_way_at",
@@ -22041,14 +21771,70 @@
                     "sales"
                 ]
             },
-            "CartItemResponseDto": {
+            "PromocionDto": {
                 "type": "object",
                 "properties": {
-                    "cartItemId": {
+                    "quantity": {
+                        "type": "number",
+                        "description": "Unidades desde las que aplica",
+                        "example": 3
+                    },
+                    "discountPercentage": {
+                        "type": "number",
+                        "description": "Descuento, en porcentaje",
+                        "example": 10
+                    }
+                },
+                "required": [
+                    "quantity",
+                    "discountPercentage"
+                ]
+            },
+            "CreateGasCylinderDto": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "description": "Tipo de garrafa (10, 15, 45 kg)"
+                    },
+                    "weight": {
+                        "type": "number",
+                        "description": "Peso en kg"
+                    },
+                    "price": {
+                        "type": "number",
+                        "description": "Precio unitario"
+                    },
+                    "stock": {
+                        "type": "number",
+                        "description": "Stock vendible inicial: se registra como físico del depósito predeterminado. En la edición (PATCH /gascylinder/{id}) no se admite: responde 400; el stock cambia con PATCH /gascylinder/{id}/stock."
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Descripción"
+                    },
+                    "promotions": {
+                        "description": "Promociones por cantidad (ej: 3 unidades 10% off)",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PromocionDto"
+                        }
+                    }
+                },
+                "required": [
+                    "type",
+                    "weight",
+                    "price"
+                ]
+            },
+            "GasCylinderResponseDto": {
+                "type": "object",
+                "properties": {
+                    "gas_cylinder_id": {
                         "type": "string",
                         "format": "uuid"
                     },
-                    "gasCylinderId": {
+                    "distributor_id": {
                         "type": "string",
                         "format": "uuid"
                     },
@@ -22056,139 +21842,174 @@
                         "type": "string",
                         "example": "10kg"
                     },
-                    "quantity": {
-                        "type": "number",
-                        "example": 2
+                    "weight": {
+                        "type": "number"
                     },
-                    "savedUnitPrice": {
-                        "type": "number",
-                        "example": 1000,
-                        "description": "Precio que vio el cliente al agregar el ítem"
+                    "price": {
+                        "type": "number"
                     },
-                    "currentUnitPrice": {
-                        "type": "number",
-                        "example": 1100,
-                        "description": "Precio vigente del catálogo"
+                    "stock": {
+                        "type": "number"
                     },
-                    "priceDifference": {
-                        "type": "number",
-                        "example": 100,
-                        "description": "Vigente menos guardado: positivo si subió, negativo si bajó, 0 si no cambió"
-                    },
-                    "subtotal": {
-                        "type": "number",
-                        "example": 2200,
-                        "description": "Cantidad por precio vigente. 0 si el tipo ya no está disponible"
-                    },
-                    "available": {
-                        "type": "boolean",
-                        "description": "false si el tipo de garrafa se dio de baja después de agregarlo: se muestra pero no suma al total"
-                    },
-                    "hasEnoughStock": {
-                        "type": "boolean",
-                        "description": "false si el stock vendible no alcanza para la cantidad. El carrito no reserva stock: se controla al crear el pedido"
-                    }
-                },
-                "required": [
-                    "cartItemId",
-                    "gasCylinderId",
-                    "type",
-                    "quantity",
-                    "savedUnitPrice",
-                    "currentUnitPrice",
-                    "priceDifference",
-                    "subtotal",
-                    "available",
-                    "hasEnoughStock"
-                ]
-            },
-            "CartResponseDto": {
-                "type": "object",
-                "properties": {
-                    "cartId": {
+                    "description": {
                         "type": "string",
-                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "isActive": {
+                        "type": "boolean"
+                    },
+                    "photoUrl": {
+                        "type": "string",
                         "nullable": true,
-                        "description": "null si el cliente todavía no tiene carrito (se ve vacío)"
+                        "description": "URL firmada de la imagen del producto (se abre sin token, vence); `null` si no tiene."
                     },
-                    "distributorId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "items": {
+                    "promotions": {
+                        "nullable": true,
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/CartItemResponseDto"
+                            "$ref": "#/components/schemas/PromocionDto"
                         }
                     },
-                    "totalUnits": {
-                        "type": "number",
-                        "description": "Unidades de los ítems disponibles"
-                    },
-                    "total": {
-                        "type": "number",
-                        "example": 2200,
-                        "description": "Suma de los subtotales sobre los precios vigentes"
-                    },
-                    "hasPriceChanges": {
-                        "type": "boolean",
-                        "description": "Algún ítem tiene un precio distinto al guardado"
-                    },
-                    "hasUnavailableItems": {
-                        "type": "boolean",
-                        "description": "Algún ítem ya no está disponible"
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
                     },
                     "updatedAt": {
                         "type": "string",
-                        "format": "date-time",
-                        "nullable": true
+                        "format": "date-time"
                     }
                 },
                 "required": [
-                    "cartId",
-                    "distributorId",
-                    "items",
-                    "totalUnits",
-                    "total",
-                    "hasPriceChanges",
-                    "hasUnavailableItems",
+                    "gas_cylinder_id",
+                    "distributor_id",
+                    "type",
+                    "weight",
+                    "price",
+                    "stock",
+                    "description",
+                    "isActive",
+                    "photoUrl",
+                    "promotions",
+                    "createdAt",
                     "updatedAt"
                 ]
             },
-            "AddCartItemDto": {
+            "CatalogoDto": {
                 "type": "object",
                 "properties": {
-                    "gasCylinderId": {
-                        "type": "string",
-                        "format": "uuid",
-                        "description": "Tipo de garrafa del catálogo de la distribuidora"
+                    "gasCylinders": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/GasCylinderResponseDto"
+                        }
                     },
-                    "quantity": {
-                        "type": "number",
-                        "example": 2,
-                        "minimum": 1,
-                        "maximum": 999,
-                        "description": "Entero positivo. Si el tipo ya está en el carrito, se suma a lo que tenía"
+                    "total": {
+                        "type": "number"
+                    },
+                    "limit": {
+                        "type": "number"
+                    },
+                    "offset": {
+                        "type": "number"
                     }
                 },
                 "required": [
-                    "gasCylinderId",
-                    "quantity"
+                    "gasCylinders",
+                    "total",
+                    "limit",
+                    "offset"
                 ]
             },
-            "UpdateCartItemDto": {
+            "MedioDePagoDto": {
                 "type": "object",
                 "properties": {
-                    "quantity": {
+                    "name": {
+                        "type": "string",
+                        "example": "Efectivo"
+                    },
+                    "key": {
+                        "type": "string",
+                        "example": "CASH"
+                    },
+                    "surcharge": {
                         "type": "number",
-                        "example": 3,
-                        "minimum": 1,
-                        "maximum": 999,
-                        "description": "Cantidad nueva (reemplaza a la anterior). Para dejarlo en cero hay que quitar el ítem"
+                        "example": 0
                     }
                 },
                 "required": [
-                    "quantity"
+                    "name",
+                    "key",
+                    "surcharge"
+                ]
+            },
+            "DisponiblesDto": {
+                "type": "object",
+                "properties": {
+                    "products": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/GasCylinderResponseDto"
+                        }
+                    },
+                    "paymentMethods": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/MedioDePagoDto"
+                        }
+                    }
+                },
+                "required": [
+                    "products",
+                    "paymentMethods"
+                ]
+            },
+            "UpdateGasCylinderDto": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "description": "Tipo de garrafa (10, 15, 45 kg)"
+                    },
+                    "weight": {
+                        "type": "number",
+                        "description": "Peso en kg"
+                    },
+                    "price": {
+                        "type": "number",
+                        "description": "Precio unitario"
+                    },
+                    "stock": {
+                        "type": "number",
+                        "description": "Stock vendible inicial: se registra como físico del depósito predeterminado. En la edición (PATCH /gascylinder/{id}) no se admite: responde 400; el stock cambia con PATCH /gascylinder/{id}/stock."
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Descripción"
+                    },
+                    "promotions": {
+                        "description": "Promociones por cantidad (ej: 3 unidades 10% off)",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PromocionDto"
+                        }
+                    }
+                }
+            },
+            "BajaDeProductoDto": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "example": "Gas cylinder deactivated successfully"
+                    },
+                    "gasCylinderId": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                },
+                "required": [
+                    "message",
+                    "gasCylinderId"
                 ]
             },
             "CreateUserAddressDto": {
@@ -23758,9 +23579,10 @@
                         "type": "string",
                         "enum": [
                             "vehicle",
-                            "driver"
+                            "driver",
+                            "employee"
                         ],
-                        "description": "A qué aplica: al vehículo o al chofer"
+                        "description": "A qué aplica: al vehículo, al chofer (histórico: la licencia) o al empleado (personal)"
                     },
                     "trigger": {
                         "type": "string",
@@ -23795,6 +23617,37 @@
                     "carType": {
                         "type": "string",
                         "description": "Tipo de vehículo al que aplica (null = todos)"
+                    },
+                    "documentKind": {
+                        "type": "string",
+                        "enum": [
+                            "insurance",
+                            "vtv",
+                            "hazmat_vehicle_permit",
+                            "driver_license",
+                            "hazmat_driver_course",
+                            "psychophysical",
+                            "art_coverage",
+                            "service",
+                            "generic"
+                        ],
+                        "description": "Tipo de documento: define el detalle que se pide al cargarlo. Sin él, la tarea no lleva detalle."
+                    },
+                    "appliesToCategories": {
+                        "type": "array",
+                        "description": "Categorías de puesto a las que aplica un plan de personal (sin indicar = todas)",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "driver",
+                                "helper",
+                                "warehouse",
+                                "administration",
+                                "sales",
+                                "management",
+                                "other"
+                            ]
+                        }
                     },
                     "isActive": {
                         "type": "boolean",
@@ -23827,7 +23680,8 @@
                         "type": "string",
                         "enum": [
                             "vehicle",
-                            "driver"
+                            "driver",
+                            "employee"
                         ]
                     },
                     "trigger": {
@@ -23860,6 +23714,39 @@
                         "type": "string",
                         "nullable": true
                     },
+                    "documentKind": {
+                        "type": "string",
+                        "enum": [
+                            "insurance",
+                            "vtv",
+                            "hazmat_vehicle_permit",
+                            "driver_license",
+                            "hazmat_driver_course",
+                            "psychophysical",
+                            "art_coverage",
+                            "service",
+                            "generic"
+                        ],
+                        "nullable": true,
+                        "description": "Qué formulario muestra el panel y qué forma de `details` valida el back"
+                    },
+                    "appliesToCategories": {
+                        "type": "array",
+                        "nullable": true,
+                        "description": "Categorías de puesto a las que aplica (null = todas)",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "driver",
+                                "helper",
+                                "warehouse",
+                                "administration",
+                                "sales",
+                                "management",
+                                "other"
+                            ]
+                        }
+                    },
                     "isActive": {
                         "type": "boolean"
                     }
@@ -23875,6 +23762,8 @@
                     "leadTimeDays",
                     "criticality",
                     "carType",
+                    "documentKind",
+                    "appliesToCategories",
                     "isActive"
                 ]
             },
@@ -23891,9 +23780,10 @@
                         "type": "string",
                         "enum": [
                             "vehicle",
-                            "driver"
+                            "driver",
+                            "employee"
                         ],
-                        "description": "A qué aplica: al vehículo o al chofer"
+                        "description": "A qué aplica: al vehículo, al chofer (histórico: la licencia) o al empleado (personal)"
                     },
                     "trigger": {
                         "type": "string",
@@ -23929,6 +23819,37 @@
                         "type": "string",
                         "description": "Tipo de vehículo al que aplica (null = todos)"
                     },
+                    "documentKind": {
+                        "type": "string",
+                        "enum": [
+                            "insurance",
+                            "vtv",
+                            "hazmat_vehicle_permit",
+                            "driver_license",
+                            "hazmat_driver_course",
+                            "psychophysical",
+                            "art_coverage",
+                            "service",
+                            "generic"
+                        ],
+                        "description": "Tipo de documento: define el detalle que se pide al cargarlo. Sin él, la tarea no lleva detalle."
+                    },
+                    "appliesToCategories": {
+                        "type": "array",
+                        "description": "Categorías de puesto a las que aplica un plan de personal (sin indicar = todas)",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "driver",
+                                "helper",
+                                "warehouse",
+                                "administration",
+                                "sales",
+                                "management",
+                                "other"
+                            ]
+                        }
+                    },
                     "isActive": {
                         "type": "boolean",
                         "default": true
@@ -23951,6 +23872,11 @@
                         "type": "string",
                         "format": "uuid",
                         "description": "Obligatorio si el plan es de chofer (subject: driver)"
+                    },
+                    "employeeId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Obligatorio si el plan es de personal (subject: employee): curso de mercancías peligrosas, psicofísico, ART (CU-183 a CU-185)"
                     },
                     "dueAt": {
                         "type": "string",
@@ -23979,6 +23905,17 @@
                     },
                     "notes": {
                         "type": "string"
+                    },
+                    "details": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "example": {
+                            "certificateNumber": "123/26",
+                            "issuer": "CNRT"
+                        },
+                        "description": "Datos propios del tipo de documento (`plan.documentKind`): curso de mercancías peligrosas {certificateNumber, issuer}, psicofísico {examDate}, ART {insurer, policyNumber}. Los demás tipos no llevan detalle."
                     },
                     "scheduledAt": {
                         "type": "string",
@@ -24060,6 +23997,11 @@
                         "format": "uuid",
                         "nullable": true
                     },
+                    "employeeId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
                     "status": {
                         "type": "string",
                         "enum": [
@@ -24114,6 +24056,14 @@
                         "type": "string",
                         "nullable": true
                     },
+                    "details": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "nullable": true,
+                        "description": "Datos propios del tipo de documento (según `plan.documentKind`)"
+                    },
                     "expirationStatus": {
                         "type": "string",
                         "enum": [
@@ -24146,6 +24096,7 @@
                     "distributorId",
                     "carId",
                     "deliveryId",
+                    "employeeId",
                     "status",
                     "dueAt",
                     "dueKm",
@@ -24157,6 +24108,7 @@
                     "referenceNumber",
                     "category",
                     "notes",
+                    "details",
                     "expirationStatus",
                     "daysUntilDue",
                     "blocks"
@@ -24192,6 +24144,17 @@
                     },
                     "notes": {
                         "type": "string"
+                    },
+                    "details": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "example": {
+                            "certificateNumber": "123/26",
+                            "issuer": "CNRT"
+                        },
+                        "description": "Datos propios del tipo de documento (`plan.documentKind`): curso de mercancías peligrosas {certificateNumber, issuer}, psicofísico {examDate}, ART {insurer, policyNumber}. Los demás tipos no llevan detalle."
                     },
                     "scheduledAt": {
                         "type": "string",
@@ -24379,12 +24342,19 @@
                         "items": {
                             "$ref": "#/components/schemas/FleetDriverExpirationsDto"
                         }
+                    },
+                    "employees": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/FleetEmployeeExpirationsDto"
+                        }
                     }
                 },
                 "required": [
                     "withinDays",
                     "vehicles",
-                    "drivers"
+                    "drivers",
+                    "employees"
                 ]
             },
             "FleetVehicleDocumentsResponseDto": {
@@ -29036,187 +29006,585 @@
                     "paymentStatus"
                 ]
             },
-            "ChangeOrderAddressDto": {
+            "FleetEmployeeExpirationsDto": {
                 "type": "object",
                 "properties": {
-                    "addressId": {
+                    "employeeId": {
                         "type": "string",
-                        "format": "uuid",
-                        "description": "Otra de las direcciones registradas del cliente"
+                        "format": "uuid"
                     },
-                    "reason": {
+                    "fullName": {
                         "type": "string",
-                        "maxLength": 500,
-                        "example": "Me mudé temporalmente a lo de mi mamá",
-                        "description": "Motivo del cambio; queda asentado con la dirección anterior"
+                        "example": "Ana Pérez"
+                    },
+                    "fileNumber": {
+                        "type": "string",
+                        "example": "0042"
+                    },
+                    "positionName": {
+                        "type": "string",
+                        "example": "Chofer"
+                    },
+                    "category": {
+                        "type": "string",
+                        "enum": [
+                            "driver",
+                            "helper",
+                            "warehouse",
+                            "administration",
+                            "sales",
+                            "management",
+                            "other"
+                        ]
+                    },
+                    "isLocked": {
+                        "type": "boolean",
+                        "description": "Tiene una habilitación bloqueante vencida: queda inhabilitado para el despacho (CU-246)"
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/FleetExpirationEntryDto"
+                        }
                     }
                 },
                 "required": [
-                    "addressId"
+                    "employeeId",
+                    "fullName",
+                    "fileNumber",
+                    "positionName",
+                    "category",
+                    "isLocked",
+                    "items"
                 ]
             },
-            "ProcessConfigFieldDto": {
+            "EmployeeDocumentsResponseDto": {
                 "type": "object",
                 "properties": {
-                    "key": {
+                    "employeeId": {
                         "type": "string",
-                        "example": "anticipationDays"
+                        "format": "uuid"
+                    },
+                    "isLocked": {
+                        "type": "boolean",
+                        "description": "Queda inhabilitado para el despacho por la misma regla que aplica el despacho (CU-246): legajo egresado, licencia aprobada que cubre hoy o documentación bloqueante vencida (incluida la licencia de conducir). No mira el vehículo en uso."
+                    },
+                    "lockReasons": {
+                        "example": [
+                            "Examen psicofísico: venció el 01/03/2026"
+                        ],
+                        "description": "Los motivos de la inhabilitación, en castellano",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "tasks": {
+                        "description": "Las tareas del empleado, con su estado de vencimiento (incluye la licencia de conducir de un chofer)",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/FleetTaskResponseDto"
+                        }
+                    },
+                    "missingPlans": {
+                        "description": "Planes activos que le aplican por la categoría de su puesto y para los que no tiene ninguna tarea abierta",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/FleetPlanResponseDto"
+                        }
+                    }
+                },
+                "required": [
+                    "employeeId",
+                    "isLocked",
+                    "lockReasons",
+                    "tasks",
+                    "missingPlans"
+                ]
+            },
+            "CreateLeaveDto": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "vacation",
+                            "sick",
+                            "work_accident",
+                            "study",
+                            "marriage",
+                            "birth",
+                            "bereavement",
+                            "unpaid",
+                            "suspension",
+                            "unjustified_absence",
+                            "other"
+                        ],
+                        "example": "vacation"
+                    },
+                    "startDate": {
+                        "type": "string",
+                        "example": "2026-12-01",
+                        "format": "date"
+                    },
+                    "endDate": {
+                        "type": "string",
+                        "example": "2026-12-14",
+                        "format": "date"
+                    },
+                    "reason": {
+                        "type": "string",
+                        "example": "Vacaciones de verano",
+                        "maxLength": 500
+                    }
+                },
+                "required": [
+                    "type",
+                    "startDate",
+                    "endDate"
+                ]
+            },
+            "LeaveResponseDto": {
+                "type": "object",
+                "properties": {
+                    "leaveId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "employeeId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "employeeName": {
+                        "type": "string",
+                        "example": "Ana Pérez"
+                    },
+                    "employeeFileNumber": {
+                        "type": "string",
+                        "example": "0042"
                     },
                     "type": {
                         "type": "string",
                         "enum": [
-                            "integer",
-                            "number"
+                            "vacation",
+                            "sick",
+                            "work_accident",
+                            "study",
+                            "marriage",
+                            "birth",
+                            "bereavement",
+                            "unpaid",
+                            "suspension",
+                            "unjustified_absence",
+                            "other"
                         ]
                     },
-                    "min": {
-                        "type": "number",
-                        "example": 1
-                    },
-                    "max": {
-                        "type": "number",
-                        "example": 30
-                    },
-                    "default": {
-                        "type": "number",
-                        "example": 3
-                    },
-                    "unit": {
+                    "startDate": {
                         "type": "string",
-                        "nullable": true,
-                        "example": "días"
+                        "example": "2026-12-01",
+                        "format": "date"
                     },
-                    "description": {
+                    "endDate": {
                         "type": "string",
-                        "example": "Anticipación con que se envía la invitación a reponer"
-                    }
-                },
-                "required": [
-                    "key",
-                    "type",
-                    "min",
-                    "max",
-                    "default",
-                    "unit",
-                    "description"
-                ]
-            },
-            "ProcessConfigResponseDto": {
-                "type": "object",
-                "properties": {
-                    "process": {
+                        "example": "2026-12-14",
+                        "format": "date"
+                    },
+                    "days": {
+                        "type": "number",
+                        "description": "Días corridos, ambos extremos incluidos"
+                    },
+                    "status": {
                         "type": "string",
                         "enum": [
-                            "fleet_planner",
-                            "repurchase",
-                            "route_batching",
-                            "cylinder_recovery",
-                            "express_dispatch"
-                        ],
-                        "example": "repurchase"
+                            "requested",
+                            "approved",
+                            "rejected",
+                            "cancelled"
+                        ]
                     },
-                    "title": {
+                    "reason": {
                         "type": "string",
-                        "example": "Anticipación de recompra"
+                        "nullable": true
                     },
-                    "description": {
-                        "type": "string"
-                    },
-                    "fields": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/ProcessConfigFieldDto"
-                        }
-                    },
-                    "params": {
-                        "type": "object",
-                        "description": "Valor efectivo de cada parámetro (el de la distribuidora o, si no lo configuró, el de omisión)",
-                        "additionalProperties": {
-                            "type": "number"
-                        },
-                        "example": {
-                            "minOrders": 3,
-                            "anticipationDays": 3
-                        }
-                    },
-                    "isDefault": {
-                        "type": "boolean",
-                        "description": "true si rigen los valores por omisión (nada configurado o todo coincide con ellos)"
-                    },
-                    "updatedAt": {
+                    "rejectionReason": {
                         "type": "string",
-                        "format": "date-time",
-                        "nullable": true,
-                        "description": "Cuándo se modificó por última vez (null si nunca)"
+                        "nullable": true
                     },
-                    "updatedByUserId": {
+                    "requestedByUserId": {
                         "type": "string",
                         "format": "uuid",
-                        "nullable": true,
-                        "description": "Usuario que la modificó por última vez (null si nunca)"
+                        "nullable": true
+                    },
+                    "decidedByUserId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "decidedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
                     }
                 },
                 "required": [
-                    "process",
-                    "title",
-                    "description",
-                    "fields",
-                    "params",
-                    "isDefault",
-                    "updatedAt",
-                    "updatedByUserId"
+                    "leaveId",
+                    "employeeId",
+                    "employeeName",
+                    "employeeFileNumber",
+                    "type",
+                    "startDate",
+                    "endDate",
+                    "days",
+                    "status",
+                    "reason",
+                    "rejectionReason",
+                    "requestedByUserId",
+                    "decidedByUserId",
+                    "decidedAt",
+                    "createdAt"
                 ]
             },
-            "ReceiverDeOrderDto": {
+            "VacationBalanceDto": {
                 "type": "object",
                 "properties": {
+                    "employeeId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "year": {
+                        "type": "number",
+                        "example": 2026
+                    },
+                    "entitledDays": {
+                        "type": "number",
+                        "description": "Días corridos que corresponden por la antigüedad al 31 de diciembre (14, 21, 28 o 35)"
+                    },
+                    "takenDays": {
+                        "type": "number",
+                        "description": "Días de las licencias de vacaciones aprobadas que caen en el año"
+                    },
+                    "balanceDays": {
+                        "type": "number",
+                        "description": "entitledDays - takenDays (puede ser negativo)"
+                    }
+                },
+                "required": [
+                    "employeeId",
+                    "year",
+                    "entitledDays",
+                    "takenDays",
+                    "balanceDays"
+                ]
+            },
+            "LeavePageDto": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/LeaveResponseDto"
+                        }
+                    },
+                    "total": {
+                        "type": "number"
+                    }
+                },
+                "required": [
+                    "data",
+                    "total"
+                ]
+            },
+            "UpdateLeaveDto": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "vacation",
+                            "sick",
+                            "work_accident",
+                            "study",
+                            "marriage",
+                            "birth",
+                            "bereavement",
+                            "unpaid",
+                            "suspension",
+                            "unjustified_absence",
+                            "other"
+                        ],
+                        "example": "vacation"
+                    },
+                    "startDate": {
+                        "type": "string",
+                        "example": "2026-12-01",
+                        "format": "date"
+                    },
+                    "endDate": {
+                        "type": "string",
+                        "example": "2026-12-14",
+                        "format": "date"
+                    },
+                    "reason": {
+                        "type": "string",
+                        "example": "Vacaciones de verano",
+                        "maxLength": 500
+                    }
+                }
+            },
+            "RejectLeaveDto": {
+                "type": "object",
+                "properties": {
+                    "reason": {
+                        "type": "string",
+                        "example": "Sin cobertura esa semana",
+                        "maxLength": 500
+                    }
+                },
+                "required": [
+                    "reason"
+                ]
+            },
+            "RegisterAttendanceDto": {
+                "type": "object",
+                "properties": {
+                    "checkInAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2026-03-02T11:00:00.000Z"
+                    },
+                    "checkOutAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2026-03-02T19:30:00.000Z",
+                        "description": "Si la jornada ya terminó. Sin egreso queda abierta."
+                    }
+                },
+                "required": [
+                    "checkInAt"
+                ]
+            },
+            "AttendanceResponseDto": {
+                "type": "object",
+                "properties": {
+                    "attendanceId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "employeeId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "employeeName": {
+                        "type": "string",
+                        "example": "Ana Pérez"
+                    },
+                    "employeeFileNumber": {
+                        "type": "string",
+                        "example": "0042"
+                    },
+                    "workDate": {
+                        "type": "string",
+                        "example": "2026-03-02",
+                        "format": "date"
+                    },
+                    "checkInAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "checkOutAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "isOpen": {
+                        "type": "boolean",
+                        "description": "Jornada sin cerrar"
+                    },
+                    "durationMinutes": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Minutos trabajados; null mientras está abierta"
+                    },
+                    "source": {
+                        "type": "string",
+                        "enum": [
+                            "panel",
+                            "driver_app"
+                        ]
+                    },
+                    "recordedByUserId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "notes": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "attendanceId",
+                    "employeeId",
+                    "employeeName",
+                    "employeeFileNumber",
+                    "workDate",
+                    "checkInAt",
+                    "checkOutAt",
+                    "isOpen",
+                    "durationMinutes",
+                    "source",
+                    "recordedByUserId",
+                    "notes"
+                ]
+            },
+            "AttendancePageDto": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/AttendanceResponseDto"
+                        }
+                    },
+                    "total": {
+                        "type": "number"
+                    },
+                    "presentToday": {
+                        "type": "number",
+                        "description": "Empleados presentes hoy de la distribuidora: jornada abierta del día de hoy (no depende de los filtros)"
+                    },
+                    "staleOpen": {
+                        "type": "number",
+                        "description": "Jornadas de días anteriores que quedaron sin cerrar y esperan su corrección (no depende de los filtros)"
+                    }
+                },
+                "required": [
+                    "data",
+                    "total",
+                    "presentToday",
+                    "staleOpen"
+                ]
+            },
+            "CorrectAttendanceDto": {
+                "type": "object",
+                "properties": {
+                    "checkInAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "checkOutAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "notes": {
+                        "type": "string",
+                        "example": "Olvidó marcar la salida",
+                        "maxLength": 500
+                    }
+                },
+                "required": [
+                    "notes"
+                ]
+            },
+            "ActivePerPositionDto": {
+                "type": "object",
+                "properties": {
+                    "positionId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
                     "name": {
                         "type": "string",
-                        "nullable": true,
-                        "example": "María Gómez"
+                        "example": "Chofer"
                     },
-                    "document": {
+                    "category": {
                         "type": "string",
-                        "nullable": true,
-                        "example": "30123456"
+                        "enum": [
+                            "driver",
+                            "helper",
+                            "warehouse",
+                            "administration",
+                            "sales",
+                            "management",
+                            "other"
+                        ]
                     },
-                    "relationship": {
-                        "type": "string",
-                        "nullable": true,
-                        "example": "vecina"
+                    "count": {
+                        "type": "number",
+                        "example": 6
                     }
                 },
                 "required": [
+                    "positionId",
                     "name",
-                    "document",
-                    "relationship"
+                    "category",
+                    "count"
                 ]
             },
-            "SetOrderReceiverDto": {
+            "DocumentsByStatusDto": {
                 "type": "object",
                 "properties": {
-                    "receiverName": {
-                        "type": "string",
-                        "maxLength": 120,
-                        "example": "María Gómez"
+                    "current": {
+                        "type": "number",
+                        "description": "Vigentes: falta más que la anticipación del plan"
                     },
-                    "receiverDocument": {
-                        "type": "string",
-                        "maxLength": 20,
-                        "example": "30123456",
-                        "description": "DNI, CUIT/CUIL o pasaporte (6 a 15 letras o dígitos, con al menos un dígito). Puede venir con puntos o guiones: se guarda sin ellos. Dato personal de un tercero: no se guarda en el registro de auditoría."
+                    "dueSoon": {
+                        "type": "number",
+                        "description": "Por vencer: dentro de la ventana de aviso"
                     },
-                    "receiverRelationship": {
-                        "type": "string",
-                        "maxLength": 40,
-                        "example": "vecina",
-                        "description": "Relación con el cliente: familiar, encargado, vecino..."
+                    "expired": {
+                        "type": "number",
+                        "description": "Vencidas"
                     }
                 },
                 "required": [
-                    "receiverName",
-                    "receiverDocument",
-                    "receiverRelationship"
+                    "current",
+                    "dueSoon",
+                    "expired"
+                ]
+            },
+            "PersonnelDashboardDto": {
+                "type": "object",
+                "properties": {
+                    "today": {
+                        "type": "string",
+                        "example": "2026-10-17",
+                        "format": "date",
+                        "description": "El día de hoy en Argentina"
+                    },
+                    "totalActive": {
+                        "type": "number",
+                        "description": "Total de empleados activos"
+                    },
+                    "activeByPosition": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ActivePerPositionDto"
+                        }
+                    },
+                    "presentToday": {
+                        "type": "number",
+                        "description": "Empleados con una jornada abierta"
+                    },
+                    "onLeaveToday": {
+                        "type": "number",
+                        "description": "Empleados con una licencia aprobada que cubre el día de hoy"
+                    },
+                    "documents": {
+                        "$ref": "#/components/schemas/DocumentsByStatusDto"
+                    }
+                },
+                "required": [
+                    "today",
+                    "totalActive",
+                    "activeByPosition",
+                    "presentToday",
+                    "onLeaveToday",
+                    "documents"
                 ]
             }
         }

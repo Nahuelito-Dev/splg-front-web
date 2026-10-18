@@ -11,7 +11,7 @@ import { fleetTaskCreateSchema, type FleetTaskCreateValues } from './fleetTaskSc
 interface Props {
   open: boolean;
   onClose: () => void;
-  subject: 'vehicle' | 'driver';
+  subject: 'vehicle' | 'driver' | 'employee';
   ownerId: string;
   /** Sólo para subject="vehicle": filtra los planes a los que aplica el tipo de este vehículo. */
   carType?: string | null;
@@ -113,7 +113,11 @@ export const FleetTaskFormModal = ({ open, onClose, subject, ownerId, carType, t
           category: values.category,
           notes: values.notes,
           scheduledAt: values.scheduledAt || undefined,
-          ...(subject === 'vehicle' ? { carId: ownerId } : { deliveryId: ownerId }),
+          ...(subject === 'vehicle'
+            ? { carId: ownerId }
+            : subject === 'employee'
+              ? { employeeId: ownerId }
+              : { deliveryId: ownerId }),
         },
         options,
       );

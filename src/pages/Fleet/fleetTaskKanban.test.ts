@@ -8,6 +8,8 @@ const task = (patch: Partial<FleetTask>): FleetTask => ({
   distributorId: 'd1',
   carId: null,
   deliveryId: null,
+  employeeId: null,
+  details: null,
   status: 'scheduled',
   dueAt: '2026-10-10T00:00:00.000Z',
   dueKm: null,

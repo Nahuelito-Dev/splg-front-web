@@ -14,11 +14,14 @@ import {
 import { useBackToList, usePermissions } from '../../hooks';
 import { useCrumbLeaf } from '../../common/components';
 import { useCar } from '../../services/queries/cars';
+import { useEmployee } from '../../services/queries/employees';
 import { useCancelFleetTask, useFleetTask } from '../../services/queries/fleet';
 import { formatDay, formatNumber } from '../../utils/format';
 import { confirm, notify } from '../../utils/notifications';
 import { FLEET_EXPIRATION_STATUS, FLEET_TASK_STATUS, labelOf } from '../../utils/statusLabels';
+import { detailFieldsOf } from '../Employees/documentDetails';
 import { FleetTaskAttachments } from './components/FleetTaskAttachments';
+import { taskSubject } from './fleetTaskSubject';
 import { FleetTaskCloseModal } from './components/FleetTaskCloseModal';
 import { FleetTaskFormModal } from './components/FleetTaskFormModal';
 
@@ -32,6 +35,7 @@ export const FleetTaskDetail = () => {
   const { data: task, isPending, error, refetch } = useFleetTask(id);
   useCrumbLeaf(task?.plan?.name, goBack);
   const { data: car } = useCar(task?.carId ?? undefined);
+  const { data: employee } = useEmployee(task?.employeeId ?? undefined);
   const cancelTask = useCancelFleetTask();
   const [editing, setEditing] = useState(false);
   const [closing, setClosing] = useState(false);
@@ -52,8 +56,8 @@ export const FleetTaskDetail = () => {
   };
 
   const open = task ? isOpenTask(task.status) : false;
-  const subject: 'vehicle' | 'driver' = task?.carId ? 'vehicle' : 'driver';
-  const ownerId = task?.carId ?? task?.deliveryId ?? '';
+  const subject = taskSubject(task ?? null);
+  const ownerId = task?.carId ?? task?.deliveryId ?? task?.employeeId ?? '';
 
   return (
     <div className="mx-auto max-w-3xl p-4 md:p-8">
@@ -86,10 +90,22 @@ export const FleetTaskDetail = () => {
 
             <DetailList
               items={[
-                {
-                  label: 'Vehículo',
-                  value: car ? `${car.car_patent ?? ''} ${car.car_brand ?? ''}`.trim() || '—' : '—',
-                },
+                task.employeeId
+                  ? {
+                      label: 'Empleado',
+                      value: employee
+                        ? `${employee.firstName} ${employee.lastName} · legajo ${employee.fileNumber}`
+                        : '—',
+                    }
+                  : {
+                      label: 'Vehículo',
+                      value: car ? `${car.car_patent ?? ''} ${car.car_brand ?? ''}`.trim() || '—' : '—',
+                    },
+                ...detailFieldsOf(task.plan?.documentKind ?? null).map((field) => ({
+                  label: field.label,
+                  value:
+                    field.type === 'date' ? formatDay(task.details?.[field.key]) : (task.details?.[field.key] ?? '—'),
+                })),
                 { label: 'Vence el', value: formatDay(task.dueAt) },
                 {
                   label: 'Vence a los',
