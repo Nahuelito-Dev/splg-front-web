@@ -26,6 +26,7 @@ import { FleetTaskCloseModal } from './components/FleetTaskCloseModal';
 import { FleetTaskFormModal } from './components/FleetTaskFormModal';
 import { FleetTaskDueCell } from './components/FleetTaskDueCell';
 import { FleetTaskOwnerCell } from './components/FleetTaskOwnerCell';
+import { taskSubject } from './fleetTaskSubject';
 import { FleetTaskKanban } from './components/FleetTaskKanban';
 import { useFleetOwners } from './components/useFleetOwners';
 
@@ -287,8 +288,8 @@ export const FleetTasks = () => {
       <FleetTaskFormModal
         open={Boolean(editing)}
         onClose={() => setEditing(null)}
-        subject={editing?.carId ? 'vehicle' : 'driver'}
-        ownerId={editing?.carId ?? editing?.deliveryId ?? ''}
+        subject={taskSubject(editing)}
+        ownerId={editing?.carId ?? editing?.deliveryId ?? editing?.employeeId ?? ''}
         carType={editing?.carId ? carMap.get(editing.carId)?.type_car : undefined}
         task={editing}
       />

@@ -19,13 +19,15 @@ import {
   type CoverStat,
   type ProfileTabItem,
 } from '../../common/components/ui';
-import { AttachmentsPanel } from '../../common/components/AttachmentsPanel';
 import { useCrumbLeaf } from '../../common/components';
 import { useBackToList, usePermissions, useProfileTab } from '../../hooks';
 import { useDeleteEmployee, useEmployee } from '../../services/queries/employees';
 import { formatDate } from '../../utils/format';
 import { confirm, notify } from '../../utils/notifications';
+import { EmployeeAttendanceTab } from './components/EmployeeAttendanceTab';
+import { EmployeeDocumentsTab } from './components/EmployeeDocumentsTab';
 import { EmployeeFormModal } from './components/EmployeeFormModal';
+import { EmployeeLeavesTab } from './components/EmployeeLeavesTab';
 import { GrantAccountModal } from './components/GrantAccountModal';
 import { ReinstateEmployeeModal } from './components/ReinstateEmployeeModal';
 import { TerminateEmployeeModal } from './components/TerminateEmployeeModal';
@@ -38,7 +40,7 @@ import {
   employeeFullName,
 } from './employeeLabels';
 
-const TAB_KEYS = ['summary', 'documents'];
+const TAB_KEYS = ['summary', 'documents', 'attendance', 'leaves'];
 
 export const EmployeeDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -77,6 +79,8 @@ export const EmployeeDetails = () => {
   const tabs: ProfileTabItem[] = [
     { key: 'summary', label: 'Resumen' },
     { key: 'documents', label: 'Documentación' },
+    { key: 'attendance', label: 'Asistencia' },
+    { key: 'leaves', label: 'Licencias' },
   ];
   const coverStats: CoverStat[] = employee
     ? [
@@ -260,16 +264,13 @@ export const EmployeeDetails = () => {
             </div>
           </ProfileTabPanel>
           <ProfileTabPanel tabKey="documents" value={tab}>
-            <Card className="p-6">
-              <AttachmentsPanel
-                ownerType="employee"
-                ownerId={employee.employeeId}
-                canWrite={canWrite}
-                blockedReason={writeHint}
-                title="Documentación del legajo"
-                hint="DNI, licencia, contrato…"
-              />
-            </Card>
+            <EmployeeDocumentsTab employee={employee} canWrite={canWrite} blockedReason={writeHint} />
+          </ProfileTabPanel>
+          <ProfileTabPanel tabKey="attendance" value={tab}>
+            <EmployeeAttendanceTab employee={employee} canWrite={canWrite} blockedReason={writeHint} />
+          </ProfileTabPanel>
+          <ProfileTabPanel tabKey="leaves" value={tab}>
+            <EmployeeLeavesTab employee={employee} canWrite={canWrite} blockedReason={writeHint} />
           </ProfileTabPanel>
         </>
       )}

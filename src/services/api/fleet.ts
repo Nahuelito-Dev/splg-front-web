@@ -9,6 +9,7 @@ import type {
   CreateFleetTaskBody,
   DownloadLink,
   FleetDriverDocuments,
+  FleetEmployeeExpirations,
   FleetExpirations,
   FleetPlan,
   FleetTask,
@@ -178,9 +179,21 @@ export const deleteFleetTaskAttachment = async (taskId: string, attachmentId: st
   await http.delete(`/fleet/tasks/${taskId}/attachments/${attachmentId}`);
 };
 
-/** GET /fleet/expirations (CU-139): lo vencido y lo que vence, agrupado por vehículo y por chofer. */
-export const getFleetExpirations = async (withinDays?: number): Promise<FleetExpirations> => {
-  const { data } = await http.get<FleetExpirations>('/fleet/expirations', { params: { withinDays } });
+/** Qué parte trae el tablero de vencimientos y cómo se acota el personal (CU-187). */
+export interface FleetExpirationFilters {
+  subject?: 'vehicle' | 'employee';
+  category?: FleetEmployeeExpirations['category'];
+}
+
+/**
+ * GET /fleet/expirations (CU-139 y CU-187): lo vencido y lo que vence, agrupado por vehículo, por chofer y por
+ * empleado. `subject` acota qué trae; `category` filtra al personal por la categoría de su puesto.
+ */
+export const getFleetExpirations = async (
+  withinDays?: number,
+  filters: FleetExpirationFilters = {},
+): Promise<FleetExpirations> => {
+  const { data } = await http.get<FleetExpirations>('/fleet/expirations', { params: { withinDays, ...filters } });
   return data;
 };
 

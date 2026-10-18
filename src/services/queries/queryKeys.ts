@@ -11,6 +11,7 @@ const resource = <R extends string>(name: R) => ({
 
 export const queryKeys = {
   admins: resource('admins'),
+  attendance: resource('attendance'),
   audit: resource('audit'),
   cars: resource('cars'),
   claims: resource('claims'),
@@ -25,9 +26,11 @@ export const queryKeys = {
   health: resource('health'),
   incidents: resource('incidents'),
   jobPositions: resource('jobPositions'),
+  leaves: resource('leaves'),
   moduleConfig: resource('moduleConfig'),
   attachments: resource('attachments'),
   orders: resource('orders'),
+  personnel: resource('personnel'),
   ratings: resource('ratings'),
   reports: resource('reports'),
   purchaseOrders: resource('purchaseOrders'),

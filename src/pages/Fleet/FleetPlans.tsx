@@ -23,9 +23,10 @@ import { FleetPlanFormModal } from './components/FleetPlanFormModal';
 import { intervalText } from './fleetPlanInterval';
 
 const SUBJECT_FILTER_OPTIONS = [
-  { value: '', label: 'Vehículo y chofer' },
+  { value: '', label: 'Todos los planes' },
   { value: 'vehicle', label: 'Vehículo' },
   { value: 'driver', label: 'Chofer' },
+  { value: 'employee', label: 'Personal' },
 ];
 
 const STATUS_FILTER_OPTIONS = [

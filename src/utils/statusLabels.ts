@@ -1,6 +1,7 @@
 import type { CylinderFilters } from '../services/api/physicalCylinders';
 import type {
   AsientoDeAuditoria,
+  Attendance,
   Claim,
   Cylinder,
   CylinderInspection,
@@ -11,6 +12,7 @@ import type {
   FleetPlan,
   FleetTask,
   Incident,
+  Leave,
   Order,
   OrderRecord,
   PurchaseOrder,
@@ -168,6 +170,49 @@ export const FLEET_TASK_CRITICALITY: LabelMap<FleetExpirationEntry['criticality'
 export const FLEET_PLAN_SUBJECT: LabelMap<FleetPlan['subject']> = {
   vehicle: { text: 'Vehículo', tone: 'info' },
   driver: { text: 'Chofer', tone: 'accent' },
+  employee: { text: 'Personal', tone: 'primary' },
+};
+
+/** Tipo de documento de un plan: define el formulario que se muestra al cargarlo (CU-183 a CU-185). */
+export const FLEET_DOCUMENT_KIND: LabelMap<NonNullable<FleetPlan['documentKind']>> = {
+  insurance: { text: 'Seguro', tone: 'info' },
+  vtv: { text: 'VTV', tone: 'info' },
+  hazmat_vehicle_permit: { text: 'Habilitación de mercancías peligrosas (vehículo)', tone: 'info' },
+  driver_license: { text: 'Licencia de conducir', tone: 'accent' },
+  hazmat_driver_course: { text: 'Curso de mercancías peligrosas', tone: 'primary' },
+  psychophysical: { text: 'Examen psicofísico', tone: 'primary' },
+  art_coverage: { text: 'Alta en la ART', tone: 'primary' },
+  service: { text: 'Service', tone: 'neutral' },
+  generic: { text: 'Genérico', tone: 'neutral' },
+};
+
+/** Estado de una licencia o ausencia (CU-191, CU-192, CU-317, CU-318). */
+export const LEAVE_STATUS: LabelMap<Leave['status']> = {
+  requested: { text: 'Solicitada', tone: 'warn' },
+  approved: { text: 'Aprobada', tone: 'success' },
+  rejected: { text: 'Rechazada', tone: 'danger' },
+  cancelled: { text: 'Cancelada', tone: 'neutral' },
+};
+
+/** Tipo de licencia o ausencia. */
+export const LEAVE_TYPE: Record<Leave['type'], string> = {
+  vacation: 'Vacaciones',
+  sick: 'Enfermedad',
+  work_accident: 'Accidente de trabajo',
+  study: 'Estudio',
+  marriage: 'Matrimonio',
+  birth: 'Nacimiento',
+  bereavement: 'Duelo',
+  unpaid: 'Sin goce de sueldo',
+  suspension: 'Suspensión',
+  unjustified_absence: 'Ausencia injustificada',
+  other: 'Otra',
+};
+
+/** De dónde salió la marca de una jornada (CU-189, CU-190). */
+export const ATTENDANCE_SOURCE: LabelMap<Attendance['source']> = {
+  panel: { text: 'Panel', tone: 'neutral' },
+  driver_app: { text: 'App del chofer', tone: 'info' },
 };
 
 /** Qué dispara el vencimiento de un plan. */

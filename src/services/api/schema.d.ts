@@ -1056,132 +1056,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/customers/me/consumption': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Consumo declarado y recompra estimada del cliente */
-    get: operations['ConsumptionController_obtener'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /**
-     * Modificar el consumo promedio declarado (CU-144)
-     * @description Convierte la declaración a kg por mes con el peso del tipo de garrafa, valida el rango (5 a 500 kg por mes) y recalcula la fecha estimada de recompra desde la última compra entregada (o desde ahora si nunca compró). Fuera de rango responde 400 y pide confirmar con `confirmOutOfRange: true`.
-     */
-    patch: operations['ConsumptionController_actualizar'];
-    trace?: never;
-  };
-  '/api/gascylinder': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Get all gas cylinders with pagination
-     * @description Público. Con sesión iniciada se acota a la distribuidora del usuario (la del admin, o el header `X-Distributor` del super admin y del cliente); sin sesión, a `?distributor=` o a la distribuidora por defecto.
-     */
-    get: operations['GasCylinderController_findAll'];
-    put?: never;
-    /** Create a new gas cylinder type */
-    post: operations['GasCylinderController_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/gascylinder/{id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Get gas cylinder by ID */
-    get: operations['GasCylinderController_findOne'];
-    put?: never;
-    post?: never;
-    /** Delete (deactivate) gas cylinder by ID */
-    delete: operations['GasCylinderController_remove'];
-    options?: never;
-    head?: never;
-    /** Update gas cylinder by ID */
-    patch: operations['GasCylinderController_update'];
-    trace?: never;
-  };
-  '/api/gascylinder/type/{type}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Get gas cylinder by type */
-    get: operations['GasCylinderController_findByType'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/gascylinder/available/list': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Get all available gas cylinders
-     * @description Público. Con sesión iniciada se acota a la distribuidora del usuario; sin sesión, a `?distributor=` o a la distribuidora por defecto.
-     */
-    get: operations['GasCylinderController_getAvailableCylinders'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/gascylinder/{id}/photo': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Ver la imagen del producto
-     * @description Por defecto redirige (302) a la URL firmada de S3. Con `?modo=url` devuelve `{ url, expiresAt, requiresAuth }` en JSON, sin redirect; si no tiene foto, `url: null`.
-     */
-    get: operations['GasCylinderController_getPhoto'];
-    /**
-     * Subir o reemplazar la imagen del producto
-     * @description Multipart, campo `file`: JPG, PNG o WEBP de hasta 5 MB (el tipo se valida por el contenido, no por el header). Si ya tenía foto, la anterior se borra del bucket. Aparece como `photoUrl` en el catálogo que ven las apps.
-     */
-    put: operations['GasCylinderController_uploadPhoto'];
-    post?: never;
-    /**
-     * Sacar la imagen del producto
-     * @description Quita la referencia (el objeto se borra del bucket en segundo plano); no da de baja el producto.
-     */
-    delete: operations['GasCylinderController_removePhoto'];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/api/auth': {
     parameters: {
       query?: never;
@@ -1742,7 +1616,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/cart': {
+  '/api/gascylinder': {
     parameters: {
       query?: never;
       header?: never;
@@ -1750,58 +1624,101 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Consultar el carrito (CU-125)
-     * @description Total calculado sobre los precios vigentes del catálogo; cada ítem informa la diferencia con el precio guardado. Sin carrito, responde uno vacío. Un tipo dado de baja se marca `available: false` y no suma.
+     * Get all gas cylinders with pagination
+     * @description Público. Con sesión iniciada se acota a la distribuidora del usuario (la del admin, o el header `X-Distributor` del super admin y del cliente); sin sesión, a `?distributor=` o a la distribuidora por defecto.
      */
-    get: operations['CartController_consultar'];
+    get: operations['GasCylinderController_findAll'];
     put?: never;
-    post?: never;
-    /**
-     * Vaciar el carrito (CU-126)
-     * @description Sin carrito no hace nada y responde uno vacío.
-     */
-    delete: operations['CartController_vaciar'];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/cart/items': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Agregar un ítem al carrito (CU-122)
-     * @description Si el tipo de garrafa ya está en el carrito suma la cantidad. Guarda el precio vigente como referencia.
-     */
-    post: operations['CartController_agregar'];
+    /** Create a new gas cylinder type */
+    post: operations['GasCylinderController_create'];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  '/api/cart/items/{itemId}': {
+  '/api/gascylinder/{id}': {
     parameters: {
       query?: never;
       header?: never;
       path?: never;
       cookie?: never;
     };
-    get?: never;
+    /** Get gas cylinder by ID */
+    get: operations['GasCylinderController_findOne'];
     put?: never;
     post?: never;
-    /** Quitar un ítem del carrito (CU-124) */
-    delete: operations['CartController_quitar'];
+    /** Delete (deactivate) gas cylinder by ID */
+    delete: operations['GasCylinderController_remove'];
     options?: never;
     head?: never;
-    /** Modificar la cantidad de un ítem (CU-123) */
-    patch: operations['CartController_cambiarCantidad'];
+    /** Update gas cylinder by ID */
+    patch: operations['GasCylinderController_update'];
+    trace?: never;
+  };
+  '/api/gascylinder/type/{type}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get gas cylinder by type */
+    get: operations['GasCylinderController_findByType'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/gascylinder/available/list': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get all available gas cylinders
+     * @description Público. Con sesión iniciada se acota a la distribuidora del usuario; sin sesión, a `?distributor=` o a la distribuidora por defecto.
+     */
+    get: operations['GasCylinderController_getAvailableCylinders'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/gascylinder/{id}/photo': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Ver la imagen del producto
+     * @description Por defecto redirige (302) a la URL firmada de S3. Con `?modo=url` devuelve `{ url, expiresAt, requiresAuth }` en JSON, sin redirect; si no tiene foto, `url: null`.
+     */
+    get: operations['GasCylinderController_getPhoto'];
+    /**
+     * Subir o reemplazar la imagen del producto
+     * @description Multipart, campo `file`: JPG, PNG o WEBP de hasta 5 MB (el tipo se valida por el contenido, no por el header). Si ya tenía foto, la anterior se borra del bucket. Aparece como `photoUrl` en el catálogo que ven las apps.
+     */
+    put: operations['GasCylinderController_uploadPhoto'];
+    post?: never;
+    /**
+     * Sacar la imagen del producto
+     * @description Quita la referencia (el objeto se borra del bucket en segundo plano); no da de baja el producto.
+     */
+    delete: operations['GasCylinderController_removePhoto'];
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
   '/api/user-address': {
@@ -2058,46 +1975,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/cylinders/vigencia/proximos-a-vencer': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Envases próximos a vencer (CU-134)
-     * @description Separa los ya vencidos, los que vencen dentro de la ventana de `days` días (default 30) y los sin revisión registrada, que no tienen fecha con la cual comparar. Cada grupo va ordenado por vencimiento, del más urgente al menos, y se pagina por separado con `limit` (default 100, máx. 500) y `offset`; `totals` trae el total de cada grupo. No incluye envases dados de baja.
-     */
-    get: operations['CylinderController_expiring'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/cylinders/vigencia/serial/{serial}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Vigencia de un envase por número de serie (CU-133)
-     * @description Lo que se escanea: el serial grabado en el envase. El serial es único por distribuidora, así que el super admin tiene que elegir una con `X-Distributor` (400 si no).
-     */
-    get: operations['CylinderController_vigenciaBySerial'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/api/cylinders/{id}': {
     parameters: {
       query?: never;
@@ -2117,46 +1994,6 @@ export interface paths {
      * @description Serial, producto, depósito y fechas de fabricación, inspección y vencimiento. El estado cambia sólo por `/transition` y `/retire`.
      */
     patch: operations['CylinderController_update'];
-    trace?: never;
-  };
-  '/api/cylinders/{id}/vigencia': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Vigencia de un envase (CU-133)
-     * @description Fabricación, última revisión, vencimiento, días que faltan e historial de revisiones. `status`: `valid`, `expired` o `unverified` (sin revisión registrada: no es lo mismo que vencido y no bloquea el despacho).
-     */
-    get: operations['CylinderController_getVigencia'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/cylinders/{id}/inspections': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Registrar la revisión periódica de un envase (CU-132)
-     * @description Guarda la revisión en el historial y copia la última fecha y el vencimiento en la ficha. Un resultado `rejected` deja el vencimiento en la fecha de la revisión: el envase queda alcanzado por el bloqueo del despacho. Si está en poder de un cliente o en reparto no se lo saca de circulación: `withdrawalPending` lo marca para retirar.
-     */
-    post: operations['CylinderController_registerInspection'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
     trace?: never;
   };
   '/api/cylinders/{id}/history': {
@@ -2445,8 +2282,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * CU-139: vencimientos de la flota en una pantalla
-     * @description Lo vencido y lo que vence dentro de `withinDays`, agrupado por vehículo y por chofer, con si están inhabilitados.
+     * CU-139 y CU-187: vencimientos de la flota y del personal en una pantalla
+     * @description Lo vencido y lo que vence dentro de `withinDays`, agrupado por vehículo, por chofer (histórico) y por empleado, con si están inhabilitados. `subject` y `category` acotan qué trae.
      */
     get: operations['FleetExpirationsController_find'];
     put?: never;
@@ -4076,7 +3913,7 @@ export interface paths {
     patch: operations['PurchaseReceiptController_paymentStatus'];
     trace?: never;
   };
-  '/api/gascylinder/inactive': {
+  '/api/cylinders/vigencia/proximos-a-vencer': {
     parameters: {
       query?: never;
       header?: never;
@@ -4084,10 +3921,10 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Productos dados de baja de la distribuidora
-     * @description CU-269. El catálogo (`GET /gascylinder`) sólo muestra los activos; éste lista los dados de baja de la distribuidora del administrador (la del header `X-Distributor` para el super admin), con la misma paginación y búsqueda (`term`).
+     * Envases próximos a vencer (CU-134)
+     * @description Separa los ya vencidos, los que vencen dentro de la ventana de `days` días (default 30) y los sin revisión registrada, que no tienen fecha con la cual comparar. Cada grupo va ordenado por vencimiento, del más urgente al menos, y se pagina por separado con `limit` (default 100, máx. 500) y `offset`; `totals` trae el total de cada grupo. No incluye envases dados de baja.
      */
-    get: operations['GasCylinderController_findInactive'];
+    get: operations['CylinderController_expiring'];
     put?: never;
     post?: never;
     delete?: never;
@@ -4096,7 +3933,141 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/gascylinder/{id}/reactivate': {
+  '/api/cylinders/vigencia/serial/{serial}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Vigencia de un envase por número de serie (CU-133)
+     * @description Lo que se escanea: el serial grabado en el envase. El serial es único por distribuidora, así que el super admin tiene que elegir una con `X-Distributor` (400 si no).
+     */
+    get: operations['CylinderController_vigenciaBySerial'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/cylinders/{id}/vigencia': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Vigencia de un envase (CU-133)
+     * @description Fabricación, última revisión, vencimiento, días que faltan e historial de revisiones. `status`: `valid`, `expired` o `unverified` (sin revisión registrada: no es lo mismo que vencido y no bloquea el despacho).
+     */
+    get: operations['CylinderController_getVigencia'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/cylinders/{id}/inspections': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Registrar la revisión periódica de un envase (CU-132)
+     * @description Guarda la revisión en el historial y copia la última fecha y el vencimiento en la ficha. Un resultado `rejected` deja el vencimiento en la fecha de la revisión: el envase queda alcanzado por el bloqueo del despacho. Si está en poder de un cliente o en reparto no se lo saca de circulación: `withdrawalPending` lo marca para retirar.
+     */
+    post: operations['CylinderController_registerInspection'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/employees/{id}/documents': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Documentación de un empleado: tarjetas, si queda inhabilitado y qué le falta cargar (CU-187)
+     * @description Las altas del curso de mercancías peligrosas, el psicofísico y la ART (CU-183 a CU-185) se hacen con `POST /fleet/tasks` indicando `employeeId`, el plan y el detalle.
+     */
+    get: operations['EmployeeDocumentsController_find'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/employees/{id}/leaves': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Registrar una licencia o ausencia: nace solicitada (CU-191) */
+    post: operations['LeaveController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/employees/{id}/vacation-balance': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Consultar el saldo de vacaciones de un empleado (CU-193)
+     * @description Días que corresponden por antigüedad al 31/12 (LCT art. 150), días tomados (vacaciones aprobadas del año) y saldo. Se calcula en cada consulta.
+     */
+    get: operations['LeaveController_vacationBalance'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/leaves': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Consultar las licencias y la bandeja de pendientes (CU-319) */
+    get: operations['LeaveController_findAll'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/leaves/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -4109,58 +4080,11 @@ export interface paths {
     delete?: never;
     options?: never;
     head?: never;
-    /**
-     * Reactivar un producto dado de baja
-     * @description CU-268. Devuelve el producto al catálogo con su stock y sus promociones intactos. No invierte el estado: siempre lo deja activo, así que reactivar uno que ya estaba activo responde igual, con el producto sin cambios. Es una operación propia: enviar `isActive` en `PATCH /gascylinder/{id}` se rechaza.
-     */
-    patch: operations['GasCylinderController_reactivate'];
+    /** Modificar una licencia solicitada (CU-316) */
+    patch: operations['LeaveController_update'];
     trace?: never;
   };
-  '/api/module-config/processes': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Los procesos automáticos configurables con sus parámetros vigentes
-     * @description Los cinco procesos de CU-172 (planificador de flota, recompra, agrupación por recorrido, recuperación de envases y despacho express), cada uno con su esquema (rango y valor por omisión de cada parámetro) y los valores vigentes. El despacho y las tareas programadas tienen su propia ruta.
-     */
-    get: operations['ModuleConfigController_getProcesses'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/module-config/{process}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Parámetros vigentes de un proceso automático
-     * @description Los parámetros de la distribuidora o, si no configuró ninguno, los de omisión (`isDefault: true`).
-     */
-    get: operations['ModuleConfigController_getProcess'];
-    /**
-     * Cambiar los parámetros de un proceso automático
-     * @description Reemplaza la configuración: se guarda sólo lo que viene y lo demás toma su valor por omisión (`{}` restablece los valores por omisión, igual que en el despacho y las tareas programadas). Cada proceso valida con su propio esquema (`GET /module-config/processes`): un parámetro desconocido, de otro tipo o fuera de rango responde 400 con el campo. Los valores los leen los módulos M2 a M5 y la compra express cuando se construyan: hoy se guardan y se validan, pero ningún proceso los consume todavía. Cuando lo hagan, rigen desde la siguiente ejecución; las que están en curso no se interrumpen.
-     */
-    put: operations['ModuleConfigController_putProcess'];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/orders/{id}/address': {
+  '/api/leaves/{id}/approve': {
     parameters: {
       query?: never;
       header?: never;
@@ -4173,14 +4097,11 @@ export interface paths {
     delete?: never;
     options?: never;
     head?: never;
-    /**
-     * Cambiar la dirección de entrega de un pedido (cliente)
-     * @description CU-127. Sólo el CLIENTE DUEÑO (uno ajeno es 404), con el pedido pendiente o aceptado. La dirección nueva tiene que ser otra de las suyas y caer dentro de una zona de cobertura de la distribuidora del pedido. El recargo de la zona nueva se compara con el del pedido: en pago en línea (MercadoPago o transferencia) el importe ya está definido, así que si cambia responde 409 y el cliente debe cancelar y pedir de nuevo; en efectivo se recalcula el total. Actualiza el punto de entrega y deja el cambio asentado (dirección anterior, autor y motivo) en el historial de estados. Avisa al chofer asignado (`order:address-changed`) y al panel; si el pedido está pendiente, vence las ofertas vivas y vuelve a ofrecerlo. Idempotente vía `Idempotency-Key`.
-     */
-    patch: operations['OrderController_changeAddress'];
+    /** Aprobar una solicitud de licencia (CU-192) */
+    patch: operations['LeaveController_approve'];
     trace?: never;
   };
-  '/api/orders/{id}/receiver': {
+  '/api/leaves/{id}/reject': {
     parameters: {
       query?: never;
       header?: never;
@@ -4193,11 +4114,136 @@ export interface paths {
     delete?: never;
     options?: never;
     head?: never;
+    /** Rechazar una solicitud de licencia, con motivo (CU-318) */
+    patch: operations['LeaveController_reject'];
+    trace?: never;
+  };
+  '/api/leaves/{id}/cancel': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Cancelar una licencia que todavía no terminó (CU-317) */
+    patch: operations['LeaveController_cancel'];
+    trace?: never;
+  };
+  '/api/employees/{id}/attendance': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Registrar la asistencia de un empleado desde el panel (CU-189) */
+    post: operations['AttendanceController_register'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/attendance': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
     /**
-     * Indicar quién recibe el pedido (cliente)
-     * @description CU-128. Sólo el CLIENTE DUEÑO (uno ajeno es 404), mientras el pedido no esté entregado ni cancelado (409). Guarda nombre, documento y relación de quien recibe; la respuesta del pedido los expone como `receiver` sólo al cliente dueño, al chofer asignado y al administrador de la distribuidora. Son datos de un tercero: se anulan solos al vencer el plazo de reclamo (30 días desde la entrega o cancelación; con un reclamo abierto, hasta que se cierre) y ningún dato de quien recibe entra en la auditoría. Idempotente vía `Idempotency-Key`.
+     * Consultar la asistencia de los empleados (CU-314)
+     * @description Por día (`date`, por omisión hoy si no hay ningún filtro), por período (`from`/`to`), por empleado o sólo las jornadas abiertas (`open`). Informa cuántos están presentes hoy y cuántas jornadas de días anteriores quedaron sin cerrar.
      */
-    patch: operations['OrderController_setReceiver'];
+    get: operations['AttendanceController_findAll'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/attendance/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Corregir el ingreso o el egreso de una jornada, con nota (CU-313) */
+    patch: operations['AttendanceController_correct'];
+    trace?: never;
+  };
+  '/api/attendance/mine/check-in': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * El chofer inicia su jornada desde la app (CU-190)
+     * @description Idempotente: si ya tiene una jornada abierta de hoy marcada desde la app, la devuelve (200) en vez de abrir otra.
+     */
+    post: operations['AttendanceController_checkIn'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/attendance/mine/check-out': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** El chofer finaliza su jornada desde la app (CU-315) */
+    post: operations['AttendanceController_checkOut'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/personnel/dashboard': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Consultar el tablero de personal (CU-194)
+     * @description Empleados activos por puesto, presentes hoy (jornada abierta), de licencia hoy (licencia aprobada que cubre el día argentino) y documentos por estado de vencimiento. Alimenta la tarjeta «Personal hoy» del inicio. Cuenta; no lista.
+     */
+    get: operations['PersonnelController_consultar'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
 }
@@ -4252,26 +4298,6 @@ export interface components {
       createdAt: string | null;
       /** Format: date-time */
       deletedAt: string | null;
-      /**
-       * @description Consumo promedio declarado por el cliente, en kg por mes
-       * @example 20
-       */
-      avgMonthlyConsumptionKg: number | null;
-      /**
-       * Format: uuid
-       * @description Id del tipo de garrafa habitual que declaró el cliente
-       */
-      declaredCylinderTypeId: string | null;
-      /**
-       * @description Tipo de garrafa habitual que declaró el cliente
-       * @example 10kg
-       */
-      declaredCylinderType: string | null;
-      /**
-       * Format: date-time
-       * @description Fecha estimada de su próxima recompra
-       */
-      nextRepurchaseEstimateAt: string | null;
       user?: components['schemas']['UserResponseDto'];
     };
     UserResponseDto: {
@@ -4463,23 +4489,6 @@ export interface components {
       /** @example qa_pruebas */
       type?: string;
     };
-    DeclareConsumptionDto: {
-      /**
-       * Format: uuid
-       * @description Tipo de garrafa habitual (del catálogo de una distribuidora)
-       */
-      cylinderTypeId: string;
-      /**
-       * @description Garrafas de ese tipo que consume por mes (admite decimales)
-       * @example 2
-       */
-      quantityPerMonth: number;
-      /**
-       * @description true para aceptar un consumo fuera del rango razonable (5 a 500 kg por mes) después de que el sistema pidió confirmación
-       * @default false
-       */
-      confirmOutOfRange: boolean;
-    };
     RegistrarClienteDto: {
       /** @example ana@correo.com */
       email: string;
@@ -4493,8 +4502,6 @@ export interface components {
       lat_lang?: string;
       /** @description Token FCM del dispositivo */
       notification_token?: string;
-      /** @description Cliente: consumo promedio mensual (CU-143). Si se omite, el registro sigue igual y el dato queda vacío */
-      consumption?: components['schemas']['DeclareConsumptionDto'];
     };
     LegajoDeChoferDto: {
       /**
@@ -4541,8 +4548,6 @@ export interface components {
       lat_lang?: string;
       /** @description Token FCM del dispositivo */
       notification_token?: string;
-      /** @description Cliente: consumo promedio mensual (CU-143). Si se omite, el registro sigue igual y el dato queda vacío */
-      consumption?: components['schemas']['DeclareConsumptionDto'];
       /**
        * @example delivery
        * @enum {string}
@@ -5164,126 +5169,6 @@ export interface components {
       /** @description Siempre `false`: la URL firmada se abre sin token. Se conserva en el contrato por compatibilidad con el panel y las apps. */
       requiresAuth: boolean;
     };
-    ConsumptionResponseDto: {
-      /**
-       * Format: uuid
-       * @description Tipo de garrafa habitual; null si el cliente no declaró
-       */
-      cylinderTypeId: string | null;
-      /** @example 10kg */
-      cylinderType: string | null;
-      /**
-       * @description Consumo declarado en kilos por mes; null si no declaró
-       * @example 20
-       */
-      avgMonthlyConsumptionKg: number | null;
-      /**
-       * Format: date-time
-       * @description Fecha estimada de la próxima recompra
-       */
-      nextRepurchaseEstimateAt: string | null;
-    };
-    UpdateConsumptionDto: {
-      /**
-       * @description true para aceptar un consumo fuera del rango razonable (5 a 500 kg por mes) después de que el sistema pidió confirmación
-       * @default false
-       */
-      confirmOutOfRange: boolean;
-      /**
-       * Format: uuid
-       * @description Tipo de garrafa habitual. Obligatorio si el cliente nunca declaró uno
-       */
-      cylinderTypeId?: string;
-      /**
-       * @description Garrafas de ese tipo por mes (0,01 a 1000, hasta 2 decimales). Si se omite, se manda `cylinderTypeId` y se mantiene el consumo en kg por mes
-       * @example 2
-       */
-      quantityPerMonth?: number;
-    };
-    PromocionDto: {
-      /**
-       * @description Unidades desde las que aplica
-       * @example 3
-       */
-      quantity: number;
-      /**
-       * @description Descuento, en porcentaje
-       * @example 10
-       */
-      discountPercentage: number;
-    };
-    CreateGasCylinderDto: {
-      /** @description Tipo de garrafa (10, 15, 45 kg) */
-      type: string;
-      /** @description Peso en kg */
-      weight: number;
-      /** @description Precio unitario */
-      price: number;
-      /** @description Stock vendible inicial: se registra como físico del depósito predeterminado. En la edición (PATCH /gascylinder/{id}) no se admite: responde 400; el stock cambia con PATCH /gascylinder/{id}/stock. */
-      stock?: number;
-      /** @description Descripción */
-      description?: string;
-      /** @description Promociones por cantidad (ej: 3 unidades 10% off) */
-      promotions?: components['schemas']['PromocionDto'][];
-    };
-    GasCylinderResponseDto: {
-      /** Format: uuid */
-      gas_cylinder_id: string;
-      /** Format: uuid */
-      distributor_id: string;
-      /** @example 10kg */
-      type: string;
-      weight: number;
-      price: number;
-      stock: number;
-      description: string | null;
-      isActive: boolean;
-      /** @description URL firmada de la imagen del producto (se abre sin token, vence); `null` si no tiene. */
-      photoUrl: string | null;
-      promotions: components['schemas']['PromocionDto'][] | null;
-      /** Format: date-time */
-      createdAt: string;
-      /** Format: date-time */
-      updatedAt: string;
-    };
-    CatalogoDto: {
-      gasCylinders: components['schemas']['GasCylinderResponseDto'][];
-      total: number;
-      limit: number;
-      offset: number;
-    };
-    MedioDePagoDto: {
-      /** @example Efectivo */
-      name: string;
-      /** @example CASH */
-      key: string;
-      /** @example 0 */
-      surcharge: number;
-    };
-    DisponiblesDto: {
-      products: components['schemas']['GasCylinderResponseDto'][];
-      paymentMethods: components['schemas']['MedioDePagoDto'][];
-    };
-    UpdateGasCylinderDto: {
-      /** @description Tipo de garrafa (10, 15, 45 kg) */
-      type?: string;
-      /** @description Peso en kg */
-      weight?: number;
-      /** @description Precio unitario */
-      price?: number;
-      /** @description Stock vendible inicial: se registra como físico del depósito predeterminado. En la edición (PATCH /gascylinder/{id}) no se admite: responde 400; el stock cambia con PATCH /gascylinder/{id}/stock. */
-      stock?: number;
-      /** @description Descripción */
-      description?: string;
-      /** @description Promociones por cantidad (ej: 3 unidades 10% off) */
-      promotions?: components['schemas']['PromocionDto'][];
-    };
-    BajaDeProductoDto: {
-      /** @example Gas cylinder deactivated successfully */
-      message: string;
-      /** Format: uuid */
-      gasCylinderId: string;
-    };
     TokenValidoResponseDto: {
       /** @example token valid */
       response: string;
@@ -5336,10 +5221,8 @@ export interface components {
       customerId: string;
       /** @description ID de la dirección de entrega */
       addressId: string;
-      /** @description Ítems del pedido. Obligatorio salvo con `fromCart: true`, que los toma del carrito (con ambos, 400) */
-      items?: components['schemas']['OrderItemDto'][];
-      /** @description Checkout del carrito (CU-126): los ítems salen del carrito del cliente en la distribuidora del header `X-Distributor`, se cobra el precio vigente del catálogo y el carrito se vacía en la misma transacción que el pedido. Sin `items` en el cuerpo. Sólo el cliente; carrito vacío o con productos dados de baja es 400. */
-      fromCart?: boolean;
+      /** @description Ítems del pedido */
+      items: components['schemas']['OrderItemDto'][];
       /**
        * @description Método de pago
        * @example cash
@@ -5361,8 +5244,6 @@ export interface components {
       isReservation?: boolean;
       /** @description Monto de la seña de la reserva (obligatorio si isReservation). */
       depositAmount?: number;
-      /** @description Quién va a recibir el pedido (CU-128): mismas reglas que `PATCH /orders/:id/receiver`. */
-      receiver?: components['schemas']['SetOrderReceiverDto'];
     };
     AddressResponseDto: {
       /** Format: uuid */
@@ -5550,7 +5431,6 @@ export interface components {
       /** @example 22600 */
       remainingBalance?: number;
       customer: components['schemas']['CustomerDeOrderDto'] | null;
-      receiver: components['schemas']['ReceiverDeOrderDto'] | null;
       cancellation_reason: string | null;
       /** Format: date-time */
       accepted_at: string | null;
@@ -5565,6 +5445,8 @@ export interface components {
       driver: components['schemas']['DriverDeOrderDto'] | null;
     };
     QuoteOrderDto: {
+      /** @description Ítems del pedido */
+      items: components['schemas']['OrderItemDto'][];
       /**
        * @description Método de pago
        * @example cash
@@ -5575,10 +5457,6 @@ export interface components {
       customerId?: string;
       /** @description ID de la dirección de entrega */
       addressId?: string;
-      /** @description Ítems del pedido. Obligatorio salvo con `fromCart: true`, que los toma del carrito (con ambos, 400) */
-      items?: components['schemas']['OrderItemDto'][];
-      /** @description Checkout del carrito (CU-126): los ítems salen del carrito del cliente en la distribuidora del header `X-Distributor`, se cobra el precio vigente del catálogo y el carrito se vacía en la misma transacción que el pedido. Sin `items` en el cuerpo. Sólo el cliente; carrito vacío o con productos dados de baja es 400. */
-      fromCart?: boolean;
       /** @description Notas adicionales */
       notes?: string;
       /** @description Token de notificación push */
@@ -5885,7 +5763,6 @@ export interface components {
       /** @example 22600 */
       remainingBalance?: number;
       customer: components['schemas']['CustomerDeOrderDto'] | null;
-      receiver: components['schemas']['ReceiverDeOrderDto'] | null;
       cancellation_reason: string | null;
       /** Format: date-time */
       accepted_at: string | null;
@@ -6058,81 +5935,89 @@ export interface components {
       /** @example 576300 */
       sales: number;
     };
-    CartItemResponseDto: {
-      /** Format: uuid */
-      cartItemId: string;
-      /** Format: uuid */
-      gasCylinderId: string;
-      /** @example 10kg */
-      type: string;
-      /** @example 2 */
-      quantity: number;
+    PromocionDto: {
       /**
-       * @description Precio que vio el cliente al agregar el ítem
-       * @example 1000
-       */
-      savedUnitPrice: number;
-      /**
-       * @description Precio vigente del catálogo
-       * @example 1100
-       */
-      currentUnitPrice: number;
-      /**
-       * @description Vigente menos guardado: positivo si subió, negativo si bajó, 0 si no cambió
-       * @example 100
-       */
-      priceDifference: number;
-      /**
-       * @description Cantidad por precio vigente. 0 si el tipo ya no está disponible
-       * @example 2200
-       */
-      subtotal: number;
-      /** @description false si el tipo de garrafa se dio de baja después de agregarlo: se muestra pero no suma al total */
-      available: boolean;
-      /** @description false si el stock vendible no alcanza para la cantidad. El carrito no reserva stock: se controla al crear el pedido */
-      hasEnoughStock: boolean;
-    };
-    CartResponseDto: {
-      /**
-       * Format: uuid
-       * @description null si el cliente todavía no tiene carrito (se ve vacío)
-       */
-      cartId: string | null;
-      /** Format: uuid */
-      distributorId: string;
-      items: components['schemas']['CartItemResponseDto'][];
-      /** @description Unidades de los ítems disponibles */
-      totalUnits: number;
-      /**
-       * @description Suma de los subtotales sobre los precios vigentes
-       * @example 2200
-       */
-      total: number;
-      /** @description Algún ítem tiene un precio distinto al guardado */
-      hasPriceChanges: boolean;
-      /** @description Algún ítem ya no está disponible */
-      hasUnavailableItems: boolean;
-      /** Format: date-time */
-      updatedAt: string | null;
-    };
-    AddCartItemDto: {
-      /**
-       * Format: uuid
-       * @description Tipo de garrafa del catálogo de la distribuidora
-       */
-      gasCylinderId: string;
-      /**
-       * @description Entero positivo. Si el tipo ya está en el carrito, se suma a lo que tenía
-       * @example 2
-       */
-      quantity: number;
-    };
-    UpdateCartItemDto: {
-      /**
-       * @description Cantidad nueva (reemplaza a la anterior). Para dejarlo en cero hay que quitar el ítem
+       * @description Unidades desde las que aplica
        * @example 3
        */
       quantity: number;
+      /**
+       * @description Descuento, en porcentaje
+       * @example 10
+       */
+      discountPercentage: number;
+    };
+    CreateGasCylinderDto: {
+      /** @description Tipo de garrafa (10, 15, 45 kg) */
+      type: string;
+      /** @description Peso en kg */
+      weight: number;
+      /** @description Precio unitario */
+      price: number;
+      /** @description Stock vendible inicial: se registra como físico del depósito predeterminado. En la edición (PATCH /gascylinder/{id}) no se admite: responde 400; el stock cambia con PATCH /gascylinder/{id}/stock. */
+      stock?: number;
+      /** @description Descripción */
+      description?: string;
+      /** @description Promociones por cantidad (ej: 3 unidades 10% off) */
+      promotions?: components['schemas']['PromocionDto'][];
+    };
+    GasCylinderResponseDto: {
+      /** Format: uuid */
+      gas_cylinder_id: string;
+      /** Format: uuid */
+      distributor_id: string;
+      /** @example 10kg */
+      type: string;
+      weight: number;
+      price: number;
+      stock: number;
+      description: string | null;
+      isActive: boolean;
+      /** @description URL firmada de la imagen del producto (se abre sin token, vence); `null` si no tiene. */
+      photoUrl: string | null;
+      promotions: components['schemas']['PromocionDto'][] | null;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    CatalogoDto: {
+      gasCylinders: components['schemas']['GasCylinderResponseDto'][];
+      total: number;
+      limit: number;
+      offset: number;
+    };
+    MedioDePagoDto: {
+      /** @example Efectivo */
+      name: string;
+      /** @example CASH */
+      key: string;
+      /** @example 0 */
+      surcharge: number;
+    };
+    DisponiblesDto: {
+      products: components['schemas']['GasCylinderResponseDto'][];
+      paymentMethods: components['schemas']['MedioDePagoDto'][];
+    };
+    UpdateGasCylinderDto: {
+      /** @description Tipo de garrafa (10, 15, 45 kg) */
+      type?: string;
+      /** @description Peso en kg */
+      weight?: number;
+      /** @description Precio unitario */
+      price?: number;
+      /** @description Stock vendible inicial: se registra como físico del depósito predeterminado. En la edición (PATCH /gascylinder/{id}) no se admite: responde 400; el stock cambia con PATCH /gascylinder/{id}/stock. */
+      stock?: number;
+      /** @description Descripción */
+      description?: string;
+      /** @description Promociones por cantidad (ej: 3 unidades 10% off) */
+      promotions?: components['schemas']['PromocionDto'][];
+    };
+    BajaDeProductoDto: {
+      /** @example Gas cylinder deactivated successfully */
+      message: string;
+      /** Format: uuid */
+      gasCylinderId: string;
     };
     CreateUserAddressDto: {
       /** @description Dueño de la dirección. Sólo lo usa el administrador general (obligatorio para él). Un cliente o un chofer crea siempre para sí mismo con el de su token: puede omitirlo; si lo manda y es el de otro usuario, 403. */
@@ -6839,10 +6724,10 @@ export interface components {
       /** @example Seguro del vehículo */
       name: string;
       /**
-       * @description A qué aplica: al vehículo o al chofer
+       * @description A qué aplica: al vehículo, al chofer (histórico: la licencia) o al empleado (personal)
        * @enum {string}
        */
-      subject: 'vehicle' | 'driver';
+      subject: 'vehicle' | 'driver' | 'employee';
       /**
        * @description Qué dispara el vencimiento: una fecha fija, un intervalo de km o de tiempo
        * @enum {string}
@@ -6864,6 +6749,22 @@ export interface components {
       criticality: 'blocking' | 'non_blocking';
       /** @description Tipo de vehículo al que aplica (null = todos) */
       carType?: string;
+      /**
+       * @description Tipo de documento: define el detalle que se pide al cargarlo. Sin él, la tarea no lleva detalle.
+       * @enum {string}
+       */
+      documentKind?:
+        | 'insurance'
+        | 'vtv'
+        | 'hazmat_vehicle_permit'
+        | 'driver_license'
+        | 'hazmat_driver_course'
+        | 'psychophysical'
+        | 'art_coverage'
+        | 'service'
+        | 'generic';
+      /** @description Categorías de puesto a las que aplica un plan de personal (sin indicar = todas) */
+      appliesToCategories?: ('driver' | 'helper' | 'warehouse' | 'administration' | 'sales' | 'management' | 'other')[];
       /** @default true */
       isActive: boolean;
     };
@@ -6874,7 +6775,7 @@ export interface components {
       distributorId: string;
       name: string;
       /** @enum {string} */
-      subject: 'vehicle' | 'driver';
+      subject: 'vehicle' | 'driver' | 'employee';
       /** @enum {string} */
       trigger: 'by_km' | 'by_time' | 'by_fixed_date';
       intervalKm: number | null;
@@ -6883,16 +6784,34 @@ export interface components {
       /** @enum {string} */
       criticality: 'blocking' | 'non_blocking';
       carType: string | null;
+      /**
+       * @description Qué formulario muestra el panel y qué forma de `details` valida el back
+       * @enum {string|null}
+       */
+      documentKind:
+        | 'insurance'
+        | 'vtv'
+        | 'hazmat_vehicle_permit'
+        | 'driver_license'
+        | 'hazmat_driver_course'
+        | 'psychophysical'
+        | 'art_coverage'
+        | 'service'
+        | 'generic'
+        | null;
+      /** @description Categorías de puesto a las que aplica (null = todas) */
+      appliesToCategories:
+        ('driver' | 'helper' | 'warehouse' | 'administration' | 'sales' | 'management' | 'other')[] | null;
       isActive: boolean;
     };
     UpdateFleetPlanDto: {
       /** @example Seguro del vehículo */
       name?: string;
       /**
-       * @description A qué aplica: al vehículo o al chofer
+       * @description A qué aplica: al vehículo, al chofer (histórico: la licencia) o al empleado (personal)
        * @enum {string}
        */
-      subject?: 'vehicle' | 'driver';
+      subject?: 'vehicle' | 'driver' | 'employee';
       /**
        * @description Qué dispara el vencimiento: una fecha fija, un intervalo de km o de tiempo
        * @enum {string}
@@ -6914,6 +6833,22 @@ export interface components {
       criticality?: 'blocking' | 'non_blocking';
       /** @description Tipo de vehículo al que aplica (null = todos) */
       carType?: string;
+      /**
+       * @description Tipo de documento: define el detalle que se pide al cargarlo. Sin él, la tarea no lleva detalle.
+       * @enum {string}
+       */
+      documentKind?:
+        | 'insurance'
+        | 'vtv'
+        | 'hazmat_vehicle_permit'
+        | 'driver_license'
+        | 'hazmat_driver_course'
+        | 'psychophysical'
+        | 'art_coverage'
+        | 'service'
+        | 'generic';
+      /** @description Categorías de puesto a las que aplica un plan de personal (sin indicar = todas) */
+      appliesToCategories?: ('driver' | 'helper' | 'warehouse' | 'administration' | 'sales' | 'management' | 'other')[];
       /** @default true */
       isActive: boolean;
     };
@@ -6930,6 +6865,11 @@ export interface components {
        * @description Obligatorio si el plan es de chofer (subject: driver)
        */
       deliveryId?: string;
+      /**
+       * Format: uuid
+       * @description Obligatorio si el plan es de personal (subject: employee): curso de mercancías peligrosas, psicofísico, ART (CU-183 a CU-185)
+       */
+      employeeId?: string;
       /**
        * Format: date-time
        * @description Fecha límite (vencimiento de la póliza, la VTV, la licencia)
@@ -6954,6 +6894,16 @@ export interface components {
        */
       category?: string;
       notes?: string;
+      /**
+       * @description Datos propios del tipo de documento (`plan.documentKind`): curso de mercancías peligrosas {certificateNumber, issuer}, psicofísico {examDate}, ART {insurer, policyNumber}. Los demás tipos no llevan detalle.
+       * @example {
+       *       "certificateNumber": "123/26",
+       *       "issuer": "CNRT"
+       *     }
+       */
+      details?: {
+        [key: string]: string;
+      };
       /**
        * Format: date-time
        * @description Cuándo está agendado el turno/trámite, si ya se sabe
@@ -6988,6 +6938,8 @@ export interface components {
       carId: string | null;
       /** Format: uuid */
       deliveryId: string | null;
+      /** Format: uuid */
+      employeeId: string | null;
       /** @enum {string} */
       status: 'forecast' | 'scheduled' | 'in_progress' | 'done' | 'overdue' | 'cancelled';
       /** Format: date-time */
@@ -7003,6 +6955,10 @@ export interface components {
       referenceNumber: string | null;
       category: string | null;
       notes: string | null;
+      /** @description Datos propios del tipo de documento (según `plan.documentKind`) */
+      details: {
+        [key: string]: string;
+      } | null;
       /**
        * @description null si no tiene fecha límite (p. ej. un service todavía sin fecha estimada) o si ya está cerrada/cancelada
        * @enum {string|null}
@@ -7039,6 +6995,16 @@ export interface components {
        */
       category?: string;
       notes?: string;
+      /**
+       * @description Datos propios del tipo de documento (`plan.documentKind`): curso de mercancías peligrosas {certificateNumber, issuer}, psicofísico {examDate}, ART {insurer, policyNumber}. Los demás tipos no llevan detalle.
+       * @example {
+       *       "certificateNumber": "123/26",
+       *       "issuer": "CNRT"
+       *     }
+       */
+      details?: {
+        [key: string]: string;
+      };
       /**
        * Format: date-time
        * @description Cuándo está agendado el turno/trámite, si ya se sabe
@@ -7104,6 +7070,7 @@ export interface components {
       withinDays: number;
       vehicles: components['schemas']['FleetVehicleExpirationsDto'][];
       drivers: components['schemas']['FleetDriverExpirationsDto'][];
+      employees: components['schemas']['FleetEmployeeExpirationsDto'][];
     };
     FleetVehicleDocumentsResponseDto: {
       /** Format: uuid */
@@ -8910,88 +8877,255 @@ export interface components {
        */
       paymentStatus: 'unpaid' | 'paid';
     };
-    ChangeOrderAddressDto: {
-      /**
-       * Format: uuid
-       * @description Otra de las direcciones registradas del cliente
-       */
-      addressId: string;
-      /**
-       * @description Motivo del cambio; queda asentado con la dirección anterior
-       * @example Me mudé temporalmente a lo de mi mamá
-       */
-      reason?: string;
-    };
-    ProcessConfigFieldDto: {
-      /** @example anticipationDays */
-      key: string;
+    FleetEmployeeExpirationsDto: {
+      /** Format: uuid */
+      employeeId: string;
+      /** @example Ana Pérez */
+      fullName: string;
+      /** @example 0042 */
+      fileNumber: string;
+      /** @example Chofer */
+      positionName: string;
       /** @enum {string} */
-      type: 'integer' | 'number';
-      /** @example 1 */
-      min: number;
-      /** @example 30 */
-      max: number;
-      /** @example 3 */
-      default: number;
-      /** @example días */
-      unit: string | null;
-      /** @example Anticipación con que se envía la invitación a reponer */
-      description: string;
+      category: 'driver' | 'helper' | 'warehouse' | 'administration' | 'sales' | 'management' | 'other';
+      /** @description Tiene una habilitación bloqueante vencida: queda inhabilitado para el despacho (CU-246) */
+      isLocked: boolean;
+      items: components['schemas']['FleetExpirationEntryDto'][];
     };
-    ProcessConfigResponseDto: {
+    EmployeeDocumentsResponseDto: {
+      /** Format: uuid */
+      employeeId: string;
+      /** @description Queda inhabilitado para el despacho por la misma regla que aplica el despacho (CU-246): legajo egresado, licencia aprobada que cubre hoy o documentación bloqueante vencida (incluida la licencia de conducir). No mira el vehículo en uso. */
+      isLocked: boolean;
       /**
-       * @example repurchase
+       * @description Los motivos de la inhabilitación, en castellano
+       * @example [
+       *       "Examen psicofísico: venció el 01/03/2026"
+       *     ]
+       */
+      lockReasons: string[];
+      /** @description Las tareas del empleado, con su estado de vencimiento (incluye la licencia de conducir de un chofer) */
+      tasks: components['schemas']['FleetTaskResponseDto'][];
+      /** @description Planes activos que le aplican por la categoría de su puesto y para los que no tiene ninguna tarea abierta */
+      missingPlans: components['schemas']['FleetPlanResponseDto'][];
+    };
+    CreateLeaveDto: {
+      /**
+       * @example vacation
        * @enum {string}
        */
-      process: 'fleet_planner' | 'repurchase' | 'route_batching' | 'cylinder_recovery' | 'express_dispatch';
-      /** @example Anticipación de recompra */
-      title: string;
-      description: string;
-      fields: components['schemas']['ProcessConfigFieldDto'][];
+      type:
+        | 'vacation'
+        | 'sick'
+        | 'work_accident'
+        | 'study'
+        | 'marriage'
+        | 'birth'
+        | 'bereavement'
+        | 'unpaid'
+        | 'suspension'
+        | 'unjustified_absence'
+        | 'other';
       /**
-       * @description Valor efectivo de cada parámetro (el de la distribuidora o, si no lo configuró, el de omisión)
-       * @example {
-       *       "minOrders": 3,
-       *       "anticipationDays": 3
-       *     }
+       * Format: date
+       * @example 2026-12-01
        */
-      params: {
-        [key: string]: number;
-      };
-      /** @description true si rigen los valores por omisión (nada configurado o todo coincide con ellos) */
-      isDefault: boolean;
+      startDate: string;
+      /**
+       * Format: date
+       * @example 2026-12-14
+       */
+      endDate: string;
+      /** @example Vacaciones de verano */
+      reason?: string;
+    };
+    LeaveResponseDto: {
+      /** Format: uuid */
+      leaveId: string;
+      /** Format: uuid */
+      employeeId: string;
+      /** @example Ana Pérez */
+      employeeName: string;
+      /** @example 0042 */
+      employeeFileNumber: string;
+      /** @enum {string} */
+      type:
+        | 'vacation'
+        | 'sick'
+        | 'work_accident'
+        | 'study'
+        | 'marriage'
+        | 'birth'
+        | 'bereavement'
+        | 'unpaid'
+        | 'suspension'
+        | 'unjustified_absence'
+        | 'other';
+      /**
+       * Format: date
+       * @example 2026-12-01
+       */
+      startDate: string;
+      /**
+       * Format: date
+       * @example 2026-12-14
+       */
+      endDate: string;
+      /** @description Días corridos, ambos extremos incluidos */
+      days: number;
+      /** @enum {string} */
+      status: 'requested' | 'approved' | 'rejected' | 'cancelled';
+      reason: string | null;
+      rejectionReason: string | null;
+      /** Format: uuid */
+      requestedByUserId: string | null;
+      /** Format: uuid */
+      decidedByUserId: string | null;
+      /** Format: date-time */
+      decidedAt: string | null;
+      /** Format: date-time */
+      createdAt: string;
+    };
+    VacationBalanceDto: {
+      /** Format: uuid */
+      employeeId: string;
+      /** @example 2026 */
+      year: number;
+      /** @description Días corridos que corresponden por la antigüedad al 31 de diciembre (14, 21, 28 o 35) */
+      entitledDays: number;
+      /** @description Días de las licencias de vacaciones aprobadas que caen en el año */
+      takenDays: number;
+      /** @description entitledDays - takenDays (puede ser negativo) */
+      balanceDays: number;
+    };
+    LeavePageDto: {
+      data: components['schemas']['LeaveResponseDto'][];
+      total: number;
+    };
+    UpdateLeaveDto: {
+      /**
+       * @example vacation
+       * @enum {string}
+       */
+      type?:
+        | 'vacation'
+        | 'sick'
+        | 'work_accident'
+        | 'study'
+        | 'marriage'
+        | 'birth'
+        | 'bereavement'
+        | 'unpaid'
+        | 'suspension'
+        | 'unjustified_absence'
+        | 'other';
+      /**
+       * Format: date
+       * @example 2026-12-01
+       */
+      startDate?: string;
+      /**
+       * Format: date
+       * @example 2026-12-14
+       */
+      endDate?: string;
+      /** @example Vacaciones de verano */
+      reason?: string;
+    };
+    RejectLeaveDto: {
+      /** @example Sin cobertura esa semana */
+      reason: string;
+    };
+    RegisterAttendanceDto: {
       /**
        * Format: date-time
-       * @description Cuándo se modificó por última vez (null si nunca)
+       * @example 2026-03-02T11:00:00.000Z
        */
-      updatedAt: string | null;
+      checkInAt: string;
       /**
-       * Format: uuid
-       * @description Usuario que la modificó por última vez (null si nunca)
+       * Format: date-time
+       * @description Si la jornada ya terminó. Sin egreso queda abierta.
+       * @example 2026-03-02T19:30:00.000Z
        */
-      updatedByUserId: string | null;
+      checkOutAt?: string;
     };
-    ReceiverDeOrderDto: {
-      /** @example María Gómez */
-      name: string | null;
-      /** @example 30123456 */
-      document: string | null;
-      /** @example vecina */
-      relationship: string | null;
+    AttendanceResponseDto: {
+      /** Format: uuid */
+      attendanceId: string;
+      /** Format: uuid */
+      employeeId: string;
+      /** @example Ana Pérez */
+      employeeName: string;
+      /** @example 0042 */
+      employeeFileNumber: string;
+      /**
+       * Format: date
+       * @example 2026-03-02
+       */
+      workDate: string;
+      /** Format: date-time */
+      checkInAt: string;
+      /** Format: date-time */
+      checkOutAt: string | null;
+      /** @description Jornada sin cerrar */
+      isOpen: boolean;
+      /** @description Minutos trabajados; null mientras está abierta */
+      durationMinutes: number | null;
+      /** @enum {string} */
+      source: 'panel' | 'driver_app';
+      /** Format: uuid */
+      recordedByUserId: string | null;
+      notes: string | null;
     };
-    SetOrderReceiverDto: {
-      /** @example María Gómez */
-      receiverName: string;
+    AttendancePageDto: {
+      data: components['schemas']['AttendanceResponseDto'][];
+      total: number;
+      /** @description Empleados presentes hoy de la distribuidora: jornada abierta del día de hoy (no depende de los filtros) */
+      presentToday: number;
+      /** @description Jornadas de días anteriores que quedaron sin cerrar y esperan su corrección (no depende de los filtros) */
+      staleOpen: number;
+    };
+    CorrectAttendanceDto: {
+      /** Format: date-time */
+      checkInAt?: string;
+      /** Format: date-time */
+      checkOutAt?: string;
+      /** @example Olvidó marcar la salida */
+      notes: string;
+    };
+    ActivePerPositionDto: {
+      /** Format: uuid */
+      positionId: string;
+      /** @example Chofer */
+      name: string;
+      /** @enum {string} */
+      category: 'driver' | 'helper' | 'warehouse' | 'administration' | 'sales' | 'management' | 'other';
+      /** @example 6 */
+      count: number;
+    };
+    DocumentsByStatusDto: {
+      /** @description Vigentes: falta más que la anticipación del plan */
+      current: number;
+      /** @description Por vencer: dentro de la ventana de aviso */
+      dueSoon: number;
+      /** @description Vencidas */
+      expired: number;
+    };
+    PersonnelDashboardDto: {
       /**
-       * @description DNI, CUIT/CUIL o pasaporte (6 a 15 letras o dígitos, con al menos un dígito). Puede venir con puntos o guiones: se guarda sin ellos. Dato personal de un tercero: no se guarda en el registro de auditoría.
-       * @example 30123456
+       * Format: date
+       * @description El día de hoy en Argentina
+       * @example 2026-10-17
        */
-      receiverDocument: string;
-      /**
-       * @description Relación con el cliente: familiar, encargado, vecino...
-       * @example vecina
-       */
-      receiverRelationship: string;
+      today: string;
+      /** @description Total de empleados activos */
+      totalActive: number;
+      activeByPosition: components['schemas']['ActivePerPositionDto'][];
+      /** @description Empleados con una jornada abierta */
+      presentToday: number;
+      /** @description Empleados con una licencia aprobada que cubre el día de hoy */
+      onLeaveToday: number;
+      documents: components['schemas']['DocumentsByStatusDto'];
     };
   };
   responses: never;
@@ -13329,503 +13463,6 @@ export interface operations {
       };
     };
   };
-  ConsumptionController_obtener: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ConsumptionResponseDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: customer */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description El usuario no tiene ficha de cliente */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  ConsumptionController_actualizar: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['UpdateConsumptionDto'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ConsumptionResponseDto'];
-        };
-      };
-      /** @description Valor fuera de rango sin confirmar, tipo de garrafa inexistente o dado de baja, o falta el tipo de garrafa habitual */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: customer */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description El usuario no tiene ficha de cliente */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  GasCylinderController_findAll: {
-    parameters: {
-      query?: {
-        limit?: number;
-        offset?: number;
-        page?: number;
-        /** @description Texto a buscar */
-        term?: string;
-        distributor?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['CatalogoDto'];
-        };
-      };
-    };
-  };
-  GasCylinderController_create: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CreateGasCylinderDto'];
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['GasCylinderResponseDto'];
-        };
-      };
-      /** @description Datos inválidos o tipo repetido */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  GasCylinderController_findOne: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Gas cylinder UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['GasCylinderResponseDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Gas cylinder not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  GasCylinderController_remove: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Gas cylinder UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['BajaDeProductoDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  GasCylinderController_update: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Gas cylinder UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['UpdateGasCylinderDto'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['GasCylinderResponseDto'];
-        };
-      };
-      /** @description Datos inválidos (p. ej.: weight debe ser mayor que 0; price debe ser mayor que 0) */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  GasCylinderController_findByType: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Gas cylinder type (10kg, 15kg, etc) */
-        type: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['GasCylinderResponseDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No hay un producto activo de ese tipo */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  GasCylinderController_getAvailableCylinders: {
-    parameters: {
-      query?: {
-        distributor?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['DisponiblesDto'];
-        };
-      };
-    };
-  };
-  GasCylinderController_getPhoto: {
-    parameters: {
-      query?: {
-        /** @description `url` devuelve `{ url, expiresAt, requiresAuth }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada de S3). */
-        modo?: components['schemas']['DownloadMode'];
-      };
-      header?: never;
-      path: {
-        /** @description Gas cylinder UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PhotoLinkResponseDto'];
-        };
-      };
-      /** @description No existe o es de otra distribuidora; sin `modo`, también si no tiene foto */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  GasCylinderController_uploadPhoto: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Gas cylinder UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'multipart/form-data': {
-          /** Format: binary */
-          file: string;
-        };
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['GasCylinderResponseDto'];
-        };
-      };
-      /** @description Falta la foto o está vacía */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La foto supera los 5 MB */
-      413: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No es JPG, PNG ni WEBP (o el contenido no coincide) */
-      415: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  GasCylinderController_removePhoto: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Gas cylinder UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['GasCylinderResponseDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
   AuthController_checkToken: {
     parameters: {
       query?: never;
@@ -15373,13 +15010,17 @@ export interface operations {
       };
     };
   };
-  CartController_consultar: {
+  GasCylinderController_findAll: {
     parameters: {
-      query?: never;
-      header: {
-        /** @description Slug o id de la distribuidora del carrito */
-        'X-Distributor': string;
+      query?: {
+        limit?: number;
+        offset?: number;
+        page?: number;
+        /** @description Texto a buscar */
+        term?: string;
+        distributor?: string;
       };
+      header?: never;
       path?: never;
       cookie?: never;
     };
@@ -15390,74 +15031,21 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['CartResponseDto'];
+          'application/json': components['schemas']['CatalogoDto'];
         };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: customer */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
       };
     };
   };
-  CartController_vaciar: {
+  GasCylinderController_create: {
     parameters: {
       query?: never;
-      header: {
-        /** @description Slug o id de la distribuidora del carrito */
-        'X-Distributor': string;
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['CartResponseDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: customer */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  CartController_agregar: {
-    parameters: {
-      query?: never;
-      header: {
-        /** @description Slug o id de la distribuidora del carrito */
-        'X-Distributor': string;
-      };
+      header?: never;
       path?: never;
       cookie?: never;
     };
     requestBody: {
       content: {
-        'application/json': components['schemas']['AddCartItemDto'];
+        'application/json': components['schemas']['CreateGasCylinderDto'];
       };
     };
     responses: {
@@ -15466,10 +15054,10 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['CartResponseDto'];
+          'application/json': components['schemas']['GasCylinderResponseDto'];
         };
       };
-      /** @description Cantidad inválida (no entera o no positiva) o que supera el máximo por ítem */
+      /** @description Datos inválidos o tipo repetido */
       400: {
         headers: {
           [name: string]: unknown;
@@ -15483,15 +15071,8 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: customer */
+      /** @description Requiere rol: admin, super_admin */
       403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description El tipo de garrafa no existe, está dado de baja o es de otra distribuidora */
-      404: {
         headers: {
           [name: string]: unknown;
         };
@@ -15499,15 +15080,13 @@ export interface operations {
       };
     };
   };
-  CartController_quitar: {
+  GasCylinderController_findOne: {
     parameters: {
       query?: never;
-      header: {
-        /** @description Slug o id de la distribuidora del carrito */
-        'X-Distributor': string;
-      };
+      header?: never;
       path: {
-        itemId: string;
+        /** @description Gas cylinder UUID */
+        id: string;
       };
       cookie?: never;
     };
@@ -15518,7 +15097,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['CartResponseDto'];
+          'application/json': components['schemas']['GasCylinderResponseDto'];
         };
       };
       /** @description Sin token o token inválido */
@@ -15528,14 +15107,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: customer */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description El ítem no está en el carrito del cliente */
+      /** @description Gas cylinder not found */
       404: {
         headers: {
           [name: string]: unknown;
@@ -15544,21 +15116,62 @@ export interface operations {
       };
     };
   };
-  CartController_cambiarCantidad: {
+  GasCylinderController_remove: {
     parameters: {
       query?: never;
-      header: {
-        /** @description Slug o id de la distribuidora del carrito */
-        'X-Distributor': string;
-      };
+      header?: never;
       path: {
-        itemId: string;
+        /** @description Gas cylinder UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BajaDeProductoDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  GasCylinderController_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Gas cylinder UUID */
+        id: string;
       };
       cookie?: never;
     };
     requestBody: {
       content: {
-        'application/json': components['schemas']['UpdateCartItemDto'];
+        'application/json': components['schemas']['UpdateGasCylinderDto'];
       };
     };
     responses: {
@@ -15567,10 +15180,10 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['CartResponseDto'];
+          'application/json': components['schemas']['GasCylinderResponseDto'];
         };
       };
-      /** @description Cantidad cero, negativa o no entera: para dejarlo en cero hay que quitar el ítem */
+      /** @description Datos inválidos (p. ej.: weight debe ser mayor que 0; price debe ser mayor que 0) */
       400: {
         headers: {
           [name: string]: unknown;
@@ -15584,14 +15197,217 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: customer */
+      /** @description Requiere rol: admin, super_admin */
       403: {
         headers: {
           [name: string]: unknown;
         };
         content?: never;
       };
-      /** @description El ítem no está en el carrito del cliente */
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  GasCylinderController_findByType: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Gas cylinder type (10kg, 15kg, etc) */
+        type: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GasCylinderResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No hay un producto activo de ese tipo */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  GasCylinderController_getAvailableCylinders: {
+    parameters: {
+      query?: {
+        distributor?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DisponiblesDto'];
+        };
+      };
+    };
+  };
+  GasCylinderController_getPhoto: {
+    parameters: {
+      query?: {
+        /** @description `url` devuelve `{ url, expiresAt, requiresAuth }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada de S3). */
+        modo?: components['schemas']['DownloadMode'];
+      };
+      header?: never;
+      path: {
+        /** @description Gas cylinder UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PhotoLinkResponseDto'];
+        };
+      };
+      /** @description No existe o es de otra distribuidora; sin `modo`, también si no tiene foto */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  GasCylinderController_uploadPhoto: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Gas cylinder UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'multipart/form-data': {
+          /** Format: binary */
+          file: string;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GasCylinderResponseDto'];
+        };
+      };
+      /** @description Falta la foto o está vacía */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La foto supera los 5 MB */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No es JPG, PNG ni WEBP (o el contenido no coincide) */
+      415: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  GasCylinderController_removePhoto: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Gas cylinder UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GasCylinderResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
       404: {
         headers: {
           [name: string]: unknown;
@@ -16533,94 +16349,6 @@ export interface operations {
       };
     };
   };
-  CylinderController_expiring: {
-    parameters: {
-      query?: {
-        /** @description Ventana en días: los que vencen de hoy a hoy + `days`. */
-        days?: number;
-        /** @description Tamaño de página de cada grupo. */
-        limit?: number;
-        offset?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ExpiringCylindersResponseDto'];
-        };
-      };
-      /** @description `days` o la paginación fuera de rango */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  CylinderController_vigenciaBySerial: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        serial: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['CylinderVigenciaResponseDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Envase no encontrado */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
   CylinderController_findOne: {
     parameters: {
       query?: never;
@@ -16717,110 +16445,6 @@ export interface operations {
         content?: never;
       };
       /** @description Serial repetido en la distribuidora, o envase dado de baja */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  CylinderController_getVigencia: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Cylinder UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['CylinderVigenciaResponseDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Envase no encontrado */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  CylinderController_registerInspection: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Cylinder UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['RegisterInspectionDto'];
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['CylinderVigenciaResponseDto'];
-        };
-      };
-      /** @description Fecha de revisión futura, vencimiento faltante o no posterior a la revisión */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Envase no encontrado */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description El envase está dado de baja */
       409: {
         headers: {
           [name: string]: unknown;
@@ -17251,7 +16875,7 @@ export interface operations {
   FleetPlanController_findAll: {
     parameters: {
       query?: {
-        subject?: 'vehicle' | 'driver';
+        subject?: 'vehicle' | 'driver' | 'employee';
         /** @description Sin este filtro trae activos e inactivos */
         isActive?: boolean;
       };
@@ -17436,6 +17060,7 @@ export interface operations {
         term?: string;
         carId?: string;
         deliveryId?: string;
+        employeeId?: string;
         /** @description Sólo las tareas de este plan */
         planId?: string;
         status?: 'forecast' | 'scheduled' | 'in_progress' | 'done' | 'overdue' | 'cancelled';
@@ -17961,6 +17586,10 @@ export interface operations {
       query?: {
         /** @description Ventana en días: trae lo vencido y lo que vence dentro de esta cantidad de días */
         withinDays?: number;
+        /** @description `vehicle`: sólo vehículos y choferes (CU-139); `employee`: sólo personal (CU-187). Sin indicar, todo. */
+        subject?: 'vehicle' | 'employee';
+        /** @description Filtra el personal por la categoría de su puesto (CU-187) */
+        category?: 'driver' | 'helper' | 'warehouse' | 'administration' | 'sales' | 'management' | 'other';
       };
       header?: never;
       path?: never;
@@ -23423,14 +23052,383 @@ export interface operations {
       };
     };
   };
-  GasCylinderController_findInactive: {
+  CylinderController_expiring: {
+    parameters: {
+      query?: {
+        /** @description Ventana en días: los que vencen de hoy a hoy + `days`. */
+        days?: number;
+        /** @description Tamaño de página de cada grupo. */
+        limit?: number;
+        offset?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ExpiringCylindersResponseDto'];
+        };
+      };
+      /** @description `days` o la paginación fuera de rango */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CylinderController_vigenciaBySerial: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        serial: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CylinderVigenciaResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Envase no encontrado */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CylinderController_getVigencia: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Cylinder UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CylinderVigenciaResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Envase no encontrado */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CylinderController_registerInspection: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Cylinder UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RegisterInspectionDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CylinderVigenciaResponseDto'];
+        };
+      };
+      /** @description Fecha de revisión futura, vencimiento faltante o no posterior a la revisión */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Envase no encontrado */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El envase está dado de baja */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  EmployeeDocumentsController_find: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Empleado UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['EmployeeDocumentsResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Empleado no encontrado */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  LeaveController_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Empleado UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateLeaveDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['LeaveResponseDto'];
+        };
+      };
+      /** @description Datos inválidos o fin anterior al inicio */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Empleado no encontrado */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El empleado está egresado, o el período se superpone con otra licencia solicitada o aprobada */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  LeaveController_vacationBalance: {
+    parameters: {
+      query?: {
+        /** @description Por omisión, el año actual */
+        year?: number;
+      };
+      header?: never;
+      path: {
+        /** @description Empleado UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['VacationBalanceDto'];
+        };
+      };
+      /** @description Año inválido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Empleado no encontrado */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  LeaveController_findAll: {
     parameters: {
       query?: {
         limit?: number;
-        offset?: number;
         page?: number;
-        /** @description Texto a buscar */
-        term?: string;
+        status?: 'requested' | 'approved' | 'rejected' | 'cancelled';
+        type?:
+          | 'vacation'
+          | 'sick'
+          | 'work_accident'
+          | 'study'
+          | 'marriage'
+          | 'birth'
+          | 'bereavement'
+          | 'unpaid'
+          | 'suspension'
+          | 'unjustified_absence'
+          | 'other';
+        employeeId?: string;
+        from?: string | null;
+        to?: string | null;
       };
       header?: never;
       path?: never;
@@ -23443,10 +23441,10 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['CatalogoDto'];
+          'application/json': components['schemas']['LeavePageDto'];
         };
       };
-      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
+      /** @description Un filtro tiene un valor inválido */
       400: {
         headers: {
           [name: string]: unknown;
@@ -23469,12 +23467,73 @@ export interface operations {
       };
     };
   };
-  GasCylinderController_reactivate: {
+  LeaveController_update: {
     parameters: {
       query?: never;
       header?: never;
       path: {
-        /** @description Gas cylinder UUID */
+        /** @description Licencia UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateLeaveDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['LeaveResponseDto'];
+        };
+      };
+      /** @description Fin anterior al inicio */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Licencia no encontrada */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No está solicitada, o el período se superpone con otra */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  LeaveController_approve: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Licencia UUID */
         id: string;
       };
       cookie?: never;
@@ -23486,15 +23545,8 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['GasCylinderResponseDto'];
+          'application/json': components['schemas']['LeaveResponseDto'];
         };
-      };
-      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
       };
       /** @description Sin token o token inválido */
       401: {
@@ -23510,48 +23562,15 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description No existe o es de otra distribuidora (no se distingue) */
+      /** @description Licencia no encontrada */
       404: {
         headers: {
           [name: string]: unknown;
         };
         content?: never;
       };
-    };
-  };
-  ModuleConfigController_getProcesses: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ProcessConfigResponseDto'][];
-        };
-      };
-      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") o cuerpo fuera de los límites (detalle por campo) */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
+      /** @description No está solicitada */
+      409: {
         headers: {
           [name: string]: unknown;
         };
@@ -23559,123 +23578,19 @@ export interface operations {
       };
     };
   };
-  ModuleConfigController_getProcess: {
+  LeaveController_reject: {
     parameters: {
       query?: never;
       header?: never;
       path: {
-        process: 'fleet_planner' | 'repurchase' | 'route_batching' | 'cylinder_recovery' | 'express_dispatch';
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ProcessConfigResponseDto'];
-        };
-      };
-      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") o cuerpo fuera de los límites (detalle por campo) */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description El proceso no es uno de los cinco configurables */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  ModuleConfigController_putProcess: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        process: 'fleet_planner' | 'repurchase' | 'route_batching' | 'cylinder_recovery' | 'express_dispatch';
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          [key: string]: number;
-        };
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ProcessConfigResponseDto'];
-        };
-      };
-      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") o cuerpo fuera de los límites (detalle por campo) */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description El proceso no es uno de los cinco configurables */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  OrderController_changeAddress: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Order UUID */
+        /** @description Licencia UUID */
         id: string;
       };
       cookie?: never;
     };
     requestBody: {
       content: {
-        'application/json': components['schemas']['ChangeOrderAddressDto'];
+        'application/json': components['schemas']['RejectLeaveDto'];
       };
     };
     responses: {
@@ -23684,10 +23599,10 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['OrderResponseDto'];
+          'application/json': components['schemas']['LeaveResponseDto'];
         };
       };
-      /** @description La dirección nueva es la actual, o queda fuera de la zona de cobertura («La dirección está fuera de la zona de cobertura de la distribuidora») */
+      /** @description Falta el motivo */
       400: {
         headers: {
           [name: string]: unknown;
@@ -23701,21 +23616,132 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: customer */
+      /** @description Requiere rol: admin, super_admin */
       403: {
         headers: {
           [name: string]: unknown;
         };
         content?: never;
       };
-      /** @description Pedido ajeno o inexistente, o dirección que no es del cliente */
+      /** @description Licencia no encontrada */
       404: {
         headers: {
           [name: string]: unknown;
         };
         content?: never;
       };
-      /** @description El pedido ya salió o fue entregado, no está pendiente/aceptado, o es de pago en línea y el recargo de la zona nueva es distinto */
+      /** @description No está solicitada */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  LeaveController_cancel: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Licencia UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['LeaveResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Licencia no encontrada */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya estaba rechazada o cancelada, o ya terminó */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AttendanceController_register: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Empleado UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RegisterAttendanceDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AttendanceResponseDto'];
+        };
+      };
+      /** @description El egreso no es posterior al ingreso */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Empleado no encontrado */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El empleado está egresado o ya tiene una jornada abierta */
       409: {
         headers: {
           [name: string]: unknown;
@@ -23731,31 +23757,33 @@ export interface operations {
       };
     };
   };
-  OrderController_setReceiver: {
+  AttendanceController_findAll: {
     parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Order UUID */
-        id: string;
+      query?: {
+        limit?: number;
+        page?: number;
+        date?: string | null;
+        from?: string | null;
+        to?: string | null;
+        employeeId?: string;
+        /** @description true: sólo las jornadas sin cerrar; false: sólo las cerradas */
+        open?: boolean;
       };
+      header?: never;
+      path?: never;
       cookie?: never;
     };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['SetOrderReceiverDto'];
-      };
-    };
+    requestBody?: never;
     responses: {
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['OrderResponseDto'];
+          'application/json': components['schemas']['AttendancePageDto'];
         };
       };
-      /** @description Datos inválidos (p. ej.: formato de documento) */
+      /** @description Un filtro tiene un valor inválido */
       400: {
         headers: {
           [name: string]: unknown;
@@ -23769,21 +23797,110 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: customer */
+      /** @description Requiere rol: admin, super_admin */
       403: {
         headers: {
           [name: string]: unknown;
         };
         content?: never;
       };
-      /** @description Pedido ajeno o inexistente */
+    };
+  };
+  AttendanceController_correct: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Jornada UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CorrectAttendanceDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AttendanceResponseDto'];
+        };
+      };
+      /** @description Falta la nota, o el egreso no es posterior al ingreso */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Jornada no encontrada */
       404: {
         headers: {
           [name: string]: unknown;
         };
         content?: never;
       };
-      /** @description El pedido ya fue entregado o está cancelado */
+    };
+  };
+  AttendanceController_checkIn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Ya tenía una jornada abierta de hoy desde la app */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AttendanceResponseDto'];
+        };
+      };
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AttendanceResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: delivery */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no está vinculada a un legajo activo, o hay una jornada abierta de otro día o cargada desde el panel */
       409: {
         headers: {
           [name: string]: unknown;
@@ -23792,6 +23909,86 @@ export interface operations {
       };
       /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
       422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AttendanceController_checkOut: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AttendanceResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: delivery */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no está vinculada a un legajo activo, no hay jornada abierta, o la abierta es de un día anterior (se corrige desde el panel) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PersonnelController_consultar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PersonnelDashboardDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
         headers: {
           [name: string]: unknown;
         };
