@@ -3,6 +3,8 @@ import type {
   DispatchConfig,
   DispatchConfigBody,
   ProcessConfig,
+  ExpressConfig,
+  ExpressConfigBody,
   ScheduledTasksConfig,
   ScheduledTasksConfigBody,
 } from './types';
@@ -43,5 +45,17 @@ export const listProcessConfigs = async (): Promise<ProcessConfig[]> => {
 /** PUT /module-config/:proceso: sólo se guarda lo que viene; lo demás toma el valor por omisión (`{}` restablece todo). */
 export const putProcessConfig = async (process: string, body: ProcessConfigBody): Promise<ProcessConfig> => {
   const { data } = await http.put<ProcessConfig>(`/module-config/${process}`, body);
+  return data;
+};
+
+/** GET /module-config/express_dispatch: recargo, radio, horario y tiempos de la compra express (CU-172). */
+export const getExpressConfig = async (): Promise<ExpressConfig> => {
+  const { data } = await http.get<ExpressConfig>('/module-config/express_dispatch');
+  return data;
+};
+
+/** PUT /module-config/express_dispatch: reemplaza la configuración; lo que no se envía toma el valor por omisión. */
+export const putExpressConfig = async (body: ExpressConfigBody): Promise<ExpressConfig> => {
+  const { data } = await http.put<ExpressConfig>('/module-config/express_dispatch', body);
   return data;
 };

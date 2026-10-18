@@ -28,7 +28,7 @@ export const CancelOrderModal = ({ open, onClose, onConfirm, cancelling, count =
       description={
         count > 1
           ? 'Cada cliente y, si ya tenía chofer asignado, su chofer se enteran de la cancelación. Se usa el mismo motivo para todos.'
-          : 'El cliente y, si ya tenía chofer asignado, el chofer se enteran de la cancelación.'
+          : 'El cliente y, si ya tenía chofer asignado, el chofer se enteran de la cancelación. Si el pedido estaba pagado en línea, el pago se devuelve solo por la pasarela.'
       }
       footer={
         <>

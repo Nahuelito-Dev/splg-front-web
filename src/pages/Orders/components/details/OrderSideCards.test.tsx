@@ -1,9 +1,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Order } from '../../../../services/api/types';
 import { OrderSideCards } from './OrderSideCards';
+
+vi.mock('./OrderRefunds', () => ({ OrderRefunds: () => null }));
 
 afterEach(cleanup);
 
@@ -144,9 +146,18 @@ describe('OrderSideCards: transferencia', () => {
 
 describe('OrderSideCards: reintegro pendiente', () => {
   it('un pedido cobrado y cancelado avisa que hay que devolver el dinero', () => {
-    renderCards(order({ status: 'cancelled', paymentStatus: 'paid', payment_url: undefined }));
+    renderCards(
+      order({ status: 'cancelled', paymentStatus: 'paid', paymentMethodDetail: 'transfer', payment_url: undefined }),
+    );
     expect(screen.getByRole('status')).toHaveTextContent('Reintegro pendiente');
-    expect(screen.getByRole('status')).toHaveTextContent('no gestiona la devolución');
+    expect(screen.getByRole('status')).toHaveTextContent('no pasa por una pasarela');
+  });
+
+  it('con MercadoPago no avisa de un reintegro manual: lo devuelve el sistema y se ve en «Reintegros»', () => {
+    renderCards(
+      order({ status: 'cancelled', paymentStatus: 'paid', paymentMethodDetail: 'mercadopago', payment_url: undefined }),
+    );
+    expect(screen.queryByText(/Reintegro pendiente/)).toBeNull();
   });
 
   it('cancelado sin cobrar, o cobrado sin cancelar, no lo muestra', () => {
@@ -172,5 +183,26 @@ describe('OrderSideCards: quién recibe', () => {
   it('sin datos (o ya anulados por el plazo de reclamo) no dibuja la sección', () => {
     renderCards(order({ receiver: null } as Partial<Order>));
     expect(screen.queryByText('Quién recibe')).not.toBeInTheDocument();
+  });
+});
+
+describe('OrderSideCards: modalidad express', () => {
+  it('muestra la modalidad y el recargo', () => {
+    renderCards(order({ deliveryMode: 'express', expressSurchargeAmount: 1500, payment_url: undefined }));
+    expect(screen.getByText('Express')).toBeInTheDocument();
+    expect(screen.getByText('Recargo express')).toBeInTheDocument();
+  });
+
+  it('un express que pasó al reparto común lo dice y marca el recargo como descontado', () => {
+    renderCards(
+      order({
+        deliveryMode: 'standard',
+        expressSurchargeAmount: 1500,
+        expressDegradedAt: '2026-10-17T15:00:00.000Z',
+        payment_url: undefined,
+      }),
+    );
+    expect(screen.getByText('Pasó a reparto común')).toBeInTheDocument();
+    expect(screen.getByText(/descontado/)).toBeInTheDocument();
   });
 });

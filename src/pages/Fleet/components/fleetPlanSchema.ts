@@ -35,6 +35,8 @@ export const fleetPlanSchema = z
       'insurance',
       'vtv',
       'hazmat_vehicle_permit',
+      'service',
+      'driver_license',
     ]),
     appliesToCategories: z.array(
       z.enum(['driver', 'helper', 'warehouse', 'administration', 'sales', 'management', 'other']),

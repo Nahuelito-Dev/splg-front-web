@@ -6,6 +6,7 @@ import type {
   ConfirmDeliveryBody,
   ConfirmTransferBody,
   CreateOrderBody,
+  DeliveryOptions,
   Incident,
   Message,
   MotivoDeCobroBody,
@@ -234,5 +235,14 @@ export const confirmTransfer = async (
   const { data } = await http.patch<Order>(`/orders/${id}/payment/confirm-transfer`, body, {
     headers: idempotencyHeaders(idempotencyKey),
   });
+  return data;
+};
+
+/**
+ * GET /orders/delivery-options: modalidades de entrega para una dirección (CU-148). La programada siempre figura;
+ * la express sólo con cobertura, horario y una moto cerca. No escribe nada: el alta vuelve a evaluar.
+ */
+export const getDeliveryOptions = async (addressId: string, customerId: string): Promise<DeliveryOptions> => {
+  const { data } = await http.get<DeliveryOptions>('/orders/delivery-options', { params: { addressId, customerId } });
   return data;
 };

@@ -18,6 +18,7 @@ import type {
   Order,
   OrderRecord,
   PurchaseOrder,
+  Refund,
   PurchaseReceipt,
   StockAdjustment,
   StockBalance,
@@ -88,6 +89,25 @@ export const PAYMENT_STATUS_ORDER: NonNullable<Order['paymentStatus']>[] = [
   'written_off',
   'failed',
 ];
+
+/** Modalidad de entrega del pedido (CU-148). */
+export const DELIVERY_MODE: LabelMap<Order['deliveryMode']> = {
+  standard: { text: 'Programada', tone: 'neutral' },
+  express: { text: 'Express', tone: 'accent' },
+};
+
+/** Estado de una devolución a la pasarela (CU-168). */
+export const REFUND_STATUS: LabelMap<Refund['status']> = {
+  pending: { text: 'En curso', tone: 'info' },
+  succeeded: { text: 'Reintegrado', tone: 'success' },
+  failed: { text: 'Falló', tone: 'danger' },
+};
+
+/** Qué parte del pago se devuelve. */
+export const REFUND_KIND: LabelMap<Refund['kind']> = {
+  full: { text: 'Pago completo', tone: 'neutral' },
+  express_surcharge: { text: 'Recargo express', tone: 'accent' },
+};
 
 export const CYLINDER_STATE: LabelMap<Cylinder['state']> = {
   in_depot: { text: 'En depósito', tone: 'neutral' },

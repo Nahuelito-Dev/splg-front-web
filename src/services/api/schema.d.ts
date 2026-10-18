@@ -767,6 +767,74 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/module-config/processes': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Los procesos automáticos configurables con sus parámetros vigentes
+     * @description Los procesos de CU-172 (planificador de flota, recompra, agrupación por recorrido y recuperación de envases), cada uno con su esquema (rango y valor por omisión de cada parámetro) y los valores vigentes. El despacho, las tareas programadas y el despacho express tienen su propia ruta.
+     */
+    get: operations['ModuleConfigController_getProcesses'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/module-config/{process}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Parámetros vigentes de un proceso automático
+     * @description Los parámetros de la distribuidora o, si no configuró ninguno, los de omisión (`isDefault: true`).
+     */
+    get: operations['ModuleConfigController_getProcess'];
+    /**
+     * Cambiar los parámetros de un proceso automático
+     * @description Reemplaza la configuración: se guarda sólo lo que viene y lo demás toma su valor por omisión (`{}` restablece los valores por omisión, igual que en el despacho y las tareas programadas). Cada proceso valida con su propio esquema (`GET /module-config/processes`): un parámetro desconocido, de otro tipo o fuera de rango responde 400 con el campo. Los valores los leen los módulos M2 a M5 cuando se construyan: hoy se guardan y se validan, pero ningún proceso los consume todavía. Cuando lo hagan, rigen desde la siguiente ejecución; las que están en curso no se interrumpen.
+     */
+    put: operations['ModuleConfigController_putProcess'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/module-config/express_dispatch': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Parámetros de la compra express de la distribuidora
+     * @description Sin configuración la modalidad express está apagada (`enabled: false`, `isDefault: true`).
+     */
+    get: operations['ExpressConfigController_get'];
+    /**
+     * Cambiar los parámetros de la compra express
+     * @description Reemplaza la configuración: lo que no se manda toma su valor por omisión. Rige para los pedidos que se cotizan o crean desde ese momento (en otras instancias del servidor, como máximo un minuto después). La ventana de la oferta rige para las ofertas nuevas.
+     */
+    put: operations['ExpressConfigController_put'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/job-positions': {
     parameters: {
       query?: never;
@@ -1056,6 +1124,172 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/customers/me/consumption': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Consumo declarado y recompra estimada del cliente */
+    get: operations['ConsumptionController_obtener'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Modificar el consumo promedio declarado (CU-144)
+     * @description Convierte la declaración a kg por mes con el peso del tipo de garrafa, valida el rango (5 a 500 kg por mes) y recalcula la fecha estimada de recompra desde la última compra entregada (o desde ahora si nunca compró). Fuera de rango responde 400 y pide confirmar con `confirmOutOfRange: true`.
+     */
+    patch: operations['ConsumptionController_actualizar'];
+    trace?: never;
+  };
+  '/api/gascylinder': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get all gas cylinders with pagination
+     * @description Público. Con sesión iniciada se acota a la distribuidora del usuario (la del admin, o el header `X-Distributor` del super admin y del cliente); sin sesión, a `?distributor=` o a la distribuidora por defecto.
+     */
+    get: operations['GasCylinderController_findAll'];
+    put?: never;
+    /** Create a new gas cylinder type */
+    post: operations['GasCylinderController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/gascylinder/inactive': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Productos dados de baja de la distribuidora
+     * @description CU-269. El catálogo (`GET /gascylinder`) sólo muestra los activos; éste lista los dados de baja de la distribuidora del administrador (la del header `X-Distributor` para el super admin), con la misma paginación y búsqueda (`term`).
+     */
+    get: operations['GasCylinderController_findInactive'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/gascylinder/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get gas cylinder by ID */
+    get: operations['GasCylinderController_findOne'];
+    put?: never;
+    post?: never;
+    /** Delete (deactivate) gas cylinder by ID */
+    delete: operations['GasCylinderController_remove'];
+    options?: never;
+    head?: never;
+    /** Update gas cylinder by ID */
+    patch: operations['GasCylinderController_update'];
+    trace?: never;
+  };
+  '/api/gascylinder/type/{type}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get gas cylinder by type */
+    get: operations['GasCylinderController_findByType'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/gascylinder/available/list': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get all available gas cylinders
+     * @description Público. Con sesión iniciada se acota a la distribuidora del usuario; sin sesión, a `?distributor=` o a la distribuidora por defecto.
+     */
+    get: operations['GasCylinderController_getAvailableCylinders'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/gascylinder/{id}/reactivate': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Reactivar un producto dado de baja
+     * @description CU-268. Devuelve el producto al catálogo con su stock y sus promociones intactos. No invierte el estado: siempre lo deja activo, así que reactivar uno que ya estaba activo responde igual, con el producto sin cambios. Es una operación propia: enviar `isActive` en `PATCH /gascylinder/{id}` se rechaza.
+     */
+    patch: operations['GasCylinderController_reactivate'];
+    trace?: never;
+  };
+  '/api/gascylinder/{id}/photo': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Ver la imagen del producto
+     * @description Por defecto redirige (302) a la URL firmada de S3. Con `?modo=url` devuelve `{ url, expiresAt, requiresAuth }` en JSON, sin redirect; si no tiene foto, `url: null`.
+     */
+    get: operations['GasCylinderController_getPhoto'];
+    /**
+     * Subir o reemplazar la imagen del producto
+     * @description Multipart, campo `file`: JPG, PNG o WEBP de hasta 5 MB (el tipo se valida por el contenido, no por el header). Si ya tenía foto, la anterior se borra del bucket. Aparece como `photoUrl` en el catálogo que ven las apps.
+     */
+    put: operations['GasCylinderController_uploadPhoto'];
+    post?: never;
+    /**
+     * Sacar la imagen del producto
+     * @description Quita la referencia (el objeto se borra del bucket en segundo plano); no da de baja el producto.
+     */
+    delete: operations['GasCylinderController_removePhoto'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/auth': {
     parameters: {
       query?: never;
@@ -1104,6 +1338,66 @@ export interface paths {
     put?: never;
     /** Iniciar sesión en el panel */
     post: operations['AuthController_dashboardLogin'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/orders/delivery-options': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Modalidades de entrega disponibles para una dirección (CU-148)
+     * @description La programada (`standard`) siempre figura; la `express` sólo está disponible con la dirección dentro de la cobertura, en horario de servicio y con un chofer en moto habilitado dentro del radio express. Cada una trae su recargo y su tiempo estimado. No escribe nada: `POST /orders` con `deliveryMode` vuelve a evaluar. Cliente sin `X-Distributor`: distribuidora por defecto; el admin manda `customerId`.
+     */
+    get: operations['ExpressOrderController_options'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/orders/express/quote': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Vista previa de la compra express (CU-147)
+     * @description Con la dirección predeterminada del cliente y su garrafa habitual (la de su última compra en la distribuidora, o `gasCylinderId`), evalúa la modalidad y devuelve el precio final con el recargo express. Si no hay cobertura, horario o moto, responde 200 con `available: false`, el motivo y `fallback: "scheduled"` (el flujo con franja horaria). No escribe nada.
+     */
+    post: operations['ExpressOrderController_preview'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/orders/express': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Realizar una compra express (CU-147)
+     * @description Crea el pedido en modalidad express (sin franja, a la dirección predeterminada) y lo despacha al chofer en moto más cercano. El cliente confirma con este llamado; si entre la vista previa y la confirmación el último chofer se ocupó, 409. Si después ninguna moto acepta, el pedido pasa al reparto común sin el recargo (CU-149) y se avisa al cliente por `order:express-degraded`. Idempotente vía `Idempotency-Key`. Con `mercadopago` devuelve `payment_url` y no se despacha hasta que el pago se apruebe.
+     */
+    post: operations['ExpressOrderController_buy'];
     delete?: never;
     options?: never;
     head?: never;
@@ -1539,6 +1833,46 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/orders/{id}/address': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Cambiar la dirección de entrega de un pedido (cliente)
+     * @description CU-127. Sólo el CLIENTE DUEÑO (uno ajeno es 404), con el pedido pendiente o aceptado. La dirección nueva tiene que ser otra de las suyas y caer dentro de una zona de cobertura de la distribuidora del pedido. El recargo de la zona nueva se compara con el del pedido: en pago en línea (MercadoPago o transferencia) el importe ya está definido, así que si cambia responde 409 y el cliente debe cancelar y pedir de nuevo; en efectivo se recalcula el total. Actualiza el punto de entrega y deja el cambio asentado (dirección anterior, autor y motivo) en el historial de estados. Avisa al chofer asignado (`order:address-changed`) y al panel; si el pedido está pendiente, vence las ofertas vivas y vuelve a ofrecerlo. Idempotente vía `Idempotency-Key`.
+     */
+    patch: operations['OrderController_changeAddress'];
+    trace?: never;
+  };
+  '/api/orders/{id}/receiver': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Indicar quién recibe el pedido (cliente)
+     * @description CU-128. Sólo el CLIENTE DUEÑO (uno ajeno es 404), mientras el pedido no esté entregado ni cancelado (409). Guarda nombre, documento y relación de quien recibe; la respuesta del pedido los expone como `receiver` sólo al cliente dueño, al chofer asignado y al administrador de la distribuidora. Son datos de un tercero: se anulan solos al vencer el plazo de reclamo (30 días desde la entrega o cancelación; con un reclamo abierto, hasta que se cierre) y ningún dato de quien recibe entra en la auditoría. Idempotente vía `Idempotency-Key`.
+     */
+    patch: operations['OrderController_setReceiver'];
+    trace?: never;
+  };
   '/api/orders/{id}/cancel': {
     parameters: {
       query?: never;
@@ -1616,7 +1950,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/gascylinder': {
+  '/api/cart': {
     parameters: {
       query?: never;
       header?: never;
@@ -1624,101 +1958,58 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Get all gas cylinders with pagination
-     * @description Público. Con sesión iniciada se acota a la distribuidora del usuario (la del admin, o el header `X-Distributor` del super admin y del cliente); sin sesión, a `?distributor=` o a la distribuidora por defecto.
+     * Consultar el carrito (CU-125)
+     * @description Total calculado sobre los precios vigentes del catálogo; cada ítem informa la diferencia con el precio guardado. Sin carrito, responde uno vacío. Un tipo dado de baja se marca `available: false` y no suma.
      */
-    get: operations['GasCylinderController_findAll'];
+    get: operations['CartController_consultar'];
     put?: never;
-    /** Create a new gas cylinder type */
-    post: operations['GasCylinderController_create'];
+    post?: never;
+    /**
+     * Vaciar el carrito (CU-126)
+     * @description Sin carrito no hace nada y responde uno vacío.
+     */
+    delete: operations['CartController_vaciar'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/cart/items': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Agregar un ítem al carrito (CU-122)
+     * @description Si el tipo de garrafa ya está en el carrito suma la cantidad. Guarda el precio vigente como referencia.
+     */
+    post: operations['CartController_agregar'];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  '/api/gascylinder/{id}': {
+  '/api/cart/items/{itemId}': {
     parameters: {
       query?: never;
       header?: never;
       path?: never;
       cookie?: never;
     };
-    /** Get gas cylinder by ID */
-    get: operations['GasCylinderController_findOne'];
+    get?: never;
     put?: never;
     post?: never;
-    /** Delete (deactivate) gas cylinder by ID */
-    delete: operations['GasCylinderController_remove'];
+    /** Quitar un ítem del carrito (CU-124) */
+    delete: operations['CartController_quitar'];
     options?: never;
     head?: never;
-    /** Update gas cylinder by ID */
-    patch: operations['GasCylinderController_update'];
-    trace?: never;
-  };
-  '/api/gascylinder/type/{type}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Get gas cylinder by type */
-    get: operations['GasCylinderController_findByType'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/gascylinder/available/list': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Get all available gas cylinders
-     * @description Público. Con sesión iniciada se acota a la distribuidora del usuario; sin sesión, a `?distributor=` o a la distribuidora por defecto.
-     */
-    get: operations['GasCylinderController_getAvailableCylinders'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/gascylinder/{id}/photo': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Ver la imagen del producto
-     * @description Por defecto redirige (302) a la URL firmada de S3. Con `?modo=url` devuelve `{ url, expiresAt, requiresAuth }` en JSON, sin redirect; si no tiene foto, `url: null`.
-     */
-    get: operations['GasCylinderController_getPhoto'];
-    /**
-     * Subir o reemplazar la imagen del producto
-     * @description Multipart, campo `file`: JPG, PNG o WEBP de hasta 5 MB (el tipo se valida por el contenido, no por el header). Si ya tenía foto, la anterior se borra del bucket. Aparece como `photoUrl` en el catálogo que ven las apps.
-     */
-    put: operations['GasCylinderController_uploadPhoto'];
-    post?: never;
-    /**
-     * Sacar la imagen del producto
-     * @description Quita la referencia (el objeto se borra del bucket en segundo plano); no da de baja el producto.
-     */
-    delete: operations['GasCylinderController_removePhoto'];
-    options?: never;
-    head?: never;
-    patch?: never;
+    /** Modificar la cantidad de un ítem (CU-123) */
+    patch: operations['CartController_cambiarCantidad'];
     trace?: never;
   };
   '/api/user-address': {
@@ -1975,6 +2266,46 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/cylinders/vigencia/proximos-a-vencer': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Envases próximos a vencer (CU-134)
+     * @description Separa los ya vencidos, los que vencen dentro de la ventana de `days` días (default 30) y los sin revisión registrada, que no tienen fecha con la cual comparar. Cada grupo va ordenado por vencimiento, del más urgente al menos, y se pagina por separado con `limit` (default 100, máx. 500) y `offset`; `totals` trae el total de cada grupo. No incluye envases dados de baja.
+     */
+    get: operations['CylinderController_expiring'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/cylinders/vigencia/serial/{serial}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Vigencia de un envase por número de serie (CU-133)
+     * @description Lo que se escanea: el serial grabado en el envase. El serial es único por distribuidora, así que el super admin tiene que elegir una con `X-Distributor` (400 si no).
+     */
+    get: operations['CylinderController_vigenciaBySerial'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/cylinders/{id}': {
     parameters: {
       query?: never;
@@ -1994,6 +2325,46 @@ export interface paths {
      * @description Serial, producto, depósito y fechas de fabricación, inspección y vencimiento. El estado cambia sólo por `/transition` y `/retire`.
      */
     patch: operations['CylinderController_update'];
+    trace?: never;
+  };
+  '/api/cylinders/{id}/vigencia': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Vigencia de un envase (CU-133)
+     * @description Fabricación, última revisión, vencimiento, días que faltan e historial de revisiones. `status`: `valid`, `expired` o `unverified` (sin revisión registrada: no es lo mismo que vencido y no bloquea el despacho).
+     */
+    get: operations['CylinderController_getVigencia'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/cylinders/{id}/inspections': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Registrar la revisión periódica de un envase (CU-132)
+     * @description Guarda la revisión en el historial y copia la última fecha y el vencimiento en la ficha. Un resultado `rejected` deja el vencimiento en la fecha de la revisión: el envase queda alcanzado por el bloqueo del despacho. Si está en poder de un cliente o en reparto no se lo saca de circulación: `withdrawalPending` lo marca para retirar.
+     */
+    post: operations['CylinderController_registerInspection'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
   '/api/cylinders/{id}/history': {
@@ -2111,6 +2482,63 @@ export interface paths {
      * @description Nombre, polígono, tipo y valor del recargo, prioridad, vigencia, color, etiqueta o si está activa. La validación del recargo y de la vigencia corre sobre el estado ya fusionado con lo que no vino en el body.
      */
     patch: operations['CoverageZoneController_update'];
+    trace?: never;
+  };
+  '/api/refunds': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Listar las devoluciones de la distribuidora
+     * @description Más nuevas primero. Con `status=failed` son las que esperan un reintento del administrador.
+     */
+    get: operations['RefundsController_listar'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/orders/{id}/refunds': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Devoluciones de un pedido */
+    get: operations['RefundsController_delPedido'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/orders/{id}/refunds/retry': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Reintentar la devolución de un pedido
+     * @description Vuelve a pedir a la pasarela las devoluciones que fallaron (y crea la del pedido cancelado si nunca se pidió). La clave de idempotencia de cada devolución viaja a la pasarela: repetir no devuelve el dinero dos veces. Una devolución que sigue fallando queda `failed` con su error (la respuesta es 200 igual). Si la pasarela informa que el pago ya estaba devuelto, se marca como reintegrada sin repetir la solicitud.
+     */
+    post: operations['RefundsController_reintentar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
   '/api/fleet/plans': {
@@ -2282,8 +2710,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * CU-139: vencimientos de la flota en una pantalla
-     * @description Lo vencido y lo que vence dentro de `withinDays`, agrupado por vehículo y por chofer, con si están inhabilitados.
+     * CU-139 y CU-187: vencimientos de la flota y del personal en una pantalla
+     * @description Lo vencido y lo que vence dentro de `withinDays`, agrupado por vehículo, por chofer (histórico) y por empleado, con si están inhabilitados. `subject` y `category` acotan qué trae.
      */
     get: operations['FleetExpirationsController_find'];
     put?: never;
@@ -2401,6 +2829,46 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/employees/{id}/documents': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Documentación de un empleado: tarjetas, si queda inhabilitado y qué le falta cargar (CU-187)
+     * @description Las altas del curso de mercancías peligrosas, el psicofísico y la ART (CU-183 a CU-185) se hacen con `POST /fleet/tasks` indicando `employeeId`, el plan y el detalle.
+     */
+    get: operations['EmployeeDocumentsController_find'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/car/{id}/reactivate': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Reactivar un vehículo fuera de servicio
+     * @description Lo pasa de `grounded` a `active` si el seguro, la VTV y la habilitación de mercancías peligrosas están vigentes. No lo asigna a ningún chofer.
+     */
+    post: operations['CarReactivationController_reactivar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/email/password-reset': {
     parameters: {
       query?: never;
@@ -2450,6 +2918,128 @@ export interface paths {
     options?: never;
     head?: never;
     patch?: never;
+    trace?: never;
+  };
+  '/api/employees/{id}/leaves': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Registrar una licencia o ausencia: nace solicitada (CU-191) */
+    post: operations['LeaveController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/employees/{id}/vacation-balance': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Consultar el saldo de vacaciones de un empleado (CU-193)
+     * @description Días que corresponden por antigüedad al 31/12 (LCT art. 150), días tomados (vacaciones aprobadas del año) y saldo. Se calcula en cada consulta.
+     */
+    get: operations['LeaveController_vacationBalance'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/leaves': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Consultar las licencias y la bandeja de pendientes (CU-319) */
+    get: operations['LeaveController_findAll'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/leaves/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Modificar una licencia solicitada (CU-316) */
+    patch: operations['LeaveController_update'];
+    trace?: never;
+  };
+  '/api/leaves/{id}/approve': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Aprobar una solicitud de licencia (CU-192) */
+    patch: operations['LeaveController_approve'];
+    trace?: never;
+  };
+  '/api/leaves/{id}/reject': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Rechazar una solicitud de licencia, con motivo (CU-318) */
+    patch: operations['LeaveController_reject'];
+    trace?: never;
+  };
+  '/api/leaves/{id}/cancel': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Cancelar una licencia que todavía no terminó (CU-317) */
+    patch: operations['LeaveController_cancel'];
     trace?: never;
   };
   '/api/warehouses': {
@@ -3556,463 +4146,6 @@ export interface paths {
     patch: operations['UnpaidCashController_registerUnpaid'];
     trace?: never;
   };
-  '/api/audit': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Consultar el registro de auditoría
-     * @description Quién hizo cada operación que modificó datos, sobre qué, cuándo, desde qué aplicación y con qué resultado. Un admin de empresa ve sólo lo de su distribuidora.
-     */
-    get: operations['AuditController_consultar'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/audit/entries': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Consultar la auditoría de datos
-     * @description Una Auditoria por registro afectado (tipo de acción, usuario, entidadAfectada, idRegistro, ipUsuario, fechaHora) con sus DetalleAuditoria (campo, valorAnterior, valorNuevo). Un admin de empresa ve sólo lo de su distribuidora; el super admin ve todo o la que elige con X-Distributor.
-     */
-    get: operations['DataAuditController_findAll'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/audit/entries/{id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Una auditoría de datos con sus detalles
-     * @description Una Auditoria con todos sus DetalleAuditoria.
-     */
-    get: operations['DataAuditController_findOne'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/audit/action-types': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Catálogo de acciones auditadas
-     * @description TipoAccionAuditoria: Alta, Modificación, Baja lógica y Reactivación.
-     */
-    get: operations['DataAuditController_findActionTypes'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/suppliers': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Listar los proveedores, paginado y filtrable */
-    get: operations['SupplierController_findAll'];
-    put?: never;
-    /**
-     * Crear un proveedor
-     * @description El CUIT se valida (prefijo y dígito verificador) y es único entre los proveedores vigentes de la distribuidora.
-     */
-    post: operations['SupplierController_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/suppliers/{id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Ver un proveedor */
-    get: operations['SupplierController_findOne'];
-    put?: never;
-    post?: never;
-    /** Dar de baja un proveedor (baja lógica) */
-    delete: operations['SupplierController_remove'];
-    options?: never;
-    head?: never;
-    /** Editar un proveedor */
-    patch: operations['SupplierController_update'];
-    trace?: never;
-  };
-  '/api/suppliers/{id}/purchase-history': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Historial de compras de un proveedor
-     * @description Recepciones del proveedor (las anuladas incluidas en la lista), con el total y las llenas de las confirmadas del período. También para un proveedor dado de baja.
-     */
-    get: operations['SupplierController_historial'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/purchase-orders': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Listar las órdenes de compra por estado, proveedor y fecha */
-    get: operations['PurchaseOrderController_ordenes'];
-    put?: never;
-    /**
-     * Crear una orden de compra en borrador
-     * @description Número correlativo por distribuidora. Total = Σ cantidad × costo unitario. Sin depósito destino usa el predeterminado.
-     */
-    post: operations['PurchaseOrderController_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/purchase-orders/{id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Ver una orden con sus renglones, lo pendiente y sus recepciones */
-    get: operations['PurchaseOrderController_orden'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /**
-     * Editar una orden (sólo en borrador)
-     * @description Si vienen `items`, reemplazan a todos los renglones anteriores.
-     */
-    patch: operations['PurchaseOrderController_update'];
-    trace?: never;
-  };
-  '/api/purchase-orders/{id}/pending': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Pendiente de recibir de una orden
-     * @description Por garrafa: pedido, recibido y lo que falta. Una orden cancelada no espera nada.
-     */
-    get: operations['PurchaseOrderController_pendiente'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/purchase-orders/{id}/send': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /** Enviar la orden al proveedor (borrador a enviada) */
-    patch: operations['PurchaseOrderController_send'];
-    trace?: never;
-  };
-  '/api/purchase-orders/{id}/cancel': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /**
-     * Cancelar una orden (borrador o enviada) con motivo
-     * @description Una orden con recepciones confirmadas (incluso sólo de vacías) no se cancela: responde 409. Se anulan primero las recepciones, o se cierra la orden con faltante.
-     */
-    patch: operations['PurchaseOrderController_cancel'];
-    trace?: never;
-  };
-  '/api/purchase-orders/{id}/close-short': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /**
-     * Cerrar con faltante una orden parcialmente recibida
-     * @description Lo que falta ya no llega: la orden queda `closed_short` con el motivo, deja de esperar mercadería y de bloquear la baja del proveedor. Sus recepciones se pueden seguir anulando.
-     */
-    patch: operations['PurchaseOrderController_closeShort'];
-    trace?: never;
-  };
-  '/api/purchase-receipts': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Listar las recepciones por proveedor, orden, fecha y estado de pago */
-    get: operations['PurchaseReceiptController_recepciones'];
-    put?: never;
-    /**
-     * Registrar la recepción de una compra (con o sin orden)
-     * @description En una transacción: suma las llenas al depósito (sube el vendible), descuenta las vacías que se llevó la planta (sin dejar el depósito en negativo), actualiza lo recibido y el estado de la orden y recalcula el costo promedio ponderado. El número del documento del proveedor es único por proveedor. **Exige** `Idempotency-Key` (400 sin ella). Un `receivedAt` anterior al conteo inicial del depósito responde 400.
-     */
-    post: operations['PurchaseReceiptController_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/purchase-receipts/average-costs': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Costo promedio ponderado por garrafa
-     * @description Con el último costo comprado y las llenas que hay hoy. `null` si nunca se compró.
-     */
-    get: operations['PurchaseReceiptController_costos'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/purchase-receipts/{id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Ver una recepción con sus renglones */
-    get: operations['PurchaseReceiptController_recepcion'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/purchase-receipts/{id}/void': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /**
-     * Anular una recepción (contraasiento del libro, con motivo)
-     * @description Saca las llenas que entraron y devuelve las vacías que se llevó la planta; recalcula lo recibido de la orden y el costo promedio (recalculado de las recepciones que siguen confirmadas). **Exige** `Idempotency-Key`. Si las llenas ya no están en el depósito responde 409 diciendo dónde están; si el depósito fue dado de baja, 409. No se anula una recepción pagada.
-     */
-    patch: operations['PurchaseReceiptController_void'];
-    trace?: never;
-  };
-  '/api/purchase-receipts/{id}/payment-status': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /**
-     * Marcar la recepción como pagada o impaga
-     * @description Sólo la marca: el movimiento de caja (`cashMovementId`) lo completará el módulo de caja.
-     */
-    patch: operations['PurchaseReceiptController_paymentStatus'];
-    trace?: never;
-  };
-  '/api/cylinders/vigencia/proximos-a-vencer': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Envases próximos a vencer (CU-134)
-     * @description Separa los ya vencidos, los que vencen dentro de la ventana de `days` días (default 30) y los sin revisión registrada, que no tienen fecha con la cual comparar. Cada grupo va ordenado por vencimiento, del más urgente al menos, y se pagina por separado con `limit` (default 100, máx. 500) y `offset`; `totals` trae el total de cada grupo. No incluye envases dados de baja.
-     */
-    get: operations['CylinderController_expiring'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/cylinders/vigencia/serial/{serial}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Vigencia de un envase por número de serie (CU-133)
-     * @description Lo que se escanea: el serial grabado en el envase. El serial es único por distribuidora, así que el super admin tiene que elegir una con `X-Distributor` (400 si no).
-     */
-    get: operations['CylinderController_vigenciaBySerial'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/cylinders/{id}/vigencia': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Vigencia de un envase (CU-133)
-     * @description Fabricación, última revisión, vencimiento, días que faltan e historial de revisiones. `status`: `valid`, `expired` o `unverified` (sin revisión registrada: no es lo mismo que vencido y no bloquea el despacho).
-     */
-    get: operations['CylinderController_getVigencia'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/cylinders/{id}/inspections': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Registrar la revisión periódica de un envase (CU-132)
-     * @description Guarda la revisión en el historial y copia la última fecha y el vencimiento en la ficha. Un resultado `rejected` deja el vencimiento en la fecha de la revisión: el envase queda alcanzado por el bloqueo del despacho. Si está en poder de un cliente o en reparto no se lo saca de circulación: `withdrawalPending` lo marca para retirar.
-     */
-    post: operations['CylinderController_registerInspection'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/car/{id}/reactivate': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Reactivar un vehículo fuera de servicio
-     * @description Lo pasa de `grounded` a `active` si el seguro, la VTV y la habilitación de mercancías peligrosas están vigentes. No lo asigna a ningún chofer.
-     */
-    post: operations['CarReactivationController_reactivar'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/api/fleet/fuel-loads': {
     parameters: {
       query?: never;
@@ -4398,6 +4531,474 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/audit': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Consultar el registro de auditoría
+     * @description Quién hizo cada operación que modificó datos, sobre qué, cuándo, desde qué aplicación y con qué resultado. Un admin de empresa ve sólo lo de su distribuidora.
+     */
+    get: operations['AuditController_consultar'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/audit/entries': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Consultar la auditoría de datos
+     * @description Una Auditoria por registro afectado (tipo de acción, usuario, entidadAfectada, idRegistro, ipUsuario, fechaHora) con sus DetalleAuditoria (campo, valorAnterior, valorNuevo). Un admin de empresa ve sólo lo de su distribuidora; el super admin ve todo o la que elige con X-Distributor.
+     */
+    get: operations['DataAuditController_findAll'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/audit/entries/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Una auditoría de datos con sus detalles
+     * @description Una Auditoria con todos sus DetalleAuditoria.
+     */
+    get: operations['DataAuditController_findOne'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/audit/action-types': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Catálogo de acciones auditadas
+     * @description TipoAccionAuditoria: Alta, Modificación, Baja lógica y Reactivación.
+     */
+    get: operations['DataAuditController_findActionTypes'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/employees/{id}/attendance': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Registrar la asistencia de un empleado desde el panel (CU-189) */
+    post: operations['AttendanceController_register'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/attendance': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Consultar la asistencia de los empleados (CU-314)
+     * @description Por día (`date`, por omisión hoy si no hay ningún filtro), por período (`from`/`to`), por empleado o sólo las jornadas abiertas (`open`). Informa cuántos están presentes hoy y cuántas jornadas de días anteriores quedaron sin cerrar.
+     */
+    get: operations['AttendanceController_findAll'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/attendance/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Corregir el ingreso o el egreso de una jornada, con nota (CU-313) */
+    patch: operations['AttendanceController_correct'];
+    trace?: never;
+  };
+  '/api/attendance/mine/check-in': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * El chofer inicia su jornada desde la app (CU-190)
+     * @description Idempotente: si ya tiene una jornada abierta de hoy marcada desde la app, la devuelve (200) en vez de abrir otra.
+     */
+    post: operations['AttendanceController_checkIn'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/attendance/mine/check-out': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** El chofer finaliza su jornada desde la app (CU-315) */
+    post: operations['AttendanceController_checkOut'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/personnel/dashboard': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Consultar el tablero de personal (CU-194)
+     * @description Empleados activos por puesto, presentes hoy (jornada abierta), de licencia hoy (licencia aprobada que cubre el día argentino) y documentos por estado de vencimiento. Alimenta la tarjeta «Personal hoy» del inicio. Cuenta; no lista.
+     */
+    get: operations['PersonnelController_consultar'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/suppliers': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Listar los proveedores, paginado y filtrable */
+    get: operations['SupplierController_findAll'];
+    put?: never;
+    /**
+     * Crear un proveedor
+     * @description El CUIT se valida (prefijo y dígito verificador) y es único entre los proveedores vigentes de la distribuidora.
+     */
+    post: operations['SupplierController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/suppliers/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Ver un proveedor */
+    get: operations['SupplierController_findOne'];
+    put?: never;
+    post?: never;
+    /** Dar de baja un proveedor (baja lógica) */
+    delete: operations['SupplierController_remove'];
+    options?: never;
+    head?: never;
+    /** Editar un proveedor */
+    patch: operations['SupplierController_update'];
+    trace?: never;
+  };
+  '/api/suppliers/{id}/purchase-history': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Historial de compras de un proveedor
+     * @description Recepciones del proveedor (las anuladas incluidas en la lista), con el total y las llenas de las confirmadas del período. También para un proveedor dado de baja.
+     */
+    get: operations['SupplierController_historial'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/purchase-orders': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Listar las órdenes de compra por estado, proveedor y fecha */
+    get: operations['PurchaseOrderController_ordenes'];
+    put?: never;
+    /**
+     * Crear una orden de compra en borrador
+     * @description Número correlativo por distribuidora. Total = Σ cantidad × costo unitario. Sin depósito destino usa el predeterminado.
+     */
+    post: operations['PurchaseOrderController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/purchase-orders/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Ver una orden con sus renglones, lo pendiente y sus recepciones */
+    get: operations['PurchaseOrderController_orden'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Editar una orden (sólo en borrador)
+     * @description Si vienen `items`, reemplazan a todos los renglones anteriores.
+     */
+    patch: operations['PurchaseOrderController_update'];
+    trace?: never;
+  };
+  '/api/purchase-orders/{id}/pending': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Pendiente de recibir de una orden
+     * @description Por garrafa: pedido, recibido y lo que falta. Una orden cancelada no espera nada.
+     */
+    get: operations['PurchaseOrderController_pendiente'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/purchase-orders/{id}/send': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Enviar la orden al proveedor (borrador a enviada) */
+    patch: operations['PurchaseOrderController_send'];
+    trace?: never;
+  };
+  '/api/purchase-orders/{id}/cancel': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Cancelar una orden (borrador o enviada) con motivo
+     * @description Una orden con recepciones confirmadas (incluso sólo de vacías) no se cancela: responde 409. Se anulan primero las recepciones, o se cierra la orden con faltante.
+     */
+    patch: operations['PurchaseOrderController_cancel'];
+    trace?: never;
+  };
+  '/api/purchase-orders/{id}/close-short': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Cerrar con faltante una orden parcialmente recibida
+     * @description Lo que falta ya no llega: la orden queda `closed_short` con el motivo, deja de esperar mercadería y de bloquear la baja del proveedor. Sus recepciones se pueden seguir anulando.
+     */
+    patch: operations['PurchaseOrderController_closeShort'];
+    trace?: never;
+  };
+  '/api/purchase-receipts': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Listar las recepciones por proveedor, orden, fecha y estado de pago */
+    get: operations['PurchaseReceiptController_recepciones'];
+    put?: never;
+    /**
+     * Registrar la recepción de una compra (con o sin orden)
+     * @description En una transacción: suma las llenas al depósito (sube el vendible), descuenta las vacías que se llevó la planta (sin dejar el depósito en negativo), actualiza lo recibido y el estado de la orden y recalcula el costo promedio ponderado. El número del documento del proveedor es único por proveedor. **Exige** `Idempotency-Key` (400 sin ella). Un `receivedAt` anterior al conteo inicial del depósito responde 400.
+     */
+    post: operations['PurchaseReceiptController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/purchase-receipts/average-costs': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Costo promedio ponderado por garrafa
+     * @description Con el último costo comprado y las llenas que hay hoy. `null` si nunca se compró.
+     */
+    get: operations['PurchaseReceiptController_costos'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/purchase-receipts/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Ver una recepción con sus renglones */
+    get: operations['PurchaseReceiptController_recepcion'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/purchase-receipts/{id}/void': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Anular una recepción (contraasiento del libro, con motivo)
+     * @description Saca las llenas que entraron y devuelve las vacías que se llevó la planta; recalcula lo recibido de la orden y el costo promedio (recalculado de las recepciones que siguen confirmadas). **Exige** `Idempotency-Key`. Si las llenas ya no están en el depósito responde 409 diciendo dónde están; si el depósito fue dado de baja, 409. No se anula una recepción pagada.
+     */
+    patch: operations['PurchaseReceiptController_void'];
+    trace?: never;
+  };
+  '/api/purchase-receipts/{id}/payment-status': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Marcar la recepción como pagada o impaga
+     * @description Sólo la marca: el movimiento de caja (`cashMovementId`) lo completará el módulo de caja.
+     */
+    patch: operations['PurchaseReceiptController_paymentStatus'];
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -4450,6 +5051,26 @@ export interface components {
       createdAt: string | null;
       /** Format: date-time */
       deletedAt: string | null;
+      /**
+       * @description Consumo promedio declarado por el cliente, en kg por mes
+       * @example 20
+       */
+      avgMonthlyConsumptionKg: number | null;
+      /**
+       * Format: uuid
+       * @description Id del tipo de garrafa habitual que declaró el cliente
+       */
+      declaredCylinderTypeId: string | null;
+      /**
+       * @description Tipo de garrafa habitual que declaró el cliente
+       * @example 10kg
+       */
+      declaredCylinderType: string | null;
+      /**
+       * Format: date-time
+       * @description Fecha estimada de su próxima recompra
+       */
+      nextRepurchaseEstimateAt: string | null;
       user?: components['schemas']['UserResponseDto'];
     };
     UserResponseDto: {
@@ -4641,6 +5262,23 @@ export interface components {
       /** @example qa_pruebas */
       type?: string;
     };
+    DeclareConsumptionDto: {
+      /**
+       * Format: uuid
+       * @description Tipo de garrafa habitual (del catálogo de una distribuidora)
+       */
+      cylinderTypeId: string;
+      /**
+       * @description Garrafas de ese tipo que consume por mes (admite decimales)
+       * @example 2
+       */
+      quantityPerMonth: number;
+      /**
+       * @description true para aceptar un consumo fuera del rango razonable (5 a 500 kg por mes) después de que el sistema pidió confirmación
+       * @default false
+       */
+      confirmOutOfRange: boolean;
+    };
     RegistrarClienteDto: {
       /** @example ana@correo.com */
       email: string;
@@ -4654,6 +5292,8 @@ export interface components {
       lat_lang?: string;
       /** @description Token FCM del dispositivo */
       notification_token?: string;
+      /** @description Cliente: consumo promedio mensual (CU-143). Si se omite, el registro sigue igual y el dato queda vacío */
+      consumption?: components['schemas']['DeclareConsumptionDto'];
     };
     LegajoDeChoferDto: {
       /**
@@ -4700,6 +5340,8 @@ export interface components {
       lat_lang?: string;
       /** @description Token FCM del dispositivo */
       notification_token?: string;
+      /** @description Cliente: consumo promedio mensual (CU-143). Si se omite, el registro sigue igual y el dato queda vacío */
+      consumption?: components['schemas']['DeclareConsumptionDto'];
       /**
        * @example delivery
        * @enum {string}
@@ -4991,6 +5633,124 @@ export interface components {
        * @example 8
        */
       fleetAlertHour?: number;
+    };
+    ProcessConfigFieldDto: {
+      /** @example anticipationDays */
+      key: string;
+      /** @enum {string} */
+      type: 'integer' | 'number';
+      /** @example 1 */
+      min: number;
+      /** @example 30 */
+      max: number;
+      /** @example 3 */
+      default: number;
+      /** @example días */
+      unit: string | null;
+      /** @example Anticipación con que se envía la invitación a reponer */
+      description: string;
+    };
+    ProcessConfigResponseDto: {
+      /**
+       * @example repurchase
+       * @enum {string}
+       */
+      process: 'fleet_planner' | 'repurchase' | 'route_batching' | 'cylinder_recovery';
+      /** @example Anticipación de recompra */
+      title: string;
+      description: string;
+      fields: components['schemas']['ProcessConfigFieldDto'][];
+      /**
+       * @description Valor efectivo de cada parámetro (el de la distribuidora o, si no lo configuró, el de omisión)
+       * @example {
+       *       "minOrders": 3,
+       *       "anticipationDays": 3
+       *     }
+       */
+      params: {
+        [key: string]: number;
+      };
+      /** @description true si rigen los valores por omisión (nada configurado o todo coincide con ellos) */
+      isDefault: boolean;
+      /**
+       * Format: date-time
+       * @description Cuándo se modificó por última vez (null si nunca)
+       */
+      updatedAt: string | null;
+      /**
+       * Format: uuid
+       * @description Usuario que la modificó por última vez (null si nunca)
+       */
+      updatedByUserId: string | null;
+    };
+    ExpressConfigResponseDto: {
+      /** @example false */
+      enabled: boolean;
+      /** @example 1500 */
+      surchargeAmount: number;
+      /** @example 5 */
+      maxRadiusKm: number;
+      /** @example 20 */
+      offerTtlSeconds: number;
+      /** @example 08:00 */
+      serviceFrom: string;
+      /** @example 20:00 */
+      serviceTo: string;
+      /** @example 45 */
+      estimatedMinutes: number;
+      /** @example 180 */
+      standardEstimatedMinutes: number;
+      /**
+       * @description true si rigen los valores por omisión (no configuró nada o todo coincide con ellos)
+       * @example true
+       */
+      isDefault: boolean;
+      /** Format: date-time */
+      updatedAt: string | null;
+      /** Format: uuid */
+      updatedByUserId: string | null;
+    };
+    ExpressConfigDto: {
+      /**
+       * @description Ofrecer la modalidad express (apagada por omisión)
+       * @example true
+       */
+      enabled?: boolean;
+      /**
+       * @description Recargo express fijo en pesos (0 a 1000000)
+       * @example 1500
+       */
+      surchargeAmount?: number;
+      /**
+       * @description Radio máximo, en km, en que se busca un chofer en moto (1 a 50); no se amplía
+       * @example 5
+       */
+      maxRadiusKm?: number;
+      /**
+       * @description Ventana de aceptación de cada oferta express, en segundos (10 a 120)
+       * @example 20
+       */
+      offerTtlSeconds?: number;
+      /**
+       * @description Inicio del horario express (HH:mm, hora argentina)
+       * @example 08:00
+       */
+      serviceFrom?: string;
+      /**
+       * @description Fin del horario express (HH:mm, hora argentina, exclusivo); posterior al inicio
+       * @example 20:00
+       */
+      serviceTo?: string;
+      /**
+       * @description Tiempo estimado de la entrega express, en minutos (5 a 240)
+       * @example 45
+       */
+      estimatedMinutes?: number;
+      /**
+       * @description Tiempo estimado del reparto común, en minutos (30 a 1440)
+       * @example 180
+       */
+      standardEstimatedMinutes?: number;
     };
     JobPositionResponseDto: {
       /** Format: uuid */
@@ -5352,6 +6112,126 @@ export interface components {
       /** @description Siempre `false`: la URL firmada se abre sin token. Se conserva en el contrato por compatibilidad con el panel y las apps. */
       requiresAuth: boolean;
     };
+    ConsumptionResponseDto: {
+      /**
+       * Format: uuid
+       * @description Tipo de garrafa habitual; null si el cliente no declaró
+       */
+      cylinderTypeId: string | null;
+      /** @example 10kg */
+      cylinderType: string | null;
+      /**
+       * @description Consumo declarado en kilos por mes; null si no declaró
+       * @example 20
+       */
+      avgMonthlyConsumptionKg: number | null;
+      /**
+       * Format: date-time
+       * @description Fecha estimada de la próxima recompra
+       */
+      nextRepurchaseEstimateAt: string | null;
+    };
+    UpdateConsumptionDto: {
+      /**
+       * @description true para aceptar un consumo fuera del rango razonable (5 a 500 kg por mes) después de que el sistema pidió confirmación
+       * @default false
+       */
+      confirmOutOfRange: boolean;
+      /**
+       * Format: uuid
+       * @description Tipo de garrafa habitual. Obligatorio si el cliente nunca declaró uno
+       */
+      cylinderTypeId?: string;
+      /**
+       * @description Garrafas de ese tipo por mes (0,01 a 1000, hasta 2 decimales). Si se omite, se manda `cylinderTypeId` y se mantiene el consumo en kg por mes
+       * @example 2
+       */
+      quantityPerMonth?: number;
+    };
+    PromocionDto: {
+      /**
+       * @description Unidades desde las que aplica
+       * @example 3
+       */
+      quantity: number;
+      /**
+       * @description Descuento, en porcentaje
+       * @example 10
+       */
+      discountPercentage: number;
+    };
+    CreateGasCylinderDto: {
+      /** @description Tipo de garrafa (10, 15, 45 kg) */
+      type: string;
+      /** @description Peso en kg */
+      weight: number;
+      /** @description Precio unitario */
+      price: number;
+      /** @description Stock vendible inicial: se registra como físico del depósito predeterminado. En la edición (PATCH /gascylinder/{id}) no se admite: responde 400; el stock cambia con PATCH /gascylinder/{id}/stock. */
+      stock?: number;
+      /** @description Descripción */
+      description?: string;
+      /** @description Promociones por cantidad (ej: 3 unidades 10% off) */
+      promotions?: components['schemas']['PromocionDto'][];
+    };
+    GasCylinderResponseDto: {
+      /** Format: uuid */
+      gas_cylinder_id: string;
+      /** Format: uuid */
+      distributor_id: string;
+      /** @example 10kg */
+      type: string;
+      weight: number;
+      price: number;
+      stock: number;
+      description: string | null;
+      isActive: boolean;
+      /** @description URL firmada de la imagen del producto (se abre sin token, vence); `null` si no tiene. */
+      photoUrl: string | null;
+      promotions: components['schemas']['PromocionDto'][] | null;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    CatalogoDto: {
+      gasCylinders: components['schemas']['GasCylinderResponseDto'][];
+      total: number;
+      limit: number;
+      offset: number;
+    };
+    MedioDePagoDto: {
+      /** @example Efectivo */
+      name: string;
+      /** @example CASH */
+      key: string;
+      /** @example 0 */
+      surcharge: number;
+    };
+    DisponiblesDto: {
+      products: components['schemas']['GasCylinderResponseDto'][];
+      paymentMethods: components['schemas']['MedioDePagoDto'][];
+    };
+    UpdateGasCylinderDto: {
+      /** @description Tipo de garrafa (10, 15, 45 kg) */
+      type?: string;
+      /** @description Peso en kg */
+      weight?: number;
+      /** @description Precio unitario */
+      price?: number;
+      /** @description Stock vendible inicial: se registra como físico del depósito predeterminado. En la edición (PATCH /gascylinder/{id}) no se admite: responde 400; el stock cambia con PATCH /gascylinder/{id}/stock. */
+      stock?: number;
+      /** @description Descripción */
+      description?: string;
+      /** @description Promociones por cantidad (ej: 3 unidades 10% off) */
+      promotions?: components['schemas']['PromocionDto'][];
+    };
+    BajaDeProductoDto: {
+      /** @example Gas cylinder deactivated successfully */
+      message: string;
+      /** Format: uuid */
+      gasCylinderId: string;
+    };
     TokenValidoResponseDto: {
       /** @example token valid */
       response: string;
@@ -5391,42 +6271,162 @@ export interface components {
       expiresIn: number;
       user: components['schemas']['UsuarioAutenticadoDto'];
     };
-    OrderItemDto: {
-      /** @description ID de la garrafa */
-      gasCylinderId: string;
-      /** @description Cantidad (entero, mínimo 1) */
-      quantity: number;
-      /** @description Precio unitario */
-      unitPrice: number;
-    };
-    CreateOrderDto: {
-      /** @description ID del cliente */
-      customerId: string;
-      /** @description ID de la dirección de entrega */
-      addressId: string;
-      /** @description Ítems del pedido */
-      items: components['schemas']['OrderItemDto'][];
+    DeliveryOptionDto: {
+      /** @enum {string} */
+      mode: 'standard' | 'express';
+      /** @example true */
+      available: boolean;
       /**
-       * @description Método de pago
+       * @description Por qué no está disponible (null si lo está)
+       * @enum {string|null}
+       */
+      reason: 'disabled' | 'no_location' | 'out_of_coverage' | 'out_of_hours' | 'no_motorcycle_driver' | null;
+      /** @description Explicación para mostrarle al cliente */
+      message: string | null;
+      /**
+       * @description Recargo de la modalidad (0 en `standard`); se suma al final del total
+       * @example 1500
+       */
+      surchargeAmount: number;
+      /**
+       * @description Tiempo estimado, en minutos
+       * @example 45
+       */
+      estimatedMinutes: number;
+    };
+    DeliveryOptionsResponseDto: {
+      /** Format: uuid */
+      addressId: string;
+      /** @description La modalidad `standard` siempre figura; `express` sólo está disponible con cobertura, horario y una moto cerca. Consultar no escribe nada: el alta vuelve a evaluar. */
+      options: components['schemas']['DeliveryOptionDto'][];
+    };
+    ExpressPurchaseDto: {
+      /**
        * @example cash
        * @enum {string}
        */
       paymentMethod: 'cash' | 'mercadopago' | 'transfer';
-      /** @description Notas adicionales */
-      notes?: string;
+      /**
+       * Format: uuid
+       * @description Tipo de garrafa. Si no se manda, el de la última compra del cliente en esta distribuidora; sin compras previas es obligatorio (400).
+       */
+      gasCylinderId?: string;
+      /**
+       * @description Cantidad de garrafas (una por omisión)
+       * @default 1
+       */
+      quantity: number;
       /** @description Token de notificación push */
       notificationToken?: string;
-      /** @description ID del turno de entrega (TimeSlot) */
-      timeSlotId?: string;
+    };
+    ExpressAddressDto: {
+      /** Format: uuid */
+      addressId: string;
+      /** @example Av. Siempre Viva 742 */
+      street: string;
+      /** @example Posadas */
+      city: string;
+    };
+    ExpressItemDto: {
+      /** Format: uuid */
+      gasCylinderId: string;
+      /** @example 1 */
+      quantity: number;
+    };
+    QuoteItemDto: {
+      gasCylinderId: string;
+      /** @example Garrafa 10kg */
+      title: string;
+      /** @example 2 */
+      quantity: number;
       /**
-       * @description Fecha agendada de entrega (YYYY-MM-DD). Con timeSlotId, agenda el pedido a esa franja de ese día (valida capacidad). Omitir = entrega inmediata.
-       * @example 2026-07-15
+       * @description Precio unitario con la promoción por volumen aplicada
+       * @example 9500
        */
-      scheduledDate?: string;
-      /** @description Marca el pedido como pre-reserva: reserva stock para la fecha agendada pero NO se despacha hasta que la seña esté paga y llegue el día (el sistema lo activa solo). Requiere scheduledDate. */
-      isReservation?: boolean;
-      /** @description Monto de la seña de la reserva (obligatorio si isReservation). */
-      depositAmount?: number;
+      unitPrice: number;
+      /** @example 19000 */
+      subtotal: number;
+    };
+    QuoteZoneDto: {
+      coverageZoneId: string;
+      /** @example Zona norte */
+      name: string;
+      /** @enum {string} */
+      type: 'fixed' | 'percentage';
+      /** @example 5 */
+      value: number;
+      /** @example 950 */
+      amount: number;
+    };
+    QuoteResponseDto: {
+      items: components['schemas']['QuoteItemDto'][];
+      /**
+       * @description Suma de los renglones, ya con promociones por volumen
+       * @example 19000
+       */
+      subtotal: number;
+      /** @description Zona de cobertura de la dirección y su recargo; `null` si no se mandó `addressId` o la distribuidora no tiene zonas */
+      zone: components['schemas']['QuoteZoneDto'] | null;
+      /**
+       * @description Recargo por zona (0 si no hay)
+       * @example 950
+       */
+      zoneSurcharge: number;
+      /**
+       * @example transfer
+       * @enum {string}
+       */
+      paymentMethod: 'cash' | 'mercadopago' | 'transfer';
+      /**
+       * @description Recargo por medio de pago: +10% sobre subtotal + recargo de zona en `mercadopago` y `transfer`; 0 en `cash`
+       * @example 1995
+       */
+      paymentSurcharge: number;
+      /**
+       * @description Modalidad cotizada (CU-148)
+       * @example standard
+       * @enum {string}
+       */
+      deliveryMode: 'standard' | 'express';
+      /**
+       * @description Recargo express (0 si la modalidad es `standard`). Se suma al final del total, sin el recargo por medio de pago
+       * @example 0
+       */
+      expressSurcharge: number;
+      /**
+       * @description Seña de la reserva (0 si no es reserva)
+       * @example 0
+       */
+      deposit: number;
+      /**
+       * @description Total del pedido: es el `total` que tendrá el pedido creado
+       * @example 21945
+       */
+      total: number;
+      /**
+       * @description Saldo a cobrar una vez paga la seña: `total - deposit`
+       * @example 21945
+       */
+      balance: number;
+    };
+    ExpressPreviewResponseDto: {
+      /**
+       * @description false: no hay cobertura, horario o moto; la app ofrece el flujo con franja horaria (`fallback: "scheduled"`)
+       * @example true
+       */
+      available: boolean;
+      reason: string | null;
+      message: string | null;
+      /** @enum {string|null} */
+      fallback: 'scheduled' | null;
+      /** @description Dirección predeterminada */
+      address: components['schemas']['ExpressAddressDto'];
+      /** @description Lo que se compra */
+      item: components['schemas']['ExpressItemDto'];
+      /** @description Precio final con el recargo express (null si no está disponible) */
+      quote: components['schemas']['QuoteResponseDto'] | null;
+      /** @example 45 */
+      estimatedMinutes: number | null;
     };
     AddressResponseDto: {
       /** Format: uuid */
@@ -5473,6 +6473,14 @@ export interface components {
       full_name: string | null;
       phone_number: string | null;
       email: string | null;
+    };
+    ReceiverDeOrderDto: {
+      /** @example María Gómez */
+      name: string | null;
+      /** @example 30123456 */
+      document: string | null;
+      /** @example vecina */
+      relationship: string | null;
     };
     ZoneSurchargeDto: {
       /** Format: uuid */
@@ -5592,6 +6600,22 @@ export interface components {
        * @example true
        */
       editable: boolean;
+      /**
+       * @description Modalidad de entrega vigente. Un pedido express que ninguna moto aceptó pasa a `standard` (ver `expressDegradedAt`).
+       * @example standard
+       * @enum {string}
+       */
+      deliveryMode: 'standard' | 'express';
+      /**
+       * @description Recargo express que se cobró al pedir (0 si nunca fue express). Se conserva aunque el pedido pase al reparto común: en ese caso el `total_amount` ya no lo incluye.
+       * @example 0
+       */
+      expressSurchargeAmount: number;
+      /**
+       * Format: date-time
+       * @description Cuándo ninguna moto aceptó y el pedido pasó al reparto común sin el recargo (null si no pasó)
+       */
+      expressDegradedAt: string | null;
       delivery_address: components['schemas']['AddressResponseDto'] | null;
       /** Format: uuid */
       delivery_id: string | null;
@@ -5614,6 +6638,7 @@ export interface components {
       /** @example 22600 */
       remainingBalance?: number;
       customer: components['schemas']['CustomerDeOrderDto'] | null;
+      receiver: components['schemas']['ReceiverDeOrderDto'] | null;
       cancellation_reason: string | null;
       /** Format: date-time */
       accepted_at: string | null;
@@ -5627,19 +6652,43 @@ export interface components {
       cancelledBy: 'customer' | 'admin' | 'system' | 'driver' | null;
       driver: components['schemas']['DriverDeOrderDto'] | null;
     };
-    QuoteOrderDto: {
-      /** @description Ítems del pedido */
-      items: components['schemas']['OrderItemDto'][];
+    OrderItemDto: {
+      /** @description ID de la garrafa */
+      gasCylinderId: string;
+      /** @description Cantidad (entero, mínimo 1) */
+      quantity: number;
+      /** @description Precio unitario */
+      unitPrice: number;
+    };
+    SetOrderReceiverDto: {
+      /** @example María Gómez */
+      receiverName: string;
+      /**
+       * @description DNI, CUIT/CUIL o pasaporte (6 a 15 letras o dígitos, con al menos un dígito). Puede venir con puntos o guiones: se guarda sin ellos. Dato personal de un tercero: no se guarda en el registro de auditoría.
+       * @example 30123456
+       */
+      receiverDocument: string;
+      /**
+       * @description Relación con el cliente: familiar, encargado, vecino...
+       * @example vecina
+       */
+      receiverRelationship: string;
+    };
+    CreateOrderDto: {
+      /** @description ID del cliente */
+      customerId: string;
+      /** @description ID de la dirección de entrega */
+      addressId: string;
+      /** @description Ítems del pedido. Obligatorio salvo con `fromCart: true`, que los toma del carrito (con ambos, 400) */
+      items?: components['schemas']['OrderItemDto'][];
+      /** @description Checkout del carrito (CU-126): los ítems salen del carrito del cliente en la distribuidora del header `X-Distributor`, se cobra el precio vigente del catálogo y el carrito se vacía en la misma transacción que el pedido. Sin `items` en el cuerpo. Sólo el cliente; carrito vacío o con productos dados de baja es 400. */
+      fromCart?: boolean;
       /**
        * @description Método de pago
        * @example cash
        * @enum {string}
        */
       paymentMethod: 'cash' | 'mercadopago' | 'transfer';
-      /** @description ID del cliente */
-      customerId?: string;
-      /** @description ID de la dirección de entrega */
-      addressId?: string;
       /** @description Notas adicionales */
       notes?: string;
       /** @description Token de notificación push */
@@ -5655,76 +6704,58 @@ export interface components {
       isReservation?: boolean;
       /** @description Monto de la seña de la reserva (obligatorio si isReservation). */
       depositAmount?: number;
+      /** @description Quién va a recibir el pedido (CU-128): mismas reglas que `PATCH /orders/:id/receiver`. */
+      receiver?: components['schemas']['SetOrderReceiverDto'];
+      /**
+       * @description Modalidad de entrega (CU-148). `standard` (por omisión) es el reparto común; `express` sale a un chofer en moto con el recargo express de la distribuidora. Se vuelve a evaluar al crear el pedido: si no hay cobertura, horario o una moto disponible responde 409 con `reason`. No se combina con reserva, franja ni fecha agendada.
+       * @example standard
+       * @enum {string}
+       */
+      deliveryMode?: 'standard' | 'express';
+    };
+    QuoteOrderDto: {
+      /**
+       * @description Método de pago
+       * @example cash
+       * @enum {string}
+       */
+      paymentMethod: 'cash' | 'mercadopago' | 'transfer';
+      /** @description ID del cliente */
+      customerId?: string;
+      /** @description ID de la dirección de entrega */
+      addressId?: string;
+      /** @description Ítems del pedido. Obligatorio salvo con `fromCart: true`, que los toma del carrito (con ambos, 400) */
+      items?: components['schemas']['OrderItemDto'][];
+      /** @description Checkout del carrito (CU-126): los ítems salen del carrito del cliente en la distribuidora del header `X-Distributor`, se cobra el precio vigente del catálogo y el carrito se vacía en la misma transacción que el pedido. Sin `items` en el cuerpo. Sólo el cliente; carrito vacío o con productos dados de baja es 400. */
+      fromCart?: boolean;
+      /** @description Notas adicionales */
+      notes?: string;
+      /** @description Token de notificación push */
+      notificationToken?: string;
+      /** @description ID del turno de entrega (TimeSlot) */
+      timeSlotId?: string;
+      /**
+       * @description Fecha agendada de entrega (YYYY-MM-DD). Con timeSlotId, agenda el pedido a esa franja de ese día (valida capacidad). Omitir = entrega inmediata.
+       * @example 2026-07-15
+       */
+      scheduledDate?: string;
+      /** @description Marca el pedido como pre-reserva: reserva stock para la fecha agendada pero NO se despacha hasta que la seña esté paga y llegue el día (el sistema lo activa solo). Requiere scheduledDate. */
+      isReservation?: boolean;
+      /** @description Monto de la seña de la reserva (obligatorio si isReservation). */
+      depositAmount?: number;
+      /** @description Quién va a recibir el pedido (CU-128): mismas reglas que `PATCH /orders/:id/receiver`. */
+      receiver?: components['schemas']['SetOrderReceiverDto'];
+      /**
+       * @description Modalidad de entrega (CU-148). `standard` (por omisión) es el reparto común; `express` sale a un chofer en moto con el recargo express de la distribuidora. Se vuelve a evaluar al crear el pedido: si no hay cobertura, horario o una moto disponible responde 409 con `reason`. No se combina con reserva, franja ni fecha agendada.
+       * @example standard
+       * @enum {string}
+       */
+      deliveryMode?: 'standard' | 'express';
       /**
        * Format: uuid
        * @description Cotización de EDICIÓN de un pedido existente (el del cliente que cotiza, o de la distribuidora del staff; si no, 404). Sólo vale si el pedido es editable (409 con el mismo mensaje que `PATCH /orders/:id`). El stock se compara por la diferencia contra el pedido actual; la franja y la fecha sólo se validan si cambian; lo que no se manda se toma del pedido (dirección y zona incluidas).
        */
       orderId?: string;
-    };
-    QuoteItemDto: {
-      gasCylinderId: string;
-      /** @example Garrafa 10kg */
-      title: string;
-      /** @example 2 */
-      quantity: number;
-      /**
-       * @description Precio unitario con la promoción por volumen aplicada
-       * @example 9500
-       */
-      unitPrice: number;
-      /** @example 19000 */
-      subtotal: number;
-    };
-    QuoteZoneDto: {
-      coverageZoneId: string;
-      /** @example Zona norte */
-      name: string;
-      /** @enum {string} */
-      type: 'fixed' | 'percentage';
-      /** @example 5 */
-      value: number;
-      /** @example 950 */
-      amount: number;
-    };
-    QuoteResponseDto: {
-      items: components['schemas']['QuoteItemDto'][];
-      /**
-       * @description Suma de los renglones, ya con promociones por volumen
-       * @example 19000
-       */
-      subtotal: number;
-      /** @description Zona de cobertura de la dirección y su recargo; `null` si no se mandó `addressId` o la distribuidora no tiene zonas */
-      zone: components['schemas']['QuoteZoneDto'] | null;
-      /**
-       * @description Recargo por zona (0 si no hay)
-       * @example 950
-       */
-      zoneSurcharge: number;
-      /**
-       * @example transfer
-       * @enum {string}
-       */
-      paymentMethod: 'cash' | 'mercadopago' | 'transfer';
-      /**
-       * @description Recargo por medio de pago: +10% sobre subtotal + recargo de zona en `mercadopago` y `transfer`; 0 en `cash`
-       * @example 1995
-       */
-      paymentSurcharge: number;
-      /**
-       * @description Seña de la reserva (0 si no es reserva)
-       * @example 0
-       */
-      deposit: number;
-      /**
-       * @description Total del pedido: es el `total` que tendrá el pedido creado
-       * @example 21945
-       */
-      total: number;
-      /**
-       * @description Saldo a cobrar una vez paga la seña: `total - deposit`
-       * @example 21945
-       */
-      balance: number;
     };
     PaginatedOrdersResponseDto: {
       orders: components['schemas']['OrderResponseDto'][];
@@ -5924,6 +6955,22 @@ export interface components {
        * @example true
        */
       editable: boolean;
+      /**
+       * @description Modalidad de entrega vigente. Un pedido express que ninguna moto aceptó pasa a `standard` (ver `expressDegradedAt`).
+       * @example standard
+       * @enum {string}
+       */
+      deliveryMode: 'standard' | 'express';
+      /**
+       * @description Recargo express que se cobró al pedir (0 si nunca fue express). Se conserva aunque el pedido pase al reparto común: en ese caso el `total_amount` ya no lo incluye.
+       * @example 0
+       */
+      expressSurchargeAmount: number;
+      /**
+       * Format: date-time
+       * @description Cuándo ninguna moto aceptó y el pedido pasó al reparto común sin el recargo (null si no pasó)
+       */
+      expressDegradedAt: string | null;
       delivery_address: components['schemas']['AddressResponseDto'] | null;
       /** Format: uuid */
       delivery_id: string | null;
@@ -5946,6 +6993,7 @@ export interface components {
       /** @example 22600 */
       remainingBalance?: number;
       customer: components['schemas']['CustomerDeOrderDto'] | null;
+      receiver: components['schemas']['ReceiverDeOrderDto'] | null;
       cancellation_reason: string | null;
       /** Format: date-time */
       accepted_at: string | null;
@@ -6097,6 +7145,18 @@ export interface components {
       /** @description Renglones nuevos: reemplazan a los actuales (se devuelve el stock viejo y se reserva el nuevo, con los precios vigentes) */
       items?: components['schemas']['UpdateOrderItemDto'][];
     };
+    ChangeOrderAddressDto: {
+      /**
+       * Format: uuid
+       * @description Otra de las direcciones registradas del cliente
+       */
+      addressId: string;
+      /**
+       * @description Motivo del cambio; queda asentado con la dirección anterior
+       * @example Me mudé temporalmente a lo de mi mamá
+       */
+      reason?: string;
+    };
     CancelOrderDto: {
       /**
        * @description Motivo de la cancelación (opcional)
@@ -6118,89 +7178,81 @@ export interface components {
       /** @example 576300 */
       sales: number;
     };
-    PromocionDto: {
+    CartItemResponseDto: {
+      /** Format: uuid */
+      cartItemId: string;
+      /** Format: uuid */
+      gasCylinderId: string;
+      /** @example 10kg */
+      type: string;
+      /** @example 2 */
+      quantity: number;
       /**
-       * @description Unidades desde las que aplica
+       * @description Precio que vio el cliente al agregar el ítem
+       * @example 1000
+       */
+      savedUnitPrice: number;
+      /**
+       * @description Precio vigente del catálogo
+       * @example 1100
+       */
+      currentUnitPrice: number;
+      /**
+       * @description Vigente menos guardado: positivo si subió, negativo si bajó, 0 si no cambió
+       * @example 100
+       */
+      priceDifference: number;
+      /**
+       * @description Cantidad por precio vigente. 0 si el tipo ya no está disponible
+       * @example 2200
+       */
+      subtotal: number;
+      /** @description false si el tipo de garrafa se dio de baja después de agregarlo: se muestra pero no suma al total */
+      available: boolean;
+      /** @description false si el stock vendible no alcanza para la cantidad. El carrito no reserva stock: se controla al crear el pedido */
+      hasEnoughStock: boolean;
+    };
+    CartResponseDto: {
+      /**
+       * Format: uuid
+       * @description null si el cliente todavía no tiene carrito (se ve vacío)
+       */
+      cartId: string | null;
+      /** Format: uuid */
+      distributorId: string;
+      items: components['schemas']['CartItemResponseDto'][];
+      /** @description Unidades de los ítems disponibles */
+      totalUnits: number;
+      /**
+       * @description Suma de los subtotales sobre los precios vigentes
+       * @example 2200
+       */
+      total: number;
+      /** @description Algún ítem tiene un precio distinto al guardado */
+      hasPriceChanges: boolean;
+      /** @description Algún ítem ya no está disponible */
+      hasUnavailableItems: boolean;
+      /** Format: date-time */
+      updatedAt: string | null;
+    };
+    AddCartItemDto: {
+      /**
+       * Format: uuid
+       * @description Tipo de garrafa del catálogo de la distribuidora
+       */
+      gasCylinderId: string;
+      /**
+       * @description Entero positivo. Si el tipo ya está en el carrito, se suma a lo que tenía
+       * @example 2
+       */
+      quantity: number;
+    };
+    UpdateCartItemDto: {
+      /**
+       * @description Cantidad nueva (reemplaza a la anterior). Para dejarlo en cero hay que quitar el ítem
        * @example 3
        */
       quantity: number;
-      /**
-       * @description Descuento, en porcentaje
-       * @example 10
-       */
-      discountPercentage: number;
-    };
-    CreateGasCylinderDto: {
-      /** @description Tipo de garrafa (10, 15, 45 kg) */
-      type: string;
-      /** @description Peso en kg */
-      weight: number;
-      /** @description Precio unitario */
-      price: number;
-      /** @description Stock vendible inicial: se registra como físico del depósito predeterminado. En la edición (PATCH /gascylinder/{id}) no se admite: responde 400; el stock cambia con PATCH /gascylinder/{id}/stock. */
-      stock?: number;
-      /** @description Descripción */
-      description?: string;
-      /** @description Promociones por cantidad (ej: 3 unidades 10% off) */
-      promotions?: components['schemas']['PromocionDto'][];
-    };
-    GasCylinderResponseDto: {
-      /** Format: uuid */
-      gas_cylinder_id: string;
-      /** Format: uuid */
-      distributor_id: string;
-      /** @example 10kg */
-      type: string;
-      weight: number;
-      price: number;
-      stock: number;
-      description: string | null;
-      isActive: boolean;
-      /** @description URL firmada de la imagen del producto (se abre sin token, vence); `null` si no tiene. */
-      photoUrl: string | null;
-      promotions: components['schemas']['PromocionDto'][] | null;
-      /** Format: date-time */
-      createdAt: string;
-      /** Format: date-time */
-      updatedAt: string;
-    };
-    CatalogoDto: {
-      gasCylinders: components['schemas']['GasCylinderResponseDto'][];
-      total: number;
-      limit: number;
-      offset: number;
-    };
-    MedioDePagoDto: {
-      /** @example Efectivo */
-      name: string;
-      /** @example CASH */
-      key: string;
-      /** @example 0 */
-      surcharge: number;
-    };
-    DisponiblesDto: {
-      products: components['schemas']['GasCylinderResponseDto'][];
-      paymentMethods: components['schemas']['MedioDePagoDto'][];
-    };
-    UpdateGasCylinderDto: {
-      /** @description Tipo de garrafa (10, 15, 45 kg) */
-      type?: string;
-      /** @description Peso en kg */
-      weight?: number;
-      /** @description Precio unitario */
-      price?: number;
-      /** @description Stock vendible inicial: se registra como físico del depósito predeterminado. En la edición (PATCH /gascylinder/{id}) no se admite: responde 400; el stock cambia con PATCH /gascylinder/{id}/stock. */
-      stock?: number;
-      /** @description Descripción */
-      description?: string;
-      /** @description Promociones por cantidad (ej: 3 unidades 10% off) */
-      promotions?: components['schemas']['PromocionDto'][];
-    };
-    BajaDeProductoDto: {
-      /** @example Gas cylinder deactivated successfully */
-      message: string;
-      /** Format: uuid */
-      gasCylinderId: string;
     };
     CreateUserAddressDto: {
       /** @description Dueño de la dirección. Sólo lo usa el administrador general (obligatorio para él). Un cliente o un chofer crea siempre para sí mismo con el de su token: puede omitirlo; si lo manda y es el de otro usuario, 403. */
@@ -6903,14 +7955,60 @@ export interface components {
        */
       validUntil?: string | null;
     };
+    RefundResponseDto: {
+      /** Format: uuid */
+      refundId: string;
+      /** Format: uuid */
+      orderId: string;
+      /**
+       * Format: uuid
+       * @description Pago del ledger que se devuelve
+       */
+      paymentId: string;
+      /**
+       * @description `full`: lo que faltaba devolver del pago (el pedido se canceló); `express_surcharge`: sólo el recargo express
+       * @enum {string}
+       */
+      kind: 'full' | 'express_surcharge';
+      /** @example 1500 */
+      amount: number;
+      /**
+       * @description `failed` se puede reintentar con `POST /orders/:id/refunds/retry`
+       * @enum {string}
+       */
+      status: 'pending' | 'succeeded' | 'failed';
+      gatewayRefundId: string | null;
+      /** @description Por qué falló el último intento */
+      errorMessage: string | null;
+      /**
+       * @description Intentos contra la pasarela
+       * @example 1
+       */
+      attempts: number;
+      /** Format: date-time */
+      refundedAt: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    RefundListResponseDto: {
+      items: components['schemas']['RefundResponseDto'][];
+      /** @example 3 */
+      total: number;
+      /** @example 10 */
+      limit: number;
+      /** @example 0 */
+      offset: number;
+    };
     CreateFleetPlanDto: {
       /** @example Seguro del vehículo */
       name: string;
       /**
-       * @description A qué aplica: al vehículo o al chofer
+       * @description A qué aplica: al vehículo, al chofer (histórico: la licencia) o al empleado (personal)
        * @enum {string}
        */
-      subject: 'vehicle' | 'driver';
+      subject: 'vehicle' | 'driver' | 'employee';
       /**
        * @description Qué dispara el vencimiento: una fecha fija, un intervalo de km o de tiempo
        * @enum {string}
@@ -6933,10 +8031,22 @@ export interface components {
       /** @description Tipo de vehículo al que aplica (null = todos) */
       carType?: string;
       /**
-       * @description Qué documento es, si el sistema lo tiene que reconocer: `insurance` (el costo del vehículo prorratea su prima), `vtv` o `hazmat_vehicle_permit` (CU-197)
+       * @description Qué documento es: define el detalle que se pide al cargarlo y si el sistema lo reconoce (`insurance`: el costo del vehículo prorratea su prima; `vtv`; `hazmat_vehicle_permit`, CU-197). Sin él, la tarea no lleva detalle; `null` en la edición se lo quita.
        * @enum {string|null}
        */
-      documentKind?: 'insurance' | 'vtv' | 'hazmat_vehicle_permit' | null;
+      documentKind?:
+        | 'insurance'
+        | 'vtv'
+        | 'hazmat_vehicle_permit'
+        | 'driver_license'
+        | 'hazmat_driver_course'
+        | 'psychophysical'
+        | 'art_coverage'
+        | 'service'
+        | 'generic'
+        | null;
+      /** @description Categorías de puesto a las que aplica un plan de personal (sin indicar = todas) */
+      appliesToCategories?: ('driver' | 'helper' | 'warehouse' | 'administration' | 'sales' | 'management' | 'other')[];
       /** @default true */
       isActive: boolean;
     };
@@ -6947,7 +8057,7 @@ export interface components {
       distributorId: string;
       name: string;
       /** @enum {string} */
-      subject: 'vehicle' | 'driver';
+      subject: 'vehicle' | 'driver' | 'employee';
       /** @enum {string} */
       trigger: 'by_km' | 'by_time' | 'by_fixed_date';
       intervalKm: number | null;
@@ -6956,18 +8066,34 @@ export interface components {
       /** @enum {string} */
       criticality: 'blocking' | 'non_blocking';
       carType: string | null;
-      /** @enum {string|null} */
-      documentKind: 'insurance' | 'vtv' | 'hazmat_vehicle_permit' | null;
+      /**
+       * @description Qué formulario muestra el panel y qué forma de `details` valida el back
+       * @enum {string|null}
+       */
+      documentKind:
+        | 'insurance'
+        | 'vtv'
+        | 'hazmat_vehicle_permit'
+        | 'driver_license'
+        | 'hazmat_driver_course'
+        | 'psychophysical'
+        | 'art_coverage'
+        | 'service'
+        | 'generic'
+        | null;
+      /** @description Categorías de puesto a las que aplica (null = todas) */
+      appliesToCategories:
+        ('driver' | 'helper' | 'warehouse' | 'administration' | 'sales' | 'management' | 'other')[] | null;
       isActive: boolean;
     };
     UpdateFleetPlanDto: {
       /** @example Seguro del vehículo */
       name?: string;
       /**
-       * @description A qué aplica: al vehículo o al chofer
+       * @description A qué aplica: al vehículo, al chofer (histórico: la licencia) o al empleado (personal)
        * @enum {string}
        */
-      subject?: 'vehicle' | 'driver';
+      subject?: 'vehicle' | 'driver' | 'employee';
       /**
        * @description Qué dispara el vencimiento: una fecha fija, un intervalo de km o de tiempo
        * @enum {string}
@@ -6990,10 +8116,22 @@ export interface components {
       /** @description Tipo de vehículo al que aplica (null = todos) */
       carType?: string;
       /**
-       * @description Qué documento es, si el sistema lo tiene que reconocer: `insurance` (el costo del vehículo prorratea su prima), `vtv` o `hazmat_vehicle_permit` (CU-197)
+       * @description Qué documento es: define el detalle que se pide al cargarlo y si el sistema lo reconoce (`insurance`: el costo del vehículo prorratea su prima; `vtv`; `hazmat_vehicle_permit`, CU-197). Sin él, la tarea no lleva detalle; `null` en la edición se lo quita.
        * @enum {string|null}
        */
-      documentKind?: 'insurance' | 'vtv' | 'hazmat_vehicle_permit' | null;
+      documentKind?:
+        | 'insurance'
+        | 'vtv'
+        | 'hazmat_vehicle_permit'
+        | 'driver_license'
+        | 'hazmat_driver_course'
+        | 'psychophysical'
+        | 'art_coverage'
+        | 'service'
+        | 'generic'
+        | null;
+      /** @description Categorías de puesto a las que aplica un plan de personal (sin indicar = todas) */
+      appliesToCategories?: ('driver' | 'helper' | 'warehouse' | 'administration' | 'sales' | 'management' | 'other')[];
       /** @default true */
       isActive: boolean;
     };
@@ -7010,6 +8148,11 @@ export interface components {
        * @description Obligatorio si el plan es de chofer (subject: driver)
        */
       deliveryId?: string;
+      /**
+       * Format: uuid
+       * @description Obligatorio si el plan es de personal (subject: employee): curso de mercancías peligrosas, psicofísico, ART (CU-183 a CU-185)
+       */
+      employeeId?: string;
       /**
        * Format: date-time
        * @description Fecha límite (vencimiento de la póliza, la VTV, la licencia)
@@ -7046,6 +8189,16 @@ export interface components {
       category?: string;
       notes?: string;
       /**
+       * @description Datos propios del tipo de documento (`plan.documentKind`): curso de mercancías peligrosas {certificateNumber, issuer}, psicofísico {examDate}, ART {insurer, policyNumber}. Los demás tipos no llevan detalle.
+       * @example {
+       *       "certificateNumber": "123/26",
+       *       "issuer": "CNRT"
+       *     }
+       */
+      details?: {
+        [key: string]: string;
+      };
+      /**
        * Format: date-time
        * @description Cuándo está agendado el turno/trámite, si ya se sabe
        */
@@ -7079,6 +8232,8 @@ export interface components {
       carId: string | null;
       /** Format: uuid */
       deliveryId: string | null;
+      /** Format: uuid */
+      employeeId: string | null;
       /** @enum {string} */
       status: 'forecast' | 'scheduled' | 'in_progress' | 'done' | 'overdue' | 'cancelled';
       /** Format: date-time */
@@ -7096,6 +8251,10 @@ export interface components {
       referenceNumber: string | null;
       category: string | null;
       notes: string | null;
+      /** @description Datos propios del tipo de documento (según `plan.documentKind`) */
+      details: {
+        [key: string]: string;
+      } | null;
       /**
        * @description null si no tiene fecha límite (p. ej. un service todavía sin fecha estimada) o si ya está cerrada/cancelada
        * @enum {string|null}
@@ -7143,6 +8302,16 @@ export interface components {
        */
       category?: string;
       notes?: string;
+      /**
+       * @description Datos propios del tipo de documento (`plan.documentKind`): curso de mercancías peligrosas {certificateNumber, issuer}, psicofísico {examDate}, ART {insurer, policyNumber}. Los demás tipos no llevan detalle.
+       * @example {
+       *       "certificateNumber": "123/26",
+       *       "issuer": "CNRT"
+       *     }
+       */
+      details?: {
+        [key: string]: string;
+      };
       /**
        * Format: date-time
        * @description Cuándo está agendado el turno/trámite, si ya se sabe
@@ -7204,10 +8373,26 @@ export interface components {
       isLocked: boolean;
       items: components['schemas']['FleetExpirationEntryDto'][];
     };
+    FleetEmployeeExpirationsDto: {
+      /** Format: uuid */
+      employeeId: string;
+      /** @example Ana Pérez */
+      fullName: string;
+      /** @example 0042 */
+      fileNumber: string;
+      /** @example Chofer */
+      positionName: string;
+      /** @enum {string} */
+      category: 'driver' | 'helper' | 'warehouse' | 'administration' | 'sales' | 'management' | 'other';
+      /** @description Tiene una habilitación bloqueante vencida: queda inhabilitado para el despacho (CU-246) */
+      isLocked: boolean;
+      items: components['schemas']['FleetExpirationEntryDto'][];
+    };
     FleetExpirationsResponseDto: {
       withinDays: number;
       vehicles: components['schemas']['FleetVehicleExpirationsDto'][];
       drivers: components['schemas']['FleetDriverExpirationsDto'][];
+      employees: components['schemas']['FleetEmployeeExpirationsDto'][];
     };
     FleetVehicleDocumentsResponseDto: {
       /** Format: uuid */
@@ -7266,6 +8451,23 @@ export interface components {
       releasedAt: string | null;
       note: string | null;
     };
+    EmployeeDocumentsResponseDto: {
+      /** Format: uuid */
+      employeeId: string;
+      /** @description Queda inhabilitado para el despacho por la misma regla que aplica el despacho (CU-246): legajo egresado, licencia aprobada que cubre hoy o documentación bloqueante vencida (incluida la licencia de conducir). No mira el vehículo en uso. */
+      isLocked: boolean;
+      /**
+       * @description Los motivos de la inhabilitación, en castellano
+       * @example [
+       *       "Examen psicofísico: venció el 01/03/2026"
+       *     ]
+       */
+      lockReasons: string[];
+      /** @description Las tareas del empleado, con su estado de vencimiento (incluye la licencia de conducir de un chofer) */
+      tasks: components['schemas']['FleetTaskResponseDto'][];
+      /** @description Planes activos que le aplican por la categoría de su puesto y para los que no tiene ninguna tarea abierta */
+      missingPlans: components['schemas']['FleetPlanResponseDto'][];
+    };
     SendPasswordResetDto: {
       /** @example user@example.com */
       email: string;
@@ -7298,6 +8500,133 @@ export interface components {
       /** @example sent */
       resendStatus?: string;
       cacheStats?: components['schemas']['EstadoDeCacheDto'];
+    };
+    CreateLeaveDto: {
+      /**
+       * @example vacation
+       * @enum {string}
+       */
+      type:
+        | 'vacation'
+        | 'sick'
+        | 'work_accident'
+        | 'study'
+        | 'marriage'
+        | 'birth'
+        | 'bereavement'
+        | 'unpaid'
+        | 'suspension'
+        | 'unjustified_absence'
+        | 'other';
+      /**
+       * Format: date
+       * @example 2026-12-01
+       */
+      startDate: string;
+      /**
+       * Format: date
+       * @example 2026-12-14
+       */
+      endDate: string;
+      /** @example Vacaciones de verano */
+      reason?: string;
+    };
+    LeaveResponseDto: {
+      /** Format: uuid */
+      leaveId: string;
+      /** Format: uuid */
+      employeeId: string;
+      /** @example Ana Pérez */
+      employeeName: string;
+      /** @example 0042 */
+      employeeFileNumber: string;
+      /** @enum {string} */
+      type:
+        | 'vacation'
+        | 'sick'
+        | 'work_accident'
+        | 'study'
+        | 'marriage'
+        | 'birth'
+        | 'bereavement'
+        | 'unpaid'
+        | 'suspension'
+        | 'unjustified_absence'
+        | 'other';
+      /**
+       * Format: date
+       * @example 2026-12-01
+       */
+      startDate: string;
+      /**
+       * Format: date
+       * @example 2026-12-14
+       */
+      endDate: string;
+      /** @description Días corridos, ambos extremos incluidos */
+      days: number;
+      /** @enum {string} */
+      status: 'requested' | 'approved' | 'rejected' | 'cancelled';
+      reason: string | null;
+      rejectionReason: string | null;
+      /** Format: uuid */
+      requestedByUserId: string | null;
+      /** Format: uuid */
+      decidedByUserId: string | null;
+      /** Format: date-time */
+      decidedAt: string | null;
+      /** Format: date-time */
+      createdAt: string;
+    };
+    VacationBalanceDto: {
+      /** Format: uuid */
+      employeeId: string;
+      /** @example 2026 */
+      year: number;
+      /** @description Días corridos que corresponden por la antigüedad al 31 de diciembre (14, 21, 28 o 35) */
+      entitledDays: number;
+      /** @description Días de las licencias de vacaciones aprobadas que caen en el año */
+      takenDays: number;
+      /** @description entitledDays - takenDays (puede ser negativo) */
+      balanceDays: number;
+    };
+    LeavePageDto: {
+      data: components['schemas']['LeaveResponseDto'][];
+      total: number;
+    };
+    UpdateLeaveDto: {
+      /**
+       * @example vacation
+       * @enum {string}
+       */
+      type?:
+        | 'vacation'
+        | 'sick'
+        | 'work_accident'
+        | 'study'
+        | 'marriage'
+        | 'birth'
+        | 'bereavement'
+        | 'unpaid'
+        | 'suspension'
+        | 'unjustified_absence'
+        | 'other';
+      /**
+       * Format: date
+       * @example 2026-12-01
+       */
+      startDate?: string;
+      /**
+       * Format: date
+       * @example 2026-12-14
+       */
+      endDate?: string;
+      /** @example Vacaciones de verano */
+      reason?: string;
+    };
+    RejectLeaveDto: {
+      /** @example Sin cobertura esa semana */
+      reason: string;
     };
     WarehouseResponseDto: {
       /** Format: uuid */
@@ -8398,622 +9727,6 @@ export interface components {
       /** @description Incidencia de tipo `unpaid_collection` abierta por el impago (la misma si se repite la llamada) */
       incident: components['schemas']['IncidentResponseDto'];
     };
-    AsientoDeAuditoriaDto: {
-      /** Format: uuid */
-      auditId: string;
-      /** Format: uuid */
-      distributorId: string | null;
-      /** Format: uuid */
-      actorUserId: string | null;
-      /** @example admin */
-      actorRole: string | null;
-      /** @example PATCH */
-      httpMethod: string;
-      /** @example orders */
-      resource: string;
-      resourceId: string | null;
-      /** @example /api/orders/:id/status */
-      path: string;
-      /** @example panel-app */
-      clientSource: string | null;
-      ip: string | null;
-      /** @enum {string} */
-      result: 'success' | 'failure';
-      /** @example 200 */
-      statusCode: number;
-      /** @description El cuerpo de la operación, sin credenciales */
-      changes: {
-        [key: string]: unknown;
-      } | null;
-      errorMessage: string | null;
-      /** Format: date-time */
-      createdAt: string;
-    };
-    RegistroDeAuditoriaDto: {
-      items: components['schemas']['AsientoDeAuditoriaDto'][];
-      total: number;
-    };
-    AuditActionTypeDto: {
-      /**
-       * @description idTipoAuditoria
-       * @example 2
-       */
-      id: number;
-      /**
-       * @description nombre
-       * @example Modificación
-       */
-      name: string;
-    };
-    AuditUserDto: {
-      /** Format: uuid */
-      userId: string;
-      fullName: string | null;
-      email: string | null;
-      /** @description El usuario fue dado de baja después */
-      deleted: boolean;
-    };
-    AuditDetailDto: {
-      /**
-       * Format: uuid
-       * @description idDetalleAuditoria
-       */
-      auditDetailId: string;
-      /**
-       * @description campo
-       * @example status
-       */
-      field: string;
-      /** @description valorAnterior (null en una alta). Secretos: [oculto] */
-      oldValue: string | null;
-      /** @description valorNuevo. Secretos: [oculto] */
-      newValue: string | null;
-    };
-    AuditEntryDto: {
-      /**
-       * Format: uuid
-       * @description idAuditoria
-       */
-      auditId: string;
-      /** @description idTipoAuditoria con su nombre */
-      actionType: components['schemas']['AuditActionTypeDto'];
-      /**
-       * Format: uuid
-       * @description idUsuario; null si lo hizo el sistema (cron, seed)
-       */
-      userId: string | null;
-      /** @description Datos del usuario (aunque esté dado de baja, con `deleted`); null si lo hizo el sistema */
-      user: components['schemas']['AuditUserDto'] | null;
-      /** Format: uuid */
-      distributorId: string | null;
-      /**
-       * @description entidadAfectada
-       * @example Order
-       */
-      entity: string;
-      /** @description idRegistro */
-      recordId: string;
-      /** @description ipUsuario */
-      ip: string | null;
-      /**
-       * Format: date-time
-       * @description fechaHora
-       */
-      dateTime: string;
-      details: components['schemas']['AuditDetailDto'][];
-    };
-    AuditEntriesPageDto: {
-      data: components['schemas']['AuditEntryDto'][];
-      /** @description Total que cumple el filtro, sin paginar */
-      total: number;
-    };
-    SupplierResponseDto: {
-      /** Format: uuid */
-      supplierId: string;
-      /** @example Gas del Litoral S.A. */
-      businessName: string;
-      /** @example 30715123456 */
-      cuit: string;
-      /** @enum {string} */
-      kind: 'filling_plant' | 'other';
-      contactName: string | null;
-      phone: string | null;
-      email: string | null;
-      address: string | null;
-      /** @example 30 */
-      paymentTermsDays: number | null;
-      isActive: boolean;
-      /** Format: date-time */
-      createdAt: string;
-      /** Format: date-time */
-      updatedAt: string;
-    };
-    SupplierPageDto: {
-      data: components['schemas']['SupplierResponseDto'][];
-      /** @example 12 */
-      total: number;
-    };
-    CreateSupplierDto: {
-      /** @example Gas del Litoral S.A. */
-      businessName: string;
-      /**
-       * @description CUIT de 11 dígitos (se aceptan guiones). Único entre los proveedores vigentes de la distribuidora.
-       * @example 30715123456
-       */
-      cuit: string;
-      /**
-       * @description `filling_plant` es la planta fraccionadora que llena y canjea envases
-       * @example filling_plant
-       * @enum {string}
-       */
-      kind: 'filling_plant' | 'other';
-      /** @example Marta Gómez */
-      contactName?: string | null;
-      /** @example +5493624123456 */
-      phone?: string | null;
-      /**
-       * Format: email
-       * @example compras@gasdellitoral.com.ar
-       */
-      email?: string | null;
-      /** @example Ruta 11 km 1005, Resistencia */
-      address?: string | null;
-      /**
-       * @description Plazo de pago en días (0 = contado)
-       * @example 30
-       */
-      paymentTermsDays?: number | null;
-    };
-    PurchaseReceiptSummaryDto: {
-      /** Format: uuid */
-      receiptId: string;
-      /**
-       * @description Número interno correlativo
-       * @example 3
-       */
-      number: number;
-      /** Format: uuid */
-      supplierId: string;
-      /** @example Gas del Litoral S.A. */
-      supplierName: string;
-      /** Format: uuid */
-      purchaseOrderId: string | null;
-      /** @example 7 */
-      purchaseOrderNumber: number | null;
-      /** Format: uuid */
-      warehouseId: string;
-      /** @example Depósito central */
-      warehouseName: string;
-      /** @enum {string} */
-      supplierDocumentType: 'delivery_note' | 'invoice';
-      /** @example 0001-00004567 */
-      supplierDocumentNumber: string;
-      /** Format: date-time */
-      receivedAt: string;
-      /** @example 130012.5 */
-      totalAmount: number;
-      /** @enum {string} */
-      paymentStatus: 'unpaid' | 'paid';
-      /** @enum {string} */
-      status: 'confirmed' | 'voided';
-    };
-    SupplierHistoryDto: {
-      /** Format: uuid */
-      supplierId: string;
-      /** @example Gas del Litoral S.A. */
-      supplierName: string;
-      /**
-       * @description Recepciones confirmadas del período
-       * @example 4
-       */
-      receiptsCount: number;
-      /**
-       * @description Σ de las recepciones confirmadas del período
-       * @example 520050
-       */
-      totalAmount: number;
-      /**
-       * @description Llenas recibidas (confirmadas) del período
-       * @example 100
-       */
-      fullReceived: number;
-      data: components['schemas']['PurchaseReceiptSummaryDto'][];
-      /**
-       * @description Total de recepciones (con las anuladas) para paginar
-       * @example 5
-       */
-      total: number;
-    };
-    UpdateSupplierDto: {
-      /** @example Gas del Litoral S.A. */
-      businessName?: string;
-      /**
-       * @description CUIT de 11 dígitos (se aceptan guiones). Único entre los proveedores vigentes de la distribuidora.
-       * @example 30715123456
-       */
-      cuit?: string;
-      /**
-       * @description `filling_plant` es la planta fraccionadora que llena y canjea envases
-       * @example filling_plant
-       * @enum {string}
-       */
-      kind?: 'filling_plant' | 'other';
-      /** @example Marta Gómez */
-      contactName?: string | null;
-      /** @example +5493624123456 */
-      phone?: string | null;
-      /**
-       * Format: email
-       * @example compras@gasdellitoral.com.ar
-       */
-      email?: string | null;
-      /** @example Ruta 11 km 1005, Resistencia */
-      address?: string | null;
-      /**
-       * @description Plazo de pago en días (0 = contado)
-       * @example 30
-       */
-      paymentTermsDays?: number | null;
-      /** @description false lo deja fuera de las listas de operación */
-      isActive?: boolean;
-    };
-    PurchaseOrderItemInputDto: {
-      /**
-       * Format: uuid
-       * @description Tipo de garrafa
-       */
-      gasCylinderId: string;
-      /**
-       * @description Llenas que se piden
-       * @example 40
-       */
-      quantity: number;
-      /**
-       * @description Costo por garrafa llena (hasta 2 decimales)
-       * @example 5200.5
-       */
-      unitCost: number;
-      /**
-       * @description Vacíos que se entregan a la planta a cambio
-       * @default 0
-       * @example 40
-       */
-      emptiesToExchange: number;
-    };
-    CreatePurchaseOrderDto: {
-      /** Format: uuid */
-      supplierId: string;
-      /**
-       * Format: uuid
-       * @description Depósito donde se recibe; si falta, el predeterminado
-       */
-      destinationWarehouseId?: string;
-      /**
-       * Format: date
-       * @example 2026-10-20
-       */
-      expectedDate?: string | null;
-      /** @example Entrega en horario de la mañana */
-      notes?: string | null;
-      items: components['schemas']['PurchaseOrderItemInputDto'][];
-    };
-    PurchaseOrderItemResponseDto: {
-      /** Format: uuid */
-      itemId: string;
-      /** Format: uuid */
-      gasCylinderId: string;
-      /** @example 10kg */
-      gasCylinderType: string;
-      /** @example 40 */
-      quantity: number;
-      /** @example 5200.5 */
-      unitCost: number;
-      /** @example 208020 */
-      subtotal: number;
-      /** @example 40 */
-      emptiesToExchange: number;
-      /** @example 25 */
-      receivedQuantity: number;
-      /** @example 15 */
-      pendingQuantity: number;
-    };
-    PurchaseOrderResponseDto: {
-      /** Format: uuid */
-      purchaseOrderId: string;
-      /** @example 7 */
-      number: number;
-      /** Format: uuid */
-      supplierId: string;
-      /** @example Gas del Litoral S.A. */
-      supplierName: string;
-      /** Format: uuid */
-      destinationWarehouseId: string;
-      /** @example Depósito central */
-      destinationWarehouseName: string;
-      /** @enum {string} */
-      status: 'draft' | 'sent' | 'partially_received' | 'received' | 'closed_short' | 'cancelled';
-      /** Format: date-time */
-      issuedAt: string | null;
-      /** @example 2026-10-20 */
-      expectedDate: string | null;
-      /** @example 208020 */
-      totalAmount: number;
-      cancelReason: string | null;
-      /** @description Motivo del cierre con faltante (`closed_short`) */
-      closeReason: string | null;
-      notes: string | null;
-      /** @example 40 */
-      orderedQuantity: number;
-      /** @example 25 */
-      receivedQuantity: number;
-      /** @example 15 */
-      pendingQuantity: number;
-      /** Format: date-time */
-      createdAt: string;
-      /** Format: date-time */
-      updatedAt: string;
-      items: components['schemas']['PurchaseOrderItemResponseDto'][];
-      /** @description Recepciones de esta orden (las anuladas incluidas) */
-      receipts: components['schemas']['PurchaseReceiptSummaryDto'][];
-    };
-    PurchaseOrderSummaryDto: {
-      /** Format: uuid */
-      purchaseOrderId: string;
-      /** @example 7 */
-      number: number;
-      /** Format: uuid */
-      supplierId: string;
-      /** @example Gas del Litoral S.A. */
-      supplierName: string;
-      /** Format: uuid */
-      destinationWarehouseId: string;
-      /** @example Depósito central */
-      destinationWarehouseName: string;
-      /** @enum {string} */
-      status: 'draft' | 'sent' | 'partially_received' | 'received' | 'closed_short' | 'cancelled';
-      /** Format: date-time */
-      issuedAt: string | null;
-      /** @example 2026-10-20 */
-      expectedDate: string | null;
-      /** @example 208020 */
-      totalAmount: number;
-      cancelReason: string | null;
-      /** @description Motivo del cierre con faltante (`closed_short`) */
-      closeReason: string | null;
-      notes: string | null;
-      /** @example 40 */
-      orderedQuantity: number;
-      /** @example 25 */
-      receivedQuantity: number;
-      /** @example 15 */
-      pendingQuantity: number;
-      /** Format: date-time */
-      createdAt: string;
-      /** Format: date-time */
-      updatedAt: string;
-    };
-    PurchaseOrderPageDto: {
-      data: components['schemas']['PurchaseOrderSummaryDto'][];
-      /** @example 12 */
-      total: number;
-    };
-    PendingItemDto: {
-      /** Format: uuid */
-      gasCylinderId: string;
-      /** @example 10kg */
-      gasCylinderType: string;
-      /** @example 40 */
-      ordered: number;
-      /** @example 25 */
-      received: number;
-      /** @example 15 */
-      pending: number;
-      /**
-       * @description Vacíos que se canjean por el pedido
-       * @example 40
-       */
-      emptiesToExchange: number;
-    };
-    PurchaseOrderPendingDto: {
-      /** Format: uuid */
-      purchaseOrderId: string;
-      /** @example 7 */
-      number: number;
-      /** @enum {string} */
-      status: 'draft' | 'sent' | 'partially_received' | 'received' | 'closed_short' | 'cancelled';
-      items: components['schemas']['PendingItemDto'][];
-      /** @example 15 */
-      totalPending: number;
-    };
-    UpdatePurchaseOrderDto: {
-      /** Format: uuid */
-      supplierId?: string;
-      /**
-       * Format: uuid
-       * @description Depósito donde se recibe; si falta, el predeterminado
-       */
-      destinationWarehouseId?: string;
-      /**
-       * Format: date
-       * @example 2026-10-20
-       */
-      expectedDate?: string | null;
-      /** @example Entrega en horario de la mañana */
-      notes?: string | null;
-      items?: components['schemas']['PurchaseOrderItemInputDto'][];
-    };
-    CancelPurchaseOrderDto: {
-      /** @example El proveedor no tiene stock este mes */
-      reason: string;
-    };
-    CloseShortPurchaseOrderDto: {
-      /** @example La planta no repone el resto este mes */
-      reason: string;
-    };
-    PurchaseReceiptItemInputDto: {
-      /**
-       * Format: uuid
-       * @description Tipo de garrafa
-       */
-      gasCylinderId: string;
-      /**
-       * @description Llenas que llegaron
-       * @example 25
-       */
-      quantityFull: number;
-      /**
-       * @description Vacías que se llevó la planta; salen del depósito y no pueden dejarlo en negativo
-       * @default 0
-       * @example 25
-       */
-      quantityEmptyOut: number;
-      /**
-       * @description Costo por llena del remito. Con orden de compra, si falta se usa el de la orden; sin orden es obligatorio.
-       * @example 5200.5
-       */
-      unitCost?: number;
-    };
-    CreatePurchaseReceiptDto: {
-      /**
-       * Format: uuid
-       * @description Orden de compra que se recibe; sin ella es una compra directa
-       */
-      purchaseOrderId?: string;
-      /**
-       * Format: uuid
-       * @description Obligatorio sin orden; con orden tiene que ser el de la orden
-       */
-      supplierId?: string;
-      /**
-       * Format: uuid
-       * @description Depósito destino. Con orden: el de la orden; sin orden: el predeterminado
-       */
-      warehouseId?: string;
-      /**
-       * @example delivery_note
-       * @enum {string}
-       */
-      supplierDocumentType: 'delivery_note' | 'invoice';
-      /**
-       * @description Número del remito o la factura del proveedor; único por proveedor
-       * @example 0001-00004567
-       */
-      supplierDocumentNumber: string;
-      /**
-       * @description Cuándo llegó (default: ahora). No puede ser futuro.
-       * @example 2026-10-12T14:30:00-03:00
-       */
-      receivedAt?: string;
-      /** @example Llegó en el camión de las 14 */
-      notes?: string | null;
-      items: components['schemas']['PurchaseReceiptItemInputDto'][];
-    };
-    PurchaseReceiptItemResponseDto: {
-      /** Format: uuid */
-      itemId: string;
-      /** Format: uuid */
-      gasCylinderId: string;
-      /** @example 10kg */
-      gasCylinderType: string;
-      /** @example 25 */
-      quantityFull: number;
-      /** @example 25 */
-      quantityEmptyOut: number;
-      /** @example 5200.5 */
-      unitCost: number;
-      /** @example 130012.5 */
-      subtotal: number;
-    };
-    PurchaseReceiptResponseDto: {
-      /** Format: uuid */
-      receiptId: string;
-      /**
-       * @description Número interno correlativo
-       * @example 3
-       */
-      number: number;
-      /** Format: uuid */
-      supplierId: string;
-      /** @example Gas del Litoral S.A. */
-      supplierName: string;
-      /** Format: uuid */
-      purchaseOrderId: string | null;
-      /** @example 7 */
-      purchaseOrderNumber: number | null;
-      /** Format: uuid */
-      warehouseId: string;
-      /** @example Depósito central */
-      warehouseName: string;
-      /** @enum {string} */
-      supplierDocumentType: 'delivery_note' | 'invoice';
-      /** @example 0001-00004567 */
-      supplierDocumentNumber: string;
-      /** Format: date-time */
-      receivedAt: string;
-      /** @example 130012.5 */
-      totalAmount: number;
-      /** @enum {string} */
-      paymentStatus: 'unpaid' | 'paid';
-      /** @enum {string} */
-      status: 'confirmed' | 'voided';
-      items: components['schemas']['PurchaseReceiptItemResponseDto'][];
-      notes: string | null;
-      voidReason: string | null;
-      /** Format: date-time */
-      voidedAt: string | null;
-      /** Format: uuid */
-      receivedByUserId: string;
-      /**
-       * Format: uuid
-       * @description Lote del libro de movimientos (GET /stock/movements?batchId=)
-       */
-      batchId: string;
-      /** Format: uuid */
-      voidBatchId: string | null;
-      /**
-       * Format: uuid
-       * @description Movimiento de caja del pago; lo completa el módulo de caja (todavía no existe)
-       */
-      cashMovementId: string | null;
-      /** Format: date-time */
-      createdAt: string;
-    };
-    PurchaseReceiptPageDto: {
-      data: components['schemas']['PurchaseReceiptSummaryDto'][];
-      /** @example 12 */
-      total: number;
-    };
-    AverageCostDto: {
-      /** Format: uuid */
-      gasCylinderId: string;
-      /** @example 10kg */
-      gasCylinderType: string;
-      /**
-       * @description Costo promedio ponderado; null si nunca se compró
-       * @example 5180.25
-       */
-      averageUnitCost: number | null;
-      /** @example 5200.5 */
-      lastUnitCost: number | null;
-      /** Format: date-time */
-      lastReceivedAt: string | null;
-      /**
-       * @description Llenas en depósitos y camiones
-       * @example 85
-       */
-      fullOnHand: number;
-    };
-    VoidPurchaseReceiptDto: {
-      /** @example Remito cargado dos veces */
-      reason: string;
-    };
-    UpdatePaymentStatusDto: {
-      /**
-       * @example paid
-       * @enum {string}
-       */
-      paymentStatus: 'unpaid' | 'paid';
-    };
     CreateFuelLoadDto: {
       /**
        * Format: uuid
@@ -9656,6 +10369,713 @@ export interface components {
       kmSource: 'usage_log' | 'odometer' | 'none';
       /** @description `null` si no hubo km */
       costPerKm: number | null;
+    };
+    AsientoDeAuditoriaDto: {
+      /** Format: uuid */
+      auditId: string;
+      /** Format: uuid */
+      distributorId: string | null;
+      /** Format: uuid */
+      actorUserId: string | null;
+      /** @example admin */
+      actorRole: string | null;
+      /** @example PATCH */
+      httpMethod: string;
+      /** @example orders */
+      resource: string;
+      resourceId: string | null;
+      /** @example /api/orders/:id/status */
+      path: string;
+      /** @example panel-app */
+      clientSource: string | null;
+      ip: string | null;
+      /** @enum {string} */
+      result: 'success' | 'failure';
+      /** @example 200 */
+      statusCode: number;
+      /** @description El cuerpo de la operación, sin credenciales */
+      changes: {
+        [key: string]: unknown;
+      } | null;
+      errorMessage: string | null;
+      /** Format: date-time */
+      createdAt: string;
+    };
+    RegistroDeAuditoriaDto: {
+      items: components['schemas']['AsientoDeAuditoriaDto'][];
+      total: number;
+    };
+    AuditActionTypeDto: {
+      /**
+       * @description idTipoAuditoria
+       * @example 2
+       */
+      id: number;
+      /**
+       * @description nombre
+       * @example Modificación
+       */
+      name: string;
+    };
+    AuditUserDto: {
+      /** Format: uuid */
+      userId: string;
+      fullName: string | null;
+      email: string | null;
+      /** @description El usuario fue dado de baja después */
+      deleted: boolean;
+    };
+    AuditDetailDto: {
+      /**
+       * Format: uuid
+       * @description idDetalleAuditoria
+       */
+      auditDetailId: string;
+      /**
+       * @description campo
+       * @example status
+       */
+      field: string;
+      /** @description valorAnterior (null en una alta). Secretos: [oculto] */
+      oldValue: string | null;
+      /** @description valorNuevo. Secretos: [oculto] */
+      newValue: string | null;
+    };
+    AuditEntryDto: {
+      /**
+       * Format: uuid
+       * @description idAuditoria
+       */
+      auditId: string;
+      /** @description idTipoAuditoria con su nombre */
+      actionType: components['schemas']['AuditActionTypeDto'];
+      /**
+       * Format: uuid
+       * @description idUsuario; null si lo hizo el sistema (cron, seed)
+       */
+      userId: string | null;
+      /** @description Datos del usuario (aunque esté dado de baja, con `deleted`); null si lo hizo el sistema */
+      user: components['schemas']['AuditUserDto'] | null;
+      /** Format: uuid */
+      distributorId: string | null;
+      /**
+       * @description entidadAfectada
+       * @example Order
+       */
+      entity: string;
+      /** @description idRegistro */
+      recordId: string;
+      /** @description ipUsuario */
+      ip: string | null;
+      /**
+       * Format: date-time
+       * @description fechaHora
+       */
+      dateTime: string;
+      details: components['schemas']['AuditDetailDto'][];
+    };
+    AuditEntriesPageDto: {
+      data: components['schemas']['AuditEntryDto'][];
+      /** @description Total que cumple el filtro, sin paginar */
+      total: number;
+    };
+    RegisterAttendanceDto: {
+      /**
+       * Format: date-time
+       * @example 2026-03-02T11:00:00.000Z
+       */
+      checkInAt: string;
+      /**
+       * Format: date-time
+       * @description Si la jornada ya terminó. Sin egreso queda abierta.
+       * @example 2026-03-02T19:30:00.000Z
+       */
+      checkOutAt?: string;
+    };
+    AttendanceResponseDto: {
+      /** Format: uuid */
+      attendanceId: string;
+      /** Format: uuid */
+      employeeId: string;
+      /** @example Ana Pérez */
+      employeeName: string;
+      /** @example 0042 */
+      employeeFileNumber: string;
+      /**
+       * Format: date
+       * @example 2026-03-02
+       */
+      workDate: string;
+      /** Format: date-time */
+      checkInAt: string;
+      /** Format: date-time */
+      checkOutAt: string | null;
+      /** @description Jornada sin cerrar */
+      isOpen: boolean;
+      /** @description Minutos trabajados; null mientras está abierta */
+      durationMinutes: number | null;
+      /** @enum {string} */
+      source: 'panel' | 'driver_app';
+      /** Format: uuid */
+      recordedByUserId: string | null;
+      notes: string | null;
+    };
+    AttendancePageDto: {
+      data: components['schemas']['AttendanceResponseDto'][];
+      total: number;
+      /** @description Empleados presentes hoy de la distribuidora: jornada abierta del día de hoy (no depende de los filtros) */
+      presentToday: number;
+      /** @description Jornadas de días anteriores que quedaron sin cerrar y esperan su corrección (no depende de los filtros) */
+      staleOpen: number;
+    };
+    CorrectAttendanceDto: {
+      /** Format: date-time */
+      checkInAt?: string;
+      /** Format: date-time */
+      checkOutAt?: string;
+      /** @example Olvidó marcar la salida */
+      notes: string;
+    };
+    ActivePerPositionDto: {
+      /** Format: uuid */
+      positionId: string;
+      /** @example Chofer */
+      name: string;
+      /** @enum {string} */
+      category: 'driver' | 'helper' | 'warehouse' | 'administration' | 'sales' | 'management' | 'other';
+      /** @example 6 */
+      count: number;
+    };
+    DocumentsByStatusDto: {
+      /** @description Vigentes: falta más que la anticipación del plan */
+      current: number;
+      /** @description Por vencer: dentro de la ventana de aviso */
+      dueSoon: number;
+      /** @description Vencidas */
+      expired: number;
+    };
+    PersonnelDashboardDto: {
+      /**
+       * Format: date
+       * @description El día de hoy en Argentina
+       * @example 2026-10-17
+       */
+      today: string;
+      /** @description Total de empleados activos */
+      totalActive: number;
+      activeByPosition: components['schemas']['ActivePerPositionDto'][];
+      /** @description Empleados con una jornada abierta */
+      presentToday: number;
+      /** @description Empleados con una licencia aprobada que cubre el día de hoy */
+      onLeaveToday: number;
+      documents: components['schemas']['DocumentsByStatusDto'];
+    };
+    SupplierResponseDto: {
+      /** Format: uuid */
+      supplierId: string;
+      /** @example Gas del Litoral S.A. */
+      businessName: string;
+      /** @example 30715123456 */
+      cuit: string;
+      /** @enum {string} */
+      kind: 'filling_plant' | 'other';
+      contactName: string | null;
+      phone: string | null;
+      email: string | null;
+      address: string | null;
+      /** @example 30 */
+      paymentTermsDays: number | null;
+      isActive: boolean;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    SupplierPageDto: {
+      data: components['schemas']['SupplierResponseDto'][];
+      /** @example 12 */
+      total: number;
+    };
+    CreateSupplierDto: {
+      /** @example Gas del Litoral S.A. */
+      businessName: string;
+      /**
+       * @description CUIT de 11 dígitos (se aceptan guiones). Único entre los proveedores vigentes de la distribuidora.
+       * @example 30715123456
+       */
+      cuit: string;
+      /**
+       * @description `filling_plant` es la planta fraccionadora que llena y canjea envases
+       * @example filling_plant
+       * @enum {string}
+       */
+      kind: 'filling_plant' | 'other';
+      /** @example Marta Gómez */
+      contactName?: string | null;
+      /** @example +5493624123456 */
+      phone?: string | null;
+      /**
+       * Format: email
+       * @example compras@gasdellitoral.com.ar
+       */
+      email?: string | null;
+      /** @example Ruta 11 km 1005, Resistencia */
+      address?: string | null;
+      /**
+       * @description Plazo de pago en días (0 = contado)
+       * @example 30
+       */
+      paymentTermsDays?: number | null;
+    };
+    PurchaseReceiptSummaryDto: {
+      /** Format: uuid */
+      receiptId: string;
+      /**
+       * @description Número interno correlativo
+       * @example 3
+       */
+      number: number;
+      /** Format: uuid */
+      supplierId: string;
+      /** @example Gas del Litoral S.A. */
+      supplierName: string;
+      /** Format: uuid */
+      purchaseOrderId: string | null;
+      /** @example 7 */
+      purchaseOrderNumber: number | null;
+      /** Format: uuid */
+      warehouseId: string;
+      /** @example Depósito central */
+      warehouseName: string;
+      /** @enum {string} */
+      supplierDocumentType: 'delivery_note' | 'invoice';
+      /** @example 0001-00004567 */
+      supplierDocumentNumber: string;
+      /** Format: date-time */
+      receivedAt: string;
+      /** @example 130012.5 */
+      totalAmount: number;
+      /** @enum {string} */
+      paymentStatus: 'unpaid' | 'paid';
+      /** @enum {string} */
+      status: 'confirmed' | 'voided';
+    };
+    SupplierHistoryDto: {
+      /** Format: uuid */
+      supplierId: string;
+      /** @example Gas del Litoral S.A. */
+      supplierName: string;
+      /**
+       * @description Recepciones confirmadas del período
+       * @example 4
+       */
+      receiptsCount: number;
+      /**
+       * @description Σ de las recepciones confirmadas del período
+       * @example 520050
+       */
+      totalAmount: number;
+      /**
+       * @description Llenas recibidas (confirmadas) del período
+       * @example 100
+       */
+      fullReceived: number;
+      data: components['schemas']['PurchaseReceiptSummaryDto'][];
+      /**
+       * @description Total de recepciones (con las anuladas) para paginar
+       * @example 5
+       */
+      total: number;
+    };
+    UpdateSupplierDto: {
+      /** @example Gas del Litoral S.A. */
+      businessName?: string;
+      /**
+       * @description CUIT de 11 dígitos (se aceptan guiones). Único entre los proveedores vigentes de la distribuidora.
+       * @example 30715123456
+       */
+      cuit?: string;
+      /**
+       * @description `filling_plant` es la planta fraccionadora que llena y canjea envases
+       * @example filling_plant
+       * @enum {string}
+       */
+      kind?: 'filling_plant' | 'other';
+      /** @example Marta Gómez */
+      contactName?: string | null;
+      /** @example +5493624123456 */
+      phone?: string | null;
+      /**
+       * Format: email
+       * @example compras@gasdellitoral.com.ar
+       */
+      email?: string | null;
+      /** @example Ruta 11 km 1005, Resistencia */
+      address?: string | null;
+      /**
+       * @description Plazo de pago en días (0 = contado)
+       * @example 30
+       */
+      paymentTermsDays?: number | null;
+      /** @description false lo deja fuera de las listas de operación */
+      isActive?: boolean;
+    };
+    PurchaseOrderItemInputDto: {
+      /**
+       * Format: uuid
+       * @description Tipo de garrafa
+       */
+      gasCylinderId: string;
+      /**
+       * @description Llenas que se piden
+       * @example 40
+       */
+      quantity: number;
+      /**
+       * @description Costo por garrafa llena (hasta 2 decimales)
+       * @example 5200.5
+       */
+      unitCost: number;
+      /**
+       * @description Vacíos que se entregan a la planta a cambio
+       * @default 0
+       * @example 40
+       */
+      emptiesToExchange: number;
+    };
+    CreatePurchaseOrderDto: {
+      /** Format: uuid */
+      supplierId: string;
+      /**
+       * Format: uuid
+       * @description Depósito donde se recibe; si falta, el predeterminado
+       */
+      destinationWarehouseId?: string;
+      /**
+       * Format: date
+       * @example 2026-10-20
+       */
+      expectedDate?: string | null;
+      /** @example Entrega en horario de la mañana */
+      notes?: string | null;
+      items: components['schemas']['PurchaseOrderItemInputDto'][];
+    };
+    PurchaseOrderItemResponseDto: {
+      /** Format: uuid */
+      itemId: string;
+      /** Format: uuid */
+      gasCylinderId: string;
+      /** @example 10kg */
+      gasCylinderType: string;
+      /** @example 40 */
+      quantity: number;
+      /** @example 5200.5 */
+      unitCost: number;
+      /** @example 208020 */
+      subtotal: number;
+      /** @example 40 */
+      emptiesToExchange: number;
+      /** @example 25 */
+      receivedQuantity: number;
+      /** @example 15 */
+      pendingQuantity: number;
+    };
+    PurchaseOrderResponseDto: {
+      /** Format: uuid */
+      purchaseOrderId: string;
+      /** @example 7 */
+      number: number;
+      /** Format: uuid */
+      supplierId: string;
+      /** @example Gas del Litoral S.A. */
+      supplierName: string;
+      /** Format: uuid */
+      destinationWarehouseId: string;
+      /** @example Depósito central */
+      destinationWarehouseName: string;
+      /** @enum {string} */
+      status: 'draft' | 'sent' | 'partially_received' | 'received' | 'closed_short' | 'cancelled';
+      /** Format: date-time */
+      issuedAt: string | null;
+      /** @example 2026-10-20 */
+      expectedDate: string | null;
+      /** @example 208020 */
+      totalAmount: number;
+      cancelReason: string | null;
+      /** @description Motivo del cierre con faltante (`closed_short`) */
+      closeReason: string | null;
+      notes: string | null;
+      /** @example 40 */
+      orderedQuantity: number;
+      /** @example 25 */
+      receivedQuantity: number;
+      /** @example 15 */
+      pendingQuantity: number;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+      items: components['schemas']['PurchaseOrderItemResponseDto'][];
+      /** @description Recepciones de esta orden (las anuladas incluidas) */
+      receipts: components['schemas']['PurchaseReceiptSummaryDto'][];
+    };
+    PurchaseOrderSummaryDto: {
+      /** Format: uuid */
+      purchaseOrderId: string;
+      /** @example 7 */
+      number: number;
+      /** Format: uuid */
+      supplierId: string;
+      /** @example Gas del Litoral S.A. */
+      supplierName: string;
+      /** Format: uuid */
+      destinationWarehouseId: string;
+      /** @example Depósito central */
+      destinationWarehouseName: string;
+      /** @enum {string} */
+      status: 'draft' | 'sent' | 'partially_received' | 'received' | 'closed_short' | 'cancelled';
+      /** Format: date-time */
+      issuedAt: string | null;
+      /** @example 2026-10-20 */
+      expectedDate: string | null;
+      /** @example 208020 */
+      totalAmount: number;
+      cancelReason: string | null;
+      /** @description Motivo del cierre con faltante (`closed_short`) */
+      closeReason: string | null;
+      notes: string | null;
+      /** @example 40 */
+      orderedQuantity: number;
+      /** @example 25 */
+      receivedQuantity: number;
+      /** @example 15 */
+      pendingQuantity: number;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    PurchaseOrderPageDto: {
+      data: components['schemas']['PurchaseOrderSummaryDto'][];
+      /** @example 12 */
+      total: number;
+    };
+    PendingItemDto: {
+      /** Format: uuid */
+      gasCylinderId: string;
+      /** @example 10kg */
+      gasCylinderType: string;
+      /** @example 40 */
+      ordered: number;
+      /** @example 25 */
+      received: number;
+      /** @example 15 */
+      pending: number;
+      /**
+       * @description Vacíos que se canjean por el pedido
+       * @example 40
+       */
+      emptiesToExchange: number;
+    };
+    PurchaseOrderPendingDto: {
+      /** Format: uuid */
+      purchaseOrderId: string;
+      /** @example 7 */
+      number: number;
+      /** @enum {string} */
+      status: 'draft' | 'sent' | 'partially_received' | 'received' | 'closed_short' | 'cancelled';
+      items: components['schemas']['PendingItemDto'][];
+      /** @example 15 */
+      totalPending: number;
+    };
+    UpdatePurchaseOrderDto: {
+      /** Format: uuid */
+      supplierId?: string;
+      /**
+       * Format: uuid
+       * @description Depósito donde se recibe; si falta, el predeterminado
+       */
+      destinationWarehouseId?: string;
+      /**
+       * Format: date
+       * @example 2026-10-20
+       */
+      expectedDate?: string | null;
+      /** @example Entrega en horario de la mañana */
+      notes?: string | null;
+      items?: components['schemas']['PurchaseOrderItemInputDto'][];
+    };
+    CancelPurchaseOrderDto: {
+      /** @example El proveedor no tiene stock este mes */
+      reason: string;
+    };
+    CloseShortPurchaseOrderDto: {
+      /** @example La planta no repone el resto este mes */
+      reason: string;
+    };
+    PurchaseReceiptItemInputDto: {
+      /**
+       * Format: uuid
+       * @description Tipo de garrafa
+       */
+      gasCylinderId: string;
+      /**
+       * @description Llenas que llegaron
+       * @example 25
+       */
+      quantityFull: number;
+      /**
+       * @description Vacías que se llevó la planta; salen del depósito y no pueden dejarlo en negativo
+       * @default 0
+       * @example 25
+       */
+      quantityEmptyOut: number;
+      /**
+       * @description Costo por llena del remito. Con orden de compra, si falta se usa el de la orden; sin orden es obligatorio.
+       * @example 5200.5
+       */
+      unitCost?: number;
+    };
+    CreatePurchaseReceiptDto: {
+      /**
+       * Format: uuid
+       * @description Orden de compra que se recibe; sin ella es una compra directa
+       */
+      purchaseOrderId?: string;
+      /**
+       * Format: uuid
+       * @description Obligatorio sin orden; con orden tiene que ser el de la orden
+       */
+      supplierId?: string;
+      /**
+       * Format: uuid
+       * @description Depósito destino. Con orden: el de la orden; sin orden: el predeterminado
+       */
+      warehouseId?: string;
+      /**
+       * @example delivery_note
+       * @enum {string}
+       */
+      supplierDocumentType: 'delivery_note' | 'invoice';
+      /**
+       * @description Número del remito o la factura del proveedor; único por proveedor
+       * @example 0001-00004567
+       */
+      supplierDocumentNumber: string;
+      /**
+       * @description Cuándo llegó (default: ahora). No puede ser futuro.
+       * @example 2026-10-12T14:30:00-03:00
+       */
+      receivedAt?: string;
+      /** @example Llegó en el camión de las 14 */
+      notes?: string | null;
+      items: components['schemas']['PurchaseReceiptItemInputDto'][];
+    };
+    PurchaseReceiptItemResponseDto: {
+      /** Format: uuid */
+      itemId: string;
+      /** Format: uuid */
+      gasCylinderId: string;
+      /** @example 10kg */
+      gasCylinderType: string;
+      /** @example 25 */
+      quantityFull: number;
+      /** @example 25 */
+      quantityEmptyOut: number;
+      /** @example 5200.5 */
+      unitCost: number;
+      /** @example 130012.5 */
+      subtotal: number;
+    };
+    PurchaseReceiptResponseDto: {
+      /** Format: uuid */
+      receiptId: string;
+      /**
+       * @description Número interno correlativo
+       * @example 3
+       */
+      number: number;
+      /** Format: uuid */
+      supplierId: string;
+      /** @example Gas del Litoral S.A. */
+      supplierName: string;
+      /** Format: uuid */
+      purchaseOrderId: string | null;
+      /** @example 7 */
+      purchaseOrderNumber: number | null;
+      /** Format: uuid */
+      warehouseId: string;
+      /** @example Depósito central */
+      warehouseName: string;
+      /** @enum {string} */
+      supplierDocumentType: 'delivery_note' | 'invoice';
+      /** @example 0001-00004567 */
+      supplierDocumentNumber: string;
+      /** Format: date-time */
+      receivedAt: string;
+      /** @example 130012.5 */
+      totalAmount: number;
+      /** @enum {string} */
+      paymentStatus: 'unpaid' | 'paid';
+      /** @enum {string} */
+      status: 'confirmed' | 'voided';
+      items: components['schemas']['PurchaseReceiptItemResponseDto'][];
+      notes: string | null;
+      voidReason: string | null;
+      /** Format: date-time */
+      voidedAt: string | null;
+      /** Format: uuid */
+      receivedByUserId: string;
+      /**
+       * Format: uuid
+       * @description Lote del libro de movimientos (GET /stock/movements?batchId=)
+       */
+      batchId: string;
+      /** Format: uuid */
+      voidBatchId: string | null;
+      /**
+       * Format: uuid
+       * @description Movimiento de caja del pago; lo completa el módulo de caja (todavía no existe)
+       */
+      cashMovementId: string | null;
+      /** Format: date-time */
+      createdAt: string;
+    };
+    PurchaseReceiptPageDto: {
+      data: components['schemas']['PurchaseReceiptSummaryDto'][];
+      /** @example 12 */
+      total: number;
+    };
+    AverageCostDto: {
+      /** Format: uuid */
+      gasCylinderId: string;
+      /** @example 10kg */
+      gasCylinderType: string;
+      /**
+       * @description Costo promedio ponderado; null si nunca se compró
+       * @example 5180.25
+       */
+      averageUnitCost: number | null;
+      /** @example 5200.5 */
+      lastUnitCost: number | null;
+      /** Format: date-time */
+      lastReceivedAt: string | null;
+      /**
+       * @description Llenas en depósitos y camiones
+       * @example 85
+       */
+      fullOnHand: number;
+    };
+    VoidPurchaseReceiptDto: {
+      /** @example Remito cargado dos veces */
+      reason: string;
+    };
+    UpdatePaymentStatusDto: {
+      /**
+       * @example paid
+       * @enum {string}
+       */
+      paymentStatus: 'unpaid' | 'paid';
     };
   };
   responses: never;
@@ -12546,6 +13966,234 @@ export interface operations {
       };
     };
   };
+  ModuleConfigController_getProcesses: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProcessConfigResponseDto'][];
+        };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") o cuerpo fuera de los límites (detalle por campo) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ModuleConfigController_getProcess: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        process: 'fleet_planner' | 'repurchase' | 'route_batching' | 'cylinder_recovery';
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProcessConfigResponseDto'];
+        };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") o cuerpo fuera de los límites (detalle por campo) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El proceso no es uno de los cinco configurables */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ModuleConfigController_putProcess: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        process: 'fleet_planner' | 'repurchase' | 'route_batching' | 'cylinder_recovery';
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          [key: string]: number;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProcessConfigResponseDto'];
+        };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") o cuerpo fuera de los límites (detalle por campo) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El proceso no es uno de los cinco configurables */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ExpressConfigController_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ExpressConfigResponseDto'];
+        };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)"), cuerpo fuera de los límites (detalle por campo) o horario que no empieza antes de terminar */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ExpressConfigController_put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ExpressConfigDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ExpressConfigResponseDto'];
+        };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)"), cuerpo fuera de los límites (detalle por campo) o horario que no empieza antes de terminar */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   JobPositionController_findAll: {
     parameters: {
       query?: never;
@@ -13769,9 +15417,9 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
+        ownerType: components['schemas']['AttachmentOwnerType'];
         /** @description UUID del dueño */
         ownerId: string;
-        ownerType: components['schemas']['AttachmentOwnerType'];
       };
       cookie?: never;
     };
@@ -13820,9 +15468,9 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
+        ownerType: components['schemas']['AttachmentOwnerType'];
         /** @description UUID del dueño */
         ownerId: string;
-        ownerType: components['schemas']['AttachmentOwnerType'];
       };
       cookie?: never;
     };
@@ -13993,6 +15641,599 @@ export interface operations {
       };
     };
   };
+  ConsumptionController_obtener: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ConsumptionResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El usuario no tiene ficha de cliente */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ConsumptionController_actualizar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateConsumptionDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ConsumptionResponseDto'];
+        };
+      };
+      /** @description Valor fuera de rango sin confirmar, tipo de garrafa inexistente o dado de baja, o falta el tipo de garrafa habitual */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El usuario no tiene ficha de cliente */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  GasCylinderController_findAll: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+        page?: number;
+        /** @description Texto a buscar */
+        term?: string;
+        distributor?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CatalogoDto'];
+        };
+      };
+    };
+  };
+  GasCylinderController_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateGasCylinderDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GasCylinderResponseDto'];
+        };
+      };
+      /** @description Datos inválidos o tipo repetido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  GasCylinderController_findInactive: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+        page?: number;
+        /** @description Texto a buscar */
+        term?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CatalogoDto'];
+        };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  GasCylinderController_findOne: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Gas cylinder UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GasCylinderResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Gas cylinder not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  GasCylinderController_remove: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Gas cylinder UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BajaDeProductoDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  GasCylinderController_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Gas cylinder UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateGasCylinderDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GasCylinderResponseDto'];
+        };
+      };
+      /** @description Datos inválidos (p. ej.: weight debe ser mayor que 0; price debe ser mayor que 0) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  GasCylinderController_findByType: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Gas cylinder type (10kg, 15kg, etc) */
+        type: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GasCylinderResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No hay un producto activo de ese tipo */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  GasCylinderController_getAvailableCylinders: {
+    parameters: {
+      query?: {
+        distributor?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DisponiblesDto'];
+        };
+      };
+    };
+  };
+  GasCylinderController_reactivate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Gas cylinder UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GasCylinderResponseDto'];
+        };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora (no se distingue) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  GasCylinderController_getPhoto: {
+    parameters: {
+      query?: {
+        /** @description `url` devuelve `{ url, expiresAt, requiresAuth }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada de S3). */
+        modo?: components['schemas']['DownloadMode'];
+      };
+      header?: never;
+      path: {
+        /** @description Gas cylinder UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PhotoLinkResponseDto'];
+        };
+      };
+      /** @description No existe o es de otra distribuidora; sin `modo`, también si no tiene foto */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  GasCylinderController_uploadPhoto: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Gas cylinder UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'multipart/form-data': {
+          /** Format: binary */
+          file: string;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GasCylinderResponseDto'];
+        };
+      };
+      /** @description Falta la foto o está vacía */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La foto supera los 5 MB */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No es JPG, PNG ni WEBP (o el contenido no coincide) */
+      415: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  GasCylinderController_removePhoto: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Gas cylinder UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GasCylinderResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   AuthController_checkToken: {
     parameters: {
       query?: never;
@@ -14086,6 +16327,174 @@ export interface operations {
       };
       /** @description Demasiados intentos fallidos */
       429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ExpressOrderController_options: {
+    parameters: {
+      query: {
+        /** @description Dirección de entrega elegida */
+        addressId: string;
+        /** @description Dueño de la dirección: sólo lo manda el administrador */
+        customerId?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DeliveryOptionsResponseDto'];
+        };
+      };
+      /** @description Admin sin `customerId` */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer, admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La dirección no existe o no es del cliente */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ExpressOrderController_preview: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ExpressPurchaseDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ExpressPreviewResponseDto'];
+        };
+      };
+      /** @description Sin compras previas y sin `gasCylinderId`, o garrafa de otra distribuidora */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El cliente no tiene una dirección predeterminada */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ExpressOrderController_buy: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ExpressPurchaseDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['OrderResponseDto'];
+        };
+      };
+      /** @description Sin garrafa habitual ni `gasCylinderId`, o sin stock */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El cliente no tiene una dirección predeterminada */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La modalidad express dejó de estar disponible (`code: EXPRESS_NOT_AVAILABLE`, con `reason`: disabled, no_location, out_of_coverage, out_of_hours o no_motorcycle_driver): la app ofrece el flujo con franja horaria */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
         headers: {
           [name: string]: unknown;
         };
@@ -15337,6 +17746,142 @@ export interface operations {
       };
     };
   };
+  OrderController_changeAddress: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Order UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ChangeOrderAddressDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['OrderResponseDto'];
+        };
+      };
+      /** @description La dirección nueva es la actual, o queda fuera de la zona de cobertura («La dirección está fuera de la zona de cobertura de la distribuidora») */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Pedido ajeno o inexistente, o dirección que no es del cliente */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El pedido ya salió o fue entregado, no está pendiente/aceptado, o es de pago en línea y el recargo de la zona nueva es distinto */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  OrderController_setReceiver: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Order UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SetOrderReceiverDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['OrderResponseDto'];
+        };
+      };
+      /** @description Datos inválidos (p. ej.: formato de documento) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Pedido ajeno o inexistente */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El pedido ya fue entregado o está cancelado */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   OrderController_cancel: {
     parameters: {
       query?: never;
@@ -15540,17 +18085,13 @@ export interface operations {
       };
     };
   };
-  GasCylinderController_findAll: {
+  CartController_consultar: {
     parameters: {
-      query?: {
-        limit?: number;
-        offset?: number;
-        page?: number;
-        /** @description Texto a buscar */
-        term?: string;
-        distributor?: string;
+      query?: never;
+      header: {
+        /** @description Slug o id de la distribuidora del carrito */
+        'X-Distributor': string;
       };
-      header?: never;
       path?: never;
       cookie?: never;
     };
@@ -15561,21 +18102,74 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['CatalogoDto'];
+          'application/json': components['schemas']['CartResponseDto'];
         };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
     };
   };
-  GasCylinderController_create: {
+  CartController_vaciar: {
     parameters: {
       query?: never;
-      header?: never;
+      header: {
+        /** @description Slug o id de la distribuidora del carrito */
+        'X-Distributor': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CartResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CartController_agregar: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description Slug o id de la distribuidora del carrito */
+        'X-Distributor': string;
+      };
       path?: never;
       cookie?: never;
     };
     requestBody: {
       content: {
-        'application/json': components['schemas']['CreateGasCylinderDto'];
+        'application/json': components['schemas']['AddCartItemDto'];
       };
     };
     responses: {
@@ -15584,10 +18178,10 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['GasCylinderResponseDto'];
+          'application/json': components['schemas']['CartResponseDto'];
         };
       };
-      /** @description Datos inválidos o tipo repetido */
+      /** @description Cantidad inválida (no entera o no positiva) o que supera el máximo por ítem */
       400: {
         headers: {
           [name: string]: unknown;
@@ -15601,8 +18195,15 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description Requiere rol: customer */
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El tipo de garrafa no existe, está dado de baja o es de otra distribuidora */
+      404: {
         headers: {
           [name: string]: unknown;
         };
@@ -15610,13 +18211,15 @@ export interface operations {
       };
     };
   };
-  GasCylinderController_findOne: {
+  CartController_quitar: {
     parameters: {
       query?: never;
-      header?: never;
+      header: {
+        /** @description Slug o id de la distribuidora del carrito */
+        'X-Distributor': string;
+      };
       path: {
-        /** @description Gas cylinder UUID */
-        id: string;
+        itemId: string;
       };
       cookie?: never;
     };
@@ -15627,7 +18230,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['GasCylinderResponseDto'];
+          'application/json': components['schemas']['CartResponseDto'];
         };
       };
       /** @description Sin token o token inválido */
@@ -15637,50 +18240,14 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Gas cylinder not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  GasCylinderController_remove: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Gas cylinder UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['BajaDeProductoDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description Requiere rol: customer */
       403: {
         headers: {
           [name: string]: unknown;
         };
         content?: never;
       };
-      /** @description No existe o es de otra distribuidora */
+      /** @description El ítem no está en el carrito del cliente */
       404: {
         headers: {
           [name: string]: unknown;
@@ -15689,19 +18256,21 @@ export interface operations {
       };
     };
   };
-  GasCylinderController_update: {
+  CartController_cambiarCantidad: {
     parameters: {
       query?: never;
-      header?: never;
+      header: {
+        /** @description Slug o id de la distribuidora del carrito */
+        'X-Distributor': string;
+      };
       path: {
-        /** @description Gas cylinder UUID */
-        id: string;
+        itemId: string;
       };
       cookie?: never;
     };
     requestBody: {
       content: {
-        'application/json': components['schemas']['UpdateGasCylinderDto'];
+        'application/json': components['schemas']['UpdateCartItemDto'];
       };
     };
     responses: {
@@ -15710,10 +18279,10 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['GasCylinderResponseDto'];
+          'application/json': components['schemas']['CartResponseDto'];
         };
       };
-      /** @description Datos inválidos (p. ej.: weight debe ser mayor que 0; price debe ser mayor que 0) */
+      /** @description Cantidad cero, negativa o no entera: para dejarlo en cero hay que quitar el ítem */
       400: {
         headers: {
           [name: string]: unknown;
@@ -15727,217 +18296,14 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description Requiere rol: customer */
       403: {
         headers: {
           [name: string]: unknown;
         };
         content?: never;
       };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  GasCylinderController_findByType: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Gas cylinder type (10kg, 15kg, etc) */
-        type: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['GasCylinderResponseDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No hay un producto activo de ese tipo */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  GasCylinderController_getAvailableCylinders: {
-    parameters: {
-      query?: {
-        distributor?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['DisponiblesDto'];
-        };
-      };
-    };
-  };
-  GasCylinderController_getPhoto: {
-    parameters: {
-      query?: {
-        /** @description `url` devuelve `{ url, expiresAt, requiresAuth }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada de S3). */
-        modo?: components['schemas']['DownloadMode'];
-      };
-      header?: never;
-      path: {
-        /** @description Gas cylinder UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PhotoLinkResponseDto'];
-        };
-      };
-      /** @description No existe o es de otra distribuidora; sin `modo`, también si no tiene foto */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  GasCylinderController_uploadPhoto: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Gas cylinder UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'multipart/form-data': {
-          /** Format: binary */
-          file: string;
-        };
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['GasCylinderResponseDto'];
-        };
-      };
-      /** @description Falta la foto o está vacía */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La foto supera los 5 MB */
-      413: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No es JPG, PNG ni WEBP (o el contenido no coincide) */
-      415: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  GasCylinderController_removePhoto: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Gas cylinder UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['GasCylinderResponseDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
+      /** @description El ítem no está en el carrito del cliente */
       404: {
         headers: {
           [name: string]: unknown;
@@ -16879,6 +19245,94 @@ export interface operations {
       };
     };
   };
+  CylinderController_expiring: {
+    parameters: {
+      query?: {
+        /** @description Ventana en días: los que vencen de hoy a hoy + `days`. */
+        days?: number;
+        /** @description Tamaño de página de cada grupo. */
+        limit?: number;
+        offset?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ExpiringCylindersResponseDto'];
+        };
+      };
+      /** @description `days` o la paginación fuera de rango */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CylinderController_vigenciaBySerial: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        serial: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CylinderVigenciaResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Envase no encontrado */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   CylinderController_findOne: {
     parameters: {
       query?: never;
@@ -16975,6 +19429,110 @@ export interface operations {
         content?: never;
       };
       /** @description Serial repetido en la distribuidora, o envase dado de baja */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CylinderController_getVigencia: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Cylinder UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CylinderVigenciaResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Envase no encontrado */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CylinderController_registerInspection: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Cylinder UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RegisterInspectionDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CylinderVigenciaResponseDto'];
+        };
+      };
+      /** @description Fecha de revisión futura, vencimiento faltante o no posterior a la revisión */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Envase no encontrado */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El envase está dado de baja */
       409: {
         headers: {
           [name: string]: unknown;
@@ -17402,10 +19960,167 @@ export interface operations {
       };
     };
   };
+  RefundsController_listar: {
+    parameters: {
+      query?: {
+        /** @description Sólo las que están en este estado (`failed`: pendientes de reintento) */
+        status?: 'pending' | 'succeeded' | 'failed';
+        limit?: number;
+        offset?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RefundListResponseDto'];
+        };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RefundsController_delPedido: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RefundResponseDto'][];
+        };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El pedido no existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RefundsController_reintentar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RefundResponseDto'][];
+        };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El pedido no existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El pedido no está cancelado ni tiene pendiente la devolución del recargo express */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   FleetPlanController_findAll: {
     parameters: {
       query?: {
-        subject?: 'vehicle' | 'driver';
+        subject?: 'vehicle' | 'driver' | 'employee';
         /** @description Sin este filtro trae activos e inactivos */
         isActive?: boolean;
       };
@@ -17590,6 +20305,7 @@ export interface operations {
         term?: string;
         carId?: string;
         deliveryId?: string;
+        employeeId?: string;
         /** @description Sólo las tareas de este plan */
         planId?: string;
         status?: 'forecast' | 'scheduled' | 'in_progress' | 'done' | 'overdue' | 'cancelled';
@@ -18115,6 +20831,10 @@ export interface operations {
       query?: {
         /** @description Ventana en días: trae lo vencido y lo que vence dentro de esta cantidad de días */
         withinDays?: number;
+        /** @description `vehicle`: sólo vehículos y choferes (CU-139); `employee`: sólo personal (CU-187). Sin indicar, todo. */
+        subject?: 'vehicle' | 'employee';
+        /** @description Filtra el personal por la categoría de su puesto (CU-187) */
+        category?: 'driver' | 'helper' | 'warehouse' | 'administration' | 'sales' | 'management' | 'other';
       };
       header?: never;
       path?: never;
@@ -18519,6 +21239,106 @@ export interface operations {
       };
     };
   };
+  EmployeeDocumentsController_find: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Empleado UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['EmployeeDocumentsResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Empleado no encontrado */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CarReactivationController_reactivar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Car UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CarResponseDto'];
+        };
+      };
+      /** @description Hay documentación bloqueante vencida: el detalle dice cuál */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Vehículo no encontrado */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El vehículo no está fuera de servicio */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   EmailController_sendPasswordReset: {
     parameters: {
       query?: never;
@@ -18624,6 +21444,408 @@ export interface operations {
       };
       /** @description Requiere rol: super_admin */
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  LeaveController_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Empleado UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateLeaveDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['LeaveResponseDto'];
+        };
+      };
+      /** @description Datos inválidos o fin anterior al inicio */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Empleado no encontrado */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El empleado está egresado, o el período se superpone con otra licencia solicitada o aprobada */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  LeaveController_vacationBalance: {
+    parameters: {
+      query?: {
+        /** @description Por omisión, el año actual */
+        year?: number;
+      };
+      header?: never;
+      path: {
+        /** @description Empleado UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['VacationBalanceDto'];
+        };
+      };
+      /** @description Año inválido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Empleado no encontrado */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  LeaveController_findAll: {
+    parameters: {
+      query?: {
+        limit?: number;
+        page?: number;
+        status?: 'requested' | 'approved' | 'rejected' | 'cancelled';
+        type?:
+          | 'vacation'
+          | 'sick'
+          | 'work_accident'
+          | 'study'
+          | 'marriage'
+          | 'birth'
+          | 'bereavement'
+          | 'unpaid'
+          | 'suspension'
+          | 'unjustified_absence'
+          | 'other';
+        employeeId?: string;
+        from?: string | null;
+        to?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['LeavePageDto'];
+        };
+      };
+      /** @description Un filtro tiene un valor inválido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  LeaveController_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Licencia UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateLeaveDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['LeaveResponseDto'];
+        };
+      };
+      /** @description Fin anterior al inicio */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Licencia no encontrada */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No está solicitada, o el período se superpone con otra */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  LeaveController_approve: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Licencia UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['LeaveResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Licencia no encontrada */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No está solicitada */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  LeaveController_reject: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Licencia UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RejectLeaveDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['LeaveResponseDto'];
+        };
+      };
+      /** @description Falta el motivo */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Licencia no encontrada */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No está solicitada */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  LeaveController_cancel: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Licencia UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['LeaveResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Licencia no encontrada */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya estaba rechazada o cancelada, o ya terminó */
+      409: {
         headers: {
           [name: string]: unknown;
         };
@@ -22397,1435 +25619,6 @@ export interface operations {
       };
     };
   };
-  AuditController_consultar: {
-    parameters: {
-      query?: {
-        /** @description Quién hizo la operación */
-        actorUserId?: string;
-        /** @description Tipo de recurso */
-        resource?: string;
-        /** @description Un recurso puntual */
-        resourceId?: string;
-        result?: 'success' | 'failure';
-        desde?: string;
-        hasta?: string;
-        limit?: number;
-        offset?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['RegistroDeAuditoriaDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  DataAuditController_findAll: {
-    parameters: {
-      query?: {
-        /** @description entidadAfectada: nombre de la entidad de dominio */
-        entity?: string;
-        /** @description idRegistro: id del registro afectado */
-        recordId?: string;
-        /** @description Historial de un pedido: los asientos del Order, de sus renglones (OrderItem) y de sus pagos (Payment). Se combina con el resto de los filtros. */
-        orderId?: string;
-        /** @description idUsuario: quién hizo el cambio */
-        userId?: string;
-        /** @description idTipoAuditoria: 1 Alta, 2 Modificación, 3 Baja lógica, 4 Reactivación, 5 Baja física */
-        actionType?: number;
-        /** @description fechaHora desde (inclusive) */
-        from?: string;
-        /** @description fechaHora hasta (inclusive) */
-        to?: string;
-        page?: number;
-        limit?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['AuditEntriesPageDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  DataAuditController_findOne: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['AuditEntryDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe, o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  DataAuditController_findActionTypes: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['AuditActionTypeDto'][];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  SupplierController_findAll: {
-    parameters: {
-      query?: {
-        limit?: number;
-        page?: number;
-        /** @description Texto a buscar */
-        term?: string;
-        kind?: 'filling_plant' | 'other';
-        /** @description true también trae los proveedores inactivos (default: sólo los activos) */
-        includeInactive?: boolean;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['SupplierPageDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  SupplierController_create: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CreateSupplierDto'];
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['SupplierResponseDto'];
-        };
-      };
-      /** @description Datos inválidos o CUIT mal formado */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Ya hay un proveedor vigente con ese CUIT */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  SupplierController_findOne: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Proveedor UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['SupplierResponseDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  SupplierController_remove: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Proveedor UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['MessageResponseDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Tiene órdenes de compra abiertas */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  SupplierController_update: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Proveedor UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['UpdateSupplierDto'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['SupplierResponseDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description El CUIT ya lo tiene otro proveedor vigente */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  SupplierController_historial: {
-    parameters: {
-      query?: {
-        limit?: number;
-        page?: number;
-        from?: string | null;
-        to?: string | null;
-      };
-      header?: never;
-      path: {
-        /** @description Proveedor UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['SupplierHistoryDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  PurchaseOrderController_ordenes: {
-    parameters: {
-      query?: {
-        limit?: number;
-        page?: number;
-        status?: 'draft' | 'sent' | 'partially_received' | 'received' | 'closed_short' | 'cancelled';
-        supplierId?: string;
-        from?: string | null;
-        to?: string | null;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PurchaseOrderPageDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  PurchaseOrderController_create: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CreatePurchaseOrderDto'];
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PurchaseOrderResponseDto'];
-        };
-      };
-      /** @description Datos inválidos, proveedor inactivo o garrafa repetida */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Proveedor, depósito o garrafa inexistente */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  PurchaseOrderController_orden: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Orden de compra UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PurchaseOrderResponseDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  PurchaseOrderController_update: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Orden de compra UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['UpdatePurchaseOrderDto'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PurchaseOrderResponseDto'];
-        };
-      };
-      /** @description La orden ya no está en borrador, o datos inválidos */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  PurchaseOrderController_pendiente: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Orden de compra UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PurchaseOrderPendingDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  PurchaseOrderController_send: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Orden de compra UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PurchaseOrderResponseDto'];
-        };
-      };
-      /** @description La orden no está en borrador */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  PurchaseOrderController_cancel: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Orden de compra UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CancelPurchaseOrderDto'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PurchaseOrderResponseDto'];
-        };
-      };
-      /** @description Sin motivo, o la orden ya está cerrada */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La orden tiene recepciones confirmadas (aunque sean sólo de vacías) */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  PurchaseOrderController_closeShort: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Orden de compra UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CloseShortPurchaseOrderDto'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PurchaseOrderResponseDto'];
-        };
-      };
-      /** @description Sin motivo, o la orden no está parcialmente recibida */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  PurchaseReceiptController_recepciones: {
-    parameters: {
-      query?: {
-        limit?: number;
-        page?: number;
-        supplierId?: string;
-        purchaseOrderId?: string;
-        paymentStatus?: 'unpaid' | 'paid';
-        status?: 'confirmed' | 'voided';
-        from?: string | null;
-        to?: string | null;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PurchaseReceiptPageDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  PurchaseReceiptController_create: {
-    parameters: {
-      query?: never;
-      header: {
-        'idempotency-key': string;
-        /** @description UUID v4 de la operación. Obligatoria: sin ella responde 400 (un reintento duplicaría el movimiento). */
-        'Idempotency-Key': string;
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CreatePurchaseReceiptDto'];
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PurchaseReceiptResponseDto'];
-        };
-      };
-      /** @description Sin `Idempotency-Key`, orden no recibible, la recepción se pasa de lo pendiente, fecha anterior al conteo inicial del depósito, no alcanzan las vacías o faltan datos */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Orden, proveedor, depósito o garrafa inexistente */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Ya hay una recepción de ese proveedor con ese documento */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  PurchaseReceiptController_costos: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['AverageCostDto'][];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  PurchaseReceiptController_recepcion: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Recepción UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PurchaseReceiptResponseDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  PurchaseReceiptController_void: {
-    parameters: {
-      query?: never;
-      header: {
-        'idempotency-key': string;
-        /** @description UUID v4 de la operación. Obligatoria: sin ella responde 400 (un reintento duplicaría el movimiento). */
-        'Idempotency-Key': string;
-      };
-      path: {
-        /** @description Recepción UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['VoidPurchaseReceiptDto'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PurchaseReceiptResponseDto'];
-        };
-      };
-      /** @description Sin motivo, sin `Idempotency-Key` o la recepción figura como pagada */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Ya está anulada, las llenas ya no están en el depósito donde entraron, o ese depósito fue dado de baja */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  PurchaseReceiptController_paymentStatus: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Recepción UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['UpdatePaymentStatusDto'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PurchaseReceiptResponseDto'];
-        };
-      };
-      /** @description La recepción está anulada */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  CylinderController_expiring: {
-    parameters: {
-      query?: {
-        /** @description Ventana en días: los que vencen de hoy a hoy + `days`. */
-        days?: number;
-        /** @description Tamaño de página de cada grupo. */
-        limit?: number;
-        offset?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ExpiringCylindersResponseDto'];
-        };
-      };
-      /** @description `days` o la paginación fuera de rango */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  CylinderController_vigenciaBySerial: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        serial: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['CylinderVigenciaResponseDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Envase no encontrado */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  CylinderController_getVigencia: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Cylinder UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['CylinderVigenciaResponseDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Envase no encontrado */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  CylinderController_registerInspection: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Cylinder UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['RegisterInspectionDto'];
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['CylinderVigenciaResponseDto'];
-        };
-      };
-      /** @description Fecha de revisión futura, vencimiento faltante o no posterior a la revisión */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Envase no encontrado */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description El envase está dado de baja */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  CarReactivationController_reactivar: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Car UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['CarResponseDto'];
-        };
-      };
-      /** @description Hay documentación bloqueante vencida: el detalle dice cuál */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Vehículo no encontrado */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description El vehículo no está fuera de servicio */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
   FuelLoadController_findAll: {
     parameters: {
       query?: {
@@ -25269,6 +27062,1493 @@ export interface operations {
         content?: never;
       };
       /** @description Vehículo no encontrado */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AuditController_consultar: {
+    parameters: {
+      query?: {
+        /** @description Quién hizo la operación */
+        actorUserId?: string;
+        /** @description Tipo de recurso */
+        resource?: string;
+        /** @description Un recurso puntual */
+        resourceId?: string;
+        result?: 'success' | 'failure';
+        desde?: string;
+        hasta?: string;
+        limit?: number;
+        offset?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RegistroDeAuditoriaDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DataAuditController_findAll: {
+    parameters: {
+      query?: {
+        /** @description entidadAfectada: nombre de la entidad de dominio */
+        entity?: string;
+        /** @description idRegistro: id del registro afectado */
+        recordId?: string;
+        /** @description Historial de un pedido: los asientos del Order, de sus renglones (OrderItem) y de sus pagos (Payment). Se combina con el resto de los filtros. */
+        orderId?: string;
+        /** @description idUsuario: quién hizo el cambio */
+        userId?: string;
+        /** @description idTipoAuditoria: 1 Alta, 2 Modificación, 3 Baja lógica, 4 Reactivación, 5 Baja física */
+        actionType?: number;
+        /** @description fechaHora desde (inclusive) */
+        from?: string;
+        /** @description fechaHora hasta (inclusive) */
+        to?: string;
+        page?: number;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AuditEntriesPageDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DataAuditController_findOne: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AuditEntryDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe, o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DataAuditController_findActionTypes: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AuditActionTypeDto'][];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AttendanceController_register: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Empleado UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RegisterAttendanceDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AttendanceResponseDto'];
+        };
+      };
+      /** @description El egreso no es posterior al ingreso */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Empleado no encontrado */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El empleado está egresado o ya tiene una jornada abierta */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AttendanceController_findAll: {
+    parameters: {
+      query?: {
+        limit?: number;
+        page?: number;
+        date?: string | null;
+        from?: string | null;
+        to?: string | null;
+        employeeId?: string;
+        /** @description true: sólo las jornadas sin cerrar; false: sólo las cerradas */
+        open?: boolean;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AttendancePageDto'];
+        };
+      };
+      /** @description Un filtro tiene un valor inválido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AttendanceController_correct: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Jornada UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CorrectAttendanceDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AttendanceResponseDto'];
+        };
+      };
+      /** @description Falta la nota, o el egreso no es posterior al ingreso */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Jornada no encontrada */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AttendanceController_checkIn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Ya tenía una jornada abierta de hoy desde la app */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AttendanceResponseDto'];
+        };
+      };
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AttendanceResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: delivery */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no está vinculada a un legajo activo, o hay una jornada abierta de otro día o cargada desde el panel */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AttendanceController_checkOut: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AttendanceResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: delivery */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no está vinculada a un legajo activo, no hay jornada abierta, o la abierta es de un día anterior (se corrige desde el panel) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PersonnelController_consultar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PersonnelDashboardDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SupplierController_findAll: {
+    parameters: {
+      query?: {
+        limit?: number;
+        page?: number;
+        /** @description Texto a buscar */
+        term?: string;
+        kind?: 'filling_plant' | 'other';
+        /** @description true también trae los proveedores inactivos (default: sólo los activos) */
+        includeInactive?: boolean;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SupplierPageDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SupplierController_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateSupplierDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SupplierResponseDto'];
+        };
+      };
+      /** @description Datos inválidos o CUIT mal formado */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya hay un proveedor vigente con ese CUIT */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SupplierController_findOne: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Proveedor UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SupplierResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SupplierController_remove: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Proveedor UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MessageResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Tiene órdenes de compra abiertas */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SupplierController_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Proveedor UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateSupplierDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SupplierResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El CUIT ya lo tiene otro proveedor vigente */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SupplierController_historial: {
+    parameters: {
+      query?: {
+        limit?: number;
+        page?: number;
+        from?: string | null;
+        to?: string | null;
+      };
+      header?: never;
+      path: {
+        /** @description Proveedor UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SupplierHistoryDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PurchaseOrderController_ordenes: {
+    parameters: {
+      query?: {
+        limit?: number;
+        page?: number;
+        status?: 'draft' | 'sent' | 'partially_received' | 'received' | 'closed_short' | 'cancelled';
+        supplierId?: string;
+        from?: string | null;
+        to?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PurchaseOrderPageDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PurchaseOrderController_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreatePurchaseOrderDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PurchaseOrderResponseDto'];
+        };
+      };
+      /** @description Datos inválidos, proveedor inactivo o garrafa repetida */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Proveedor, depósito o garrafa inexistente */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PurchaseOrderController_orden: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Orden de compra UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PurchaseOrderResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PurchaseOrderController_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Orden de compra UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdatePurchaseOrderDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PurchaseOrderResponseDto'];
+        };
+      };
+      /** @description La orden ya no está en borrador, o datos inválidos */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PurchaseOrderController_pendiente: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Orden de compra UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PurchaseOrderPendingDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PurchaseOrderController_send: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Orden de compra UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PurchaseOrderResponseDto'];
+        };
+      };
+      /** @description La orden no está en borrador */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PurchaseOrderController_cancel: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Orden de compra UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CancelPurchaseOrderDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PurchaseOrderResponseDto'];
+        };
+      };
+      /** @description Sin motivo, o la orden ya está cerrada */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La orden tiene recepciones confirmadas (aunque sean sólo de vacías) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PurchaseOrderController_closeShort: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Orden de compra UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CloseShortPurchaseOrderDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PurchaseOrderResponseDto'];
+        };
+      };
+      /** @description Sin motivo, o la orden no está parcialmente recibida */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PurchaseReceiptController_recepciones: {
+    parameters: {
+      query?: {
+        limit?: number;
+        page?: number;
+        supplierId?: string;
+        purchaseOrderId?: string;
+        paymentStatus?: 'unpaid' | 'paid';
+        status?: 'confirmed' | 'voided';
+        from?: string | null;
+        to?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PurchaseReceiptPageDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PurchaseReceiptController_create: {
+    parameters: {
+      query?: never;
+      header: {
+        'idempotency-key': string;
+        /** @description UUID v4 de la operación. Obligatoria: sin ella responde 400 (un reintento duplicaría el movimiento). */
+        'Idempotency-Key': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreatePurchaseReceiptDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PurchaseReceiptResponseDto'];
+        };
+      };
+      /** @description Sin `Idempotency-Key`, orden no recibible, la recepción se pasa de lo pendiente, fecha anterior al conteo inicial del depósito, no alcanzan las vacías o faltan datos */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Orden, proveedor, depósito o garrafa inexistente */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya hay una recepción de ese proveedor con ese documento */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PurchaseReceiptController_costos: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AverageCostDto'][];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PurchaseReceiptController_recepcion: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Recepción UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PurchaseReceiptResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PurchaseReceiptController_void: {
+    parameters: {
+      query?: never;
+      header: {
+        'idempotency-key': string;
+        /** @description UUID v4 de la operación. Obligatoria: sin ella responde 400 (un reintento duplicaría el movimiento). */
+        'Idempotency-Key': string;
+      };
+      path: {
+        /** @description Recepción UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['VoidPurchaseReceiptDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PurchaseReceiptResponseDto'];
+        };
+      };
+      /** @description Sin motivo, sin `Idempotency-Key` o la recepción figura como pagada */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya está anulada, las llenas ya no están en el depósito donde entraron, o ese depósito fue dado de baja */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PurchaseReceiptController_paymentStatus: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Recepción UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdatePaymentStatusDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PurchaseReceiptResponseDto'];
+        };
+      };
+      /** @description La recepción está anulada */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
       404: {
         headers: {
           [name: string]: unknown;

@@ -1,13 +1,14 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { Button, Card, PageHeader, Select, TextArea } from '../../common/components/ui';
 import { usePermissions } from '../../hooks';
 import type { Customer } from '../../services/api/types';
 import { useUserAddresses } from '../../services/queries/userAddresses';
-import { useCreateOrder } from '../../services/queries/orders';
+import { useCreateOrder, useDeliveryOptions } from '../../services/queries/orders';
 import { notify } from '../../utils/notifications';
+import { formatCurrency } from '../../utils/format';
 import { PAYMENT_METHOD } from '../../utils/statusLabels';
 import { CustomerPicker } from './components/CustomerPicker';
 import { NewOrderItems } from './components/NewOrderItems';
@@ -32,11 +33,28 @@ export const NewOrder = () => {
     handleSubmit,
     control,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<NewOrderValues>({
     resolver: zodResolver(newOrderSchema),
-    defaultValues: { customerId: '', addressId: '', items: [], paymentMethod: 'cash', notes: '' },
+    defaultValues: {
+      customerId: '',
+      addressId: '',
+      items: [],
+      paymentMethod: 'cash',
+      deliveryMode: 'standard',
+      notes: '',
+    },
   });
+
+  const addressId = watch('addressId');
+  const deliveryMode = watch('deliveryMode');
+  const { data: options } = useDeliveryOptions(addressId || undefined, customer?.user_id);
+  const express = options?.options.find((option) => option.mode === 'express');
+  // Si al cambiar de dirección el express deja de estar disponible, se vuelve a la programada.
+  useEffect(() => {
+    if (deliveryMode === 'express' && express && !express.available) setValue('deliveryMode', 'standard');
+  }, [deliveryMode, express, setValue]);
 
   const handleSelectCustomer = (picked: Customer) => {
     setCustomer(picked);
@@ -61,6 +79,7 @@ export const NewOrder = () => {
         addressId: values.addressId,
         items: values.items,
         paymentMethod: values.paymentMethod,
+        deliveryMode: values.deliveryMode,
         notes: values.notes,
       },
       {
@@ -101,6 +120,28 @@ export const NewOrder = () => {
             error={errors.addressId?.message}
             {...register('addressId')}
           />
+          {addressId && options && (
+            <fieldset className="space-y-2">
+              <legend className="text-sm font-medium text-ink">Modalidad de entrega</legend>
+              {options.options.map((option) => (
+                <label key={option.mode} className="flex items-start gap-2 text-[13px] text-ink">
+                  <input
+                    type="radio"
+                    value={option.mode}
+                    disabled={!option.available}
+                    className="mt-1"
+                    {...register('deliveryMode')}
+                  />
+                  <span>
+                    <b>{option.mode === 'express' ? 'Express (moto)' : 'Programada'}</b>
+                    {option.available
+                      ? ` · ${option.surchargeAmount > 0 ? `+${formatCurrency(option.surchargeAmount)}` : 'sin recargo'} · ~${option.estimatedMinutes} min`
+                      : ` · no disponible: ${option.message ?? 'sin motivo'}`}
+                  </span>
+                </label>
+              ))}
+            </fieldset>
+          )}
         </Card>
 
         <Card className="p-4">

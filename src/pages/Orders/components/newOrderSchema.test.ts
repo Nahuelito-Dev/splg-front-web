@@ -6,6 +6,7 @@ const base = {
   addressId: 'b4a7b2f0-1c2d-4e3f-9a0b-123456789abc',
   items: [{ gasCylinderId: 'c1', quantity: 2, unitPrice: 1500 }],
   paymentMethod: 'cash' as const,
+  deliveryMode: 'standard' as const,
   notes: '',
 };
 

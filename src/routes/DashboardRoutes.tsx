@@ -46,6 +46,8 @@ const Tires = lazyPage(() => import('../pages/FleetExpense/Tires'), 'Tires');
 const Configuration = lazyPage(() => import('../pages/Configuration/Configuration'), 'Configuration');
 const DispatchSettings = lazyPage(() => import('../pages/Configuration/DispatchSettings'), 'DispatchSettings');
 const AutomaticProcesses = lazyPage(() => import('../pages/Configuration/AutomaticProcesses'), 'AutomaticProcesses');
+const ExpressSettings = lazyPage(() => import('../pages/Configuration/ExpressSettings'), 'ExpressSettings');
+const Refunds = lazyPage(() => import('../pages/Refunds/Refunds'), 'Refunds');
 const ScheduledTasksSettings = lazyPage(
   () => import('../pages/Configuration/ScheduledTasksSettings'),
   'ScheduledTasksSettings',
@@ -159,6 +161,8 @@ export const DashboardRoutes = () => {
           <Route path="settings/dispatch" element={<DispatchSettings />} />
           <Route path="settings/scheduled-tasks" element={<ScheduledTasksSettings />} />
           <Route path="settings/automatic-processes" element={<AutomaticProcesses />} />
+          <Route path="settings/express" element={<ExpressSettings />} />
+          <Route path="refunds" element={<Refunds />} />
 
           {/* Documentación de la flota: vencimientos (CU-139), planes (CU-105/140) y tareas */}
           <Route path="fleet/expirations" element={<FleetExpirations />} />

@@ -8,7 +8,11 @@ vi.mock('../../hooks', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   usePermissions: permissions,
 }));
-vi.mock('../../services/queries/orders', () => ({ useCreateOrder: () => ({ mutate: createOrder, isPending: false }) }));
+const deliveryOptions = vi.hoisted(() => ({ data: undefined as unknown }));
+vi.mock('../../services/queries/orders', () => ({
+  useCreateOrder: () => ({ mutate: createOrder, isPending: false }),
+  useDeliveryOptions: () => ({ data: deliveryOptions.data }),
+}));
 vi.mock('../../services/queries/userAddresses', () => ({
   useUserAddresses: () => ({
     data: [{ address_id: 'a-1', street: 'Calle 1', city: 'Posadas', isDefault: false }],
@@ -35,6 +39,7 @@ import { NewOrder } from './NewOrder';
 afterEach(() => {
   cleanup();
   createOrder.mockReset();
+  deliveryOptions.data = undefined;
 });
 
 const WRITE_HINT = 'Elegí una distribuidora con «Ver como» para crear';
@@ -83,5 +88,50 @@ describe('NewOrder: administrador general sin distribuidora elegida', () => {
     permissions.mockReturnValue({ canWrite: true, writeHint: undefined });
     renderPage();
     expect(screen.getByRole('button', { name: 'Crear pedido' })).not.toHaveAttribute('aria-disabled');
+  });
+
+  describe('modalidad de entrega (CU-148)', () => {
+    const options = (expressAvailable: boolean) => ({
+      addressId: 'a-1',
+      options: [
+        { mode: 'standard', available: true, reason: null, message: null, surchargeAmount: 0, estimatedMinutes: 180 },
+        {
+          mode: 'express',
+          available: expressAvailable,
+          reason: expressAvailable ? null : 'no_motorcycle_driver',
+          message: expressAvailable ? null : 'No hay un chofer en moto disponible cerca',
+          surchargeAmount: expressAvailable ? 1500 : 0,
+          estimatedMinutes: 45,
+        },
+      ],
+    });
+
+    it('ofrece el express con su recargo y lo manda al crear', async () => {
+      permissions.mockReturnValue({ canWrite: true, writeHint: undefined });
+      deliveryOptions.data = options(true);
+      renderPage();
+      fillForm();
+      const express = screen.getByRole('radio', { name: /Express \(moto\)/ });
+      expect(express).toBeEnabled();
+      fireEvent.click(express);
+      fireEvent.click(screen.getByRole('button', { name: 'Crear pedido' }));
+      await waitFor(() => expect(createOrder).toHaveBeenCalledTimes(1));
+      expect(createOrder).toHaveBeenCalledWith(expect.objectContaining({ deliveryMode: 'express' }), expect.anything());
+    });
+
+    it('si no hay moto lo deshabilita con el motivo y el pedido sale programado', async () => {
+      permissions.mockReturnValue({ canWrite: true, writeHint: undefined });
+      deliveryOptions.data = options(false);
+      renderPage();
+      fillForm();
+      expect(screen.getByRole('radio', { name: /Express \(moto\)/ })).toBeDisabled();
+      expect(screen.getByText(/No hay un chofer en moto disponible cerca/)).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Crear pedido' }));
+      await waitFor(() => expect(createOrder).toHaveBeenCalledTimes(1));
+      expect(createOrder).toHaveBeenCalledWith(
+        expect.objectContaining({ deliveryMode: 'standard' }),
+        expect.anything(),
+      );
+    });
   });
 });
