@@ -100,6 +100,14 @@ describe('Refunds', () => {
     expect(screen.queryByRole('button', { name: 'Reintentar' })).not.toBeInTheDocument();
   });
 
+  it('una pendiente vieja también se puede reintentar; una reciente no', () => {
+    setup([refund({ status: 'pending', errorMessage: null, updatedAt: '2020-01-01T00:00:00.000Z' })]);
+    expect(screen.getAllByRole('button', { name: 'Reintentar' }).length).toBeGreaterThan(0);
+    cleanup();
+    setup([refund({ status: 'pending', errorMessage: null, updatedAt: new Date().toISOString() })]);
+    expect(screen.queryByRole('button', { name: 'Reintentar' })).not.toBeInTheDocument();
+  });
+
   it('sin pendientes muestra el vacío', () => {
     setup([]);
     expect(screen.getByText('No hay reintegros pendientes')).toBeInTheDocument();
