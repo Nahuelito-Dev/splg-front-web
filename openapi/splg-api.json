@@ -20518,6 +20518,72 @@
                 ]
             }
         },
+        "/api/fleet/fuel-loads/{id}/cash-payment": {
+            "patch": {
+                "description": "Para la carga que registró el chofer con `paymentMethod: cash_box` (él no elige la caja): el importe sale de la caja de efectivo indicada en la misma transacción. Una carga ya asentada responde 409 y no se asienta dos veces.",
+                "operationId": "FuelLoadController_payFromCashBox",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Carga UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PayFuelLoadFromCashBoxDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FuelLoadResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "La carga no es de la caja, o la caja no es de efectivo"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "La carga o la caja no existen o son de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "La carga está anulada o ya salió de una caja; la caja no tiene sesión abierta o saldo"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Asentar en una caja una carga pagada de la caja",
+                "tags": [
+                    "Fleet · Combustible"
+                ]
+            }
+        },
         "/api/fleet/fines": {
             "post": {
                 "description": "Nace pendiente. Si no se indica el responsable, se deduce del chofer que tenía el vehículo en uso en el instante de la infracción.",
@@ -20791,6 +20857,7 @@
         },
         "/api/fleet/fines/{id}/pay": {
             "patch": {
+                "description": "Con `paidInCash` el importe pagado sale de la caja de efectivo `cashBoxId` en la misma transacción (con cajas de efectivo activas es obligatoria). Una multa pagada no se anula ni se paga de nuevo: el asiento no se repite.",
                 "operationId": "TrafficFineController_pay",
                 "parameters": [
                     {
@@ -20825,7 +20892,7 @@
                         }
                     },
                     "400": {
-                        "description": "Fecha de pago futura o importe inválido"
+                        "description": "Fecha de pago futura, importe inválido, falta la caja de efectivo o la caja no es de efectivo"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -20834,10 +20901,10 @@
                         "description": "Requiere rol: admin, super_admin"
                     },
                     "404": {
-                        "description": "No existe o es de otra distribuidora"
+                        "description": "La multa o la caja no existen o son de otra distribuidora"
                     },
                     "409": {
-                        "description": "La multa no admite el pago (ya pagada o anulada)"
+                        "description": "La multa no admite el pago (ya pagada o anulada), o la caja no tiene sesión abierta o saldo"
                     }
                 },
                 "security": [
@@ -23793,7 +23860,7 @@
         },
         "/api/purchase-receipts/{id}/payment-status": {
             "patch": {
-                "description": "Sólo la marca: el movimiento de caja (`cashMovementId`) lo completará el módulo de caja.",
+                "description": "Marca el pago. Con `paid` + `paidInCash` el total sale de la caja de efectivo `cashBoxId` en la misma transacción (`cashMovementId` guarda la salida; con cajas de efectivo activas `cashBoxId` es obligatorio). Marcarla `unpaid` asienta el contraasiento. Repetir el estado actual no asienta otra vez.",
                 "operationId": "PurchaseReceiptController_paymentStatus",
                 "parameters": [
                     {
@@ -23828,7 +23895,7 @@
                         }
                     },
                     "400": {
-                        "description": "La recepción está anulada"
+                        "description": "La recepción está anulada, falta la caja de efectivo o la caja no es de efectivo"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -23837,7 +23904,10 @@
                         "description": "Requiere rol: admin, super_admin"
                     },
                     "404": {
-                        "description": "No existe o es de otra distribuidora"
+                        "description": "No existe o es de otra distribuidora (también la caja)"
+                    },
+                    "409": {
+                        "description": "La caja no tiene una sesión abierta o no alcanza el saldo"
                     }
                 },
                 "security": [
@@ -37575,6 +37645,11 @@
                             "fuel_account"
                         ]
                     },
+                    "cashBoxId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Sólo con `paymentMethod: cash_box` (el administrador): caja de efectivo de la que sale el pago. Con cajas de efectivo activas es obligatoria; la carga del chofer no la manda y queda pendiente de asentar"
+                    },
                     "receiptNumber": {
                         "type": "string",
                         "example": "0001-00012345",
@@ -37676,6 +37751,20 @@
                         "type": "string",
                         "nullable": true
                     },
+                    "cashMovementId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true,
+                        "description": "Salida de caja del pago (`cash_box`); `null` mientras está pendiente de asentar o si pagó el chofer"
+                    },
+                    "registeredByDriver": {
+                        "type": "boolean",
+                        "description": "La registró el chofer desde su app"
+                    },
+                    "cashPaymentLegacy": {
+                        "type": "boolean",
+                        "description": "Carga `cash_box` anterior al asiento de caja: no se puede asentar"
+                    },
                     "anomaly": {
                         "type": "boolean",
                         "description": "El consumo del tramo se apartó más de un 25 % del habitual"
@@ -37715,6 +37804,9 @@
                     "station",
                     "paymentMethod",
                     "receiptNumber",
+                    "cashMovementId",
+                    "registeredByDriver",
+                    "cashPaymentLegacy",
                     "anomaly",
                     "notes",
                     "odometerCorrectionNote",
@@ -37903,6 +37995,19 @@
                     }
                 }
             },
+            "PayFuelLoadFromCashBoxDto": {
+                "type": "object",
+                "properties": {
+                    "cashBoxId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Caja de efectivo de la que sale el pago de la carga"
+                    }
+                },
+                "required": [
+                    "cashBoxId"
+                ]
+            },
             "CreateTrafficFineDto": {
                 "type": "object",
                 "properties": {
@@ -38032,6 +38137,12 @@
                         "type": "number",
                         "nullable": true
                     },
+                    "cashMovementId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true,
+                        "description": "Salida de caja del pago en efectivo"
+                    },
                     "chargedToEmployee": {
                         "type": "boolean",
                         "description": "La asume el chofer: no cuenta como costo del vehículo"
@@ -38067,6 +38178,7 @@
                     "status",
                     "paidAt",
                     "paidAmount",
+                    "cashMovementId",
                     "chargedToEmployee",
                     "voidReason",
                     "voidedAt",
@@ -38144,6 +38256,15 @@
                         "type": "string",
                         "example": "2026-10-20",
                         "format": "date"
+                    },
+                    "paidInCash": {
+                        "type": "boolean",
+                        "description": "Se pagó en efectivo de una caja de la distribuidora (por omisión, no). Con cajas de efectivo activas exige `cashBoxId`"
+                    },
+                    "cashBoxId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Caja de efectivo de la que sale el pago; sólo con `paidInCash`"
                     },
                     "paidAmount": {
                         "type": "number",
@@ -40825,7 +40946,7 @@
                         "type": "string",
                         "format": "uuid",
                         "nullable": true,
-                        "description": "Movimiento de caja del pago; lo completa el módulo de caja (todavía no existe)"
+                        "description": "Salida de caja del pago en efectivo; `null` si no se pagó en efectivo. Al marcar la recepción como impaga se asienta el contraasiento y vuelve a `null`"
                     },
                     "createdAt": {
                         "format": "date-time",
@@ -40942,6 +41063,15 @@
                             "paid"
                         ],
                         "example": "paid"
+                    },
+                    "paidInCash": {
+                        "type": "boolean",
+                        "description": "Con `paymentStatus: paid`: se pagó en efectivo de una caja de la distribuidora (por omisión, no). Con cajas de efectivo activas exige `cashBoxId`"
+                    },
+                    "cashBoxId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Caja de efectivo de la que sale el pago; sólo con `paidInCash`"
                     }
                 },
                 "required": [

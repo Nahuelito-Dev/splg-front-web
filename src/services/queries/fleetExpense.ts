@@ -18,6 +18,7 @@ import {
   listTires,
   listTrafficFines,
   listVehicleAccidents,
+  payFuelLoadFromCashBox,
   payTrafficFine,
   reactivateCar,
   registerTireEvent,
@@ -41,6 +42,7 @@ import type {
   CreateTireEventBody,
   CreateTrafficFineBody,
   CreateVehicleAccidentBody,
+  PayFuelLoadFromCashBoxBody,
   PayTrafficFineBody,
   UpdateFuelLoadBody,
   UpdateTrafficFineBody,
@@ -56,12 +58,14 @@ interface Options {
 
 /**
  * Lo que cambia el kilometraje, el estado o el costo de un vehículo: su ficha, las cargas, los costos y el tablero
- * se refrescan juntos.
+ * se refrescan juntos. El pago en efectivo de una carga o de una multa (y la anulación de la carga) también mueve una caja.
  */
 const refreshCar = (queryClient: QueryClient) =>
   Promise.all([
     queryClient.invalidateQueries({ queryKey: queryKeys.cars.all }),
     queryClient.invalidateQueries({ queryKey: queryKeys.fleetCosts.all }),
+    queryClient.invalidateQueries({ queryKey: queryKeys.cashBoxes.all }),
+    queryClient.invalidateQueries({ queryKey: queryKeys.cashMovements.all }),
   ]);
 
 export const useFuelLoads = (params: PageParams, filters: FuelLoadFilters, { enabled = true }: Options = {}) =>
@@ -100,6 +104,15 @@ export const useUpdateFuelLoad = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, body }: { id: string; body: UpdateFuelLoadBody }) => updateFuelLoad(id, body),
+    onSuccess: () =>
+      Promise.all([queryClient.invalidateQueries({ queryKey: queryKeys.fuelLoads.all }), refreshCar(queryClient)]),
+  });
+};
+
+export const usePayFuelLoadFromCashBox = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: PayFuelLoadFromCashBoxBody }) => payFuelLoadFromCashBox(id, body),
     onSuccess: () =>
       Promise.all([queryClient.invalidateQueries({ queryKey: queryKeys.fuelLoads.all }), refreshCar(queryClient)]),
   });

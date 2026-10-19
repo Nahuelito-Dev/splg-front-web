@@ -225,6 +225,7 @@ export type OrderStats = S['OrderStatsResponseDto'];
 export type OrderStatusHistoryEntry = S['OrderStatusHistoryEntryDto'];
 export type PaginatedOrders = S['PaginatedOrdersResponseDto'];
 export type PayDriverLiquidationBody = S['PayDriverLiquidationDto'];
+export type PayFuelLoadFromCashBoxBody = S['PayFuelLoadFromCashBoxDto'];
 export type PayTrafficFineBody = S['PayTrafficFineDto'];
 export type PedidoEntregadoSinMovimiento = S['PedidoEntregadoSinMovimientoDto'];
 export type PendingItem = S['PendingItemDto'];

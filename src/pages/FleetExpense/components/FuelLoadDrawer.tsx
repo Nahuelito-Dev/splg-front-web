@@ -1,7 +1,9 @@
 import { AttachmentsPanel } from '../../../common/components/AttachmentsPanel';
-import { Badge, Drawer, DetailList, ErrorState, LoadingState } from '../../../common/components/ui';
+import { useState } from 'react';
+import { Badge, Button, Drawer, DetailList, ErrorState, LoadingState } from '../../../common/components/ui';
 import { usePermissions } from '../../../hooks';
 import { useFuelLoad } from '../../../services/queries/fleetExpense';
+import { FuelLoadCashPaymentModal } from './FuelLoadCashPaymentModal';
 import { formatCurrency, formatDateTime, formatNumber } from '../../../utils/format';
 import { FUEL_PAYMENT_METHOD, FUEL_TYPE, labelOf } from '../../../utils/statusLabels';
 
@@ -14,6 +16,10 @@ interface Props {
 export const FuelLoadDrawer = ({ loadId, onClose }: Props) => {
   const { canWrite, writeHint } = usePermissions();
   const { data: load, isPending, error, refetch } = useFuelLoad(loadId ?? undefined);
+  const [settling, setSettling] = useState(false);
+  // La del chofer pagada de la caja no eligió caja: queda pendiente hasta que un administrador la asienta.
+  const pendingCash =
+    load?.paymentMethod === 'cash_box' && !load.cashMovementId && !load.cashPaymentLegacy && !load.voidedAt;
 
   return (
     <Drawer
@@ -32,6 +38,7 @@ export const FuelLoadDrawer = ({ loadId, onClose }: Props) => {
           <div className="flex flex-wrap gap-2">
             {load.voidedAt && <Badge label={{ text: 'Anulada', tone: 'neutral' }} />}
             {load.anomaly && <Badge label={{ text: 'Consumo anómalo', tone: 'warn' }} />}
+            {pendingCash && <Badge label={{ text: 'Pendiente de asentar en caja', tone: 'warn' }} />}
             <Badge label={labelOf(FUEL_TYPE, load.fuelType)} />
             <Badge
               label={
@@ -49,6 +56,7 @@ export const FuelLoadDrawer = ({ loadId, onClose }: Props) => {
               { label: 'Precio por litro', value: formatCurrency(load.unitPrice), mono: true },
               { label: 'Importe', value: formatCurrency(load.totalAmount), mono: true },
               { label: 'Medio de pago', value: labelOf(FUEL_PAYMENT_METHOD, load.paymentMethod).text },
+              ...(load.cashMovementId ? [{ label: 'Salida de caja', value: load.cashMovementId, mono: true }] : []),
               { label: 'Estación', value: load.station },
               { label: 'Comprobante', value: load.receiptNumber, mono: true },
               ...(load.odometerCorrectionNote
@@ -58,6 +66,19 @@ export const FuelLoadDrawer = ({ loadId, onClose }: Props) => {
               ...(load.notes ? [{ label: 'Notas', value: load.notes, wide: true }] : []),
             ]}
           />
+          {pendingCash && canWrite && (
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-outline p-3">
+              <p className="text-sm text-muted">
+                {load.registeredByDriver
+                  ? 'El chofer la registró pagada de la caja: indicá de cuál sale el efectivo. No la rindas además como gasto del chofer.'
+                  : 'Se registró pagada de la caja pero sin salida de caja: indicá de cuál sale el efectivo.'}
+              </p>
+              <Button size="sm" onClick={() => setSettling(true)}>
+                Asentar en caja
+              </Button>
+            </div>
+          )}
+          <FuelLoadCashPaymentModal load={settling ? load : null} onClose={() => setSettling(false)} />
           <AttachmentsPanel
             ownerType="fuel_load"
             ownerId={load.fuelLoadId}

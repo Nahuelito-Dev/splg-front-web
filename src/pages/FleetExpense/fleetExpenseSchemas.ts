@@ -138,6 +138,7 @@ export const payFineSchema = (today: string) =>
   z.object({
     paidAt: day('Ingresá la fecha de pago').refine((value) => value <= today, 'No puede ser posterior a hoy'),
     paidAmount: money('lo pagado').pipe(z.number().positive('Tiene que ser mayor a cero')),
+    paidInCash: z.boolean(),
   });
 
 export type PayFineFormValues = z.infer<ReturnType<typeof payFineSchema>>;

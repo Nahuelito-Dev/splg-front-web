@@ -4906,6 +4906,26 @@ export interface paths {
     patch: operations['FuelLoadController_update'];
     trace?: never;
   };
+  '/api/fleet/fuel-loads/{id}/cash-payment': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Asentar en una caja una carga pagada de la caja
+     * @description Para la carga que registró el chofer con `paymentMethod: cash_box` (él no elige la caja): el importe sale de la caja de efectivo indicada en la misma transacción. Una carga ya asentada responde 409 y no se asienta dos veces.
+     */
+    patch: operations['FuelLoadController_payFromCashBox'];
+    trace?: never;
+  };
   '/api/fleet/fines': {
     parameters: {
       query?: never;
@@ -4961,7 +4981,10 @@ export interface paths {
     delete?: never;
     options?: never;
     head?: never;
-    /** Registrar el pago de una multa */
+    /**
+     * Registrar el pago de una multa
+     * @description Con `paidInCash` el importe pagado sale de la caja de efectivo `cashBoxId` en la misma transacción (con cajas de efectivo activas es obligatoria). Una multa pagada no se anula ni se paga de nuevo: el asiento no se repite.
+     */
     patch: operations['TrafficFineController_pay'];
     trace?: never;
   };
@@ -5705,7 +5728,7 @@ export interface paths {
     head?: never;
     /**
      * Marcar la recepción como pagada o impaga
-     * @description Sólo la marca: el movimiento de caja (`cashMovementId`) lo completará el módulo de caja.
+     * @description Marca el pago. Con `paid` + `paidInCash` el total sale de la caja de efectivo `cashBoxId` en la misma transacción (`cashMovementId` guarda la salida; con cajas de efectivo activas `cashBoxId` es obligatorio). Marcarla `unpaid` asienta el contraasiento. Repetir el estado actual no asienta otra vez.
      */
     patch: operations['PurchaseReceiptController_paymentStatus'];
     trace?: never;
@@ -11423,6 +11446,11 @@ export interface components {
       station?: string | null;
       /** @enum {string} */
       paymentMethod: 'cash_box' | 'driver_cash' | 'card' | 'fuel_account';
+      /**
+       * Format: uuid
+       * @description Sólo con `paymentMethod: cash_box` (el administrador): caja de efectivo de la que sale el pago. Con cajas de efectivo activas es obligatoria; la carga del chofer no la manda y queda pendiente de asentar
+       */
+      cashBoxId?: string;
       /** @example 0001-00012345 */
       receiptNumber?: string | null;
       notes?: string | null;
@@ -11456,6 +11484,15 @@ export interface components {
       /** @enum {string} */
       paymentMethod: 'cash_box' | 'driver_cash' | 'card' | 'fuel_account';
       receiptNumber: string | null;
+      /**
+       * Format: uuid
+       * @description Salida de caja del pago (`cash_box`); `null` mientras está pendiente de asentar o si pagó el chofer
+       */
+      cashMovementId: string | null;
+      /** @description La registró el chofer desde su app */
+      registeredByDriver: boolean;
+      /** @description Carga `cash_box` anterior al asiento de caja: no se puede asentar */
+      cashPaymentLegacy: boolean;
       /** @description El consumo del tramo se apartó más de un 25 % del habitual */
       anomaly: boolean;
       notes: string | null;
@@ -11569,6 +11606,13 @@ export interface components {
       /** @description Por qué se fuerza el kilometraje (obligatoria con `odometerCorrection`) */
       odometerCorrectionNote?: string;
     };
+    PayFuelLoadFromCashBoxDto: {
+      /**
+       * Format: uuid
+       * @description Caja de efectivo de la que sale el pago de la carga
+       */
+      cashBoxId: string;
+    };
     CreateTrafficFineDto: {
       /** Format: uuid */
       carId: string;
@@ -11629,6 +11673,11 @@ export interface components {
       /** Format: date-time */
       paidAt: string | null;
       paidAmount: number | null;
+      /**
+       * Format: uuid
+       * @description Salida de caja del pago en efectivo
+       */
+      cashMovementId: string | null;
       /** @description La asume el chofer: no cuenta como costo del vehículo */
       chargedToEmployee: boolean;
       voidReason: string | null;
@@ -11678,6 +11727,13 @@ export interface components {
        * @example 2026-10-20
        */
       paidAt: string;
+      /** @description Se pagó en efectivo de una caja de la distribuidora (por omisión, no). Con cajas de efectivo activas exige `cashBoxId` */
+      paidInCash?: boolean;
+      /**
+       * Format: uuid
+       * @description Caja de efectivo de la que sale el pago; sólo con `paidInCash`
+       */
+      cashBoxId?: string;
       /**
        * @description Lo efectivamente pagado (suele ser el del pago voluntario)
        * @example 59500
@@ -12728,7 +12784,7 @@ export interface components {
       voidBatchId: string | null;
       /**
        * Format: uuid
-       * @description Movimiento de caja del pago; lo completa el módulo de caja (todavía no existe)
+       * @description Salida de caja del pago en efectivo; `null` si no se pagó en efectivo. Al marcar la recepción como impaga se asienta el contraasiento y vuelve a `null`
        */
       cashMovementId: string | null;
       /** Format: date-time */
@@ -12769,6 +12825,13 @@ export interface components {
        * @enum {string}
        */
       paymentStatus: 'unpaid' | 'paid';
+      /** @description Con `paymentStatus: paid`: se pagó en efectivo de una caja de la distribuidora (por omisión, no). Con cajas de efectivo activas exige `cashBoxId` */
+      paidInCash?: boolean;
+      /**
+       * Format: uuid
+       * @description Caja de efectivo de la que sale el pago; sólo con `paidInCash`
+       */
+      cashBoxId?: string;
     };
     DashboardCashBoxDto: {
       cashBoxId: string;
@@ -30229,6 +30292,74 @@ export interface operations {
       };
     };
   };
+  FuelLoadController_payFromCashBox: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Carga UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PayFuelLoadFromCashBoxDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FuelLoadResponseDto'];
+        };
+      };
+      /** @description La carga no es de la caja, o la caja no es de efectivo */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La carga o la caja no existen o son de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La carga está anulada o ya salió de una caja; la caja no tiene sesión abierta o saldo */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   TrafficFineController_findAll: {
     parameters: {
       query?: {
@@ -30470,7 +30601,7 @@ export interface operations {
           'application/json': components['schemas']['TrafficFineResponseDto'];
         };
       };
-      /** @description Fecha de pago futura o importe inválido */
+      /** @description Fecha de pago futura, importe inválido, falta la caja de efectivo o la caja no es de efectivo */
       400: {
         headers: {
           [name: string]: unknown;
@@ -30491,14 +30622,14 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description No existe o es de otra distribuidora */
+      /** @description La multa o la caja no existen o son de otra distribuidora */
       404: {
         headers: {
           [name: string]: unknown;
         };
         content?: never;
       };
-      /** @description La multa no admite el pago (ya pagada o anulada) */
+      /** @description La multa no admite el pago (ya pagada o anulada), o la caja no tiene sesión abierta o saldo */
       409: {
         headers: {
           [name: string]: unknown;
@@ -32857,7 +32988,7 @@ export interface operations {
           'application/json': components['schemas']['PurchaseReceiptResponseDto'];
         };
       };
-      /** @description La recepción está anulada */
+      /** @description La recepción está anulada, falta la caja de efectivo o la caja no es de efectivo */
       400: {
         headers: {
           [name: string]: unknown;
@@ -32878,8 +33009,15 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description No existe o es de otra distribuidora */
+      /** @description No existe o es de otra distribuidora (también la caja) */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La caja no tiene una sesión abierta o no alcanza el saldo */
+      409: {
         headers: {
           [name: string]: unknown;
         };

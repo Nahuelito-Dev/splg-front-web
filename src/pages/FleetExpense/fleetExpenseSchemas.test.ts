@@ -103,10 +103,11 @@ describe('multa', () => {
 
   it('el pago no puede ser de una fecha futura ni de importe cero', () => {
     const schema = payFineSchema('2026-10-17');
-    expect(schema.safeParse({ paidAt: '2026-10-17', paidAmount: '59500' }).success).toBe(true);
-    expect(schema.safeParse({ paidAt: '2026-10-18', paidAmount: '59500' }).success).toBe(false);
-    expect(schema.safeParse({ paidAt: '2026-10-17', paidAmount: '0' }).success).toBe(false);
-    expect(schema.safeParse({ paidAt: '', paidAmount: '10' }).success).toBe(false);
+    const paid = { paidInCash: false };
+    expect(schema.safeParse({ paidAt: '2026-10-17', paidAmount: '59500', ...paid }).success).toBe(true);
+    expect(schema.safeParse({ paidAt: '2026-10-18', paidAmount: '59500', ...paid }).success).toBe(false);
+    expect(schema.safeParse({ paidAt: '2026-10-17', paidAmount: '0', ...paid }).success).toBe(false);
+    expect(schema.safeParse({ paidAt: '', paidAmount: '10', ...paid }).success).toBe(false);
   });
 });
 
