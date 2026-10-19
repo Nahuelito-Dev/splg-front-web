@@ -37,6 +37,9 @@ vi.mock('../../utils/notifications', () => ({
   confirm: state.confirm,
   notify: { success: vi.fn(), error: vi.fn() },
 }));
+vi.mock('./components/PayReceiptModal', () => ({
+  PayReceiptModal: ({ receipt }: { receipt: unknown }) => (receipt ? <p>Marcar como pagada</p> : null),
+}));
 vi.mock('./components/VoidReceiptModal', () => ({
   VoidReceiptModal: ({ receipt }: { receipt: unknown }) => (receipt ? <p>Anular recepción</p> : null),
 }));
@@ -96,15 +99,29 @@ describe('PurchaseReceiptDetails', () => {
     expect(screen.getByText(/10 llenas · 8 vacías a la planta/)).toBeInTheDocument();
   });
 
-  it('marcar pagada confirma y manda el estado', async () => {
+  it('marcar pagada abre el pago (con la caja si fue en efectivo) y no manda nada todavía', () => {
     const payment = mutation();
     state.receipt.mockReturnValue(ok(RECEIPT()));
     state.payment.mockReturnValue(payment);
-    state.confirm.mockResolvedValue(true);
     draw();
     fireEvent.click(screen.getByRole('button', { name: 'Marcar pagada' }));
+    expect(screen.getByText('Marcar como pagada')).toBeInTheDocument();
+    expect(payment.mutate).not.toHaveBeenCalled();
+    expect(state.confirm).not.toHaveBeenCalled();
+  });
+
+  it('marcar sin pagar confirma, avisa que el efectivo vuelve a la caja y manda el estado', async () => {
+    const payment = mutation();
+    state.receipt.mockReturnValue(ok(RECEIPT({ paymentStatus: 'paid', cashMovementId: 'mov-1' })));
+    state.payment.mockReturnValue(payment);
+    state.confirm.mockResolvedValue(true);
+    draw();
+    fireEvent.click(screen.getByRole('button', { name: 'Marcar sin pagar' }));
     await waitFor(() => expect(payment.mutate).toHaveBeenCalled());
-    expect(payment.mutate.mock.calls[0][0]).toEqual({ id: 'r-1', body: { paymentStatus: 'paid' } });
+    expect(state.confirm).toHaveBeenCalledWith(
+      expect.objectContaining({ text: expect.stringContaining('caja') as string }),
+    );
+    expect(payment.mutate.mock.calls[0][0]).toEqual({ id: 'r-1', body: { paymentStatus: 'unpaid' } });
   });
 
   it('una recepción pagada no se puede anular', () => {

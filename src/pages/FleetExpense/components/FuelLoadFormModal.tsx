@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button, Checkbox, Input, Modal, Select, TextArea } from '../../../common/components/ui';
 import type { FuelLoad } from '../../../services/api/types';
@@ -7,6 +7,8 @@ import { useCars } from '../../../services/queries/cars';
 import { useCreateFuelLoad, useFuelLoads, useUpdateFuelLoad } from '../../../services/queries/fleetExpense';
 import { formatCurrency, formatNumber } from '../../../utils/format';
 import { notify } from '../../../utils/notifications';
+import { CashBoxField } from '../../Orders/components/CashBoxField';
+import { useOrderCashBoxes } from '../../Orders/components/useOrderCashBoxes';
 import { fromLocalInput, toLocalInput } from '../fleetExpenseDates';
 import {
   expectedFuelAmount,
@@ -47,6 +49,8 @@ const EMPTY: FuelLoadFormValues = {
 /** Alta o edición de una carga de combustible. El importe y el kilometraje se validan igual que en la API. */
 export const FuelLoadFormModal = ({ open, onClose, load, fixedCarId }: Props) => {
   const isEditing = Boolean(load);
+  // Una carga que ya salió de una caja no cambia de importe ni de medio de pago (la API responde 409).
+  const locked = Boolean(load?.cashMovementId);
   const create = useCreateFuelLoad();
   const update = useUpdateFuelLoad();
   const { options: carOptions } = useCarOptions('Elegí un vehículo');
@@ -85,6 +89,18 @@ export const FuelLoadFormModal = ({ open, onClose, load, fixedCarId }: Props) =>
     );
   }, [open, load, fixedCarId, reset]);
 
+  const [cashBoxId, setCashBoxId] = useState('');
+  const [touched, setTouched] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    setCashBoxId('');
+    setTouched(false);
+  }, [open, load]);
+  const paysFromBox = !isEditing && watch('paymentMethod') === 'cash_box';
+  const cashBoxes = useOrderCashBoxes(open && paysFromBox);
+  const needsBox = paysFromBox && cashBoxes.required;
+  const boxError = touched && needsBox && !cashBoxId ? 'Elegí la caja de la que sale el efectivo' : undefined;
+
   const carId = watch('carId');
   const liters = Number(watch('liters'));
   const unitPrice = Number(watch('unitPrice'));
@@ -107,6 +123,12 @@ export const FuelLoadFormModal = ({ open, onClose, load, fixedCarId }: Props) =>
   const saving = create.isPending || update.isPending;
 
   const onSubmit = handleSubmit((values) => {
+    setTouched(true);
+    if (paysFromBox && (cashBoxes.loading || cashBoxes.failed)) {
+      notify.error(new Error('No pudimos cargar las cajas: probá de nuevo'));
+      return;
+    }
+    if (needsBox && !cashBoxId) return;
     const body = {
       loadedAt: fromLocalInput(values.loadedAt),
       fuelType: values.fuelType || undefined,
@@ -131,7 +153,11 @@ export const FuelLoadFormModal = ({ open, onClose, load, fixedCarId }: Props) =>
       onError: notify.error,
     };
     if (load) update.mutate({ id: load.fuelLoadId, body }, options);
-    else create.mutate({ ...body, carId: values.carId }, options);
+    else
+      create.mutate(
+        { ...body, carId: values.carId, cashBoxId: paysFromBox && cashBoxId ? cashBoxId : undefined },
+        options,
+      );
   });
 
   return (
@@ -201,10 +227,11 @@ export const FuelLoadFormModal = ({ open, onClose, load, fixedCarId }: Props) =>
             min={0}
             required
             hint={expected === null ? undefined : `Litros × precio: ${formatCurrency(expected)}`}
+            disabled={locked}
             error={errors.totalAmount?.message}
             {...register('totalAmount')}
           />
-          {expected !== null && (
+          {expected !== null && !locked && (
             <Button
               type="button"
               variant="ghost"
@@ -236,9 +263,27 @@ export const FuelLoadFormModal = ({ open, onClose, load, fixedCarId }: Props) =>
           label="Medio de pago"
           required
           options={FUEL_PAYMENT_OPTIONS}
+          disabled={locked}
           error={errors.paymentMethod?.message}
           {...register('paymentMethod')}
         />
+        {paysFromBox && (
+          <div className="sm:col-span-2">
+            <CashBoxField
+              boxes={cashBoxes.boxes}
+              value={cashBoxId}
+              onChange={setCashBoxId}
+              error={boxError}
+              hint="El importe sale de esta caja en efectivo. Si exige sesión, tiene que estar abierta."
+            />
+          </div>
+        )}
+        {locked && (
+          <p className="text-xs text-muted sm:col-span-2">
+            Esta carga ya salió de una caja: no se cambian su importe ni su medio de pago. Para corregirlos, anulala y
+            registrala de nuevo.
+          </p>
+        )}
         <Input label="Estación" maxLength={120} error={errors.station?.message} {...register('station')} />
         <Input
           label="Comprobante"

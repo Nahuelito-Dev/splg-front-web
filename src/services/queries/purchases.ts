@@ -219,11 +219,11 @@ export const useUpdateReceiptPaymentStatus = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, body }: { id: string; body: UpdatePaymentStatusBody }) => updateReceiptPaymentStatus(id, body),
-    // El historial del proveedor también muestra el estado de pago de cada recepción.
+    // El historial del proveedor también muestra el estado de pago de cada recepción; el pago en efectivo mueve una caja.
     onSuccess: () =>
       Promise.all(
-        [queryKeys.purchaseReceipts, queryKeys.suppliers].map((resource) =>
-          queryClient.invalidateQueries({ queryKey: resource.all }),
+        [queryKeys.purchaseReceipts, queryKeys.suppliers, queryKeys.cashBoxes, queryKeys.cashMovements].map(
+          (resource) => queryClient.invalidateQueries({ queryKey: resource.all }),
         ),
       ),
   });

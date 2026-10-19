@@ -1,10 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, Input, Modal } from '../../../common/components/ui';
+import { Button, Checkbox, Input, Modal } from '../../../common/components/ui';
 import type { TrafficFine } from '../../../services/api/types';
 import { usePayTrafficFine } from '../../../services/queries/fleetExpense';
 import { toIsoDay } from '../../../utils/dates';
+import { CashBoxField } from '../../Orders/components/CashBoxField';
+import { useOrderCashBoxes } from '../../Orders/components/useOrderCashBoxes';
 import { formatCurrency } from '../../../utils/format';
 import { notify } from '../../../utils/notifications';
 import { payFineSchema, type PayFineFormValues } from '../fleetExpenseSchemas';
@@ -23,16 +25,39 @@ export const PayFineModal = ({ fine, onClose }: Props) => {
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
   } = useForm<PayFineFormValues>({ resolver: zodResolver(schema) });
+  const [cashBoxId, setCashBoxId] = useState('');
+  const [touched, setTouched] = useState(false);
+  const paidInCash = watch('paidInCash');
+  const cashBoxes = useOrderCashBoxes(fine !== null && paidInCash === true);
+  const needsBox = paidInCash === true && cashBoxes.required;
+  const boxError = touched && needsBox && !cashBoxId ? 'Elegí la caja de la que sale el efectivo' : undefined;
 
   useEffect(() => {
-    if (fine) reset({ paidAt: today, paidAmount: fine.voluntaryPaymentAmount ?? fine.amount });
+    if (!fine) return;
+    reset({ paidAt: today, paidAmount: fine.voluntaryPaymentAmount ?? fine.amount, paidInCash: false });
+    setCashBoxId('');
+    setTouched(false);
   }, [fine, today, reset]);
 
-  const onSubmit = handleSubmit((values) =>
+  const onSubmit = handleSubmit((values) => {
+    setTouched(true);
+    if (values.paidInCash && (cashBoxes.loading || cashBoxes.failed)) {
+      notify.error(new Error('No pudimos cargar las cajas: probá de nuevo'));
+      return;
+    }
+    if (needsBox && !cashBoxId) return;
     pay.mutate(
-      { id: fine?.fineId ?? '', body: values },
+      {
+        id: fine?.fineId ?? '',
+        body: {
+          paidAt: values.paidAt,
+          paidAmount: values.paidAmount,
+          ...(values.paidInCash ? { paidInCash: true, cashBoxId: cashBoxId || undefined } : {}),
+        },
+      },
       {
         onSuccess: () => {
           notify.success('Pago registrado');
@@ -40,8 +65,8 @@ export const PayFineModal = ({ fine, onClose }: Props) => {
         },
         onError: notify.error,
       },
-    ),
-  );
+    );
+  });
 
   return (
     <Modal
@@ -84,6 +109,20 @@ export const PayFineModal = ({ fine, onClose }: Props) => {
           error={errors.paidAmount?.message}
           {...register('paidAmount')}
         />
+        <Checkbox
+          label="Se pagó en efectivo de una caja"
+          hint="El importe pagado sale de la caja que elijas."
+          {...register('paidInCash')}
+        />
+        {paidInCash && (
+          <CashBoxField
+            boxes={cashBoxes.boxes}
+            value={cashBoxId}
+            onChange={setCashBoxId}
+            error={boxError}
+            hint="El efectivo sale de esta caja. Si exige sesión, tiene que estar abierta."
+          />
+        )}
       </form>
     </Modal>
   );

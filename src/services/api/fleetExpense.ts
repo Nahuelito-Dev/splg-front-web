@@ -14,6 +14,7 @@ import type {
   FuelLoad,
   FuelLoadPage,
   Message,
+  PayFuelLoadFromCashBoxBody,
   PayTrafficFineBody,
   Tire,
   TireMovement,
@@ -73,6 +74,12 @@ export const voidFuelLoad = async (id: string): Promise<Message> => {
 };
 
 /** GET /cars/:carId/fuel-efficiency (CU-196) */
+/** PATCH /fleet/fuel-loads/:id/cash-payment: la carga del chofer pagada de la caja sale de la caja indicada. */
+export const payFuelLoadFromCashBox = async (id: string, body: PayFuelLoadFromCashBoxBody): Promise<FuelLoad> => {
+  const { data } = await http.patch<FuelLoad>(`/fleet/fuel-loads/${id}/cash-payment`, body);
+  return data;
+};
+
 export const getFuelEfficiency = async (carId: string, range: DayRangeParams): Promise<FuelEfficiency> => {
   const { data } = await http.get<FuelEfficiency>(`/cars/${carId}/fuel-efficiency`, { params: range });
   return data;

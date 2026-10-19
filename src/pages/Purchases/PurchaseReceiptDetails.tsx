@@ -20,6 +20,7 @@ import { usePurchaseReceipt, useUpdateReceiptPaymentStatus } from '../../service
 import { formatCurrency, formatDateTime } from '../../utils/format';
 import { confirm, notify } from '../../utils/notifications';
 import { RECEIPT_PAYMENT, RECEIPT_STATUS, SUPPLIER_DOCUMENT_TYPE, labelOf } from '../../utils/statusLabels';
+import { PayReceiptModal } from './components/PayReceiptModal';
 import { VoidReceiptModal } from './components/VoidReceiptModal';
 
 const COLUMNS: GridColDef<PurchaseReceiptItem>[] = [
@@ -51,20 +52,24 @@ export const PurchaseReceiptDetails = () => {
   useCrumbLeaf(receipt ? `Recepción N° ${receipt.number}` : null, goBack);
   const setPayment = useUpdateReceiptPaymentStatus();
   const [voiding, setVoiding] = useState(false);
+  const [paying, setPaying] = useState(false);
 
   const togglePayment = async () => {
     if (!receipt) return;
-    const paid = receipt.paymentStatus !== 'paid';
+    if (receipt.paymentStatus !== 'paid') {
+      setPaying(true);
+      return;
+    }
     const ok = await confirm({
-      title: paid ? '¿Marcar como pagada?' : '¿Marcar como sin pagar?',
-      text: paid
-        ? 'Es solo una marca: no mueve caja. Una recepción pagada no se puede anular.'
+      title: '¿Marcar como sin pagar?',
+      text: receipt.cashMovementId
+        ? 'Vuelve a figurar pendiente de pago y el efectivo vuelve a la caja de la que salió.'
         : 'Vuelve a figurar pendiente de pago.',
     });
     if (!ok) return;
     setPayment.mutate(
-      { id: receipt.receiptId, body: { paymentStatus: paid ? 'paid' : 'unpaid' } },
-      { onSuccess: () => notify.success(paid ? 'Marcada como pagada' : 'Marcada sin pagar'), onError: notify.error },
+      { id: receipt.receiptId, body: { paymentStatus: 'unpaid' } },
+      { onSuccess: () => notify.success('Marcada sin pagar'), onError: notify.error },
     );
   };
 
@@ -194,6 +199,7 @@ export const PurchaseReceiptDetails = () => {
           </div>
         </div>
       )}
+      <PayReceiptModal receipt={paying ? (receipt ?? null) : null} onClose={() => setPaying(false)} />
       <VoidReceiptModal receipt={voiding ? (receipt ?? null) : null} onClose={() => setVoiding(false)} />
     </div>
   );
