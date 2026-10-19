@@ -14,11 +14,12 @@ interface Props {
 /** En la ficha del cliente: ir a su cuenta corriente en esta distribuidora o habilitársela. */
 export const CustomerAccountAction = ({ userId, name }: Props) => {
   const navigate = useNavigate();
-  const { canWrite, writeHint } = usePermissions();
-  const { data: account, isPending } = useCustomerAccountOf(userId, name);
+  const { canWrite, writeHint, needsDistributor } = usePermissions();
+  // Sin distribuidora elegida la API rechaza la consulta (400): no se dispara y no se ofrece nada.
+  const { data: account, isPending } = useCustomerAccountOf(userId, name, { enabled: !needsDistributor });
   const [enabling, setEnabling] = useState(false);
 
-  if (isPending) return null;
+  if (needsDistributor || isPending) return null;
   return account ? (
     <Button
       variant="secondary"

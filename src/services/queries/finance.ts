@@ -406,14 +406,24 @@ export const useCustomerAccount = (id: string | undefined) =>
   });
 
 /** La cuenta corriente de un cliente en esta distribuidora, si la tiene (busca por su usuario). */
-export const useCustomerAccountOf = (customerUserId: string | undefined, name: string | undefined) =>
+export const useCustomerAccountOf = (
+  customerUserId: string | undefined,
+  name: string | undefined,
+  { enabled = true }: Options = {},
+) =>
   useQuery({
     queryKey: queryKeys.customerAccounts.list({ customerUserId: customerUserId ?? '', name: name ?? '' }),
+    // La API no filtra por usuario: se busca por nombre si lo hay y se recorren las páginas hasta dar con la cuenta.
     queryFn: async () => {
-      const page = await listCustomerAccounts({ page: 0, pageSize: 100 }, { q: name });
-      return page.data.find((account) => account.customerUserId === customerUserId) ?? null;
+      const pageSize = 100;
+      for (let page = 0; ; page += 1) {
+        const result = await listCustomerAccounts({ page, pageSize }, { q: name || undefined });
+        const found = result.data.find((account) => account.customerUserId === customerUserId);
+        if (found) return found;
+        if ((page + 1) * pageSize >= result.total) return null;
+      }
     },
-    enabled: Boolean(customerUserId) && Boolean(name),
+    enabled: Boolean(customerUserId) && enabled,
   });
 
 export const useCustomerStatement = (

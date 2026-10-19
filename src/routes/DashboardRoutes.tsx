@@ -34,6 +34,7 @@ const DeliveryDetails = lazyPage(() => import('../pages/Deliveries/DeliveryDetai
 const Cars = lazyPage(() => import('../pages/Cars/Cars'), 'Cars');
 const CarDetails = lazyPage(() => import('../pages/Cars/CarDetails'), 'CarDetails');
 const FleetExpirations = lazyPage(() => import('../pages/Fleet/FleetExpirations'), 'FleetExpirations');
+const FleetFiles = lazyPage(() => import('../pages/Fleet/FleetFiles'), 'FleetFiles');
 const FleetPlans = lazyPage(() => import('../pages/Fleet/FleetPlans'), 'FleetPlans');
 const FleetPlanDetails = lazyPage(() => import('../pages/Fleet/FleetPlanDetails'), 'FleetPlanDetails');
 const FleetTasks = lazyPage(() => import('../pages/Fleet/FleetTasks'), 'FleetTasks');
@@ -53,6 +54,7 @@ const ScheduledTasksSettings = lazyPage(
   'ScheduledTasksSettings',
 );
 const Orders = lazyPage(() => import('../pages/Orders/Orders'), 'Orders');
+const DispatchBoard = lazyPage(() => import('../pages/Orders/DispatchBoard'), 'DispatchBoard');
 const OrderDetails = lazyPage(() => import('../pages/Orders/OrderDetails'), 'OrderDetails');
 const OrderInvoice = lazyPage(() => import('../pages/Orders/OrderInvoice'), 'OrderInvoice');
 const NewOrder = lazyPage(() => import('../pages/Orders/NewOrder'), 'NewOrder');
@@ -188,6 +190,7 @@ export const DashboardRoutes = () => {
 
           {/* Documentación de la flota: vencimientos (CU-139), planes (CU-105/140) y tareas */}
           <Route path="fleet/expirations" element={<FleetExpirations />} />
+          <Route path="fleet/files" element={<FleetFiles />} />
           <Route path="fleet/plans" element={<FleetPlans />} />
           <Route path="fleet/plans/:id" element={<FleetPlanDetails />} />
           <Route path="fleet/tasks" element={<FleetTasks />} />
@@ -195,6 +198,7 @@ export const DashboardRoutes = () => {
 
           {/* 7. Ordenes */}
           <Route path="orders" element={<Orders />} />
+          <Route path="orders/dispatch" element={<DispatchBoard />} />
           <Route path="orders/new" element={<NewOrder />} />
           <Route path="orders/:id" element={<OrderDetails />} />
           <Route path="orders/:id/remito" element={<OrderInvoice />} />

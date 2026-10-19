@@ -54,6 +54,7 @@ vi.mock('../../services/queries/physicalCylinders', () => ({
     empty_returned: 0,
     retired: 0,
   }),
+  useCylinder: () => ({ data: undefined, error: null, refetch: vi.fn() }),
   useBulkTransitionCylinders: () => ({ mutate: bulk, isPending: busy.value, stop }),
   useRetireCylinder: () => ({ mutate: vi.fn(), isPending: false }),
 }));
@@ -172,5 +173,19 @@ describe('PhysicalCylinders', () => {
     fireEvent.click(boxes()[0]);
     fireEvent.click(screen.getByRole('button', { name: 'Detener' }));
     expect(stop).toHaveBeenCalledOnce();
+  });
+});
+
+describe('PhysicalCylinders: panel lateral', () => {
+  it('abrir un envase muestra su detalle en un panel con el enlace a la ficha, sin salir del listado', () => {
+    renderPage();
+    fireEvent.click(screen.getByText('GAS-001'));
+    const drawer = screen.getByRole('dialog', { name: 'GAS-001' });
+    expect(within(drawer).getByText('La distribuidora')).toBeInTheDocument();
+    expect(within(drawer).getByRole('link', { name: /Abrir ficha completa/ })).toHaveAttribute(
+      'href',
+      '/physical-cylinders/1',
+    );
+    expect(screen.getByRole('tab', { name: 'Todos 3', hidden: true })).toBeInTheDocument();
   });
 });

@@ -39,6 +39,7 @@ import type {
 } from '../api/types';
 import { SKIP } from '../../utils/batch';
 import { canAssignDriver, canCancel } from '../../pages/Orders/components/orderStatus';
+import { BOARD_PAGE_SIZE, BOARD_STATUSES, type BoardStatus } from '../../pages/Orders/boardRules';
 import { ORDER_FLOW } from '../../utils/statusLabels';
 import { useBatchMutation } from './batchMutation';
 import { runIntent } from './intent';
@@ -66,6 +67,27 @@ export const useOrders = (
     refetchInterval,
     enabled,
   });
+
+/**
+ * Las cuatro columnas del tablero de despacho: los pedidos más recientes de cada estado (hasta el tope de la API) y su
+ * `total` real. Comparten la caché de `useOrders`. «Entregados» trae los últimos entregados; el filtro del día lo
+ * hace el tablero, porque `from`/`to` de la API cuentan desde la fecha de alta y no desde la de entrega.
+ */
+export const useDispatchBoard = ({ refetchInterval }: Pick<LiveOptions, 'refetchInterval'> = {}) => {
+  const page: PageParams = { page: 0, pageSize: BOARD_PAGE_SIZE };
+  const results = useQueries({
+    queries: BOARD_STATUSES.map((status) => ({
+      queryKey: keys.list({ ...page, status }),
+      queryFn: () => listOrders(page, { status }),
+      placeholderData: keepPreviousData,
+      refetchInterval,
+    })),
+  });
+  return Object.fromEntries(BOARD_STATUSES.map((status, index) => [status, results[index]])) as Record<
+    BoardStatus,
+    (typeof results)[number]
+  >;
+};
 
 /** Los estados que el resumen `/orders/stats/summary` ya cuenta (pendientes, aceptados y en camino). */
 const FROM_SUMMARY = ['pending', 'accepted', 'out_for_delivery'] as const;
