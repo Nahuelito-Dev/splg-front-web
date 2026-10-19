@@ -77,6 +77,8 @@ import type {
   UpdateCommissionRuleBody,
   UpdateCustomerAccountBody,
 } from '../api/types';
+import { ACCOUNT_STATUS, LIQUIDATION_STATUS, SETTLEMENT_STATUS, statusKeys } from '../../utils/statusLabels';
+import { useStatusCounts } from './statusCounts';
 import { queryKeys } from './queryKeys';
 
 interface Options {
@@ -149,12 +151,56 @@ const useMoneyMutation = <V, R>(
 
 // ── Tablero ─────────────────────────────────────────────────────────────────
 
-export const useFinanceDashboard = (date?: string) =>
+export const useFinanceDashboard = (date?: string, enabled = true) =>
   useQuery({
     queryKey: queryKeys.finance.list({ date: date ?? '' }),
     queryFn: () => getFinanceDashboard(date),
     placeholderData: keepPreviousData,
+    enabled,
   });
+
+/** Cuántas rendiciones hay en cada estado del día (o de todos, sin fecha). */
+export const useSettlementStatusCounts = (filters: Omit<SettlementFilters, 'status'>, enabled = true) =>
+  useStatusCounts(
+    statusKeys(SETTLEMENT_STATUS),
+    (status) => queryKeys.driverSettlements.list({ ...filters, counts: status }),
+    (status) => listDriverSettlements({ page: 0, pageSize: 1 }, { ...filters, status }).then((page) => page.total),
+    enabled,
+  );
+
+/**
+ * Rendiciones por estado para las pestañas. Con un día elegido salen del tablero financiero (una sola consulta, la
+ * misma de las cifras de arriba); sin día («todos los días») el tablero no sirve y se cuenta estado por estado.
+ */
+export const useSettlementCounts = (date: string | undefined) => {
+  const dashboard = useFinanceDashboard(date, date !== undefined);
+  const perStatus = useSettlementStatusCounts({}, date === undefined);
+  if (date === undefined) return perStatus;
+  const day = dashboard.data?.settlements;
+  if (!day) return { all: null, open: null, submitted: null, approved: null };
+  return {
+    all: day.open + day.submitted + day.approved,
+    open: day.open,
+    submitted: day.submitted,
+    approved: day.approved,
+  };
+};
+
+/** Cuántas liquidaciones hay en cada estado. */
+export const useLiquidationStatusCounts = () =>
+  useStatusCounts(
+    statusKeys(LIQUIDATION_STATUS),
+    (status) => queryKeys.driverLiquidations.list({ counts: status }),
+    (status) => listDriverLiquidations({ page: 0, pageSize: 1 }, { status }).then((page) => page.total),
+  );
+
+/** Cuántas cuentas corrientes hay en cada estado, con la búsqueda y «vencidas» aplicadas. */
+export const useCustomerAccountStatusCounts = (filters: Omit<CustomerAccountFilters, 'status'>) =>
+  useStatusCounts(
+    statusKeys(ACCOUNT_STATUS),
+    (status) => queryKeys.customerAccounts.list({ ...filters, counts: status }),
+    (status) => listCustomerAccounts({ page: 0, pageSize: 1 }, { ...filters, status }).then((page) => page.total),
+  );
 
 // ── Cajas ───────────────────────────────────────────────────────────────────
 

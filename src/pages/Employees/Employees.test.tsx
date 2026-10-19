@@ -12,6 +12,7 @@ vi.mock('../../hooks', async (importOriginal) => ({
 }));
 vi.mock('../../services/queries/employees', () => ({
   useEmployees: (...args: unknown[]) => server(...args) as unknown,
+  useEmployeeStatusCounts: () => ({ all: 3, active: 2, terminated: 1 }),
   useJobPositions: (...args: unknown[]) => positions(...args) as unknown,
 }));
 vi.mock('./components/EmployeeFormModal', () => ({ EmployeeFormModal: () => null }));
@@ -65,5 +66,14 @@ describe('Employees', () => {
     cleanup();
     renderPage('/employees?position=p-1');
     expect(server).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ positionId: 'p-1' }), true);
+  });
+
+  it('las pestañas de estado muestran la cantidad de legajos de cada una', () => {
+    server.mockReturnValue({ data: { rows: [], total: 0 }, isFetching: false, error: null });
+    positions.mockReturnValue({ data: PUESTOS, isPending: false });
+    renderPage();
+    expect(screen.getByRole('tab', { name: 'Todos 3' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Activos? 2/ })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Egresad[oa]s? 1/ })).toBeInTheDocument();
   });
 });

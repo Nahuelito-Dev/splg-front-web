@@ -7,6 +7,7 @@ import {
   Card,
   EmptyState,
   ErrorState,
+  ExportCsvButton,
   FilterChips,
   IdentityCell,
   Input,
@@ -29,9 +30,11 @@ import {
 import { formatCurrency, formatDateTime } from '../../utils/format';
 import { notify } from '../../utils/notifications';
 import { CASH_REFERENCE, labelOf } from '../../utils/statusLabels';
+import { FinanceSummary } from './components/FinanceSummary';
 import { CashMovementFormModal } from './components/CashMovementFormModal';
 import { TransferModal } from './components/TransferModal';
 import { reverseKindOf } from './movementActions';
+import { csvDateTime } from '../../utils/csv';
 
 const DIRECTIONS = [
   { value: '', label: 'Entradas y salidas' },
@@ -183,6 +186,7 @@ export const CashMovements = () => {
           </>
         }
       />
+      <FinanceSummary kind="movements" />
       <Card>
         <div className="grid grid-cols-1 items-end gap-3 border-b border-outline p-4 sm:grid-cols-2 lg:grid-cols-5">
           <Select
@@ -228,6 +232,25 @@ export const CashMovements = () => {
             />
           </div>
         )}
+        <div className="flex justify-end border-b border-outline px-4 py-2">
+          <ExportCsvButton
+            filename="movimientos-de-caja"
+            headers={['Fecha', 'Caja', 'Categoría', 'Descripción', 'Sentido', 'Importe', 'Origen']}
+            rows={(data?.data ?? []).map((row) => [
+              csvDateTime(row.occurredAt),
+              row.cashBoxName,
+              row.categoryName,
+              row.description,
+              row.direction === 'in' ? 'Entrada' : 'Salida',
+              row.amount,
+              row.reversed
+                ? 'Anulado'
+                : row.reversesMovementId
+                  ? 'Anulación'
+                  : labelOf(CASH_REFERENCE, row.referenceType).text,
+            ])}
+          />
+        </div>
         {error ? (
           <ErrorState error={error} resource="Los movimientos" onRetry={() => void refetch()} />
         ) : (

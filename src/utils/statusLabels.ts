@@ -404,6 +404,17 @@ export const TIRE_EVENT_TYPE: LabelMap<TireEvent['type']> = {
   retire: { text: 'Baja', tone: 'danger' },
 };
 
+/** Los estados de un mapa de etiquetas, en el orden en que está declarado. */
+export const statusKeys = <K extends string>(map: LabelMap<K>): K[] => Object.keys(map) as K[];
+
+/** El estado que viene de la URL si es uno del mapa; cualquier otro valor (enlace viejo o escrito a mano) es «todos» (vacío). */
+export const statusParam = <K extends string>(map: LabelMap<K>, value: string): K | '' =>
+  statusKeys(map).find((key) => key === value) ?? '';
+
+/** Las opciones («Pendiente», tono) de un mapa de etiquetas, para las pestañas por estado de un listado. */
+export const statusOptions = <K extends string>(map: LabelMap<K>): { value: K; label: string; tone: Tone }[] =>
+  statusKeys(map).map((value) => ({ value, label: map[value].text, tone: map[value].tone }));
+
 export const labelOf = <K extends string>(map: LabelMap<K>, value: K | null | undefined): Label =>
   value && value in map ? map[value] : { text: value ?? '—', tone: 'neutral' };
 

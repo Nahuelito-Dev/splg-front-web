@@ -1,11 +1,11 @@
-import { useState } from 'react';
-import type { GridPaginationModel } from '@mui/x-data-grid';
+import { useEffect, useState } from 'react';
 import { CirclePlus, CircleX, UserRoundCog } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
   AnalyticSummary,
   Button,
   Card,
+  ExportCsvButton,
   FilterChips,
   PageHeader,
   SelectionBar,
@@ -13,7 +13,7 @@ import {
   type AnalyticItem,
   type FilterChip,
 } from '../../common/components/ui';
-import { useDebounce, usePermissions } from '../../hooks';
+import { useDebounce, usePermissions, useUrlPagedParams } from '../../hooks';
 import type { Order } from '../../services/api/types';
 import {
   useAssignOrderDelivery,
@@ -25,16 +25,24 @@ import {
 } from '../../services/queries/orders';
 import type { BatchResult } from '../../utils/batch';
 import { formatShortId } from '../../utils/format';
-import { labelOf, ORDER_FLOW, ORDER_STATUS, paymentFilterLabel } from '../../utils/statusLabels';
+import {
+  labelOf,
+  ORDER_FLOW,
+  ORDER_STATUS,
+  PAYMENT_STATUS_ORDER,
+  paymentFilterLabel,
+  paymentStatusLabel,
+} from '../../utils/statusLabels';
 import { notify } from '../../utils/notifications';
 import { AssignDriverModal } from './components/AssignDriverModal';
 import { CancelOrderModal } from './components/CancelOrderModal';
 import { EditOrderModal } from './components/EditOrderModal';
-import { EMPTY_TOOLBAR_FILTERS, isInvertedRange, type OrdersToolbarFilters } from './components/ordersFilterValues';
+import { isInvertedRange, type OrdersToolbarFilters } from './components/ordersFilterValues';
 import { ORDER_TABS_ID, OrderStatusTabs } from './components/OrderStatusTabs';
 import { canAssignDriver } from './components/orderStatus';
 import { OrdersFilters } from './components/OrdersFilters';
 import { OrdersTable } from './components/OrdersTable';
+import { csvDateTime } from '../../utils/csv';
 
 // Ver el detalle de un pedido navega a su ficha (`/orders/:id`); acá sólo
 // quedan las acciones rápidas de la tabla (asignar y cancelar).
@@ -51,24 +59,31 @@ export const Orders = () => {
   const { canWrite, writeHint, canOperate, operateHint } = usePermissions();
   // Sin distribuidora elegida (administrador general) la API rechaza con 400 toda escritura sobre pedidos.
   const blockedReason = canOperate ? undefined : operateHint;
-  const [status, setStatus] = useState<Order['status'] | ''>('');
-  const [toolbar, setToolbar] = useState<OrdersToolbarFilters>(EMPTY_TOOLBAR_FILTERS);
+  // El estado, los filtros y la página viven en la URL: al volver de una ficha el listado queda como estaba.
+  const [urlFilters, setUrlFilters, pagination, setPagination] = useUrlPagedParams(
+    { status: '', q: '', payment: '', from: '', to: '' },
+    10,
+  );
+  const status = ORDER_FLOW.find((flowStatus) => flowStatus === urlFilters.status) ?? '';
+  const toolbar: OrdersToolbarFilters = {
+    search: urlFilters.q,
+    payment: PAYMENT_STATUS_ORDER.find((payment) => payment === urlFilters.payment) ?? '',
+    from: urlFilters.from,
+    to: urlFilters.to,
+  };
   const debouncedSearch = useDebounce(toolbar.search.trim());
-  const [pagination, setPagination] = useState<GridPaginationModel>({
-    page: 0,
-    pageSize: 10,
-  });
   const [modal, setModal] = useState<ModalState>({ kind: 'closed' });
 
-  const { counts, total: totalAll } = useOrderStatusCounts();
   const invertedRange = isInvertedRange(toolbar);
-  const { data, isFetching } = useOrders(pagination, {
+  // Las pestañas y el resumen cuentan con la misma búsqueda, cobro y fechas que el listado.
+  const listFilters = {
     search: debouncedSearch,
-    status: status || undefined,
     paymentStatus: toolbar.payment || undefined,
     from: invertedRange ? '' : toolbar.from,
     to: invertedRange ? '' : toolbar.to,
-  });
+  };
+  const { counts, total: totalAll } = useOrderStatusCounts(listFilters);
+  const { data, isFetching } = useOrders(pagination, { ...listFilters, status: status || undefined });
   const assignDelivery = useAssignOrderDelivery();
   const cancelOrderMutation = useCancelOrder();
   const bulkAssign = useBulkAssignOrders();
@@ -136,14 +151,12 @@ export const Orders = () => {
 
   const handleStatus = (value: Order['status'] | '') => {
     clearSelection();
-    setStatus(value);
-    setPagination((p) => ({ ...p, page: 0 }));
+    setUrlFilters({ status: value });
   };
 
   const handleToolbar = (values: OrdersToolbarFilters) => {
     clearSelection();
-    setToolbar(values);
-    setPagination((p) => ({ ...p, page: 0 }));
+    setUrlFilters({ q: values.search, payment: values.payment, from: values.from, to: values.to });
   };
 
   const chips: FilterChip[] = [];
@@ -152,12 +165,36 @@ export const Orders = () => {
   if (toolbar.from) chips.push({ key: 'from', label: `Desde ${toolbar.from}` });
   if (toolbar.to) chips.push({ key: 'to', label: `Hasta ${toolbar.to}` });
 
+  // El estado vive en las pestañas; sólo se repite como chip cuando hay otros filtros, para sacarlo junto con ellos.
+  if (chips.length > 0 && status)
+    chips.unshift({ key: 'status', label: `Estado: ${labelOf(ORDER_STATUS, status).text}` });
+
   const removeChip = (key: string) => {
-    if (key === 'search') handleToolbar({ ...toolbar, search: '' });
+    if (key === 'status') handleStatus('');
+    else if (key === 'search') handleToolbar({ ...toolbar, search: '' });
     else if (key === 'payment') handleToolbar({ ...toolbar, payment: '' });
     else if (key === 'from') handleToolbar({ ...toolbar, from: '' });
     else if (key === 'to') handleToolbar({ ...toolbar, to: '' });
   };
+
+  // Una `?page=` fuera de rango vuelve a la última página que existe.
+  useEffect(() => {
+    if (data && !isFetching && data.total > 0 && data.orders.length === 0 && pagination.page > 0)
+      setPagination({ page: Math.max(0, Math.ceil(data.total / pagination.pageSize) - 1) });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, isFetching, pagination.page]);
+
+  const exported = selectedOrders.length > 0 ? selectedOrders : (data?.orders ?? []);
+  const exportRows = exported.map((order) => [
+    formatShortId(order.order_id),
+    csvDateTime(order.created_at),
+    order.customer?.full_name ?? '',
+    order.delivery_address?.street ?? '',
+    order.delivery_name ?? '',
+    labelOf(ORDER_STATUS, order.status).text,
+    order.paymentStatus ? paymentStatusLabel(order.paymentStatus, order.paymentMethodDetail).text : '',
+    order.total_amount,
+  ]);
 
   const closeModal = () => setModal({ kind: 'closed' });
 
@@ -235,9 +272,20 @@ export const Orders = () => {
             <FilterChips
               items={chips}
               onRemove={removeChip}
-              onClearAll={() => handleToolbar(EMPTY_TOOLBAR_FILTERS)}
+              onClearAll={() => {
+                clearSelection();
+                setUrlFilters({ status: '', q: '', payment: '', from: '', to: '' });
+              }}
               resultCount={data?.total}
             />
+            <span className="ml-auto">
+              <ExportCsvButton
+                filename="pedidos"
+                label={selectedOrders.length > 0 ? 'Exportar selección' : 'Exportar CSV'}
+                headers={['Pedido', 'Fecha', 'Cliente', 'Entrega', 'Chofer', 'Estado', 'Cobro', 'Total']}
+                rows={exportRows}
+              />
+            </span>
           </div>
 
           <SelectionBar

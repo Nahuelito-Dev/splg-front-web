@@ -5,9 +5,11 @@ import AddIcon from '@mui/icons-material/Add';
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import { CalendarClock, PackageCheck, Warehouse } from 'lucide-react';
 import {
+  AnalyticSummary,
   Button,
   Card,
   ErrorState,
+  ExportCsvButton,
   FilterChips,
   ListSkeleton,
   PageHeader,
@@ -16,6 +18,7 @@ import {
   SelectionBar,
   Tabs,
   tabPanelProps,
+  type AnalyticItem,
   type FilterChip,
   type TabItem,
 } from '../../common/components/ui';
@@ -38,6 +41,7 @@ import { PhysicalCylindersTable } from './components/PhysicalCylindersTable';
 import { TransitionModal } from './components/TransitionModal';
 import { movable, uuidOrUndefined, type CylinderStateFilter } from './cylinderFilters';
 import { ALL_STATES } from './cylinderTransitions';
+import { asText, csvDateTime } from '../../utils/csv';
 
 const TABS_ID = 'cylinders';
 const PAGE_SIZE = 10;
@@ -108,6 +112,22 @@ export const PhysicalCylinders = () => {
     })),
   ];
 
+  const summary: AnalyticItem[] = ALL_STATES.map((s) => ({
+    key: s,
+    label: labelOf(CYLINDER_STATE, s).text,
+    count: counts[s],
+    tone: labelOf(CYLINDER_STATE, s).tone,
+  }));
+  const CSV_HEADERS = ['Serial', 'Producto', 'Estado', 'En poder de', 'Último movimiento'];
+  const toCsvRows = (list: Cylinder[]) =>
+    list.map((cylinder) => [
+      asText(cylinder.serial),
+      cylinder.gas_cylinder ? `${cylinder.gas_cylinder.type} ${cylinder.gas_cylinder.weight} kg` : '',
+      labelOf(CYLINDER_STATE, cylinder.state).text,
+      cylinder.current_customer?.full_name ?? 'La distribuidora',
+      csvDateTime(cylinder.lastMovementAt),
+    ]);
+
   const chips: FilterChip[] = [];
   if (state !== 'all') chips.push({ key: 'state', label: labelOf(CYLINDER_STATE, state).text });
   if (orderId) chips.push({ key: 'order', label: `Pedido ${formatShortId(orderId)}` });
@@ -175,6 +195,16 @@ export const PhysicalCylinders = () => {
         }
       />
 
+      <AnalyticSummary
+        label="Envases por estado"
+        items={summary}
+        selected={state === 'all' ? undefined : state}
+        onSelect={(key) => {
+          clearSelection();
+          setFilters({ state: key === state ? 'all' : key, page: '1' });
+        }}
+      />
+
       <Card>
         {isPending ? (
           <ListSkeleton />
@@ -227,6 +257,14 @@ export const PhysicalCylinders = () => {
                   }}
                   resultCount={data ? total : undefined}
                 />
+                <div>
+                  <ExportCsvButton
+                    filename="envases"
+                    label={selected.length > 0 ? 'Exportar selección' : 'Exportar CSV'}
+                    headers={CSV_HEADERS}
+                    rows={toCsvRows(selected.length > 0 ? selected : rows)}
+                  />
+                </div>
               </div>
               {canWrite && (
                 <SelectionBar

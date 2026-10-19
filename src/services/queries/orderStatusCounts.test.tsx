@@ -41,4 +41,20 @@ describe('useOrderStatusCounts', () => {
     const asked = listOrders.mock.calls.map(([, filters]) => filters.status).sort();
     expect(asked).toEqual(['cancelled', 'delivered', 'reserved']);
   });
+
+  it('con búsqueda, cobro o fechas ya no sirve el resumen global: cada estado se pide con esos filtros', async () => {
+    const { result } = renderHook(() => useOrderStatusCounts({ search: 'ana', paymentStatus: 'paid' }), { wrapper });
+    await waitFor(() => expect(result.current.total).not.toBeNull());
+    expect(result.current.counts).toMatchObject({ pending: 2, accepted: 2, out_for_delivery: 2, delivered: 100 });
+    const calls = listOrders.mock.calls as unknown as [unknown, { status?: string; search?: string }][];
+    expect(calls.map(([, filters]) => filters.status).sort()).toEqual([
+      'accepted',
+      'cancelled',
+      'delivered',
+      'out_for_delivery',
+      'pending',
+      'reserved',
+    ]);
+    expect(calls.every(([, filters]) => filters.search === 'ana')).toBe(true);
+  });
 });

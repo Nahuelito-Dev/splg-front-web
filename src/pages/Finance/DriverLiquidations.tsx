@@ -12,36 +12,34 @@ import {
   PageHeader,
   ResponsiveTable,
   RowActions,
-  Select,
+  ExportCsvButton,
+  StatusFilterTabs,
 } from '../../common/components/ui';
 import { FROM_LIST_STATE, useClampPage, usePermissions, useUrlPagedParams } from '../../hooks';
 import type { DriverLiquidation } from '../../services/api/types';
-import { useDriverLiquidations } from '../../services/queries/finance';
+import { useDriverLiquidations, useLiquidationStatusCounts } from '../../services/queries/finance';
 import { formatCurrency, formatDay } from '../../utils/format';
-import { LIQUIDATION_STATUS, labelOf } from '../../utils/statusLabels';
+import { LIQUIDATION_STATUS, labelOf, statusOptions, statusParam } from '../../utils/statusLabels';
 import { LiquidationFormModal } from './components/LiquidationFormModal';
-
-const STATUS_FILTER = [
-  { value: '', label: 'Todos los estados' },
-  { value: 'draft', label: 'Borrador' },
-  { value: 'approved', label: 'Aprobadas' },
-  { value: 'paid', label: 'Pagadas' },
-  { value: 'voided', label: 'Anuladas' },
-];
+import { csvDay } from '../../utils/csv';
 
 /** Liquidaciones de comisiones de los choferes (CU-242, 243, 334, 335). */
 export const DriverLiquidations = () => {
   const navigate = useNavigate();
   const { canWrite, writeHint } = usePermissions();
   const [filters, setFilters, pagination, setPagination] = useUrlPagedParams({ status: '' }, 10);
+  // Un estado inválido en la URL (enlace viejo o escrito a mano) se trata como «todos», en la consulta y en las pestañas.
+  const status = statusParam(LIQUIDATION_STATUS, filters.status);
   const { data, isFetching, error, refetch } = useDriverLiquidations(pagination, {
-    status: (filters.status || undefined) as DriverLiquidation['status'] | undefined,
+    status: status || undefined,
   });
   const [creating, setCreating] = useState(false);
 
   const goTo = (row: DriverLiquidation) =>
     navigate(`/finance/liquidations/${row.liquidationId}`, { state: FROM_LIST_STATE });
   const period = (row: DriverLiquidation) => `${formatDay(row.periodFrom)} al ${formatDay(row.periodTo)}`;
+
+  const statusCounts = useLiquidationStatusCounts();
 
   const columns: GridColDef<DriverLiquidation>[] = [
     {
@@ -112,52 +110,70 @@ export const DriverLiquidations = () => {
         }
       />
       <Card>
-        <div className="border-b border-outline p-4 sm:max-w-xs">
-          <Select
-            label="Estado"
-            options={STATUS_FILTER}
-            value={filters.status}
-            onChange={(e) => setFilters({ status: e.target.value })}
-          />
-        </div>
-        {error ? (
-          <ErrorState error={error} resource="Las liquidaciones" onRetry={() => void refetch()} />
-        ) : (
-          <ResponsiveTable
-            label="liquidaciones"
-            rows={data?.data ?? []}
-            columns={columns}
-            getRowId={(row) => row.liquidationId}
-            loading={isFetching}
-            pagination={{ model: pagination, onChange: setPagination, total: data?.total ?? 0 }}
-            onRowClick={goTo}
-            empty={
-              filters.status ? (
-                <EmptyState illustration="search" title="Sin resultados" description="Probá con otro estado." />
-              ) : (
-                <EmptyState icon={ReceiptText} title="Todavía no hay liquidaciones" />
-              )
-            }
-            renderCard={(row) => (
-              <>
-                <IdentityCell
-                  title={`N° ${row.number} · ${row.employeeName}`}
-                  subtitle={period(row)}
-                  icon={ReceiptText}
-                />
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge label={labelOf(LIQUIDATION_STATUS, row.status)} />
-                  <span className="font-mono text-sm">Neto {formatCurrency(row.net)}</span>
-                </div>
-                <div>
-                  <Button size="sm" variant="secondary" onClick={() => goTo(row)}>
-                    Ver liquidación
-                  </Button>
-                </div>
-              </>
-            )}
-          />
-        )}
+        <StatusFilterTabs
+          options={statusOptions(LIQUIDATION_STATUS)}
+          value={status}
+          onChange={(status) => setFilters({ status })}
+          counts={statusCounts}
+          label="Filtrar liquidaciones por estado"
+          idPrefix="driver-liquidations"
+        >
+          <div className="border-b border-outline p-4 sm:max-w-xs"></div>
+          <div className="flex justify-end border-b border-outline px-4 py-2">
+            <ExportCsvButton
+              filename="liquidaciones"
+              headers={['Liquidación', 'Chofer', 'Desde', 'Hasta', 'Bruto', 'Deducciones', 'Neto', 'Estado']}
+              rows={(data?.data ?? []).map((row) => [
+                row.number,
+                row.employeeName,
+                csvDay(row.periodFrom),
+                csvDay(row.periodTo),
+                row.gross,
+                row.deductions,
+                row.net,
+                labelOf(LIQUIDATION_STATUS, row.status).text,
+              ])}
+            />
+          </div>
+          {error ? (
+            <ErrorState error={error} resource="Las liquidaciones" onRetry={() => void refetch()} />
+          ) : (
+            <ResponsiveTable
+              label="liquidaciones"
+              rows={data?.data ?? []}
+              columns={columns}
+              getRowId={(row) => row.liquidationId}
+              loading={isFetching}
+              pagination={{ model: pagination, onChange: setPagination, total: data?.total ?? 0 }}
+              onRowClick={goTo}
+              empty={
+                status ? (
+                  <EmptyState illustration="search" title="Sin resultados" description="Probá con otro estado." />
+                ) : (
+                  <EmptyState icon={ReceiptText} title="Todavía no hay liquidaciones" />
+                )
+              }
+              renderCard={(row) => (
+                <>
+                  <IdentityCell
+                    title={`N° ${row.number} · ${row.employeeName}`}
+                    subtitle={period(row)}
+                    icon={ReceiptText}
+                  />
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge label={labelOf(LIQUIDATION_STATUS, row.status)} />
+                    <span className="font-mono text-sm">Neto {formatCurrency(row.net)}</span>
+                  </div>
+                  <div>
+                    <Button size="sm" variant="secondary" onClick={() => goTo(row)}>
+                      Ver liquidación
+                    </Button>
+                  </div>
+                </>
+              )}
+            />
+          )}
+        </StatusFilterTabs>
       </Card>
       <LiquidationFormModal open={creating} onClose={() => setCreating(false)} />
     </div>

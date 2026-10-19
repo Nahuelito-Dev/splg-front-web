@@ -3,13 +3,17 @@ import type { GridPaginationModel } from '@mui/x-data-grid';
 import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
 import { SearchCheck } from 'lucide-react';
 import {
+  AnalyticSummary,
   Button,
   Card,
+  ExportCsvButton,
   FilterChips,
   PageHeader,
   SearchInput,
+  SelectionBar,
   Tabs,
   tabPanelProps,
+  type AnalyticItem,
   type FilterChip,
   type TabItem,
 } from '../../common/components/ui';
@@ -21,11 +25,13 @@ import { CustomerFormModal } from './components/CustomerFormModal';
 import { CustomersTable } from './components/CustomersTable';
 import { FindCustomerByUserModal } from './components/FindCustomerByUserModal';
 import { CUSTOMER_SEGMENTS, CUSTOMER_SEGMENT_LABELS, type CustomerSegment } from './customerSegments';
+import { asText, csvDateTime } from '../../utils/csv';
 
 type FormState = { open: false } | { open: true; customer: Customer | null };
 
 const TABS_ID = 'customers';
 const PAGE_SIZE = 10;
+const CSV_HEADERS = ['Cliente', 'Email', 'Teléfono', 'Alta'];
 
 export const Customers = () => {
   const { canManageCustomerAccounts } = usePermissions();
@@ -55,6 +61,33 @@ export const Customers = () => {
   }, [loading, total, rows.length, pagination.page]);
   const deleteCustomer = useDeleteCustomer();
 
+  // La selección es sólo de lo que se ve: cambiar de segmento, búsqueda o página la suelta.
+  const [selected, setSelected] = useState<Record<string, Customer>>({});
+  const clearSelection = () => setSelected({});
+  const changeFilters = (patch: Parameters<typeof setFilters>[0]) => {
+    clearSelection();
+    setFilters(patch);
+  };
+  const visibleIds = new Set(rows.map((customer) => customer.customer_id));
+  const selectedCustomers = Object.values(selected).filter((customer) => visibleIds.has(customer.customer_id));
+  const handleSelection = (ids: string[]) =>
+    setSelected((previous) => {
+      const known = { ...previous, ...Object.fromEntries(rows.map((customer) => [customer.customer_id, customer])) };
+      return Object.fromEntries(ids.flatMap((id) => (known[id] ? [[id, known[id]]] : [])));
+    });
+  const toCsvRows = (list: Customer[]) =>
+    list.map((customer) => [
+      customer.user?.full_name ?? '',
+      customer.user?.email ?? '',
+      asText(customer.user?.phone_number),
+      csvDateTime(customer.createdAt),
+    ]);
+
+  const summary: AnalyticItem[] = [
+    { key: 'active', label: CUSTOMER_SEGMENT_LABELS.active, count: counts.active, tone: 'success' },
+    { key: 'blocked', label: CUSTOMER_SEGMENT_LABELS.blocked, count: counts.blocked, tone: 'danger' },
+  ];
+
   const tabs: TabItem[] = CUSTOMER_SEGMENTS.map((s) => ({
     id: s,
     label: CUSTOMER_SEGMENT_LABELS[s],
@@ -66,7 +99,7 @@ export const Customers = () => {
   if (segment !== 'all') chips.push({ key: 'status', label: CUSTOMER_SEGMENT_LABELS[segment] });
   if (search.trim()) chips.push({ key: 'q', label: `"${search.trim()}"` });
   const removeChip = (key: string) =>
-    setFilters(key === 'status' ? { status: 'all', page: '1' } : { q: '', page: '1' });
+    changeFilters(key === 'status' ? { status: 'all', page: '1' } : { q: '', page: '1' });
 
   const handleDelete = async (customer: Customer) => {
     const confirmed = await confirm({
@@ -99,11 +132,18 @@ export const Customers = () => {
         }
       />
 
+      <AnalyticSummary
+        label="Clientes por estado de la cuenta"
+        items={summary}
+        selected={segment === 'all' ? undefined : segment}
+        onSelect={(key) => changeFilters({ status: key === segment ? 'all' : key, page: '1' })}
+      />
+
       <Card>
         <Tabs
           items={tabs}
           value={segment}
-          onChange={(id) => setFilters({ status: id, page: '1' })}
+          onChange={(id) => changeFilters({ status: id, page: '1' })}
           label="Filtrar clientes por estado de la cuenta"
           idPrefix={TABS_ID}
         />
@@ -113,13 +153,13 @@ export const Customers = () => {
               label="Buscar clientes"
               placeholder="Nombre, email o teléfono"
               value={search}
-              onChange={(e) => setFilters({ q: e.target.value, page: '1' })}
+              onChange={(e) => changeFilters({ q: e.target.value, page: '1' })}
             />
             {chips.length > 0 ? (
               <FilterChips
                 items={chips}
                 onRemove={removeChip}
-                onClearAll={() => setFilters({ q: '', status: 'all', page: '1' })}
+                onClearAll={() => changeFilters({ q: '', status: 'all', page: '1' })}
                 resultCount={server.data ? total : undefined}
               />
             ) : (
@@ -127,7 +167,13 @@ export const Customers = () => {
                 {server.data ? `${total} ${total === 1 ? 'cliente' : 'clientes'}` : ''}
               </p>
             )}
+            <div>
+              <ExportCsvButton filename="clientes" headers={CSV_HEADERS} rows={toCsvRows(rows)} />
+            </div>
           </div>
+          <SelectionBar count={selectedCustomers.length} noun={['cliente', 'clientes']} onClear={clearSelection}>
+            <span className="text-sm text-primary-strong">Se exporta sólo la selección.</span>
+          </SelectionBar>
           <CustomersTable
             rows={rows}
             total={total}
@@ -136,6 +182,8 @@ export const Customers = () => {
             pagination={pagination}
             onPaginationChange={setPagination}
             onEdit={canManageCustomerAccounts ? (customer) => setForm({ open: true, customer }) : undefined}
+            selection={{ ids: Object.keys(selected), onChange: handleSelection }}
+            onPageChange={clearSelection}
             onDelete={canManageCustomerAccounts ? (customer) => void handleDelete(customer) : undefined}
           />
         </div>

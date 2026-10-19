@@ -5,6 +5,7 @@ import {
   Button,
   Card,
   ErrorState,
+  ExportCsvButton,
   FilterChips,
   ListSkeleton,
   PageHeader,
@@ -18,12 +19,14 @@ import {
 import { usePermissions, useUrlParams } from '../../hooks';
 import type { Claim } from '../../services/api/types';
 import { useClaims } from '../../services/queries/claims';
+import { formatShortId } from '../../utils/format';
 import { CLAIM_STATUS, labelOf } from '../../utils/statusLabels';
 import { ClaimDetailDrawer, type PendingAction } from './components/ClaimDetailDrawer';
 import { ClaimsTable } from './components/ClaimsTable';
 import { EditClaimModal } from './components/EditClaimModal';
 import { CreateClaimModal } from './components/CreateClaimModal';
 import { CLAIM_STATUS_ORDER, countClaimsByStatus, filterClaims, type ClaimStatusFilter } from './claimFilters';
+import { csvDateTime } from '../../utils/csv';
 
 const TABS_ID = 'claims';
 
@@ -113,6 +116,20 @@ export const Claims = () => {
                   onChange={(e) => setTerm(e.target.value)}
                 />
                 <FilterChips items={chips} onRemove={removeChip} onClearAll={clearAll} resultCount={rows.length} />
+                <div>
+                  <ExportCsvButton
+                    filename="reclamos"
+                    headers={['Cliente', 'Pedido', 'Motivo', 'Descripción', 'Fecha', 'Estado']}
+                    rows={rows.map((claim) => [
+                      claim.customer?.full_name ?? '',
+                      formatShortId(claim.order_id),
+                      claim.reason,
+                      claim.description,
+                      csvDateTime(claim.createdAt),
+                      labelOf(CLAIM_STATUS, claim.status).text,
+                    ])}
+                  />
+                </div>
               </div>
               <ClaimsTable
                 rows={rows}

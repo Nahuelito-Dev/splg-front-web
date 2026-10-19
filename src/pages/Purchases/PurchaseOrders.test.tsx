@@ -13,6 +13,7 @@ vi.mock('../../hooks', async (importOriginal) => ({
 vi.mock('../../services/queries/purchases', () => ({
   usePurchaseOrders: (...args: unknown[]) => state.list(...args) as unknown,
   useSupplierOptions: () => state.suppliers() as unknown,
+  usePurchaseOrderStatusCounts: () => ({ all: 4, draft: 1, sent: 2 }),
 }));
 vi.mock('./components/PurchaseOrderFormModal', () => ({
   PurchaseOrderFormModal: ({ open }: { open: boolean }) => (open ? <p>Formulario de orden</p> : null),
@@ -48,6 +49,31 @@ describe('PurchaseOrders', () => {
     expect(screen.getByText(/4 de 10 recibidas/)).toBeInTheDocument();
   });
 
+  it('las pestañas muestran la cantidad por estado, filtran y se puede exportar', () => {
+    state.list.mockReturnValue(ok(pageOf([orderSummary()])));
+    renderPage(<PurchaseOrders />, { url: '/purchases/orders?status=sent' });
+    expect(screen.getByRole('tab', { name: 'Todos 4' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Enviada 2' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: 'Cancelada –' })).toBeInTheDocument();
+    expect(state.list).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.objectContaining({ status: 'sent' }),
+      expect.anything(),
+    );
+    expect(screen.getByRole('button', { name: 'Exportar CSV' })).toBeEnabled();
+  });
+
+  it('un estado inválido en la URL se trata como «todos» en la consulta y en las pestañas', () => {
+    state.list.mockReturnValue(ok(pageOf([orderSummary()])));
+    renderPage(<PurchaseOrders />, { url: '/purchases/orders?status=inventado' });
+    expect(state.list).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.objectContaining({ status: undefined }),
+      expect.anything(),
+    );
+    expect(screen.getByRole('tab', { name: /Todos/ })).toHaveAttribute('aria-selected', 'true');
+  });
+
   it('«Nueva orden» abre el formulario', () => {
     state.list.mockReturnValue(ok(pageOf([orderSummary()])));
     renderPage(<PurchaseOrders />, { url: '/purchases/orders' });
@@ -58,9 +84,13 @@ describe('PurchaseOrders', () => {
   it('la página va en la URL y un filtro vuelve a la primera', () => {
     state.list.mockReturnValue(ok(pageOf([orderSummary()], 45)));
     renderPage(<PurchaseOrders />, { url: '/purchases/orders?page=4' });
-    expect(state.list).toHaveBeenLastCalledWith({ page: 3, pageSize: 10 }, expect.anything());
-    fireEvent.change(screen.getByLabelText('Estado'), { target: { value: 'sent' } });
-    expect(state.list).toHaveBeenLastCalledWith({ page: 0, pageSize: 10 }, expect.objectContaining({ status: 'sent' }));
+    expect(state.list).toHaveBeenLastCalledWith({ page: 3, pageSize: 10 }, expect.anything(), expect.anything());
+    fireEvent.click(screen.getByRole('tab', { name: /Enviada/ }));
+    expect(state.list).toHaveBeenLastCalledWith(
+      { page: 0, pageSize: 10 },
+      expect.objectContaining({ status: 'sent' }),
+      expect.anything(),
+    );
   });
 
   it('sin permiso de escritura no se puede crear', () => {
@@ -68,5 +98,12 @@ describe('PurchaseOrders', () => {
     state.list.mockReturnValue(ok(pageOf([orderSummary()])));
     renderPage(<PurchaseOrders />, { url: '/purchases/orders' });
     expect(screen.getByRole('button', { name: /Nueva orden/ })).toBeDisabled();
+  });
+
+  it('un rango invertido (desde > hasta) no consulta el listado y lo avisa', () => {
+    state.list.mockReturnValue(ok(pageOf([])));
+    renderPage(<PurchaseOrders />, { url: '/purchases/orders?from=2026-10-20&to=2026-10-01' });
+    expect(state.list).toHaveBeenLastCalledWith(expect.anything(), expect.anything(), { enabled: false });
+    expect(screen.getByText('Es anterior al inicio')).toBeInTheDocument();
   });
 });
