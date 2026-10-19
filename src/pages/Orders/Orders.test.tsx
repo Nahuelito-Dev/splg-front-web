@@ -1,5 +1,5 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Order } from '../../services/api/types';
 
@@ -9,6 +9,7 @@ const bulkAssign = vi.hoisted(() => vi.fn<BulkCall, void>());
 const notifyError = vi.hoisted(() => vi.fn<[Error], void>());
 const notifySuccess = vi.hoisted(() => vi.fn<[string], void>());
 const stop = vi.hoisted(() => vi.fn());
+const useOrdersSpy = vi.hoisted(() => vi.fn());
 const busy = vi.hoisted(() => ({ cancel: false }));
 const HINT = 'Elegí una distribuidora en «Ver como» para operar';
 const WRITE_HINT = 'Elegí una distribuidora con «Ver como» para crear';
@@ -53,7 +54,10 @@ vi.mock('../../utils/notifications', () => ({
 vi.mock('../../services/queries/orders', () => {
   const idle = { mutate: vi.fn(), isPending: false };
   return {
-    useOrders: () => ({ data: { orders: ORDERS, total: 4 }, isFetching: false }),
+    useOrders: (...args: unknown[]) => {
+      useOrdersSpy(...args);
+      return { data: { orders: ORDERS, total: 4 }, isFetching: false };
+    },
     useOrderStatusCounts: () => ({
       counts: { reserved: 0, pending: 1, accepted: 1, out_for_delivery: 0, delivered: 1, cancelled: 0 },
       total: 3,
@@ -219,5 +223,40 @@ describe('Orders: administrador general sin distribuidora elegida', () => {
     const button = screen.getByRole('button', { name: /Pedido telefónico/ });
     expect(button).toHaveAttribute('aria-disabled', 'true');
     expect(button).toHaveAttribute('title', WRITE_HINT);
+  });
+});
+
+describe('Orders: filtros en la URL y exportación', () => {
+  const Search = () => <output data-testid="search">{useLocation().search}</output>;
+
+  it('elegir un estado queda en la URL y volver a «Todos» la deja limpia', () => {
+    render(
+      <MemoryRouter>
+        <Orders />
+        <Search />
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByRole('tab', { name: /Pendiente/ }));
+    expect(screen.getByTestId('search')).toHaveTextContent('?status=pending');
+    fireEvent.click(screen.getByRole('tab', { name: /Todos/ }));
+    expect(screen.getByTestId('search')).toHaveTextContent('');
+  });
+
+  it('un estado inválido en la URL se ignora', () => {
+    render(
+      <MemoryRouter initialEntries={['/orders?status=inventado']}>
+        <Orders />
+      </MemoryRouter>,
+    );
+    expect(screen.queryByRole('group', { name: 'Filtros activos' })).not.toBeInTheDocument();
+    expect(useOrdersSpy).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ status: undefined }));
+    expect(screen.getByRole('tab', { name: /Todos/ })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('ofrece exportar el listado visible y, con filas marcadas, la selección', () => {
+    renderPage();
+    expect(screen.getByRole('button', { name: 'Exportar CSV' })).toBeEnabled();
+    fireEvent.click(checkboxes()[0]);
+    expect(screen.getByRole('button', { name: 'Exportar selección' })).toBeEnabled();
   });
 });

@@ -20,6 +20,10 @@ interface Props {
   onDelete?: (delivery: Delivery) => void;
   /** CU-032, directo desde el listado. */
   onToggleValidated?: (delivery: Delivery) => void;
+  /** Selección múltiple para las acciones en lote; sin esto la tabla no dibuja casillas. */
+  selection?: { ids: string[]; onChange: (ids: string[]) => void };
+  /** Avisa que se cambió de página, p. ej. para soltar la selección. */
+  onPageChange?: () => void;
 }
 
 /** Choferes: lo justo para ubicarlos; saldo, vehículos y pedidos van en la ficha. */
@@ -33,6 +37,8 @@ export const DeliveriesTable = ({
   onEdit,
   onDelete,
   onToggleValidated,
+  selection,
+  onPageChange,
 }: Props) => {
   const navigate = useNavigate();
   const columns = useMemo<GridColDef<Delivery>[]>(
@@ -121,6 +127,8 @@ export const DeliveriesTable = ({
       getRowId={(row) => row.delivery_id}
       loading={loading}
       pagination={{ model: pagination, onChange: onPaginationChange, total }}
+      selection={selection}
+      onPageChange={onPageChange}
       onRowClick={(row) => navigate(`/deliveries/details/${row.delivery_id}`, { state: FROM_LIST_STATE })}
       empty={
         filtered ? (

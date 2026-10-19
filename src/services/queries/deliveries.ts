@@ -19,6 +19,8 @@ import type { PageParams } from '../api/httpClient';
 import { listDeliveryOrders } from '../api/orders';
 import { updateUserAccount } from '../api/users';
 import type { UpdateUserBody } from '../api/types';
+import { SKIP } from '../../utils/batch';
+import { useBatchMutation } from './batchMutation';
 import { queryKeys } from './queryKeys';
 
 const keys = queryKeys.deliveries;
@@ -42,14 +44,14 @@ const DELIVERY_TABS: DeliveriesStatusTab[] = ['all', 'unvalidated', 'enabled', '
  * Cuántos choferes hay en cada grupo de la lista: una página mínima por grupo, leyendo `X-Total-Count`. Un grupo
  * sin dato (cargando o con error) queda en `null`, nunca en 0.
  */
-export const useDeliveryStatusCounts = () => {
+export const useDeliveryStatusCounts = (search = '') => {
   const results = useQueries({
     queries: DELIVERY_TABS.map((tab) => ({
-      queryKey: keys.list({ page: 0, pageSize: 1, search: '', statusTab: tab, counts: true }),
+      queryKey: keys.list({ page: 0, pageSize: 1, search, statusTab: tab, counts: true }),
       queryFn: () =>
         (tab === 'online'
-          ? listActiveDeliveries({ page: 0, pageSize: 1 })
-          : listDeliveries({ page: 0, pageSize: 1 }, '', tab === 'all' ? undefined : tab)
+          ? listActiveDeliveries({ page: 0, pageSize: 1 }, search)
+          : listDeliveries({ page: 0, pageSize: 1 }, search, tab === 'all' ? undefined : tab)
         ).then((page) => page.total),
       staleTime: 30_000,
     })),
@@ -131,6 +133,21 @@ export const useInvalidateDelivery = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
   });
 };
+
+/**
+ * Validar o retirar la validación de varios choferes: una llamada por chofer, de a una. Antes de cada una se vuelve
+ * a pedir el chofer: si ya está en el estado pedido se omite en vez de contarlo como falla.
+ */
+export const useBulkValidateDeliveries = () =>
+  useBatchMutation<{ ids: string[]; validated: boolean }>({
+    run: async ({ validated }, id) => {
+      if ((await getDelivery(id)).validated === validated) return SKIP;
+      return validated ? validateDelivery(id) : invalidateDelivery(id);
+    },
+    invalidate: keys.all,
+    noun: ['chofer', 'choferes'],
+    participle: ['actualizado', 'actualizados'],
+  });
 
 export const useSetDeliveryEnabled = () => {
   const queryClient = useQueryClient();

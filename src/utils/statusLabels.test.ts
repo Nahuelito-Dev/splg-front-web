@@ -7,6 +7,9 @@ import {
   PAYMENT_STATUS_ORDER,
   paymentFilterLabel,
   paymentStatusLabel,
+  RECEIPT_STATUS,
+  statusOptions,
+  statusParam,
   vehicleAssignmentStatus,
 } from './statusLabels';
 
@@ -60,5 +63,20 @@ describe('paymentFilterLabel', () => {
   it('el filtro de `failed` nombra los dos casos; el resto, como siempre', () => {
     expect(paymentFilterLabel('failed').text).toBe('Rechazado / no recibida');
     expect(paymentFilterLabel('unpaid')).toEqual(labelOf(PAYMENT_STATUS, 'unpaid'));
+  });
+});
+
+describe('statusParam y statusOptions', () => {
+  it('un estado del mapa pasa; cualquier otro valor es «todos»', () => {
+    expect(statusParam(RECEIPT_STATUS, 'voided')).toBe('voided');
+    expect(statusParam(RECEIPT_STATUS, 'inventado')).toBe('');
+    expect(statusParam(RECEIPT_STATUS, '')).toBe('');
+  });
+
+  it('las opciones salen del mapa, con su texto y su tono', () => {
+    expect(statusOptions(RECEIPT_STATUS)).toEqual([
+      { value: 'confirmed', label: 'Confirmada', tone: 'success' },
+      { value: 'voided', label: 'Anulada', tone: 'danger' },
+    ]);
   });
 });

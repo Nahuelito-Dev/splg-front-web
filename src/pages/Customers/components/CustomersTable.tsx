@@ -17,6 +17,10 @@ interface Props {
   /** Sin permiso para administrar cuentas (admin de empresa) no se muestran. */
   onEdit?: (customer: Customer) => void;
   onDelete?: (customer: Customer) => void;
+  /** Selección múltiple para exportar lo marcado; sin esto la tabla no dibuja casillas. */
+  selection?: { ids: string[]; onChange: (ids: string[]) => void };
+  /** Avisa que se cambió de página, p. ej. para soltar la selección. */
+  onPageChange?: () => void;
 }
 
 export const CustomersTable = ({
@@ -28,6 +32,8 @@ export const CustomersTable = ({
   onPaginationChange,
   onEdit,
   onDelete,
+  selection,
+  onPageChange,
 }: Props) => {
   const navigate = useNavigate();
   const columns = useMemo<GridColDef<Customer>[]>(
@@ -94,6 +100,8 @@ export const CustomersTable = ({
       getRowId={(row) => row.customer_id}
       loading={loading}
       pagination={{ model: pagination, onChange: onPaginationChange, total }}
+      selection={selection}
+      onPageChange={onPageChange}
       onRowClick={(row) => navigate(`/customers/details/${row.customer_id}`, { state: FROM_LIST_STATE })}
       empty={
         filtered ? (

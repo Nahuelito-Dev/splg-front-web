@@ -49,6 +49,8 @@ import type {
   UpdateVehicleAccidentBody,
   VoidTrafficFineBody,
 } from '../api/types';
+import { ACCIDENT_STATUS, TIRE_STATUS, TRAFFIC_FINE_STATUS, statusKeys } from '../../utils/statusLabels';
+import { useStatusCounts } from './statusCounts';
 import { queryKeys } from './queryKeys';
 
 interface Options {
@@ -134,6 +136,32 @@ export const useTrafficFines = (params: PageParams, filters: TrafficFineFilters,
     placeholderData: keepPreviousData,
     enabled,
   });
+
+/** Cuántas multas hay en cada estado, con los demás filtros aplicados. */
+export const useTrafficFineStatusCounts = (filters: Omit<TrafficFineFilters, 'status'>, enabled = true) =>
+  useStatusCounts(
+    statusKeys(TRAFFIC_FINE_STATUS),
+    (status) => queryKeys.trafficFines.list({ ...filters, counts: status }),
+    (status) => listTrafficFines({ page: 0, pageSize: 1 }, { ...filters, status }).then((page) => page.total),
+    enabled,
+  );
+
+/** Cuántos siniestros hay en cada estado, con los demás filtros aplicados. */
+export const useAccidentStatusCounts = (filters: Omit<VehicleAccidentFilters, 'status'>, enabled = true) =>
+  useStatusCounts(
+    statusKeys(ACCIDENT_STATUS),
+    (status) => queryKeys.vehicleAccidents.list({ ...filters, counts: status }),
+    (status) => listVehicleAccidents({ page: 0, pageSize: 1 }, { ...filters, status }).then((page) => page.total),
+    enabled,
+  );
+
+/** Cuántos neumáticos hay en cada estado, con el vehículo aplicado. */
+export const useTireStatusCounts = (filters: Omit<TireFilters, 'status'>) =>
+  useStatusCounts(
+    statusKeys(TIRE_STATUS),
+    (status) => queryKeys.tires.list({ ...filters, counts: status }),
+    (status) => listTires({ page: 0, pageSize: 1 }, { ...filters, status }).then((page) => page.total),
+  );
 
 export const useTrafficFine = (id: string | undefined) =>
   useQuery({

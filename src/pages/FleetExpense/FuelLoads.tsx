@@ -7,6 +7,7 @@ import {
   Card,
   Checkbox,
   EmptyState,
+  ExportCsvButton,
   ErrorState,
   IdentityCell,
   Input,
@@ -25,6 +26,7 @@ import { FUEL_TYPE, labelOf } from '../../utils/statusLabels';
 import { FuelLoadDrawer } from './components/FuelLoadDrawer';
 import { FuelLoadFormModal } from './components/FuelLoadFormModal';
 import { useCarOptions } from './components/useCarOptions';
+import { csvDateTime } from '../../utils/csv';
 
 /** Las cargas de combustible de la flota (CU-195, CU-320 a CU-322): registrar, corregir, anular y consultar. */
 export const FuelLoads = () => {
@@ -183,6 +185,33 @@ export const FuelLoads = () => {
             label="Sólo anómalas"
             checked={filters.anomaly === '1'}
             onChange={(e) => setFilters({ anomaly: e.target.checked ? '1' : '' })}
+          />
+        </div>
+        <div className="flex justify-end border-b border-outline px-4 py-2">
+          <ExportCsvButton
+            filename="combustible"
+            headers={[
+              'Fecha',
+              'Vehículo',
+              'Chofer',
+              'Combustible',
+              'Litros',
+              'Importe',
+              'Km',
+              'Tanque lleno',
+              'Consumo anómalo',
+            ]}
+            rows={(data?.data ?? []).map((row) => [
+              csvDateTime(row.loadedAt),
+              row.carPatent ?? '',
+              row.employeeName ?? '',
+              labelOf(FUEL_TYPE, row.fuelType).text,
+              row.liters,
+              row.totalAmount,
+              row.odometerKm,
+              row.isFullTank ? 'Sí' : 'No',
+              row.anomaly ? 'Sí' : 'No',
+            ])}
           />
         </div>
         {error ? (

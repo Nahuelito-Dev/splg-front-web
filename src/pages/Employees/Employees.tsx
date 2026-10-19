@@ -6,6 +6,7 @@ import {
   Card,
   EmptyState,
   ErrorState,
+  ExportCsvButton,
   FilterChips,
   PageHeader,
   SearchInput,
@@ -17,10 +18,12 @@ import {
 } from '../../common/components/ui';
 import { useDebounce, usePermissions, useUrlParams } from '../../hooks';
 import type { Employee, JobPosition } from '../../services/api/types';
-import { useEmployees, useJobPositions } from '../../services/queries/employees';
+import { useEmployees, useEmployeeStatusCounts, useJobPositions } from '../../services/queries/employees';
+
 import { EmployeeFormModal } from './components/EmployeeFormModal';
 import { EmployeesTable } from './components/EmployeesTable';
-import { EMPLOYEE_STATUS_LABELS, POSITION_CATEGORY_LABELS } from './employeeLabels';
+import { EMPLOYEE_STATUS_LABELS, POSITION_CATEGORY_LABELS, employeeFullName } from './employeeLabels';
+import { csvDay } from '../../utils/csv';
 
 const TABS_ID = 'employees';
 const PAGE_SIZE = 10;
@@ -58,6 +61,10 @@ export const Employees = () => {
     },
     !needsDistributor && (!position || !positions.isPending),
   );
+  const counts = useEmployeeStatusCounts(
+    { q: debouncedSearch || undefined, category: categoryFilter, positionId: positionFilter?.positionId },
+    !needsDistributor && (!position || !positions.isPending),
+  );
   const rows = server.data?.rows ?? [];
   const total = server.data?.total ?? 0;
   const loading = server.isFetching;
@@ -66,7 +73,12 @@ export const Employees = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, total, rows.length, pagination.page]);
 
-  const tabs: TabItem[] = STATUSES.map((s) => ({ id: s, label: SEGMENT_LABELS[s] }));
+  const tabs: TabItem[] = STATUSES.map((s) => ({
+    id: s,
+    label: SEGMENT_LABELS[s],
+    count: s === 'terminated' ? counts.terminated : counts[s],
+    tone: s === 'active' ? 'success' : undefined,
+  }));
 
   const chips: FilterChip[] = [];
   if (segment !== 'all') chips.push({ key: 'status', label: SEGMENT_LABELS[segment] });
@@ -146,6 +158,18 @@ export const Employees = () => {
                   {server.data ? `${total} ${total === 1 ? 'legajo' : 'legajos'}` : ''}
                 </p>
               )}
+              <div>
+                <ExportCsvButton
+                  filename="legajos"
+                  headers={['Empleado', 'Puesto', 'Estado', 'Ingreso']}
+                  rows={rows.map((employee) => [
+                    employeeFullName(employee),
+                    employee.position.name,
+                    EMPLOYEE_STATUS_LABELS[employee.status],
+                    csvDay(employee.hireDate),
+                  ])}
+                />
+              </div>
             </div>
             <EmployeesTable
               rows={rows}

@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Delivery } from '../../services/api/types';
@@ -14,6 +14,7 @@ vi.mock('../../hooks', async (importOriginal) => ({
 vi.mock('../../services/queries/deliveries', () => ({
   useDeliveries: (_page: unknown, _search: string, tab: string) => deliveriesQuery(tab) as unknown,
   useDeliveryStatusCounts: () => ({ all: 5, unvalidated: 2, enabled: 4, disabled: null, online: 1 }),
+  useBulkValidateDeliveries: () => ({ mutate: vi.fn(), isPending: false, stop: vi.fn() }),
   useDeleteDelivery: () => ({ mutate: vi.fn() }),
   useValidateDelivery: () => ({ mutate: vi.fn() }),
   useInvalidateDelivery: () => ({ mutate: vi.fn() }),
@@ -61,6 +62,38 @@ describe('Deliveries: pestañas con contador', () => {
     expect(deliveriesQuery).toHaveBeenLastCalledWith('online');
     expect(screen.getByTestId('search')).toHaveTextContent('?status=online');
     expect(screen.getByRole('group', { name: 'Filtros activos' })).toHaveTextContent('En línea');
+  });
+});
+
+describe('Deliveries: resumen, selección y exportación', () => {
+  it('el resumen filtra por estado desde la URL', () => {
+    deliveriesQuery.mockReturnValue({ data: { rows: [] as Delivery[], total: 0 }, isFetching: false });
+    render(
+      <MemoryRouter>
+        <Deliveries />
+        <Search />
+      </MemoryRouter>,
+    );
+    const summary = screen.getByRole('list', { name: 'Choferes por estado' });
+    fireEvent.click(within(summary).getByRole('button', { name: /Habilitados/ }));
+    expect(screen.getByTestId('search')).toHaveTextContent('?status=enabled');
+  });
+
+  it('la tabla recibe selección sólo si se puede operar, y se ofrece exportar', () => {
+    deliveriesQuery.mockReturnValue({ data: { rows: [] as Delivery[], total: 0 }, isFetching: false });
+    const renderIt = () =>
+      render(
+        <MemoryRouter>
+          <Deliveries />
+        </MemoryRouter>,
+      );
+    renderIt();
+    expect(tableProps.current.selection).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Exportar CSV' })).toBeDisabled();
+    cleanup();
+    permissions.canOperate = false;
+    renderIt();
+    expect(tableProps.current.selection).toBeUndefined();
   });
 });
 

@@ -1,4 +1,4 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createEmployee,
   createJobPosition,
@@ -18,6 +18,7 @@ import {
 import type { PageParams } from '../api/httpClient';
 import type {
   CreateJobPositionBody,
+  Employee,
   GrantEmployeeAccountBody,
   ReinstateEmployeeBody,
   TerminateEmployeeBody,
@@ -34,6 +35,24 @@ export const useEmployees = (params: PageParams, filters: EmployeeFilters, enabl
     enabled,
     placeholderData: keepPreviousData,
   });
+
+/**
+ * Cuántos legajos hay en cada estado con los demás filtros aplicados: una página mínima por estado, leyendo el total.
+ * Un estado sin dato (cargando o con error) queda en `null`, nunca en 0.
+ */
+export const useEmployeeStatusCounts = (filters: Omit<EmployeeFilters, 'status'>, enabled = true) => {
+  const statuses: (Employee['status'] | undefined)[] = [undefined, 'active', 'terminated'];
+  const results = useQueries({
+    queries: statuses.map((status) => ({
+      queryKey: keys.list({ counts: status ?? 'all', ...filters }),
+      queryFn: () => listEmployees({ page: 0, pageSize: 1 }, { ...filters, status }).then((page) => page.total),
+      enabled,
+      staleTime: 30_000,
+    })),
+  });
+  const [all, active, terminated] = results.map((result) => result.data ?? null);
+  return { all: all ?? null, active: active ?? null, terminated: terminated ?? null };
+};
 
 export const useEmployee = (id: string | undefined) =>
   useQuery({ queryKey: keys.detail(id ?? ''), queryFn: () => getEmployee(id ?? ''), enabled: Boolean(id) });

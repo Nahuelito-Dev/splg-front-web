@@ -14,26 +14,26 @@ import {
   ResponsiveTable,
   RowActions,
   Select,
+  ExportCsvButton,
+  StatusFilterTabs,
 } from '../../common/components/ui';
 import { useClampPage, usePermissions, useUrlPagedParams } from '../../hooks';
 import type { TrafficFine } from '../../services/api/types';
-import { useTrafficFines, useUpdateTrafficFine, useVoidTrafficFine } from '../../services/queries/fleetExpense';
+import {
+  useTrafficFines,
+  useUpdateTrafficFine,
+  useVoidTrafficFine,
+  useTrafficFineStatusCounts,
+} from '../../services/queries/fleetExpense';
 import { formatCurrency, formatDay } from '../../utils/format';
 import { notify } from '../../utils/notifications';
-import { TRAFFIC_FINE_STATUS, labelOf } from '../../utils/statusLabels';
+import { TRAFFIC_FINE_STATUS, labelOf, statusOptions, statusParam } from '../../utils/statusLabels';
 import { ChargeFineModal } from './components/ChargeFineModal';
 import { PayFineModal } from './components/PayFineModal';
 import { TrafficFineDrawer } from './components/TrafficFineDrawer';
 import { TrafficFineFormModal } from './components/TrafficFineFormModal';
 import { useCarOptions } from './components/useCarOptions';
-
-const STATUS_OPTIONS = [
-  { value: '', label: 'Todos los estados' },
-  { value: 'pending', label: 'Pendientes' },
-  { value: 'appealed', label: 'Apeladas' },
-  { value: 'paid', label: 'Pagadas' },
-  { value: 'voided', label: 'Anuladas' },
-];
+import { asText, csvDateTime, csvDay } from '../../utils/csv';
 
 const isOpen = (fine: TrafficFine) => fine.status === 'pending' || fine.status === 'appealed';
 
@@ -44,6 +44,8 @@ export const TrafficFines = () => {
     { car: '', status: '', from: '', to: '' },
     10,
   );
+  // Un estado inválido en la URL (enlace viejo o escrito a mano) se trata como «todos», en la consulta y en las pestañas.
+  const status = statusParam(TRAFFIC_FINE_STATUS, filters.status);
   const { options: carOptions } = useCarOptions('Todos los vehículos');
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<TrafficFine | null>(null);
@@ -58,13 +60,13 @@ export const TrafficFines = () => {
     pagination,
     {
       carId: filters.car || undefined,
-      status: (filters.status || undefined) as TrafficFine['status'] | undefined,
+      status: status || undefined,
       from: filters.from || undefined,
       to: filters.to || undefined,
     },
     { enabled: !rangeInvalid },
   );
-  const filtered = Boolean(filters.car || filters.status || filters.from || filters.to);
+  const filtered = Boolean(filters.car || status || filters.from || filters.to);
   useClampPage(pagination, data?.total, setPagination);
 
   const appeal = (fine: TrafficFine) =>
@@ -92,6 +94,15 @@ export const TrafficFines = () => {
       <Badge label={labelOf(TRAFFIC_FINE_STATUS, row.status)} />
       {row.chargedToEmployee && <Badge label={{ text: 'Imputada', tone: 'accent' }} />}
     </div>
+  );
+
+  const statusCounts = useTrafficFineStatusCounts(
+    {
+      carId: filters.car || undefined,
+      from: filters.from || undefined,
+      to: filters.to || undefined,
+    },
+    !rangeInvalid,
   );
 
   const columns: GridColDef<TrafficFine>[] = [
@@ -157,81 +168,100 @@ export const TrafficFines = () => {
         }
       />
       <Card>
-        <div className="grid grid-cols-1 items-end gap-3 border-b border-outline p-4 sm:grid-cols-4">
-          <Select
-            label="Vehículo"
-            options={carOptions}
-            value={filters.car}
-            onChange={(e) => setFilters({ car: e.target.value })}
-          />
-          <Select
-            label="Estado"
-            options={STATUS_OPTIONS}
-            value={filters.status}
-            onChange={(e) => setFilters({ status: e.target.value })}
-          />
-          <Input
-            label="Desde"
-            type="date"
-            value={filters.from}
-            onChange={(e) => setFilters({ from: e.target.value })}
-          />
-          <Input
-            label="Hasta"
-            type="date"
-            value={filters.to}
-            error={rangeInvalid ? 'Es anterior al inicio' : undefined}
-            onChange={(e) => setFilters({ to: e.target.value })}
-          />
-        </div>
-        {error ? (
-          <ErrorState error={error} resource="Las multas" onRetry={() => void refetch()} />
-        ) : (
-          <ResponsiveTable
-            label="multas"
-            rows={data?.data ?? []}
-            columns={columns}
-            getRowId={(row) => row.fineId}
-            loading={isFetching}
-            pagination={{ model: pagination, onChange: setPagination, total: data?.total ?? 0 }}
-            onRowClick={(row) => setViewing(row.fineId)}
-            empty={
-              filtered ? (
-                <EmptyState illustration="search" title="Sin resultados" description="Probá con otro filtro." />
-              ) : (
-                <EmptyState
-                  icon={Gavel}
-                  title="Todavía no hay multas"
-                  description="Registrá la primera cuando llegue un acta."
-                />
-              )
-            }
-            renderCard={(row) => (
-              <>
-                <IdentityCell title={`Acta ${row.actNumber}`} subtitle={row.jurisdiction} icon={Gavel} />
-                <p className="text-sm text-ink-2">
-                  {row.carPatent ?? '—'} · {formatCurrency(row.amount)} · vence {formatDay(row.dueDate)}
-                </p>
-                {state(row)}
-                <div className="flex flex-wrap gap-2">
-                  <Button size="sm" variant="secondary" onClick={() => setViewing(row.fineId)}>
-                    Ver
-                  </Button>
-                  {actionsOf(row).map((a) => (
-                    <Button key={a.label} size="sm" variant="secondary" onClick={a.onClick}>
-                      {a.label}
+        <StatusFilterTabs
+          options={statusOptions(TRAFFIC_FINE_STATUS)}
+          value={status}
+          onChange={(status) => setFilters({ status })}
+          counts={statusCounts}
+          label="Filtrar multas por estado"
+          idPrefix="traffic-fines"
+        >
+          <div className="grid grid-cols-1 items-end gap-3 border-b border-outline p-4 sm:grid-cols-3">
+            <Select
+              label="Vehículo"
+              options={carOptions}
+              value={filters.car}
+              onChange={(e) => setFilters({ car: e.target.value })}
+            />
+            <Input
+              label="Desde"
+              type="date"
+              value={filters.from}
+              onChange={(e) => setFilters({ from: e.target.value })}
+            />
+            <Input
+              label="Hasta"
+              type="date"
+              value={filters.to}
+              error={rangeInvalid ? 'Es anterior al inicio' : undefined}
+              onChange={(e) => setFilters({ to: e.target.value })}
+            />
+          </div>
+          <div className="flex justify-end border-b border-outline px-4 py-2">
+            <ExportCsvButton
+              filename="multas"
+              headers={['Acta', 'Vehículo', 'Chofer', 'Fecha', 'Infracción', 'Importe', 'Vencimiento', 'Estado']}
+              rows={(data?.data ?? []).map((row) => [
+                asText(row.actNumber),
+                row.carPatent ?? '',
+                row.employeeName ?? '',
+                csvDateTime(row.occurredAt),
+                row.infraction,
+                row.amount,
+                row.dueDate ? csvDay(row.dueDate) : '',
+                labelOf(TRAFFIC_FINE_STATUS, row.status).text,
+              ])}
+            />
+          </div>
+          {error ? (
+            <ErrorState error={error} resource="Las multas" onRetry={() => void refetch()} />
+          ) : (
+            <ResponsiveTable
+              label="multas"
+              rows={data?.data ?? []}
+              columns={columns}
+              getRowId={(row) => row.fineId}
+              loading={isFetching}
+              pagination={{ model: pagination, onChange: setPagination, total: data?.total ?? 0 }}
+              onRowClick={(row) => setViewing(row.fineId)}
+              empty={
+                filtered ? (
+                  <EmptyState illustration="search" title="Sin resultados" description="Probá con otro filtro." />
+                ) : (
+                  <EmptyState
+                    icon={Gavel}
+                    title="Todavía no hay multas"
+                    description="Registrá la primera cuando llegue un acta."
+                  />
+                )
+              }
+              renderCard={(row) => (
+                <>
+                  <IdentityCell title={`Acta ${row.actNumber}`} subtitle={row.jurisdiction} icon={Gavel} />
+                  <p className="text-sm text-ink-2">
+                    {row.carPatent ?? '—'} · {formatCurrency(row.amount)} · vence {formatDay(row.dueDate)}
+                  </p>
+                  {state(row)}
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm" variant="secondary" onClick={() => setViewing(row.fineId)}>
+                      Ver
                     </Button>
-                  ))}
-                  {canWrite && isOpen(row) && (
-                    <Button size="sm" variant="secondary" onClick={() => setEditing(row)}>
-                      Editar
-                    </Button>
-                  )}
-                </div>
-              </>
-            )}
-          />
-        )}
+                    {actionsOf(row).map((a) => (
+                      <Button key={a.label} size="sm" variant="secondary" onClick={a.onClick}>
+                        {a.label}
+                      </Button>
+                    ))}
+                    {canWrite && isOpen(row) && (
+                      <Button size="sm" variant="secondary" onClick={() => setEditing(row)}>
+                        Editar
+                      </Button>
+                    )}
+                  </div>
+                </>
+              )}
+            />
+          )}
+        </StatusFilterTabs>
       </Card>
       <TrafficFineFormModal
         open={creating || editing !== null}

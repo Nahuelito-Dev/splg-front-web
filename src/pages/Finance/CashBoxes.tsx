@@ -8,6 +8,7 @@ import {
   Card,
   Checkbox,
   EmptyState,
+  ExportCsvButton,
   ErrorState,
   IdentityCell,
   PageHeader,
@@ -20,6 +21,7 @@ import type { CashBox } from '../../services/api/types';
 import { useCashBoxes } from '../../services/queries/finance';
 import { formatCurrency } from '../../utils/format';
 import { CASH_BOX_KIND, labelOf } from '../../utils/statusLabels';
+import { FinanceSummary } from './components/FinanceSummary';
 import { CashBoxFormModal } from './components/CashBoxFormModal';
 import { CloseSessionModal } from './components/CloseSessionModal';
 import { OpenSessionModal } from './components/OpenSessionModal';
@@ -119,6 +121,7 @@ export const CashBoxes = () => {
           </Button>
         }
       />
+      <FinanceSummary kind="boxes" />
       <Card>
         <div className="grid grid-cols-1 items-end gap-3 border-b border-outline p-4 sm:grid-cols-[1fr_auto]">
           <Select
@@ -131,6 +134,24 @@ export const CashBoxes = () => {
             label="Ver desactivadas"
             checked={filters.inactive === '1'}
             onChange={(e) => setFilters({ inactive: e.target.checked ? '1' : '' })}
+          />
+        </div>
+        <div className="flex justify-end border-b border-outline px-4 py-2">
+          <ExportCsvButton
+            filename="cajas"
+            headers={['Caja', 'Tipo', 'Saldo', 'Estado']}
+            rows={(data?.data ?? []).map((row) => [
+              row.name,
+              labelOf(CASH_BOX_KIND, row.kind).text,
+              row.balance,
+              !row.isActive
+                ? 'Desactivada'
+                : row.requiresSession
+                  ? row.openSessionId
+                    ? 'Abierta'
+                    : 'Cerrada'
+                  : 'Sin sesión',
+            ])}
           />
         </div>
         {error ? (

@@ -13,24 +13,19 @@ import {
   ResponsiveTable,
   RowActions,
   Select,
+  ExportCsvButton,
+  StatusFilterTabs,
 } from '../../common/components/ui';
 import { useClampPage, usePermissions, useUrlPagedParams } from '../../hooks';
 import type { VehicleAccident } from '../../services/api/types';
-import { useVehicleAccidents } from '../../services/queries/fleetExpense';
+import { useVehicleAccidents, useAccidentStatusCounts } from '../../services/queries/fleetExpense';
 import { formatCurrency, formatDateTime } from '../../utils/format';
-import { ACCIDENT_STATUS, labelOf } from '../../utils/statusLabels';
+import { ACCIDENT_STATUS, labelOf, statusOptions, statusParam } from '../../utils/statusLabels';
 import { CloseAccidentModal } from './components/CloseAccidentModal';
 import { VehicleAccidentDrawer } from './components/VehicleAccidentDrawer';
 import { VehicleAccidentFormModal } from './components/VehicleAccidentFormModal';
 import { useCarOptions } from './components/useCarOptions';
-
-const STATUS_OPTIONS = [
-  { value: '', label: 'Todos los estados' },
-  { value: 'reported', label: 'Denunciados' },
-  { value: 'under_review', label: 'En revisión' },
-  { value: 'repairing', label: 'En reparación' },
-  { value: 'closed', label: 'Cerrados' },
-];
+import { csvDateTime } from '../../utils/csv';
 
 /** Los siniestros de la flota (CU-201, CU-202, CU-327, CU-328): registrar, avanzar el ciclo, cerrar y consultar. */
 export const VehicleAccidents = () => {
@@ -39,6 +34,8 @@ export const VehicleAccidents = () => {
     { car: '', status: '', from: '', to: '' },
     10,
   );
+  // Un estado inválido en la URL (enlace viejo o escrito a mano) se trata como «todos», en la consulta y en las pestañas.
+  const status = statusParam(ACCIDENT_STATUS, filters.status);
   const { options: carOptions } = useCarOptions('Todos los vehículos');
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<VehicleAccident | null>(null);
@@ -49,13 +46,13 @@ export const VehicleAccidents = () => {
     pagination,
     {
       carId: filters.car || undefined,
-      status: (filters.status || undefined) as VehicleAccident['status'] | undefined,
+      status: status || undefined,
       from: filters.from || undefined,
       to: filters.to || undefined,
     },
     { enabled: !rangeInvalid },
   );
-  const filtered = Boolean(filters.car || filters.status || filters.from || filters.to);
+  const filtered = Boolean(filters.car || status || filters.from || filters.to);
   useClampPage(pagination, data?.total, setPagination);
 
   const state = (row: VehicleAccident) => (
@@ -66,6 +63,15 @@ export const VehicleAccidents = () => {
     </div>
   );
   const closable = (row: VehicleAccident) => canWrite && row.status !== 'closed';
+
+  const statusCounts = useAccidentStatusCounts(
+    {
+      carId: filters.car || undefined,
+      from: filters.from || undefined,
+      to: filters.to || undefined,
+    },
+    !rangeInvalid,
+  );
 
   const columns: GridColDef<VehicleAccident>[] = [
     {
@@ -130,79 +136,107 @@ export const VehicleAccidents = () => {
         }
       />
       <Card>
-        <div className="grid grid-cols-1 items-end gap-3 border-b border-outline p-4 sm:grid-cols-4">
-          <Select
-            label="Vehículo"
-            options={carOptions}
-            value={filters.car}
-            onChange={(e) => setFilters({ car: e.target.value })}
-          />
-          <Select
-            label="Estado"
-            options={STATUS_OPTIONS}
-            value={filters.status}
-            onChange={(e) => setFilters({ status: e.target.value })}
-          />
-          <Input
-            label="Desde"
-            type="date"
-            value={filters.from}
-            onChange={(e) => setFilters({ from: e.target.value })}
-          />
-          <Input
-            label="Hasta"
-            type="date"
-            value={filters.to}
-            error={rangeInvalid ? 'Es anterior al inicio' : undefined}
-            onChange={(e) => setFilters({ to: e.target.value })}
-          />
-        </div>
-        {error ? (
-          <ErrorState error={error} resource="Los siniestros" onRetry={() => void refetch()} />
-        ) : (
-          <ResponsiveTable
-            label="siniestros"
-            rows={data?.data ?? []}
-            columns={columns}
-            getRowId={(row) => row.accidentId}
-            loading={isFetching}
-            pagination={{ model: pagination, onChange: setPagination, total: data?.total ?? 0 }}
-            onRowClick={(row) => setViewing(row.accidentId)}
-            empty={
-              filtered ? (
-                <EmptyState illustration="search" title="Sin resultados" description="Probá con otro filtro." />
-              ) : (
-                <EmptyState icon={TriangleAlert} title="Sin siniestros" description="Ojalá siga así." />
-              )
-            }
-            renderCard={(row) => (
-              <>
-                <IdentityCell
-                  title={row.carPatent ?? 'Sin patente'}
-                  subtitle={formatDateTime(row.occurredAt)}
-                  icon={TriangleAlert}
-                />
-                <p className="text-sm text-ink-2">{row.description}</p>
-                {state(row)}
-                <div className="flex flex-wrap gap-2">
-                  <Button size="sm" variant="secondary" onClick={() => setViewing(row.accidentId)}>
-                    Ver
-                  </Button>
-                  {closable(row) && (
-                    <>
-                      <Button size="sm" variant="secondary" onClick={() => setEditing(row)}>
-                        Editar
-                      </Button>
-                      <Button size="sm" variant="secondary" onClick={() => setClosing(row)}>
-                        Cerrar
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </>
-            )}
-          />
-        )}
+        <StatusFilterTabs
+          options={statusOptions(ACCIDENT_STATUS)}
+          value={status}
+          onChange={(status) => setFilters({ status })}
+          counts={statusCounts}
+          label="Filtrar siniestros por estado"
+          idPrefix="vehicle-accidents"
+        >
+          <div className="grid grid-cols-1 items-end gap-3 border-b border-outline p-4 sm:grid-cols-3">
+            <Select
+              label="Vehículo"
+              options={carOptions}
+              value={filters.car}
+              onChange={(e) => setFilters({ car: e.target.value })}
+            />
+            <Input
+              label="Desde"
+              type="date"
+              value={filters.from}
+              onChange={(e) => setFilters({ from: e.target.value })}
+            />
+            <Input
+              label="Hasta"
+              type="date"
+              value={filters.to}
+              error={rangeInvalid ? 'Es anterior al inicio' : undefined}
+              onChange={(e) => setFilters({ to: e.target.value })}
+            />
+          </div>
+          <div className="flex justify-end border-b border-outline px-4 py-2">
+            <ExportCsvButton
+              filename="siniestros"
+              headers={[
+                'Vehículo',
+                'Chofer',
+                'Fecha',
+                'Lugar',
+                'Estado',
+                'Inutilizable',
+                'Costo de reparación',
+                'Costo neto',
+              ]}
+              rows={(data?.data ?? []).map((row) => [
+                row.carPatent ?? '',
+                row.employeeName ?? '',
+                csvDateTime(row.occurredAt),
+                row.location ?? '',
+                labelOf(ACCIDENT_STATUS, row.status).text,
+                row.vehicleUnusable ? 'Sí' : 'No',
+                row.repairCost ?? '',
+                row.netCost ?? '',
+              ])}
+            />
+          </div>
+          {error ? (
+            <ErrorState error={error} resource="Los siniestros" onRetry={() => void refetch()} />
+          ) : (
+            <ResponsiveTable
+              label="siniestros"
+              rows={data?.data ?? []}
+              columns={columns}
+              getRowId={(row) => row.accidentId}
+              loading={isFetching}
+              pagination={{ model: pagination, onChange: setPagination, total: data?.total ?? 0 }}
+              onRowClick={(row) => setViewing(row.accidentId)}
+              empty={
+                filtered ? (
+                  <EmptyState illustration="search" title="Sin resultados" description="Probá con otro filtro." />
+                ) : (
+                  <EmptyState icon={TriangleAlert} title="Sin siniestros" description="Ojalá siga así." />
+                )
+              }
+              renderCard={(row) => (
+                <>
+                  <IdentityCell
+                    title={row.carPatent ?? 'Sin patente'}
+                    subtitle={formatDateTime(row.occurredAt)}
+                    icon={TriangleAlert}
+                  />
+                  <p className="text-sm text-ink-2">{row.description}</p>
+                  {state(row)}
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm" variant="secondary" onClick={() => setViewing(row.accidentId)}>
+                      Ver
+                    </Button>
+                    {closable(row) && (
+                      <>
+                        <Button size="sm" variant="secondary" onClick={() => setEditing(row)}>
+                          Editar
+                        </Button>
+                        <Button size="sm" variant="secondary" onClick={() => setClosing(row)}>
+                          Cerrar
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </>
+              )}
+            />
+          )}
+        </StatusFilterTabs>
       </Card>
       <VehicleAccidentFormModal
         open={creating || editing !== null}

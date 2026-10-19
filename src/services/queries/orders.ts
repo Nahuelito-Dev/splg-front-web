@@ -73,17 +73,19 @@ const FROM_LIST = ORDER_FLOW.filter((status) => !(FROM_SUMMARY as readonly strin
 
 /**
  * Cuántos pedidos hay en cada estado (pestañas de Pedidos y dona del tablero).
- * Pendientes, aceptados y en camino salen del resumen de estadísticas (una sola
- * llamada, la misma que usa el tablero); el resto, de una página mínima de
- * GET /orders por estado leyendo `total`. Un estado sin dato (cargando o con
- * error) queda en `null`, nunca en 0, y `total` es `null` si falta alguno.
+ * Sin filtros, pendientes, aceptados y en camino salen del resumen de estadísticas (una sola llamada, la misma que
+ * usa el tablero) y el resto, de una página mínima de GET /orders por estado leyendo `total`. Con búsqueda, cobro
+ * o fechas el resumen no sirve (es global): cada estado se pide a GET /orders con esos mismos filtros. Un estado
+ * sin dato (cargando o con error) queda en `null`, nunca en 0, y `total` es `null` si falta alguno.
  */
-export const useOrderStatusCounts = () => {
+export const useOrderStatusCounts = (filters: Omit<OrderFilters, 'status'> = {}) => {
+  const filtered = Boolean(filters.search || filters.paymentStatus || filters.from || filters.to);
   const summary = useOrderStats();
+  const statuses = filtered ? ORDER_FLOW : FROM_LIST;
   const results = useQueries({
-    queries: FROM_LIST.map((status) => ({
-      queryKey: keys.list({ page: 0, pageSize: 1, status }),
-      queryFn: () => listOrders({ page: 0, pageSize: 1 }, { status }),
+    queries: statuses.map((status) => ({
+      queryKey: keys.list({ page: 0, pageSize: 1, status, ...(filtered ? filters : {}) }),
+      queryFn: () => listOrders({ page: 0, pageSize: 1 }, { ...(filtered ? filters : {}), status }),
       staleTime: 30_000,
     })),
   });
@@ -91,16 +93,20 @@ export const useOrderStatusCounts = () => {
   const fromSummary = summary.data?.ordersSummary;
   const counts = Object.fromEntries(
     ORDER_FLOW.map((status) => {
-      if (status === 'pending') return [status, fromSummary?.pending ?? null];
-      if (status === 'accepted') return [status, fromSummary?.accepted ?? null];
-      if (status === 'out_for_delivery') return [status, fromSummary?.onTheWay ?? null];
-      return [status, results[FROM_LIST.indexOf(status)].data?.total ?? null];
+      if (!filtered && status === 'pending') return [status, fromSummary?.pending ?? null];
+      if (!filtered && status === 'accepted') return [status, fromSummary?.accepted ?? null];
+      if (!filtered && status === 'out_for_delivery') return [status, fromSummary?.onTheWay ?? null];
+      return [status, results[statuses.indexOf(status)].data?.total ?? null];
     }),
   ) as Record<Order['status'], number | null>;
   const values = Object.values(counts);
   const total = values.some((count) => count === null) ? null : values.reduce<number>((acc, c) => acc + (c ?? 0), 0);
 
-  return { counts, total, isError: summary.isError || results.some((result) => result.isError) };
+  return {
+    counts,
+    total,
+    isError: (!filtered && summary.isError) || results.some((result) => result.isError),
+  };
 };
 
 /**

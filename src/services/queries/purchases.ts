@@ -37,6 +37,8 @@ import type {
   VoidPurchaseReceiptBody,
 } from '../api/types';
 import { runIntent } from './intent';
+import { PURCHASE_ORDER_STATUS, RECEIPT_STATUS, statusKeys } from '../../utils/statusLabels';
+import { useStatusCounts } from './statusCounts';
 import { queryKeys } from './queryKeys';
 import { invalidateStockViews } from './stock';
 
@@ -119,6 +121,24 @@ export const usePurchaseOrders = (
     placeholderData: keepPreviousData,
     enabled,
   });
+
+/** Cuántas órdenes hay en cada estado, con los demás filtros aplicados. */
+export const usePurchaseOrderStatusCounts = (filters: Omit<PurchaseOrderFilters, 'status'>, enabled = true) =>
+  useStatusCounts(
+    statusKeys(PURCHASE_ORDER_STATUS),
+    (status) => queryKeys.purchaseOrders.list({ ...filters, counts: status }),
+    (status) => listPurchaseOrders({ page: 0, pageSize: 1 }, { ...filters, status }).then((page) => page.total),
+    enabled,
+  );
+
+/** Cuántas recepciones hay confirmadas y anuladas, con los demás filtros aplicados. */
+export const usePurchaseReceiptStatusCounts = (filters: Omit<PurchaseReceiptFilters, 'status'>, enabled = true) =>
+  useStatusCounts(
+    statusKeys(RECEIPT_STATUS),
+    (status) => queryKeys.purchaseReceipts.list({ ...filters, counts: status }),
+    (status) => listPurchaseReceipts({ page: 0, pageSize: 1 }, { ...filters, status }).then((page) => page.total),
+    enabled,
+  );
 
 export const usePurchaseOrder = (id: string | undefined, { enabled = true }: Options = {}) =>
   useQuery({

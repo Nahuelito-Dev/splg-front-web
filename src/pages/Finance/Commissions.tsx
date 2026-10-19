@@ -5,6 +5,7 @@ import {
   Badge,
   Card,
   EmptyState,
+  ExportCsvButton,
   ErrorState,
   FilterChips,
   Input,
@@ -17,7 +18,9 @@ import type { CommissionEntry } from '../../services/api/types';
 import { useCommissionEntries } from '../../services/queries/finance';
 import { useEmployees } from '../../services/queries/employees';
 import { formatCurrency, formatDateTime, formatShortId } from '../../utils/format';
+import { FinanceSummary } from './components/FinanceSummary';
 import { COMMISSION_ENTRY_TYPE, labelOf } from '../../utils/statusLabels';
+import { csvDateTime } from '../../utils/csv';
 
 const LIQUIDATED = [
   { value: '', label: 'Liquidadas y pendientes' },
@@ -112,6 +115,7 @@ export const Commissions = () => {
         title="Comisiones"
         description="Lo que devengó cada chofer por sus entregas, menos las deducciones."
       />
+      <FinanceSummary kind="commissions" />
       <Card>
         <div className="grid grid-cols-1 items-end gap-3 border-b border-outline p-4 sm:grid-cols-2 lg:grid-cols-4">
           <Select
@@ -162,6 +166,21 @@ export const Commissions = () => {
             <b className="font-mono text-ink">{formatCurrency(data.totalAmount)}</b>
           </p>
         )}
+        <div className="flex justify-end border-b border-outline px-4 py-2">
+          <ExportCsvButton
+            filename="comisiones"
+            headers={['Fecha', 'Chofer', 'Asiento', 'Pedido', 'Descripción', 'Liquidada', 'Importe']}
+            rows={(data?.data ?? []).map((row) => [
+              csvDateTime(row.occurredAt),
+              row.employeeName,
+              labelOf(COMMISSION_ENTRY_TYPE, row.type).text,
+              row.orderId ? formatShortId(row.orderId) : '',
+              row.description,
+              row.liquidationId ? 'Sí' : 'No',
+              row.amount,
+            ])}
+          />
+        </div>
         {error ? (
           <ErrorState error={error} resource="Las comisiones" onRetry={() => void refetch()} />
         ) : (

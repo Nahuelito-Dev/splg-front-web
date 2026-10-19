@@ -14,37 +14,39 @@ import {
   ResponsiveTable,
   RowActions,
   SearchInput,
-  Select,
+  ExportCsvButton,
+  StatusFilterTabs,
 } from '../../common/components/ui';
 import { FROM_LIST_STATE, useClampPage, useDebounce, usePermissions, useUrlPagedParams } from '../../hooks';
 import type { CustomerAccount } from '../../services/api/types';
-import { useCustomerAccounts } from '../../services/queries/finance';
+import { useCustomerAccounts, useCustomerAccountStatusCounts } from '../../services/queries/finance';
 import { formatCurrency } from '../../utils/format';
-import { ACCOUNT_STATUS, labelOf } from '../../utils/statusLabels';
+import { ACCOUNT_STATUS, labelOf, statusOptions, statusParam } from '../../utils/statusLabels';
+import { FinanceSummary } from './components/FinanceSummary';
 import { CustomerAccountFormModal } from './components/CustomerAccountFormModal';
-
-const STATUS_FILTER = [
-  { value: '', label: 'Todos los estados' },
-  { value: 'active', label: 'Activas' },
-  { value: 'blocked', label: 'Bloqueadas' },
-  { value: 'closed', label: 'Cerradas' },
-];
 
 /** Cuentas corrientes de los clientes: saldo, crédito disponible y deuda vencida (CU-235, 238). */
 export const CustomerAccounts = () => {
   const navigate = useNavigate();
   const { canWrite, writeHint } = usePermissions();
   const [filters, setFilters, pagination, setPagination] = useUrlPagedParams({ q: '', status: '', overdue: '' }, 10);
+  // Un estado inválido en la URL (enlace viejo o escrito a mano) se trata como «todos», en la consulta y en las pestañas.
+  const status = statusParam(ACCOUNT_STATUS, filters.status);
   const q = useDebounce(filters.q, 300);
   const { data, isFetching, error, refetch } = useCustomerAccounts(pagination, {
     q: q || undefined,
-    status: (filters.status || undefined) as CustomerAccount['status'] | undefined,
+    status: status || undefined,
     overdue: filters.overdue === '1' ? true : undefined,
   });
   const [creating, setCreating] = useState(false);
-  const filtered = Boolean(filters.q || filters.status || filters.overdue);
+  const filtered = Boolean(filters.q || status || filters.overdue);
 
   const goTo = (row: CustomerAccount) => navigate(`/finance/accounts/${row.accountId}`, { state: FROM_LIST_STATE });
+
+  const statusCounts = useCustomerAccountStatusCounts({
+    q: q || undefined,
+    overdue: filters.overdue === '1' ? true : undefined,
+  });
 
   const columns: GridColDef<CustomerAccount>[] = [
     {
@@ -135,72 +137,90 @@ export const CustomerAccounts = () => {
           </>
         }
       />
+      <FinanceSummary kind="accounts" />
       <Card>
-        <div className="grid grid-cols-1 items-end gap-3 border-b border-outline p-4 sm:grid-cols-[2fr_1fr_auto]">
-          <SearchInput
-            value={filters.q}
-            onChange={(e) => setFilters({ q: e.target.value })}
-            placeholder="Razón social, CUIT, nombre o correo"
-            label="Buscar cuentas"
-            className="sm:w-full"
-          />
-          <Select
-            label="Estado"
-            options={STATUS_FILTER}
-            value={filters.status}
-            onChange={(e) => setFilters({ status: e.target.value })}
-          />
-          <Checkbox
-            label="Con deuda vencida"
-            checked={filters.overdue === '1'}
-            onChange={(e) => setFilters({ overdue: e.target.checked ? '1' : '' })}
-          />
-        </div>
-        {error ? (
-          <ErrorState error={error} resource="Las cuentas corrientes" onRetry={() => void refetch()} />
-        ) : (
-          <ResponsiveTable
-            label="cuentas corrientes"
-            rows={data?.data ?? []}
-            columns={columns}
-            getRowId={(row) => row.accountId}
-            loading={isFetching}
-            pagination={{ model: pagination, onChange: setPagination, total: data?.total ?? 0 }}
-            onRowClick={goTo}
-            empty={
-              filtered ? (
-                <EmptyState
-                  illustration="search"
-                  title="Sin resultados"
-                  description="Probá con otra búsqueda o filtro."
-                />
-              ) : (
-                <EmptyState
-                  icon={Landmark}
-                  title="Todavía no hay cuentas corrientes"
-                  description="Habilitá la primera para poder venderle a crédito a un cliente."
-                />
-              )
-            }
-            renderCard={(row) => (
-              <>
-                <IdentityCell title={row.businessName} subtitle={row.customerName || undefined} icon={Landmark} />
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge label={labelOf(ACCOUNT_STATUS, row.status)} />
-                  <span className="font-mono text-sm">Saldo {formatCurrency(row.balance)}</span>
-                  {row.overdueAmount > 0 && (
-                    <span className="font-mono text-sm text-danger">Vencido {formatCurrency(row.overdueAmount)}</span>
-                  )}
-                </div>
-                <div>
-                  <Button size="sm" variant="secondary" onClick={() => goTo(row)}>
-                    Ver cuenta
-                  </Button>
-                </div>
-              </>
-            )}
-          />
-        )}
+        <StatusFilterTabs
+          options={statusOptions(ACCOUNT_STATUS)}
+          value={status}
+          onChange={(status) => setFilters({ status })}
+          counts={statusCounts}
+          label="Filtrar cuentas por estado"
+          idPrefix="customer-accounts"
+        >
+          <div className="grid grid-cols-1 items-end gap-3 border-b border-outline p-4 sm:grid-cols-[2fr_auto]">
+            <SearchInput
+              value={filters.q}
+              onChange={(e) => setFilters({ q: e.target.value })}
+              placeholder="Razón social, CUIT, nombre o correo"
+              label="Buscar cuentas"
+              className="sm:w-full"
+            />
+            <Checkbox
+              label="Con deuda vencida"
+              checked={filters.overdue === '1'}
+              onChange={(e) => setFilters({ overdue: e.target.checked ? '1' : '' })}
+            />
+          </div>
+          <div className="flex justify-end border-b border-outline px-4 py-2">
+            <ExportCsvButton
+              filename="cuentas-corrientes"
+              headers={['Cuenta', 'Cliente', 'Saldo', 'Disponible', 'Vencido', 'Estado']}
+              rows={(data?.data ?? []).map((row) => [
+                row.businessName,
+                row.customerName || row.customerEmail || '',
+                row.balance,
+                row.availableCredit,
+                row.overdueAmount,
+                labelOf(ACCOUNT_STATUS, row.status).text,
+              ])}
+            />
+          </div>
+          {error ? (
+            <ErrorState error={error} resource="Las cuentas corrientes" onRetry={() => void refetch()} />
+          ) : (
+            <ResponsiveTable
+              label="cuentas corrientes"
+              rows={data?.data ?? []}
+              columns={columns}
+              getRowId={(row) => row.accountId}
+              loading={isFetching}
+              pagination={{ model: pagination, onChange: setPagination, total: data?.total ?? 0 }}
+              onRowClick={goTo}
+              empty={
+                filtered ? (
+                  <EmptyState
+                    illustration="search"
+                    title="Sin resultados"
+                    description="Probá con otra búsqueda o filtro."
+                  />
+                ) : (
+                  <EmptyState
+                    icon={Landmark}
+                    title="Todavía no hay cuentas corrientes"
+                    description="Habilitá la primera para poder venderle a crédito a un cliente."
+                  />
+                )
+              }
+              renderCard={(row) => (
+                <>
+                  <IdentityCell title={row.businessName} subtitle={row.customerName || undefined} icon={Landmark} />
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge label={labelOf(ACCOUNT_STATUS, row.status)} />
+                    <span className="font-mono text-sm">Saldo {formatCurrency(row.balance)}</span>
+                    {row.overdueAmount > 0 && (
+                      <span className="font-mono text-sm text-danger">Vencido {formatCurrency(row.overdueAmount)}</span>
+                    )}
+                  </div>
+                  <div>
+                    <Button size="sm" variant="secondary" onClick={() => goTo(row)}>
+                      Ver cuenta
+                    </Button>
+                  </div>
+                </>
+              )}
+            />
+          )}
+        </StatusFilterTabs>
       </Card>
       <CustomerAccountFormModal open={creating} onClose={() => setCreating(false)} account={null} />
     </div>
