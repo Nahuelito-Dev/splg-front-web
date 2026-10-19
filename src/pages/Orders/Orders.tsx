@@ -41,11 +41,12 @@ import { isInvertedRange, type OrdersToolbarFilters } from './components/ordersF
 import { ORDER_TABS_ID, OrderStatusTabs } from './components/OrderStatusTabs';
 import { canAssignDriver } from './components/orderStatus';
 import { OrdersFilters } from './components/OrdersFilters';
+import { OrderQuickDrawer } from './components/OrderQuickDrawer';
 import { OrdersTable } from './components/OrdersTable';
 import { csvDateTime } from '../../utils/csv';
 
-// Ver el detalle de un pedido navega a su ficha (`/orders/:id`); acá sólo
-// quedan las acciones rápidas de la tabla (asignar y cancelar).
+// Ver un pedido abre un panel lateral sin salir del listado (con enlace a su ficha, `/orders/:id`);
+// el resto son las acciones rápidas de la tabla (asignar, editar y cancelar).
 type ModalState =
   | { kind: 'closed' }
   | { kind: 'assign'; order: Order }
@@ -73,6 +74,7 @@ export const Orders = () => {
   };
   const debouncedSearch = useDebounce(toolbar.search.trim());
   const [modal, setModal] = useState<ModalState>({ kind: 'closed' });
+  const [viewing, setViewing] = useState<Order | null>(null);
 
   const invertedRange = isInvertedRange(toolbar);
   // Las pestañas y el resumen cuentan con la misma búsqueda, cobro y fechas que el listado.
@@ -326,7 +328,7 @@ export const Orders = () => {
               clearSelection();
               setPagination(model);
             }}
-            onView={(order) => navigate(`/orders/${order.order_id}`)}
+            onView={setViewing}
             onAssign={canOperate ? (order) => setModal({ kind: 'assign', order }) : undefined}
             onEdit={canWrite ? (order) => setModal({ kind: 'edit', order }) : undefined}
             onCancel={canOperate ? (order) => setModal({ kind: 'cancel', order }) : undefined}
@@ -350,6 +352,19 @@ export const Orders = () => {
         }
         count={modal.kind === 'bulk-assign' ? assignable.length : 1}
         affected={modal.kind === 'bulk-assign' ? assignable.map(label) : undefined}
+      />
+      <OrderQuickDrawer
+        open={viewing !== null}
+        onClose={() => setViewing(null)}
+        order={viewing}
+        onAssign={
+          canOperate
+            ? (order) => {
+                setViewing(null);
+                setModal({ kind: 'assign', order });
+              }
+            : undefined
+        }
       />
       <EditOrderModal order={modal.kind === 'edit' ? modal.order : null} onClose={closeModal} />
       <CancelOrderModal

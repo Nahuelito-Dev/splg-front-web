@@ -18,6 +18,7 @@ describe('customerStats', () => {
     );
     expect(stats).toEqual({
       totalPurchased: 3500,
+      averageTicket: 1750,
       ordersCount: 4,
       lastPurchaseAt: '2026-09-01T10:00:00Z',
       partial: false,
@@ -25,7 +26,13 @@ describe('customerStats', () => {
   });
 
   it('sin pedidos no inventa fecha ni monto', () => {
-    expect(customerStats([], 0)).toEqual({ totalPurchased: 0, ordersCount: 0, lastPurchaseAt: null, partial: false });
+    expect(customerStats([], 0)).toEqual({
+      totalPurchased: 0,
+      averageTicket: null,
+      ordersCount: 0,
+      lastPurchaseAt: null,
+      partial: false,
+    });
   });
 
   it('avisa si el monto sale de una muestra (hay más pedidos que los traídos)', () => {

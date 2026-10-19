@@ -10,6 +10,7 @@ export * from './AffectedList';
 export * from './AnalyticSummary';
 export * from './DetailList';
 export * from './Drawer';
+export * from './RecordDrawer';
 export * from './EmptyIllustration';
 export * from './EmptyState';
 export * from './EntityPhoto';

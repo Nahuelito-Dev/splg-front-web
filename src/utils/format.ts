@@ -1,6 +1,7 @@
 /** Formatos de presentación del panel (es-AR). Un solo lugar para moneda y fechas. */
 
 const currency = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 });
+const currencyExact = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
 const number = new Intl.NumberFormat('es-AR');
 const dateOnly = new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium' });
 const dateTime = new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium', timeStyle: 'short' });
@@ -17,6 +18,12 @@ const toDate = (value: Exclude<DateInput, null | undefined>): Date | null => {
 export const formatCurrency = (value: number | string | null | undefined): string => {
   const n = Number(value);
   return value === null || value === undefined || value === '' || !Number.isFinite(n) ? '—' : currency.format(n);
+};
+
+/** $ 22.600,50: con centavos, para saldos y promedios donde los decimales cuentan. */
+export const formatCurrencyExact = (value: number | string | null | undefined): string => {
+  const n = Number(value);
+  return value === null || value === undefined || value === '' || !Number.isFinite(n) ? '—' : currencyExact.format(n);
 };
 
 /** 1.234 */

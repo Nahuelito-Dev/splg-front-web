@@ -3,6 +3,8 @@ import type { Order } from '../../services/api/types';
 export interface CustomerStats {
   /** Suma de los pedidos entregados (los cancelados y los que siguen en curso no cuentan como compra). */
   totalPurchased: number;
+  /** Ticket promedio: lo comprado dividido los pedidos entregados; null si todavía no recibió ninguno. */
+  averageTicket: number | null;
   /** Cuántos pedidos tiene en total, según la API (`total` del listado). */
   ordersCount: number;
   /** Fecha del último pedido entregado (coherente con el total comprado), o null si no tiene ninguno. */
@@ -22,8 +24,10 @@ export const customerStats = (orders: Order[], total: number): CustomerStats => 
     (latest, order) => (latest === null || order.created_at > latest ? order.created_at : latest),
     null,
   );
+  const totalPurchased = delivered.reduce((sum, order) => sum + order.total_amount, 0);
   return {
-    totalPurchased: delivered.reduce((sum, order) => sum + order.total_amount, 0),
+    totalPurchased,
+    averageTicket: delivered.length > 0 ? totalPurchased / delivered.length : null,
     ordersCount: total,
     lastPurchaseAt,
     partial: total > orders.length,

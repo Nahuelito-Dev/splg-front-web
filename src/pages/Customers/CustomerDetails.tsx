@@ -23,9 +23,10 @@ import { useCrumbLeaf } from '../../common/components';
 import type { Claim } from '../../services/api/types';
 import { useClaims } from '../../services/queries/claims';
 import { useCustomer, useCustomerOrderSample, useDeleteCustomer } from '../../services/queries/customers';
+import { useCustomerAccountOf } from '../../services/queries/finance';
 import { useCylinders } from '../../services/queries/physicalCylinders';
 import { useUserAddresses } from '../../services/queries/userAddresses';
-import { formatCurrency, formatDate } from '../../utils/format';
+import { formatCurrency, formatCurrencyExact, formatDate, formatNumber } from '../../utils/format';
 import { confirm, notify } from '../../utils/notifications';
 import { ClaimDetailDrawer } from '../Claims/components/ClaimDetailDrawer';
 import { CylinderLinksCard } from '../PhysicalCylinders/components/CylinderLinksCard';
@@ -34,6 +35,7 @@ import { UserRatingsTab } from '../Ratings/components/UserRatingsTab';
 import { roleLabel } from '../Users/roleLabel';
 import { CustomerAccountAction } from '../Finance/components/CustomerAccountAction';
 import { CustomerFormModal } from './components/CustomerFormModal';
+import { CustomerAccountTab } from './components/details/CustomerAccountTab';
 import { CustomerAddresses } from './components/details/CustomerAddresses';
 import { CustomerClaims } from './components/details/CustomerClaims';
 import { CustomerLocationModal } from './components/details/CustomerLocationModal';
@@ -41,13 +43,19 @@ import { CustomerOrders } from './components/details/CustomerOrders';
 import { CustomerSummary } from './components/details/CustomerSummary';
 import { customerStats } from './customerStats';
 
-const TAB_KEYS = ['summary', 'orders', 'addresses', 'cylinders', 'claims', 'ratings'];
+/** El texto sale del valor real en centavos: un saldo de $ 0,004 se muestra $ 0,00 y está al día. */
+const balanceHint = (balance: number): string => {
+  const cents = Math.round(balance * 100);
+  return cents > 0 ? 'El cliente debe' : cents < 0 ? 'Saldo a favor' : 'Al día';
+};
+
+const TAB_KEYS = ['summary', 'orders', 'addresses', 'cylinders', 'claims', 'account', 'ratings'];
 
 export const CustomerDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const goBack = useBackToList('/customers');
-  const { canManageCustomerAccounts } = usePermissions();
+  const { canManageCustomerAccounts, needsDistributor } = usePermissions();
   const { data: customer, isPending, error, refetch } = useCustomer(id);
   const deleteCustomer = useDeleteCustomer();
   const [editing, setEditing] = useState(false);
@@ -63,6 +71,10 @@ export const CustomerDetails = () => {
     '',
     { enabled: Boolean(customer?.user_id) },
   );
+  const accountQuery = useCustomerAccountOf(customer?.user_id, customer?.user?.full_name ?? undefined, {
+    enabled: !needsDistributor,
+  });
+  const account = accountQuery.data;
   const claimsQuery = useClaims();
   // `claim.customer_id` es el id de la cuenta (`user_id`) del cliente, no el de su perfil: se filtran los de esta ficha.
   const claims = useMemo(
@@ -92,6 +104,7 @@ export const CustomerDetails = () => {
   const name = customer?.user?.full_name ?? 'Sin nombre';
   useCrumbLeaf(customer ? name : undefined, goBack);
   const stats = orders.data ? customerStats(orders.data.orders, orders.data.total) : null;
+  const consumption = customer?.avgMonthlyConsumptionKg;
   const coverStats: CoverStat[] = [
     {
       label: 'Total comprado',
@@ -100,8 +113,28 @@ export const CustomerDetails = () => {
     },
     { label: 'Pedidos', value: stats ? String(stats.ordersCount) : '–' },
     {
+      label: 'Ticket promedio',
+      value: stats ? (stats.averageTicket === null ? 'Sin entregas' : formatCurrencyExact(stats.averageTicket)) : '–',
+      hint: stats?.partial && stats.averageTicket !== null ? 'De sus últimos 100 pedidos' : undefined,
+    },
+    {
       label: 'Última compra',
       value: stats ? (stats.lastPurchaseAt ? formatDate(stats.lastPurchaseAt) : 'Sin pedidos') : '–',
+    },
+    {
+      label: 'Consumo declarado',
+      value: consumption == null ? 'Sin declarar' : `${formatNumber(consumption)} kg/mes`,
+    },
+    {
+      label: 'Cuenta corriente',
+      value: needsDistributor
+        ? 'Elegí distribuidora'
+        : accountQuery.isError || account === undefined
+          ? '–'
+          : account
+            ? formatCurrencyExact(account.balance)
+            : 'Sin cuenta',
+      hint: account ? balanceHint(account.balance) : undefined,
     },
   ];
 
@@ -111,6 +144,7 @@ export const CustomerDetails = () => {
     { key: 'addresses', label: 'Direcciones', badge: addresses.data?.length },
     { key: 'cylinders', label: 'Envases en su poder', badge: heldCylinders.data?.total },
     { key: 'claims', label: 'Reclamos', badge: claimsQuery.data ? claims.length : undefined },
+    { key: 'account', label: 'Cuenta corriente' },
     { key: 'ratings', label: 'Calificaciones' },
   ];
 
@@ -205,6 +239,17 @@ export const CustomerDetails = () => {
           </ProfileTabPanel>
           <ProfileTabPanel tabKey="claims" value={tab}>
             <CustomerClaims claims={claims} onOpen={(claim: Claim) => setClaimId(claim.claim_id)} />
+          </ProfileTabPanel>
+          <ProfileTabPanel tabKey="account" value={tab}>
+            <CustomerAccountTab
+              userId={customer.user_id}
+              name={name}
+              account={account}
+              needsDistributor={needsDistributor}
+              loading={accountQuery.isPending}
+              error={accountQuery.error}
+              onRetry={() => void accountQuery.refetch()}
+            />
           </ProfileTabPanel>
           <ProfileTabPanel tabKey="ratings" value={tab}>
             <UserRatingsTab userId={customer.user_id} name={customer.user?.full_name} />

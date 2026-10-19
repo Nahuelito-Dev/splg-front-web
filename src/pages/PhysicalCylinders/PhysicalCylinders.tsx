@@ -22,7 +22,7 @@ import {
   type FilterChip,
   type TabItem,
 } from '../../common/components/ui';
-import { FROM_LIST_STATE, useDebounce, usePermissions, useUrlParams } from '../../hooks';
+import { useDebounce, usePermissions, useUrlParams } from '../../hooks';
 import type { Cylinder } from '../../services/api/types';
 import { useUserNames } from '../../services/queries/userNames';
 import {
@@ -35,6 +35,7 @@ import { notify } from '../../utils/notifications';
 import { CYLINDER_STATE, VIGENCIA_FILTER_LABEL, labelOf } from '../../utils/statusLabels';
 import { BulkTransitionModal } from './components/BulkTransitionModal';
 import { AssignCylindersModal } from './components/AssignCylindersModal';
+import { CylinderQuickDrawer } from './components/CylinderQuickDrawer';
 import { CylinderFormModal } from './components/CylinderFormModal';
 import { RetireCylinderModal } from './components/RetireCylinderModal';
 import { PhysicalCylindersTable } from './components/PhysicalCylindersTable';
@@ -67,6 +68,7 @@ export const PhysicalCylinders = () => {
   const state: CylinderStateFilter = ALL_STATES.find((s) => s === stateParam) ?? 'all';
   const vigencia = VIGENCIAS.find((v) => v === vigenciaParam);
   const [form, setForm] = useState<{ open: boolean; cylinder: Cylinder | null }>({ open: false, cylinder: null });
+  const [viewing, setViewing] = useState<Cylinder | null>(null);
   const [retireTarget, setRetireTarget] = useState<Cylinder | null>(null);
   const [assignOpen, setAssignOpen] = useState(false);
   const [transitionTarget, setTransitionTarget] = useState<Cylinder | null>(null);
@@ -306,9 +308,7 @@ export const PhysicalCylinders = () => {
                 onTransition={canWrite ? setTransitionTarget : undefined}
                 onEdit={canWrite ? (cylinder) => setForm({ open: true, cylinder }) : undefined}
                 onRetire={canWrite ? setRetireTarget : undefined}
-                onView={(cylinder) =>
-                  navigate(`/physical-cylinders/${cylinder.cylinder_id}`, { state: FROM_LIST_STATE })
-                }
+                onView={setViewing}
               />
             </div>
           </>
@@ -329,6 +329,7 @@ export const PhysicalCylinders = () => {
         onClose={() => setForm((current) => ({ ...current, open: false }))}
         cylinder={form.cylinder}
       />
+      <CylinderQuickDrawer open={viewing !== null} onClose={() => setViewing(null)} cylinder={viewing} />
       <RetireCylinderModal cylinder={retireTarget} onClose={() => setRetireTarget(null)} />
       <AssignCylindersModal open={assignOpen} onClose={() => setAssignOpen(false)} />
       <TransitionModal

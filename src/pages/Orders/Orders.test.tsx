@@ -26,6 +26,7 @@ const order = (id: string, status: Order['status'], name: string) =>
     delivery_address: { street: 'Calle 1', city: 'Posadas' },
     delivery_name: null,
     zone_surcharge: null,
+    order_items: [{ quantity: 2, subtotal: 1000, gas_cylinder: { type: 'Garrafa 10 kg' } }],
   }) as unknown as Order;
 
 const ORDERS = [
@@ -62,6 +63,7 @@ vi.mock('../../services/queries/orders', () => {
       counts: { reserved: 0, pending: 1, accepted: 1, out_for_delivery: 0, delivered: 1, cancelled: 0 },
       total: 3,
     }),
+    useOrder: () => ({ data: undefined, error: null, refetch: vi.fn() }),
     useAssignOrderDelivery: () => idle,
     useUpdateOrder: () => idle,
     useCancelOrder: () => idle,
@@ -258,5 +260,37 @@ describe('Orders: filtros en la URL y exportación', () => {
     expect(screen.getByRole('button', { name: 'Exportar CSV' })).toBeEnabled();
     fireEvent.click(checkboxes()[0]);
     expect(screen.getByRole('button', { name: 'Exportar selección' })).toBeEnabled();
+  });
+});
+
+describe('Orders: panel lateral', () => {
+  it('abrir un pedido muestra su detalle en un panel con el enlace a la ficha, sin salir del listado', () => {
+    renderPage();
+    fireEvent.click(screen.getByText('Ana Pérez'));
+    const drawer = screen.getByRole('dialog', { name: /Pedido #/ });
+    expect(within(drawer).getByText(/2 × Garrafa 10 kg/)).toBeInTheDocument();
+    expect(within(drawer).getByRole('link', { name: /Abrir ficha completa/ })).toHaveAttribute(
+      'href',
+      '/orders/aaaaaaaa-1',
+    );
+    expect(screen.getByRole('list', { name: 'Pedidos por estado', hidden: true })).toBeInTheDocument();
+  });
+
+  it('«Asignar chofer» del panel abre la asignación de ese pedido y cierra el panel', async () => {
+    renderPage();
+    fireEvent.click(screen.getByText('Ana Pérez'));
+    fireEvent.click(
+      within(screen.getByRole('dialog', { name: /Pedido #/ })).getByRole('button', { name: 'Asignar chofer' }),
+    );
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: /Pedido #/ })).not.toBeInTheDocument());
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('un pedido entregado no ofrece asignar chofer en el panel', () => {
+    renderPage();
+    fireEvent.click(screen.getByText('Carla Ruiz'));
+    expect(
+      within(screen.getByRole('dialog', { name: /Pedido #/ })).queryByRole('button', { name: /chofer/ }),
+    ).not.toBeInTheDocument();
   });
 });

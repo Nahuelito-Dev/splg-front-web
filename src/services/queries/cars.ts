@@ -6,10 +6,11 @@ import { queryKeys } from './queryKeys';
 const keys = queryKeys.cars;
 
 /** La flota completa: la usa la vista global de vehículos. */
-export const useCars = () =>
+export const useCars = ({ enabled = true }: { enabled?: boolean } = {}) =>
   useQuery({
     queryKey: keys.lists(),
     queryFn: listCars,
+    enabled,
   });
 
 /** Los vehículos de un chofer puntual: la usa su ficha. */

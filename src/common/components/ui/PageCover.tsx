@@ -52,7 +52,7 @@ export const PageCover = ({ avatar, title, subtitle, badges, actions, stats, chi
           className={cx(
             'mt-5 grid grid-cols-2 gap-3 border-t border-outline-soft pt-4',
             stats.length >= 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2',
-            stats.length >= 4 && 'lg:grid-cols-4',
+            stats.length >= 4 && (stats.length % 3 === 0 ? 'lg:grid-cols-3' : 'lg:grid-cols-4'),
           )}
         >
           {stats.map((stat) => (
