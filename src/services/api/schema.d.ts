@@ -9345,6 +9345,16 @@ export interface components {
     };
     SettlementOrderDto: {
       orderId: string;
+      /**
+       * @description Nombre del cliente que recibió el pedido
+       * @example Ana Gómez
+       */
+      customerName: string | null;
+      /**
+       * @description Dirección de entrega (sin coordenadas, teléfono ni indicaciones)
+       * @example Av. Mitre 1200, piso 3 depto B, Posadas
+       */
+      deliveryAddress: string | null;
       /** @example 12000 */
       totalAmount: number;
       /**
@@ -18356,6 +18366,14 @@ export interface operations {
         from?: string;
         /** @description Fecha hasta (inclusive), día en hora argentina, YYYY-MM-DD */
         to?: string;
+        /** @description Entregados desde (inclusive), día en hora argentina, YYYY-MM-DD. Filtra por `deliveredAt`: deja afuera los pedidos sin entregar */
+        deliveredFrom?: string;
+        /** @description Entregados hasta (inclusive), día en hora argentina, YYYY-MM-DD. Filtra por `deliveredAt` */
+        deliveredTo?: string;
+        /** @description Campo por el que se ordena. Con `deliveredAt` los pedidos sin entregar quedan al final */
+        sort?: 'createdAt' | 'deliveredAt';
+        /** @description Sentido del orden: `desc` los más nuevos primero */
+        order?: 'asc' | 'desc';
       };
       header?: never;
       path?: never;

@@ -31,11 +31,17 @@ export interface OrderFilters {
   paymentStatus?: NonNullable<Order['paymentStatus']>;
   from?: string;
   to?: string;
+  /** Entregados desde/hasta (YYYY-MM-DD, `deliveredTo` inclusivo): filtra por fecha de entrega, no de alta. */
+  deliveredFrom?: string;
+  deliveredTo?: string;
+  /** Campo de orden (por defecto, la fecha de alta) y sentido (por defecto, los más nuevos primero). */
+  sort?: 'createdAt' | 'deliveredAt';
+  order?: 'asc' | 'desc';
 }
 
 /** GET /orders: pedidos de la distribuidora, paginados y filtrados en la API. */
 export const listOrders = async (params: PageParams, filters: OrderFilters = {}): Promise<PaginatedOrders> => {
-  const { search, status, paymentStatus, from, to } = filters;
+  const { search, status, paymentStatus, from, to, deliveredFrom, deliveredTo, sort, order } = filters;
   const { data } = await http.get<PaginatedOrders>('/orders', {
     params: {
       ...toQuery(params),
@@ -44,6 +50,10 @@ export const listOrders = async (params: PageParams, filters: OrderFilters = {})
       paymentStatus,
       from: from || undefined,
       to: to || undefined,
+      deliveredFrom: deliveredFrom || undefined,
+      deliveredTo: deliveredTo || undefined,
+      sort,
+      order,
     },
   });
   return data;
