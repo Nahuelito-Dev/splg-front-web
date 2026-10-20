@@ -6318,6 +6318,56 @@
                             "example": "2026-09-30",
                             "type": "string"
                         }
+                    },
+                    {
+                        "name": "deliveredFrom",
+                        "required": false,
+                        "in": "query",
+                        "description": "Entregados desde (inclusive), día en hora argentina, YYYY-MM-DD. Filtra por `deliveredAt`: deja afuera los pedidos sin entregar",
+                        "schema": {
+                            "format": "date",
+                            "example": "2026-09-01",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "deliveredTo",
+                        "required": false,
+                        "in": "query",
+                        "description": "Entregados hasta (inclusive), día en hora argentina, YYYY-MM-DD. Filtra por `deliveredAt`",
+                        "schema": {
+                            "format": "date",
+                            "example": "2026-09-30",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "required": false,
+                        "in": "query",
+                        "description": "Campo por el que se ordena. Con `deliveredAt` los pedidos sin entregar quedan al final",
+                        "schema": {
+                            "default": "createdAt",
+                            "type": "string",
+                            "enum": [
+                                "createdAt",
+                                "deliveredAt"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "order",
+                        "required": false,
+                        "in": "query",
+                        "description": "Sentido del orden: `desc` los más nuevos primero",
+                        "schema": {
+                            "default": "desc",
+                            "type": "string",
+                            "enum": [
+                                "asc",
+                                "desc"
+                            ]
+                        }
                     }
                 ],
                 "responses": {
@@ -32387,6 +32437,18 @@
                     "orderId": {
                         "type": "string"
                     },
+                    "customerName": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "Ana Gómez",
+                        "description": "Nombre del cliente que recibió el pedido"
+                    },
+                    "deliveryAddress": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "Av. Mitre 1200, piso 3 depto B, Posadas",
+                        "description": "Dirección de entrega (sin coordenadas, teléfono ni indicaciones)"
+                    },
                     "totalAmount": {
                         "type": "number",
                         "example": 12000
@@ -32407,6 +32469,8 @@
                 },
                 "required": [
                     "orderId",
+                    "customerName",
+                    "deliveryAddress",
                     "totalAmount",
                     "amountToCollect",
                     "paymentStatus",

@@ -10,11 +10,10 @@ const notifySuccess = vi.hoisted(() => vi.fn());
 const boardState = vi.hoisted(() => ({
   pending: { isPending: false, error: null as unknown, data: true },
   assignedLater: false,
-  total: { pending: 2, accepted: 1, out_for_delivery: 1, delivered: 2 } as Record<string, number>,
+  total: { pending: 2, accepted: 1, out_for_delivery: 1, delivered: 1 } as Record<string, number>,
 }));
 
 const today = new Date().toISOString();
-const longAgo = '2020-01-01T10:00:00Z';
 
 const order = (id: string, status: Order['status'], name: string, extra: Partial<Order> = {}) =>
   ({
@@ -38,10 +37,7 @@ const DATA: Record<string, Order[]> = {
   ],
   accepted: [order('a-000003', 'accepted', 'Carla Ruiz', { delivery_name: 'Chofer Uno', delivery_id: 'd-1' })],
   out_for_delivery: [order('o-000004', 'out_for_delivery', 'Diego Sosa', { delivery_name: 'Chofer Dos' })],
-  delivered: [
-    order('d-000005', 'delivered', 'Eva Luna', { actual_delivery_date: today }),
-    order('d-000006', 'delivered', 'Fede Vega', { actual_delivery_date: longAgo }),
-  ],
+  delivered: [order('d-000005', 'delivered', 'Eva Luna', { actual_delivery_date: today })],
 };
 
 vi.mock('../../hooks', async (importOriginal) => ({
@@ -120,7 +116,7 @@ beforeEach(() => {
   permissions.operate = true;
   boardState.pending = { isPending: false, error: null, data: true };
   boardState.assignedLater = false;
-  boardState.total = { pending: 2, accepted: 1, out_for_delivery: 1, delivered: 2 };
+  boardState.total = { pending: 2, accepted: 1, out_for_delivery: 1, delivered: 1 };
 });
 afterEach(() => {
   cleanup();
@@ -128,14 +124,13 @@ afterEach(() => {
 });
 
 describe('DispatchBoard', () => {
-  it('arma una columna por etapa con sus pedidos y deja en «Entregados hoy» sólo los de hoy', () => {
+  it('arma una columna por etapa con sus pedidos y muestra en «Entregados hoy» lo que trae la API', () => {
     renderPage();
     expect(within(column('Pendientes')).getByText('Ana Pérez')).toBeInTheDocument();
     expect(within(column('Pendientes')).getByText('Beto Gómez')).toBeInTheDocument();
     expect(within(column('Aceptados')).getByText('Carla Ruiz')).toBeInTheDocument();
     expect(within(column('En camino')).getByText('Diego Sosa')).toBeInTheDocument();
     expect(within(column('Entregados hoy')).getByText('Eva Luna')).toBeInTheDocument();
-    expect(screen.queryByText('Fede Vega')).not.toBeInTheDocument();
     expect(within(column('Pendientes')).getByLabelText('2 pedidos')).toBeInTheDocument();
     expect(within(column('Entregados hoy')).getByLabelText('1 pedidos')).toBeInTheDocument();
   });
@@ -192,25 +187,21 @@ describe('DispatchBoard', () => {
     expect(within(column('Pendientes')).getByText('Sin resultados')).toBeInTheDocument();
   });
 
-  it('si una columna de espera tiene más pedidos que los que trae la API avisa que faltan los más viejos', () => {
+  it('si una columna de espera tiene más pedidos que los que trae la API avisa que faltan los más nuevos', () => {
     boardState.total = { ...boardState.total, pending: 240 };
     renderPage();
-    expect(within(column('Pendientes')).getByText(/quedan afuera los 238 más viejos/)).toBeInTheDocument();
+    expect(within(column('Pendientes')).getByText(/quedan afuera los 238 más nuevos/)).toBeInTheDocument();
     expect(within(column('Aceptados')).queryByText(/quedan afuera/)).not.toBeInTheDocument();
   });
 
-  it('«Entregados hoy» avisa de un posible truncado sólo si el último traído sigue siendo de hoy', () => {
+  it('«Entregados hoy» avisa cuántas entregas del día quedan afuera sólo si hay más que las traídas', () => {
     boardState.total = { ...boardState.total, delivered: 500 };
-    DATA.delivered = [order('d-000005', 'delivered', 'Eva Luna', { actual_delivery_date: today })];
     renderPage();
-    expect(within(column('Entregados hoy')).getByText(/puede haber más de hoy/)).toBeInTheDocument();
+    expect(within(column('Entregados hoy')).getByText(/Hoy se entregaron 500/)).toBeInTheDocument();
     cleanup();
-    DATA.delivered = [
-      order('d-000005', 'delivered', 'Eva Luna', { actual_delivery_date: today }),
-      order('d-000006', 'delivered', 'Fede Vega', { actual_delivery_date: longAgo }),
-    ];
+    boardState.total = { ...boardState.total, delivered: 1 };
     renderPage();
-    expect(within(column('Entregados hoy')).queryByText(/puede haber más de hoy/)).not.toBeInTheDocument();
+    expect(within(column('Entregados hoy')).queryByText(/Hoy se entregaron/)).not.toBeInTheDocument();
   });
 
   it('el panel lateral toma el pedido actual del tablero: si ya tiene chofer no ofrece asignarlo', () => {

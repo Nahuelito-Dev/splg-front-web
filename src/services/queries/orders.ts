@@ -40,6 +40,7 @@ import type {
 import { SKIP } from '../../utils/batch';
 import { canAssignDriver, canCancel } from '../../pages/Orders/components/orderStatus';
 import { BOARD_PAGE_SIZE, BOARD_STATUSES, type BoardStatus } from '../../pages/Orders/boardRules';
+import { argentinaDay } from '../../utils/format';
 import { ORDER_FLOW } from '../../utils/statusLabels';
 import { useBatchMutation } from './batchMutation';
 import { runIntent } from './intent';
@@ -69,19 +70,36 @@ export const useOrders = (
   });
 
 /**
- * Las cuatro columnas del tablero de despacho: los pedidos más recientes de cada estado (hasta el tope de la API) y su
- * `total` real. Comparten la caché de `useOrders`. «Entregados» trae los últimos entregados; el filtro del día lo
- * hace el tablero, porque `from`/`to` de la API cuentan desde la fecha de alta y no desde la de entrega.
+ * Las cuatro columnas del tablero de despacho y su `total` real. Comparten la caché de `useOrders`.
+ * «Pendientes» y «Aceptados» traen los más viejos primero (los que más llevan esperando) hasta el tope de la API;
+ * «En camino», los más recientes; «Entregados hoy» pide a la API sólo las entregas de hoy (día de Buenos Aires, por
+ * fecha de entrega), la última entregada primero.
  */
+export const boardFilters = (status: BoardStatus, today: string): OrderFilters => {
+  switch (status) {
+    case 'pending':
+    case 'accepted':
+      return { status, sort: 'createdAt', order: 'asc' };
+    case 'delivered':
+      return { status, deliveredFrom: today, deliveredTo: today, sort: 'deliveredAt', order: 'desc' };
+    default:
+      return { status };
+  }
+};
+
 export const useDispatchBoard = ({ refetchInterval }: Pick<LiveOptions, 'refetchInterval'> = {}) => {
   const page: PageParams = { page: 0, pageSize: BOARD_PAGE_SIZE };
+  const today = argentinaDay(new Date());
   const results = useQueries({
-    queries: BOARD_STATUSES.map((status) => ({
-      queryKey: keys.list({ ...page, status }),
-      queryFn: () => listOrders(page, { status }),
-      placeholderData: keepPreviousData,
-      refetchInterval,
-    })),
+    queries: BOARD_STATUSES.map((status) => {
+      const filters = boardFilters(status, today);
+      return {
+        queryKey: keys.list({ ...page, ...filters }),
+        queryFn: () => listOrders(page, filters),
+        placeholderData: keepPreviousData,
+        refetchInterval,
+      };
+    }),
   });
   return Object.fromEntries(BOARD_STATUSES.map((status, index) => [status, results[index]])) as Record<
     BoardStatus,

@@ -9,7 +9,7 @@ import { notify } from '../../utils/notifications';
 import { AssignDriverModal } from './components/AssignDriverModal';
 import { DispatchColumn } from './components/DispatchColumn';
 import { OrderQuickDrawer } from './components/OrderQuickDrawer';
-import { BOARD_STATUSES, deliveredToday, matchesBoardSearch, sortColumn, truncationNote } from './boardRules';
+import { BOARD_STATUSES, matchesBoardSearch, sortColumn, truncationNote } from './boardRules';
 import { useDispatchBoardSync } from './useDispatchBoardSync';
 
 /** Cada cuánto se recalculan los «hace Xm» de las tarjetas. */
@@ -41,17 +41,16 @@ export const DispatchBoard = () => {
     const byStatus = { pending, accepted, out_for_delivery: onTheWay, delivered };
     return BOARD_STATUSES.map((status) => {
       const fetched = byStatus[status].data?.orders ?? [];
-      const ofColumn = status === 'delivered' ? deliveredToday(fetched, new Date(now)) : fetched;
       return {
         status,
         orders: sortColumn(
           status,
-          ofColumn.filter((order) => matchesBoardSearch(order, search)),
+          fetched.filter((order) => matchesBoardSearch(order, search)),
         ),
-        note: truncationNote(status, fetched, byStatus[status].data?.total ?? null, new Date(now)),
+        note: truncationNote(status, fetched, byStatus[status].data?.total ?? null),
       };
     });
-  }, [pending, accepted, onTheWay, delivered, now, search]);
+  }, [pending, accepted, onTheWay, delivered, search]);
 
   // El panel muestra siempre la versión más nueva del pedido que está en el tablero, no la que había al abrirlo.
   const previewing = useMemo(
