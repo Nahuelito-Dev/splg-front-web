@@ -22,7 +22,7 @@ interface Props {
 /** Cuatro cifras del tablero financiero (`GET /finance/dashboard`) sobre un listado de Finanzas; sin dato no se dibuja. */
 export const FinanceSummary = ({ date, kind }: Props) => {
   const { data, isPending, isError } = useFinanceDashboard(date);
-  if (isError) return null;
+  if (isError && !data) return null;
 
   const kpis: Kpi[] = !data
     ? Array.from({ length: kind === 'boxes' ? 2 : 3 }, () => ({ title: '…', icon: Wallet, value: '' }))
@@ -48,17 +48,21 @@ export const FinanceSummary = ({ date, kind }: Props) => {
         : kind === 'settlements'
           ? [
               {
-                title: 'Efectivo por rendir',
+                title: 'Efectivo presentado sin aprobar',
                 icon: HandCoins,
                 value: formatCurrency(data.settlements.pendingCash),
+                hint: 'De todos los días',
               },
-              { title: 'Rendiciones abiertas', icon: Clock, value: formatNumber(data.settlements.open) },
               {
-                title: 'Presentadas sin aprobar',
-                icon: Banknote,
-                value: formatNumber(data.settlements.submitted),
-                warn: data.settlements.overdue > 0 ? `${data.settlements.overdue} atrasadas` : undefined,
+                title: 'Rendiciones abiertas',
+                icon: Clock,
+                value: formatNumber(data.settlements.open),
+                warn:
+                  data.settlements.overdue > 0
+                    ? `${data.settlements.overdue} de días anteriores sin cerrar`
+                    : undefined,
               },
+              { title: 'Presentadas sin aprobar', icon: Banknote, value: formatNumber(data.settlements.submitted) },
             ]
           : kind === 'accounts'
             ? [
@@ -77,9 +81,9 @@ export const FinanceSummary = ({ date, kind }: Props) => {
 
   return (
     <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {kpis.map((kpi) => (
+      {kpis.map((kpi, i) => (
         <KpiCard
-          key={kpi.title}
+          key={data ? kpi.title : `cargando-${i}`}
           title={kpi.title}
           icon={kpi.icon}
           value={kpi.value}
