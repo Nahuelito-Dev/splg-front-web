@@ -1,7 +1,14 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
-import { AuditHistoryLink, Button, DetailSkeleton, ErrorState, PageHeader } from '../../common/components/ui';
+import {
+  AuditHistoryLink,
+  Button,
+  DetailSkeleton,
+  ErrorState,
+  PageHeader,
+  PageContainer,
+} from '../../common/components/ui';
 import { useBackToList } from '../../hooks';
 import { useCrumbLeaf } from '../../common/components';
 import { useGasCylinder } from '../../services/queries/gasCylinders';
@@ -17,7 +24,7 @@ export const GasCylinderDetails = () => {
   useCrumbLeaf(cylinder?.type, goBack);
 
   return (
-    <div className="mx-auto max-w-4xl p-4 md:p-8">
+    <PageContainer size="md">
       <PageHeader
         title="Ficha del producto"
         actions={
@@ -44,6 +51,6 @@ export const GasCylinderDetails = () => {
       )}
 
       <CylinderFormModal open={editing} onClose={() => setEditing(false)} cylinder={cylinder ?? null} />
-    </div>
+    </PageContainer>
   );
 };

@@ -2,7 +2,16 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useCallback, useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { Plus, RotateCcw, X } from 'lucide-react';
-import { Button, Card, ErrorState, IconButton, Input, PageHeader, Skeleton } from '../../common/components/ui';
+import {
+  Button,
+  Card,
+  ErrorState,
+  IconButton,
+  Input,
+  PageHeader,
+  Skeleton,
+  PageContainer,
+} from '../../common/components/ui';
 import { usePermissions } from '../../hooks';
 import { errorMessage } from '../../services/api/errors';
 import type { DispatchConfig } from '../../services/api/types';
@@ -207,7 +216,7 @@ export const DispatchSettings = () => {
   const { needsDistributor, canWrite, writeHint } = usePermissions();
   const { data, isPending, error, refetch } = useDispatchConfig({ enabled: !needsDistributor });
   return (
-    <div className="mx-auto max-w-3xl p-4 md:p-8">
+    <PageContainer size="sm">
       <PageHeader
         title="Parámetros del despacho"
         description="Cómo se busca al chofer para cada pedido: hasta dónde se amplía el radio y cuánto tiempo tiene para aceptar."
@@ -221,6 +230,6 @@ export const DispatchSettings = () => {
       ) : (
         <DispatchForm config={data} canWrite={canWrite} writeHint={writeHint} />
       )}
-    </div>
+    </PageContainer>
   );
 };

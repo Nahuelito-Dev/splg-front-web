@@ -10,6 +10,7 @@ import {
   SearchInput,
   Select,
   TableSkeleton,
+  PageContainer,
 } from '../../common/components/ui';
 import { usePermissions } from '../../hooks';
 import type { Reserva } from '../../services/api/types';
@@ -57,7 +58,7 @@ export const Reservations = () => {
   };
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Reservas"
         description={`Pedidos agendados con seña. Confirmá la seña en efectivo para que se despachen solos el día agendado${
@@ -119,6 +120,6 @@ export const Reservations = () => {
         onConfirmDeposit={handleConfirmDeposit}
         confirming={confirmDeposit.isPending}
       />
-    </div>
+    </PageContainer>
   );
 };

@@ -1,11 +1,11 @@
-import { Card } from '../../../../common/components/ui';
+import { Card, CardHeader } from '../../../../common/components/ui';
 import type { Order } from '../../../../services/api/types';
 import { formatCurrency, formatDay } from '../../../../utils/format';
 
 /** Sólo tiene sentido para un pedido en estado `reserved` (con seña). */
 export const OrderDepositCard = ({ order }: { order: Order }) => (
   <Card className="bg-accent-soft p-4">
-    <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">Reserva</h3>
+    <CardHeader title="Reserva" as="h3" className="mb-3" />
     <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
       <div>
         <dt className="text-xs text-muted">Agendada</dt>

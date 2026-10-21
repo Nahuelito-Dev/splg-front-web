@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { Button, Card, EmptyState, IdentityCell, LoadingState } from '../../../common/components/ui';
+import { Button, Card, EmptyState, IdentityCell, LoadingState, CardHeader } from '../../../common/components/ui';
 import { usePermissions } from '../../../hooks';
 import { useCarAssignments } from '../../../services/queries/fleet';
 import { formatDateTime } from '../../../utils/format';
@@ -29,7 +29,7 @@ export const CurrentDriverCard = ({ carId }: { carId: string }) => {
 
   return (
     <Card className="p-6">
-      <h2 className="mb-4 text-base font-semibold text-ink">En uso por</h2>
+      <CardHeader title="En uso por" className="mb-4" />
       {isPending ? (
         <LoadingState label="Buscando chofer…" />
       ) : current ? (

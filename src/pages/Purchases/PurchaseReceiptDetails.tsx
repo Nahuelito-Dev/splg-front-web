@@ -13,6 +13,8 @@ import {
   ErrorState,
   PageHeader,
   ResponsiveTable,
+  PageContainer,
+  CardHeader,
 } from '../../common/components/ui';
 import { useBackToList, usePermissions } from '../../hooks';
 import type { PurchaseReceiptItem } from '../../services/api/types';
@@ -76,7 +78,7 @@ export const PurchaseReceiptDetails = () => {
   const confirmed = receipt?.status === 'confirmed';
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title={receipt ? `Recepción N° ${receipt.number}` : 'Recepción'}
         badges={
@@ -167,7 +169,7 @@ export const PurchaseReceiptDetails = () => {
           </Card>
           <div className="min-w-0 space-y-6 lg:col-span-2">
             <Card>
-              <h2 className="border-b border-outline px-4 py-3 text-sm font-semibold text-ink">Renglones</h2>
+              <CardHeader title="Renglones" className="border-b border-outline px-4 py-3" />
               <ResponsiveTable
                 label="renglones"
                 rows={receipt.items}
@@ -201,6 +203,6 @@ export const PurchaseReceiptDetails = () => {
       )}
       <PayReceiptModal receipt={paying ? (receipt ?? null) : null} onClose={() => setPaying(false)} />
       <VoidReceiptModal receipt={voiding ? (receipt ?? null) : null} onClose={() => setVoiding(false)} />
-    </div>
+    </PageContainer>
   );
 };

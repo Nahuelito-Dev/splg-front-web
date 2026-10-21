@@ -13,6 +13,7 @@ import {
   ResponsiveTable,
   RowActions,
   Select,
+  PageContainer,
 } from '../../common/components/ui';
 import { useClampPage, usePermissions, useUrlPagedParams } from '../../hooks';
 import type { CashCategory } from '../../services/api/types';
@@ -111,7 +112,7 @@ export const CashCategories = () => {
   useClampPage(pagination, data?.total, setPagination);
 
   return (
-    <div className="mx-auto max-w-5xl p-4 md:p-8">
+    <PageContainer size="md">
       <PageHeader
         title="Categorías de caja"
         description="Con qué se clasifican los ingresos y los gastos. Las de sistema las usan las rendiciones, los cobros y los pagos."
@@ -186,6 +187,6 @@ export const CashCategories = () => {
         }}
         category={editing}
       />
-    </div>
+    </PageContainer>
   );
 };

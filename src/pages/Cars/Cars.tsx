@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import { Button, Card, PageHeader, SearchInput } from '../../common/components/ui';
+import { Button, Card, PageHeader, SearchInput, PageContainer } from '../../common/components/ui';
 import { useDebounce, usePermissions } from '../../hooks';
 import type { Car } from '../../services/api/types';
 import { useDeliveryOptions } from '../../services/queries/deliveries';
@@ -67,7 +67,7 @@ export const Cars = () => {
   };
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Vehículos"
         description="La flota de la distribuidora."
@@ -130,6 +130,6 @@ export const Cars = () => {
             : undefined
         }
       />
-    </div>
+    </PageContainer>
   );
 };

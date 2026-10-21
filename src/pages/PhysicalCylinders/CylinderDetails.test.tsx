@@ -108,6 +108,7 @@ describe('CylinderDetails', () => {
     renderPage();
     expect(screen.getByRole('button', { name: 'Mover de estado' })).toHaveAttribute('aria-disabled', 'true');
     expect(screen.getByRole('button', { name: 'Mover de estado' }).getAttribute('title')).toMatch(/retirado/);
+    // «Editar» no se ofrece en un envase retirado: «Dar de baja» queda como única acción secundaria, a la vista.
     expect(screen.getByRole('button', { name: 'Dar de baja' })).toHaveAttribute('aria-disabled', 'true');
     expect(screen.queryByRole('button', { name: 'Editar' })).toBeNull();
   });

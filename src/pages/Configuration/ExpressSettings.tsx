@@ -2,7 +2,16 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useCallback, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { RotateCcw } from 'lucide-react';
-import { Button, Card, ErrorState, Input, PageHeader, Skeleton, Switch } from '../../common/components/ui';
+import {
+  Button,
+  Card,
+  ErrorState,
+  Input,
+  PageHeader,
+  Skeleton,
+  Switch,
+  PageContainer,
+} from '../../common/components/ui';
 import { usePermissions } from '../../hooks';
 import { errorMessage } from '../../services/api/errors';
 import type { ExpressConfig } from '../../services/api/types';
@@ -197,7 +206,7 @@ export const ExpressSettings = () => {
   const { needsDistributor, canWrite, writeHint } = usePermissions();
   const { data, isPending, error, refetch } = useExpressConfig({ enabled: !needsDistributor });
   return (
-    <div className="mx-auto max-w-3xl p-4 md:p-8">
+    <PageContainer size="sm">
       <PageHeader
         title="Compra express"
         description="Entrega en moto: recargo, radio de búsqueda, horario de servicio y tiempos estimados (CU-148 y CU-149)."
@@ -211,6 +220,6 @@ export const ExpressSettings = () => {
       ) : (
         <ExpressForm config={data} canWrite={canWrite} writeHint={writeHint} />
       )}
-    </div>
+    </PageContainer>
   );
 };

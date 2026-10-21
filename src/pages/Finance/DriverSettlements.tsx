@@ -9,12 +9,13 @@ import {
   EmptyState,
   ErrorState,
   IdentityCell,
-  Input,
   PageHeader,
   ResponsiveTable,
   RowActions,
-  ExportCsvButton,
   StatusFilterTabs,
+  PageContainer,
+  TableToolbar,
+  DayFilter,
 } from '../../common/components/ui';
 import { FROM_LIST_STATE, useClampPage, usePermissions, useUrlPagedParams } from '../../hooks';
 import type { DriverSettlement } from '../../services/api/types';
@@ -117,7 +118,7 @@ export const DriverSettlements = () => {
   const filtered = Boolean(status || filters.all);
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Rendiciones"
         description="Lo que cada chofer cobró en efectivo y lo que entrega al volver."
@@ -137,26 +138,27 @@ export const DriverSettlements = () => {
           label="Filtrar rendiciones por estado"
           idPrefix="driver-settlements"
         >
-          <div className="grid grid-cols-1 items-end gap-3 border-b border-outline p-4 sm:grid-cols-2">
-            <Input
-              label="Día"
-              type="date"
-              value={filters.date}
-              disabled={filters.all === '1'}
-              onChange={(e) => setFilters({ date: e.target.value, all: '' })}
-            />
-            <Button
-              variant="secondary"
-              onClick={() => setFilters(filters.all === '1' ? { all: '' } : { all: '1', date: '' })}
-            >
-              {filters.all === '1' ? 'Ver sólo un día' : 'Ver todos los días'}
-            </Button>
-          </div>
-          <div className="flex justify-end border-b border-outline px-4 py-2">
-            <ExportCsvButton
-              filename="rendiciones"
-              headers={['Rendición', 'Chofer', 'Fecha', 'Esperado', 'Declarado', 'Diferencia', 'Estado']}
-              rows={(data?.data ?? []).map((row) => [
+          <TableToolbar
+            filters={
+              <>
+                <DayFilter
+                  value={filters.date}
+                  emptyLabel={filters.all === '1' ? 'Todos los días' : 'Hoy'}
+                  disabled={filters.all === '1'}
+                  onChange={(day) => setFilters({ date: day, all: '' })}
+                />
+                <Button
+                  variant="secondary"
+                  onClick={() => setFilters(filters.all === '1' ? { all: '' } : { all: '1', date: '' })}
+                >
+                  {filters.all === '1' ? 'Ver sólo un día' : 'Ver todos los días'}
+                </Button>
+              </>
+            }
+            csv={{
+              filename: 'rendiciones',
+              headers: ['Rendición', 'Chofer', 'Fecha', 'Esperado', 'Declarado', 'Diferencia', 'Estado'],
+              rows: (data?.data ?? []).map((row) => [
                 row.number,
                 row.driverName,
                 csvDay(row.businessDate),
@@ -164,9 +166,10 @@ export const DriverSettlements = () => {
                 row.declaredCash ?? '',
                 row.difference ?? '',
                 labelOf(SETTLEMENT_STATUS, row.status).text,
-              ])}
-            />
-          </div>
+              ]),
+            }}
+            noun={['rendición', 'rendiciones']}
+          />
           {error ? (
             <ErrorState error={error} resource="Las rendiciones" onRetry={() => void refetch()} />
           ) : (
@@ -212,6 +215,6 @@ export const DriverSettlements = () => {
         </StatusFilterTabs>
       </Card>
       <OpenSettlementModal open={creating} onClose={() => setCreating(false)} />
-    </div>
+    </PageContainer>
   );
 };

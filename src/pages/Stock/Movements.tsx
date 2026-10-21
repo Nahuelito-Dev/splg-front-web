@@ -5,12 +5,13 @@ import {
   Card,
   EmptyState,
   ErrorState,
-  FilterChips,
   IdentityCell,
-  Input,
   PageHeader,
   ResponsiveTable,
   Select,
+  PageContainer,
+  TableToolbar,
+  DateRangeFilter,
 } from '../../common/components/ui';
 import { useClampPage, useUrlPagedParams } from '../../hooks';
 import type { StockMovement } from '../../services/api/types';
@@ -95,45 +96,43 @@ export const Movements = () => {
   useClampPage(pagination, data?.total, setPagination);
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Libro de movimientos"
         description="Cada entrada, salida y traslado de garrafas. Un error se corrige con un contraasiento: nada se borra."
       />
       <Card>
-        <div className="grid grid-cols-1 gap-3 border-b border-outline p-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Input label="Desde" type="date" value={filters.from} onChange={(e) => change({ from: e.target.value })} />
-          <Input label="Hasta" type="date" value={filters.to} onChange={(e) => change({ to: e.target.value })} />
-          <Select
-            label="Motivo"
-            options={REASON_OPTIONS}
-            value={filters.reason}
-            onChange={(e) => change({ reason: e.target.value })}
-          />
-          <Select
-            label="Ubicación"
-            options={[
-              { value: '', label: 'Todas las ubicaciones' },
-              ...(locations.data ?? []).map((l) => ({
-                value: l.locationId,
-                label: `${l.kind === 'warehouse' ? 'Galpón' : 'Camión'} · ${l.name}`,
-              })),
-            ]}
-            hint={locations.isError ? 'No se pudieron cargar las ubicaciones' : undefined}
-            value={filters.location}
-            onChange={(e) => change({ location: e.target.value })}
-          />
-        </div>
-        {chips.length > 0 && (
-          <div className="border-b border-outline px-4 py-3">
-            <FilterChips
-              items={chips}
-              resultCount={data?.total}
-              onRemove={(key) => change({ [key]: '' })}
-              onClearAll={() => change({ from: '', to: '', reason: '', location: '' })}
-            />
-          </div>
-        )}
+        <TableToolbar
+          filters={
+            <>
+              <DateRangeFilter from={filters.from} to={filters.to} onChange={(range) => change({ ...range })} />
+              <Select
+                label="Motivo"
+                options={REASON_OPTIONS}
+                value={filters.reason}
+                onChange={(e) => change({ reason: e.target.value })}
+              />
+              <Select
+                label="Ubicación"
+                options={[
+                  { value: '', label: 'Todas las ubicaciones' },
+                  ...(locations.data ?? []).map((l) => ({
+                    value: l.locationId,
+                    label: `${l.kind === 'warehouse' ? 'Galpón' : 'Camión'} · ${l.name}`,
+                  })),
+                ]}
+                hint={locations.isError ? 'No se pudieron cargar las ubicaciones' : undefined}
+                value={filters.location}
+                onChange={(e) => change({ location: e.target.value })}
+              />
+            </>
+          }
+          chips={chips}
+          onRemoveChip={(key) => change({ [key]: '' })}
+          onClearChips={() => change({ from: '', to: '', reason: '', location: '' })}
+          resultCount={data?.total}
+          noun={['movimiento', 'movimientos']}
+        />
         {error ? (
           <ErrorState error={error} resource="Los movimientos" onRetry={() => void refetch()} />
         ) : (
@@ -169,6 +168,6 @@ export const Movements = () => {
           />
         )}
       </Card>
-    </div>
+    </PageContainer>
   );
 };

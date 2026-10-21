@@ -1,6 +1,6 @@
 import type { GridColDef } from '@mui/x-data-grid';
 import { Coins } from 'lucide-react';
-import { Card, EmptyState, ErrorState, PageHeader, ResponsiveTable } from '../../common/components/ui';
+import { Card, EmptyState, ErrorState, PageHeader, ResponsiveTable, PageContainer } from '../../common/components/ui';
 import type { AverageCost } from '../../services/api/types';
 import { useAverageCosts } from '../../services/queries/purchases';
 import { formatCurrency, formatDateTime } from '../../utils/format';
@@ -38,7 +38,7 @@ const COLUMNS: GridColDef<AverageCost>[] = [
 export const AverageCosts = () => {
   const { data, isPending, error, refetch } = useAverageCosts();
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Costo promedio"
         description="Cuánto cuesta en promedio cada garrafa llena. Solo una compra lo cambia: las ventas, mermas y ajustes no."
@@ -68,6 +68,6 @@ export const AverageCosts = () => {
           />
         )}
       </Card>
-    </div>
+    </PageContainer>
   );
 };

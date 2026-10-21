@@ -6,14 +6,13 @@ import {
   AnalyticSummary,
   Button,
   Card,
-  ExportCsvButton,
-  FilterChips,
   PageHeader,
-  SearchInput,
   SelectionBar,
   tabPanelProps,
   type AnalyticItem,
   type FilterChip,
+  PageContainer,
+  TableToolbar,
 } from '../../common/components/ui';
 import { useDebounce, usePermissions, useUrlParams } from '../../hooks';
 import type { Delivery } from '../../services/api/types';
@@ -162,7 +161,7 @@ export const Deliveries = () => {
   };
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Choferes"
         description="La flota de repartidores de la distribuidora."
@@ -188,37 +187,28 @@ export const Deliveries = () => {
       <Card>
         <DeliveryStatusTabs value={statusTab} onChange={handleStatusTab} counts={counts} />
         <div {...tabPanelProps(DELIVERY_TABS_ID, statusTab)}>
-          <div className="flex flex-col gap-3 border-b border-outline p-4">
-            <SearchInput
-              label="Buscar choferes"
-              placeholder="Nombre, email, teléfono o patente"
-              value={search}
-              onChange={(e) => handleSearch(e.target.value)}
-            />
-            {chips.length > 0 ? (
-              <FilterChips
-                items={chips}
-                onRemove={removeChip}
-                onClearAll={() => {
-                  clearSelection();
-                  setFilters({ status: 'all', q: '', page: '1' });
-                }}
-                resultCount={data?.total}
-              />
-            ) : (
-              <p className="text-sm text-muted" aria-live="polite">
-                {data ? `${data.total} ${data.total === 1 ? 'chofer' : 'choferes'}` : ''}
-              </p>
-            )}
-            <div>
-              <ExportCsvButton
-                filename="choferes"
-                label={selectedDeliveries.length > 0 ? 'Exportar selección' : 'Exportar CSV'}
-                headers={['Chofer', 'Email', 'Teléfono', 'Calificación', 'Estado']}
-                rows={exportRows}
-              />
-            </div>
-          </div>
+          <TableToolbar
+            search={{
+              label: 'Buscar choferes',
+              placeholder: 'Nombre, email, teléfono o patente',
+              value: search,
+              onChange: (value) => handleSearch(value),
+            }}
+            csv={{
+              filename: 'choferes',
+              label: selectedDeliveries.length > 0 ? 'Exportar selección' : 'Exportar CSV',
+              headers: ['Chofer', 'Email', 'Teléfono', 'Calificación', 'Estado'],
+              rows: exportRows,
+            }}
+            chips={chips}
+            onRemoveChip={removeChip}
+            onClearChips={() => {
+              clearSelection();
+              setFilters({ status: 'all', q: '', page: '1' });
+            }}
+            resultCount={data?.total}
+            noun={['chofer', 'choferes']}
+          />
           {canOperate && (
             <SelectionBar
               count={selectedDeliveries.length}
@@ -269,6 +259,6 @@ export const Deliveries = () => {
         delivery={form.open ? form.delivery : null}
       />
       <FindDeliveryByUserModal open={findingByUser} onClose={() => setFindingByUser(false)} />
-    </div>
+    </PageContainer>
   );
 };

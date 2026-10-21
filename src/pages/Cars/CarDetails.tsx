@@ -17,6 +17,7 @@ import {
   ProfileTabs,
   type CoverStat,
   type ProfileTabItem,
+  PageContainer,
 } from '../../common/components/ui';
 import { useBackToList, usePermissions, useProfileTab } from '../../hooks';
 import { useCrumbLeaf } from '../../common/components';
@@ -114,15 +115,39 @@ export const CarDetails = () => {
   ];
 
   return (
-    <div className="mx-auto max-w-5xl p-4 md:p-8">
+    <PageContainer size="md">
       <PageHeader
         title="Ficha del vehículo"
+        secondaryActions={
+          car
+            ? [
+                ...(car.fleet_status === 'grounded'
+                  ? [
+                      {
+                        label: 'Reactivar',
+                        icon: <RotateCcw />,
+                        disabled: !canWrite || reactivate.isPending,
+                        title: writeHint,
+                        onClick: () => void handleReactivate(),
+                      },
+                    ]
+                  : []),
+                {
+                  label: 'Dar de baja',
+                  icon: <Trash2 />,
+                  tone: 'danger' as const,
+                  disabled: !canWrite,
+                  title: writeHint,
+                  onClick: () => void handleDelete(),
+                },
+              ]
+            : []
+        }
         actions={
           car && (
             <>
               <AuditHistoryLink entity="Car" recordId={car.car_id} />
               <Button
-                variant="secondary"
                 size="sm"
                 icon={<PencilLine />}
                 disabled={!canWrite}
@@ -130,28 +155,6 @@ export const CarDetails = () => {
                 onClick={() => setEditing(true)}
               >
                 Editar
-              </Button>
-              {car.fleet_status === 'grounded' && (
-                <Button
-                  size="sm"
-                  icon={<RotateCcw />}
-                  disabled={!canWrite}
-                  title={writeHint}
-                  loading={reactivate.isPending}
-                  onClick={() => void handleReactivate()}
-                >
-                  Reactivar
-                </Button>
-              )}
-              <Button
-                variant="danger"
-                size="sm"
-                icon={<Trash2 />}
-                disabled={!canWrite}
-                title={writeHint}
-                onClick={() => void handleDelete()}
-              >
-                Dar de baja
               </Button>
             </>
           )
@@ -255,6 +258,6 @@ export const CarDetails = () => {
       )}
 
       <CarFormModal open={editing} onClose={() => setEditing(false)} car={car ?? null} fixedUserId={car?.user_id} />
-    </div>
+    </PageContainer>
   );
 };

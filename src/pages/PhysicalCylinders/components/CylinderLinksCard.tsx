@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Cylinder as CylinderIcon } from 'lucide-react';
-import { Badge, Card, EmptyState, ListSkeleton } from '../../../common/components/ui';
+import { Badge, Card, CardHeader, EmptyState, ListSkeleton } from '../../../common/components/ui';
 import type { CylinderFilters } from '../../../services/api/physicalCylinders';
 import { useCylinders } from '../../../services/queries/physicalCylinders';
 import { CYLINDER_CARD_LIMIT } from '../cylinderFilters';
@@ -15,33 +15,19 @@ interface Props {
   emptyDescription: string;
   /** Enlace al listado de Envases con el mismo filtro. */
   listSearch: string;
-  /** Si es una pestaña de una ficha, el título ya lo dice la pestaña. */
-  bare?: boolean;
 }
 
 /** Series de envases de un pedido o de un cliente: serial (enlace a su ficha), tipo, estado y último movimiento. */
-export const CylinderLinksCard = ({
-  title,
-  filters,
-  emptyTitle,
-  emptyDescription,
-  listSearch,
-  bare = false,
-}: Props) => {
+export const CylinderLinksCard = ({ title, filters, emptyTitle, emptyDescription, listSearch }: Props) => {
   const { data, isPending, error } = useCylinders(filters, { page: 0, pageSize: CYLINDER_CARD_LIMIT });
 
   return (
     <Card>
-      <div className="flex items-center justify-between gap-3 border-b border-outline p-4">
-        <h2
-          className={
-            bare ? 'text-base font-semibold text-ink' : 'text-xs font-semibold uppercase tracking-wide text-muted'
-          }
-        >
-          {title}
-        </h2>
-        <span className="text-sm text-muted">{data ? `${data.total} en total` : ''}</span>
-      </div>
+      <CardHeader
+        title={title}
+        action={<span className="text-sm text-muted">{data ? `${data.total} en total` : ''}</span>}
+        className="border-b border-outline p-4"
+      />
       {isPending ? (
         <ListSkeleton rows={3} columns={3} />
       ) : error ? (

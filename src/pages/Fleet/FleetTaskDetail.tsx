@@ -10,6 +10,7 @@ import {
   DetailSkeleton,
   ErrorState,
   PageHeader,
+  PageContainer,
 } from '../../common/components/ui';
 import { useBackToList, usePermissions } from '../../hooks';
 import { useCrumbLeaf } from '../../common/components';
@@ -60,7 +61,7 @@ export const FleetTaskDetail = () => {
   const ownerId = task?.carId ?? task?.deliveryId ?? task?.employeeId ?? '';
 
   return (
-    <div className="mx-auto max-w-3xl p-4 md:p-8">
+    <PageContainer size="sm">
       <PageHeader
         title={task?.plan?.name ?? 'Tarea'}
         description="Documentación de la flota"
@@ -161,6 +162,6 @@ export const FleetTaskDetail = () => {
           <FleetTaskCloseModal open={closing} onClose={() => setClosing(false)} task={task} />
         </>
       )}
-    </div>
+    </PageContainer>
   );
 };

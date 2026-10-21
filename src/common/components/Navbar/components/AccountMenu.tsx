@@ -38,7 +38,7 @@ export const AccountMenu = () => {
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
         slotProps={{
-          paper: { className: '!mt-2 !w-[260px] !rounded-xl !border !border-outline !bg-surface !shadow-lg' },
+          paper: { className: '!mt-2 !w-[260px]' },
         }}
       >
         <div className="flex flex-col items-center gap-1 border-b border-outline px-4 pb-3.5 pt-4 text-center">

@@ -8,6 +8,7 @@ import {
   ErrorState,
   IconButton,
   LoadingState,
+  CardHeader,
 } from '../../../common/components/ui';
 import type { CoverageZone } from '../../../services/api/types';
 import { useCoverageZone } from '../../../services/queries/coverageZones';
@@ -30,7 +31,7 @@ export const ZoneDetailPanel = ({ zoneId, onClose, onEdit, onDelete }: Props) =>
   return (
     <Card className="p-5">
       <div className="mb-3 flex items-start justify-between gap-2">
-        <h3 className="font-semibold text-ink">Detalle de la zona</h3>
+        <CardHeader title="Detalle de la zona" as="h3" className="" />
         <IconButton label="Cerrar el detalle" icon={<X />} onClick={onClose} />
       </div>
 

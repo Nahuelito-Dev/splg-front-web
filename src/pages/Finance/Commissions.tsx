@@ -5,13 +5,13 @@ import {
   Badge,
   Card,
   EmptyState,
-  ExportCsvButton,
   ErrorState,
-  FilterChips,
-  Input,
   PageHeader,
   ResponsiveTable,
   Select,
+  PageContainer,
+  TableToolbar,
+  DateRangeFilter,
 } from '../../common/components/ui';
 import { useClampPage, useUrlPagedParams } from '../../hooks';
 import type { CommissionEntry } from '../../services/api/types';
@@ -110,67 +110,41 @@ export const Commissions = () => {
   ].filter((c): c is { key: string; label: string } => Boolean(c));
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Comisiones"
         description="Lo que devengó cada chofer por sus entregas, menos las deducciones."
       />
       <FinanceSummary kind="commissions" />
       <Card>
-        <div className="grid grid-cols-1 items-end gap-3 border-b border-outline p-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Select
-            label="Chofer"
-            options={[
-              { value: '', label: 'Todos los choferes' },
-              ...(employees.data?.rows ?? []).map((e) => ({
-                value: e.employeeId,
-                label: `${e.firstName} ${e.lastName}`,
-              })),
-            ]}
-            value={filters.employeeId}
-            onChange={(e) => setFilters({ employeeId: e.target.value })}
-          />
-          <Select
-            label="Liquidación"
-            options={LIQUIDATED}
-            value={filters.liquidated}
-            onChange={(e) => setFilters({ liquidated: e.target.value })}
-          />
-          <Input
-            label="Desde"
-            type="date"
-            value={filters.from}
-            onChange={(e) => setFilters({ from: e.target.value })}
-          />
-          <Input
-            label="Hasta"
-            type="date"
-            value={filters.to}
-            onChange={(e) => setFilters({ to: e.target.value })}
-            error={rangeInvalid ? 'Anterior a la fecha inicial' : undefined}
-          />
-        </div>
-        {chips.length > 0 && (
-          <div className="border-b border-outline px-4 py-2">
-            <FilterChips
-              items={chips}
-              resultCount={data?.total}
-              onRemove={(key) => setFilters({ [key]: '' })}
-              onClearAll={() => setFilters({ employeeId: '', liquidated: '', from: '', to: '' })}
-            />
-          </div>
-        )}
-        {data && (
-          <p className="border-b border-outline px-5 py-2 text-sm text-muted">
-            Total de los asientos que cumplen el filtro:{' '}
-            <b className="font-mono text-ink">{formatCurrency(data.totalAmount)}</b>
-          </p>
-        )}
-        <div className="flex justify-end border-b border-outline px-4 py-2">
-          <ExportCsvButton
-            filename="comisiones"
-            headers={['Fecha', 'Chofer', 'Asiento', 'Pedido', 'Descripción', 'Liquidada', 'Importe']}
-            rows={(data?.data ?? []).map((row) => [
+        <TableToolbar
+          filters={
+            <>
+              <Select
+                label="Chofer"
+                options={[
+                  { value: '', label: 'Todos los choferes' },
+                  ...(employees.data?.rows ?? []).map((e) => ({
+                    value: e.employeeId,
+                    label: `${e.firstName} ${e.lastName}`,
+                  })),
+                ]}
+                value={filters.employeeId}
+                onChange={(e) => setFilters({ employeeId: e.target.value })}
+              />
+              <Select
+                label="Liquidación"
+                options={LIQUIDATED}
+                value={filters.liquidated}
+                onChange={(e) => setFilters({ liquidated: e.target.value })}
+              />
+              <DateRangeFilter from={filters.from} to={filters.to} onChange={(range) => setFilters({ ...range })} />
+            </>
+          }
+          csv={{
+            filename: 'comisiones',
+            headers: ['Fecha', 'Chofer', 'Asiento', 'Pedido', 'Descripción', 'Liquidada', 'Importe'],
+            rows: (data?.data ?? []).map((row) => [
               csvDateTime(row.occurredAt),
               row.employeeName,
               labelOf(COMMISSION_ENTRY_TYPE, row.type).text,
@@ -178,9 +152,21 @@ export const Commissions = () => {
               row.description,
               row.liquidationId ? 'Sí' : 'No',
               row.amount,
-            ])}
-          />
-        </div>
+            ]),
+          }}
+          chips={chips}
+          onRemoveChip={(key) => setFilters({ [key]: '' })}
+          onClearChips={() => setFilters({ employeeId: '', liquidated: '', from: '', to: '' })}
+          resultCount={data?.total}
+          noun={['asiento', 'asientos']}
+        >
+          {data && (
+            <p className="text-sm text-muted">
+              Total de los asientos que cumplen el filtro:{' '}
+              <b className="font-mono text-ink">{formatCurrency(data.totalAmount)}</b>
+            </p>
+          )}
+        </TableToolbar>
         {error ? (
           <ErrorState error={error} resource="Las comisiones" onRetry={() => void refetch()} />
         ) : (
@@ -216,6 +202,6 @@ export const Commissions = () => {
           />
         )}
       </Card>
-    </div>
+    </PageContainer>
   );
 };

@@ -1,6 +1,15 @@
 import { useState } from 'react';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import { Button, Card, EmptyState, ErrorState, LoadingState, PageHeader } from '../../common/components/ui';
+import {
+  Button,
+  Card,
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  PageHeader,
+  PageContainer,
+  CardHeader,
+} from '../../common/components/ui';
 import { usePermissions } from '../../hooks';
 import type { CoverageZone } from '../../services/api/types';
 import { useCoverageZones, useDeleteCoverageZone, useUpdateCoverageZone } from '../../services/queries/coverageZones';
@@ -86,7 +95,7 @@ export const CoverageZones = () => {
 
   if (needsDistributor) {
     return (
-      <div className="mx-auto max-w-[1600px] p-4 md:p-8">
+      <PageContainer size="xl">
         <PageHeader
           title="Zonas de cobertura"
           description="Las áreas donde la distribuidora entrega, con su recargo."
@@ -97,13 +106,13 @@ export const CoverageZones = () => {
             description="Como administrador general, elegí una con «Ver como» para ver sus zonas."
           />
         </Card>
-      </div>
+      </PageContainer>
     );
   }
 
   if (isError) {
     return (
-      <div className="mx-auto max-w-[1600px] p-4 md:p-8">
+      <PageContainer size="xl">
         <PageHeader
           title="Zonas de cobertura"
           description="Las áreas donde la distribuidora entrega, con su recargo."
@@ -111,12 +120,12 @@ export const CoverageZones = () => {
         <Card>
           <ErrorState error={error} resource="Las zonas de cobertura" onRetry={() => void refetch()} />
         </Card>
-      </div>
+      </PageContainer>
     );
   }
 
   return (
-    <div className="mx-auto max-w-[1600px] p-4 md:p-8">
+    <PageContainer size="xl">
       <PageHeader
         title="Zonas de cobertura"
         description="Las áreas donde la distribuidora entrega, con su recargo."
@@ -177,9 +186,11 @@ export const CoverageZones = () => {
         <div className="space-y-6">
           {(mode === 'draw' || mode === 'edit') && (
             <Card className="p-5">
-              <h3 className="mb-3 font-semibold text-ink">
-                {editingZone ? `Editar "${editingZone.name}"` : 'Nueva zona'}
-              </h3>
+              <CardHeader
+                title={editingZone ? `Editar "${editingZone.name}"` : 'Nueva zona'}
+                as="h3"
+                className="mb-3"
+              />
               <ZoneFormPanel
                 key={editingZone?.coverage_zone_id ?? `new-${formSession}`}
                 zone={editingZone}
@@ -210,6 +221,6 @@ export const CoverageZones = () => {
           </Card>
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 };

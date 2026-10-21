@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { GridPaginationModel } from '@mui/x-data-grid';
-import { Card, EmptyState, PageHeader } from '../../common/components/ui';
+import { Card, EmptyState, PageHeader, PageContainer } from '../../common/components/ui';
 import type { UserAddressConUsuario } from '../../services/api/types';
 import { confirm, notify } from '../../utils/notifications';
 import { AddressFormModal } from '../Customers/components/details/AddressFormModal';
@@ -34,7 +34,7 @@ export const Addresses = () => {
   };
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Direcciones"
         description="Las direcciones de entrega que cargaron los clientes, la predeterminada primero."
@@ -73,6 +73,6 @@ export const Addresses = () => {
           isFirstAddress={false}
         />
       )}
-    </div>
+    </PageContainer>
   );
 };

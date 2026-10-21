@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { List, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Badge, Button, PageHeader, SearchInput } from '../../common/components/ui';
+import { Badge, Button, PageHeader, SearchInput, PageContainer } from '../../common/components/ui';
 import { usePermissions } from '../../hooks';
 import type { Order } from '../../services/api/types';
 import { useAssignOrderDelivery, useDispatchBoard } from '../../services/queries/orders';
@@ -81,7 +81,7 @@ export const DispatchBoard = () => {
   };
 
   return (
-    <div className="mx-auto max-w-[1600px] p-4 md:p-8">
+    <PageContainer size="xl">
       <PageHeader
         title="Tablero de despacho"
         description="Los pedidos del día por etapa. Se actualiza solo; desde cada tarjeta se asigna el chofer o se abre el pedido."
@@ -156,6 +156,6 @@ export const DispatchBoard = () => {
         assigning={assignDelivery.isPending}
         distributorId={assigning?.distributor_id}
       />
-    </div>
+    </PageContainer>
   );
 };

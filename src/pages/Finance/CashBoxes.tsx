@@ -8,13 +8,14 @@ import {
   Card,
   Checkbox,
   EmptyState,
-  ExportCsvButton,
   ErrorState,
   IdentityCell,
   PageHeader,
   ResponsiveTable,
   RowActions,
   Select,
+  PageContainer,
+  TableToolbar,
 } from '../../common/components/ui';
 import { useClampPage, usePermissions, useUrlPagedParams } from '../../hooks';
 import type { CashBox } from '../../services/api/types';
@@ -111,7 +112,7 @@ export const CashBoxes = () => {
   useClampPage(pagination, data?.total, setPagination);
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Cajas"
         description="El efectivo, los bancos y las billeteras de la distribuidora, con su saldo según el libro."
@@ -123,24 +124,26 @@ export const CashBoxes = () => {
       />
       <FinanceSummary kind="boxes" />
       <Card>
-        <div className="grid grid-cols-1 items-end gap-3 border-b border-outline p-4 sm:grid-cols-[1fr_auto]">
-          <Select
-            label="Tipo"
-            options={KIND_FILTER}
-            value={filters.kind}
-            onChange={(e) => setFilters({ kind: e.target.value })}
-          />
-          <Checkbox
-            label="Ver desactivadas"
-            checked={filters.inactive === '1'}
-            onChange={(e) => setFilters({ inactive: e.target.checked ? '1' : '' })}
-          />
-        </div>
-        <div className="flex justify-end border-b border-outline px-4 py-2">
-          <ExportCsvButton
-            filename="cajas"
-            headers={['Caja', 'Tipo', 'Saldo', 'Estado']}
-            rows={(data?.data ?? []).map((row) => [
+        <TableToolbar
+          filters={
+            <>
+              <Select
+                label="Tipo"
+                options={KIND_FILTER}
+                value={filters.kind}
+                onChange={(e) => setFilters({ kind: e.target.value })}
+              />
+              <Checkbox
+                label="Ver desactivadas"
+                checked={filters.inactive === '1'}
+                onChange={(e) => setFilters({ inactive: e.target.checked ? '1' : '' })}
+              />
+            </>
+          }
+          csv={{
+            filename: 'cajas',
+            headers: ['Caja', 'Tipo', 'Saldo', 'Estado'],
+            rows: (data?.data ?? []).map((row) => [
               row.name,
               labelOf(CASH_BOX_KIND, row.kind).text,
               row.balance,
@@ -151,9 +154,10 @@ export const CashBoxes = () => {
                     ? 'Abierta'
                     : 'Cerrada'
                   : 'Sin sesión',
-            ])}
-          />
-        </div>
+            ]),
+          }}
+          noun={['caja', 'cajas']}
+        />
         {error ? (
           <ErrorState error={error} resource="Las cajas" onRetry={() => void refetch()} />
         ) : (
@@ -213,6 +217,6 @@ export const CashBoxes = () => {
       />
       <OpenSessionModal open={opening !== null} onClose={() => setOpening(null)} cashBox={opening} />
       <CloseSessionModal open={closing !== null} onClose={() => setClosing(null)} sessionId={closing} />
-    </div>
+    </PageContainer>
   );
 };

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ClipboardCheck } from 'lucide-react';
-import { Badge, Button, Card, EmptyState, ErrorState, LoadingState } from '../../../common/components/ui';
+import { Badge, Button, Card, CardHeader, EmptyState, ErrorState, LoadingState } from '../../../common/components/ui';
 import { usePermissions } from '../../../hooks';
 import { useCylinderVigencia } from '../../../services/queries/physicalCylinders';
 import { formatArgentinaDay } from '../../../utils/format';
@@ -16,20 +16,22 @@ export const CylinderVigenciaCard = ({ cylinderId, retired }: { cylinderId: stri
 
   return (
     <Card className="min-w-0 p-6 lg:col-span-3">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-base font-semibold text-ink">Vigencia y revisiones</h2>
-        <Button
-          variant="secondary"
-          size="sm"
-          icon={<ClipboardCheck />}
-          disabled={!canWrite}
-          title={writeHint}
-          blockedReason={canWrite && retired ? 'Un envase dado de baja no admite revisiones' : undefined}
-          onClick={() => setRegistering(true)}
-        >
-          Registrar revisión
-        </Button>
-      </div>
+      <CardHeader
+        title="Vigencia y revisiones"
+        action={
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<ClipboardCheck />}
+            disabled={!canWrite}
+            title={writeHint}
+            blockedReason={canWrite && retired ? 'Un envase dado de baja no admite revisiones' : undefined}
+            onClick={() => setRegistering(true)}
+          >
+            Registrar revisión
+          </Button>
+        }
+      />
 
       {isPending ? (
         <LoadingState label="Cargando vigencia…" />
@@ -55,7 +57,7 @@ export const CylinderVigenciaCard = ({ cylinderId, retired }: { cylinderId: stri
               Este envase está vencido y todavía no volvió al depósito: hay que retirarlo cuando vuelva.
             </p>
           )}
-          <h3 className="mt-6 mb-2 text-sm font-semibold text-ink">Historial de revisiones</h3>
+          <CardHeader title="Historial de revisiones" as="h3" className="mt-6 mb-2" />
           {data.inspections.length === 0 ? (
             <EmptyState title="Sin revisiones" description="Todavía no se registró ninguna revisión de este envase." />
           ) : (

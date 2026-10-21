@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { CirclePlus, Trash2 } from 'lucide-react';
-import { Button, IconButton, Input, Modal, Select, TextArea } from '../../../common/components/ui';
+import { Button, IconButton, Input, Modal, Select, TextArea, CardHeader } from '../../../common/components/ui';
 import type { Order } from '../../../services/api/types';
 import { useGasCylinders } from '../../../services/queries/gasCylinders';
 import { useUpdateOrder } from '../../../services/queries/orders';
@@ -145,7 +145,7 @@ export const EditOrderModal = ({ order, onClose }: Props) => {
 
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-ink">Renglones</h3>
+            <CardHeader title="Renglones" as="h3" className="" />
             <Button
               type="button"
               size="sm"

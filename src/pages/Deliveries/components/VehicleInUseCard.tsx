@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ArrowRightLeft, ShieldAlert } from 'lucide-react';
-import { Button, Card, EmptyState, LoadingState } from '../../../common/components/ui';
+import { Button, Card, EmptyState, LoadingState, CardHeader } from '../../../common/components/ui';
 import { usePermissions } from '../../../hooks';
 import { carIcon } from '../../Cars/components/carIcon';
 import { useReleaseVehicle, useVehicleInUse } from '../../../services/queries/fleet';
@@ -54,7 +54,7 @@ export const VehicleInUseCard = ({ deliveryId, canWrite, writeHint }: Props) => 
     <Card className="p-6">
       <div className="mb-4 flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-base font-semibold text-ink">Vehículo en uso</h2>
+          <CardHeader title="Vehículo en uso" className="" />
           <p className="text-sm text-muted">El vehículo de la flota que este chofer está usando ahora.</p>
         </div>
         <div className="flex shrink-0 gap-2">

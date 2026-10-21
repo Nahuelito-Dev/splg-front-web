@@ -74,7 +74,7 @@ describe('Claims', () => {
     expect(screen.queryByText('Ana Pérez')).not.toBeInTheDocument();
     const chips = screen.getByRole('group', { name: 'Filtros activos' });
     expect(chips).toHaveTextContent('1 resultado');
-    expect(within(chips).getByText('Resuelto')).toBeInTheDocument();
+    expect(within(chips).getByText('Estado: Resuelto')).toBeInTheDocument();
   });
 
   it('arranca con los filtros de la URL y "Limpiar todo" los saca de una vez', () => {

@@ -6,11 +6,13 @@ import {
   Badge,
   Button,
   Card,
+  CardHeader,
   DetailList,
   DetailSkeleton,
   ErrorState,
   PageHeader,
   UserRefLink,
+  PageContainer,
 } from '../../common/components/ui';
 import { useBackToList, usePermissions } from '../../hooks';
 import { useCrumbLeaf } from '../../common/components';
@@ -36,15 +38,40 @@ export const CylinderDetails = () => {
   const [retiring, setRetiring] = useState(false);
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Ficha del envase"
+        secondaryActions={
+          cylinder
+            ? [
+                ...(canEditCylinder(cylinder)
+                  ? [
+                      {
+                        label: 'Editar',
+                        icon: <PencilLine />,
+                        disabled: !canWrite,
+                        title: writeHint,
+                        onClick: () => setEditing(true),
+                      },
+                    ]
+                  : []),
+                {
+                  label: 'Dar de baja',
+                  icon: <Trash2 />,
+                  tone: 'danger' as const,
+                  disabled: !canWrite,
+                  title: writeHint,
+                  blockedReason: canWrite && !canRetire(cylinder) ? RETIRE_HINT : undefined,
+                  onClick: () => setRetiring(true),
+                },
+              ]
+            : []
+        }
         actions={
           cylinder && (
             <>
               <AuditHistoryLink entity="Cylinder" recordId={cylinder.cylinder_id} />
               <Button
-                variant="secondary"
                 size="sm"
                 icon={<ArrowRightLeft />}
                 disabled={!canWrite}
@@ -53,29 +80,6 @@ export const CylinderDetails = () => {
                 onClick={() => setTransitioning(true)}
               >
                 Mover de estado
-              </Button>
-              {canEditCylinder(cylinder) && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  icon={<PencilLine />}
-                  disabled={!canWrite}
-                  title={writeHint}
-                  onClick={() => setEditing(true)}
-                >
-                  Editar
-                </Button>
-              )}
-              <Button
-                variant="danger"
-                size="sm"
-                icon={<Trash2 />}
-                disabled={!canWrite}
-                title={writeHint}
-                blockedReason={canWrite && !canRetire(cylinder) ? RETIRE_HINT : undefined}
-                onClick={() => setRetiring(true)}
-              >
-                Dar de baja
               </Button>
             </>
           )
@@ -139,7 +143,7 @@ export const CylinderDetails = () => {
           </Card>
 
           <Card className="min-w-0 p-6 lg:col-span-2">
-            <h2 className="mb-4 text-base font-semibold text-ink">Movimientos</h2>
+            <CardHeader title="Movimientos" />
             <CylinderTimeline cylinderId={cylinder.cylinder_id} />
           </Card>
 
@@ -150,6 +154,6 @@ export const CylinderDetails = () => {
       <CylinderFormModal open={editing} onClose={() => setEditing(false)} cylinder={cylinder ?? null} />
       <RetireCylinderModal cylinder={retiring ? (cylinder ?? null) : null} onClose={() => setRetiring(false)} />
       <TransitionModal open={transitioning} onClose={() => setTransitioning(false)} cylinder={cylinder ?? null} />
-    </div>
+    </PageContainer>
   );
 };

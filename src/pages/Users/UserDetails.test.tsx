@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { User } from '../../services/api/types';
@@ -107,10 +107,16 @@ describe('UserDetails: administrador general sin distribuidora elegida', () => {
     withoutDistributor();
     user.current = makeUser(false, role);
     renderDetails();
-    for (const name of ['Editar cuenta', 'Bloquear', 'Dar de baja', 'Reemplazar', 'Quitar']) {
+    for (const name of ['Editar cuenta', 'Reemplazar', 'Quitar']) {
       const button = screen.getByRole('button', { name });
       expect(button).toHaveAttribute('aria-disabled', 'true');
       expect(button).toHaveAttribute('title', HINT);
+    }
+    fireEvent.click(screen.getByRole('button', { name: 'Más acciones' }));
+    for (const name of ['Bloquear', 'Dar de baja']) {
+      const item = screen.getByRole('menuitem', { name });
+      expect(item).toHaveAttribute('aria-disabled', 'true');
+      expect(item).toHaveAttribute('title', HINT);
     }
   });
 
@@ -118,8 +124,10 @@ describe('UserDetails: administrador general sin distribuidora elegida', () => {
     withoutDistributor();
     user.current = makeUser(role === 'customer', role);
     renderDetails();
-    for (const name of ['Editar cuenta', 'Bloquear', 'Dar de baja']) {
-      expect(screen.getByRole('button', { name })).not.toHaveAttribute('aria-disabled');
+    expect(screen.getByRole('button', { name: 'Editar cuenta' })).not.toHaveAttribute('aria-disabled');
+    fireEvent.click(screen.getByRole('button', { name: 'Más acciones' }));
+    for (const name of ['Bloquear', 'Dar de baja']) {
+      expect(screen.getByRole('menuitem', { name })).not.toHaveAttribute('aria-disabled');
     }
   });
 
@@ -127,6 +135,7 @@ describe('UserDetails: administrador general sin distribuidora elegida', () => {
     permissions.canManageCustomerAccounts = true;
     user.current = makeUser(false, 'delivery');
     renderDetails();
-    expect(screen.getByRole('button', { name: 'Bloquear' })).not.toHaveAttribute('aria-disabled');
+    fireEvent.click(screen.getByRole('button', { name: 'Más acciones' }));
+    expect(screen.getByRole('menuitem', { name: 'Bloquear' })).not.toHaveAttribute('aria-disabled');
   });
 });

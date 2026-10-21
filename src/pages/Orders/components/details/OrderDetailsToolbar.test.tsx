@@ -60,6 +60,12 @@ const renderToolbar = (status: Order['status'] = 'accepted') =>
     </QueryClientProvider>,
   );
 
+/** Las acciones de segundo orden viven en el menú ⋮ del encabezado. */
+const clickMenu = (name: string | RegExp) => {
+  fireEvent.click(screen.getByRole('button', { name: 'Más acciones' }));
+  fireEvent.click(screen.getByRole('menuitem', { name }));
+};
+
 describe('OrderDetailsToolbar: permisos', () => {
   const withoutDistributor = () =>
     permissions.mockReturnValue({ canWrite: false, writeHint: undefined, canOperate: false, operateHint: HINT });
@@ -68,13 +74,13 @@ describe('OrderDetailsToolbar: permisos', () => {
     withoutDistributor();
     for (const status of ['pending', 'accepted', 'out_for_delivery'] as const) {
       renderToolbar(status);
-      const operations = screen
-        .getAllByRole('button')
-        .filter((button) =>
-          /Asignar chofer|Reasignar chofer|Cancelar pedido|Marcar|Volver a|Avisar llegada|Confirmar entrega/.test(
-            button.textContent ?? '',
-          ),
-        );
+      const headerButtons = screen.getAllByRole('button');
+      fireEvent.click(screen.getByRole('button', { name: 'Más acciones' }));
+      const operations = [...headerButtons, ...screen.getAllByRole('menuitem')].filter((button) =>
+        /Asignar chofer|Reasignar chofer|Cancelar pedido|Marcar|Volver a|Avisar llegada|Confirmar entrega/.test(
+          button.textContent ?? '',
+        ),
+      );
       expect(operations.length).toBeGreaterThan(0);
       for (const button of operations) {
         expect(button).toHaveAttribute('aria-disabled', 'true');
@@ -88,8 +94,8 @@ describe('OrderDetailsToolbar: permisos', () => {
     withoutDistributor();
     renderToolbar('out_for_delivery');
     fireEvent.click(screen.getByRole('button', { name: /Confirmar entrega/ }));
-    fireEvent.click(screen.getByRole('button', { name: 'Marcar como entregado' }));
-    fireEvent.click(screen.getByRole('button', { name: /Cancelar pedido/ }));
+    clickMenu('Marcar como entregado');
+    clickMenu(/Cancelar pedido/);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(notifications.confirm).not.toHaveBeenCalled();
     expect(api.updateOrderStatus).not.toHaveBeenCalled();
@@ -98,7 +104,8 @@ describe('OrderDetailsToolbar: permisos', () => {
   it('lo que no escribe sigue disponible: el remito', () => {
     withoutDistributor();
     renderToolbar();
-    expect(screen.getByRole('link', { name: /Imprimir remito/ })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Más acciones' }));
+    expect(screen.getByRole('menuitem', { name: /Imprimir remito/ })).toBeInTheDocument();
   });
 
   it('con distribuidora elegida las acciones están habilitadas y sin aviso', () => {
@@ -106,14 +113,15 @@ describe('OrderDetailsToolbar: permisos', () => {
     const assign = screen.getByRole('button', { name: /Asignar chofer/ });
     expect(assign).not.toHaveAttribute('aria-disabled');
     expect(assign).not.toHaveAttribute('title');
-    expect(screen.getByRole('button', { name: /Cancelar pedido/ })).not.toHaveAttribute('aria-disabled');
+    fireEvent.click(screen.getByRole('button', { name: 'Más acciones' }));
+    expect(screen.getByRole('menuitem', { name: /Cancelar pedido/ })).not.toHaveAttribute('aria-disabled');
   });
 });
 
 describe('OrderDetailsToolbar: entrega manual', () => {
   it('Marcar como entregado pide motivo y manda status + reason', async () => {
     renderToolbar('out_for_delivery');
-    fireEvent.click(screen.getByRole('button', { name: 'Marcar como entregado' }));
+    clickMenu('Marcar como entregado');
     expect(screen.getByRole('dialog', { name: 'Marcar como entregado' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Marcar como entregado' })).toHaveAttribute('aria-disabled', 'true');
 
@@ -172,7 +180,7 @@ describe('OrderDetailsToolbar: entrega manual', () => {
   it('doble click en entrega manual dispara un solo envío', async () => {
     api.updateOrderStatus.mockReturnValue(new Promise(() => undefined));
     renderToolbar('out_for_delivery');
-    fireEvent.click(screen.getByRole('button', { name: 'Marcar como entregado' }));
+    clickMenu('Marcar como entregado');
     fireEvent.change(screen.getByRole('textbox', { name: /Motivo/ }), {
       target: { value: 'Cliente confirmó por WhatsApp' },
     });
@@ -185,7 +193,7 @@ describe('OrderDetailsToolbar: entrega manual', () => {
   it('no permite cerrar la entrega manual mientras envía', async () => {
     api.updateOrderStatus.mockReturnValue(new Promise(() => undefined));
     renderToolbar('out_for_delivery');
-    fireEvent.click(screen.getByRole('button', { name: 'Marcar como entregado' }));
+    clickMenu('Marcar como entregado');
     fireEvent.change(screen.getByRole('textbox', { name: /Motivo/ }), {
       target: { value: 'Cliente confirmó por WhatsApp' },
     });
@@ -198,7 +206,7 @@ describe('OrderDetailsToolbar: entrega manual', () => {
   it('el error del back viaja del hook al modal y se limpia al editar', async () => {
     api.updateOrderStatus.mockRejectedValue(new ApiError(409, ['El pedido ya fue cerrado']));
     renderToolbar('out_for_delivery');
-    fireEvent.click(screen.getByRole('button', { name: 'Marcar como entregado' }));
+    clickMenu('Marcar como entregado');
     const reason = screen.getByRole('textbox', { name: /Motivo/ });
     fireEvent.change(reason, { target: { value: 'Cliente confirmó por WhatsApp' } });
     fireEvent.click(screen.getByRole('button', { name: 'Marcar como entregado' }));
@@ -223,7 +231,7 @@ describe('OrderDetailsToolbar: entrega manual', () => {
 
   it('Volver a pendiente sigue pidiendo confirmación y no manda reason', async () => {
     renderToolbar('out_for_delivery');
-    fireEvent.click(screen.getByRole('button', { name: 'Volver a pendiente' }));
+    clickMenu('Volver a pendiente');
     await waitFor(() => expect(notifications.confirm).toHaveBeenCalled());
     await waitFor(() => expect(api.updateOrderStatus).toHaveBeenCalledWith('abcdef123456', { status: 'pending' }));
   });

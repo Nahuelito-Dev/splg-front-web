@@ -1,5 +1,5 @@
 import ReportProblemOutlinedIcon from '@mui/icons-material/ReportProblemOutlined';
-import { Badge, Card } from '../../../../common/components/ui';
+import { Badge, Card, CardHeader } from '../../../../common/components/ui';
 import { useOrderIncidents } from '../../../../services/queries/orders';
 import { errorMessage } from '../../../../services/api/errors';
 import { formatDateTime } from '../../../../utils/format';
@@ -26,9 +26,7 @@ export const OrderIncidents = ({ orderId }: { orderId: string }) => {
 
   return (
     <Card className="p-4">
-      <h3 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted">
-        <ReportProblemOutlinedIcon fontSize="small" /> Incidencias reportadas
-      </h3>
+      <CardHeader title="Incidencias reportadas" icon={<ReportProblemOutlinedIcon />} as="h3" className="mb-3" />
       <ul className="space-y-3">
         {incidents.map((incident) => (
           <li

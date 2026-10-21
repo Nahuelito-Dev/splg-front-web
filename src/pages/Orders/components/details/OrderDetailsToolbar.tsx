@@ -1,7 +1,14 @@
 import { BellRing, CircleX, KeyRound, PackageCheck, PencilLine, Printer, RefreshCw, UserRoundCog } from 'lucide-react';
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { AuditHistoryLink, Badge, Button, PageHeader, ReasonModal } from '../../../../common/components/ui';
+import { useNavigate } from 'react-router-dom';
+import {
+  AuditHistoryLink,
+  Badge,
+  Button,
+  PageHeader,
+  ReasonModal,
+  type MenuAction,
+} from '../../../../common/components/ui';
 import { usePermissions } from '../../../../hooks';
 import type { Order } from '../../../../services/api/types';
 import { formatDateTime, formatShortId } from '../../../../utils/format';
@@ -38,6 +45,81 @@ export const OrderDetailsToolbar = ({ order }: { order: Order }) => {
   const [editing, setEditing] = useState(false);
   const editBlocked = orderEditBlockedReason(order);
   const targets = manualStatusTargets(order.status);
+  const navigate = useNavigate();
+
+  // La primaria es la que avanza el pedido según su estado: confirmar la entrega o, antes, asignar el chofer.
+  const assignLabel = order.delivery_id ? 'Reasignar chofer' : 'Asignar chofer';
+  const confirmIsPrimary = canConfirmDelivery(order.status);
+  const assignIsPrimary = !confirmIsPrimary && canAssignDriver(order.status);
+  const primary = confirmIsPrimary ? (
+    <Button size="sm" icon={<PackageCheck />} blockedReason={blockedReason} onClick={() => actions.open('confirm')}>
+      Confirmar entrega
+    </Button>
+  ) : assignIsPrimary ? (
+    <Button size="sm" icon={<UserRoundCog />} blockedReason={blockedReason} onClick={() => actions.open('assign')}>
+      {assignLabel}
+    </Button>
+  ) : null;
+  const secondary: MenuAction[] = [
+    {
+      label: 'Editar pedido',
+      icon: <PencilLine />,
+      disabled: !canWrite,
+      title: writeHint,
+      blockedReason: canWrite && editBlocked ? `No se puede editar: ${editBlocked}` : undefined,
+      onClick: () => setEditing(true),
+    },
+    ...(canAssignDriver(order.status) && !assignIsPrimary
+      ? [
+          {
+            label: assignLabel,
+            icon: <UserRoundCog />,
+            blockedReason,
+            onClick: () => actions.open('assign'),
+          },
+        ]
+      : []),
+    ...targets.map((target) => ({
+      label: manualStatusActionLabel(order.status, target),
+      icon: <RefreshCw />,
+      disabled: actions.pending.status,
+      blockedReason,
+      onClick: () => void actions.changeStatus(target),
+    })),
+    ...(canViewDeliveryCode(order.status)
+      ? [
+          {
+            label: 'Ver código',
+            icon: <KeyRound />,
+            disabled: actions.pending.code,
+            onClick: () => void actions.viewCode(),
+          },
+        ]
+      : []),
+    ...(canNotifyArrival(order.status)
+      ? [
+          {
+            label: 'Avisar llegada',
+            icon: <BellRing />,
+            disabled: actions.pending.arrival,
+            blockedReason,
+            onClick: () => void actions.announceArrival(),
+          },
+        ]
+      : []),
+    { label: 'Imprimir remito', icon: <Printer />, onClick: () => navigate(`/orders/${order.order_id}/remito`) },
+    ...(canCancel(order.status)
+      ? [
+          {
+            label: 'Cancelar pedido',
+            icon: <CircleX />,
+            tone: 'danger' as const,
+            blockedReason,
+            onClick: () => actions.open('cancel'),
+          },
+        ]
+      : []),
+  ];
 
   return (
     <>
@@ -55,95 +137,12 @@ export const OrderDetailsToolbar = ({ order }: { order: Order }) => {
         actions={
           <>
             <AuditHistoryLink entity="Order" recordId={order.order_id} />
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={<PencilLine />}
-              disabled={!canWrite}
-              title={writeHint}
-              blockedReason={canWrite && editBlocked ? `No se puede editar: ${editBlocked}` : undefined}
-              onClick={() => setEditing(true)}
-            >
-              Editar pedido
-            </Button>
-            {canAssignDriver(order.status) && (
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={<UserRoundCog />}
-                blockedReason={blockedReason}
-                onClick={() => actions.open('assign')}
-              >
-                {order.delivery_id ? 'Reasignar chofer' : 'Asignar chofer'}
-              </Button>
-            )}
-            {targets.map((target) => (
-              <Button
-                key={target}
-                variant="secondary"
-                size="sm"
-                icon={<RefreshCw />}
-                disabled={actions.pending.status}
-                blockedReason={blockedReason}
-                onClick={() => void actions.changeStatus(target)}
-              >
-                {manualStatusActionLabel(order.status, target)}
-              </Button>
-            ))}
-            {canViewDeliveryCode(order.status) && (
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={<KeyRound />}
-                loading={actions.pending.code}
-                onClick={() => void actions.viewCode()}
-              >
-                Ver código
-              </Button>
-            )}
-            {canNotifyArrival(order.status) && (
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={<BellRing />}
-                loading={actions.pending.arrival}
-                blockedReason={blockedReason}
-                onClick={() => void actions.announceArrival()}
-              >
-                Avisar llegada
-              </Button>
-            )}
-            {canConfirmDelivery(order.status) && (
-              <Button
-                size="sm"
-                icon={<PackageCheck />}
-                blockedReason={blockedReason}
-                onClick={() => actions.open('confirm')}
-              >
-                Confirmar entrega
-              </Button>
-            )}
+            {primary}
             {order.paymentStatus === 'unpaid' && <ResolveUnpaidAction order={order} />}
             <OrderPaymentActions order={order} />
-            {canCancel(order.status) && (
-              <Button
-                variant="danger"
-                size="sm"
-                icon={<CircleX />}
-                blockedReason={blockedReason}
-                onClick={() => actions.open('cancel')}
-              >
-                Cancelar pedido
-              </Button>
-            )}
-            <Link
-              to={`/orders/${order.order_id}/remito`}
-              className="inline-flex h-8 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-outline bg-surface px-3 text-xs font-semibold text-ink shadow-control transition hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 [&_svg]:h-4 [&_svg]:w-4"
-            >
-              <Printer aria-hidden="true" /> Imprimir remito
-            </Link>
           </>
         }
+        secondaryActions={secondary}
       />
 
       {actions.revealedCode && (

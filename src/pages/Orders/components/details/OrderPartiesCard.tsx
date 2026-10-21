@@ -1,14 +1,12 @@
 import { CircleUser, MapPin, Truck } from 'lucide-react';
-import { Card } from '../../../../common/components/ui';
+import { Card, CardHeader } from '../../../../common/components/ui';
 import type { Order } from '../../../../services/api/types';
 
 /** Cliente, entrega y chofer de un pedido (el pago está en el resumen de ítems): la "tarjeta lateral" de la ficha. */
 export const OrderPartiesCard = ({ order }: { order: Order }) => (
   <Card className="divide-y divide-dashed divide-outline">
     <section className="p-4">
-      <h3 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted">
-        <CircleUser aria-hidden="true" className="h-4 w-4" strokeWidth={1.8} /> Cliente
-      </h3>
+      <CardHeader title="Cliente" icon={<CircleUser strokeWidth={1.8} />} as="h3" className="mb-3" />
       {order.customer ? (
         <>
           <p className="font-medium text-ink">{order.customer.full_name ?? 'Sin nombre'}</p>
@@ -21,9 +19,7 @@ export const OrderPartiesCard = ({ order }: { order: Order }) => (
     </section>
 
     <section className="p-4">
-      <h3 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted">
-        <MapPin aria-hidden="true" className="h-4 w-4" strokeWidth={1.8} /> Entrega
-      </h3>
+      <CardHeader title="Entrega" icon={<MapPin strokeWidth={1.8} />} as="h3" className="mb-3" />
       <p className="font-medium text-ink">{order.delivery_address?.street ?? 'Sin dirección'}</p>
       <p className="text-sm text-muted">{order.delivery_address?.city ?? '—'}</p>
       {order.delivery_window_start && order.delivery_window_end && (
@@ -38,9 +34,7 @@ export const OrderPartiesCard = ({ order }: { order: Order }) => (
     </section>
 
     <section className="p-4">
-      <h3 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted">
-        <Truck aria-hidden="true" className="h-4 w-4" strokeWidth={1.8} /> Chofer asignado
-      </h3>
+      <CardHeader title="Chofer asignado" icon={<Truck strokeWidth={1.8} />} as="h3" className="mb-3" />
       {order.delivery_name ? (
         <>
           <p className="font-medium text-ink">{order.delivery_name}</p>

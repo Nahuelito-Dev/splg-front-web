@@ -1,4 +1,4 @@
-import { Card, Input, Select } from '../../../common/components/ui';
+import { DateRangeFilter, Input, Select } from '../../../common/components/ui';
 import type { AuditFiltersState } from './auditFiltersState';
 
 interface Props {
@@ -17,7 +17,7 @@ export const AuditFilters = ({ value, onChange }: Props) => {
     onChange({ ...value, [key]: fieldValue });
 
   return (
-    <Card className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-6">
+    <>
       <Input
         label="Recurso"
         placeholder="orders, ratings…"
@@ -42,8 +42,11 @@ export const AuditFilters = ({ value, onChange }: Props) => {
         onChange={(e) => set('result', e.target.value as AuditFiltersState['result'])}
         options={RESULT_OPTIONS}
       />
-      <Input label="Desde" type="date" value={value.desde} onChange={(e) => set('desde', e.target.value)} />
-      <Input label="Hasta" type="date" value={value.hasta} onChange={(e) => set('hasta', e.target.value)} />
-    </Card>
+      <DateRangeFilter
+        from={value.desde}
+        to={value.hasta}
+        onChange={(range) => onChange({ ...value, desde: range.from, hasta: range.to })}
+      />
+    </>
   );
 };

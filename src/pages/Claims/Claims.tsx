@@ -5,16 +5,15 @@ import {
   Button,
   Card,
   ErrorState,
-  ExportCsvButton,
-  FilterChips,
   ListSkeleton,
   PageHeader,
-  SearchInput,
   Tabs,
   tabPanelProps,
   type AnalyticItem,
   type FilterChip,
   type TabItem,
+  PageContainer,
+  TableToolbar,
 } from '../../common/components/ui';
 import { usePermissions, useUrlParams } from '../../hooks';
 import type { Claim } from '../../services/api/types';
@@ -72,7 +71,7 @@ export const Claims = () => {
   const clearAll = () => setFilters({ status: 'all', q: '' });
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Reclamos"
         description="Atención y resolución de reclamos post-venta de los clientes."
@@ -108,29 +107,31 @@ export const Claims = () => {
               idPrefix={TABS_ID}
             />
             <div {...tabPanelProps(TABS_ID, status)}>
-              <div className="flex flex-col gap-3 border-b border-outline p-4">
-                <SearchInput
-                  label="Buscar reclamos"
-                  placeholder="Cliente, teléfono, motivo o n.º de pedido"
-                  value={term}
-                  onChange={(e) => setTerm(e.target.value)}
-                />
-                <FilterChips items={chips} onRemove={removeChip} onClearAll={clearAll} resultCount={rows.length} />
-                <div>
-                  <ExportCsvButton
-                    filename="reclamos"
-                    headers={['Cliente', 'Pedido', 'Motivo', 'Descripción', 'Fecha', 'Estado']}
-                    rows={rows.map((claim) => [
-                      claim.customer?.full_name ?? '',
-                      formatShortId(claim.order_id),
-                      claim.reason,
-                      claim.description,
-                      csvDateTime(claim.createdAt),
-                      labelOf(CLAIM_STATUS, claim.status).text,
-                    ])}
-                  />
-                </div>
-              </div>
+              <TableToolbar
+                search={{
+                  label: 'Buscar reclamos',
+                  placeholder: 'Cliente, teléfono, motivo o n.º de pedido',
+                  value: term,
+                  onChange: (value) => setTerm(value),
+                }}
+                csv={{
+                  filename: 'reclamos',
+                  headers: ['Cliente', 'Pedido', 'Motivo', 'Descripción', 'Fecha', 'Estado'],
+                  rows: rows.map((claim) => [
+                    claim.customer?.full_name ?? '',
+                    formatShortId(claim.order_id),
+                    claim.reason,
+                    claim.description,
+                    csvDateTime(claim.createdAt),
+                    labelOf(CLAIM_STATUS, claim.status).text,
+                  ]),
+                }}
+                chips={chips}
+                onRemoveChip={removeChip}
+                onClearChips={clearAll}
+                resultCount={rows.length}
+                noun={['reclamo', 'reclamos']}
+              />
               <ClaimsTable
                 rows={rows}
                 loading={isFetching}
@@ -163,6 +164,6 @@ export const Claims = () => {
       />
       <EditClaimModal claim={editing} onClose={() => setEditing(null)} />
       <CreateClaimModal open={creating} onClose={() => setCreating(false)} />
-    </div>
+    </PageContainer>
   );
 };

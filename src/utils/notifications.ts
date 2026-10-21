@@ -1,5 +1,4 @@
 import { enqueueSnackbar } from 'notistack';
-import Swal from 'sweetalert2';
 import { errorMessage } from '../services/api/errors';
 
 /** Avisos cortos (toasts). Se pueden llamar desde cualquier lado. */
@@ -9,7 +8,7 @@ export const notify = {
   info: (message: string) => enqueueSnackbar(message, { variant: 'info' }),
 };
 
-interface ConfirmOptions {
+export interface ConfirmOptions {
   title: string;
   text?: string;
   /** Texto del botón que confirma (por defecto "Confirmar"). */
@@ -18,67 +17,40 @@ interface ConfirmOptions {
   danger?: boolean;
 }
 
-/** Por encima de los diálogos de MUI (z-index 1300) y de sus toasts. */
-const CONFIRM_Z_INDEX = '1500';
+export interface PendingConfirm extends ConfirmOptions {
+  /** Distingue una solicitud de la siguiente: el diálogo se monta de nuevo por cada una. */
+  id: number;
+  resolve: (confirmed: boolean) => void;
+}
 
-let openConfirms = 0;
-const confirmListeners = new Set<() => void>();
-const setOpenConfirms = (next: number) => {
-  openConfirms = next;
-  confirmListeners.forEach((listener) => listener());
+/** Cola de confirmaciones: las dibuja `ConfirmDialogHost` (montado una vez en la App). */
+let queue: PendingConfirm[] = [];
+let nextConfirmId = 0;
+const listeners = new Set<() => void>();
+const setQueue = (next: PendingConfirm[]) => {
+  queue = next;
+  listeners.forEach((listener) => listener());
 };
 
-/** Para `useSyncExternalStore`: avisa cuando se abre o se cierra una confirmación. */
-export const subscribeConfirmOpen = (listener: () => void) => {
-  confirmListeners.add(listener);
+/** Para `useSyncExternalStore`. */
+export const subscribeConfirms = (listener: () => void) => {
+  listeners.add(listener);
   return () => {
-    confirmListeners.delete(listener);
+    listeners.delete(listener);
   };
 };
-export const isConfirmOpen = () => openConfirms > 0;
+/** La confirmación que se muestra ahora (la más vieja de la cola). */
+export const currentConfirm = () => queue[0];
+export const settleConfirm = (confirmed: boolean) => {
+  const [first, ...rest] = queue;
+  if (!first) return;
+  setQueue(rest);
+  first.resolve(confirmed);
+};
 
-/**
- * Pide confirmación antes de una acción. Devuelve true si el usuario confirmó.
- * Los estilos salen de la paleta (clases de Tailwind), no de colores sueltos.
- */
-export async function confirm({
-  title,
-  text,
-  confirmText = 'Confirmar',
-  danger = false,
-}: ConfirmOptions): Promise<boolean> {
-  setOpenConfirms(openConfirms + 1);
-  try {
-    // Un tick para que los diálogos de MUI abiertos suelten el foco antes de que SweetAlert lo tome.
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    const { isConfirmed } = await Swal.fire({
-      // Si hay un diálogo de MUI abierto, la confirmación tiene que verse encima de él.
-      didOpen: (popup) => {
-        if (popup.parentElement) popup.parentElement.style.zIndex = CONFIRM_Z_INDEX;
-      },
-      title,
-      text,
-      icon: danger ? 'warning' : 'question',
-      showCancelButton: true,
-      confirmButtonText: confirmText,
-      cancelButtonText: 'Cancelar',
-      reverseButtons: true,
-      focusCancel: danger,
-      buttonsStyling: false,
-      customClass: {
-        popup: '!bg-surface rounded-2xl font-sans',
-        title: 'font-display text-ink',
-        htmlContainer: 'text-muted',
-        actions: 'gap-3',
-        confirmButton: `rounded-lg px-4 py-2 text-sm font-semibold ${
-          danger ? 'bg-danger text-white hover:bg-danger/90' : 'bg-primary text-on-primary hover:bg-primary-hover'
-        }`,
-        cancelButton:
-          'rounded-lg border border-outline bg-surface px-4 py-2 text-sm font-semibold text-ink hover:bg-surface-hover',
-      },
-    });
-    return isConfirmed;
-  } finally {
-    setOpenConfirms(openConfirms - 1);
-  }
+/** Pide confirmación antes de una acción. Devuelve true si el usuario confirmó. */
+export function confirm(options: ConfirmOptions): Promise<boolean> {
+  return new Promise<boolean>((resolve) => {
+    setQueue([...queue, { ...options, id: ++nextConfirmId, resolve }]);
+  });
 }

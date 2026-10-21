@@ -2,6 +2,8 @@ import { createTheme } from '@mui/material/styles';
 import { esES } from '@mui/material/locale';
 import { esES as esESGrid } from '@mui/x-data-grid/locales';
 import brand from './brand.json';
+import { dataGridComponents } from './components/dataGrid';
+import { overlayComponents } from './components/overlays';
 import type { ResolvedThemeMode } from './themeMode';
 
 const { llama, gas, tinta, status, dark } = brand;
@@ -40,6 +42,8 @@ export const createAppTheme = (mode: ResolvedThemeMode) =>
       },
       shape: { borderRadius: 10 },
       components: {
+        ...overlayComponents(mode),
+        ...dataGridComponents(mode),
         MuiTooltip: {
           styleOverrides: {
             tooltip: {

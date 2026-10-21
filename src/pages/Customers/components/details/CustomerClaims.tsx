@@ -1,4 +1,4 @@
-import { Card, EmptyState } from '../../../../common/components/ui';
+import { Card, CardHeader, EmptyState } from '../../../../common/components/ui';
 import type { Claim } from '../../../../services/api/types';
 import { formatDateTime, formatShortId } from '../../../../utils/format';
 import { Badge } from '../../../../common/components/ui';
@@ -13,10 +13,11 @@ interface Props {
 /** Pestaña "Reclamos" de la ficha de un cliente: los que cargó (o le cargaron) sobre sus pedidos. */
 export const CustomerClaims = ({ claims, onOpen }: Props) => (
   <Card>
-    <div className="flex items-center justify-between border-b border-outline p-4">
-      <h2 className="text-base font-semibold text-ink">Reclamos</h2>
-      <span className="text-sm text-muted">{claims.length} en total</span>
-    </div>
+    <CardHeader
+      title="Reclamos"
+      action={<span className="text-sm text-muted">{claims.length} en total</span>}
+      className="border-b border-outline p-4"
+    />
     {claims.length === 0 ? (
       <EmptyState illustration="done" title="Sin reclamos" description="Este cliente no tiene reclamos cargados." />
     ) : (

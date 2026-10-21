@@ -1,6 +1,6 @@
 import type { GridColDef, GridPaginationModel } from '@mui/x-data-grid';
 import { useState } from 'react';
-import { Badge, Card, DataTable, EmptyState } from '../../../common/components/ui';
+import { Badge, Card, DataTable, EmptyState, CardHeader } from '../../../common/components/ui';
 import type { Order } from '../../../services/api/types';
 import { useDeliveryOrders } from '../../../services/queries/deliveries';
 import { formatCurrency, formatDateTime, formatShortId } from '../../../utils/format';
@@ -54,7 +54,7 @@ export const DeliveryOrders = ({ deliveryId }: { deliveryId: string }) => {
   return (
     <Card>
       <div className="flex items-center justify-between border-b border-outline p-4">
-        <h2 className="text-base font-semibold text-ink">Pedidos asignados</h2>
+        <CardHeader title="Pedidos asignados" className="" />
         {data && <span className="text-sm text-muted">{data.total} en total</span>}
       </div>
       <DataTable

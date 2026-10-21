@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Badge, Card, PageHeader, Tabs, tabPanelProps } from '../../common/components/ui';
+import { Badge, Card, PageHeader, Tabs, tabPanelProps, PageContainer } from '../../common/components/ui';
 import { useSocketContext } from '../../context/useSocketContext';
 import { DRIVER_LOCATION_EVENT } from '../../hooks/useSocket';
 import { AvailableOrdersPool } from './components/AvailableOrdersPool';
@@ -44,7 +44,7 @@ export const Tracking = () => {
   );
 
   return (
-    <div className="mx-auto max-w-[1600px] p-4 md:p-8">
+    <PageContainer size="xl">
       <PageHeader
         title="Seguimiento en vivo"
         description="Ubicación en tiempo real de los choferes con entregas en curso."
@@ -80,6 +80,6 @@ export const Tracking = () => {
           </div>
         </Card>
       </section>
-    </div>
+    </PageContainer>
   );
 };

@@ -1,10 +1,8 @@
 import { X } from 'lucide-react';
 import { Button } from './Button';
+import { chipText, type FilterChip } from './chipText';
 
-export interface FilterChip {
-  key: string;
-  label: string;
-}
+export type { FilterChip };
 
 interface Props {
   items: FilterChip[];
@@ -30,11 +28,11 @@ export const FilterChips = ({ items, onRemove, onClearAll, resultCount }: Props)
           key={item.key}
           className="inline-flex items-center gap-1 rounded-full border border-outline bg-surface-muted py-0.5 pl-2.5 pr-1.5 text-xs font-medium text-ink-2"
         >
-          {item.label}
+          {chipText(item)}
           <button
             type="button"
             onClick={() => onRemove(item.key)}
-            aria-label={`Quitar filtro: ${item.label}`}
+            aria-label={`Quitar filtro: ${chipText(item)}`}
             className="grid h-[18px] w-[18px] place-items-center rounded-full text-muted transition-colors hover:bg-surface-hover hover:text-ink"
           >
             <X aria-hidden="true" className="h-3 w-3" strokeWidth={2} />

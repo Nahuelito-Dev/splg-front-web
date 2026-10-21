@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Pencil, Trash2, UserCog } from 'lucide-react';
 import {
   AuditHistoryLink,
@@ -12,6 +12,8 @@ import {
   ErrorState,
   PageHeader,
   PhotoThumb,
+  PageContainer,
+  type MenuAction,
 } from '../../common/components/ui';
 import { useCrumbLeaf } from '../../common/components';
 import { useBackToList } from '../../hooks';
@@ -35,51 +37,52 @@ export const AdminDetails = () => {
   const [editing, setEditing] = useState(false);
   const { stateOf, remove, blockedReason } = useAdminManagement();
   const state = admin ? stateOf(admin) : null;
+  const navigate = useNavigate();
+
+  // La primaria es editar; administrar la cuenta y la baja van al menú ⋮.
+  const headerPrimary = admin ? (
+    <>
+      <AuditHistoryLink entity="Admin" recordId={admin.admin_id} />
+      {state && state.edit !== 'hidden' && (
+        <Button
+          size="sm"
+          icon={<Pencil />}
+          blockedReason={state.edit === 'needs-distributor' ? blockedReason : undefined}
+          onClick={() => setEditing(true)}
+        >
+          Editar
+        </Button>
+      )}
+    </>
+  ) : undefined;
+  const headerSecondary: MenuAction[] = admin
+    ? [
+        {
+          label: 'Administrar la cuenta',
+          icon: <UserCog />,
+          onClick: () => navigate(`/users/details/${admin.user_id}`),
+        },
+        ...(state && state.remove !== 'hidden'
+          ? [
+              {
+                label: 'Dar de baja',
+                icon: <Trash2 />,
+                tone: 'danger' as const,
+                blockedReason: state.remove === 'needs-distributor' ? blockedReason : undefined,
+                onClick: () =>
+                  void remove(admin, () => {
+                    setRemoved(true);
+                    goBack();
+                  }),
+              },
+            ]
+          : []),
+      ]
+    : [];
 
   return (
-    <div className="mx-auto max-w-4xl p-4 md:p-8">
-      <PageHeader
-        title="Ficha del administrador"
-        actions={
-          admin && (
-            <>
-              <AuditHistoryLink entity="Admin" recordId={admin.admin_id} />
-              {state && state.edit !== 'hidden' && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  icon={<Pencil />}
-                  blockedReason={state.edit === 'needs-distributor' ? blockedReason : undefined}
-                  onClick={() => setEditing(true)}
-                >
-                  Editar
-                </Button>
-              )}
-              {state && state.remove !== 'hidden' && (
-                <Button
-                  variant="danger"
-                  size="sm"
-                  icon={<Trash2 />}
-                  blockedReason={state.remove === 'needs-distributor' ? blockedReason : undefined}
-                  onClick={() =>
-                    void remove(admin, () => {
-                      setRemoved(true);
-                      goBack();
-                    })
-                  }
-                >
-                  Dar de baja
-                </Button>
-              )}
-              <Link to={`/users/details/${admin.user_id}`}>
-                <Button variant="secondary" size="sm" icon={<UserCog />}>
-                  Administrar la cuenta
-                </Button>
-              </Link>
-            </>
-          )
-        }
-      />
+    <PageContainer size="md">
+      <PageHeader title="Ficha del administrador" actions={headerPrimary} secondaryActions={headerSecondary} />
 
       {isPending ? (
         <DetailSkeleton />
@@ -117,6 +120,6 @@ export const AdminDetails = () => {
         </Card>
       )}
       <EditAdminModal admin={editing ? (admin ?? null) : null} onClose={() => setEditing(false)} />
-    </div>
+    </PageContainer>
   );
 };

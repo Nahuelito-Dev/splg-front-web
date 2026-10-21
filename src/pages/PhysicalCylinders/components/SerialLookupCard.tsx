@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
-import { Badge, Button, Card, DetailList, Input } from '../../../common/components/ui';
+import { Badge, Button, Card, DetailList, Input, CardHeader } from '../../../common/components/ui';
 import { OPERATE_HINT, usePermissions } from '../../../hooks';
 import { errorMessage } from '../../../services/api/errors';
 import { useFindCylinderBySerial } from '../../../services/queries/physicalCylinders';
@@ -20,7 +20,7 @@ export const SerialLookupCard = () => {
 
   return (
     <Card className="mb-6 p-4">
-      <h2 className="text-base font-semibold text-ink">Buscar un envase por número de serie</h2>
+      <CardHeader title="Buscar un envase por número de serie" className="" />
       <form
         className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end"
         onSubmit={(e) => {

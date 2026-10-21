@@ -12,6 +12,7 @@ import {
   PageHeader,
   ResponsiveTable,
   RowActions,
+  PageContainer,
 } from '../../common/components/ui';
 import { useClampPage, usePermissions, useUrlPagedParams } from '../../hooks';
 import type { CommissionRule } from '../../services/api/types';
@@ -86,7 +87,7 @@ export const CommissionRules = () => {
   useClampPage(pagination, data?.total, setPagination);
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Reglas de comisión"
         description="Cuánto cobra un chofer por cada entrega. Cada asiento guarda la regla con que se calculó."
@@ -149,6 +150,6 @@ export const CommissionRules = () => {
         }}
         rule={editing}
       />
-    </div>
+    </PageContainer>
   );
 };

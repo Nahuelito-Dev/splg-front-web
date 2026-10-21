@@ -13,6 +13,7 @@ import {
   PageHeader,
   ResponsiveTable,
   RowActions,
+  PageContainer,
 } from '../../common/components/ui';
 import { usePermissions } from '../../hooks';
 import type { Warehouse } from '../../services/api/types';
@@ -132,7 +133,7 @@ export const Warehouses = () => {
   ];
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Galpones"
         description="Dónde guarda la distribuidora sus garrafas. Cada galpón tiene su saldo de llenas, vacías y defectuosas."
@@ -217,6 +218,6 @@ export const Warehouses = () => {
         }}
         warehouse={editing}
       />
-    </div>
+    </PageContainer>
   );
 };

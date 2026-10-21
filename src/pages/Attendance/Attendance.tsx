@@ -1,17 +1,18 @@
 import type { GridPaginationModel } from '@mui/x-data-grid';
-import { CirclePlus, Clock, TriangleAlert, UserCheck } from 'lucide-react';
+import { CirclePlus, TriangleAlert, UserCheck } from 'lucide-react';
 import { useState } from 'react';
 import {
   Button,
   Card,
   EmptyState,
   ErrorState,
-  FilterChips,
-  Input,
   KpiCard,
   PageHeader,
   Select,
   type FilterChip,
+  PageContainer,
+  TableToolbar,
+  DayFilter,
 } from '../../common/components/ui';
 import { useUrlParams, usePermissions } from '../../hooks';
 import type { Attendance as AttendanceRow } from '../../services/api/types';
@@ -53,7 +54,7 @@ export const Attendance = () => {
   if (onlyOpen) chips.push({ key: 'open', label: 'Sin cerrar' });
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
+    <PageContainer stack>
       <PageHeader
         title="Asistencia"
         description="Las jornadas del personal: quién está presente y qué marcas quedaron sin cerrar."
@@ -99,49 +100,41 @@ export const Attendance = () => {
           </div>
 
           <Card>
-            <div className="flex flex-col gap-3 border-b border-outline p-4">
-              <div className="grid gap-3 sm:grid-cols-3">
-                <Input
-                  label="Día"
-                  type="date"
-                  value={date}
-                  max={todayLocal()}
-                  hint={date ? undefined : 'Hoy'}
-                  onChange={(e) => setFilters({ date: e.target.value, page: '1' })}
-                />
-                <Select
-                  label="Empleado"
-                  value={employee}
-                  onChange={(e) => setFilters({ employee: e.target.value, page: '1' })}
-                  options={[
-                    { value: '', label: 'Todos' },
-                    ...(employees.data?.rows ?? []).map((e) => ({ value: e.employeeId, label: employeeFullName(e) })),
-                  ]}
-                />
-                <Select
-                  label="Jornadas"
-                  value={open}
-                  onChange={(e) => setFilters({ open: e.target.value, page: '1' })}
-                  options={[
-                    { value: '', label: 'Todas' },
-                    { value: 'true', label: 'Sólo sin cerrar' },
-                  ]}
-                />
-              </div>
-              {chips.length > 0 ? (
-                <FilterChips
-                  items={chips}
-                  onRemove={(key) => setFilters({ [key]: '', page: '1' })}
-                  onClearAll={() => setFilters({ date: '', employee: '', open: '', page: '1' })}
-                  resultCount={server.data?.total}
-                />
-              ) : (
-                <p className="flex items-center gap-1.5 text-sm text-muted" aria-live="polite">
-                  <Clock aria-hidden="true" className="h-3.5 w-3.5" />
-                  {server.data ? `Jornadas de hoy: ${server.data.total}` : ''}
-                </p>
-              )}
-            </div>
+            <TableToolbar
+              filters={
+                <>
+                  <DayFilter
+                    value={date}
+                    emptyLabel="Hoy"
+                    maxDay={todayLocal()}
+                    onChange={(day) => setFilters({ date: day, page: '1' })}
+                  />
+                  <Select
+                    label="Empleado"
+                    value={employee}
+                    onChange={(e) => setFilters({ employee: e.target.value, page: '1' })}
+                    options={[
+                      { value: '', label: 'Todos' },
+                      ...(employees.data?.rows ?? []).map((e) => ({ value: e.employeeId, label: employeeFullName(e) })),
+                    ]}
+                  />
+                  <Select
+                    label="Jornadas"
+                    value={open}
+                    onChange={(e) => setFilters({ open: e.target.value, page: '1' })}
+                    options={[
+                      { value: '', label: 'Todas' },
+                      { value: 'true', label: 'Sólo sin cerrar' },
+                    ]}
+                  />
+                </>
+              }
+              chips={chips}
+              onRemoveChip={(key) => setFilters({ [key]: '', page: '1' })}
+              onClearChips={() => setFilters({ date: '', employee: '', open: '', page: '1' })}
+              resultCount={server.data?.total}
+              noun={['jornada', 'jornadas']}
+            />
             <AttendanceTable
               rows={server.data?.rows ?? []}
               total={server.data?.total ?? 0}
@@ -156,6 +149,6 @@ export const Attendance = () => {
       )}
       <AttendanceFormModal open={registering} onClose={() => setRegistering(false)} />
       <AttendanceCorrectModal open={Boolean(correcting)} onClose={() => setCorrecting(null)} attendance={correcting} />
-    </div>
+    </PageContainer>
   );
 };

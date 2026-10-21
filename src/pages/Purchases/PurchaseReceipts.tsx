@@ -8,15 +8,15 @@ import {
   Card,
   EmptyState,
   ErrorState,
-  FilterChips,
   IdentityCell,
-  Input,
   PageHeader,
   ResponsiveTable,
   RowActions,
   Select,
-  ExportCsvButton,
   StatusFilterTabs,
+  PageContainer,
+  TableToolbar,
+  DateRangeFilter,
 } from '../../common/components/ui';
 import { FROM_LIST_STATE, usePermissions, useClampPage, useUrlPagedParams } from '../../hooks';
 import type { PurchaseReceiptSummary } from '../../services/api/types';
@@ -147,7 +147,7 @@ export const PurchaseReceipts = () => {
   useClampPage(pagination, data?.total, setPagination);
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Recepciones"
         description="Cada remito o factura del proveedor: las llenas que entran, las vacías que se lleva la planta y el costo."
@@ -166,47 +166,32 @@ export const PurchaseReceipts = () => {
           label="Filtrar recepciones por estado"
           idPrefix="purchase-receipts"
         >
-          <div className="grid grid-cols-1 gap-3 border-b border-outline p-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Select
-              label="Pago"
-              options={PAYMENT_OPTIONS}
-              value={filters.payment}
-              onChange={(e) => change({ payment: e.target.value })}
-            />
-            <Select
-              label="Proveedor"
-              options={[
-                { value: '', label: 'Todos' },
-                ...(suppliers.data?.data ?? []).map((s) => ({ value: s.supplierId, label: s.businessName })),
-              ]}
-              hint={suppliers.isError ? 'No se pudieron cargar los proveedores' : undefined}
-              value={filters.supplier}
-              onChange={(e) => change({ supplier: e.target.value })}
-            />
-            <Input label="Desde" type="date" value={filters.from} onChange={(e) => change({ from: e.target.value })} />
-            <Input
-              label="Hasta"
-              type="date"
-              value={filters.to}
-              onChange={(e) => change({ to: e.target.value })}
-              error={rangeInvalid ? 'Es anterior al inicio' : undefined}
-            />
-          </div>
-          {chips.length > 0 && (
-            <div className="border-b border-outline px-4 py-3">
-              <FilterChips
-                items={chips}
-                resultCount={data?.total}
-                onRemove={(key) => change({ [key]: '' })}
-                onClearAll={() => change({ status: '', payment: '', supplier: '', from: '', to: '' })}
-              />
-            </div>
-          )}
-          <div className="flex justify-end border-b border-outline px-4 py-2">
-            <ExportCsvButton
-              filename="recepciones"
-              headers={['Recepción', 'Proveedor', 'Fecha', 'Depósito', 'Documento', 'Estado', 'Pago', 'Importe']}
-              rows={(data?.data ?? []).map((row) => [
+          <TableToolbar
+            filters={
+              <>
+                <Select
+                  label="Pago"
+                  options={PAYMENT_OPTIONS}
+                  value={filters.payment}
+                  onChange={(e) => change({ payment: e.target.value })}
+                />
+                <Select
+                  label="Proveedor"
+                  options={[
+                    { value: '', label: 'Todos' },
+                    ...(suppliers.data?.data ?? []).map((s) => ({ value: s.supplierId, label: s.businessName })),
+                  ]}
+                  hint={suppliers.isError ? 'No se pudieron cargar los proveedores' : undefined}
+                  value={filters.supplier}
+                  onChange={(e) => change({ supplier: e.target.value })}
+                />
+                <DateRangeFilter from={filters.from} to={filters.to} onChange={(range) => change({ ...range })} />
+              </>
+            }
+            csv={{
+              filename: 'recepciones',
+              headers: ['Recepción', 'Proveedor', 'Fecha', 'Depósito', 'Documento', 'Estado', 'Pago', 'Importe'],
+              rows: (data?.data ?? []).map((row) => [
                 row.number,
                 row.supplierName,
                 csvDateTime(row.receivedAt),
@@ -215,9 +200,20 @@ export const PurchaseReceipts = () => {
                 labelOf(RECEIPT_STATUS, row.status).text,
                 labelOf(RECEIPT_PAYMENT, row.paymentStatus).text,
                 row.totalAmount,
-              ])}
-            />
-          </div>
+              ]),
+            }}
+            chips={chips}
+            onRemoveChip={(key) => change({ [key]: '' })}
+            onClearChips={() => change({ status: '', payment: '', supplier: '', from: '', to: '' })}
+            resultCount={data?.total}
+            noun={['recepción', 'recepciones']}
+          >
+            {rangeInvalid && (
+              <p role="alert" className="text-xs text-danger">
+                {'Es anterior al inicio'}
+              </p>
+            )}
+          </TableToolbar>
           {error ? (
             <ErrorState error={error} resource="Las recepciones" onRetry={() => void refetch()} />
           ) : (
@@ -266,6 +262,6 @@ export const PurchaseReceipts = () => {
         order={null}
         onSaved={(receipt) => navigate(`/purchases/receipts/${receipt.receiptId}`)}
       />
-    </div>
+    </PageContainer>
   );
 };

@@ -1,4 +1,4 @@
-import { Card } from '../../../common/components/ui';
+import { Card, CardHeader } from '../../../common/components/ui';
 import { errorMessage } from '../../../services/api/errors';
 import type { QuoteOrderBody } from '../../../services/api/types';
 import { useOrderQuote } from '../../../services/queries/orders';
@@ -32,7 +32,7 @@ export const OrderQuoteCard = ({ body, hint }: Props) => {
   return (
     <Card className="space-y-3 p-4" aria-live="polite">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-ink">Cotización</h3>
+        <CardHeader title="Cotización" as="h3" className="" />
         {body && (isFetching || stale) && <span className="text-xs text-muted">Actualizando…</span>}
       </div>
       {!body ? (

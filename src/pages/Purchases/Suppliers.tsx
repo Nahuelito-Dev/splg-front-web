@@ -15,6 +15,7 @@ import {
   RowActions,
   SearchInput,
   Select,
+  PageContainer,
 } from '../../common/components/ui';
 import { FROM_LIST_STATE, useDebounce, usePermissions, useClampPage, useUrlPagedParams } from '../../hooks';
 import type { Supplier } from '../../services/api/types';
@@ -126,7 +127,7 @@ export const Suppliers = () => {
   useClampPage(pagination, data?.total, setPagination);
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Proveedores"
         description="Las plantas y empresas a las que se les compran garrafas."
@@ -223,6 +224,6 @@ export const Suppliers = () => {
         }}
         supplier={editing}
       />
-    </div>
+    </PageContainer>
   );
 };

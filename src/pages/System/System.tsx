@@ -1,4 +1,4 @@
-import { PageHeader } from '../../common/components/ui';
+import { PageHeader, PageContainer } from '../../common/components/ui';
 import { EmailTestCard } from './components/EmailTestCard';
 import { NotificationTestCard } from './components/NotificationTestCard';
 import { OrderConfirmationCard } from './components/OrderConfirmationCard';
@@ -13,7 +13,7 @@ import { SystemHealthCard } from './components/SystemHealthCard';
  * alguien entra igual por URL cada tarjeta va a mostrar su propio error.
  */
 export const System = () => (
-  <div className="mx-auto max-w-5xl p-4 md:p-8">
+  <PageContainer size="md">
     <PageHeader
       title="Sistema"
       description="Estado de la plataforma y herramientas de soporte, sólo para la plataforma."
@@ -25,5 +25,5 @@ export const System = () => (
       <OrderConfirmationCard />
       <RolesCard />
     </div>
-  </div>
+  </PageContainer>
 );

@@ -1,6 +1,15 @@
 import { Banknote, Hourglass, Landmark, ScrollText } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Badge, Button, Card, EmptyState, ErrorState, KpiCard, ListSkeleton } from '../../../../common/components/ui';
+import {
+  Badge,
+  Button,
+  Card,
+  CardHeader,
+  EmptyState,
+  ErrorState,
+  KpiCard,
+  ListSkeleton,
+} from '../../../../common/components/ui';
 import type { CustomerAccount } from '../../../../services/api/types';
 import { useCustomerStatement } from '../../../../services/queries/finance';
 import { formatCurrencyExact as formatCurrency, formatDateTime, formatShortId } from '../../../../utils/format';
@@ -78,20 +87,21 @@ export const CustomerAccountTab = ({ userId, name, account, loading, needsDistri
       </div>
 
       <Card>
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-outline p-4">
-          <div className="flex items-center gap-2">
-            <h2 className="text-base font-semibold text-ink">Últimos asientos</h2>
-            <Badge label={labelOf(ACCOUNT_STATUS, account.status)} />
-          </div>
-          <Button
-            variant="secondary"
-            size="sm"
-            icon={<Landmark />}
-            onClick={() => navigate(`/finance/accounts/${account.accountId}`)}
-          >
-            Abrir cuenta corriente
-          </Button>
-        </div>
+        <CardHeader
+          title="Últimos asientos"
+          badge={<Badge label={labelOf(ACCOUNT_STATUS, account.status)} />}
+          action={
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<Landmark />}
+              onClick={() => navigate(`/finance/accounts/${account.accountId}`)}
+            >
+              Abrir cuenta corriente
+            </Button>
+          }
+          className="border-b border-outline p-4"
+        />
         {statement.error ? (
           <ErrorState error={statement.error} resource="El estado de cuenta" onRetry={() => void statement.refetch()} />
         ) : !statement.data ? (

@@ -1,10 +1,11 @@
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { toIsoDay } from '../../../utils/dates';
 import {
   RANGE_PRESETS,
   dateRangeLabel,
   dateRangeSummary,
+  isValidDay,
   matchPreset,
   parseDay,
   presetRange,
@@ -30,7 +31,11 @@ const monthCells = (month: Date): string[] => {
 };
 
 interface Props {
-  value: DayRange;
+  /**
+   * `null` = sin período elegido (filtros opcionales): el botón dice `emptyLabel` y el panel arranca en el mes actual.
+   * Con `openEnds` puede venir con un solo extremo (el otro vacío). Una fecha inválida se trata como vacía.
+   */
+  value: DayRange | null;
   /** Recibe el atajo elegido (o `null` si el rango es personalizado) para poder guardarlo junto al rango. */
   onChange: (range: DayRange, preset: RangePresetId | null) => void;
   /** El atajo elegido; sin él se deduce de las fechas (con fechas que coinciden entre atajos, mostraría otro). */
@@ -38,6 +43,17 @@ interface Props {
   /** Último día elegible (por defecto, hoy: no hay reportes del futuro). */
   maxDay?: string;
   label?: string;
+  /** Con esto el panel ofrece «Quitar período», que vuelve a no filtrar por fecha. */
+  onClear?: () => void;
+  /** Texto del botón cuando no hay período. */
+  emptyLabel?: string;
+  /** De qué lado del botón se abre el panel: por defecto `auto` (a la derecha si no entra, a la izquierda si no). */
+  align?: 'left' | 'right' | 'auto';
+  /** Permite rangos abiertos (sólo desde / sólo hasta) y quitar un extremo. */
+  openEnds?: boolean;
+  disabled?: boolean;
+  /** Un solo día: sin atajos, un clic en el calendario aplica y cierra (`from` y `to` iguales). */
+  single?: boolean;
 }
 
 /**
@@ -50,22 +66,65 @@ export const DateRangePicker = ({
   preset,
   maxDay = toIsoDay(new Date()),
   label = 'Período',
+  onClear,
+  emptyLabel = 'Elegir fechas',
+  align = 'auto',
+  openEnds = false,
+  disabled = false,
+  single = false,
 }: Props) => {
+  const clean = (day: string | undefined) => (day && isValidDay(day) ? day : '');
+  const current = value ? { from: clean(value.from), to: clean(value.to) } : null;
+  const effective = current && (current.from || current.to) ? current : null;
+  const partial = Boolean(effective && (!effective.from || !effective.to));
+  // El calendario y los atajos trabajan con un rango completo; un extremo faltante se completa sólo para mostrarlo.
+  const range: DayRange = effective
+    ? { from: effective.from || effective.to, to: effective.to || effective.from }
+    : presetRange('today');
   const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState<DayRange>(value);
+  const [draft, setDraft] = useState<DayRange>(effective ?? range);
   const [anchor, setAnchor] = useState<string | null>(null);
-  const [month, setMonth] = useState(() => parseDay(value.to));
+  const [month, setMonth] = useState(() => parseDay(range.to));
+  const [side, setSide] = useState<'left' | 'right'>(align === 'right' ? 'right' : 'left');
   const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const panelId = useId();
-  const shown = preset === undefined ? matchPreset(value) : preset;
-  const activePreset = draft.from === value.from && draft.to === value.to ? shown : matchPreset(draft);
+  const shown = preset === undefined ? matchPreset(range) : preset;
+  const activePreset = !effective
+    ? null
+    : draft.from === effective.from && draft.to === effective.to
+      ? partial
+        ? null
+        : shown
+      : matchPreset(draft);
+  const triggerText = !effective
+    ? emptyLabel
+    : partial
+      ? effective.from
+        ? `Desde ${formatDay(effective.from)}`
+        : `Hasta ${formatDay(effective.to)}`
+      : dateRangeLabel(range, shown);
 
   const openPanel = () => {
-    setDraft(value);
+    setDraft(effective ?? range);
     setAnchor(null);
-    setMonth(parseDay(value.to));
+    setMonth(parseDay(range.to));
+    setSide(align === 'right' ? 'right' : 'left');
     setOpen(true);
   };
+  /** Cierra el panel y devuelve el foco al botón que lo abrió (si no, el foco se pierde en el body). */
+  const closePanel = () => {
+    setOpen(false);
+    triggerRef.current?.focus();
+  };
+
+  // Con `auto`, si el panel no entra a la derecha del botón se abre hacia la izquierda.
+  useLayoutEffect(() => {
+    if (!open || align !== 'auto' || !panelRef.current) return;
+    const rect = panelRef.current.getBoundingClientRect();
+    if (side === 'left' && rect.right > window.innerWidth - 8) setSide('right');
+  }, [open, align, side]);
 
   useEffect(() => {
     if (!open) return;
@@ -73,7 +132,7 @@ export const DateRangePicker = ({
       if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
     };
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false);
+      if (event.key === 'Escape') closePanel();
     };
     document.addEventListener('mousedown', onPointer);
     document.addEventListener('keydown', onKey);
@@ -85,10 +144,15 @@ export const DateRangePicker = ({
 
   const pickPreset = (id: RangePresetId) => {
     onChange(presetRange(id), id);
-    setOpen(false);
+    closePanel();
   };
 
   const pickDay = (day: string) => {
+    if (single) {
+      onChange({ from: day, to: day }, null);
+      closePanel();
+      return;
+    }
     if (anchor === null) {
       setAnchor(day);
       setDraft({ from: day, to: day });
@@ -99,8 +163,12 @@ export const DateRangePicker = ({
   };
 
   const apply = () => {
-    onChange(draft, matchPreset(draft));
-    setOpen(false);
+    onChange(draft, draft.from && draft.to ? matchPreset(draft) : null);
+    closePanel();
+  };
+  const applyOpen = (next: DayRange) => {
+    onChange(next, null);
+    closePanel();
   };
 
   const shiftMonth = (delta: number) => setMonth((m) => new Date(m.getFullYear(), m.getMonth() + delta, 1));
@@ -112,40 +180,49 @@ export const DateRangePicker = ({
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}
-        aria-label={`${label}: ${dateRangeSummary(value, shown)}`}
+        aria-label={`${label}: ${effective ? (partial ? triggerText : dateRangeSummary(range, shown)) : 'sin elegir'}`}
+        ref={triggerRef}
+        disabled={disabled}
         onClick={() => (open ? setOpen(false) : openPanel())}
         className="flex h-[38px] w-full items-center gap-2 rounded-[10px] border border-outline bg-surface px-3 text-[13px] font-medium text-ink shadow-control transition-colors hover:bg-surface-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 sm:w-auto"
       >
         <CalendarDays aria-hidden="true" className="h-4 w-4 shrink-0 text-muted" strokeWidth={1.8} />
-        <span className="truncate">{dateRangeLabel(value, shown)}</span>
+        <span className="truncate">{triggerText}</span>
       </button>
 
       {open && (
         <div
+          ref={panelRef}
           id={panelId}
           role="dialog"
           aria-label="Elegir período"
-          className="absolute left-0 top-full z-30 mt-2 flex w-[min(21.5rem,calc(100vw-2rem))] flex-col gap-3 rounded-card border border-outline bg-surface p-3 shadow-card sm:left-auto sm:right-0 sm:w-[30rem] sm:flex-row"
+          className={cx(
+            'absolute top-full z-30 mt-2 flex w-[min(21.5rem,calc(100vw-4rem))] flex-col gap-3 rounded-card border border-outline bg-surface p-3 shadow-card',
+            !single && 'sm:w-[30rem] sm:flex-row',
+            side === 'right' ? 'right-0' : 'left-0',
+          )}
         >
-          <ul className="flex flex-wrap gap-1.5 sm:w-36 sm:shrink-0 sm:flex-col sm:gap-0.5" aria-label="Atajos">
-            {RANGE_PRESETS.map((preset) => (
-              <li key={preset.id}>
-                <button
-                  type="button"
-                  aria-pressed={activePreset === preset.id}
-                  onClick={() => pickPreset(preset.id)}
-                  className={cx(
-                    'w-full rounded-lg px-2.5 py-1.5 text-left text-[12.5px] font-medium transition-colors',
-                    activePreset === preset.id
-                      ? 'bg-primary-soft text-primary-strong'
-                      : 'text-ink-2 hover:bg-surface-muted hover:text-ink',
-                  )}
-                >
-                  {preset.label}
-                </button>
-              </li>
-            ))}
-          </ul>
+          {!single && (
+            <ul className="flex flex-wrap gap-1.5 sm:w-36 sm:shrink-0 sm:flex-col sm:gap-0.5" aria-label="Atajos">
+              {RANGE_PRESETS.map((preset) => (
+                <li key={preset.id}>
+                  <button
+                    type="button"
+                    aria-pressed={activePreset === preset.id}
+                    onClick={() => pickPreset(preset.id)}
+                    className={cx(
+                      'w-full rounded-lg px-2.5 py-1.5 text-left text-[12.5px] font-medium transition-colors',
+                      activePreset === preset.id
+                        ? 'bg-primary-soft text-primary-strong'
+                        : 'text-ink-2 hover:bg-surface-muted hover:text-ink',
+                    )}
+                  >
+                    {preset.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
 
           <div className="min-w-0 flex-1">
             <div className="mb-2 flex items-center justify-between">
@@ -206,13 +283,62 @@ export const DateRangePicker = ({
                 );
               })}
             </div>
+            {openEnds && !single && (anchor || (effective && !partial)) && (
+              <div className="mt-3 flex flex-wrap items-center gap-1 border-t border-outline pt-3">
+                {anchor ? (
+                  <>
+                    <Button size="sm" variant="ghost" onClick={() => applyOpen({ from: anchor, to: '' })}>
+                      Sólo desde este día
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => applyOpen({ from: '', to: anchor })}>
+                      Sólo hasta este día
+                    </Button>
+                  </>
+                ) : (
+                  effective && (
+                    <>
+                      <Button size="sm" variant="ghost" onClick={() => applyOpen({ from: '', to: effective.to })}>
+                        Quitar el inicio
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => applyOpen({ from: effective.from, to: '' })}>
+                        Quitar el fin
+                      </Button>
+                    </>
+                  )
+                )}
+              </div>
+            )}
             <div className="mt-3 flex items-center justify-between gap-2 border-t border-outline pt-3">
               <p className="min-w-0 truncate text-[12px] text-muted">
-                {anchor ? 'Elegí el último día' : dateRangeSummary(draft)}
+                {single
+                  ? 'Elegí el día'
+                  : anchor
+                    ? 'Elegí el último día'
+                    : draft.from && draft.to
+                      ? dateRangeSummary(draft)
+                      : draft.from
+                        ? `Desde ${formatDay(draft.from)}`
+                        : `Hasta ${formatDay(draft.to)}`}
               </p>
-              <Button size="sm" onClick={apply}>
-                Aplicar
-              </Button>
+              <div className="flex shrink-0 items-center gap-1">
+                {onClear && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      onClear();
+                      closePanel();
+                    }}
+                  >
+                    Quitar
+                  </Button>
+                )}
+                {!single && (
+                  <Button size="sm" onClick={apply}>
+                    Aplicar
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>

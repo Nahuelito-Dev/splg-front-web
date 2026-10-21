@@ -10,6 +10,7 @@ import {
   TableSkeleton,
   PageHeader,
   SearchInput,
+  PageContainer,
 } from '../../common/components/ui';
 import { useDebounce, usePermissions } from '../../hooks';
 import { useAdmins, useFindAdminByTerm } from '../../services/queries/admins';
@@ -51,7 +52,7 @@ export const Admins = () => {
   const { data: admins, isLoading, isFetching, error, refetch } = useAdmins();
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Administradores"
         description="Gestión de admins por empresa (distribuidora)."
@@ -91,6 +92,6 @@ export const Admins = () => {
 
       <EditAdminModal admin={editing} onClose={() => setEditing(null)} />
       <CreateAdminModal open={createOpen} onClose={() => setCreateOpen(false)} isSuperAdmin={isSuperAdmin} />
-    </div>
+    </PageContainer>
   );
 };

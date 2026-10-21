@@ -1,6 +1,6 @@
 import { MapContainer, Marker, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Card } from '../../../common/components/ui';
+import { Card, CardHeader } from '../../../common/components/ui';
 import type { Delivery } from '../../../services/api/types';
 import '../../Tracking/leafletIconFix';
 import { parseLatLng } from '../deliveryLocation';
@@ -16,7 +16,7 @@ export const DeliveryLocationCard = ({ delivery }: { delivery: Delivery }) => {
   return (
     <Card className="overflow-hidden">
       <div className="p-4 pb-3">
-        <h2 className="text-base font-semibold text-ink">Última ubicación</h2>
+        <CardHeader title="Última ubicación" className="" />
         <p className="mt-0.5 text-sm text-muted">{address || 'La app del chofer no informó una dirección.'}</p>
       </div>
       {point ? (

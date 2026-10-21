@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Eye } from 'lucide-react';
-import { Badge, Card, EmptyState, RowActions, UserRefLink } from '../../../common/components/ui';
+import { Badge, Card, EmptyState, RowActions, UserRefLink, CardHeader } from '../../../common/components/ui';
 import { usePermissions } from '../../../hooks';
 import type { Rating } from '../../../services/api/types';
 import { useUserNames } from '../../../services/queries/userNames';
@@ -25,7 +25,7 @@ export const RatingHistoryList = ({ ratings }: { ratings: Rating[] }) => {
   return (
     <Card>
       <div className="border-b border-outline p-4">
-        <h2 className="text-base font-semibold text-ink">Reseñas</h2>
+        <CardHeader title="Reseñas" className="" />
       </div>
       {ratings.length === 0 ? (
         <EmptyState title="Todavía no recibió calificaciones" />

@@ -10,6 +10,7 @@ import {
   ErrorState,
   KpiCard,
   LoadingState,
+  CardHeader,
 } from '../../../common/components/ui';
 import type { Car } from '../../../services/api/types';
 import { useFuelEfficiency } from '../../../services/queries/fleetExpense';
@@ -109,7 +110,7 @@ export const CarFuelTab = ({ car, canWrite, writeHint }: Props) => {
           </Card>
           {data.anomalies.length > 0 && (
             <Card className="space-y-2 p-4">
-              <h3 className="text-sm font-semibold text-ink">Cargas con consumo anómalo</h3>
+              <CardHeader title="Cargas con consumo anómalo" as="h3" className="" />
               <ul className="space-y-1 text-sm">
                 {data.anomalies.map((a) => (
                   <li key={a.fuelLoadId} className="flex flex-wrap items-center gap-2">

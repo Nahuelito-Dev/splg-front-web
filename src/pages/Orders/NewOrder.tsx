@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
-import { Button, Card, PageHeader, Select, TextArea } from '../../common/components/ui';
+import { Button, Card, PageHeader, Select, TextArea, PageContainer, CardHeader } from '../../common/components/ui';
 import { usePermissions } from '../../hooks';
 import type { Customer } from '../../services/api/types';
 import { useCustomerAccountOf } from '../../services/queries/finance';
@@ -113,7 +113,7 @@ export const NewOrder = () => {
   });
 
   return (
-    <div className="mx-auto max-w-3xl p-4 md:p-8">
+    <PageContainer size="sm">
       <PageHeader
         title="Nuevo pedido telefónico"
         description="Alta manual para cuando el cliente llama en vez de pedir desde la app (CU-072)."
@@ -121,7 +121,7 @@ export const NewOrder = () => {
 
       <form onSubmit={(e) => void onSubmit(e)} className="space-y-5" noValidate>
         <Card className="space-y-3 p-4">
-          <h3 className="text-sm font-semibold text-ink">Cliente</h3>
+          <CardHeader title="Cliente" as="h3" className="" />
           <CustomerPicker selected={customer} onSelect={handleSelectCustomer} />
           {errors.customerId?.message && (
             <p role="alert" className="text-xs text-danger">
@@ -131,7 +131,7 @@ export const NewOrder = () => {
         </Card>
 
         <Card className="space-y-3 p-4">
-          <h3 className="text-sm font-semibold text-ink">Entrega</h3>
+          <CardHeader title="Entrega" as="h3" className="" />
           <Select
             label="Dirección"
             options={addressOptions}
@@ -192,6 +192,6 @@ export const NewOrder = () => {
           </Button>
         </div>
       </form>
-    </div>
+    </PageContainer>
   );
 };

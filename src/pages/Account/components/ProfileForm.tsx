@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, Card, Input } from '../../../common/components/ui';
+import { Button, Card, Input, CardHeader } from '../../../common/components/ui';
 import type { User } from '../../../services/api/types';
 import { useUpdateUserAccount } from '../../../services/queries/users';
 import { notify } from '../../../utils/notifications';
@@ -30,7 +30,7 @@ export const ProfileForm = ({ user }: { user: User }) => {
 
   return (
     <Card className="p-6">
-      <h2 className="text-base font-semibold text-ink">Datos generales</h2>
+      <CardHeader title="Datos generales" className="" />
       <form onSubmit={(e) => void onSubmit(e)} className="mt-4 grid gap-4 sm:grid-cols-2" noValidate>
         <Input
           label="Nombre completo"

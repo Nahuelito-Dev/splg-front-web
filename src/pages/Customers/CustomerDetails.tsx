@@ -17,6 +17,7 @@ import {
   ProfileTabs,
   type CoverStat,
   type ProfileTabItem,
+  PageContainer,
 } from '../../common/components/ui';
 import { useBackToList, usePermissions, useProfileTab } from '../../hooks';
 import { useCrumbLeaf } from '../../common/components';
@@ -149,7 +150,7 @@ export const CustomerDetails = () => {
   ];
 
   return (
-    <div className="mx-auto max-w-5xl p-4 md:p-8">
+    <PageContainer size="md">
       <PageHeader
         title="Ficha del cliente"
         actions={
@@ -229,7 +230,6 @@ export const CustomerDetails = () => {
           </ProfileTabPanel>
           <ProfileTabPanel tabKey="cylinders" value={tab}>
             <CylinderLinksCard
-              bare
               title="Envases en su poder"
               filters={{ customerUserId: customer.user_id }}
               emptyTitle="Sin envases en su poder"
@@ -261,6 +261,6 @@ export const CustomerDetails = () => {
       )}
 
       <CustomerFormModal open={editing} onClose={() => setEditing(false)} customer={customer ?? null} />
-    </div>
+    </PageContainer>
   );
 };

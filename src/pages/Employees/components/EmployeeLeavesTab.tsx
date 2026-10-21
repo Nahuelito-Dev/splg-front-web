@@ -1,7 +1,7 @@
 import type { GridPaginationModel } from '@mui/x-data-grid';
 import { CirclePlus } from 'lucide-react';
 import { useState } from 'react';
-import { Button, Card, ErrorState, Select } from '../../../common/components/ui';
+import { Button, Card, ErrorState, Select, CardHeader } from '../../../common/components/ui';
 import type { Employee } from '../../../services/api/types';
 import { useLeaves, useVacationBalance } from '../../../services/queries/personnel';
 import { formatNumber } from '../../../utils/format';
@@ -27,7 +27,7 @@ const VacationBalanceCard = ({ employeeId }: { employeeId: string }) => {
     <Card className="p-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold text-ink">Saldo de vacaciones</h3>
+          <CardHeader title="Saldo de vacaciones" as="h3" className="" />
           <p className="text-xs text-muted">
             Días corridos (LCT art. 150). Es una referencia: no descuenta licencias sin goce ni el proporcional de quien
             ingresó en el año.

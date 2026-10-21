@@ -10,6 +10,7 @@ import {
   ErrorState,
   IdentityCell,
   RowActions,
+  CardHeader,
 } from '../../../common/components/ui';
 import { usePermissions } from '../../../hooks';
 import type { FleetTask } from '../../../services/api/types';
@@ -162,7 +163,7 @@ export const FleetDocuments = ({ subject, ownerId, carType, canWrite, writeHint 
     <Card>
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-outline p-4">
         <div>
-          <h2 className="text-base font-semibold text-ink">Documentación</h2>
+          <CardHeader title="Documentación" className="" />
           <p className="text-sm text-muted">
             {subject === 'vehicle' ? 'Seguro, VTV y service del vehículo.' : 'Licencia de conducir del chofer.'}
           </p>

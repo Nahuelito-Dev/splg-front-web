@@ -1,4 +1,4 @@
-import { Card } from '../../../../common/components/ui';
+import { Card, CardHeader } from '../../../../common/components/ui';
 import type { Order } from '../../../../services/api/types';
 import { formatDateTime, formatDay } from '../../../../utils/format';
 
@@ -22,7 +22,7 @@ export const OrderTimeline = ({ order }: { order: Order }) => {
 
   return (
     <Card className="p-4">
-      <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">Tiempos del pedido</h3>
+      <CardHeader title="Tiempos del pedido" as="h3" className="mb-3" />
       <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {entries.map(({ label, value }) => (
           <div key={label}>

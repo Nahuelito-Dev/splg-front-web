@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Card, LoadingState, PageHeader, SearchInput } from '../../common/components/ui';
+import { Button, Card, LoadingState, PageHeader, SearchInput, PageContainer } from '../../common/components/ui';
 import { useDebounce } from '../../hooks';
 import { useCustomers } from '../../services/queries/customers';
 import { useDeliveries } from '../../services/queries/deliveries';
@@ -37,7 +37,7 @@ export const Ratings = () => {
   };
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Calificaciones"
         description="Calificaciones bidireccionales entre clientes y choferes al finalizar un pedido."
@@ -101,6 +101,6 @@ export const Ratings = () => {
           )}
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 };

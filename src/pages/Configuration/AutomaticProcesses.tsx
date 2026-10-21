@@ -1,6 +1,15 @@
 import { useState } from 'react';
 import { SlidersHorizontal } from 'lucide-react';
-import { Badge, Button, Card, EmptyState, ErrorState, PageHeader, Skeleton } from '../../common/components/ui';
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  ErrorState,
+  PageHeader,
+  Skeleton,
+  PageContainer,
+} from '../../common/components/ui';
 import { usePermissions } from '../../hooks';
 import { useProcessConfigs } from '../../services/queries/moduleConfig';
 import { formatDateTime } from '../../utils/format';
@@ -16,7 +25,7 @@ export const AutomaticProcesses = () => {
   const config = data?.find((p) => p.process === editing);
 
   return (
-    <div className="mx-auto max-w-4xl p-4 md:p-8">
+    <PageContainer size="md">
       <PageHeader
         title="Procesos automáticos"
         description="Los parámetros de los procesos que el sistema ejecuta solo: plazos, umbrales, vigencias y horarios de cada uno."
@@ -72,6 +81,6 @@ export const AutomaticProcesses = () => {
           onClose={() => setEditing(null)}
         />
       )}
-    </div>
+    </PageContainer>
   );
 };

@@ -1,5 +1,5 @@
 import { Lock } from 'lucide-react';
-import { Card, EmptyState, ErrorState, ListSkeleton } from '../../../common/components/ui';
+import { Card, EmptyState, ErrorState, ListSkeleton, CardHeader } from '../../../common/components/ui';
 import { AttachmentsPanel } from '../../../common/components/AttachmentsPanel';
 import { useCarDocuments } from '../../../services/queries/fleet';
 import { useEmployeeDocuments } from '../../../services/queries/personnel';
@@ -32,7 +32,7 @@ export const FleetOwnerFiles = ({ subject, ownerId, ownerName, canWrite, blocked
 
   return (
     <div className="space-y-4">
-      <h2 className="text-base font-semibold text-ink">{ownerName}</h2>
+      <CardHeader title={ownerName} className="" />
       {data.isLocked && (
         <p
           role="alert"

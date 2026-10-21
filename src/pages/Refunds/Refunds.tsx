@@ -12,6 +12,7 @@ import {
   ResponsiveTable,
   RowActions,
   Tabs,
+  PageContainer,
 } from '../../common/components/ui';
 import { usePermissions, useUrlParam } from '../../hooks';
 import type { Refund } from '../../services/api/types';
@@ -131,7 +132,7 @@ export const Refunds = () => {
   );
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Reintegros"
         description="Devoluciones de pagos por MercadoPago: al cancelar un pedido pagado en línea y al perder el recargo express. Si la pasarela falla, reintentala desde acá."
@@ -205,6 +206,6 @@ export const Refunds = () => {
           />
         )}
       </Card>
-    </div>
+    </PageContainer>
   );
 };

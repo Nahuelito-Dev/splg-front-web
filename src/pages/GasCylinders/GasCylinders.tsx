@@ -5,12 +5,12 @@ import {
   Button,
   Card,
   EmptyState,
-  FilterChips,
   PageHeader,
-  SearchInput,
   Select,
   Switch,
   type FilterChip,
+  PageContainer,
+  TableToolbar,
 } from '../../common/components/ui';
 import { useDebounce, usePermissions, useUrlParams } from '../../hooks';
 import type { GasCylinder } from '../../services/api/types';
@@ -155,7 +155,7 @@ export const GasCylinders = () => {
   };
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Catálogo de garrafas"
         description="Los tipos de producto que vende la distribuidora, su stock y sus promociones."
@@ -172,20 +172,9 @@ export const GasCylinders = () => {
       />
 
       <Card>
-        <div className="flex flex-col gap-3 border-b border-outline p-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-              <SearchInput
-                label="Buscar garrafas"
-                placeholder="Tipo o descripción"
-                value={search}
-                disabled={typeSelected}
-                title={typeSelected ? 'No aplica: elegiste un tipo exacto' : undefined}
-                onChange={(e) => {
-                  setFilters({ q: e.target.value });
-                  setPagination((p) => ({ ...p, page: 0 }));
-                }}
-              />
+        <TableToolbar
+          filters={
+            <>
               <Select
                 label="Tipo"
                 className="sm:w-44"
@@ -193,50 +182,53 @@ export const GasCylinders = () => {
                 options={typeOptions}
                 onChange={(e) => selectType(e.target.value)}
               />
-            </div>
-            <div className="flex items-center gap-2 pb-2.5">
-              <Switch
-                checked={onlyAvailable}
-                disabled={typeSelected || onlyInactive}
-                title={
-                  typeSelected
-                    ? 'No aplica: elegiste un tipo exacto'
-                    : onlyInactive
-                      ? 'No aplica: estás viendo los productos dados de baja'
-                      : undefined
-                }
-                label="Mostrar sólo las garrafas disponibles para la app"
-                onChange={(checked) => {
-                  setFilters({ available: checked ? '1' : '' });
-                  setPagination((p) => ({ ...p, page: 0 }));
-                }}
-              />
-              <span className="text-sm text-ink">Sólo disponibles</span>
-              <Switch
-                checked={onlyInactive}
-                label="Mostrar los productos dados de baja"
-                onChange={(checked) => {
-                  setFilters(checked ? { inactive: '1', type: ALL_TYPES, available: '' } : { inactive: '' });
-                  setPagination((p) => ({ ...p, page: 0 }));
-                }}
-              />
-              <span className="text-sm text-ink">Dados de baja</span>
-            </div>
-          </div>
-          {chips.length > 0 && !loadFailed && data ? (
-            <FilterChips items={chips} onRemove={removeChip} onClearAll={clearAll} resultCount={data.total} />
-          ) : (
-            <p className="text-sm text-muted" aria-live="polite">
-              {loadFailed
-                ? 'No se pudo cargar el catálogo'
-                : firstLoad
-                  ? 'Cargando…'
-                  : data
-                    ? `${data.total} ${data.total === 1 ? 'producto' : 'productos'}`
-                    : ''}
-            </p>
-          )}
-        </div>
+              <div className="flex items-center gap-2 pb-2.5">
+                <Switch
+                  checked={onlyAvailable}
+                  disabled={typeSelected || onlyInactive}
+                  title={
+                    typeSelected
+                      ? 'No aplica: elegiste un tipo exacto'
+                      : onlyInactive
+                        ? 'No aplica: estás viendo los productos dados de baja'
+                        : undefined
+                  }
+                  label="Mostrar sólo las garrafas disponibles para la app"
+                  onChange={(checked) => {
+                    setFilters({ available: checked ? '1' : '' });
+                    setPagination((p) => ({ ...p, page: 0 }));
+                  }}
+                />
+                <span className="text-sm text-ink">Sólo disponibles</span>
+                <Switch
+                  checked={onlyInactive}
+                  label="Mostrar los productos dados de baja"
+                  onChange={(checked) => {
+                    setFilters(checked ? { inactive: '1', type: ALL_TYPES, available: '' } : { inactive: '' });
+                    setPagination((p) => ({ ...p, page: 0 }));
+                  }}
+                />
+                <span className="text-sm text-ink">Dados de baja</span>
+              </div>
+            </>
+          }
+          search={{
+            label: 'Buscar garrafas',
+            placeholder: 'Tipo o descripción',
+            value: search,
+            disabled: typeSelected,
+            title: typeSelected ? 'No aplica: elegiste un tipo exacto' : undefined,
+            onChange: (value) => {
+              setFilters({ q: value });
+              setPagination((p) => ({ ...p, page: 0 }));
+            },
+          }}
+          chips={loadFailed ? [] : chips}
+          onRemoveChip={removeChip}
+          onClearChips={clearAll}
+          resultCount={!loadFailed && data ? data.total : undefined}
+          noun={['producto', 'productos']}
+        />
         {loadFailed ? (
           <EmptyState
             title="No se pudo cargar el catálogo"
@@ -270,6 +262,6 @@ export const GasCylinders = () => {
         cylinder={form.open ? form.cylinder : null}
       />
       <StockAdjustModal open={Boolean(stockTarget)} onClose={() => setStockTarget(null)} cylinder={stockTarget} />
-    </div>
+    </PageContainer>
   );
 };

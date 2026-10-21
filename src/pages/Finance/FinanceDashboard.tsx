@@ -1,6 +1,16 @@
 import { Banknote, HandCoins, Landmark, Percent, Wallet } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Badge, Card, ErrorState, Input, KpiCard, LoadingState, PageHeader } from '../../common/components/ui';
+import {
+  Badge,
+  Card,
+  CardHeader,
+  ErrorState,
+  KpiCard,
+  LoadingState,
+  PageHeader,
+  PageContainer,
+  DayFilter,
+} from '../../common/components/ui';
 import { useUrlParam } from '../../hooks';
 import { useFinanceDashboard } from '../../services/queries/finance';
 import { toIsoDay } from '../../utils/dates';
@@ -15,11 +25,11 @@ export const FinanceDashboard = () => {
   const { data, isPending, error, refetch } = useFinanceDashboard(date);
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Finanzas"
         description="La plata de la distribuidora de un vistazo."
-        actions={<Input label="Día" type="date" value={date} onChange={(e) => setDate(e.target.value || today())} />}
+        actions={<DayFilter value={date} onChange={(day) => setDate(day || today())} />}
       />
       {isPending ? (
         <LoadingState label="Cargando el tablero…" />
@@ -55,12 +65,15 @@ export const FinanceDashboard = () => {
           </div>
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <Card>
-              <div className="flex items-center justify-between border-b border-outline px-5 py-3">
-                <h2 className="text-base font-semibold">Cajas</h2>
-                <Link className="text-sm text-primary underline" to="/finance/boxes">
-                  Ver cajas
-                </Link>
-              </div>
+              <CardHeader
+                title="Cajas"
+                action={
+                  <Link className="text-sm text-primary underline" to="/finance/boxes">
+                    Ver cajas
+                  </Link>
+                }
+                className="border-b border-outline px-5 py-3"
+              />
               <ul className="divide-y divide-outline">
                 {data.cashBoxes.map((box) => (
                   <li key={box.cashBoxId} className="flex items-center justify-between gap-3 px-5 py-3">
@@ -77,12 +90,15 @@ export const FinanceDashboard = () => {
               </ul>
             </Card>
             <Card>
-              <div className="flex items-center justify-between border-b border-outline px-5 py-3">
-                <h2 className="text-base font-semibold">Rendiciones</h2>
-                <Link className="text-sm text-primary underline" to={`/finance/settlements?date=${data.date}`}>
-                  Ver rendiciones
-                </Link>
-              </div>
+              <CardHeader
+                title="Rendiciones"
+                action={
+                  <Link className="text-sm text-primary underline" to={`/finance/settlements?date=${data.date}`}>
+                    Ver rendiciones
+                  </Link>
+                }
+                className="border-b border-outline px-5 py-3"
+              />
               <div className="grid gap-3 p-5">
                 <div className="flex flex-wrap gap-2">
                   <Badge label={{ text: `${data.settlements.open} abiertas`, tone: 'warn' }} />
@@ -104,6 +120,6 @@ export const FinanceDashboard = () => {
           </div>
         </div>
       )}
-    </div>
+    </PageContainer>
   );
 };

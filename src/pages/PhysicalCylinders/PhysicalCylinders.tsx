@@ -9,18 +9,17 @@ import {
   Button,
   Card,
   ErrorState,
-  ExportCsvButton,
-  FilterChips,
   ListSkeleton,
   PageHeader,
-  SearchInput,
   Select,
   SelectionBar,
+  TableToolbar,
   Tabs,
   tabPanelProps,
   type AnalyticItem,
   type FilterChip,
   type TabItem,
+  PageContainer,
 } from '../../common/components/ui';
 import { useDebounce, usePermissions, useUrlParams } from '../../hooks';
 import type { Cylinder } from '../../services/api/types';
@@ -163,37 +162,33 @@ export const PhysicalCylinders = () => {
   };
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Envases físicos"
         description="Garrafas serializadas y su ciclo de vida: depósito → llenado → reparto → cliente → retorno."
+        secondaryActions={[
+          {
+            label: 'Vencimientos',
+            icon: <CalendarClock />,
+            onClick: () => navigate('/physical-cylinders/expirations'),
+          },
+          {
+            label: 'Asignar a pedido',
+            icon: <AssignmentTurnedInIcon />,
+            disabled: !canWrite,
+            title: writeHint,
+            onClick: () => setAssignOpen(true),
+          },
+        ]}
         actions={
-          <>
-            <Button
-              variant="secondary"
-              icon={<CalendarClock />}
-              onClick={() => navigate('/physical-cylinders/expirations')}
-            >
-              Vencimientos
-            </Button>
-            <Button
-              variant="secondary"
-              icon={<AssignmentTurnedInIcon />}
-              disabled={!canWrite}
-              title={writeHint}
-              onClick={() => setAssignOpen(true)}
-            >
-              Asignar a pedido
-            </Button>
-            <Button
-              icon={<AddIcon />}
-              disabled={!canWrite}
-              title={writeHint}
-              onClick={() => setForm({ open: true, cylinder: null })}
-            >
-              Nuevo envase
-            </Button>
-          </>
+          <Button
+            icon={<AddIcon />}
+            disabled={!canWrite}
+            title={writeHint}
+            onClick={() => setForm({ open: true, cylinder: null })}
+          >
+            Nuevo envase
+          </Button>
         }
       />
 
@@ -225,49 +220,48 @@ export const PhysicalCylinders = () => {
               idPrefix={TABS_ID}
             />
             <div {...tabPanelProps(TABS_ID, state)}>
-              <div className="flex flex-col gap-3 border-b border-outline p-4">
-                <SearchInput
-                  label="Buscar envases"
-                  placeholder="Serial, producto o cliente"
-                  value={term}
-                  onChange={(e) => {
-                    clearSelection();
-                    setFilters({ q: e.target.value, page: '1' });
-                  }}
-                />
-                <Select
-                  label="Vigencia de la revisión"
-                  value={vigencia ?? ''}
-                  onChange={(e) => {
-                    clearSelection();
-                    setFilters({ vigencia: e.target.value, page: '1' });
-                  }}
-                  options={[
-                    { value: '', label: 'Todas' },
-                    ...VIGENCIAS.map((v) => ({ value: v, label: VIGENCIA_FILTER_LABEL[v] })),
-                  ]}
-                />
-                <FilterChips
-                  items={chips}
-                  onRemove={(key) => {
-                    clearSelection();
-                    removeChip(key);
-                  }}
-                  onClearAll={() => {
-                    clearSelection();
-                    setFilters({ state: 'all', q: '', order: '', customer: '', vigencia: '', page: '1' });
-                  }}
-                  resultCount={data ? total : undefined}
-                />
-                <div>
-                  <ExportCsvButton
-                    filename="envases"
-                    label={selected.length > 0 ? 'Exportar selección' : 'Exportar CSV'}
-                    headers={CSV_HEADERS}
-                    rows={toCsvRows(selected.length > 0 ? selected : rows)}
+              <TableToolbar
+                filters={
+                  <Select
+                    label="Vigencia de la revisión"
+                    value={vigencia ?? ''}
+                    onChange={(e) => {
+                      clearSelection();
+                      setFilters({ vigencia: e.target.value, page: '1' });
+                    }}
+                    options={[
+                      { value: '', label: 'Todas' },
+                      ...VIGENCIAS.map((v) => ({ value: v, label: VIGENCIA_FILTER_LABEL[v] })),
+                    ]}
                   />
-                </div>
-              </div>
+                }
+                search={{
+                  label: 'Buscar envases',
+                  placeholder: 'Serial, producto o cliente',
+                  value: term,
+                  onChange: (value) => {
+                    clearSelection();
+                    setFilters({ q: value, page: '1' });
+                  },
+                }}
+                csv={{
+                  filename: 'envases',
+                  label: selected.length > 0 ? 'Exportar selección' : 'Exportar CSV',
+                  headers: CSV_HEADERS,
+                  rows: toCsvRows(selected.length > 0 ? selected : rows),
+                }}
+                chips={chips}
+                onRemoveChip={(key) => {
+                  clearSelection();
+                  removeChip(key);
+                }}
+                onClearChips={() => {
+                  clearSelection();
+                  setFilters({ state: 'all', q: '', order: '', customer: '', vigencia: '', page: '1' });
+                }}
+                resultCount={data ? total : undefined}
+                noun={['envase', 'envases']}
+              />
               {canWrite && (
                 <SelectionBar
                   count={selected.length}
@@ -337,6 +331,6 @@ export const PhysicalCylinders = () => {
         onClose={() => setTransitionTarget(null)}
         cylinder={transitionTarget}
       />
-    </div>
+    </PageContainer>
   );
 };

@@ -1,4 +1,4 @@
-import { Badge, DetailList, Drawer, ErrorState, LoadingState } from '../../../common/components/ui';
+import { Badge, DetailList, Drawer, ErrorState, LoadingState, CardHeader } from '../../../common/components/ui';
 import { useTire } from '../../../services/queries/fleetExpense';
 import { formatCurrency, formatDateTime, formatNumber } from '../../../utils/format';
 import { TIRE_EVENT_TYPE, TIRE_STATUS, labelOf } from '../../../utils/statusLabels';
@@ -33,7 +33,7 @@ export const TireDrawer = ({ tireId, onClose }: Props) => {
             ]}
           />
           <section aria-label="Historial de movimientos">
-            <h3 className="mb-2 text-sm font-semibold text-ink">Historial</h3>
+            <CardHeader title="Historial" as="h3" className="mb-2" />
             {(tire.events ?? []).length === 0 ? (
               <p className="text-sm text-muted">Todavía no tuvo movimientos.</p>
             ) : (
