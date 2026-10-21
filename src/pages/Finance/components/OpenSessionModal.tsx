@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Button, Input, Modal } from '../../../common/components/ui';
+import { Button, Modal, FormInput, Form } from '../../../common/components/ui';
 import type { CashBox } from '../../../services/api/types';
 import { useOpenCashSession } from '../../../services/queries/finance';
 import { formatCurrency } from '../../../utils/format';
@@ -21,13 +21,8 @@ interface Props {
 /** Abrir la caja (CU-226): el monto inicial; si no coincide con el saldo del libro se asienta un ajuste. */
 export const OpenSessionModal = ({ open, onClose, cashBox }: Props) => {
   const openSession = useOpenCashSession();
-  const {
-    register,
-    handleSubmit,
-    reset,
-    watch,
-    formState: { errors },
-  } = useForm<Values>({ resolver: zodResolver(schema) });
+  const methods = useForm<Values>({ resolver: zodResolver(schema) });
+  const { reset, watch } = methods;
   const typed = watch('openingAmount');
 
   useEffect(() => {
@@ -40,7 +35,7 @@ export const OpenSessionModal = ({ open, onClose, cashBox }: Props) => {
     !Number.isNaN(parseMoney(typed ?? '')) &&
     parseMoney(typed ?? '') !== cashBox.balance;
 
-  const onSubmit = handleSubmit((values) => {
+  const onSubmit = (values: Values) => {
     if (!cashBox) return;
     openSession.mutate(
       { id: cashBox.cashBoxId, body: { openingAmount: parseMoney(values.openingAmount) } },
@@ -52,7 +47,7 @@ export const OpenSessionModal = ({ open, onClose, cashBox }: Props) => {
         onError: notify.error,
       },
     );
-  });
+  };
 
   return (
     <Modal
@@ -72,14 +67,13 @@ export const OpenSessionModal = ({ open, onClose, cashBox }: Props) => {
         </>
       }
     >
-      <form id="open-session-form" onSubmit={(e) => void onSubmit(e)} className="grid gap-4" noValidate>
-        <Input
+      <Form methods={methods} id="open-session-form" onSubmit={onSubmit} className="grid gap-4">
+        <FormInput
+          name="openingAmount"
           label="Monto inicial"
           required
           inputMode="decimal"
-          error={errors.openingAmount?.message}
           hint={cashBox ? `Saldo del libro: ${formatCurrency(cashBox.balance)}` : undefined}
-          {...register('openingAmount')}
         />
         {adjusts && cashBox && (
           <p className="rounded-lg border border-warn bg-warn-soft px-3 py-2 text-sm text-warn">
@@ -87,7 +81,7 @@ export const OpenSessionModal = ({ open, onClose, cashBox }: Props) => {
             exactamente el que contaste.
           </p>
         )}
-      </form>
+      </Form>
     </Modal>
   );
 };

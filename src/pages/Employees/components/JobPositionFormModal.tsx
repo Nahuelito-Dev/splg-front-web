@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, Checkbox, Input, Modal, Select } from '../../../common/components/ui';
+import { Button, Modal, FormInput, FormCheckbox, FormSelect, Form } from '../../../common/components/ui';
 import type { JobPosition } from '../../../services/api/types';
 import { useCreateJobPosition, useUpdateJobPosition } from '../../../services/queries/employees';
 import { notify } from '../../../utils/notifications';
@@ -21,12 +21,8 @@ const CATEGORY_OPTIONS = Object.entries(POSITION_CATEGORY_LABELS).map(([value, l
 export const JobPositionFormModal = ({ open, onClose, position }: Props) => {
   const create = useCreateJobPosition();
   const update = useUpdateJobPosition();
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<JobPositionFormValues>({ resolver: zodResolver(jobPositionSchema) });
+  const methods = useForm<JobPositionFormValues>({ resolver: zodResolver(jobPositionSchema) });
+  const { reset } = methods;
 
   useEffect(() => {
     if (!open) return;
@@ -37,7 +33,7 @@ export const JobPositionFormModal = ({ open, onClose, position }: Props) => {
     });
   }, [open, position, reset]);
 
-  const onSubmit = handleSubmit((body) => {
+  const onSubmit = (body: JobPositionFormValues) => {
     if (create.isPending || update.isPending) return;
     const options = {
       onSuccess: () => {
@@ -48,7 +44,7 @@ export const JobPositionFormModal = ({ open, onClose, position }: Props) => {
     };
     if (position) update.mutate({ id: position.positionId, body }, options);
     else create.mutate(body, options);
-  });
+  };
 
   return (
     <Modal
@@ -67,17 +63,11 @@ export const JobPositionFormModal = ({ open, onClose, position }: Props) => {
         </>
       }
     >
-      <form id="job-position-form" onSubmit={(e) => void onSubmit(e)} className="grid gap-4" noValidate>
-        <Input label="Nombre" required maxLength={80} error={errors.name?.message} {...register('name')} />
-        <Select
-          label="Categoría"
-          required
-          options={CATEGORY_OPTIONS}
-          error={errors.category?.message}
-          {...register('category')}
-        />
-        {position && <Checkbox label="Puesto vigente" {...register('isActive')} />}
-      </form>
+      <Form methods={methods} id="job-position-form" onSubmit={onSubmit} className="grid gap-4">
+        <FormInput name="name" label="Nombre" required maxLength={80} />
+        <FormSelect name="category" label="Categoría" required options={CATEGORY_OPTIONS} />
+        {position && <FormCheckbox name="isActive" label="Puesto vigente" />}
+      </Form>
     </Modal>
   );
 };

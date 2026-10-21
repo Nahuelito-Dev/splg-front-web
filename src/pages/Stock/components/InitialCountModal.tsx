@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
-import { Button, Input, Modal, TextArea } from '../../../common/components/ui';
+import { Button, Modal, FormInput, FormTextArea, Form } from '../../../common/components/ui';
 import type { WarehouseDetail } from '../../../services/api/types';
 import { useCreateInitialCount } from '../../../services/queries/stock';
 import { notify } from '../../../utils/notifications';
@@ -20,13 +20,8 @@ export const InitialCountModal = ({ open, onClose, warehouse }: Props) => {
   const cylinders = useCylinderOptions();
   const create = useCreateInitialCount();
   const scope = `count:${warehouse.warehouseId}`;
-  const {
-    register,
-    handleSubmit,
-    reset,
-    control,
-    formState: { errors },
-  } = useForm<InitialCountFormValues>({ resolver: zodResolver(initialCountSchema) });
+  const methods = useForm<InitialCountFormValues>({ resolver: zodResolver(initialCountSchema) });
+  const { reset, control } = methods;
   const { fields } = useFieldArray({ control, name: 'items' });
 
   useEffect(() => {
@@ -44,7 +39,7 @@ export const InitialCountModal = ({ open, onClose, warehouse }: Props) => {
     });
   }, [open, cylinders.loading, cylinders.options, warehouse.balances, reset]);
 
-  const onSubmit = handleSubmit((values) =>
+  const onSubmit = (values: InitialCountFormValues) =>
     create.mutate(
       {
         scope,
@@ -66,8 +61,7 @@ export const InitialCountModal = ({ open, onClose, warehouse }: Props) => {
         },
         onError: notify.error,
       },
-    ),
-  );
+    );
 
   return (
     <Modal
@@ -95,37 +89,19 @@ export const InitialCountModal = ({ open, onClose, warehouse }: Props) => {
           </button>
         </p>
       ) : (
-        <form id="initial-count-form" onSubmit={(e) => void onSubmit(e)} className="space-y-4" noValidate>
+        <Form methods={methods} id="initial-count-form" onSubmit={onSubmit} className="space-y-4">
           {fields.map((field, index) => (
             <fieldset key={field.id} className="min-w-0 rounded-lg border border-outline p-3">
               <legend className="px-1 text-sm font-semibold text-ink">{field.type}</legend>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <Input
-                  label="Llenas"
-                  type="number"
-                  min={0}
-                  error={errors.items?.[index]?.full?.message}
-                  {...register(`items.${index}.full`)}
-                />
-                <Input
-                  label="Vacías"
-                  type="number"
-                  min={0}
-                  error={errors.items?.[index]?.empty?.message}
-                  {...register(`items.${index}.empty`)}
-                />
-                <Input
-                  label="Defectuosas"
-                  type="number"
-                  min={0}
-                  error={errors.items?.[index]?.defective?.message}
-                  {...register(`items.${index}.defective`)}
-                />
+                <FormInput name={`items.${index}.full`} label="Llenas" type="number" min={0} />
+                <FormInput name={`items.${index}.empty`} label="Vacías" type="number" min={0} />
+                <FormInput name={`items.${index}.defective`} label="Defectuosas" type="number" min={0} />
               </div>
             </fieldset>
           ))}
-          <TextArea label="Nota (opcional)" maxLength={300} error={errors.notes?.message} {...register('notes')} />
-        </form>
+          <FormTextArea name="notes" label="Nota (opcional)" maxLength={300} />
+        </Form>
       )}
     </Modal>
   );

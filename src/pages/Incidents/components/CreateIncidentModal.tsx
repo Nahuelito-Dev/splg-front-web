@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, Modal, PhotoPicker, Select, TextArea } from '../../../common/components/ui';
+import { Button, Modal, PhotoPicker, FormTextArea, FormSelect, Form } from '../../../common/components/ui';
 import type { Order } from '../../../services/api/types';
 import { useCreateIncident } from '../../../services/queries/incidents';
 import { useUploadPhoto } from '../../../services/queries/photos';
@@ -37,15 +37,11 @@ export const CreateIncidentModal = ({ open, onClose }: Props) => {
   const sending = useRef(false);
   const createIncident = useCreateIncident();
   const uploadPhoto = useUploadPhoto('incident');
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<CreateIncidentFormValues>({
+  const methods = useForm<CreateIncidentFormValues>({
     resolver: zodResolver(createIncidentSchema),
     defaultValues: { type: 'other' },
   });
+  const { reset } = methods;
 
   useEffect(() => {
     if (open) {
@@ -58,7 +54,7 @@ export const CreateIncidentModal = ({ open, onClose }: Props) => {
 
   if (!open) return null;
 
-  const onSubmit = handleSubmit((values) => {
+  const onSubmit = (values: CreateIncidentFormValues) => {
     if (!order || sending.current) return;
     sending.current = true;
     createIncident.mutate(
@@ -97,7 +93,7 @@ export const CreateIncidentModal = ({ open, onClose }: Props) => {
         },
       },
     );
-  });
+  };
 
   return (
     <Modal
@@ -122,19 +118,12 @@ export const CreateIncidentModal = ({ open, onClose }: Props) => {
         </>
       }
     >
-      <form id="incident-create" onSubmit={(e) => void onSubmit(e)} className="space-y-4" noValidate>
+      <Form methods={methods} id="incident-create" onSubmit={onSubmit} className="space-y-4">
         <OrderPicker selected={order} onSelect={setOrder} />
-        <Select label="Tipo de problema" required options={TYPE_OPTIONS} {...register('type')} />
-        <TextArea
-          label="Descripción"
-          required
-          rows={4}
-          placeholder="Detalle de lo que pasó"
-          error={errors.description?.message}
-          {...register('description')}
-        />
+        <FormSelect name="type" label="Tipo de problema" required options={TYPE_OPTIONS} />
+        <FormTextArea name="description" label="Descripción" required rows={4} placeholder="Detalle de lo que pasó" />
         <PhotoPicker kind="incident" file={photo} onChange={setPhoto} />
-      </form>
+      </Form>
     </Modal>
   );
 };

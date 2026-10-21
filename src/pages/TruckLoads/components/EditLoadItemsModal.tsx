@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, Modal } from '../../../common/components/ui';
+import { Button, Form, Modal } from '../../../common/components/ui';
 import type { TruckLoad } from '../../../services/api/types';
 import { useUpdateTruckLoadItems } from '../../../services/queries/truckLoads';
 import { notify } from '../../../utils/notifications';
@@ -19,13 +19,8 @@ interface Props {
 export const EditLoadItemsModal = ({ open, onClose, load }: Props) => {
   const cylinders = useCylinderOptions();
   const update = useUpdateTruckLoadItems();
-  const {
-    register,
-    handleSubmit,
-    reset,
-    control,
-    formState: { errors },
-  } = useForm<OpenLoadFormValues>({ resolver: zodResolver(openLoadSchema) });
+  const methods = useForm<OpenLoadFormValues>({ resolver: zodResolver(openLoadSchema) });
+  const { reset } = methods;
 
   useEffect(() => {
     if (open) {
@@ -45,7 +40,7 @@ export const EditLoadItemsModal = ({ open, onClose, load }: Props) => {
     }
   }, [open, load, reset]);
 
-  const onSubmit = handleSubmit((values) =>
+  const onSubmit = (values: OpenLoadFormValues) =>
     update.mutate(
       { id: load.loadId, body: { items: values.items } },
       {
@@ -55,8 +50,7 @@ export const EditLoadItemsModal = ({ open, onClose, load }: Props) => {
         },
         onError: notify.error,
       },
-    ),
-  );
+    );
 
   return (
     <Modal
@@ -84,9 +78,9 @@ export const EditLoadItemsModal = ({ open, onClose, load }: Props) => {
           </button>
         </p>
       ) : (
-        <form id="edit-items-form" onSubmit={(e) => void onSubmit(e)} noValidate>
-          <LoadItemsFields control={control} register={register} errors={errors} cylinders={cylinders.options} />
-        </form>
+        <Form methods={methods} onSubmit={onSubmit} id="edit-items-form">
+          <LoadItemsFields cylinders={cylinders.options} />
+        </Form>
       )}
     </Modal>
   );

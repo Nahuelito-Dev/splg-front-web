@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Badge, Button, Input, CardHeader } from '../../../common/components/ui';
+import { Badge, Button, CardHeader, FormInput, Form } from '../../../common/components/ui';
 import { useCheckCoverage } from '../../../services/queries/coverageZones';
 import { formatCurrency } from '../../../utils/format';
 import { notify } from '../../../utils/notifications';
@@ -41,12 +41,8 @@ interface Props {
  */
 export const CoverageCheckPanel = ({ pickedPoint, isPicking, onStartPicking, onStopPicking }: Props) => {
   const checkCoverage = useCheckCoverage();
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    formState: { errors },
-  } = useForm<FormValues>({ resolver: zodResolver(schema) });
+  const methods = useForm<FormValues>({ resolver: zodResolver(schema) });
+  const { setValue } = methods;
 
   useEffect(() => {
     if (!pickedPoint) return;
@@ -55,7 +51,7 @@ export const CoverageCheckPanel = ({ pickedPoint, isPicking, onStartPicking, onS
     onStopPicking();
   }, [pickedPoint, setValue, onStopPicking]);
 
-  const onSubmit = handleSubmit((values) => checkCoverage.mutate(values, { onError: notify.error }));
+  const onSubmit = (values: FormValues) => checkCoverage.mutate(values, { onError: notify.error });
 
   const result = checkCoverage.data;
 
@@ -67,23 +63,16 @@ export const CoverageCheckPanel = ({ pickedPoint, isPicking, onStartPicking, onS
           {isPicking ? 'Cancelar' : 'Elegir en el mapa'}
         </Button>
       </div>
-      <form onSubmit={(e) => void onSubmit(e)} className="space-y-3" noValidate>
+      <Form methods={methods} onSubmit={onSubmit} className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
-          <Input label="Latitud" type="number" step="any" error={errors.lat?.message} {...register('lat')} />
-          <Input label="Longitud" type="number" step="any" error={errors.lng?.message} {...register('lng')} />
+          <FormInput name="lat" label="Latitud" type="number" step="any" />
+          <FormInput name="lng" label="Longitud" type="number" step="any" />
         </div>
-        <Input
-          label="Subtotal de garrafas (opcional)"
-          type="number"
-          step="any"
-          min={0}
-          error={errors.subtotal?.message}
-          {...register('subtotal')}
-        />
+        <FormInput name="subtotal" label="Subtotal de garrafas (opcional)" type="number" step="any" min={0} />
         <Button type="submit" variant="secondary" className="w-full" loading={checkCoverage.isPending}>
           Verificar
         </Button>
-      </form>
+      </Form>
 
       {result && (
         <div className="mt-4 rounded-lg border border-outline p-3 text-sm">

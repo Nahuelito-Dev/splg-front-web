@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, Input, Modal } from '../../../common/components/ui';
+import { Button, Modal, FormInput, Form } from '../../../common/components/ui';
 import type { Employee } from '../../../services/api/types';
 import { useReinstateEmployee } from '../../../services/queries/employees';
 import { notify } from '../../../utils/notifications';
@@ -16,18 +16,17 @@ interface Props {
 /** Reincorporación de un legajo egresado (CU-181): fecha de ingreso nueva, opcional. No desbloquea la cuenta. */
 export const ReinstateEmployeeModal = ({ open, onClose, employee }: Props) => {
   const reinstate = useReinstateEmployee();
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<ReinstateFormValues>({ resolver: zodResolver(reinstateSchema), defaultValues: { hireDate: '' } });
+  const methods = useForm<ReinstateFormValues>({
+    resolver: zodResolver(reinstateSchema),
+    defaultValues: { hireDate: '' },
+  });
+  const { reset } = methods;
 
   useEffect(() => {
     if (open) reset({ hireDate: '' });
   }, [open, reset]);
 
-  const onSubmit = handleSubmit((values) => {
+  const onSubmit = (values: ReinstateFormValues) => {
     if (reinstate.isPending) return;
     reinstate.mutate(
       { id: employee.employeeId, body: values.hireDate ? { hireDate: values.hireDate } : {} },
@@ -39,7 +38,7 @@ export const ReinstateEmployeeModal = ({ open, onClose, employee }: Props) => {
         onError: notify.error,
       },
     );
-  });
+  };
 
   return (
     <Modal
@@ -62,15 +61,14 @@ export const ReinstateEmployeeModal = ({ open, onClose, employee }: Props) => {
         </>
       }
     >
-      <form id="employee-reinstate" onSubmit={(e) => void onSubmit(e)} noValidate>
-        <Input
+      <Form methods={methods} id="employee-reinstate" onSubmit={onSubmit}>
+        <FormInput
+          name="hireDate"
           label="Nueva fecha de ingreso (opcional)"
           type="date"
           hint="Si la dejás vacía, se usa hoy. No puede ser anterior al egreso."
-          error={errors.hireDate?.message}
-          {...register('hireDate')}
         />
-      </form>
+      </Form>
     </Modal>
   );
 };

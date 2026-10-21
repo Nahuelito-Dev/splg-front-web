@@ -129,7 +129,7 @@ describe('VehicleAccidentForm', () => {
     await waitFor(() => expect(create.mutate).toHaveBeenCalled());
     expect(create.mutate.mock.calls[0][0]).toEqual({
       carId: 'c-1',
-      occurredAt: '2026-10-10T15:00:00.000Z',
+      occurredAt: new Date('2026-10-10T12:00').toISOString(),
       location: null,
       address: null,
       description: 'Choque trasero',

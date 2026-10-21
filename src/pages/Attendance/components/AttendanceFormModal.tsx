@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, Input, Modal, Select } from '../../../common/components/ui';
+import { Button, Modal, FormInput, FormSelect, Form } from '../../../common/components/ui';
 import { useEmployees } from '../../../services/queries/employees';
 import { useRegisterAttendance } from '../../../services/queries/personnel';
 import { notify } from '../../../utils/notifications';
@@ -21,18 +21,14 @@ const EMPLOYEES = { page: 0, pageSize: 100 };
 export const AttendanceFormModal = ({ open, onClose, employeeId }: Props) => {
   const register_ = useRegisterAttendance();
   const employees = useEmployees(EMPLOYEES, { status: 'active' }, open && !employeeId);
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<AttendanceRegisterValues>({ resolver: zodResolver(attendanceRegisterSchema) });
+  const methods = useForm<AttendanceRegisterValues>({ resolver: zodResolver(attendanceRegisterSchema) });
+  const { reset } = methods;
 
   useEffect(() => {
     if (open) reset({ employeeId: employeeId ?? '', checkInAt: isoToLocal(new Date().toISOString()), checkOutAt: '' });
   }, [open, employeeId, reset]);
 
-  const onSubmit = handleSubmit((values) => {
+  const onSubmit = (values: AttendanceRegisterValues) => {
     if (register_.isPending) return;
     const checkInAt = localToIso(values.checkInAt);
     if (!checkInAt) return;
@@ -46,7 +42,7 @@ export const AttendanceFormModal = ({ open, onClose, employeeId }: Props) => {
         onError: notify.error,
       },
     );
-  });
+  };
 
   return (
     <Modal
@@ -66,10 +62,11 @@ export const AttendanceFormModal = ({ open, onClose, employeeId }: Props) => {
         </>
       }
     >
-      <form id="attendance-form" onSubmit={(e) => void onSubmit(e)} className="grid gap-4 sm:grid-cols-2" noValidate>
+      <Form methods={methods} id="attendance-form" onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
         {!employeeId && (
           <div className="sm:col-span-2">
-            <Select
+            <FormSelect
+              name="employeeId"
               label="Empleado"
               required
               options={[
@@ -79,20 +76,12 @@ export const AttendanceFormModal = ({ open, onClose, employeeId }: Props) => {
                   label: `${employeeFullName(e)} · legajo ${e.fileNumber}`,
                 })),
               ]}
-              error={errors.employeeId?.message}
-              {...register('employeeId')}
             />
           </div>
         )}
-        <Input
-          label="Ingreso"
-          required
-          type="datetime-local"
-          error={errors.checkInAt?.message}
-          {...register('checkInAt')}
-        />
-        <Input label="Egreso" type="datetime-local" error={errors.checkOutAt?.message} {...register('checkOutAt')} />
-      </form>
+        <FormInput name="checkInAt" label="Ingreso" required type="datetime-local" />
+        <FormInput name="checkOutAt" label="Egreso" type="datetime-local" />
+      </Form>
     </Modal>
   );
 };

@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Button, Input, Modal } from '../../../common/components/ui';
+import { Button, Modal, FormInput, Form } from '../../../common/components/ui';
 import type { Delivery } from '../../../services/api/types';
 import { useUpdateDeliveryBalance } from '../../../services/queries/deliveries';
 import { formatCurrency } from '../../../utils/format';
@@ -28,12 +28,8 @@ interface Props {
 /** CU-049: liquidación o descuento manual sobre el saldo del chofer. */
 export const BalanceAdjustModal = ({ open, onClose, delivery }: Props) => {
   const updateBalance = useUpdateDeliveryBalance();
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { amount: 0 } });
+  const methods = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { amount: 0 } });
+  const { reset } = methods;
 
   useEffect(() => {
     if (open) reset({ amount: 0 });
@@ -41,7 +37,7 @@ export const BalanceAdjustModal = ({ open, onClose, delivery }: Props) => {
 
   if (!delivery) return null;
 
-  const onSubmit = handleSubmit(({ amount }) =>
+  const onSubmit = ({ amount }: FormValues) =>
     updateBalance.mutate(
       { id: delivery.delivery_id, amount },
       {
@@ -51,8 +47,7 @@ export const BalanceAdjustModal = ({ open, onClose, delivery }: Props) => {
         },
         onError: notify.error,
       },
-    ),
-  );
+    );
 
   return (
     <Modal
@@ -71,17 +66,16 @@ export const BalanceAdjustModal = ({ open, onClose, delivery }: Props) => {
         </>
       }
     >
-      <form id="balance-adjust-form" onSubmit={(e) => void onSubmit(e)} noValidate>
-        <Input
+      <Form methods={methods} id="balance-adjust-form" onSubmit={onSubmit}>
+        <FormInput
+          name="amount"
           label="Monto a acreditar (o descontar con signo negativo)"
           type="number"
           step="0.01"
           required
           hint="Ej: 15000 para liquidar ganancias, -3000 para descontar un adelanto."
-          error={errors.amount?.message}
-          {...register('amount')}
         />
-      </form>
+      </Form>
     </Modal>
   );
 };

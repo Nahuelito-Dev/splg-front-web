@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
-import { Button, Checkbox, cx, Input } from '../../../common/components/ui';
+import { Button, cx, FormCheckbox, FormInput, Form } from '../../../common/components/ui';
 import type { CoverageZone } from '../../../services/api/types';
 import {
   useCoverageZones,
@@ -53,18 +53,15 @@ export const ZoneFormPanel = ({ zone, polygon, zones, onSaved, onCancel }: Props
   const saving = createZone.isPending || updateZone.isPending;
   const canSubmit = hasEnoughVertices(polygon);
 
-  const {
-    register,
-    handleSubmit,
-    control,
-    watch,
-    setError,
-    formState: { errors },
-  } = useForm<ZoneFormValues>({ resolver: zodResolver(zoneSchema), defaultValues: defaultsFor(zone, zones) });
+  const methods = useForm<ZoneFormValues>({
+    resolver: zodResolver(zoneSchema),
+    defaultValues: defaultsFor(zone, zones),
+  });
+  const { control, watch, setError } = methods;
 
   const surchargeType = watch('surchargeType');
 
-  const onSubmit = handleSubmit(async (values) => {
+  const onSubmit = async (values: ZoneFormValues) => {
     if (!canSubmit) {
       notify.error(new Error(`Dibujá el polígono en el mapa (mínimo ${MIN_POLYGON_VERTICES} vértices)`));
       return;
@@ -97,17 +94,12 @@ export const ZoneFormPanel = ({ zone, polygon, zones, onSaved, onCancel }: Props
     };
     if (zone) updateZone.mutate({ id: zone.coverage_zone_id, changes: payload }, options);
     else createZone.mutate(payload, options);
-  });
+  };
 
   return (
-    <form onSubmit={(e) => void onSubmit(e)} className="space-y-4" noValidate>
-      <Input label="Nombre" required error={errors.name?.message} {...register('name')} />
-      <Input
-        label="Etiqueta (opcional)"
-        placeholder="Zona centro"
-        error={errors.label?.message}
-        {...register('label')}
-      />
+    <Form methods={methods} onSubmit={onSubmit} className="space-y-4">
+      <FormInput name="name" label="Nombre" required />
+      <FormInput name="label" label="Etiqueta (opcional)" placeholder="Zona centro" />
 
       <div className="grid grid-cols-2 gap-3">
         <Controller
@@ -140,46 +132,43 @@ export const ZoneFormPanel = ({ zone, polygon, zones, onSaved, onCancel }: Props
             </div>
           )}
         />
-        <Input
+        <FormInput
+          name="surchargeValue"
           label={surchargeType === 'percentage' ? 'Recargo (%)' : 'Recargo ($)'}
           type="number"
           step="any"
           min={0}
-          error={errors.surchargeValue?.message}
-          {...register('surchargeValue')}
         />
       </div>
 
       <Controller
         control={control}
         name="color"
-        render={({ field }) => (
-          <ZoneColorPicker value={field.value} onChange={field.onChange} error={errors.color?.message} />
+        render={({ field, fieldState }) => (
+          <ZoneColorPicker value={field.value} onChange={field.onChange} error={fieldState.error?.message} />
         )}
       />
 
-      <Input
+      <FormInput
+        name="priority"
         label="Prioridad"
         type="number"
         step={1}
         min={0}
         hint="Entre zonas superpuestas gana la de mayor prioridad."
-        error={errors.priority?.message}
-        {...register('priority')}
       />
 
       <div className="grid grid-cols-2 gap-3">
-        <Input label="Vigente desde" type="date" error={errors.validFrom?.message} {...register('validFrom')} />
-        <Input
+        <FormInput name="validFrom" label="Vigente desde" type="date" />
+        <FormInput
+          name="validUntil"
           label="Vigente hasta"
           type="date"
           hint={zone ? 'Vacío: no se toca la vigencia actual.' : undefined}
-          error={errors.validUntil?.message}
-          {...register('validUntil')}
         />
       </div>
 
-      <Checkbox label="Zona activa" {...register('isActive')} />
+      <FormCheckbox name="isActive" label="Zona activa" />
 
       {!canSubmit && <p className="text-xs text-warn">Dibujá el polígono en el mapa antes de guardar.</p>}
 
@@ -191,6 +180,6 @@ export const ZoneFormPanel = ({ zone, polygon, zones, onSaved, onCancel }: Props
           {zone ? 'Guardar cambios' : 'Crear zona'}
         </Button>
       </div>
-    </form>
+    </Form>
   );
 };

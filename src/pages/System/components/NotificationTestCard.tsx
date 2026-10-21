@@ -2,7 +2,16 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Send } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Badge, Button, Card, IdentityCell, Input, SearchInput } from '../../../common/components/ui';
+import {
+  Badge,
+  Button,
+  Card,
+  IdentityCell,
+  SearchInput,
+  CardHeader,
+  FormInput,
+  Form,
+} from '../../../common/components/ui';
 import { useDebounce } from '../../../hooks';
 import { errorMessage } from '../../../services/api/errors';
 import type { ResultadoDeEnvio, User } from '../../../services/api/types';
@@ -79,35 +88,29 @@ export const NotificationTestCard = () => {
   const [result, setResult] = useState<ResultadoDeEnvio | null>(null);
   const tokens = useUserNotificationTokens(selectedUser?.user_id);
   const sendTest = useSendTestNotification();
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    watch,
-    formState: { errors },
-  } = useForm<NotificationTestFormValues>({
+  const methods = useForm<NotificationTestFormValues>({
     resolver: zodResolver(notificationTestSchema),
     defaultValues: { title: 'Prueba', body: 'Probando notificaciones push desde el panel' },
   });
+  const { setValue, watch } = methods;
 
   const currentToken = watch('token');
 
-  const onSubmit = handleSubmit((values) => {
+  const onSubmit = (values: NotificationTestFormValues) => {
     setResult(null);
     sendTest.mutate(values, {
       onSuccess: setResult,
       onError: (error) => setResult({ success: false, error: errorMessage(error) }),
     });
-  });
+  };
 
   return (
     <Card className="space-y-4 p-5">
-      <div>
-        <h3 className="text-sm font-semibold text-ink">Probar las notificaciones push</h3>
-        <p className="text-xs text-muted">
-          Manda un push real por Firebase Cloud Messaging a un token de dispositivo puntual.
-        </p>
-      </div>
+      <CardHeader
+        title="Probar las notificaciones push"
+        subtitle="Manda un push real por Firebase Cloud Messaging a un token de dispositivo puntual."
+        className=""
+      />
 
       <UserPicker selected={selectedUser} onSelect={setSelectedUser} />
 
@@ -140,21 +143,16 @@ export const NotificationTestCard = () => {
         </div>
       )}
 
-      <form onSubmit={(e) => void onSubmit(e)} className="space-y-3" noValidate>
-        <Input
-          label="Token de FCM del dispositivo"
-          placeholder="Pegalo acá o elegí uno de arriba"
-          error={errors.token?.message}
-          {...register('token')}
-        />
+      <Form methods={methods} onSubmit={onSubmit} className="space-y-3">
+        <FormInput name="token" label="Token de FCM del dispositivo" placeholder="Pegalo acá o elegí uno de arriba" />
         <div className="grid gap-3 sm:grid-cols-2">
-          <Input label="Título" required error={errors.title?.message} {...register('title')} />
-          <Input label="Cuerpo" required error={errors.body?.message} {...register('body')} />
+          <FormInput name="title" label="Título" required />
+          <FormInput name="body" label="Cuerpo" required />
         </div>
         <Button type="submit" icon={<Send />} loading={sendTest.isPending}>
           Enviar push de prueba
         </Button>
-      </form>
+      </Form>
 
       {result && (
         <div className="space-y-1 rounded-xl border border-outline bg-surface-hover p-3.5">

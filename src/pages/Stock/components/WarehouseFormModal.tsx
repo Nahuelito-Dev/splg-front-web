@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, Checkbox, Input, Modal, Select } from '../../../common/components/ui';
+import { Button, Modal, FormInput, FormCheckbox, FormSelect, Form } from '../../../common/components/ui';
 import type { Warehouse } from '../../../services/api/types';
 import { useCreateWarehouse, useUpdateWarehouse } from '../../../services/queries/stock';
 import { notify } from '../../../utils/notifications';
@@ -24,12 +24,8 @@ export const WarehouseFormModal = ({ open, onClose, warehouse }: Props) => {
   const createWarehouse = useCreateWarehouse();
   const updateWarehouse = useUpdateWarehouse();
   const saving = createWarehouse.isPending || updateWarehouse.isPending;
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<WarehouseFormValues>({ resolver: zodResolver(warehouseSchema) });
+  const methods = useForm<WarehouseFormValues>({ resolver: zodResolver(warehouseSchema) });
+  const { reset } = methods;
 
   useEffect(() => {
     if (!open) return;
@@ -42,7 +38,7 @@ export const WarehouseFormModal = ({ open, onClose, warehouse }: Props) => {
     });
   }, [open, warehouse, reset]);
 
-  const onSubmit = handleSubmit((values) => {
+  const onSubmit = (values: WarehouseFormValues) => {
     const options = {
       onSuccess: () => {
         notify.success(warehouse ? 'Galpón actualizado' : 'Galpón creado');
@@ -53,7 +49,7 @@ export const WarehouseFormModal = ({ open, onClose, warehouse }: Props) => {
     if (warehouse)
       updateWarehouse.mutate({ id: warehouse.warehouseId, body: warehouseUpdateBody(values, warehouse) }, options);
     else createWarehouse.mutate(warehouseCreateBody(values), options);
-  });
+  };
 
   return (
     <Modal
@@ -72,26 +68,19 @@ export const WarehouseFormModal = ({ open, onClose, warehouse }: Props) => {
         </>
       }
     >
-      <form id="warehouse-form" onSubmit={(e) => void onSubmit(e)} className="grid gap-4 sm:grid-cols-2" noValidate>
-        <Input label="Nombre" required maxLength={80} error={errors.name?.message} {...register('name')} />
-        <Input
-          label="Código"
-          required
-          maxLength={12}
-          hint="Corto y único; se guarda en mayúsculas."
-          error={errors.code?.message}
-          {...register('code')}
-        />
-        <Select label="Tipo" options={KIND_OPTIONS} error={errors.kind?.message} {...register('kind')} />
-        <Input label="Dirección" maxLength={300} error={errors.address?.message} {...register('address')} />
+      <Form methods={methods} id="warehouse-form" onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
+        <FormInput name="name" label="Nombre" required maxLength={80} />
+        <FormInput name="code" label="Código" required maxLength={12} hint="Corto y único; se guarda en mayúsculas." />
+        <FormSelect name="kind" label="Tipo" options={KIND_OPTIONS} />
+        <FormInput name="address" label="Dirección" maxLength={300} />
         <div className="sm:col-span-2">
-          <Checkbox
+          <FormCheckbox
+            name="isDefault"
             label="Galpón predeterminado"
             hint="Es el que usa la entrega cuando el camión no tiene stock. No puede estar inactivo."
-            {...register('isDefault')}
           />
         </div>
-      </form>
+      </Form>
     </Modal>
   );
 };

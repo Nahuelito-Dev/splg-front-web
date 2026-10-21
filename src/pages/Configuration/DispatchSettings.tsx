@@ -7,10 +7,13 @@ import {
   Card,
   ErrorState,
   IconButton,
-  Input,
   PageHeader,
   Skeleton,
   PageContainer,
+  CardHeader,
+  FormInput,
+  Form,
+  FormError,
 } from '../../common/components/ui';
 import { usePermissions } from '../../hooks';
 import { errorMessage } from '../../services/api/errors';
@@ -46,20 +49,19 @@ const valuesOf = (config: DispatchConfig): DispatchFormValues => ({
 const DispatchForm = ({ config, canWrite, writeHint }: FormProps) => {
   const update = useUpdateDispatchConfig();
   const [serverError, setServerError] = useState<string | null>(null);
-  const {
-    register,
-    control,
-    handleSubmit,
-    watch,
-    trigger,
-    getValues,
-    reset,
-    formState: { errors, isDirty, isValid },
-  } = useForm<DispatchFormValues>({
+  const methods = useForm<DispatchFormValues>({
     resolver: zodResolver(dispatchSchema),
     mode: 'onChange',
     defaultValues: valuesOf(config),
   });
+  const {
+    control,
+    watch,
+    trigger,
+    getValues,
+    reset,
+    formState: { isDirty, isValid },
+  } = methods;
   const { fields, append, remove } = useFieldArray({ control, name: 'steps' });
 
   // Cada paso depende del anterior: al cambiar cualquiera se revalida todo el formulario.
@@ -78,7 +80,7 @@ const DispatchForm = ({ config, canWrite, writeHint }: FormProps) => {
     append({ value: canGrow ? String(Math.min(last + 5, RADIUS_MAX_KM)) : '' });
   };
 
-  const submit = handleSubmit((values) => {
+  const submit = (values: DispatchFormValues) => {
     setServerError(null);
     update.mutate(toDispatchBody(values), {
       onSuccess: (saved) => {
@@ -87,7 +89,7 @@ const DispatchForm = ({ config, canWrite, writeHint }: FormProps) => {
       },
       onError: (error) => setServerError(errorMessage(error)),
     });
-  });
+  };
 
   const restoreDefaults = async () => {
     const ok = await confirm({
@@ -109,10 +111,8 @@ const DispatchForm = ({ config, canWrite, writeHint }: FormProps) => {
     );
   };
 
-  const listError = errors.steps?.root?.message ?? errors.steps?.message;
-
   return (
-    <form onSubmit={(event) => void submit(event)} noValidate className="space-y-6">
+    <Form methods={methods} onSubmit={submit} className="space-y-6">
       {stale && <StaleConfigNotice onAccept={acceptStale} />}
       <Card className="p-6">
         <SettingsMeta
@@ -121,25 +121,23 @@ const DispatchForm = ({ config, canWrite, writeHint }: FormProps) => {
           updatedByUserId={config.updatedByUserId}
         />
 
-        <h2 className="mt-5 text-base font-semibold text-ink">Pasos de radio</h2>
-        <p className="mt-1 text-sm text-muted">
-          Al llegar un pedido se busca primero al chofer más cercano dentro del primer radio. Si nadie lo acepta, se
-          amplía la búsqueda al paso siguiente. Cada paso tiene que ser mayor que el anterior ({RADIUS_MIN_KM} a{' '}
-          {RADIUS_MAX_KM} km, hasta {RADIUS_STEPS_MAX} pasos).
-        </p>
+        <CardHeader
+          title="Pasos de radio"
+          subtitle={`Al llegar un pedido se busca primero al chofer más cercano dentro del primer radio. Si nadie lo acepta, se amplía la búsqueda al paso siguiente. Cada paso tiene que ser mayor que el anterior (${RADIUS_MIN_KM} a ${RADIUS_MAX_KM} km, hasta ${RADIUS_STEPS_MAX} pasos).`}
+          className="mt-5"
+        />
         <ol className="mt-4 space-y-3">
           {fields.map((field, index) => (
             <li key={field.id} className="flex items-start gap-3">
               <div className="w-48">
-                <Input
+                <FormInput
+                  name={`steps.${index}.value`}
                   label={`Paso ${index + 1} (km)`}
                   type="number"
                   inputMode="decimal"
                   min={RADIUS_MIN_KM}
                   max={RADIUS_MAX_KM}
-                  error={errors.steps?.[index]?.value?.message}
                   disabled={!canWrite}
-                  {...register(`steps.${index}.value`)}
                 />
               </div>
               <IconButton
@@ -152,11 +150,8 @@ const DispatchForm = ({ config, canWrite, writeHint }: FormProps) => {
             </li>
           ))}
         </ol>
-        {listError && (
-          <p role="alert" className="mt-2 text-xs text-danger">
-            {listError}
-          </p>
-        )}
+        <FormError name="steps.root" />
+        <FormError name="steps" />
         <Button
           variant="secondary"
           size="sm"
@@ -170,18 +165,17 @@ const DispatchForm = ({ config, canWrite, writeHint }: FormProps) => {
       </Card>
 
       <Card className="p-6">
-        <h2 className="text-base font-semibold text-ink">Tiempo para aceptar una oferta</h2>
+        <CardHeader title="Tiempo para aceptar una oferta" className="" />
         <div className="mt-4 w-48">
-          <Input
+          <FormInput
+            name="ttl"
             label="Segundos"
             type="number"
             inputMode="numeric"
             min={OFFER_TTL_MIN_SECONDS}
             max={OFFER_TTL_MAX_SECONDS}
-            error={errors.ttl?.message}
             disabled={!canWrite}
             hint={`${OFFER_TTL_MIN_SECONDS} a ${OFFER_TTL_MAX_SECONDS}`}
-            {...register('ttl')}
           />
         </div>
         <p className="mt-2 text-sm text-muted">
@@ -208,7 +202,7 @@ const DispatchForm = ({ config, canWrite, writeHint }: FormProps) => {
           Restablecer valores por defecto
         </Button>
       </div>
-    </form>
+    </Form>
   );
 };
 

@@ -1,5 +1,15 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fleetTaskCloseSchema, fleetTaskCreateSchema, fleetTaskDetailsSchema } from './fleetTaskSchema';
+
+/** Reloj fijo: las reglas de «no futuro» y «no pasado» dependen de la hora de ejecución. */
+const NOW = new Date('2026-10-21T15:00:00.000Z');
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(NOW);
+});
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe('fleetTaskCreateSchema', () => {
   const planId = '8657d458-bb9e-4d4c-841d-6d936f7a4627';
@@ -90,11 +100,23 @@ describe('fleetTaskCloseSchema: fecha de cierre', () => {
 });
 
 describe('fleetTaskCloseSchema: tolerancia', () => {
-  it('interpreta la fecha como el back (new Date) con 5 minutos de margen', () => {
-    const tomorrow = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
-    expect(fleetTaskCloseSchema.safeParse({ performedAt: tomorrow }).success).toBe(false);
-    expect(fleetTaskCloseSchema.safeParse({ performedAt: new Date(Date.now() + 120_000).toISOString() }).success).toBe(
-      true,
-    );
+  const performedAt = (offsetMs: number) => new Date(NOW.getTime() + offsetMs).toISOString();
+
+  it('interpreta la fecha como el back (new Date): un día YYYY-MM-DD es la medianoche UTC', () => {
+    expect(fleetTaskCloseSchema.safeParse({ performedAt: '2026-10-21' }).success).toBe(true);
+    expect(fleetTaskCloseSchema.safeParse({ performedAt: '2026-10-22' }).success).toBe(false);
+  });
+
+  it('acepta hasta 5 minutos de adelanto y rechaza lo que pasa del límite', () => {
+    expect(fleetTaskCloseSchema.safeParse({ performedAt: performedAt(120_000) }).success).toBe(true);
+    expect(fleetTaskCloseSchema.safeParse({ performedAt: performedAt(5 * 60_000) }).success).toBe(true);
+    expect(fleetTaskCloseSchema.safeParse({ performedAt: performedAt(5 * 60_000 + 1) }).success).toBe(false);
+  });
+
+  it('cerca de la medianoche UTC (21:57 en Argentina) el día siguiente entra en la tolerancia, igual que en el back', () => {
+    vi.setSystemTime(new Date('2026-10-21T23:57:00.000Z'));
+    expect(fleetTaskCloseSchema.safeParse({ performedAt: '2026-10-22' }).success).toBe(true);
+    vi.setSystemTime(new Date('2026-10-21T23:54:00.000Z'));
+    expect(fleetTaskCloseSchema.safeParse({ performedAt: '2026-10-22' }).success).toBe(false);
   });
 });

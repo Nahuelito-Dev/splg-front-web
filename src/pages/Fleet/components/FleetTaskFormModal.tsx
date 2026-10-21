@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, Input, Modal, Select, TextArea } from '../../../common/components/ui';
+import { Button, Modal, FormInput, FormTextArea, FormSelect, Form } from '../../../common/components/ui';
 import type { FleetTaskUpdateBody } from '../../../services/api/fleet';
 import type { FleetPlan, FleetTask } from '../../../services/api/types';
 import { useCreateFleetTask, useFleetPlans, useUpdateFleetTask } from '../../../services/queries/fleet';
@@ -43,18 +43,11 @@ export const FleetTaskFormModal = ({ open, onClose, subject, ownerId, carType, t
   const updateTask = useUpdateFleetTask();
   const saving = createTask.isPending || updateTask.isPending;
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    watch,
-    getValues,
-    setValue,
-    formState: { errors },
-  } = useForm<FleetTaskCreateValues>({
+  const methods = useForm<FleetTaskCreateValues>({
     // La edición manda el mismo esquema: `planId` ya viene de la tarea (el plan no se cambia).
     resolver: zodResolver(fleetTaskCreateSchema),
   });
+  const { reset, watch, getValues, setValue } = methods;
 
   useEffect(() => {
     if (!open) return;
@@ -84,7 +77,7 @@ export const FleetTaskFormModal = ({ open, onClose, subject, ownerId, carType, t
   const watchedPlanId = watch('planId');
   const plan = task?.plan ?? plans.find((p) => p.planId === watchedPlanId);
 
-  const onSubmit = handleSubmit((values) => {
+  const onSubmit = (values: FleetTaskCreateValues) => {
     const options = {
       onSuccess: () => {
         notify.success(isEditing ? 'Tarea actualizada' : 'Tarea agregada');
@@ -128,7 +121,7 @@ export const FleetTaskFormModal = ({ open, onClose, subject, ownerId, carType, t
         options,
       );
     }
-  });
+  };
 
   return (
     <Modal
@@ -147,7 +140,7 @@ export const FleetTaskFormModal = ({ open, onClose, subject, ownerId, carType, t
         </>
       }
     >
-      <form id="fleet-task-form" onSubmit={(e) => void onSubmit(e)} className="grid gap-4 sm:grid-cols-2" noValidate>
+      <Form methods={methods} id="fleet-task-form" onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
         {!isEditing &&
           (plansError ? (
             <div className="flex items-center justify-between gap-3 rounded-xl border border-danger/30 bg-danger-soft px-3 py-2.5 text-sm text-danger sm:col-span-2">
@@ -158,26 +151,25 @@ export const FleetTaskFormModal = ({ open, onClose, subject, ownerId, carType, t
             </div>
           ) : (
             <div className="sm:col-span-2">
-              <Select
+              <FormSelect
+                name="planId"
                 label="Plan"
                 required
                 options={planOptions}
                 hint={
                   planOptions.length === 0 ? 'No hay planes activos para esto todavía.' : triggerHint(plan?.trigger)
                 }
-                error={errors.planId?.message}
-                {...register('planId')}
               />
             </div>
           ))}
-        <Input
+        <FormInput
+          name="validFrom"
           label="Vigente desde"
           type="date"
           hint="Inicio de la vigencia (póliza, habilitación)."
-          error={errors.validFrom?.message}
-          {...register('validFrom')}
         />
-        <Input
+        <FormInput
+          name="dueAt"
           label="Vence el"
           type="date"
           required={plan?.documentKind === 'hazmat_vehicle_permit'}
@@ -186,54 +178,29 @@ export const FleetTaskFormModal = ({ open, onClose, subject, ownerId, carType, t
               ? 'La habilitación necesita su vencimiento: vencida, el vehículo queda inhabilitado.'
               : triggerHint(plan?.trigger)
           }
-          error={errors.dueAt?.message}
-          {...register('dueAt')}
         />
-        <Input
-          label="Vence a los (km)"
-          type="number"
-          min={0}
-          step={1}
-          error={errors.dueKm?.message}
-          {...register('dueKm')}
-        />
-        <Input
-          label="Proveedor"
-          placeholder="Aseguradora, taller o gestoría"
-          maxLength={120}
-          error={errors.provider?.message}
-          {...register('provider')}
-        />
-        <Input
+        <FormInput name="dueKm" label="Vence a los (km)" type="number" min={0} step={1} />
+        <FormInput name="provider" label="Proveedor" placeholder="Aseguradora, taller o gestoría" maxLength={120} />
+        <FormInput
+          name="referenceNumber"
           label="Número de referencia"
           placeholder="Nº de póliza, licencia u otro"
           maxLength={60}
-          error={errors.referenceNumber?.message}
-          {...register('referenceNumber')}
         />
-        {subject === 'driver' && (
-          <Input
-            label="Categoría"
-            placeholder="B1"
-            maxLength={10}
-            error={errors.category?.message}
-            {...register('category')}
-          />
-        )}
-        <Input
+        {subject === 'driver' && <FormInput name="category" label="Categoría" placeholder="B1" maxLength={10} />}
+        <FormInput
+          name="cost"
           label="Importe"
           type="number"
           step="0.01"
           min={0}
           hint="La prima de la póliza o lo que cuesta: entra en el costo del vehículo."
-          error={errors.cost?.message}
-          {...register('cost')}
         />
-        <Input label="Turno agendado" type="date" error={errors.scheduledAt?.message} {...register('scheduledAt')} />
+        <FormInput name="scheduledAt" label="Turno agendado" type="date" />
         <div className="sm:col-span-2">
-          <TextArea label="Notas" maxLength={2000} error={errors.notes?.message} {...register('notes')} />
+          <FormTextArea name="notes" label="Notas" maxLength={2000} />
         </div>
-      </form>
+      </Form>
     </Modal>
   );
 };

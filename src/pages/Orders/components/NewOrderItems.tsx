@@ -1,26 +1,13 @@
-import {
-  useFieldArray,
-  useWatch,
-  type Control,
-  type FieldErrors,
-  type UseFormRegister,
-  type UseFormSetValue,
-} from 'react-hook-form';
+import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 import { CirclePlus, Trash2 } from 'lucide-react';
-import { Button, IconButton, Input, Select, CardHeader } from '../../../common/components/ui';
+import { Button, CardHeader, FormError, FormInput, FormSelect, IconButton, Input } from '../../../common/components/ui';
 import { useGasCylinders } from '../../../services/queries/gasCylinders';
 import { formatCurrency } from '../../../utils/format';
 import type { NewOrderValues } from './newOrderSchema';
 
-interface Props {
-  control: Control<NewOrderValues>;
-  register: UseFormRegister<NewOrderValues>;
-  setValue: UseFormSetValue<NewOrderValues>;
-  errors: FieldErrors<NewOrderValues>;
-}
-
 /** Los renglones del pedido: garrafa, cantidad y precio (sólo lectura: el back cobra siempre el de catálogo, con su promoción por volumen). */
-export const NewOrderItems = ({ control, register, setValue, errors }: Props) => {
+export const NewOrderItems = () => {
+  const { control, setValue } = useFormContext<NewOrderValues>();
   const { data: catalog } = useGasCylinders({ page: 0, pageSize: 100 });
   const { fields, append, remove } = useFieldArray({ control, name: 'items' });
 
@@ -59,27 +46,18 @@ export const NewOrderItems = ({ control, register, setValue, errors }: Props) =>
           {fields.map((field, index) => (
             <div key={field.id} className="flex flex-wrap items-end gap-3 rounded-xl border border-outline p-3">
               <div className="min-w-[220px] flex-1">
-                <Select
+                <FormSelect
+                  name={`items.${index}.gasCylinderId`}
                   label="Garrafa"
                   options={cylinderOptions}
-                  error={errors.items?.[index]?.gasCylinderId?.message}
-                  {...register(`items.${index}.gasCylinderId`)}
                   onChange={(e) => {
-                    setValue(`items.${index}.gasCylinderId`, e.target.value);
                     const picked = catalog?.rows.find((c) => c.gas_cylinder_id === e.target.value);
                     if (picked) setValue(`items.${index}.unitPrice`, picked.price);
                   }}
                 />
               </div>
               <div className="w-24">
-                <Input
-                  label="Cantidad"
-                  type="number"
-                  min={1}
-                  step={1}
-                  error={errors.items?.[index]?.quantity?.message}
-                  {...register(`items.${index}.quantity`)}
-                />
+                <FormInput name={`items.${index}.quantity`} label="Cantidad" type="number" min={1} step={1} />
               </div>
               <div className="w-32">
                 <Input
@@ -98,11 +76,7 @@ export const NewOrderItems = ({ control, register, setValue, errors }: Props) =>
         </div>
       )}
 
-      {errors.items?.message && (
-        <p role="alert" className="text-xs text-danger">
-          {errors.items.message}
-        </p>
-      )}
+      <FormError name="items" />
     </div>
   );
 };

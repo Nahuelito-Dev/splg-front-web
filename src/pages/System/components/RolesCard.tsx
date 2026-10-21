@@ -1,6 +1,14 @@
 import { useState } from 'react';
 import { Eye, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react';
-import { Button, Card, ErrorState, IconButton, IdentityCell, LoadingState } from '../../../common/components/ui';
+import {
+  Button,
+  Card,
+  ErrorState,
+  IconButton,
+  IdentityCell,
+  LoadingState,
+  CardHeader,
+} from '../../../common/components/ui';
 import type { Role } from '../../../services/api/types';
 import { useDeleteRole, useRoles, useSeedRoles } from '../../../services/queries/role';
 import { formatDateTime } from '../../../utils/format';
@@ -58,12 +66,11 @@ export const RolesCard = () => {
   return (
     <Card className="space-y-4 p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="text-sm font-semibold text-ink">Roles del sistema</h3>
-          <p className="text-xs text-muted">
-            {SYSTEM_ROLES.join(', ')} son los que el código necesita para funcionar y no se editan desde acá.
-          </p>
-        </div>
+        <CardHeader
+          title="Roles del sistema"
+          subtitle={`${SYSTEM_ROLES.join(', ')} son los que el código necesita para funcionar y no se editan desde acá.`}
+          className=""
+        />
         <div className="flex gap-2">
           <Button variant="secondary" size="sm" icon={<Plus />} onClick={() => setForm({ open: true, role: null })}>
             Nuevo rol

@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Button, Input, Modal, Select } from '../../../common/components/ui';
+import { Button, Input, Modal, FormInput, FormSelect, Form } from '../../../common/components/ui';
 import { useDebounce } from '../../../hooks';
 import type { CustomerAccountDetail } from '../../../services/api/types';
 import { useCreateCustomerAccount, useUpdateCustomerAccount } from '../../../services/queries/finance';
@@ -52,13 +52,8 @@ export const CustomerAccountFormModal = ({ open, onClose, account, customer }: P
   const [term, setTerm] = useState('');
   const search = useDebounce(term, 300);
   const customers = useCustomers({ page: 0, pageSize: 20 }, search);
-  const {
-    register,
-    handleSubmit,
-    reset,
-    setError,
-    formState: { errors },
-  } = useForm<Values>({ resolver: zodResolver(schema) });
+  const methods = useForm<Values>({ resolver: zodResolver(schema) });
+  const { reset, setError } = methods;
 
   useEffect(() => {
     if (!open) return;
@@ -74,7 +69,7 @@ export const CustomerAccountFormModal = ({ open, onClose, account, customer }: P
     });
   }, [open, account, customer, reset]);
 
-  const onSubmit = handleSubmit((values) => {
+  const onSubmit = (values: Values) => {
     const common = {
       businessName: values.businessName,
       taxId: values.taxId ? normalizeCuit(values.taxId) : undefined,
@@ -103,7 +98,7 @@ export const CustomerAccountFormModal = ({ open, onClose, account, customer }: P
       return;
     }
     create.mutate({ ...common, customerUserId: values.customerUserId }, options);
-  });
+  };
 
   const customerOptions = [
     { value: '', label: customers.isFetching ? 'Buscando…' : 'Elegí un cliente' },
@@ -132,12 +127,7 @@ export const CustomerAccountFormModal = ({ open, onClose, account, customer }: P
         </>
       }
     >
-      <form
-        id="customer-account-form"
-        onSubmit={(e) => void onSubmit(e)}
-        className="grid gap-4 sm:grid-cols-2"
-        noValidate
-      >
+      <Form methods={methods} id="customer-account-form" onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
         {!account && !customer && (
           <>
             <Input
@@ -146,64 +136,22 @@ export const CustomerAccountFormModal = ({ open, onClose, account, customer }: P
               value={term}
               onChange={(e) => setTerm(e.target.value)}
             />
-            <Select
-              label="Cliente"
-              required
-              options={customerOptions}
-              error={errors.customerUserId?.message}
-              {...register('customerUserId')}
-            />
+            <FormSelect name="customerUserId" label="Cliente" required options={customerOptions} />
           </>
         )}
         <div className="sm:col-span-2">
-          <Input
-            label="Razón social"
-            required
-            maxLength={120}
-            error={errors.businessName?.message}
-            {...register('businessName')}
-          />
+          <FormInput name="businessName" label="Razón social" required maxLength={120} />
         </div>
-        <Input
-          label="CUIT"
-          placeholder="30-71512345-9"
-          hint="Se valida el dígito verificador."
-          error={errors.taxId?.message}
-          {...register('taxId')}
-        />
-        <Select
-          label="Condición fiscal"
-          options={TAX_OPTIONS}
-          error={errors.taxCondition?.message}
-          {...register('taxCondition')}
-        />
-        <Input
-          label="Límite de crédito"
-          required
-          inputMode="decimal"
-          error={errors.creditLimit?.message}
-          {...register('creditLimit')}
-        />
-        <Input
-          label="Plazo de pago (días)"
-          required
-          type="number"
-          min={1}
-          max={365}
-          error={errors.paymentTermsDays?.message}
-          {...register('paymentTermsDays')}
-        />
+        <FormInput name="taxId" label="CUIT" placeholder="30-71512345-9" hint="Se valida el dígito verificador." />
+        <FormSelect name="taxCondition" label="Condición fiscal" options={TAX_OPTIONS} />
+        <FormInput name="creditLimit" label="Límite de crédito" required inputMode="decimal" />
+        <FormInput name="paymentTermsDays" label="Plazo de pago (días)" required type="number" min={1} max={365} />
         {account && (
           <div className="sm:col-span-2">
-            <Select
-              label="Estado"
-              options={accountStatusOptions(account.status)}
-              error={errors.status?.message}
-              {...register('status')}
-            />
+            <FormSelect name="status" label="Estado" options={accountStatusOptions(account.status)} />
           </div>
         )}
-      </form>
+      </Form>
     </Modal>
   );
 };

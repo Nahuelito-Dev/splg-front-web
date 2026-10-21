@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, Input, Modal, Select, TextArea } from '../../../common/components/ui';
+import { Button, Modal, FormInput, FormTextArea, FormSelect, Form } from '../../../common/components/ui';
 import type { Leave } from '../../../services/api/types';
 import { useEmployees } from '../../../services/queries/employees';
 import { useCreateLeave, useLeaves, useUpdateLeave } from '../../../services/queries/personnel';
@@ -34,13 +34,8 @@ export const LeaveFormModal = ({ open, onClose, employeeId, leave }: Props) => {
   const saving = createLeave.isPending || updateLeave.isPending;
   const employees = useEmployees(EMPLOYEES, { status: 'active' }, open && !employeeId && !isEditing);
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    watch,
-    formState: { errors },
-  } = useForm<LeaveFormValues>({ resolver: zodResolver(leaveFormSchema) });
+  const methods = useForm<LeaveFormValues>({ resolver: zodResolver(leaveFormSchema) });
+  const { reset, watch } = methods;
 
   useEffect(() => {
     if (!open) return;
@@ -64,7 +59,7 @@ export const LeaveFormModal = ({ open, onClose, employeeId, leave }: Props) => {
   );
   const overlap = days === null ? null : overlappingLeave(theirs.data?.rows ?? [], startDate, endDate, leave?.leaveId);
 
-  const onSubmit = handleSubmit((values) => {
+  const onSubmit = (values: LeaveFormValues) => {
     if (saving || overlap) return;
     const body = {
       type: values.type,
@@ -81,7 +76,7 @@ export const LeaveFormModal = ({ open, onClose, employeeId, leave }: Props) => {
     };
     if (leave) updateLeave.mutate({ id: leave.leaveId, body }, options);
     else createLeave.mutate({ employeeId: values.employeeId, body }, options);
-  });
+  };
 
   return (
     <Modal
@@ -110,10 +105,11 @@ export const LeaveFormModal = ({ open, onClose, employeeId, leave }: Props) => {
         </>
       }
     >
-      <form id="leave-form" onSubmit={(e) => void onSubmit(e)} className="grid gap-4 sm:grid-cols-2" noValidate>
+      <Form methods={methods} id="leave-form" onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
         {!employeeId && !isEditing && (
           <div className="sm:col-span-2">
-            <Select
+            <FormSelect
+              name="employeeId"
               label="Empleado"
               required
               options={[
@@ -123,28 +119,24 @@ export const LeaveFormModal = ({ open, onClose, employeeId, leave }: Props) => {
                   label: `${employeeFullName(e)} · legajo ${e.fileNumber}`,
                 })),
               ]}
-              error={errors.employeeId?.message}
-              {...register('employeeId')}
             />
           </div>
         )}
         <div className="sm:col-span-2">
-          <Select
+          <FormSelect
+            name="type"
             label="Tipo"
             required
             options={Object.entries(LEAVE_TYPE).map(([value, label]) => ({ value, label }))}
-            error={errors.type?.message}
-            {...register('type')}
           />
         </div>
-        <Input label="Desde" required type="date" error={errors.startDate?.message} {...register('startDate')} />
-        <Input
+        <FormInput name="startDate" label="Desde" required type="date" />
+        <FormInput
+          name="endDate"
           label="Hasta"
           required
           type="date"
           hint={days !== null ? `${days} ${days === 1 ? 'día corrido' : 'días corridos'}` : undefined}
-          error={errors.endDate?.message}
-          {...register('endDate')}
         />
         {overlap && (
           <p
@@ -156,9 +148,9 @@ export const LeaveFormModal = ({ open, onClose, employeeId, leave }: Props) => {
           </p>
         )}
         <div className="sm:col-span-2">
-          <TextArea label="Motivo" maxLength={500} error={errors.reason?.message} {...register('reason')} />
+          <FormTextArea name="reason" label="Motivo" maxLength={500} />
         </div>
-      </form>
+      </Form>
     </Modal>
   );
 };

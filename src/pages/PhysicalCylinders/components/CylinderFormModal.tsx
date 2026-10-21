@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Button, Input, Modal, Select } from '../../../common/components/ui';
+import { Button, Modal, FormInput, FormSelect, Form } from '../../../common/components/ui';
 import type { Cylinder } from '../../../services/api/types';
 import { useGasCylinders } from '../../../services/queries/gasCylinders';
 import { useCreateCylinder, useUpdateCylinder } from '../../../services/queries/physicalCylinders';
@@ -33,12 +33,8 @@ export const CylinderFormModal = ({ open, onClose, cylinder }: Props) => {
   const updateCylinder = useUpdateCylinder();
   const editing = Boolean(cylinder);
   const { data: catalog } = useGasCylinders({ page: 0, pageSize: 100 });
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: cylinderEditDefaults(cylinder) });
+  const methods = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: cylinderEditDefaults(cylinder) });
+  const { reset } = methods;
 
   useResetOnOpen(open, () => reset(cylinderEditDefaults(cylinder)));
 
@@ -58,7 +54,7 @@ export const CylinderFormModal = ({ open, onClose, cylinder }: Props) => {
     onError: notify.error,
   });
 
-  const onSubmit = handleSubmit((values) => {
+  const onSubmit = (values: FormValues) => {
     if (cylinder) {
       // Sólo lo que cambió; sin cambios no se llama a la API ni se muestra un éxito que no fue.
       const body = buildCylinderUpdate(cylinder, values);
@@ -73,7 +69,7 @@ export const CylinderFormModal = ({ open, onClose, cylinder }: Props) => {
       { serial: values.serial, gasCylinderId: values.gasCylinderId || undefined, deposit: values.deposit },
       onSuccess('Envase creado'),
     );
-  });
+  };
 
   return (
     <Modal
@@ -92,34 +88,26 @@ export const CylinderFormModal = ({ open, onClose, cylinder }: Props) => {
         </>
       }
     >
-      <form id="cylinder-form" onSubmit={(e) => void onSubmit(e)} className="space-y-4" noValidate>
-        <Input
+      <Form methods={methods} id="cylinder-form" onSubmit={onSubmit} className="space-y-4">
+        <FormInput
+          name="serial"
           label="Número de serie"
           required
           placeholder="Ej: SN-000123"
           hint="Se guarda en mayúsculas."
           maxLength={SERIAL_MAX}
-          error={errors.serial?.message}
-          {...register('serial')}
         />
-        <Select label="Tipo de producto" options={productOptions} {...register('gasCylinderId')} />
-        <Input
-          label="Depósito / garantía ($)"
-          type="number"
-          min={0}
-          step="0.01"
-          error={errors.deposit?.message}
-          {...register('deposit')}
-        />
+        <FormSelect name="gasCylinderId" label="Tipo de producto" options={productOptions} />
+        <FormInput name="deposit" label="Depósito / garantía ($)" type="number" min={0} step="0.01" />
         {editing && (
-          <Input
+          <FormInput
+            name="manufacturedAt"
             label="Fabricación"
             type="date"
             hint="La última revisión y el vencimiento se cargan con «Registrar revisión» en la ficha."
-            {...register('manufacturedAt')}
           />
         )}
-      </form>
+      </Form>
     </Modal>
   );
 };

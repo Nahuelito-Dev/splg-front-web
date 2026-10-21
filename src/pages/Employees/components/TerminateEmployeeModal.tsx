@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, Input, Modal, Select } from '../../../common/components/ui';
+import { Button, Modal, FormInput, FormSelect, Form } from '../../../common/components/ui';
 import type { Employee } from '../../../services/api/types';
 import { useTerminateEmployee } from '../../../services/queries/employees';
 import { notify } from '../../../utils/notifications';
@@ -19,21 +19,17 @@ interface Props {
 /** Egreso del legajo (CU-181): fecha y motivo. Bloquea la cuenta, deshabilita al chofer y libera su vehículo. */
 export const TerminateEmployeeModal = ({ open, onClose, employee }: Props) => {
   const terminate = useTerminateEmployee();
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<Values>({
+  const methods = useForm<Values>({
     resolver: zodResolver(terminateSchema(employee.hireDate)),
     defaultValues: { terminationDate: '', reason: 'resignation' },
   });
+  const { reset } = methods;
 
   useEffect(() => {
     if (open) reset({ terminationDate: '', reason: 'resignation' });
   }, [open, reset]);
 
-  const onSubmit = handleSubmit((body) => {
+  const onSubmit = (body: Values) => {
     if (terminate.isPending) return;
     terminate.mutate(
       { id: employee.employeeId, body },
@@ -45,7 +41,7 @@ export const TerminateEmployeeModal = ({ open, onClose, employee }: Props) => {
         onError: notify.error,
       },
     );
-  });
+  };
 
   return (
     <Modal
@@ -68,21 +64,15 @@ export const TerminateEmployeeModal = ({ open, onClose, employee }: Props) => {
         </>
       }
     >
-      <form id="employee-terminate" onSubmit={(e) => void onSubmit(e)} className="grid gap-4 sm:grid-cols-2" noValidate>
-        <Input
-          label="Fecha de egreso"
-          required
-          type="date"
-          error={errors.terminationDate?.message}
-          {...register('terminationDate')}
-        />
-        <Select
+      <Form methods={methods} id="employee-terminate" onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
+        <FormInput name="terminationDate" label="Fecha de egreso" required type="date" />
+        <FormSelect
+          name="reason"
           label="Motivo"
           required
           options={Object.entries(TERMINATION_REASON_LABELS).map(([value, label]) => ({ value, label }))}
-          {...register('reason')}
         />
-      </form>
+      </Form>
     </Modal>
   );
 };

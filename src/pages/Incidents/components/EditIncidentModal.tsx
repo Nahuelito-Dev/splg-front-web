@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Button, Modal, Select, TextArea } from '../../../common/components/ui';
+import { Button, Modal, FormTextArea, FormSelect, Form } from '../../../common/components/ui';
 import type { Incident } from '../../../services/api/types';
 import { useUpdateIncident } from '../../../services/queries/incidents';
 import { notify } from '../../../utils/notifications';
@@ -28,12 +28,8 @@ interface Props {
 /** Corrige el tipo o la descripción de una incidencia abierta (la API no deja editar una cerrada). */
 export const EditIncidentModal = ({ incident, onClose }: Props) => {
   const update = useUpdateIncident();
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<FormValues>({ resolver: zodResolver(schema) });
+  const methods = useForm<FormValues>({ resolver: zodResolver(schema) });
+  const { reset } = methods;
 
   useEffect(() => {
     if (incident)
@@ -43,7 +39,7 @@ export const EditIncidentModal = ({ incident, onClose }: Props) => {
       });
   }, [incident, reset]);
 
-  const onSubmit = handleSubmit((values) => {
+  const onSubmit = (values: FormValues) => {
     if (!incident) return;
     update.mutate(
       { id: incident.incident_id, body: values },
@@ -55,7 +51,7 @@ export const EditIncidentModal = ({ incident, onClose }: Props) => {
         onError: notify.error,
       },
     );
-  });
+  };
 
   return (
     <Modal
@@ -74,16 +70,10 @@ export const EditIncidentModal = ({ incident, onClose }: Props) => {
         </>
       }
     >
-      <form id="incident-edit" onSubmit={(e) => void onSubmit(e)} className="space-y-4" noValidate>
-        <Select label="Tipo de problema" required options={TYPE_OPTIONS} {...register('type')} />
-        <TextArea
-          label="Descripción"
-          required
-          rows={4}
-          error={errors.description?.message}
-          {...register('description')}
-        />
-      </form>
+      <Form methods={methods} id="incident-edit" onSubmit={onSubmit} className="space-y-4">
+        <FormSelect name="type" label="Tipo de problema" required options={TYPE_OPTIONS} />
+        <FormTextArea name="description" label="Descripción" required rows={4} />
+      </Form>
     </Modal>
   );
 };

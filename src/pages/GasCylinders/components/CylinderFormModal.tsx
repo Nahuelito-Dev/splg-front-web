@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
-import { Button, Input, Modal, TextArea } from '../../../common/components/ui';
+import { Button, Modal, FormInput, FormTextArea, Form } from '../../../common/components/ui';
 import type { GasCylinder } from '../../../services/api/types';
 import { useCreateGasCylinder, useUpdateGasCylinder } from '../../../services/queries/gasCylinders';
 import { notify } from '../../../utils/notifications';
@@ -20,13 +20,8 @@ const emptyValues: GasCylinderFormValues = { type: '', weight: 0, price: 0, stoc
 export const CylinderFormModal = ({ open, onClose, cylinder }: Props) => {
   const createCylinder = useCreateGasCylinder();
   const updateCylinder = useUpdateGasCylinder();
-  const {
-    register,
-    handleSubmit,
-    reset,
-    control,
-    formState: { errors },
-  } = useForm<GasCylinderFormValues>({ resolver: zodResolver(gasCylinderSchema) });
+  const methods = useForm<GasCylinderFormValues>({ resolver: zodResolver(gasCylinderSchema) });
+  const { reset, control } = methods;
 
   const price = useWatch({ control, name: 'price' });
 
@@ -48,7 +43,7 @@ export const CylinderFormModal = ({ open, onClose, cylinder }: Props) => {
 
   const saving = createCylinder.isPending || updateCylinder.isPending;
 
-  const onSubmit = handleSubmit((values) => {
+  const onSubmit = (values: GasCylinderFormValues) => {
     const base = {
       type: values.type,
       weight: values.weight,
@@ -66,7 +61,7 @@ export const CylinderFormModal = ({ open, onClose, cylinder }: Props) => {
     } else {
       createCylinder.mutate({ ...base, stock: values.stock }, { onSuccess, onError: notify.error });
     }
-  });
+  };
 
   return (
     <Modal
@@ -86,39 +81,24 @@ export const CylinderFormModal = ({ open, onClose, cylinder }: Props) => {
         </>
       }
     >
-      <form id="gas-cylinder-form" onSubmit={(e) => void onSubmit(e)} className="space-y-5" noValidate>
+      <Form methods={methods} id="gas-cylinder-form" onSubmit={onSubmit} className="space-y-5">
         <div className="grid gap-4 sm:grid-cols-2">
-          <Input label="Tipo" required placeholder="Ej: 10kg" error={errors.type?.message} {...register('type')} />
-          <Input
-            label="Peso (kg)"
-            required
-            type="number"
-            step="0.01"
-            error={errors.weight?.message}
-            {...register('weight')}
-          />
-          <Input
-            label="Precio ($)"
-            required
-            type="number"
-            step="0.01"
-            error={errors.price?.message}
-            {...register('price')}
-          />
+          <FormInput name="type" label="Tipo" required placeholder="Ej: 10kg" />
+          <FormInput name="weight" label="Peso (kg)" required type="number" step="0.01" />
+          <FormInput name="price" label="Precio ($)" required type="number" step="0.01" />
           {cylinder ? null : (
-            <Input
+            <FormInput
+              name="stock"
               label="Stock inicial"
               required
               type="number"
               hint="Queda como stock lleno del depósito central. Después se cambia con “Ajustar stock”."
-              error={errors.stock?.message}
-              {...register('stock')}
             />
           )}
         </div>
-        <TextArea label="Descripción" error={errors.description?.message} {...register('description')} />
-        <PromotionsFieldArray control={control} register={register} errors={errors} price={Number(price) || 0} />
-      </form>
+        <FormTextArea name="description" label="Descripción" />
+        <PromotionsFieldArray price={Number(price) || 0} />
+      </Form>
     </Modal>
   );
 };

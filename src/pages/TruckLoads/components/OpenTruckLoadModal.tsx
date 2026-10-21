@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, Modal, Select, TextArea } from '../../../common/components/ui';
+import { Button, Modal, FormTextArea, FormSelect, Form } from '../../../common/components/ui';
 import type { TruckLoad } from '../../../services/api/types';
 import { useEmployees } from '../../../services/queries/employees';
 import { useVehicleInUse } from '../../../services/queries/fleet';
@@ -30,15 +30,8 @@ export const OpenTruckLoadModal = ({ open, onClose, onCreated }: Props) => {
   const helpers = useEmployees({ page: 0, pageSize: 100 }, { status: 'active' }, open);
   const create = useCreateTruckLoad();
   const scope = 'load:new';
-  const {
-    register,
-    handleSubmit,
-    reset,
-    watch,
-    setValue,
-    control,
-    formState: { errors },
-  } = useForm<OpenLoadFormValues>({ resolver: zodResolver(openLoadSchema) });
+  const methods = useForm<OpenLoadFormValues>({ resolver: zodResolver(openLoadSchema) });
+  const { reset, watch, setValue } = methods;
 
   useEffect(() => {
     if (open) {
@@ -71,7 +64,7 @@ export const OpenTruckLoadModal = ({ open, onClose, onCreated }: Props) => {
     if (inUse.data?.carId) setValue('carId', inUse.data.carId);
   }, [inUse.data, setValue]);
 
-  const onSubmit = handleSubmit((values) =>
+  const onSubmit = (values: OpenLoadFormValues) =>
     create.mutate(
       {
         scope,
@@ -92,8 +85,7 @@ export const OpenTruckLoadModal = ({ open, onClose, onCreated }: Props) => {
         },
         onError: notify.error,
       },
-    ),
-  );
+    );
 
   const loadFailed = drivers.failed || warehouses.failed || cylinders.failed;
 
@@ -131,17 +123,18 @@ export const OpenTruckLoadModal = ({ open, onClose, onCreated }: Props) => {
           </button>
         </p>
       ) : (
-        <form id="open-load-form" onSubmit={(e) => void onSubmit(e)} className="space-y-4" noValidate>
+        <Form methods={methods} id="open-load-form" onSubmit={onSubmit} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
-            <Select
+            <FormSelect
+              name="deliveryId"
               label="Chofer"
               required
               options={withPlaceholder(drivers.options)}
               hint={drivers.limited ? 'Se muestran los primeros 100 choferes.' : undefined}
-              error={errors.deliveryId?.message}
-              {...register('deliveryId', { onChange: () => setValue('carId', '') })}
+              registerOptions={{ onChange: () => setValue('carId', '') }}
             />
-            <Select
+            <FormSelect
+              name="carId"
               label="Camión"
               required
               options={withPlaceholder(carOptions)}
@@ -153,10 +146,9 @@ export const OpenTruckLoadModal = ({ open, onClose, onCreated }: Props) => {
                     ? 'Camión en uso por el chofer.'
                     : 'Elegí el chofer para ver su camión en uso.'
               }
-              error={errors.carId?.message}
-              {...register('carId')}
             />
-            <Select
+            <FormSelect
+              name="helperEmployeeId"
               label="Ayudante (opcional)"
               options={withPlaceholder(
                 (helpers.data?.rows ?? []).map((e) => ({ value: e.employeeId, label: `${e.firstName} ${e.lastName}` })),
@@ -169,12 +161,11 @@ export const OpenTruckLoadModal = ({ open, onClose, onCreated }: Props) => {
                     ? 'Se muestran los primeros 100 legajos activos.'
                     : undefined
               }
-              {...register('helperEmployeeId')}
             />
-            <Select
+            <FormSelect
+              name="originWarehouseId"
               label="Sale del galpón"
               options={withPlaceholder(warehouses.options, 'Galpón predeterminado')}
-              {...register('originWarehouseId')}
             />
           </div>
           {inUse.isError && (
@@ -185,15 +176,9 @@ export const OpenTruckLoadModal = ({ open, onClose, onCreated }: Props) => {
               </button>
             </p>
           )}
-          <LoadItemsFields
-            control={control}
-            register={register}
-            errors={errors}
-            cylinders={cylinders.options}
-            cylindersLimited={cylinders.limited}
-          />
-          <TextArea label="Notas (opcional)" maxLength={300} error={errors.notes?.message} {...register('notes')} />
-        </form>
+          <LoadItemsFields cylinders={cylinders.options} cylindersLimited={cylinders.limited} />
+          <FormTextArea name="notes" label="Notas (opcional)" maxLength={300} />
+        </Form>
       )}
     </Modal>
   );

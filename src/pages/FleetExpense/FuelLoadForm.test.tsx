@@ -151,7 +151,7 @@ describe('FuelLoadForm', () => {
     await waitFor(() => expect(create.mutate).toHaveBeenCalled());
     expect(create.mutate.mock.calls[0][0]).toEqual({
       carId: 'c-1',
-      loadedAt: '2026-10-10T15:00:00.000Z',
+      loadedAt: new Date('2026-10-10T12:00').toISOString(),
       fuelType: undefined,
       liters: 40,
       unitPrice: 1000,

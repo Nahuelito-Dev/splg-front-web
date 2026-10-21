@@ -6,11 +6,13 @@ import {
   Button,
   Card,
   ErrorState,
-  Input,
   PageHeader,
   Skeleton,
   Switch,
   PageContainer,
+  CardHeader,
+  FormInput,
+  Form,
 } from '../../common/components/ui';
 import { usePermissions } from '../../hooks';
 import { errorMessage } from '../../services/api/errors';
@@ -41,22 +43,21 @@ interface FormProps {
 const ExpressForm = ({ config, canWrite, writeHint }: FormProps) => {
   const update = useUpdateExpressConfig();
   const [serverError, setServerError] = useState<string | null>(null);
-  const {
-    register,
-    control,
-    handleSubmit,
-    reset,
-    formState: { errors, isDirty, isValid },
-  } = useForm<ExpressFormValues>({
+  const methods = useForm<ExpressFormValues>({
     resolver: zodResolver(expressSchema),
     mode: 'onChange',
     defaultValues: valuesOf(config),
   });
+  const {
+    control,
+    reset,
+    formState: { isDirty, isValid },
+  } = methods;
 
   const load = useCallback((next: ExpressConfig) => reset(valuesOf(next)), [reset]);
   const { stale, adopt, acceptStale } = useConfigSync({ config, isDirty, load });
 
-  const submit = handleSubmit((values) => {
+  const submit = (values: ExpressFormValues) => {
     setServerError(null);
     update.mutate(toExpressBody(values), {
       onSuccess: (saved) => {
@@ -65,7 +66,7 @@ const ExpressForm = ({ config, canWrite, writeHint }: FormProps) => {
       },
       onError: (error) => setServerError(errorMessage(error)),
     });
-  });
+  };
 
   const restoreDefaults = async () => {
     const ok = await confirm({
@@ -88,7 +89,7 @@ const ExpressForm = ({ config, canWrite, writeHint }: FormProps) => {
   };
 
   return (
-    <form onSubmit={(event) => void submit(event)} noValidate className="space-y-6">
+    <Form methods={methods} onSubmit={submit} className="space-y-6">
       {stale && <StaleConfigNotice onAccept={acceptStale} />}
       <Card className="p-6">
         <SettingsMeta
@@ -97,13 +98,11 @@ const ExpressForm = ({ config, canWrite, writeHint }: FormProps) => {
           updatedByUserId={config.updatedByUserId}
         />
         <div className="mt-5 flex items-center justify-between gap-4">
-          <div>
-            <h2 className="text-base font-semibold text-ink">Ofrecer la compra express</h2>
-            <p className="mt-1 text-sm text-muted">
-              Entrega en moto con recargo. Se ofrece sólo con la dirección dentro de la cobertura, en horario de
-              servicio y con un chofer en moto dentro del radio.
-            </p>
-          </div>
+          <CardHeader
+            title="Ofrecer la compra express"
+            subtitle="Entrega en moto con recargo. Se ofrece sólo con la dirección dentro de la cobertura, en horario de servicio y con un chofer en moto dentro del radio."
+            className=""
+          />
           <Controller
             control={control}
             name="enabled"
@@ -121,58 +120,53 @@ const ExpressForm = ({ config, canWrite, writeHint }: FormProps) => {
       </Card>
 
       <Card className="grid gap-4 p-6 sm:grid-cols-2">
-        <Input
+        <FormInput
+          name="surcharge"
           label="Recargo express ($)"
           type="number"
           inputMode="decimal"
           min={0}
           step="0.01"
-          error={errors.surcharge?.message}
           disabled={!canWrite}
           hint="Se suma al final del total; si el pedido pasa al reparto común se descuenta."
-          {...register('surcharge')}
         />
-        <Input
+        <FormInput
+          name="radius"
           label="Radio máximo (km)"
           type="number"
           inputMode="decimal"
           min={RADIUS_MIN_KM}
           max={RADIUS_MAX_KM}
-          error={errors.radius?.message}
           disabled={!canWrite}
           hint="Hasta dónde se busca una moto. No se amplía."
-          {...register('radius')}
         />
-        <Input
+        <FormInput
+          name="ttl"
           label="Tiempo para aceptar (segundos)"
           type="number"
           inputMode="numeric"
           min={OFFER_TTL_MIN_SECONDS}
           max={OFFER_TTL_MAX_SECONDS}
-          error={errors.ttl?.message}
           disabled={!canWrite}
           hint={`${OFFER_TTL_MIN_SECONDS} a ${OFFER_TTL_MAX_SECONDS}. Más corto que el despacho normal.`}
-          {...register('ttl')}
         />
         <div className="grid grid-cols-2 gap-3">
-          <Input label="Desde" type="time" error={errors.from?.message} disabled={!canWrite} {...register('from')} />
-          <Input label="Hasta" type="time" error={errors.to?.message} disabled={!canWrite} {...register('to')} />
+          <FormInput name="from" label="Desde" type="time" disabled={!canWrite} />
+          <FormInput name="to" label="Hasta" type="time" disabled={!canWrite} />
         </div>
-        <Input
+        <FormInput
+          name="estimated"
           label="Tiempo estimado express (min)"
           type="number"
           inputMode="numeric"
-          error={errors.estimated?.message}
           disabled={!canWrite}
-          {...register('estimated')}
         />
-        <Input
+        <FormInput
+          name="standardEstimated"
           label="Tiempo estimado reparto común (min)"
           type="number"
           inputMode="numeric"
-          error={errors.standardEstimated?.message}
           disabled={!canWrite}
-          {...register('standardEstimated')}
         />
         <p className="text-sm text-muted sm:col-span-2">
           El horario es hora argentina. Si ninguna moto acepta, el pedido pasa al reparto común sin el recargo y, si el
@@ -198,7 +192,7 @@ const ExpressForm = ({ config, canWrite, writeHint }: FormProps) => {
           Restablecer valores por defecto
         </Button>
       </div>
-    </form>
+    </Form>
   );
 };
 

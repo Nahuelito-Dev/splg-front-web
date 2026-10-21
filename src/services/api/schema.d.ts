@@ -1625,7 +1625,7 @@ export interface paths {
      * Update order status
      * @description Idempotente vía header `Idempotency-Key`. Evita doble aceptación/entrega por reintento de red. Solo chofer/admin.
      *
-     *     - `status: cancelled` tiene EXACTAMENTE el mismo efecto que `PATCH /:id/cancel` (mismo código, mismo stock, mismos avisos): cancela con devolución de stock si lo pide un admin, o LIBERA el pedido a `pending` (sin devolver stock, sin motivo de cancelación) si lo pide el chofer — no cancela de verdad.
+     *     - `status: cancelled` (cliente y admin: `reason` obligatorio, 400 si falta o está en blanco) tiene EXACTAMENTE el mismo efecto que `PATCH /:id/cancel` (mismo código, mismo stock, mismos avisos): cancela con devolución de stock si lo pide un admin, o LIBERA el pedido a `pending` (sin devolver stock, sin motivo de cancelación) si lo pide el chofer — no cancela de verdad.
      *     - `status: pending` sobre un pedido ACCEPTED/ON_THE_WAY libera al chofer asignado (mismo camino que el punto anterior): limpia el chofer, corta su tracking, cierra cualquier oferta que hubiera quedado y avisa al chofer anterior, al cliente y al panel. `POST /:id/reject` sobre una asignación manual NO usa este camino: no libera, sólo avisa al panel (ver `/reject`).
      *     - `status: pending` sobre una RESERVA (pedido `reserved`) la ACTIVA a mano, con las mismas condiciones que el cron (seña paga y día agendado cumplido) — sólo admin/super_admin, 400 claro si no las cumple.
      *     - `status: accepted` sobre un pedido YA `accepted` con el MISMO chofer es idempotente: no regenera `acceptedAt` ni el código de entrega (pasa cuando el chofer "acepta" el aviso de una asignación manual).
@@ -6267,7 +6267,10 @@ export interface components {
       /** @example demo */
       slug: string;
       legal_name?: string;
-      /** @example 30-12345678-9 */
+      /**
+       * @description CUIT: se acepta con guiones o espacios y se guarda sólo con los 11 dígitos
+       * @example 30-12345678-9
+       */
       tax_id?: string;
       /** @example contacto@demo.splg.app */
       email?: string;
@@ -6280,7 +6283,10 @@ export interface components {
       /** @example Distribuidora Demo */
       name?: string;
       legal_name?: string;
-      /** @example 30-12345678-9 */
+      /**
+       * @description CUIT: se acepta con guiones o espacios y se guarda sólo con los 11 dígitos
+       * @example 30-12345678-9
+       */
       tax_id?: string;
       /** @example contacto@demo.splg.app */
       email?: string;
@@ -6729,7 +6735,10 @@ export interface components {
       type_car?: string;
       /** @description Car capacity in kg */
       car_capacity?: number;
-      /** @description Patente. Se guarda en mayúsculas, sin espacios ni guiones, y tiene que quedar con al menos 4 letras o números. `null` (al editar) la borra. */
+      /**
+       * @description Patente argentina: `AAA123` (formato anterior) o `AA123AA` (Mercosur). Se guarda en mayúsculas, sin espacios ni guiones (se aceptan al enviarla). Única entre los vehículos vigentes de la distribuidora. `null` (al editar) la borra.
+       * @example AB123CD
+       */
       car_patent?: string | null;
       /** @description Car brand */
       car_brand?: string;
@@ -6796,7 +6805,10 @@ export interface components {
       type_car?: string;
       /** @description Car capacity in kg */
       car_capacity?: number;
-      /** @description Patente. Se guarda en mayúsculas, sin espacios ni guiones, y tiene que quedar con al menos 4 letras o números. `null` (al editar) la borra. */
+      /**
+       * @description Patente argentina: `AAA123` (formato anterior) o `AA123AA` (Mercosur). Se guarda en mayúsculas, sin espacios ni guiones (se aceptan al enviarla). Única entre los vehículos vigentes de la distribuidora. `null` (al editar) la borra.
+       * @example AB123CD
+       */
       car_patent?: string | null;
       /** @description Car brand */
       car_brand?: string;
@@ -6909,7 +6921,7 @@ export interface components {
        */
       quantity: number;
       /**
-       * @description Descuento, en porcentaje
+       * @description Descuento, en porcentaje (hasta 99, 2 decimales)
        * @example 10
        */
       discountPercentage: number;
@@ -6917,9 +6929,9 @@ export interface components {
     CreateGasCylinderDto: {
       /** @description Tipo de garrafa (10, 15, 45 kg) */
       type: string;
-      /** @description Peso en kg */
+      /** @description Peso en kg (hasta 1000, 2 decimales) */
       weight: number;
-      /** @description Precio unitario */
+      /** @description Precio unitario (hasta 10.000.000, 2 decimales) */
       price: number;
       /** @description Stock vendible inicial: se registra como físico del depósito predeterminado. En la edición (PATCH /gascylinder/{id}) no se admite: responde 400; el stock cambia con PATCH /gascylinder/{id}/stock. */
       stock?: number;
@@ -6969,9 +6981,9 @@ export interface components {
     UpdateGasCylinderDto: {
       /** @description Tipo de garrafa (10, 15, 45 kg) */
       type?: string;
-      /** @description Peso en kg */
+      /** @description Peso en kg (hasta 1000, 2 decimales) */
       weight?: number;
-      /** @description Precio unitario */
+      /** @description Precio unitario (hasta 10.000.000, 2 decimales) */
       price?: number;
       /** @description Stock vendible inicial: se registra como físico del depósito predeterminado. En la edición (PATCH /gascylinder/{id}) no se admite: responde 400; el stock cambia con PATCH /gascylinder/{id}/stock. */
       stock?: number;
@@ -7630,7 +7642,7 @@ export interface components {
       /** @description ID del repartidor (solo admin; el chofer usa su token) */
       deliveryId?: string;
       /**
-       * @description Motivo de la entrega manual. Obligatorio (mínimo 10 caracteres) cuando un admin/super_admin pasa el pedido a `delivered`; queda en el historial de estados y en la auditoría. Se ignora en los demás estados.
+       * @description Motivo de la entrega manual. Obligatorio (mínimo 10 caracteres) cuando un admin/super_admin pasa el pedido a `delivered`; queda en el historial de estados y en la auditoría. Con `cancelled` es el motivo de la cancelación (obligatorio). Se ignora en los demás estados.
        * @example El cliente no tiene celular: confirmó la entrega por teléfono
        */
       reason?: string;
@@ -7943,7 +7955,7 @@ export interface components {
     };
     CancelOrderDto: {
       /**
-       * @description Motivo de la cancelación (opcional)
+       * @description Motivo de la cancelación. Obligatorio para el cliente y el administrador (400 si falta o está en blanco); el chofer, que libera el pedido, no lo necesita
        * @example El cliente no se encontraba en el domicilio
        */
       reason?: string;
@@ -8225,7 +8237,7 @@ export interface components {
        */
       endTime: string;
       /**
-       * @description Capacidad máxima de pedidos (columna con default en la base)
+       * @description Capacidad máxima de pedidos, de 1 a 10000 (columna con default en la base)
        * @default 50
        * @example 50
        */
@@ -8280,7 +8292,7 @@ export interface components {
        */
       endTime?: string;
       /**
-       * @description Capacidad máxima de pedidos (columna con default en la base)
+       * @description Capacidad máxima de pedidos, de 1 a 10000 (columna con default en la base)
        * @default 50
        * @example 50
        */
@@ -8316,7 +8328,10 @@ export interface components {
       message: string;
     };
     CreateCylinderDto: {
-      /** @example SN-000123 */
+      /**
+       * @description Hasta 100 caracteres. Se guarda sin espacios en los bordes y en mayúsculas
+       * @example SN-000123
+       */
       serial: string;
       /**
        * Format: uuid
@@ -13525,7 +13540,7 @@ export interface operations {
           'application/json': components['schemas']['UserResponseDto'];
         };
       };
-      /** @description Datos inválidos (p. ej.: property email should not exist) */
+      /** @description Datos inválidos (p. ej.: property email should not exist; phone_number fuera del formato E.164 +549...) */
       400: {
         headers: {
           [name: string]: unknown;
@@ -13553,7 +13568,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Teléfono en uso, o sin cuenta de acceso */
+      /** @description Teléfono en uso por otro usuario (aunque esté dado de baja), o sin cuenta de acceso */
       409: {
         headers: {
           [name: string]: unknown;
@@ -16882,7 +16897,7 @@ export interface operations {
           'application/json': components['schemas']['CarResponseDto'];
         };
       };
-      /** @description La patente ya está registrada */
+      /** @description Patente con formato inválido (AAA123 o AA123AA) */
       400: {
         headers: {
           [name: string]: unknown;
@@ -16905,6 +16920,13 @@ export interface operations {
       };
       /** @description El usuario no existe */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La patente ya está registrada en la distribuidora */
+      409: {
         headers: {
           [name: string]: unknown;
         };
@@ -17022,7 +17044,7 @@ export interface operations {
           'application/json': components['schemas']['CarResponseDto'];
         };
       };
-      /** @description La patente ya está registrada */
+      /** @description Patente con formato inválido (AAA123 o AA123AA) */
       400: {
         headers: {
           [name: string]: unknown;
@@ -17050,7 +17072,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description El vehículo está en uso por un chofer: no se le cambia la patente ni el tipo */
+      /** @description La patente ya está registrada en la distribuidora, o el vehículo está en uso por un chofer: no se le cambia la patente ni el tipo */
       409: {
         headers: {
           [name: string]: unknown;
@@ -18992,7 +19014,7 @@ export interface operations {
           'application/json': components['schemas']['OrderResponseDto'];
         };
       };
-      /** @description Datos inválidos, sin stock, o dirección fuera de cobertura */
+      /** @description Datos inválidos, sin stock, dirección fuera de cobertura, scheduledDate pasada (día argentino) o items vacío */
       400: {
         headers: {
           [name: string]: unknown;
@@ -19807,7 +19829,7 @@ export interface operations {
           'application/json': components['schemas']['OrderResponseDto'];
         };
       };
-      /** @description Datos inválidos (p. ej.: reason must be shorter than or equal to 500 characters) */
+      /** @description Falta el motivo (`reason`: obligatorio para cliente y administrador, no para el chofer que libera el pedido), motivo en blanco, o datos inválidos (p. ej.: reason must be shorter than or equal to 500 characters) */
       400: {
         headers: {
           [name: string]: unknown;
@@ -20798,7 +20820,7 @@ export interface operations {
           'application/json': components['schemas']['TimeSlotResponseDto'];
         };
       };
-      /** @description Datos inválidos (p. ej.: name should not be empty; startTime must be in HH:MM format) */
+      /** @description Datos inválidos (p. ej.: name should not be empty; startTime must be in HH:MM format), inicio >= fin o capacidad fuera de 1-10000 */
       400: {
         headers: {
           [name: string]: unknown;
@@ -20814,6 +20836,13 @@ export interface operations {
       };
       /** @description Requiere rol: admin, super_admin */
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La franja se solapa con otra franja activa de la distribuidora, o ya hay una activa con ese nombre */
+      409: {
         headers: {
           [name: string]: unknown;
         };
@@ -20968,6 +20997,13 @@ export interface operations {
       };
       /** @description La franja no existe o es de otra distribuidora */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El nuevo horario se solapa con otra franja activa, el nombre ya lo tiene otra activa, o la capacidad queda por debajo de lo agendado */
+      409: {
         headers: {
           [name: string]: unknown;
         };
@@ -21684,6 +21720,13 @@ export interface operations {
         };
         content?: never;
       };
+      /** @description Ya hay una zona activa con ese nombre (sin distinguir mayúsculas) o con esa prioridad; sin prioridad en el alta se asigna la siguiente */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
   };
   CoverageZoneController_check: {
@@ -21858,6 +21901,13 @@ export interface operations {
       };
       /** @description La zona no existe o es de otra distribuidora */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El nombre o la prioridad ya los tiene otra zona activa de la distribuidora */
+      409: {
         headers: {
           [name: string]: unknown;
         };
@@ -22301,7 +22351,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Se cierra con saldo distinto de cero o con pedidos a cuenta sin entregar */
+      /** @description Se cierra con saldo distinto de cero o con pedidos a cuenta sin entregar, o la transición de estado no está permitida (una cuenta cerrada sólo se reabre pasándola a active) */
       409: {
         headers: {
           [name: string]: unknown;
@@ -25020,6 +25070,13 @@ export interface operations {
       };
       /** @description Tarea no encontrada */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La tarea ya está hecha o cancelada (la cerró otra operación mientras se editaba) */
+      409: {
         headers: {
           [name: string]: unknown;
         };
@@ -30496,7 +30553,7 @@ export interface operations {
           'application/json': components['schemas']['TrafficFineResponseDto'];
         };
       };
-      /** @description Dato obligatorio faltante o importe inválido */
+      /** @description Dato obligatorio faltante, importe inválido, infracción futura, vencimiento anterior a la infracción o pago voluntario mayor al importe */
       400: {
         headers: {
           [name: string]: unknown;
@@ -30607,7 +30664,7 @@ export interface operations {
           'application/json': components['schemas']['TrafficFineResponseDto'];
         };
       };
-      /** @description Dato inválido */
+      /** @description Dato inválido, infracción futura o vencimiento anterior a la infracción */
       400: {
         headers: {
           [name: string]: unknown;
@@ -30668,7 +30725,7 @@ export interface operations {
           'application/json': components['schemas']['TrafficFineResponseDto'];
         };
       };
-      /** @description Fecha de pago futura, importe inválido, falta la caja de efectivo o la caja no es de efectivo */
+      /** @description Fecha de pago futura o anterior a la infracción, importe inválido, falta la caja de efectivo o la caja no es de efectivo */
       400: {
         headers: {
           [name: string]: unknown;

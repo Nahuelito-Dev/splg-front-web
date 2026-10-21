@@ -5,12 +5,14 @@ import { useNavigate } from 'react-router-dom';
 import {
   Button,
   Card,
-  Modal,
-  PageHeader,
-  Select,
-  TextArea,
-  PageContainer,
   CardHeader,
+  Form,
+  FormError,
+  FormSelect,
+  FormTextArea,
+  Modal,
+  PageContainer,
+  PageHeader,
 } from '../../common/components/ui';
 import { usePermissions } from '../../hooks';
 import type { Customer } from '../../services/api/types';
@@ -48,14 +50,7 @@ export const NewOrder = () => {
   const createOrder = useCreateOrder();
   const account = useCustomerAccountOf(customer?.user_id, customer?.user?.full_name ?? undefined);
 
-  const {
-    register,
-    handleSubmit,
-    control,
-    setValue,
-    watch,
-    formState: { errors },
-  } = useForm<NewOrderValues>({
+  const methods = useForm<NewOrderValues>({
     resolver: zodResolver(newOrderSchema),
     defaultValues: {
       customerId: '',
@@ -70,6 +65,7 @@ export const NewOrder = () => {
       depositAmount: '',
     },
   });
+  const { setValue, watch } = methods;
 
   const addressId = watch('addressId');
   const deliveryMode = watch('deliveryMode');
@@ -126,7 +122,7 @@ export const NewOrder = () => {
     })) ?? []),
   ];
 
-  const onSubmit = handleSubmit((values) => {
+  const onSubmit = (values: NewOrderValues) => {
     // Un botón de envío bloqueado igual dispara el submit del formulario (Enter, click): se corta acá.
     if (!canWrite) return;
     if (depositCapError) return;
@@ -157,7 +153,7 @@ export const NewOrder = () => {
         onError: notify.error,
       },
     );
-  });
+  };
 
   return (
     <PageContainer size="sm">
@@ -166,26 +162,21 @@ export const NewOrder = () => {
         description="Alta manual para cuando el cliente llama en vez de pedir desde la app, con o sin reserva programada con seña (CU-072)."
       />
 
-      <form onSubmit={(e) => void onSubmit(e)} className="space-y-5" noValidate>
+      <Form methods={methods} onSubmit={onSubmit} id="new-order" className="space-y-5">
         <Card className="space-y-3 p-4">
           <CardHeader title="Cliente" as="h3" className="" />
           <CustomerPicker selected={customer} onSelect={handleSelectCustomer} />
-          {errors.customerId?.message && (
-            <p role="alert" className="text-xs text-danger">
-              {errors.customerId.message}
-            </p>
-          )}
+          <FormError name="customerId" />
         </Card>
 
         <Card className="space-y-3 p-4">
           <CardHeader title="Entrega" as="h3" className="" />
-          <Select
+          <FormSelect
+            name="addressId"
             label="Dirección"
             options={addressOptions}
             disabled={!customer}
             hint={!customer ? 'Elegí primero un cliente.' : undefined}
-            error={errors.addressId?.message}
-            {...register('addressId')}
           />
           {addressId && options && (
             <fieldset className="space-y-2">
@@ -197,7 +188,7 @@ export const NewOrder = () => {
                     value={option.mode}
                     disabled={!option.available || (isReservation && option.mode === 'express')}
                     className="mt-1"
-                    {...register('deliveryMode')}
+                    {...methods.register('deliveryMode')}
                   />
                   <span>
                     <b>{option.mode === 'express' ? 'Express (moto)' : 'Programada'}</b>
@@ -212,8 +203,6 @@ export const NewOrder = () => {
         </Card>
 
         <ReservationFields
-          register={register}
-          errors={errors}
           isReservation={isReservation}
           scheduledDate={scheduledDate}
           paymentMethod={paymentMethod}
@@ -221,19 +210,18 @@ export const NewOrder = () => {
         />
 
         <Card className="p-4">
-          <NewOrderItems control={control} register={register} setValue={setValue} errors={errors} />
+          <NewOrderItems />
         </Card>
 
         <Card className="grid gap-4 p-4 sm:grid-cols-2">
-          <Select
+          <FormSelect
+            name="paymentMethod"
             label="Método de pago"
             options={isReservation ? PAYMENT_OPTIONS.filter((option) => option.value !== 'account') : PAYMENT_OPTIONS}
             hint={accountHint}
-            error={errors.paymentMethod?.message}
-            {...register('paymentMethod')}
           />
           <div className="sm:col-span-2">
-            <TextArea label="Notas" maxLength={500} error={errors.notes?.message} {...register('notes')} />
+            <FormTextArea name="notes" label="Notas" maxLength={500} />
           </div>
         </Card>
 
@@ -247,7 +235,7 @@ export const NewOrder = () => {
             {isReservation ? 'Crear reserva' : 'Crear pedido'}
           </Button>
         </div>
-      </form>
+      </Form>
 
       <Modal
         open={paid !== null}

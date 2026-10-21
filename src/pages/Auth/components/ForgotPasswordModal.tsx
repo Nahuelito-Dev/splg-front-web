@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Button, Input, Modal } from '../../../common/components/ui';
+import { Button, Modal, FormInput, Form } from '../../../common/components/ui';
 import { useSendPasswordReset } from '../../../services/queries/email';
 import { notify } from '../../../utils/notifications';
 
@@ -25,12 +25,8 @@ interface Props {
 export const ForgotPasswordModal = ({ open, onClose }: Props) => {
   const sendReset = useSendPasswordReset();
   const [sent, setSent] = useState(false);
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<FormValues>({ resolver: zodResolver(schema) });
+  const methods = useForm<FormValues>({ resolver: zodResolver(schema) });
+  const { reset } = methods;
 
   useEffect(() => {
     if (open) {
@@ -39,12 +35,11 @@ export const ForgotPasswordModal = ({ open, onClose }: Props) => {
     }
   }, [open, reset]);
 
-  const onSubmit = handleSubmit(({ email }) =>
+  const onSubmit = ({ email }: FormValues) =>
     sendReset.mutate(email, {
       onSuccess: () => setSent(true),
       onError: notify.error,
-    }),
-  );
+    });
 
   return (
     <Modal
@@ -70,17 +65,16 @@ export const ForgotPasswordModal = ({ open, onClose }: Props) => {
           Si ese correo tiene una cuenta, te llega un enlace para recuperar la contraseña.
         </p>
       ) : (
-        <form id="forgot-password-form" onSubmit={(e) => void onSubmit(e)} noValidate>
-          <Input
+        <Form methods={methods} id="forgot-password-form" onSubmit={onSubmit}>
+          <FormInput
+            name="email"
             label="Email"
             type="email"
             required
             autoComplete="email"
             placeholder="usuario@splg.com"
-            error={errors.email?.message}
-            {...register('email')}
           />
-        </form>
+        </Form>
       )}
     </Modal>
   );

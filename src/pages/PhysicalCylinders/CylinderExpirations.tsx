@@ -7,6 +7,7 @@ import {
   PageHeader,
   Select,
   PageContainer,
+  CardHeader,
 } from '../../common/components/ui';
 import { FROM_LIST_STATE, useUrlParams } from '../../hooks';
 import type { CylinderVencimiento } from '../../services/api/types';
@@ -29,10 +30,7 @@ interface SectionProps {
 const Section = ({ title, description, rows, total, loading, emptyTitle, onView }: SectionProps) => (
   <Card className="mb-6 overflow-hidden">
     <div className="border-b border-outline p-4">
-      <h2 className="text-base font-semibold text-ink">
-        {title} <span className="font-normal text-muted">({total})</span>
-      </h2>
-      <p className="text-[13px] text-muted">{description}</p>
+      <CardHeader title={`${title} (${total})`} subtitle={description} className="" />
       {total > rows.length && (
         <p className="mt-1 text-[13px] text-warn" role="status">
           Se muestran los primeros {rows.length} de {total}: acotá la ventana para ver el resto.

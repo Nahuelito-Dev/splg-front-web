@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { accountFields, newPassword } from '../../../common/forms/accountSchema';
-import { Button, Input, Modal } from '../../../common/components/ui';
+import { Button, Modal, FormInput, Form } from '../../../common/components/ui';
 import type { User } from '../../../services/api/types';
 import { useUpdateUserAccount } from '../../../services/queries/users';
 import { notify } from '../../../utils/notifications';
@@ -30,12 +30,11 @@ interface Props {
 
 export const UserEditModal = ({ open, onClose, user }: Props) => {
   const updateAccount = useUpdateUserAccount();
+  const methods = useForm<EditValues>({ resolver: zodResolver(editSchema) });
   const {
-    register,
-    handleSubmit,
     reset,
-    formState: { errors, isDirty },
-  } = useForm<EditValues>({ resolver: zodResolver(editSchema) });
+    formState: { isDirty },
+  } = methods;
 
   useEffect(() => {
     if (open && user) {
@@ -50,7 +49,7 @@ export const UserEditModal = ({ open, onClose, user }: Props) => {
 
   if (!user) return null;
 
-  const onSubmit = handleSubmit(({ full_name, phone_number, password }) =>
+  const onSubmit = ({ full_name, phone_number, password }: EditValues) =>
     updateAccount.mutate(
       { userId: user.user_id, changes: { full_name, phone_number, ...(password && { password }) } },
       {
@@ -60,8 +59,7 @@ export const UserEditModal = ({ open, onClose, user }: Props) => {
         },
         onError: notify.error,
       },
-    ),
-  );
+    );
 
   return (
     <Modal
@@ -80,39 +78,15 @@ export const UserEditModal = ({ open, onClose, user }: Props) => {
         </>
       }
     >
-      <form id="user-edit" onSubmit={(e) => void onSubmit(e)} className="grid gap-4 sm:grid-cols-2" noValidate>
-        <Input
-          label="Nombre completo"
-          required
-          autoComplete="name"
-          error={errors.full_name?.message}
-          {...register('full_name')}
-        />
-        <Input
-          label="Teléfono"
-          required
-          type="tel"
-          error={errors.phone_number?.message}
-          {...register('phone_number')}
-        />
+      <Form methods={methods} id="user-edit" onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
+        <FormInput name="full_name" label="Nombre completo" required autoComplete="name" />
+        <FormInput name="phone_number" label="Teléfono" required type="tel" />
         <fieldset className="grid gap-4 rounded-xl border border-outline p-4 sm:col-span-2 sm:grid-cols-2">
           <legend className="px-1 text-sm font-medium text-ink">Contraseña nueva (opcional)</legend>
-          <Input
-            label="Contraseña nueva"
-            type="password"
-            autoComplete="new-password"
-            error={errors.password?.message}
-            {...register('password')}
-          />
-          <Input
-            label="Repetir contraseña"
-            type="password"
-            autoComplete="new-password"
-            error={errors.confirmPassword?.message}
-            {...register('confirmPassword')}
-          />
+          <FormInput name="password" label="Contraseña nueva" type="password" autoComplete="new-password" />
+          <FormInput name="confirmPassword" label="Repetir contraseña" type="password" autoComplete="new-password" />
         </fieldset>
-      </form>
+      </Form>
     </Modal>
   );
 };

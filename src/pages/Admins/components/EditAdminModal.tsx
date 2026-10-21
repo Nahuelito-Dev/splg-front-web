@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { accountFields } from '../../../common/forms/accountSchema';
-import { Button, Input, Modal } from '../../../common/components/ui';
+import { Button, Modal, FormInput, Form } from '../../../common/components/ui';
 import type { Admin } from '../../../services/api/types';
 import { useUpdateAdmin } from '../../../services/queries/admins';
 import { notify } from '../../../utils/notifications';
@@ -24,18 +24,17 @@ interface Props {
 /** Nombre y teléfono del administrador (`PATCH /admin/:id`). El correo y el bloqueo se cambian desde su cuenta. */
 export const EditAdminModal = ({ admin, onClose }: Props) => {
   const updateAdmin = useUpdateAdmin();
+  const methods = useForm<EditValues>({ resolver: zodResolver(editSchema) });
   const {
-    register,
-    handleSubmit,
     reset,
-    formState: { errors, isDirty },
-  } = useForm<EditValues>({ resolver: zodResolver(editSchema) });
+    formState: { isDirty },
+  } = methods;
 
   useEffect(() => {
     if (admin) reset({ full_name: admin.user?.full_name ?? '', phone_number: admin.user?.phone_number ?? '' });
   }, [admin, reset]);
 
-  const onSubmit = handleSubmit(({ full_name, phone_number }) => {
+  const onSubmit = ({ full_name, phone_number }: EditValues) => {
     if (!admin) return;
     updateAdmin.mutate(
       { id: admin.admin_id, body: { fullName: full_name, ...(phone_number && { phoneNumber: phone_number }) } },
@@ -47,7 +46,7 @@ export const EditAdminModal = ({ admin, onClose }: Props) => {
         onError: notify.error,
       },
     );
-  });
+  };
 
   return (
     <Modal
@@ -66,22 +65,10 @@ export const EditAdminModal = ({ admin, onClose }: Props) => {
         </>
       }
     >
-      <form id="admin-edit" onSubmit={(e) => void onSubmit(e)} className="grid gap-4 sm:grid-cols-2" noValidate>
-        <Input
-          label="Nombre completo"
-          required
-          autoComplete="name"
-          error={errors.full_name?.message}
-          {...register('full_name')}
-        />
-        <Input
-          label="Teléfono"
-          type="tel"
-          placeholder="+5493764000000"
-          error={errors.phone_number?.message}
-          {...register('phone_number')}
-        />
-      </form>
+      <Form methods={methods} id="admin-edit" onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
+        <FormInput name="full_name" label="Nombre completo" required autoComplete="name" />
+        <FormInput name="phone_number" label="Teléfono" type="tel" placeholder="+5493764000000" />
+      </Form>
     </Modal>
   );
 };

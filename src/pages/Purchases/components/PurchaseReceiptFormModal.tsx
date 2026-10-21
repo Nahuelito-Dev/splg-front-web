@@ -2,7 +2,16 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus, Trash2 } from 'lucide-react';
 import { useEffect } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
-import { Button, IconButton, Input, Modal, Select, TextArea } from '../../../common/components/ui';
+import {
+  Button,
+  IconButton,
+  Modal,
+  FormTextArea,
+  FormSelect,
+  FormInput,
+  Form,
+  FormError,
+} from '../../../common/components/ui';
 import type { PurchaseOrder, PurchaseReceipt } from '../../../services/api/types';
 import {
   useCreatePurchaseReceipt,
@@ -38,14 +47,8 @@ export const PurchaseReceiptFormModal = ({ open, onClose, order, onSaved }: Prop
   const pending = usePurchaseOrderPending(order?.purchaseOrderId, open && order !== null);
   const create = useCreatePurchaseReceipt();
   const scope = `receipt:${order?.purchaseOrderId ?? 'direct'}`;
-  const {
-    register,
-    handleSubmit,
-    reset,
-    watch,
-    control,
-    formState: { errors },
-  } = useForm<ReceiptFormValues>({ resolver: zodResolver(receiptSchema) });
+  const methods = useForm<ReceiptFormValues>({ resolver: zodResolver(receiptSchema) });
+  const { reset, watch, control } = methods;
   const { fields, append, remove } = useFieldArray({ control, name: 'items' });
   const mode = order ? 'order' : 'direct';
 
@@ -78,7 +81,7 @@ export const PurchaseReceiptFormModal = ({ open, onClose, order, onSaved }: Prop
     items.map((i) => ({ quantity: Number(i.quantityFull) || 0, unitCost: Number(i.unitCost) || 0 })),
   );
 
-  const onSubmit = handleSubmit((values) => {
+  const onSubmit = (values: ReceiptFormValues) => {
     const rows = values.items.filter((i) => i.quantityFull > 0 || i.quantityEmptyOut > 0);
     create.mutate(
       {
@@ -108,7 +111,7 @@ export const PurchaseReceiptFormModal = ({ open, onClose, order, onSaved }: Prop
         onError: notify.error,
       },
     );
-  });
+  };
 
   const loadFailed = (!order && suppliers.isError) || warehouses.failed || cylinders.failed || pending.isError;
 
@@ -155,36 +158,31 @@ export const PurchaseReceiptFormModal = ({ open, onClose, order, onSaved }: Prop
           Cargando lo pendiente de la orden…
         </p>
       ) : (
-        <form id="receipt-form" onSubmit={(e) => void onSubmit(e)} className="space-y-4" noValidate>
+        <Form methods={methods} id="receipt-form" onSubmit={onSubmit} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             {!order && (
               <>
-                <SupplierField
-                  selectedId={watch('supplierId') ?? ''}
-                  error={errors.supplierId?.message}
-                  {...register('supplierId')}
-                />
-                <Select
+                <SupplierField name="supplierId" />
+                <FormSelect
+                  name="warehouseId"
                   label="Se recibe en"
                   options={withPlaceholder(warehouses.options, 'Galpón predeterminado')}
-                  {...register('warehouseId')}
                 />
               </>
             )}
-            <Select label="Documento del proveedor" options={DOCUMENT_OPTIONS} {...register('supplierDocumentType')} />
-            <Input
+            <FormSelect name="supplierDocumentType" label="Documento del proveedor" options={DOCUMENT_OPTIONS} />
+            <FormInput
+              name="supplierDocumentNumber"
               label="Número del documento"
               required
               maxLength={30}
               hint="Único por proveedor y tipo de documento."
-              error={errors.supplierDocumentNumber?.message}
-              {...register('supplierDocumentNumber')}
             />
-            <Input
+            <FormInput
+              name="receivedAt"
               label="Cuándo llegó"
               type="datetime-local"
               hint="Si lo dejás vacío, es ahora. No puede ser futuro."
-              {...register('receivedAt')}
             />
           </div>
           <div className="space-y-3">
@@ -195,37 +193,28 @@ export const PurchaseReceiptFormModal = ({ open, onClose, order, onSaved }: Prop
                 </legend>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1.4fr_1fr_1fr_1fr_auto] sm:items-start">
                   {order ? (
-                    <input type="hidden" {...register(`items.${index}.gasCylinderId`)} />
+                    <input type="hidden" {...methods.register(`items.${index}.gasCylinderId`)} />
                   ) : (
-                    <Select
+                    <FormSelect
+                      name={`items.${index}.gasCylinderId`}
                       label="Tipo"
                       options={withPlaceholder(cylinders.options)}
                       hint={cylinders.limited ? 'Se muestran las primeras 100 garrafas.' : undefined}
-                      error={errors.items?.[index]?.gasCylinderId?.message}
-                      {...register(`items.${index}.gasCylinderId`)}
                     />
                   )}
-                  <Input
-                    label="Llenas recibidas"
-                    type="number"
-                    min={0}
-                    error={errors.items?.[index]?.quantityFull?.message}
-                    {...register(`items.${index}.quantityFull`)}
-                  />
-                  <Input
+                  <FormInput name={`items.${index}.quantityFull`} label="Llenas recibidas" type="number" min={0} />
+                  <FormInput
+                    name={`items.${index}.quantityEmptyOut`}
                     label="Vacías que se lleva la planta"
                     type="number"
                     min={0}
-                    error={errors.items?.[index]?.quantityEmptyOut?.message}
-                    {...register(`items.${index}.quantityEmptyOut`)}
                   />
-                  <Input
+                  <FormInput
+                    name={`items.${index}.unitCost`}
                     label="Costo unitario"
                     type="number"
                     min={0}
                     step="0.01"
-                    error={errors.items?.[index]?.unitCost?.message}
-                    {...register(`items.${index}.unitCost`)}
                   />
                   {!order && fields.length > 1 && (
                     <IconButton
@@ -238,16 +227,8 @@ export const PurchaseReceiptFormModal = ({ open, onClose, order, onSaved }: Prop
                 </div>
               </fieldset>
             ))}
-            {errors.items?.message && (
-              <p role="alert" className="text-xs text-danger">
-                {errors.items.message}
-              </p>
-            )}
-            {errors.items?.root?.message && (
-              <p role="alert" className="text-xs text-danger">
-                {errors.items.root.message}
-              </p>
-            )}
+            <FormError name="items" />
+            <FormError name="items.root" />
             <div className="flex flex-wrap items-center justify-between gap-3">
               {!order ? (
                 <Button
@@ -267,11 +248,11 @@ export const PurchaseReceiptFormModal = ({ open, onClose, order, onSaved }: Prop
               </p>
             </div>
           </div>
-          <TextArea label="Notas (opcional)" maxLength={500} error={errors.notes?.message} {...register('notes')} />
+          <FormTextArea name="notes" label="Notas (opcional)" maxLength={500} />
           <p className="text-xs text-muted">
             Al registrarla se abre su ficha, donde podés adjuntar la foto del remito.
           </p>
-        </form>
+        </Form>
       )}
     </Modal>
   );

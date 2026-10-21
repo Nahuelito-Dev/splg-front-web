@@ -6,7 +6,7 @@ import { z } from 'zod';
 import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import { LogoSplg } from '../../common/components/LogoSplg';
-import { Button, Card, IconButton, Input } from '../../common/components/ui';
+import { Button, Card, IconButton, FormInput, Form } from '../../common/components/ui';
 import { useAppDispatch, useAppSelector } from '../../hooks';
 import { startLoginWithEmailAndPassword } from '../../store/auth/thunks';
 import { ForgotPasswordModal } from './components/ForgotPasswordModal';
@@ -25,15 +25,11 @@ export const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [recovering, setRecovering] = useState(false);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LoginValues>({ resolver: zodResolver(loginSchema) });
+  const methods = useForm<LoginValues>({ resolver: zodResolver(loginSchema) });
 
-  const onSubmit = handleSubmit((values) => {
+  const onSubmit = (values: LoginValues) => {
     void dispatch(startLoginWithEmailAndPassword(values));
-  });
+  };
 
   if (status === 'authenticated') return <Navigate to="/home" />;
 
@@ -48,26 +44,24 @@ export const LoginPage = () => {
           </div>
         </div>
 
-        <form className="space-y-4" onSubmit={(e) => void onSubmit(e)} noValidate>
-          <Input
+        <Form methods={methods} className="space-y-4" onSubmit={onSubmit}>
+          <FormInput
+            name="email"
             label="Email"
             type="email"
             required
             autoComplete="email"
             placeholder="usuario@splg.com"
-            error={errors.email?.message}
-            {...register('email')}
           />
 
           <div className="relative">
-            <Input
+            <FormInput
+              name="password"
               label="Contraseña"
               type={showPassword ? 'text' : 'password'}
               required
               autoComplete="current-password"
               className="pr-10"
-              error={errors.password?.message}
-              {...register('password')}
             />
             <IconButton
               label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
@@ -94,7 +88,7 @@ export const LoginPage = () => {
           >
             ¿Olvidaste tu contraseña?
           </button>
-        </form>
+        </Form>
       </Card>
       <ForgotPasswordModal open={recovering} onClose={() => setRecovering(false)} />
     </div>

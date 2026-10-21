@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, Card, Input, CardHeader } from '../../../common/components/ui';
+import { Button, Card, CardHeader, FormInput, Form } from '../../../common/components/ui';
 import { getCurrentIdToken, reauthenticateWithPassword } from '../../../firebase/providers';
 import { toApiError } from '../../../services/api/errors';
 import { useChangeEmail } from '../../../services/queries/email';
@@ -23,12 +23,8 @@ export const ChangeEmailForm = ({ currentEmail, onChanged }: Props) => {
   const changeEmail = useChangeEmail();
   const [needsPassword, setNeedsPassword] = useState(false);
   const schema = useMemo(() => changeEmailSchema(currentEmail), [currentEmail]);
-  const {
-    register,
-    handleSubmit,
-    setError,
-    formState: { errors },
-  } = useForm<ChangeEmailValues>({ resolver: zodResolver(schema) });
+  const methods = useForm<ChangeEmailValues>({ resolver: zodResolver(schema) });
+  const { setError } = methods;
 
   const send = async (newEmail: string, force: boolean) => {
     const idToken = await getCurrentIdToken(force);
@@ -56,7 +52,7 @@ export const ChangeEmailForm = ({ currentEmail, onChanged }: Props) => {
     );
   };
 
-  const onSubmit = handleSubmit(async ({ newEmail, password }) => {
+  const onSubmit = async ({ newEmail, password }: ChangeEmailValues) => {
     if (needsPassword) {
       if (!password) {
         setError('password', { message: 'Ingresá tu contraseña actual' });
@@ -69,7 +65,7 @@ export const ChangeEmailForm = ({ currentEmail, onChanged }: Props) => {
       }
     }
     await send(newEmail, needsPassword);
-  });
+  };
 
   return (
     <Card className="p-6">
@@ -77,23 +73,15 @@ export const ChangeEmailForm = ({ currentEmail, onChanged }: Props) => {
       <p className="mt-1 text-[13px] text-muted">
         Hoy entrás con <span className="font-medium text-ink">{currentEmail}</span>. Al cambiarlo se cierra la sesión.
       </p>
-      <form onSubmit={(e) => void onSubmit(e)} className="mt-4 grid gap-4 sm:grid-cols-2" noValidate>
-        <Input
-          label="Correo nuevo"
-          required
-          type="email"
-          autoComplete="email"
-          error={errors.newEmail?.message}
-          {...register('newEmail')}
-        />
+      <Form methods={methods} onSubmit={onSubmit} className="mt-4 grid gap-4 sm:grid-cols-2">
+        <FormInput name="newEmail" label="Correo nuevo" required type="email" autoComplete="email" />
         {needsPassword && (
-          <Input
+          <FormInput
+            name="password"
             label="Contraseña actual"
             required
             type="password"
             autoComplete="current-password"
-            error={errors.password?.message}
-            {...register('password')}
           />
         )}
         <div className="flex justify-end sm:col-span-2">
@@ -101,7 +89,7 @@ export const ChangeEmailForm = ({ currentEmail, onChanged }: Props) => {
             Cambiar correo
           </Button>
         </div>
-      </form>
+      </Form>
     </Card>
   );
 };

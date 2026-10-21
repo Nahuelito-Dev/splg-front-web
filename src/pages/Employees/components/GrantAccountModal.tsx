@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, Input, Modal } from '../../../common/components/ui';
+import { Button, Modal, FormInput, Form } from '../../../common/components/ui';
 import type { Employee } from '../../../services/api/types';
 import { useGrantEmployeeAccount } from '../../../services/queries/employees';
 import { notify } from '../../../utils/notifications';
@@ -18,12 +18,8 @@ const EMPTY: GrantAccountFormValues = { email: '', password: '', phoneNumber: ''
 /** Cuenta de acceso desde el legajo (CU-182): sólo los choferes la tienen, con el rol y el perfil de reparto. */
 export const GrantAccountModal = ({ open, onClose, employee }: Props) => {
   const grant = useGrantEmployeeAccount();
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<GrantAccountFormValues>({ resolver: zodResolver(grantAccountSchema), defaultValues: EMPTY });
+  const methods = useForm<GrantAccountFormValues>({ resolver: zodResolver(grantAccountSchema), defaultValues: EMPTY });
+  const { reset } = methods;
 
   // Se vacía al abrir y al cerrar: la contraseña no queda en el formulario ni en la mutación.
   useEffect(() => {
@@ -32,7 +28,7 @@ export const GrantAccountModal = ({ open, onClose, employee }: Props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, reset]);
 
-  const onSubmit = handleSubmit((values) => {
+  const onSubmit = (values: GrantAccountFormValues) => {
     if (grant.isPending) return;
     grant.mutate(
       { id: employee.employeeId, body: grantAccountBody(values) },
@@ -46,7 +42,7 @@ export const GrantAccountModal = ({ open, onClose, employee }: Props) => {
         onError: notify.error,
       },
     );
-  });
+  };
 
   return (
     <Modal
@@ -65,32 +61,25 @@ export const GrantAccountModal = ({ open, onClose, employee }: Props) => {
         </>
       }
     >
-      <form
-        id="employee-grant-account"
-        onSubmit={(e) => void onSubmit(e)}
-        className="grid gap-4 sm:grid-cols-2"
-        noValidate
-      >
+      <Form methods={methods} id="employee-grant-account" onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
-          <Input label="Correo" required type="email" error={errors.email?.message} {...register('email')} />
+          <FormInput name="email" label="Correo" required type="email" />
         </div>
-        <Input
+        <FormInput
+          name="password"
           label="Contraseña"
           required
           type="password"
           autoComplete="new-password"
           hint="Al menos 6 caracteres."
-          error={errors.password?.message}
-          {...register('password')}
         />
-        <Input
+        <FormInput
+          name="phoneNumber"
           label="Teléfono (opcional)"
           placeholder="+5493764000000"
           hint="Formato internacional. Si lo dejás vacío se usa el del legajo."
-          error={errors.phoneNumber?.message}
-          {...register('phoneNumber')}
         />
-      </form>
+      </Form>
     </Modal>
   );
 };

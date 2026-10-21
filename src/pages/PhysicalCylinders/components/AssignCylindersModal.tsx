@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Button, Input, Modal, TextArea } from '../../../common/components/ui';
+import { Button, Modal, FormInput, FormTextArea, Form } from '../../../common/components/ui';
 import { useAssignCylinders } from '../../../services/queries/physicalCylinders';
 import { notify } from '../../../utils/notifications';
 import { parseSerials, serialListSchema } from '../parseSerials';
@@ -24,18 +24,14 @@ interface Props {
 /** Asigna envases (por serial) a un pedido y los despacha: `filled` → `dispatched`. Los seriales deben estar llenos. */
 export const AssignCylindersModal = ({ open, onClose }: Props) => {
   const assignCylinders = useAssignCylinders();
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { orderId: '', serials: '' } });
+  const methods = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { orderId: '', serials: '' } });
+  const { reset } = methods;
 
   useEffect(() => {
     if (open) reset({ orderId: '', serials: '' });
   }, [open, reset]);
 
-  const onSubmit = handleSubmit(({ orderId, serials }) =>
+  const onSubmit = ({ orderId, serials }: FormValues) =>
     assignCylinders.mutate(
       { orderId, serials: parseSerials(serials) },
       {
@@ -45,8 +41,7 @@ export const AssignCylindersModal = ({ open, onClose }: Props) => {
         },
         onError: notify.error,
       },
-    ),
-  );
+    );
 
   return (
     <Modal
@@ -65,23 +60,16 @@ export const AssignCylindersModal = ({ open, onClose }: Props) => {
         </>
       }
     >
-      <form id="assign-cylinders-form" onSubmit={(e) => void onSubmit(e)} className="space-y-4" noValidate>
-        <Input
-          label="Pedido (UUID)"
-          required
-          placeholder="Id del pedido"
-          error={errors.orderId?.message}
-          {...register('orderId')}
-        />
-        <TextArea
+      <Form methods={methods} id="assign-cylinders-form" onSubmit={onSubmit} className="space-y-4">
+        <FormInput name="orderId" label="Pedido (UUID)" required placeholder="Id del pedido" />
+        <FormTextArea
+          name="serials"
           label="Seriales"
           required
           hint="Uno por línea o separados por coma."
           placeholder={'SN-000123\nSN-000124'}
-          error={errors.serials?.message}
-          {...register('serials')}
         />
-      </form>
+      </Form>
     </Modal>
   );
 };

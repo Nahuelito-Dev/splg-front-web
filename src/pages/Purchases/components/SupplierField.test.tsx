@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { useForm, FormProvider } from 'react-hook-form';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ok, pageOf } from '../../../test/pageTest';
 import { supplier } from '../../../test/fixtures';
@@ -10,9 +11,16 @@ vi.mock('../../../services/queries/purchases', () => ({
 
 import { SupplierField } from './SupplierField';
 
-const field = (selectedId = '') => (
-  <SupplierField name="supplierId" onChange={vi.fn()} onBlur={vi.fn()} selectedId={selectedId} />
-);
+const Harness = ({ selectedId }: { selectedId: string }) => {
+  const methods = useForm({ defaultValues: { supplierId: selectedId } });
+  return (
+    <FormProvider {...methods}>
+      <SupplierField name="supplierId" />
+    </FormProvider>
+  );
+};
+
+const field = (selectedId = '') => <Harness selectedId={selectedId} />;
 
 afterEach(() => {
   cleanup();

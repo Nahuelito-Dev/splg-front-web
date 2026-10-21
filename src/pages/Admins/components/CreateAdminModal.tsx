@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { accountFields, newPassword } from '../../../common/forms/accountSchema';
 import { checkAccountFree } from '../../../common/forms/checkAccountFree';
-import { Button, Input, Modal, Select } from '../../../common/components/ui';
+import { Button, Modal, FormInput, FormSelect, Form } from '../../../common/components/ui';
 import type { AdminRole } from '../../../services/api/admins';
 import { useCreateAdmin } from '../../../services/queries/admins';
 import { useDistributors } from '../../../services/queries/distributors';
@@ -60,17 +60,16 @@ export const CreateAdminModal = ({ open, onClose, isSuperAdmin }: Props) => {
     [isSuperAdmin],
   );
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    watch,
-    setError,
-    formState: { errors, isSubmitting },
-  } = useForm<AdminFormValues>({
+  const methods = useForm<AdminFormValues>({
     resolver: zodResolver(adminSchema(isSuperAdmin)),
     defaultValues: { role: 'admin' },
   });
+  const {
+    reset,
+    watch,
+    setError,
+    formState: { isSubmitting },
+  } = methods;
 
   const role = watch('role');
 
@@ -91,7 +90,7 @@ export const CreateAdminModal = ({ open, onClose, isSuperAdmin }: Props) => {
       });
   }, [open, reset]);
 
-  const onSubmit = handleSubmit(async ({ confirmPassword: _confirmPassword, role, distributorId, ...account }) => {
+  const onSubmit = async ({ confirmPassword: _confirmPassword, role, distributorId, ...account }: AdminFormValues) => {
     if (!(await checkAccountFree(account, setError)) || !openRef.current) return;
     createAdmin.mutate(
       { role, account: { ...account, distributorId: role === 'admin' && distributorId ? distributorId : undefined } },
@@ -103,7 +102,7 @@ export const CreateAdminModal = ({ open, onClose, isSuperAdmin }: Props) => {
         onError: notify.error,
       },
     );
-  });
+  };
 
   return (
     <Modal
@@ -122,74 +121,44 @@ export const CreateAdminModal = ({ open, onClose, isSuperAdmin }: Props) => {
         </>
       }
     >
-      <form id="admin-create" onSubmit={(e) => void onSubmit(e)} className="grid gap-4 sm:grid-cols-2" noValidate>
-        <Input
-          label="Nombre completo"
-          required
-          autoComplete="name"
-          error={errors.full_name?.message}
-          {...register('full_name')}
-        />
-        <Input
-          label="Teléfono"
-          required
-          type="tel"
-          placeholder="+5493764000000"
-          error={errors.phone_number?.message}
-          {...register('phone_number')}
-        />
+      <Form methods={methods} id="admin-create" onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
+        <FormInput name="full_name" label="Nombre completo" required autoComplete="name" />
+        <FormInput name="phone_number" label="Teléfono" required type="tel" placeholder="+5493764000000" />
         <div className="sm:col-span-2">
-          <Input
-            label="Email"
-            required
-            type="email"
-            autoComplete="email"
-            error={errors.email?.message}
-            {...register('email')}
-          />
+          <FormInput name="email" label="Email" required type="email" autoComplete="email" />
         </div>
-        <Input
-          label="Contraseña"
-          required
-          type="password"
-          autoComplete="new-password"
-          error={errors.password?.message}
-          {...register('password')}
-        />
-        <Input
+        <FormInput name="password" label="Contraseña" required type="password" autoComplete="new-password" />
+        <FormInput
+          name="confirmPassword"
           label="Repetir contraseña"
           required
           type="password"
           autoComplete="new-password"
-          error={errors.confirmPassword?.message}
-          {...register('confirmPassword')}
         />
-        <Select
+        <FormSelect
+          name="role"
           label="Rol"
           required
           options={availableRoles.map((role) => ({ value: role, label: ROLE_OPTIONS[role] }))}
-          error={errors.role?.message}
-          {...register('role')}
         />
         {role === 'super_admin' ? (
           <p className="self-end text-xs text-muted">
             El administrador general es de la plataforma: no lleva distribuidora.
           </p>
         ) : isSuperAdmin ? (
-          <Select
+          <FormSelect
+            name="distributorId"
             label="Distribuidora"
             required
-            error={errors.distributorId?.message}
             options={[
               { value: '', label: 'Elegí una distribuidora' },
               ...(distributors ?? []).map((d) => ({ value: d.distributor_id, label: d.name })),
             ]}
-            {...register('distributorId')}
           />
         ) : (
           <p className="self-end text-xs text-muted">El admin se crea en tu misma distribuidora.</p>
         )}
-      </form>
+      </Form>
     </Modal>
   );
 };

@@ -1,12 +1,11 @@
-import type { FieldErrors, UseFormRegister } from 'react-hook-form';
-import { Card, Checkbox, Input, Select } from '../../../common/components/ui';
+import { useEffect, useState } from 'react';
+import { useFormContext, useWatch } from 'react-hook-form';
+import { Card, CardHeader, FormCheckbox, FormInput, FormSelect } from '../../../common/components/ui';
 import { useTimeSlotAvailability } from '../../../services/queries/timeSlots';
 import { argentinaDay } from '../../../utils/format';
 import type { NewOrderValues } from './newOrderSchema';
 
 interface Props {
-  register: UseFormRegister<NewOrderValues>;
-  errors: FieldErrors<NewOrderValues>;
   isReservation: boolean;
   scheduledDate: string;
   paymentMethod: NewOrderValues['paymentMethod'];
@@ -23,19 +22,34 @@ const DEPOSIT_HINT: Record<NewOrderValues['paymentMethod'], string> = {
 };
 
 /** Reserva programada con seña (CU-072): fecha, franja con cupo y monto de la seña. */
-export const ReservationFields = ({
-  register,
-  errors,
-  isReservation,
-  scheduledDate,
-  paymentMethod,
-  depositCapError,
-}: Props) => {
+export const ReservationFields = ({ isReservation, scheduledDate, paymentMethod, depositCapError }: Props) => {
+  const { setValue } = useFormContext<NewOrderValues>();
+  const timeSlotId = useWatch<NewOrderValues, 'timeSlotId'>({ name: 'timeSlotId' });
+  const [lostSlot, setLostSlot] = useState(false);
   const validDate = /^\d{4}-\d{2}-\d{2}$/.test(scheduledDate);
-  const { data: availability } = useTimeSlotAvailability(isReservation && validDate ? scheduledDate : '');
+  const { data: availability, isError: availabilityFailed } = useTimeSlotAvailability(
+    isReservation && validDate ? scheduledDate : '',
+  );
   // Una franja sin cupo (completa, o ya terminada hoy) la rechazaría el alta: no se ofrece.
   const open = (availability ?? []).filter((slot) => slot.remaining > 0);
   const hidden = (availability ?? []).length - open.length;
+  // Al cambiar de fecha la franja elegida puede quedar sin cupo: se saca del formulario para no mandar una que no se ve.
+  useEffect(() => {
+    if (!timeSlotId) return;
+    if (!validDate) {
+      setValue('timeSlotId', '');
+      return;
+    }
+    // Sin disponibilidad (cargando la fecha nueva o consulta caída) la franja no está validada: no se manda.
+    if (!availability) {
+      setValue('timeSlotId', '');
+      setLostSlot(true);
+      return;
+    }
+    const stillOpen = open.some((slot) => slot.timeSlotId === timeSlotId);
+    if (!stillOpen) setValue('timeSlotId', '');
+    setLostSlot(!stillOpen);
+  }, [timeSlotId, validDate, availability, open, setValue]);
   const slotOptions = [
     { value: '', label: validDate ? 'Sin franja (sólo el día)' : 'Elegí primero la fecha' },
     ...open.map((slot) => ({
@@ -46,39 +60,45 @@ export const ReservationFields = ({
 
   return (
     <Card className="space-y-3 p-4">
-      <h3 className="text-sm font-semibold text-ink">Reserva programada</h3>
-      <Checkbox
+      <CardHeader title="Reserva programada" as="h3" className="" />
+      <FormCheckbox
+        name="isReservation"
         label="Es una reserva con seña"
         hint="Aparta el stock para otro día: no se despacha hasta que la seña esté paga y llegue la fecha."
-        {...register('isReservation')}
       />
       {isReservation && (
         <div className="grid gap-4 sm:grid-cols-2">
-          <Input
+          <FormInput
+            name="scheduledDate"
             label="Fecha de entrega"
             type="date"
             min={argentinaDay(new Date())}
             required
-            error={errors.scheduledDate?.message}
-            {...register('scheduledDate')}
           />
-          <Select
+          <FormSelect
+            name="timeSlotId"
             label="Franja horaria"
             options={slotOptions}
             disabled={!validDate}
-            hint={hidden > 0 ? `${hidden} franja(s) sin cupo no se ofrecen.` : undefined}
-            error={errors.timeSlotId?.message}
-            {...register('timeSlotId')}
+            hint={
+              availabilityFailed
+                ? 'No pudimos consultar las franjas de esa fecha: la reserva queda sólo para el día.'
+                : lostSlot
+                  ? 'La franja elegida ya no tiene cupo en esa fecha: elegí otra.'
+                  : hidden > 0
+                    ? `${hidden} franja(s) sin cupo no se ofrecen.`
+                    : undefined
+            }
           />
-          <Input
+          <FormInput
+            name="depositAmount"
             label="Monto de la seña"
             type="text"
             inputMode="decimal"
             placeholder="0"
             required
-            error={errors.depositAmount?.message ?? depositCapError ?? undefined}
+            fallbackError={depositCapError}
             hint={DEPOSIT_HINT[paymentMethod]}
-            {...register('depositAmount')}
           />
         </div>
       )}

@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Button, Input, Modal, Select } from '../../../common/components/ui';
+import { Button, Modal, FormInput, FormSelect, Form } from '../../../common/components/ui';
 import type { CashCategory } from '../../../services/api/types';
 import { useCreateCashCategory, useUpdateCashCategory } from '../../../services/queries/finance';
 import { notify } from '../../../utils/notifications';
@@ -24,18 +24,14 @@ interface Props {
 export const CashCategoryFormModal = ({ open, onClose, category }: Props) => {
   const create = useCreateCashCategory();
   const update = useUpdateCashCategory();
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<Values>({ resolver: zodResolver(schema) });
+  const methods = useForm<Values>({ resolver: zodResolver(schema) });
+  const { reset } = methods;
 
   useEffect(() => {
     if (open) reset({ name: category?.name ?? '', direction: category?.direction ?? 'expense' });
   }, [open, category, reset]);
 
-  const onSubmit = handleSubmit((values) => {
+  const onSubmit = (values: Values) => {
     const options = {
       onSuccess: () => {
         notify.success(category ? 'Categoría actualizada' : 'Categoría creada');
@@ -45,7 +41,7 @@ export const CashCategoryFormModal = ({ open, onClose, category }: Props) => {
     };
     if (category) update.mutate({ id: category.categoryId, body: { name: values.name } }, options);
     else create.mutate(values, options);
-  });
+  };
 
   return (
     <Modal
@@ -65,9 +61,10 @@ export const CashCategoryFormModal = ({ open, onClose, category }: Props) => {
         </>
       }
     >
-      <form id="cash-category-form" onSubmit={(e) => void onSubmit(e)} className="grid gap-4" noValidate>
-        <Input label="Nombre" required maxLength={80} error={errors.name?.message} {...register('name')} />
-        <Select
+      <Form methods={methods} id="cash-category-form" onSubmit={onSubmit} className="grid gap-4">
+        <FormInput name="name" label="Nombre" required maxLength={80} />
+        <FormSelect
+          name="direction"
           label="Sentido"
           options={[
             { value: 'income', label: 'Ingreso' },
@@ -75,10 +72,8 @@ export const CashCategoryFormModal = ({ open, onClose, category }: Props) => {
           ]}
           disabled={category !== null}
           hint={category ? 'No se cambia una vez creada' : undefined}
-          error={errors.direction?.message}
-          {...register('direction')}
         />
-      </form>
+      </Form>
     </Modal>
   );
 };

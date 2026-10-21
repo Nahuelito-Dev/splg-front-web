@@ -2,7 +2,16 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Button, DetailList, ErrorState, Input, LoadingState, Modal, TextArea } from '../../../common/components/ui';
+import {
+  Button,
+  DetailList,
+  ErrorState,
+  LoadingState,
+  Modal,
+  FormInput,
+  FormTextArea,
+  Form,
+} from '../../../common/components/ui';
 import { useCloseCashSession, useCashSession } from '../../../services/queries/finance';
 import { formatCurrency } from '../../../utils/format';
 import { notify } from '../../../utils/notifications';
@@ -24,13 +33,8 @@ interface Props {
 export const CloseSessionModal = ({ open, onClose, sessionId }: Props) => {
   const { data: session, isPending, error, refetch } = useCashSession(sessionId ?? undefined, { enabled: open });
   const close = useCloseCashSession();
-  const {
-    register,
-    handleSubmit,
-    reset,
-    watch,
-    formState: { errors },
-  } = useForm<Values>({ resolver: zodResolver(schema) });
+  const methods = useForm<Values>({ resolver: zodResolver(schema) });
+  const { reset, watch } = methods;
   const counted = watch('countedAmount');
 
   useEffect(() => {
@@ -41,7 +45,7 @@ export const CloseSessionModal = ({ open, onClose, sessionId }: Props) => {
   const parsed = counted && !Number.isNaN(parseMoney(counted)) ? parseMoney(counted) : null;
   const difference = expected !== null && parsed !== null ? Math.round((parsed - expected) * 100) / 100 : null;
 
-  const onSubmit = handleSubmit((values) => {
+  const onSubmit = (values: Values) => {
     if (!sessionId) return;
     close.mutate(
       {
@@ -56,7 +60,7 @@ export const CloseSessionModal = ({ open, onClose, sessionId }: Props) => {
         onError: notify.error,
       },
     );
-  });
+  };
 
   return (
     <Modal
@@ -91,14 +95,8 @@ export const CloseSessionModal = ({ open, onClose, sessionId }: Props) => {
               { label: 'Saldo según el libro', value: formatCurrency(session.currentBalance), mono: true },
             ]}
           />
-          <form id="close-session-form" onSubmit={(e) => void onSubmit(e)} className="grid gap-4" noValidate>
-            <Input
-              label="Monto contado"
-              required
-              inputMode="decimal"
-              error={errors.countedAmount?.message}
-              {...register('countedAmount')}
-            />
+          <Form methods={methods} id="close-session-form" onSubmit={onSubmit} className="grid gap-4">
+            <FormInput name="countedAmount" label="Monto contado" required inputMode="decimal" />
             {difference !== null && (
               <p
                 role="status"
@@ -115,8 +113,8 @@ export const CloseSessionModal = ({ open, onClose, sessionId }: Props) => {
                     : `Sobran ${formatCurrency(difference)}: se asienta como sobrante de caja.`}
               </p>
             )}
-            <TextArea label="Notas (opcional)" maxLength={500} error={errors.notes?.message} {...register('notes')} />
-          </form>
+            <FormTextArea name="notes" label="Notas (opcional)" maxLength={500} />
+          </Form>
         </div>
       )}
     </Modal>

@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
-import { Button, Input, Modal, Select } from '../../../common/components/ui';
+import { Button, Modal, FormInput, FormSelect, Form } from '../../../common/components/ui';
 import { useDeliveryOptions } from '../../../services/queries/deliveries';
 import { useOpenDriverSettlement } from '../../../services/queries/finance';
 import { toIsoDay } from '../../../utils/dates';
@@ -26,18 +26,14 @@ export const OpenSettlementModal = ({ open, onClose }: Props) => {
   const navigate = useNavigate();
   const open_ = useOpenDriverSettlement();
   const drivers = useDeliveryOptions();
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<Values>({ resolver: zodResolver(schema) });
+  const methods = useForm<Values>({ resolver: zodResolver(schema) });
+  const { reset } = methods;
 
   useEffect(() => {
     if (open) reset({ deliveryId: '', businessDate: toIsoDay(new Date()) });
   }, [open, reset]);
 
-  const onSubmit = handleSubmit((values) =>
+  const onSubmit = (values: Values) =>
     open_.mutate(values, {
       onSuccess: (settlement) => {
         notify.success('Rendición abierta');
@@ -45,8 +41,7 @@ export const OpenSettlementModal = ({ open, onClose }: Props) => {
         navigate(`/finance/settlements/${settlement.settlementId}`);
       },
       onError: notify.error,
-    }),
-  );
+    });
 
   return (
     <Modal
@@ -66,8 +61,9 @@ export const OpenSettlementModal = ({ open, onClose }: Props) => {
         </>
       }
     >
-      <form id="open-settlement-form" onSubmit={(e) => void onSubmit(e)} className="grid gap-4" noValidate>
-        <Select
+      <Form methods={methods} id="open-settlement-form" onSubmit={onSubmit} className="grid gap-4">
+        <FormSelect
+          name="deliveryId"
           label="Chofer"
           required
           options={[
@@ -77,11 +73,9 @@ export const OpenSettlementModal = ({ open, onClose }: Props) => {
               label: d.user?.full_name ?? d.delivery_id.slice(-6),
             })),
           ]}
-          error={errors.deliveryId?.message}
-          {...register('deliveryId')}
         />
-        <Input label="Día" type="date" required error={errors.businessDate?.message} {...register('businessDate')} />
-      </form>
+        <FormInput name="businessDate" label="Día" type="date" required />
+      </Form>
     </Modal>
   );
 };
