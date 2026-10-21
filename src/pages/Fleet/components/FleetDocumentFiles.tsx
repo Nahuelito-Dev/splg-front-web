@@ -50,9 +50,11 @@ export const FleetDocumentFiles = ({ task, canWrite, defaultOpen = false }: Prop
         </span>
         <span className="flex shrink-0 flex-wrap items-center justify-end gap-2">
           {closed ? (
-            <Badge label={labelOf(FLEET_TASK_STATUS, task.status)} />
+            <Badge label={labelOf(FLEET_TASK_STATUS, task.status)} variant="critical" />
           ) : (
-            task.expirationStatus && <Badge label={labelOf(FLEET_EXPIRATION_STATUS, task.expirationStatus)} />
+            task.expirationStatus && (
+              <Badge label={labelOf(FLEET_EXPIRATION_STATUS, task.expirationStatus)} variant="critical" />
+            )
           )}
           {count !== undefined && count > 0 && (
             <span className="inline-flex items-center gap-0.5 text-xs text-muted" aria-label={`${count} archivos`}>

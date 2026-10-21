@@ -143,7 +143,7 @@ export const FleetTasks = () => {
         field: 'status',
         headerName: 'Estado',
         width: 140,
-        renderCell: ({ row }) => <Badge label={labelOf(FLEET_TASK_STATUS, row.status)} />,
+        renderCell: ({ row }) => <Badge label={labelOf(FLEET_TASK_STATUS, row.status)} variant="critical" />,
       },
       {
         field: 'actions',

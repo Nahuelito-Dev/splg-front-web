@@ -108,7 +108,7 @@ export const DistributorDetails = () => {
                 <h2 className="truncate text-lg font-semibold text-ink">{distributor.name}</h2>
                 <p className="truncate font-mono text-sm text-muted">{distributor.slug}</p>
               </div>
-              <Badge label={labelOf(DISTRIBUTOR_STATUS, distributor.status)} />
+              <Badge label={labelOf(DISTRIBUTOR_STATUS, distributor.status)} variant="critical" />
             </div>
             <EntityPhoto
               kind="distributor"

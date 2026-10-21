@@ -34,7 +34,7 @@ export const CustomerClaims = ({ claims, onOpen }: Props) => (
                   Pedido {formatShortId(claim.order_id)} · {formatDateTime(claim.createdAt)}
                 </span>
               </span>
-              <Badge label={labelOf(CLAIM_STATUS, claim.status)} />
+              <Badge label={labelOf(CLAIM_STATUS, claim.status)} variant="critical" />
             </button>
           </li>
         ))}

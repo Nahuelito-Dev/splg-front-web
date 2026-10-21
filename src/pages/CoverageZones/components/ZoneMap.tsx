@@ -44,7 +44,7 @@ export const ZoneMap = ({
   onPickPoint,
   pickedPoint,
 }: Props) => (
-  <div className="relative h-[560px] w-full" role="group" aria-label="Mapa de zonas de cobertura">
+  <div className="relative isolate h-[560px] w-full" role="group" aria-label="Mapa de zonas de cobertura">
     <MapContainer
       center={DEFAULT_MAP_CENTER}
       zoom={DEFAULT_MAP_ZOOM}

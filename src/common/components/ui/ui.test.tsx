@@ -57,6 +57,21 @@ describe('kit de UI', () => {
     expect(screen.getByText('Entregado')).toBeInTheDocument();
   });
 
+  it('Badge: la variante llena pinta el tono completo y «critical» sólo lo hace con el tono danger', () => {
+    render(
+      <>
+        <Badge label={{ text: 'Vencido', tone: 'danger' }} variant="filled" />
+        <Badge label={{ text: 'Rechazado', tone: 'danger' }} variant="critical" />
+        <Badge label={{ text: 'Vigente', tone: 'success' }} variant="critical" />
+        <Badge label={{ text: 'Cobrado', tone: 'success' }} />
+      </>,
+    );
+    expect(screen.getByText('Vencido')).toHaveClass('bg-danger', 'text-bg');
+    expect(screen.getByText('Rechazado')).toHaveClass('bg-danger');
+    expect(screen.getByText('Vigente')).toHaveClass('bg-success-soft');
+    expect(screen.getByText('Cobrado')).toHaveClass('bg-success-soft');
+  });
+
   it('Switch: anuncia su estado y avisa al tocarlo', () => {
     const onChange = vi.fn();
     render(<Switch checked={false} onChange={onChange} label="Zona activa" />);

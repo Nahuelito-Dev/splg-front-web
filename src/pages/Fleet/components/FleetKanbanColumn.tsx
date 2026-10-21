@@ -48,7 +48,7 @@ export const FleetKanbanColumn = ({ status, tasks, dragged, onDropTask, ...card 
       )}
     >
       <header className="mb-2.5 flex items-center justify-between px-1">
-        <Badge label={labelOf(FLEET_TASK_STATUS, status)} />
+        <Badge label={labelOf(FLEET_TASK_STATUS, status)} variant="critical" />
         <span className="font-mono text-xs text-muted">{tasks.length}</span>
       </header>
       {tasks.length === 0 ? (

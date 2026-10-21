@@ -127,3 +127,27 @@ describe('OrdersTable: estado de cobro', () => {
     expect(screen.getAllByText('Rechazado')).toHaveLength(1);
   });
 });
+
+describe('OrdersTable: columnas', () => {
+  it('son cinco: el chofer va bajo la entrega y el cobro bajo el estado', () => {
+    const { container } = renderTable([
+      order('f1', { delivery_name: 'Juan Pérez', paymentStatus: 'paid', status: 'pending' }),
+      order('f2', {}),
+    ]);
+    const rowCells = container.firstElementChild?.firstElementChild?.children;
+    expect(rowCells).toHaveLength(5);
+    expect(screen.getByText('Juan Pérez')).toBeInTheDocument();
+    expect(screen.getByText('Cobrado')).toBeInTheDocument();
+    expect(screen.getByText('Sin asignar')).toBeInTheDocument();
+  });
+});
+
+describe('OrdersTable: chofer sin asignar', () => {
+  it('«Sin asignar» sólo aparece mientras el pedido sigue abierto', () => {
+    renderTable([order('g1', { status: 'pending' })]);
+    expect(screen.getByText('Sin asignar')).toBeInTheDocument();
+    cleanup();
+    renderTable([order('g2', { status: 'cancelled' }), order('g3', { status: 'delivered' })]);
+    expect(screen.queryByText('Sin asignar')).toBeNull();
+  });
+});
