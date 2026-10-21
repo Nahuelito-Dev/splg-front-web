@@ -38,7 +38,7 @@ describe('FinanceSummary', () => {
     render(<FinanceSummary kind="settlements" date="2026-10-15" />);
     expect(dashboard).toHaveBeenCalledWith('2026-10-15');
     expect(screen.getByText('$ 90.000')).toBeInTheDocument();
-    expect(screen.getByText('1 atrasadas')).toBeInTheDocument();
+    expect(screen.getByText('1 de días anteriores sin cerrar')).toBeInTheDocument();
   });
 
   it('cuentas: deuda total y vencida', () => {
@@ -46,6 +46,22 @@ describe('FinanceSummary', () => {
     render(<FinanceSummary kind="accounts" />);
     expect(screen.getByText('$ 80.000')).toBeInTheDocument();
     expect(screen.getByText('$ 30.000')).toBeInTheDocument();
+  });
+
+  it('al llegar el tablero no queda ninguna tarjeta cargando', () => {
+    dashboard.mockReturnValue({ data: undefined, isPending: true, isError: false });
+    const { rerender } = render(<FinanceSummary kind="settlements" date="2026-10-15" />);
+    expect(screen.getAllByText('…')).toHaveLength(3);
+    dashboard.mockReturnValue({ data: DATA, isPending: false, isError: false });
+    rerender(<FinanceSummary kind="settlements" date="2026-10-15" />);
+    expect(screen.queryByText('…')).not.toBeInTheDocument();
+    expect(screen.getByText('Efectivo presentado sin aprobar')).toBeInTheDocument();
+  });
+
+  it('si falla una actualización conserva las cifras que ya tenía', () => {
+    dashboard.mockReturnValue({ data: DATA, isPending: false, isError: true });
+    render(<FinanceSummary kind="boxes" />);
+    expect(screen.getByText('$ 150.000')).toBeInTheDocument();
   });
 
   it('con error del tablero no dibuja nada', () => {
