@@ -2,7 +2,16 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus, Trash2 } from 'lucide-react';
 import { useEffect } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
-import { Button, IconButton, Input, Modal, Select, TextArea } from '../../../common/components/ui';
+import {
+  Button,
+  IconButton,
+  Modal,
+  FormInput,
+  FormSelect,
+  FormTextArea,
+  Form,
+  FormError,
+} from '../../../common/components/ui';
 import type { StockAdjustment } from '../../../services/api/types';
 import { useCreateAdjustment, useStockBalances, useStockLocations } from '../../../services/queries/stock';
 import { notify } from '../../../utils/notifications';
@@ -33,15 +42,8 @@ export const AdjustmentFormModal = ({ open, onClose, onCreated }: Props) => {
   const cylinders = useCylinderOptions();
   const create = useCreateAdjustment();
   const scope = 'adjustment:new';
-  const {
-    register,
-    handleSubmit,
-    reset,
-    watch,
-    control,
-    setError,
-    formState: { errors },
-  } = useForm<AdjustmentFormValues>({ resolver: zodResolver(adjustmentSchema) });
+  const methods = useForm<AdjustmentFormValues>({ resolver: zodResolver(adjustmentSchema) });
+  const { reset, watch, control, setError } = methods;
   const { fields, append, remove } = useFieldArray({ control, name: 'items' });
 
   useEffect(() => {
@@ -59,7 +61,7 @@ export const AdjustmentFormModal = ({ open, onClose, onCreated }: Props) => {
     'Elegí la ubicación',
   );
 
-  const onSubmit = handleSubmit(async (values) => {
+  const onSubmit = async (values: AdjustmentFormValues) => {
     const location = (locations.data ?? []).find((l) => l.locationId === values.locationId);
     if (!location) return;
     // Igual que el back: ningún saldo de la ubicación puede quedar en negativo.
@@ -105,7 +107,7 @@ export const AdjustmentFormModal = ({ open, onClose, onCreated }: Props) => {
         onError: notify.error,
       },
     );
-  });
+  };
 
   const loadFailed = locations.isError || cylinders.failed;
 
@@ -142,22 +144,15 @@ export const AdjustmentFormModal = ({ open, onClose, onCreated }: Props) => {
           </button>
         </p>
       ) : (
-        <form id="adjustment-form" onSubmit={(e) => void onSubmit(e)} className="space-y-4" noValidate>
+        <Form methods={methods} id="adjustment-form" onSubmit={onSubmit} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
-            <Select
-              label="Ubicación"
-              required
-              options={locationOptions}
-              error={errors.locationId?.message}
-              {...register('locationId')}
-            />
-            <Select
+            <FormSelect name="locationId" label="Ubicación" required options={locationOptions} />
+            <FormSelect
+              name="reason"
               label="Motivo"
               required
               options={REASON_OPTIONS}
               hint={reason === 'damaged' ? 'Las llenas pasan a defectuosas en la misma ubicación.' : undefined}
-              error={errors.reason?.message}
-              {...register('reason')}
             />
           </div>
           <div className="space-y-3">
@@ -165,20 +160,18 @@ export const AdjustmentFormModal = ({ open, onClose, onCreated }: Props) => {
               <fieldset key={field.id} className="min-w-0 rounded-lg border border-outline p-3">
                 <legend className="px-1 text-xs font-medium text-muted">Garrafa {index + 1}</legend>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1.2fr_1fr_0.8fr_auto] sm:items-start">
-                  <Select
+                  <FormSelect
+                    name={`items.${index}.gasCylinderId`}
                     label="Tipo"
                     options={withPlaceholder(cylinders.options)}
-                    error={errors.items?.[index]?.gasCylinderId?.message}
-                    {...register(`items.${index}.gasCylinderId`)}
                   />
                   {reason !== 'damaged' && (
-                    <Select label="Condición" options={CONDITION_OPTIONS} {...register(`items.${index}.condition`)} />
+                    <FormSelect name={`items.${index}.condition`} label="Condición" options={CONDITION_OPTIONS} />
                   )}
-                  <Input
+                  <FormInput
+                    name={`items.${index}.amount`}
                     label={reason === 'count_correction' ? 'Diferencia (+/−)' : 'Cantidad'}
                     type="number"
-                    error={errors.items?.[index]?.amount?.message}
-                    {...register(`items.${index}.amount`)}
                   />
                   {fields.length > 1 && (
                     <IconButton
@@ -191,24 +184,13 @@ export const AdjustmentFormModal = ({ open, onClose, onCreated }: Props) => {
                 </div>
               </fieldset>
             ))}
-            {errors.items?.message && (
-              <p role="alert" className="text-xs text-danger">
-                {errors.items.message}
-              </p>
-            )}
+            <FormError name="items" />
             <Button variant="secondary" size="sm" icon={<Plus />} onClick={() => append({ ...EMPTY_ITEM })}>
               Agregar otra garrafa
             </Button>
           </div>
-          <TextArea
-            label="Nota"
-            required
-            maxLength={300}
-            placeholder="Qué pasó y cómo se detectó"
-            error={errors.notes?.message}
-            {...register('notes')}
-          />
-        </form>
+          <FormTextArea name="notes" label="Nota" required maxLength={300} placeholder="Qué pasó y cómo se detectó" />
+        </Form>
       )}
     </Modal>
   );

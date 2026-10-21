@@ -201,6 +201,18 @@ describe('DeliveryForm', () => {
     expect(refetch).toHaveBeenCalled();
   });
 
+  it('un error de recarga con el chofer en caché no desmonta el formulario: avisa en línea y reintenta', () => {
+    setup();
+    const refetch = vi.fn();
+    queries.delivery.mockReturnValue({ ...ok(DELIVERY), error: new Error('boom'), isError: true, refetch });
+    renderAt('/deliveries/dl-1/edit');
+    fireEvent.change(screen.getByLabelText(/^Nombre completo/), { target: { value: 'Cambio sin guardar' } });
+    expect(screen.getByLabelText(/^Nombre completo/)).toHaveValue('Cambio sin guardar');
+    expect(screen.getByRole('alert')).toHaveTextContent('No pudimos actualizar el chofer');
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
+    expect(refetch).toHaveBeenCalled();
+  });
+
   it('editar sin distribuidora elegida no muestra el formulario', () => {
     setup();
     permissions.canOperate = false;

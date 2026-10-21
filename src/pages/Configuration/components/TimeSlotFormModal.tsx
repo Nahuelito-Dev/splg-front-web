@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, Input, Modal } from '../../../common/components/ui';
+import { Button, Form, FormInput, Modal } from '../../../common/components/ui';
 import type { TimeSlot, UpdateTimeSlotBody } from '../../../services/api/types';
 import { useCreateTimeSlot, useTimeSlots, useUpdateTimeSlot } from '../../../services/queries/timeSlots';
 import { notify } from '../../../utils/notifications';
@@ -31,22 +31,17 @@ export const TimeSlotFormModal = ({ open, onClose, slot }: Props) => {
   const updateTimeSlot = useUpdateTimeSlot();
   const { data: slots, refetch: refetchSlots } = useTimeSlots();
   const editing = Boolean(slot);
-  const {
-    register,
-    handleSubmit,
-    reset,
-    setError,
-    formState: { errors },
-  } = useForm<TimeSlotFormValues>({
+  const methods = useForm<TimeSlotFormValues>({
     resolver: zodResolver(timeSlotSchema),
     defaultValues: toDefaults(slot),
   });
+  const { reset, setError } = methods;
 
   useEffect(() => {
     if (open) reset(toDefaults(slot));
   }, [open, slot, reset]);
 
-  const onSubmit = handleSubmit(async (values) => {
+  const onSubmit = async (values: TimeSlotFormValues) => {
     // Con las franjas de ahora, no con las de cuando se abrió el formulario; si no se pueden traer, decide el back.
     const fresh = (await refetchSlots()).data ?? slots ?? [];
     const conflict = findSlotConflict(values, fresh, slot?.time_slot_id);
@@ -73,7 +68,7 @@ export const TimeSlotFormModal = ({ open, onClose, slot }: Props) => {
       };
       updateTimeSlot.mutate({ id: slot.time_slot_id, body }, callbacks('Franja actualizada'));
     } else createTimeSlot.mutate(values, callbacks('Franja creada'));
-  });
+  };
 
   return (
     <Modal
@@ -96,22 +91,14 @@ export const TimeSlotFormModal = ({ open, onClose, slot }: Props) => {
         </>
       }
     >
-      <form id="time-slot-form" onSubmit={(e) => void onSubmit(e)} className="grid gap-4 sm:grid-cols-2" noValidate>
+      <Form methods={methods} onSubmit={onSubmit} id="time-slot-form" className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
-          <Input label="Nombre" required placeholder="Ej: Mañana" error={errors.name?.message} {...register('name')} />
+          <FormInput name="name" label="Nombre" required placeholder="Ej: Mañana" />
         </div>
-        <Input label="Inicio" required type="time" error={errors.startTime?.message} {...register('startTime')} />
-        <Input label="Fin" required type="time" error={errors.endTime?.message} {...register('endTime')} />
-        <Input
-          label="Cupo máximo"
-          required
-          type="number"
-          min={1}
-          max={MAX_SLOT_CAPACITY}
-          error={errors.capacity?.message}
-          {...register('capacity')}
-        />
-      </form>
+        <FormInput name="startTime" label="Inicio" required type="time" />
+        <FormInput name="endTime" label="Fin" required type="time" />
+        <FormInput name="capacity" label="Cupo máximo" required type="number" min={1} max={MAX_SLOT_CAPACITY} />
+      </Form>
     </Modal>
   );
 };

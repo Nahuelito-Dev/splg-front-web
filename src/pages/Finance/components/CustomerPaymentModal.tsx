@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Button, Input, Modal, Select } from '../../../common/components/ui';
+import { Button, Modal, FormInput, FormSelect, Form } from '../../../common/components/ui';
 import type { CustomerAccountDetail } from '../../../services/api/types';
 import { useCashBoxOptions, useRegisterCustomerPayment } from '../../../services/queries/finance';
 import { formatCurrency } from '../../../utils/format';
@@ -35,12 +35,8 @@ interface Props {
 export const CustomerPaymentModal = ({ open, onClose, account }: Props) => {
   const pay = useRegisterCustomerPayment();
   const boxes = useCashBoxOptions({ enabled: open });
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<Values>({ resolver: zodResolver(schema) });
+  const methods = useForm<Values>({ resolver: zodResolver(schema) });
+  const { reset } = methods;
 
   useEffect(() => {
     if (open) {
@@ -53,7 +49,7 @@ export const CustomerPaymentModal = ({ open, onClose, account }: Props) => {
     }
   }, [open, account.balance, reset]);
 
-  const onSubmit = handleSubmit((values) =>
+  const onSubmit = (values: Values) =>
     pay.mutate(
       {
         id: account.accountId,
@@ -71,8 +67,7 @@ export const CustomerPaymentModal = ({ open, onClose, account }: Props) => {
         },
         onError: notify.error,
       },
-    ),
-  );
+    );
 
   return (
     <Modal
@@ -92,10 +87,11 @@ export const CustomerPaymentModal = ({ open, onClose, account }: Props) => {
         </>
       }
     >
-      <form id="customer-payment-form" onSubmit={(e) => void onSubmit(e)} className="grid gap-4" noValidate>
-        <Input label="Importe" required inputMode="decimal" error={errors.amount?.message} {...register('amount')} />
-        <Select label="Medio" options={METHODS} error={errors.method?.message} {...register('method')} />
-        <Select
+      <Form methods={methods} id="customer-payment-form" onSubmit={onSubmit} className="grid gap-4">
+        <FormInput name="amount" label="Importe" required inputMode="decimal" />
+        <FormSelect name="method" label="Medio" options={METHODS} />
+        <FormSelect
+          name="cashBoxId"
           label="Caja"
           required
           options={[
@@ -103,16 +99,9 @@ export const CustomerPaymentModal = ({ open, onClose, account }: Props) => {
             ...(boxes.data?.data ?? []).map((b) => ({ value: b.cashBoxId, label: b.name })),
           ]}
           hint="Si exige sesión, tiene que estar abierta."
-          error={errors.cashBoxId?.message}
-          {...register('cashBoxId')}
         />
-        <Input
-          label="Detalle (opcional)"
-          maxLength={255}
-          error={errors.description?.message}
-          {...register('description')}
-        />
-      </form>
+        <FormInput name="description" label="Detalle (opcional)" maxLength={255} />
+      </Form>
     </Modal>
   );
 };

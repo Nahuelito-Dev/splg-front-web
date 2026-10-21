@@ -10,7 +10,8 @@ import {
   DetailList,
   Drawer,
   EntityPhoto,
-  TextArea,
+  FormTextArea,
+  Form,
 } from '../../../common/components/ui';
 import type { Incident } from '../../../services/api/types';
 import { useResolveIncident } from '../../../services/queries/incidents';
@@ -48,12 +49,8 @@ export const IncidentDetailDrawer = ({ open, onClose, incident, onEdit, onDiscar
   // propia distribuidora (que es siempre el caso acá: reporta un chofer o un
   // admin de la misma empresa), y el super admin, para cualquiera.
   const reporter = useUser(incident?.reported_by);
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<ResolveValues>({ resolver: zodResolver(resolveSchema) });
+  const methods = useForm<ResolveValues>({ resolver: zodResolver(resolveSchema) });
+  const { reset } = methods;
 
   useEffect(() => {
     if (open && incident) reset({ resolutionNote: incident.resolution_note ?? '' });
@@ -64,7 +61,7 @@ export const IncidentDetailDrawer = ({ open, onClose, incident, onEdit, onDiscar
   const unpaidOrder =
     incident.type === 'unpaid_collection' && incident.order?.paymentStatus === 'unpaid' ? incident.order : null;
 
-  const onSubmit = handleSubmit((body) =>
+  const onSubmit = (body: ResolveValues) =>
     resolveIncident.mutate(
       { id: incident.incident_id, body: { ...body, status: 'resolved' } },
       {
@@ -74,8 +71,7 @@ export const IncidentDetailDrawer = ({ open, onClose, incident, onEdit, onDiscar
         },
         onError: notify.error,
       },
-    ),
-  );
+    );
 
   return (
     <Drawer
@@ -170,16 +166,15 @@ export const IncidentDetailDrawer = ({ open, onClose, incident, onEdit, onDiscar
             El pedido sigue impago: la incidencia se cierra sola al resolver el cobro con «Resolver impago».
           </p>
         ) : isOpen ? (
-          <form id="incident-resolve" onSubmit={(e) => void onSubmit(e)} noValidate>
-            <TextArea
+          <Form methods={methods} id="incident-resolve" onSubmit={onSubmit}>
+            <FormTextArea
+              name="resolutionNote"
               label="Nota de resolución"
               required
               rows={4}
               placeholder="Ej: se reprogramó la entrega / se repuso la garrafa dañada"
-              error={errors.resolutionNote?.message}
-              {...register('resolutionNote')}
             />
-          </form>
+          </Form>
         ) : (
           <DetailList
             items={[

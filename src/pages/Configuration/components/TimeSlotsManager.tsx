@@ -4,7 +4,7 @@ import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
-import { Button, Card, EmptyState, IconButton, LoadingState } from '../../../common/components/ui';
+import { Button, Card, EmptyState, IconButton, LoadingState, CardHeader } from '../../../common/components/ui';
 import type { TimeSlot } from '../../../services/api/types';
 import { useDeleteTimeSlot, useTimeSlots } from '../../../services/queries/timeSlots';
 import { confirm, notify } from '../../../utils/notifications';
@@ -36,13 +36,12 @@ export const TimeSlotsManager = () => {
   return (
     <Card className="p-6">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h3 className="flex items-center gap-2 font-semibold text-ink">
-            <AccessTimeIcon aria-hidden="true" className="text-primary" fontSize="small" />
-            Turnos de entrega
-          </h3>
-          <p className="text-sm text-muted">Horarios disponibles para agendar pedidos.</p>
-        </div>
+        <CardHeader
+          title="Turnos de entrega"
+          subtitle="Horarios disponibles para agendar pedidos."
+          icon={<AccessTimeIcon />}
+          className=""
+        />
         <Button
           size="sm"
           icon={<AddCircleOutlineIcon />}

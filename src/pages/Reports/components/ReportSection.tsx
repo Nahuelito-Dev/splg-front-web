@@ -1,6 +1,6 @@
 import { Download } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { Button, Card, EmptyState, ErrorState, Skeleton } from '../../../common/components/ui';
+import { Button, Card, EmptyState, ErrorState, Skeleton, CardHeader } from '../../../common/components/ui';
 import { downloadCsv, rowsToCsv } from '../../../utils/csv';
 import { ReportTable, type ReportColumn } from './ReportTable';
 
@@ -48,10 +48,7 @@ export function ReportSection<T>({
   return (
     <Card className={className}>
       <div className="flex items-start justify-between gap-3 p-5 pb-4">
-        <div className="min-w-0">
-          <h2 className="font-display text-base font-semibold text-ink">{title}</h2>
-          <p className="mt-0.5 text-[12.5px] text-muted">{description}</p>
-        </div>
+        <CardHeader title={title} subtitle={description} className="" />
         <Button
           variant="secondary"
           size="sm"

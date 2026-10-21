@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus, Trash2 } from 'lucide-react';
 import { useEffect } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
-import { Button, IconButton, Input, Modal, Select, TextArea } from '../../../common/components/ui';
+import { Button, IconButton, Modal, FormInput, FormTextArea, FormSelect, Form } from '../../../common/components/ui';
 import { useCreateTransfer, useStockBalances } from '../../../services/queries/stock';
 import { useTruckStock } from '../../../services/queries/truckLoads';
 import { notify } from '../../../utils/notifications';
@@ -33,15 +33,8 @@ export const TransferFormModal = ({ open, onClose }: Props) => {
   const cars = useCarOptions();
   const create = useCreateTransfer();
   const scope = 'transfer:new';
-  const {
-    register,
-    handleSubmit,
-    reset,
-    watch,
-    control,
-    setError,
-    formState: { errors },
-  } = useForm<TransferFormValues>({ resolver: zodResolver(transferSchema) });
+  const methods = useForm<TransferFormValues>({ resolver: zodResolver(transferSchema) });
+  const { reset, watch, control, setError } = methods;
   const { fields, append, remove } = useFieldArray({ control, name: 'items' });
 
   useEffect(() => {
@@ -67,7 +60,7 @@ export const TransferFormModal = ({ open, onClose }: Props) => {
     enabled: open && Boolean(mode === 'warehouses' ? fromWarehouseId : carId),
   });
 
-  const onSubmit = handleSubmit(async (values) => {
+  const onSubmit = async (values: TransferFormValues) => {
     // Igual que el back: el origen no puede quedar con un saldo negativo.
     // Con los saldos de ahora; si no se pueden traer, decide el back (409).
     const freshBalances = (await balances.refetch()).data ?? balances.data;
@@ -103,7 +96,7 @@ export const TransferFormModal = ({ open, onClose }: Props) => {
         onError: notify.error,
       },
     );
-  });
+  };
 
   const loadFailed = warehouses.failed || cylinders.failed || cars.failed;
 
@@ -146,32 +139,24 @@ export const TransferFormModal = ({ open, onClose }: Props) => {
           </button>
         </p>
       ) : (
-        <form id="transfer-form" onSubmit={(e) => void onSubmit(e)} className="space-y-4" noValidate>
-          <Select label="Tipo" options={MODE_OPTIONS} {...register('mode')} />
+        <Form methods={methods} id="transfer-form" onSubmit={onSubmit} className="space-y-4">
+          <FormSelect name="mode" label="Tipo" options={MODE_OPTIONS} />
           <div className="grid gap-4 sm:grid-cols-2">
             {mode === 'warehouses' ? (
-              <Select
+              <FormSelect
+                name="fromWarehouseId"
                 label="Desde el galpón"
                 required
                 options={withPlaceholder(warehouses.options)}
-                error={errors.fromWarehouseId?.message}
-                {...register('fromWarehouseId')}
               />
             ) : (
-              <Select
-                label="Camión"
-                required
-                options={withPlaceholder(cars.options)}
-                error={errors.carId?.message}
-                {...register('carId')}
-              />
+              <FormSelect name="carId" label="Camión" required options={withPlaceholder(cars.options)} />
             )}
-            <Select
+            <FormSelect
+              name="toWarehouseId"
               label="Hacia el galpón"
               required
               options={withPlaceholder(warehouses.options)}
-              error={errors.toWarehouseId?.message}
-              {...register('toWarehouseId')}
             />
           </div>
           {mode === 'truck' && carId && (
@@ -202,20 +187,13 @@ export const TransferFormModal = ({ open, onClose }: Props) => {
               <fieldset key={field.id} className="min-w-0 rounded-lg border border-outline p-3">
                 <legend className="px-1 text-xs font-medium text-muted">Garrafa {index + 1}</legend>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1.2fr_1fr_0.8fr_auto] sm:items-start">
-                  <Select
+                  <FormSelect
+                    name={`items.${index}.gasCylinderId`}
                     label="Tipo"
                     options={withPlaceholder(cylinders.options)}
-                    error={errors.items?.[index]?.gasCylinderId?.message}
-                    {...register(`items.${index}.gasCylinderId`)}
                   />
-                  <Select label="Condición" options={CONDITION_OPTIONS} {...register(`items.${index}.condition`)} />
-                  <Input
-                    label="Cantidad"
-                    type="number"
-                    min={1}
-                    error={errors.items?.[index]?.quantity?.message}
-                    {...register(`items.${index}.quantity`)}
-                  />
+                  <FormSelect name={`items.${index}.condition`} label="Condición" options={CONDITION_OPTIONS} />
+                  <FormInput name={`items.${index}.quantity`} label="Cantidad" type="number" min={1} />
                   {fields.length > 1 && (
                     <IconButton
                       label={`Quitar garrafa ${index + 1}`}
@@ -231,14 +209,13 @@ export const TransferFormModal = ({ open, onClose }: Props) => {
               Agregar otra garrafa
             </Button>
           </div>
-          <TextArea
+          <FormTextArea
+            name="notes"
             label={mode === 'truck' ? 'Nota' : 'Nota (opcional)'}
             required={mode === 'truck'}
             maxLength={300}
-            error={errors.notes?.message}
-            {...register('notes')}
           />
-        </form>
+        </Form>
       )}
     </Modal>
   );

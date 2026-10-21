@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Button, Input, Modal, TextArea } from '../../../common/components/ui';
+import { Button, Modal, FormInput, FormTextArea, Form } from '../../../common/components/ui';
 import type { Claim } from '../../../services/api/types';
 import { useUpdateClaim } from '../../../services/queries/claims';
 import { notify } from '../../../utils/notifications';
@@ -22,18 +22,14 @@ interface Props {
 /** Corrige el motivo o la descripción de un reclamo pendiente (la API rechaza editar uno que ya se tomó). */
 export const EditClaimModal = ({ claim, onClose }: Props) => {
   const update = useUpdateClaim();
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<FormValues>({ resolver: zodResolver(schema) });
+  const methods = useForm<FormValues>({ resolver: zodResolver(schema) });
+  const { reset } = methods;
 
   useEffect(() => {
     if (claim) reset({ reason: claim.reason, description: claim.description });
   }, [claim, reset]);
 
-  const onSubmit = handleSubmit((values) => {
+  const onSubmit = (values: FormValues) => {
     if (!claim) return;
     update.mutate(
       { id: claim.claim_id, body: values },
@@ -45,7 +41,7 @@ export const EditClaimModal = ({ claim, onClose }: Props) => {
         onError: notify.error,
       },
     );
-  });
+  };
 
   return (
     <Modal
@@ -64,16 +60,10 @@ export const EditClaimModal = ({ claim, onClose }: Props) => {
         </>
       }
     >
-      <form id="claim-edit" onSubmit={(e) => void onSubmit(e)} className="space-y-4" noValidate>
-        <Input label="Motivo" required error={errors.reason?.message} {...register('reason')} />
-        <TextArea
-          label="Descripción"
-          required
-          rows={4}
-          error={errors.description?.message}
-          {...register('description')}
-        />
-      </form>
+      <Form methods={methods} id="claim-edit" onSubmit={onSubmit} className="space-y-4">
+        <FormInput name="reason" label="Motivo" required />
+        <FormTextArea name="description" label="Descripción" required rows={4} />
+      </Form>
     </Modal>
   );
 };

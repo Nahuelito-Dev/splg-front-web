@@ -11,6 +11,7 @@
     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "colors": "node scripts/check-colors.mjs",
     "test": "TZ=America/Argentina/Buenos_Aires vitest run",
+    "test:utc": "SPLG_TEST_TZ=UTC TZ=UTC vitest run",
     "api:types": "node scripts/generate-types.mjs",
     "verify": "npm run typecheck && npm run lint && npm run format:check && npm run colors && npm run test && vite build",
     "format": "prettier --write src",

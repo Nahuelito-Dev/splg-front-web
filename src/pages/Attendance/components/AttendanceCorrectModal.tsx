@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, Input, Modal, TextArea } from '../../../common/components/ui';
+import { Button, Modal, FormInput, FormTextArea, Form } from '../../../common/components/ui';
 import type { Attendance } from '../../../services/api/types';
 import { useCorrectAttendance } from '../../../services/queries/personnel';
 import { notify } from '../../../utils/notifications';
@@ -16,12 +16,8 @@ interface Props {
 /** Corrección del ingreso o del egreso de una jornada (CU-313). La nota que explica el cambio es obligatoria. */
 export const AttendanceCorrectModal = ({ open, onClose, attendance }: Props) => {
   const correct = useCorrectAttendance();
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<AttendanceCorrectValues>({ resolver: zodResolver(attendanceCorrectSchema) });
+  const methods = useForm<AttendanceCorrectValues>({ resolver: zodResolver(attendanceCorrectSchema) });
+  const { reset } = methods;
 
   useEffect(() => {
     if (open && attendance) {
@@ -29,7 +25,7 @@ export const AttendanceCorrectModal = ({ open, onClose, attendance }: Props) => 
     }
   }, [open, attendance, reset]);
 
-  const onSubmit = handleSubmit((values) => {
+  const onSubmit = (values: AttendanceCorrectValues) => {
     if (!attendance || correct.isPending) return;
     correct.mutate(
       {
@@ -48,7 +44,7 @@ export const AttendanceCorrectModal = ({ open, onClose, attendance }: Props) => 
         onError: notify.error,
       },
     );
-  });
+  };
 
   return (
     <Modal
@@ -68,26 +64,13 @@ export const AttendanceCorrectModal = ({ open, onClose, attendance }: Props) => 
         </>
       }
     >
-      <form id="attendance-correct" onSubmit={(e) => void onSubmit(e)} className="grid gap-4 sm:grid-cols-2" noValidate>
-        <Input
-          label="Ingreso"
-          required
-          type="datetime-local"
-          error={errors.checkInAt?.message}
-          {...register('checkInAt')}
-        />
-        <Input label="Egreso" type="datetime-local" error={errors.checkOutAt?.message} {...register('checkOutAt')} />
+      <Form methods={methods} id="attendance-correct" onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
+        <FormInput name="checkInAt" label="Ingreso" required type="datetime-local" />
+        <FormInput name="checkOutAt" label="Egreso" type="datetime-local" />
         <div className="sm:col-span-2">
-          <TextArea
-            label="Nota"
-            required
-            maxLength={500}
-            placeholder="Olvidó marcar la salida"
-            error={errors.notes?.message}
-            {...register('notes')}
-          />
+          <FormTextArea name="notes" label="Nota" required maxLength={500} placeholder="Olvidó marcar la salida" />
         </div>
-      </form>
+      </Form>
     </Modal>
   );
 };

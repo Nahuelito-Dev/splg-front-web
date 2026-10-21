@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, Checkbox, Input, Modal } from '../../../common/components/ui';
+import { Button, Modal, FormInput, FormCheckbox, Form } from '../../../common/components/ui';
 import type { TrafficFine } from '../../../services/api/types';
 import { usePayTrafficFine } from '../../../services/queries/fleetExpense';
 import { CashBoxField } from '../../Orders/components/CashBoxField';
@@ -21,13 +21,8 @@ export const PayFineModal = ({ fine, onClose }: Props) => {
   const today = argentinaDay(new Date());
   const occurredAt = fine?.occurredAt;
   const schema = useMemo(() => payFineSchema(today, occurredAt), [today, occurredAt]);
-  const {
-    register,
-    handleSubmit,
-    reset,
-    watch,
-    formState: { errors },
-  } = useForm<PayFineFormValues>({ resolver: zodResolver(schema) });
+  const methods = useForm<PayFineFormValues>({ resolver: zodResolver(schema) });
+  const { reset, watch } = methods;
   const [cashBoxId, setCashBoxId] = useState('');
   const [touched, setTouched] = useState(false);
   const paidInCash = watch('paidInCash');
@@ -42,7 +37,7 @@ export const PayFineModal = ({ fine, onClose }: Props) => {
     setTouched(false);
   }, [fine, today, reset]);
 
-  const onSubmit = handleSubmit((values) => {
+  const onSubmit = (values: PayFineFormValues) => {
     setTouched(true);
     if (values.paidInCash && (cashBoxes.loading || cashBoxes.failed)) {
       notify.error(new Error('No pudimos cargar las cajas: probá de nuevo'));
@@ -66,7 +61,7 @@ export const PayFineModal = ({ fine, onClose }: Props) => {
         onError: notify.error,
       },
     );
-  });
+  };
 
   return (
     <Modal
@@ -86,16 +81,10 @@ export const PayFineModal = ({ fine, onClose }: Props) => {
         </>
       }
     >
-      <form id="pay-fine-form" onSubmit={(e) => void onSubmit(e)} className="grid gap-4" noValidate>
-        <Input
-          label="Fecha de pago"
-          type="date"
-          max={today}
-          required
-          error={errors.paidAt?.message}
-          {...register('paidAt')}
-        />
-        <Input
+      <Form methods={methods} id="pay-fine-form" onSubmit={onSubmit} className="grid gap-4">
+        <FormInput name="paidAt" label="Fecha de pago" type="date" max={today} required />
+        <FormInput
+          name="paidAmount"
           label="Importe pagado"
           type="number"
           step="0.01"
@@ -106,13 +95,11 @@ export const PayFineModal = ({ fine, onClose }: Props) => {
               ? `Con pago voluntario: ${formatCurrency(fine.voluntaryPaymentAmount)}`
               : undefined
           }
-          error={errors.paidAmount?.message}
-          {...register('paidAmount')}
         />
-        <Checkbox
+        <FormCheckbox
+          name="paidInCash"
           label="Se pagó en efectivo de una caja"
           hint="El importe pagado sale de la caja que elijas."
-          {...register('paidInCash')}
         />
         {paidInCash && (
           <CashBoxField
@@ -123,7 +110,7 @@ export const PayFineModal = ({ fine, onClose }: Props) => {
             hint="El efectivo sale de esta caja. Si exige sesión, tiene que estar abierta."
           />
         )}
-      </form>
+      </Form>
     </Modal>
   );
 };

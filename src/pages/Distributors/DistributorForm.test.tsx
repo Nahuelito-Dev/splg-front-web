@@ -170,6 +170,18 @@ describe('DistributorForm', () => {
     expect(refetch).toHaveBeenCalled();
   });
 
+  it('un error de recarga con la empresa en caché no desmonta el formulario: avisa en línea y reintenta', () => {
+    setup();
+    const refetch = vi.fn();
+    queries.distributor.mockReturnValue({ ...ok(DISTRIBUTOR), error: new Error('boom'), isError: true, refetch });
+    renderAt('/distributors/d-1/edit');
+    fireEvent.change(screen.getByLabelText(/^Nombre/), { target: { value: 'Cambio sin guardar' } });
+    expect(screen.getByLabelText(/^Nombre/)).toHaveValue('Cambio sin guardar');
+    expect(screen.getByRole('alert')).toHaveTextContent('No pudimos actualizar la empresa');
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
+    expect(refetch).toHaveBeenCalled();
+  });
+
   it('quien no es administrador general no ve el formulario', () => {
     setup();
     permissions.isSuperAdmin = false;

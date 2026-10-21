@@ -1,4 +1,4 @@
-import { Card, ErrorState, Skeleton, TrendAreaChart } from '../../../common/components/ui';
+import { Card, ErrorState, Skeleton, TrendAreaChart, CardHeader } from '../../../common/components/ui';
 import { useSalesEvolution } from '../../../services/queries/reports';
 import type { DayRange } from '../../../utils/dateRange';
 import { formatCurrency } from '../../../utils/format';
@@ -27,10 +27,11 @@ export const SalesTrend = ({ range, granularity, onGranularityChange }: Props) =
   return (
     <Card>
       <div className="flex flex-wrap items-start justify-between gap-3 p-5 pb-2">
-        <div>
-          <h2 className="font-display text-base font-semibold text-ink">Ventas en el tiempo</h2>
-          <p className="mt-0.5 text-[12.5px] text-muted">Facturación del período contra el período anterior.</p>
-        </div>
+        <CardHeader
+          title="Ventas en el tiempo"
+          subtitle="Facturación del período contra el período anterior."
+          className=""
+        />
         <div role="group" aria-label="Agrupar por" className="flex gap-1 rounded-lg bg-surface-muted p-1">
           {OPTIONS.map((option) => (
             <button

@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Button, Input, Modal, Select } from '../../../common/components/ui';
+import { Button, Form, FormInput, FormSelect, Modal } from '../../../common/components/ui';
 import type { CreateCashMovementBody } from '../../../services/api/types';
 import { useCashBoxOptions, useCashCategories, useCreateCashMovement } from '../../../services/queries/finance';
 import { notify } from '../../../utils/notifications';
@@ -38,14 +38,8 @@ export const CashMovementFormModal = ({ open, onClose, defaultCashBoxId }: Props
   const create = useCreateCashMovement();
   const boxes = useCashBoxOptions({ enabled: open });
   const categories = useCashCategories({ page: 0, pageSize: 100 }, {}, { enabled: open });
-  const {
-    register,
-    handleSubmit,
-    reset,
-    watch,
-    setError,
-    formState: { errors },
-  } = useForm<Values>({ resolver: zodResolver(schema) });
+  const methods = useForm<Values>({ resolver: zodResolver(schema) });
+  const { reset, watch, setError } = methods;
   const direction = watch('direction');
 
   useEffect(() => {
@@ -68,7 +62,7 @@ export const CashMovementFormModal = ({ open, onClose, defaultCashBoxId }: Props
       .map((c) => ({ value: c.categoryId, label: c.name })),
   ];
 
-  const onSubmit = handleSubmit(async (values) => {
+  const onSubmit = async (values: Values) => {
     if (values.direction === 'out') {
       // Con el saldo de ahora; si no se puede traer, decide el back (409).
       const fresh = (await boxes.refetch()).data ?? boxes.data;
@@ -87,7 +81,7 @@ export const CashMovementFormModal = ({ open, onClose, defaultCashBoxId }: Props
       },
       onError: notify.error,
     });
-  });
+  };
 
   return (
     <Modal
@@ -108,47 +102,33 @@ export const CashMovementFormModal = ({ open, onClose, defaultCashBoxId }: Props
         </>
       }
     >
-      <form id="cash-movement-form" onSubmit={(e) => void onSubmit(e)} className="grid gap-4 sm:grid-cols-2" noValidate>
-        <Select
+      <Form methods={methods} onSubmit={onSubmit} id="cash-movement-form" className="grid gap-4 sm:grid-cols-2">
+        <FormSelect
+          name="cashBoxId"
           label="Caja"
           required
           options={[
             { value: '', label: 'Elegí una caja' },
             ...(boxes.data?.data ?? []).map((b) => ({ value: b.cashBoxId, label: b.name })),
           ]}
-          error={errors.cashBoxId?.message}
-          {...register('cashBoxId')}
         />
-        <Select
+        <FormSelect
+          name="direction"
           label="Sentido"
           options={[
             { value: 'in', label: 'Entrada' },
             { value: 'out', label: 'Salida' },
           ]}
-          error={errors.direction?.message}
-          {...register('direction')}
         />
-        <Input label="Importe" required inputMode="decimal" error={errors.amount?.message} {...register('amount')} />
-        <Select label="Medio" options={METHODS} error={errors.method?.message} {...register('method')} />
+        <FormInput name="amount" label="Importe" required inputMode="decimal" />
+        <FormSelect name="method" label="Medio" options={METHODS} />
         <div className="sm:col-span-2">
-          <Select
-            label="Categoría"
-            required
-            options={categoryOptions}
-            error={errors.categoryId?.message}
-            {...register('categoryId')}
-          />
+          <FormSelect name="categoryId" label="Categoría" required options={categoryOptions} />
         </div>
         <div className="sm:col-span-2">
-          <Input
-            label="Motivo"
-            required
-            maxLength={255}
-            error={errors.description?.message}
-            {...register('description')}
-          />
+          <FormInput name="description" label="Motivo" required maxLength={255} />
         </div>
-      </form>
+      </Form>
     </Modal>
   );
 };

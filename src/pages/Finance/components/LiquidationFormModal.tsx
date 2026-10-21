@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
-import { Button, Input, Modal, Select } from '../../../common/components/ui';
+import { Button, Modal, FormInput, FormSelect, Form } from '../../../common/components/ui';
 import { useEmployees } from '../../../services/queries/employees';
 import { useCreateDriverLiquidation } from '../../../services/queries/finance';
 import { toIsoDay } from '../../../utils/dates';
@@ -29,12 +29,8 @@ export const LiquidationFormModal = ({ open, onClose }: Props) => {
   const navigate = useNavigate();
   const create = useCreateDriverLiquidation();
   const employees = useEmployees({ page: 0, pageSize: 100 }, { category: 'driver' }, open);
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<Values>({ resolver: zodResolver(schema) });
+  const methods = useForm<Values>({ resolver: zodResolver(schema) });
+  const { reset } = methods;
 
   useEffect(() => {
     if (!open) return;
@@ -46,7 +42,7 @@ export const LiquidationFormModal = ({ open, onClose }: Props) => {
     });
   }, [open, reset]);
 
-  const onSubmit = handleSubmit((values) =>
+  const onSubmit = (values: Values) =>
     create.mutate(values, {
       onSuccess: (liquidation) => {
         notify.success('Liquidación creada en borrador');
@@ -54,8 +50,7 @@ export const LiquidationFormModal = ({ open, onClose }: Props) => {
         navigate(`/finance/liquidations/${liquidation.liquidationId}`);
       },
       onError: notify.error,
-    }),
-  );
+    });
 
   return (
     <Modal
@@ -75,9 +70,10 @@ export const LiquidationFormModal = ({ open, onClose }: Props) => {
         </>
       }
     >
-      <form id="liquidation-form" onSubmit={(e) => void onSubmit(e)} className="grid gap-4 sm:grid-cols-2" noValidate>
+      <Form methods={methods} id="liquidation-form" onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
-          <Select
+          <FormSelect
+            name="employeeId"
             label="Chofer"
             required
             options={[
@@ -87,13 +83,11 @@ export const LiquidationFormModal = ({ open, onClose }: Props) => {
                 label: `${e.firstName} ${e.lastName}`,
               })),
             ]}
-            error={errors.employeeId?.message}
-            {...register('employeeId')}
           />
         </div>
-        <Input label="Desde" type="date" required error={errors.periodFrom?.message} {...register('periodFrom')} />
-        <Input label="Hasta" type="date" required error={errors.periodTo?.message} {...register('periodTo')} />
-      </form>
+        <FormInput name="periodFrom" label="Desde" type="date" required />
+        <FormInput name="periodTo" label="Hasta" type="date" required />
+      </Form>
     </Modal>
   );
 };

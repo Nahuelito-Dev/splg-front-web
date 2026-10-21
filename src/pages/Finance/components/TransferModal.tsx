@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Button, Input, Modal, Select } from '../../../common/components/ui';
+import { Button, Modal, FormInput, FormSelect, Form } from '../../../common/components/ui';
 import { useCashBoxOptions, useTransferCash } from '../../../services/queries/finance';
 import { formatCurrency } from '../../../utils/format';
 import { notify } from '../../../utils/notifications';
@@ -30,13 +30,8 @@ interface Props {
 export const TransferModal = ({ open, onClose }: Props) => {
   const transfer = useTransferCash();
   const boxes = useCashBoxOptions({ enabled: open });
-  const {
-    register,
-    handleSubmit,
-    reset,
-    setError,
-    formState: { errors },
-  } = useForm<Values>({ resolver: zodResolver(schema) });
+  const methods = useForm<Values>({ resolver: zodResolver(schema) });
+  const { reset, setError } = methods;
 
   useEffect(() => {
     if (open) reset({ fromCashBoxId: '', toCashBoxId: '', amount: '', description: '' });
@@ -50,7 +45,7 @@ export const TransferModal = ({ open, onClose }: Props) => {
     })),
   ];
 
-  const onSubmit = handleSubmit(async (values) => {
+  const onSubmit = async (values: Values) => {
     // Con el saldo de ahora; si no se puede traer, decide el back (409).
     const fresh = (await boxes.refetch()).data ?? boxes.data;
     const origin = fresh?.data.find((b) => b.cashBoxId === values.fromCashBoxId);
@@ -74,7 +69,7 @@ export const TransferModal = ({ open, onClose }: Props) => {
         onError: notify.error,
       },
     );
-  });
+  };
 
   return (
     <Modal
@@ -94,29 +89,12 @@ export const TransferModal = ({ open, onClose }: Props) => {
         </>
       }
     >
-      <form id="transfer-form" onSubmit={(e) => void onSubmit(e)} className="grid gap-4" noValidate>
-        <Select
-          label="Desde"
-          required
-          options={options}
-          error={errors.fromCashBoxId?.message}
-          {...register('fromCashBoxId')}
-        />
-        <Select
-          label="Hacia"
-          required
-          options={options}
-          error={errors.toCashBoxId?.message}
-          {...register('toCashBoxId')}
-        />
-        <Input label="Importe" required inputMode="decimal" error={errors.amount?.message} {...register('amount')} />
-        <Input
-          label="Nota (opcional)"
-          maxLength={255}
-          error={errors.description?.message}
-          {...register('description')}
-        />
-      </form>
+      <Form methods={methods} id="transfer-form" onSubmit={onSubmit} className="grid gap-4">
+        <FormSelect name="fromCashBoxId" label="Desde" required options={options} />
+        <FormSelect name="toCashBoxId" label="Hacia" required options={options} />
+        <FormInput name="amount" label="Importe" required inputMode="decimal" />
+        <FormInput name="description" label="Nota (opcional)" maxLength={255} />
+      </Form>
     </Modal>
   );
 };

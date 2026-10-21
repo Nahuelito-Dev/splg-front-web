@@ -11,8 +11,10 @@ import {
   FormActions,
   FormCheckbox,
   FormInput,
+  FormLoadWarning,
   FormSection,
   FormSelect,
+  type LoadWarning,
   LoadingState,
   PageContainer,
   PageHeader,
@@ -58,7 +60,8 @@ export const DeliveryForm = () => {
       </PageContainer>
     );
   }
-  if (id && (isPending || error || !delivery)) {
+  // Un error de recarga con datos en caché no desmonta el formulario: se avisa en línea y se puede reintentar.
+  if (id && (isPending || !delivery)) {
     return (
       <PageContainer size="sm">
         <PageHeader title={title} />
@@ -72,7 +75,12 @@ export const DeliveryForm = () => {
       </PageContainer>
     );
   }
-  return delivery && id ? <EditDeliveryForm key={delivery.delivery_id} delivery={delivery} /> : <CreateDeliveryForm />;
+  const warning = id && error ? { text: 'No pudimos actualizar el chofer.', retry: () => void refetch() } : undefined;
+  return delivery && id ? (
+    <EditDeliveryForm key={delivery.delivery_id} delivery={delivery} warning={warning} />
+  ) : (
+    <CreateDeliveryForm />
+  );
 };
 
 const CreateDeliveryForm = () => {
@@ -158,7 +166,7 @@ const CreateDeliveryForm = () => {
   );
 };
 
-const EditDeliveryForm = ({ delivery }: { delivery: Delivery }) => {
+const EditDeliveryForm = ({ delivery, warning }: { delivery: Delivery; warning?: LoadWarning }) => {
   const navigate = useNavigate();
   const returnPath = useReturnPath(`/deliveries/details/${delivery.delivery_id}`);
   const updateAccount = useUpdateDeliveryAccount();
@@ -212,6 +220,7 @@ const EditDeliveryForm = ({ delivery }: { delivery: Delivery }) => {
   return (
     <PageContainer size="sm">
       <PageHeader title="Editar chofer" description={delivery.user?.email ?? undefined} />
+      {warning && <FormLoadWarning text={warning.text} onRetry={warning.retry} />}
       <Form methods={methods} onSubmit={onSubmit} id="delivery-edit" className="space-y-6">
         <FormSection title="Datos de la cuenta">
           <FormInput name="full_name" label="Nombre completo" required autoComplete="name" />

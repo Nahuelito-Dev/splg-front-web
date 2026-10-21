@@ -1,20 +1,18 @@
-import { useFieldArray, useWatch, type Control, type FieldErrors, type UseFormRegister } from 'react-hook-form';
+import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import { Button, IconButton, Input } from '../../../common/components/ui';
+import { Button, FormError, FormInput, IconButton } from '../../../common/components/ui';
 import { formatCurrency } from '../../../utils/format';
 import type { GasCylinderFormValues } from './gasCylinderSchema';
 import { discountedPrice } from './pricing';
 
 interface Props {
-  control: Control<GasCylinderFormValues>;
-  register: UseFormRegister<GasCylinderFormValues>;
-  errors: FieldErrors<GasCylinderFormValues>;
   price: number;
 }
 
 /** Reglas de descuento por cantidad del producto: "llevando N, X% off". */
-export const PromotionsFieldArray = ({ control, register, errors, price }: Props) => {
+export const PromotionsFieldArray = ({ price }: Props) => {
+  const { control } = useFormContext<GasCylinderFormValues>();
   const { fields, append, remove } = useFieldArray({ control, name: 'promotions' });
   const promotions = useWatch({ control, name: 'promotions' });
 
@@ -42,19 +40,17 @@ export const PromotionsFieldArray = ({ control, register, errors, price }: Props
             const finalPrice = price > 0 && Number(discount) > 0 ? discountedPrice(price, Number(discount)) : null;
             return (
               <div key={field.id} className="flex flex-wrap items-end gap-3">
-                <Input
+                <FormInput
+                  name={`promotions.${index}.quantity`}
                   label="Desde (unidades)"
                   type="number"
                   className="w-28"
-                  error={errors.promotions?.[index]?.quantity?.message}
-                  {...register(`promotions.${index}.quantity`)}
                 />
-                <Input
+                <FormInput
+                  name={`promotions.${index}.discountPercentage`}
                   label="Descuento (%)"
                   type="number"
                   className="w-28"
-                  error={errors.promotions?.[index]?.discountPercentage?.message}
-                  {...register(`promotions.${index}.discountPercentage`)}
                 />
                 <p className="pb-2.5 text-xs text-muted">
                   {finalPrice !== null ? `Queda en ${formatCurrency(finalPrice)} c/u` : ''}
@@ -73,11 +69,7 @@ export const PromotionsFieldArray = ({ control, register, errors, price }: Props
         </div>
       )}
 
-      {errors.promotions?.message && (
-        <p role="alert" className="mt-3 text-xs text-danger">
-          {errors.promotions.message}
-        </p>
-      )}
+      <FormError name="promotions" />
     </fieldset>
   );
 };

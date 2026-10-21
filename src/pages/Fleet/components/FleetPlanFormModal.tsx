@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, Checkbox, Input, Modal, Select } from '../../../common/components/ui';
+import { Button, Modal, FormInput, FormCheckbox, FormSelect, Form } from '../../../common/components/ui';
 import type { FleetPlan } from '../../../services/api/types';
 import { useCreateFleetPlan, useUpdateFleetPlan } from '../../../services/queries/fleet';
 import { notify } from '../../../utils/notifications';
@@ -67,13 +67,8 @@ export const FleetPlanFormModal = ({ open, onClose, plan }: Props) => {
   const updatePlan = useUpdateFleetPlan();
   const saving = createPlan.isPending || updatePlan.isPending;
 
-  const {
-    register,
-    handleSubmit,
-    watch,
-    reset,
-    formState: { errors },
-  } = useForm<FleetPlanFormValues>({ resolver: zodResolver(fleetPlanSchema) });
+  const methods = useForm<FleetPlanFormValues>({ resolver: zodResolver(fleetPlanSchema) });
+  const { watch, reset } = methods;
 
   useEffect(() => {
     if (!open) return;
@@ -95,7 +90,7 @@ export const FleetPlanFormModal = ({ open, onClose, plan }: Props) => {
   const trigger = watch('trigger');
   const subject = watch('subject');
 
-  const onSubmit = handleSubmit((values) => {
+  const onSubmit = (values: FleetPlanFormValues) => {
     const options = {
       onSuccess: () => {
         notify.success(isEditing ? 'Plan actualizado' : 'Plan creado');
@@ -121,7 +116,7 @@ export const FleetPlanFormModal = ({ open, onClose, plan }: Props) => {
     } else {
       createPlan.mutate(body, options);
     }
-  });
+  };
 
   return (
     <Modal
@@ -140,72 +135,31 @@ export const FleetPlanFormModal = ({ open, onClose, plan }: Props) => {
         </>
       }
     >
-      <form id="fleet-plan-form" onSubmit={(e) => void onSubmit(e)} className="grid gap-4 sm:grid-cols-2" noValidate>
+      <Form methods={methods} id="fleet-plan-form" onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
-          <Input
-            label="Nombre"
-            placeholder="Seguro del vehículo"
-            maxLength={120}
-            error={errors.name?.message}
-            {...register('name')}
-          />
+          <FormInput name="name" label="Nombre" placeholder="Seguro del vehículo" maxLength={120} />
         </div>
-        <Select
-          label="A qué aplica"
-          options={SUBJECT_OPTIONS}
-          error={errors.subject?.message}
-          {...register('subject')}
-        />
-        <Select
-          label="Dispara el vencimiento"
-          options={TRIGGER_OPTIONS}
-          error={errors.trigger?.message}
-          {...register('trigger')}
-        />
-        {trigger === 'by_km' && (
-          <Input
-            label="Cada (km)"
-            type="number"
-            min={1}
-            step={1}
-            error={errors.intervalKm?.message}
-            {...register('intervalKm')}
-          />
-        )}
+        <FormSelect name="subject" label="A qué aplica" options={SUBJECT_OPTIONS} />
+        <FormSelect name="trigger" label="Dispara el vencimiento" options={TRIGGER_OPTIONS} />
+        {trigger === 'by_km' && <FormInput name="intervalKm" label="Cada (km)" type="number" min={1} step={1} />}
         {trigger === 'by_time' && (
-          <Input
-            label="Cada (meses)"
-            type="number"
-            min={1}
-            step={1}
-            error={errors.intervalMonths?.message}
-            {...register('intervalMonths')}
-          />
+          <FormInput name="intervalMonths" label="Cada (meses)" type="number" min={1} step={1} />
         )}
-        <Input
-          label="Avisa con (días de anticipación)"
-          type="number"
-          min={0}
-          step={1}
-          error={errors.leadTimeDays?.message}
-          {...register('leadTimeDays')}
-        />
-        <Select
+        <FormInput name="leadTimeDays" label="Avisa con (días de anticipación)" type="number" min={0} step={1} />
+        <FormSelect
+          name="criticality"
           label="Criticidad"
           options={CRITICALITY_OPTIONS}
           hint="Bloqueante: sin esto vigente, no puede salir a operar."
-          error={errors.criticality?.message}
-          {...register('criticality')}
         />
         {subject === 'employee' && (
           <>
             <div className="sm:col-span-2">
-              <Select
+              <FormSelect
+                name="documentKind"
                 label="Tipo de documento"
                 options={EMPLOYEE_DOCUMENT_KIND_OPTIONS}
                 hint="Define los datos que se piden al cargarlo."
-                error={errors.documentKind?.message}
-                {...register('documentKind')}
               />
             </div>
             <fieldset className="sm:col-span-2">
@@ -213,31 +167,29 @@ export const FleetPlanFormModal = ({ open, onClose, plan }: Props) => {
               <p className="mb-2 text-xs text-muted">Sin elegir ninguna, aplica a todo el personal.</p>
               <div className="grid gap-2 sm:grid-cols-2">
                 {Object.entries(POSITION_CATEGORY_LABELS).map(([value, label]) => (
-                  <Checkbox key={value} label={label} value={value} {...register('appliesToCategories')} />
+                  <FormCheckbox name="appliesToCategories" key={value} label={label} value={value} />
                 ))}
               </div>
             </fieldset>
           </>
         )}
         {subject === 'vehicle' && (
-          <Input
+          <FormInput
+            name="carType"
             label="Tipo de vehículo"
             placeholder="Moto, camioneta… (vacío = todos)"
             maxLength={60}
-            error={errors.carType?.message}
-            {...register('carType')}
           />
         )}
         {subject === 'vehicle' && (
-          <Select
+          <FormSelect
+            name="documentKind"
             label="Qué documento es"
             options={VEHICLE_DOCUMENT_KIND_OPTIONS}
             hint="El sistema reconoce el seguro (su prima entra en el costo del vehículo) y la habilitación de mercancías peligrosas."
-            error={errors.documentKind?.message}
-            {...register('documentKind')}
           />
         )}
-      </form>
+      </Form>
     </Modal>
   );
 };

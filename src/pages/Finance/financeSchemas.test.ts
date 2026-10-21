@@ -1,6 +1,16 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { argentinaDay } from '../../utils/format';
 import { day, insufficientCashMessage, nonNegativeMoney, parseMoney, pastDay, positiveMoney } from './financeSchemas';
+
+/** Reloj fijo: las reglas de «no futuro» y «no pasado» dependen de la hora de ejecución. */
+const NOW = new Date('2026-10-21T15:00:00.000Z');
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(NOW);
+});
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe('financeSchemas', () => {
   it('parseMoney acepta coma decimal', () => {

@@ -2,7 +2,16 @@ import { useMemo } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { CirclePlus, Trash2 } from 'lucide-react';
-import { Button, IconButton, Input, Modal, Select, TextArea, CardHeader } from '../../../common/components/ui';
+import {
+  Button,
+  IconButton,
+  Modal,
+  CardHeader,
+  FormInput,
+  FormTextArea,
+  FormSelect,
+  Form,
+} from '../../../common/components/ui';
 import type { Order } from '../../../services/api/types';
 import { useGasCylinders } from '../../../services/queries/gasCylinders';
 import { useUpdateOrder } from '../../../services/queries/orders';
@@ -49,17 +58,11 @@ export const EditOrderModal = ({ order, onClose }: Props) => {
   const { data: slots } = useTimeSlots();
   const { data: catalog } = useGasCylinders({ page: 0, pageSize: 100 });
   const resolver = useMemo(() => zodResolver(orderEditSchema(order?.scheduledDate ?? '')), [order?.scheduledDate]);
-  const {
-    register,
-    control,
-    handleSubmit,
-    reset,
-    watch,
-    formState: { errors },
-  } = useForm<OrderEditValues>({
+  const methods = useForm<OrderEditValues>({
     resolver,
     defaultValues: order ? defaultsOf(order) : undefined,
   });
+  const { control, reset, watch } = methods;
   const { fields, append, remove } = useFieldArray({ control, name: 'items' });
 
   useResetOnOpen(Boolean(order), () => order && reset(defaultsOf(order)));
@@ -98,7 +101,7 @@ export const EditOrderModal = ({ order, onClose }: Props) => {
     return [{ value: '', label: 'Elegí una garrafa' }, ...options];
   }, [catalog, order]);
 
-  const onSubmit = handleSubmit((values) => {
+  const onSubmit = (values: OrderEditValues) => {
     if (!order) return;
     const body = buildOrderUpdate(initialOf(order), values);
     if (Object.keys(body).length === 0) {
@@ -115,7 +118,7 @@ export const EditOrderModal = ({ order, onClose }: Props) => {
         onError: notify.error,
       },
     );
-  });
+  };
 
   return (
     <Modal
@@ -140,24 +143,18 @@ export const EditOrderModal = ({ order, onClose }: Props) => {
         </>
       }
     >
-      <form id="order-edit" onSubmit={(e) => void onSubmit(e)} className="space-y-4" noValidate>
+      <Form methods={methods} id="order-edit" onSubmit={onSubmit} className="space-y-4">
         {addresses ? (
-          <Select label="Dirección de entrega" options={addressOptions} {...register('addressId')} />
+          <FormSelect name="addressId" label="Dirección de entrega" options={addressOptions} />
         ) : (
           <p className="text-sm text-muted">Cargando direcciones…</p>
         )}
         <div className="grid gap-4 sm:grid-cols-2">
-          <Select label="Franja horaria" options={slotOptions} {...register('timeSlotId')} />
-          <Input
-            label="Fecha agendada"
-            type="date"
-            min={argentinaDay(new Date())}
-            error={errors.scheduledDate?.message}
-            {...register('scheduledDate')}
-          />
+          <FormSelect name="timeSlotId" label="Franja horaria" options={slotOptions} />
+          <FormInput name="scheduledDate" label="Fecha agendada" type="date" min={argentinaDay(new Date())} />
         </div>
-        <Select label="Medio de pago" options={PAYMENT_OPTIONS} {...register('paymentMethod')} />
-        <TextArea label="Notas" {...register('notes')} />
+        <FormSelect name="paymentMethod" label="Medio de pago" options={PAYMENT_OPTIONS} />
+        <FormTextArea name="notes" label="Notas" />
 
         <div className="space-y-3">
           <div className="flex items-center justify-between">
@@ -176,24 +173,19 @@ export const EditOrderModal = ({ order, onClose }: Props) => {
             <div key={field.id} className="flex flex-wrap items-end gap-3 rounded-xl border border-outline p-3">
               <div className="min-w-[200px] flex-1">
                 {catalog ? (
-                  <Select
-                    label="Garrafa"
-                    options={productOptions}
-                    error={errors.items?.[index]?.gasCylinderId?.message}
-                    {...register(`items.${index}.gasCylinderId`)}
-                  />
+                  <FormSelect name={`items.${index}.gasCylinderId`} label="Garrafa" options={productOptions} />
                 ) : (
                   <p className="text-sm text-muted">Cargando garrafas…</p>
                 )}
               </div>
               <div className="w-24">
-                <Input
+                <FormInput
+                  name={`items.${index}.quantity`}
                   label="Cantidad"
                   type="number"
                   min={1}
                   step={1}
-                  error={errors.items?.[index]?.quantity?.message}
-                  {...register(`items.${index}.quantity`, { valueAsNumber: true })}
+                  registerOptions={{ valueAsNumber: true }}
                 />
               </div>
               <div className="pb-1">
@@ -203,7 +195,7 @@ export const EditOrderModal = ({ order, onClose }: Props) => {
           ))}
           <p className="text-xs text-muted">Los precios son los vigentes del catálogo.</p>
         </div>
-      </form>
+      </Form>
     </Modal>
   );
 };

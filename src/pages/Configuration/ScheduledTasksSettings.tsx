@@ -6,11 +6,13 @@ import {
   Button,
   Card,
   ErrorState,
-  Input,
   PageHeader,
-  Select,
   Skeleton,
   PageContainer,
+  CardHeader,
+  FormSelect,
+  FormInput,
+  Form,
 } from '../../common/components/ui';
 import { usePermissions } from '../../hooks';
 import { errorMessage } from '../../services/api/errors';
@@ -44,21 +46,20 @@ interface FormProps {
 const ScheduledTasksForm = ({ config, canWrite, writeHint }: FormProps) => {
   const update = useUpdateScheduledTasksConfig();
   const [serverError, setServerError] = useState<string | null>(null);
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors, isDirty, isValid },
-  } = useForm<ScheduledTasksFormValues>({
+  const methods = useForm<ScheduledTasksFormValues>({
     resolver: zodResolver(scheduledTasksSchema),
     mode: 'onChange',
     defaultValues: toScheduledTasksValues(config),
   });
+  const {
+    reset,
+    formState: { isDirty, isValid },
+  } = methods;
 
   const load = useCallback((next: ScheduledTasksConfig) => reset(toScheduledTasksValues(next)), [reset]);
   const { stale, adopt, acceptStale } = useConfigSync({ config, isDirty, load });
 
-  const submit = handleSubmit((values) => {
+  const submit = (values: ScheduledTasksFormValues) => {
     setServerError(null);
     update.mutate(toScheduledTasksBody(values), {
       onSuccess: (saved) => {
@@ -67,7 +68,7 @@ const ScheduledTasksForm = ({ config, canWrite, writeHint }: FormProps) => {
       },
       onError: (error) => setServerError(errorMessage(error)),
     });
-  });
+  };
 
   const restoreDefaults = async () => {
     const ok = await confirm({
@@ -90,7 +91,7 @@ const ScheduledTasksForm = ({ config, canWrite, writeHint }: FormProps) => {
   };
 
   return (
-    <form onSubmit={(event) => void submit(event)} noValidate className="space-y-6">
+    <Form methods={methods} onSubmit={submit} className="space-y-6">
       {stale && <StaleConfigNotice onAccept={acceptStale} />}
       <Card className="p-6">
         <SettingsMeta
@@ -98,11 +99,11 @@ const ScheduledTasksForm = ({ config, canWrite, writeHint }: FormProps) => {
           updatedAt={config.updatedAt}
           updatedByUserId={config.updatedByUserId}
         />
-        <h2 className="mt-5 text-base font-semibold text-ink">Cada cuánto corre cada tarea</h2>
-        <p className="mt-1 text-sm text-muted">
-          El intervalo tiene que ser múltiplo del ritmo base de la tarea y no puede superar las 24 horas (los reintentos
-          del despacho, 5 minutos). Al guardar, el intervalo nuevo rige desde el ciclo siguiente.
-        </p>
+        <CardHeader
+          title="Cada cuánto corre cada tarea"
+          subtitle="El intervalo tiene que ser múltiplo del ritmo base de la tarea y no puede superar las 24 horas (los reintentos del despacho, 5 minutos). Al guardar, el intervalo nuevo rige desde el ciclo siguiente."
+          className="mt-5"
+        />
         <ul className="mt-4 divide-y divide-outline">
           {TASKS.map((task) => (
             <li key={task.field} className="py-4 first:pt-0 last:pb-0">
@@ -110,22 +111,22 @@ const ScheduledTasksForm = ({ config, canWrite, writeHint }: FormProps) => {
               <p className="text-sm text-muted">{task.help}</p>
               <div className="mt-3 flex items-start gap-3">
                 <div className="w-32">
-                  <Input
+                  <FormInput
+                    name={`intervals.${task.field}.amount`}
                     label="Cada"
                     type="number"
                     inputMode="decimal"
                     min={0}
-                    error={errors.intervals?.[task.field]?.amount?.message}
                     disabled={!canWrite}
-                    {...register(`intervals.${task.field}.amount`)}
                   />
                 </div>
                 <div className="w-36">
-                  <Select
+                  <FormSelect
+                    name={`intervals.${task.field}.unit`}
                     label="Unidad"
                     options={UNIT_OPTIONS}
                     disabled={!canWrite}
-                    {...register(`intervals.${task.field}.unit`, { deps: [`intervals.${task.field}.amount`] })}
+                    registerOptions={{ deps: [`intervals.${task.field}.amount`] }}
                   />
                 </div>
               </div>
@@ -136,21 +137,20 @@ const ScheduledTasksForm = ({ config, canWrite, writeHint }: FormProps) => {
       </Card>
 
       <Card className="p-6">
-        <h2 className="text-base font-semibold text-ink">Aviso de vencimientos de flota</h2>
-        <p className="mt-1 text-sm text-muted">
-          La hora del día (hora de Argentina) en que se avisa a la distribuidora de los vencimientos de la flota. Una
-          vez por día.
-        </p>
+        <CardHeader
+          title="Aviso de vencimientos de flota"
+          subtitle="La hora del día (hora de Argentina) en que se avisa a la distribuidora de los vencimientos de la flota. Una vez por día."
+          className=""
+        />
         <div className="mt-4 w-48">
-          <Input
+          <FormInput
+            name="hour"
             label="Hora (0 a 23)"
             type="number"
             inputMode="numeric"
             min={0}
             max={FLEET_ALERT_HOUR_MAX}
-            error={errors.hour?.message}
             disabled={!canWrite}
-            {...register('hour')}
           />
         </div>
       </Card>
@@ -173,7 +173,7 @@ const ScheduledTasksForm = ({ config, canWrite, writeHint }: FormProps) => {
           Restablecer valores por defecto
         </Button>
       </div>
-    </form>
+    </Form>
   );
 };
 

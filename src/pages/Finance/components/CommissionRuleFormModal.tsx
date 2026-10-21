@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Button, Checkbox, Input, Modal, Select } from '../../../common/components/ui';
+import { Button, Modal, FormInput, FormCheckbox, FormSelect, Form } from '../../../common/components/ui';
 import type { CommissionRule } from '../../../services/api/types';
 import { useCreateCommissionRule, useUpdateCommissionRule } from '../../../services/queries/finance';
 import { useEmployees } from '../../../services/queries/employees';
@@ -54,12 +54,8 @@ export const CommissionRuleFormModal = ({ open, onClose, rule }: Props) => {
   const update = useUpdateCommissionRule();
   const employees = useEmployees({ page: 0, pageSize: 100 }, { category: 'driver', status: 'active' }, open);
   const cylinders = useGasCylinders({ page: 0, pageSize: 100 });
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<Values>({ resolver: zodResolver(schema) });
+  const methods = useForm<Values>({ resolver: zodResolver(schema) });
+  const { reset } = methods;
 
   useEffect(() => {
     if (!open) return;
@@ -74,7 +70,7 @@ export const CommissionRuleFormModal = ({ open, onClose, rule }: Props) => {
     });
   }, [open, rule, reset]);
 
-  const onSubmit = handleSubmit((values) => {
+  const onSubmit = (values: Values) => {
     const value = Number(values.value.replace(',', '.'));
     const options = {
       onSuccess: () => {
@@ -110,7 +106,7 @@ export const CommissionRuleFormModal = ({ open, onClose, rule }: Props) => {
         options,
       );
     }
-  });
+  };
 
   return (
     <Modal
@@ -131,13 +127,9 @@ export const CommissionRuleFormModal = ({ open, onClose, rule }: Props) => {
         </>
       }
     >
-      <form
-        id="commission-rule-form"
-        onSubmit={(e) => void onSubmit(e)}
-        className="grid gap-4 sm:grid-cols-2"
-        noValidate
-      >
-        <Select
+      <Form methods={methods} id="commission-rule-form" onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
+        <FormSelect
+          name="employeeId"
           label="Chofer"
           disabled={rule !== null}
           options={[
@@ -147,33 +139,26 @@ export const CommissionRuleFormModal = ({ open, onClose, rule }: Props) => {
               label: `${e.firstName} ${e.lastName}`,
             })),
           ]}
-          {...register('employeeId')}
         />
-        <Select
+        <FormSelect
+          name="gasCylinderId"
           label="Producto"
           disabled={rule !== null}
           options={[
             { value: '', label: 'Todos los productos' },
             ...(cylinders.data?.rows ?? []).map((c) => ({ value: c.gas_cylinder_id, label: c.type })),
           ]}
-          {...register('gasCylinderId')}
         />
-        <Select label="Base" options={BASIS_OPTIONS} error={errors.basis?.message} {...register('basis')} />
-        <Input label="Valor" required inputMode="decimal" error={errors.value?.message} {...register('value')} />
-        <Input label="Rige desde" type="date" required error={errors.validFrom?.message} {...register('validFrom')} />
-        <Input
-          label="Hasta (opcional)"
-          type="date"
-          hint="Vacío: sin fecha de fin"
-          error={errors.validTo?.message}
-          {...register('validTo')}
-        />
+        <FormSelect name="basis" label="Base" options={BASIS_OPTIONS} />
+        <FormInput name="value" label="Valor" required inputMode="decimal" />
+        <FormInput name="validFrom" label="Rige desde" type="date" required />
+        <FormInput name="validTo" label="Hasta (opcional)" type="date" hint="Vacío: sin fecha de fin" />
         {rule && (
           <div className="sm:col-span-2">
-            <Checkbox label="La regla está activa" {...register('isActive')} />
+            <FormCheckbox name="isActive" label="La regla está activa" />
           </div>
         )}
-      </form>
+      </Form>
     </Modal>
   );
 };

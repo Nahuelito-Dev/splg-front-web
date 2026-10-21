@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, Input, Modal, PhotoPicker, TextArea } from '../../../common/components/ui';
+import { Button, Modal, PhotoPicker, FormInput, FormTextArea, Form } from '../../../common/components/ui';
 import type { Order } from '../../../services/api/types';
 import { useCreateClaim } from '../../../services/queries/claims';
 import { useUploadPhoto } from '../../../services/queries/photos';
@@ -31,12 +31,8 @@ export const CreateClaimModal = ({ open, onClose }: Props) => {
   const sending = useRef(false);
   const createClaim = useCreateClaim();
   const uploadPhoto = useUploadPhoto('claim');
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<CreateClaimFormValues>({ resolver: zodResolver(createClaimSchema) });
+  const methods = useForm<CreateClaimFormValues>({ resolver: zodResolver(createClaimSchema) });
+  const { reset } = methods;
 
   useEffect(() => {
     if (open) {
@@ -49,7 +45,7 @@ export const CreateClaimModal = ({ open, onClose }: Props) => {
 
   if (!open) return null;
 
-  const onSubmit = handleSubmit((values) => {
+  const onSubmit = (values: CreateClaimFormValues) => {
     if (!order?.customer || sending.current) return;
     sending.current = true;
     createClaim.mutate(
@@ -89,7 +85,7 @@ export const CreateClaimModal = ({ open, onClose }: Props) => {
         },
       },
     );
-  });
+  };
 
   return (
     <Modal
@@ -115,28 +111,15 @@ export const CreateClaimModal = ({ open, onClose }: Props) => {
         </>
       }
     >
-      <form id="claim-create" onSubmit={(e) => void onSubmit(e)} className="space-y-4" noValidate>
+      <Form methods={methods} id="claim-create" onSubmit={onSubmit} className="space-y-4">
         <OrderPicker selected={order} onSelect={setOrder} />
         {order && !order.customer && (
           <p className="text-xs text-danger">Este pedido no tiene un cliente asociado: elegí otro.</p>
         )}
-        <Input
-          label="Motivo"
-          required
-          placeholder="Ej: Fuga de gas"
-          error={errors.reason?.message}
-          {...register('reason')}
-        />
-        <TextArea
-          label="Descripción"
-          required
-          rows={4}
-          placeholder="Detalle de lo que pasó"
-          error={errors.description?.message}
-          {...register('description')}
-        />
+        <FormInput name="reason" label="Motivo" required placeholder="Ej: Fuga de gas" />
+        <FormTextArea name="description" label="Descripción" required rows={4} placeholder="Detalle de lo que pasó" />
         <PhotoPicker kind="claim" file={photo} onChange={setPhoto} />
-      </form>
+      </Form>
     </Modal>
   );
 };

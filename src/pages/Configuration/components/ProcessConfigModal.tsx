@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useId, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { RotateCcw } from 'lucide-react';
-import { Button, Input, Modal } from '../../../common/components/ui';
+import { Button, Modal, FormInput, Form } from '../../../common/components/ui';
 import { errorMessage } from '../../../services/api/errors';
 import type { ProcessConfig } from '../../../services/api/types';
 import { useUpdateProcessConfig } from '../../../services/queries/moduleConfig';
@@ -22,15 +22,14 @@ export const ProcessConfigModal = ({ config, canWrite, writeHint, onClose }: Pro
   const formId = useId();
   const update = useUpdateProcessConfig();
   const [serverError, setServerError] = useState<string | null>(null);
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isDirty, isValid },
-  } = useForm<ProcessFormValues>({
+  const methods = useForm<ProcessFormValues>({
     resolver: zodResolver(buildProcessSchema(config)),
     mode: 'onChange',
     defaultValues: processValues(config),
   });
+  const {
+    formState: { isDirty, isValid },
+  } = methods;
 
   const save = (body: ReturnType<typeof toProcessBody>, successText: string) => {
     setServerError(null);
@@ -46,7 +45,8 @@ export const ProcessConfigModal = ({ config, canWrite, writeHint, onClose }: Pro
     );
   };
 
-  const submit = handleSubmit((values) => save(toProcessBody(config, values), `${config.title}: parámetros guardados`));
+  const submit = (values: ProcessFormValues) =>
+    save(toProcessBody(config, values), `${config.title}: parámetros guardados`);
 
   const restoreDefaults = async () => {
     const ok = await confirm({
@@ -96,10 +96,11 @@ export const ProcessConfigModal = ({ config, canWrite, writeHint, onClose }: Pro
         updatedAt={config.updatedAt}
         updatedByUserId={config.updatedByUserId}
       />
-      <form id={formId} onSubmit={(event) => void submit(event)} noValidate className="mt-4 grid gap-4 sm:grid-cols-2">
+      <Form methods={methods} id={formId} onSubmit={submit} className="mt-4 grid gap-4 sm:grid-cols-2">
         {config.fields.map((field) => (
           <div key={field.key}>
-            <Input
+            <FormInput
+              name={field.key}
               label={field.description}
               type="number"
               inputMode="decimal"
@@ -107,13 +108,11 @@ export const ProcessConfigModal = ({ config, canWrite, writeHint, onClose }: Pro
               min={field.min}
               max={field.max}
               hint={rangeHint(field)}
-              error={errors[field.key]?.message}
               disabled={!canWrite}
-              {...register(field.key)}
             />
           </div>
         ))}
-      </form>
+      </Form>
       {serverError && (
         <p role="alert" className="mt-4 text-sm text-danger">
           {serverError}

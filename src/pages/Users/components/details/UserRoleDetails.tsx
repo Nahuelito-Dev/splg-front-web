@@ -4,7 +4,7 @@ import StarIcon from '@mui/icons-material/Star';
 import TwoWheelerOutlinedIcon from '@mui/icons-material/TwoWheelerOutlined';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Badge, Button, Card, DetailList, EmptyState } from '../../../../common/components/ui';
+import { Badge, Button, Card, DetailList, EmptyState, CardHeader } from '../../../../common/components/ui';
 import type { User } from '../../../../services/api/types';
 import { formatCurrency, formatDate } from '../../../../utils/format';
 
@@ -78,9 +78,7 @@ export const UserRoleDetails = ({ user }: { user: User }) => {
 
   return (
     <Card className="p-6">
-      <h2 className="mb-4 flex items-center gap-2 text-base font-semibold text-ink [&_svg]:h-5 [&_svg]:w-5 [&_svg]:text-muted">
-        {icon} {title}
-      </h2>
+      <CardHeader title={title} icon={icon} />
       {user.delivery ? (
         <DeliveryDetails user={user} />
       ) : user.customer ? (

@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Button, Modal, Select, TextArea } from '../../../common/components/ui';
+import { Button, Modal, FormTextArea, FormSelect, Form } from '../../../common/components/ui';
 import type { DriverSettlementDetail } from '../../../services/api/types';
 import { useApproveDriverSettlement, useCashBoxOptions } from '../../../services/queries/finance';
 import { formatCurrency } from '../../../utils/format';
@@ -28,19 +28,14 @@ export const ApproveSettlementModal = ({ open, onClose, settlement }: Props) => 
   const boxes = useCashBoxOptions({ enabled: open });
   const difference = settlement.difference ?? 0;
   const shortage = difference < 0;
-  const {
-    register,
-    handleSubmit,
-    reset,
-    setError,
-    formState: { errors },
-  } = useForm<Values>({ resolver: zodResolver(schema) });
+  const methods = useForm<Values>({ resolver: zodResolver(schema) });
+  const { reset, setError } = methods;
 
   useEffect(() => {
     if (open) reset({ cashBoxId: '', differenceResolution: '', notes: '' });
   }, [open, reset]);
 
-  const onSubmit = handleSubmit((values) => {
+  const onSubmit = (values: Values) => {
     if (difference !== 0 && !values.differenceResolution) {
       setError('differenceResolution', { message: 'Indicá cómo se resuelve la diferencia' });
       return;
@@ -62,7 +57,7 @@ export const ApproveSettlementModal = ({ open, onClose, settlement }: Props) => 
         onError: notify.error,
       },
     );
-  });
+  };
 
   return (
     <Modal
@@ -82,8 +77,9 @@ export const ApproveSettlementModal = ({ open, onClose, settlement }: Props) => 
         </>
       }
     >
-      <form id="approve-settlement-form" onSubmit={(e) => void onSubmit(e)} className="grid gap-4" noValidate>
-        <Select
+      <Form methods={methods} id="approve-settlement-form" onSubmit={onSubmit} className="grid gap-4">
+        <FormSelect
+          name="cashBoxId"
           label="Caja destino"
           required
           options={[
@@ -91,11 +87,10 @@ export const ApproveSettlementModal = ({ open, onClose, settlement }: Props) => 
             ...(boxes.data?.data ?? []).map((b) => ({ value: b.cashBoxId, label: b.name })),
           ]}
           hint="Si exige sesión, tiene que estar abierta."
-          error={errors.cashBoxId?.message}
-          {...register('cashBoxId')}
         />
         {difference !== 0 && (
-          <Select
+          <FormSelect
+            name="differenceResolution"
             label={
               shortage ? `Faltante de ${formatCurrency(-difference)}` : `Sobrante de ${formatCurrency(difference)}`
             }
@@ -107,12 +102,10 @@ export const ApproveSettlementModal = ({ open, onClose, settlement }: Props) => 
                 ? [{ value: 'charged_to_driver', label: 'A cargo del chofer (se descuenta de sus comisiones)' }]
                 : []),
             ]}
-            error={errors.differenceResolution?.message}
-            {...register('differenceResolution')}
           />
         )}
-        <TextArea label="Notas (opcional)" maxLength={500} error={errors.notes?.message} {...register('notes')} />
-      </form>
+        <FormTextArea name="notes" label="Notas (opcional)" maxLength={500} />
+      </Form>
     </Modal>
   );
 };

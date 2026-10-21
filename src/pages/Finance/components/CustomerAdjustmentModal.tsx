@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Button, Input, Modal, Select } from '../../../common/components/ui';
+import { Button, Modal, FormInput, FormSelect, Form } from '../../../common/components/ui';
 import type { CustomerAccountDetail } from '../../../services/api/types';
 import { useRegisterCustomerAdjustment } from '../../../services/queries/finance';
 import { notify } from '../../../utils/notifications';
@@ -24,18 +24,14 @@ interface Props {
 /** Nota de crédito o de débito (CU-329): el libro no se edita, un error se corrige con un ajuste. */
 export const CustomerAdjustmentModal = ({ open, onClose, account }: Props) => {
   const adjust = useRegisterCustomerAdjustment();
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<Values>({ resolver: zodResolver(schema) });
+  const methods = useForm<Values>({ resolver: zodResolver(schema) });
+  const { reset } = methods;
 
   useEffect(() => {
     if (open) reset({ kind: 'credit', amount: '', reason: '' });
   }, [open, reset]);
 
-  const onSubmit = handleSubmit((values) =>
+  const onSubmit = (values: Values) =>
     adjust.mutate(
       { id: account.accountId, body: { kind: values.kind, amount: parseMoney(values.amount), reason: values.reason } },
       {
@@ -45,8 +41,7 @@ export const CustomerAdjustmentModal = ({ open, onClose, account }: Props) => {
         },
         onError: notify.error,
       },
-    ),
-  );
+    );
 
   return (
     <Modal
@@ -66,19 +61,18 @@ export const CustomerAdjustmentModal = ({ open, onClose, account }: Props) => {
         </>
       }
     >
-      <form id="customer-adjustment-form" onSubmit={(e) => void onSubmit(e)} className="grid gap-4" noValidate>
-        <Select
+      <Form methods={methods} id="customer-adjustment-form" onSubmit={onSubmit} className="grid gap-4">
+        <FormSelect
+          name="kind"
           label="Tipo"
           options={[
             { value: 'credit', label: 'Nota de crédito (baja la deuda)' },
             { value: 'debit', label: 'Nota de débito (sube la deuda)' },
           ]}
-          error={errors.kind?.message}
-          {...register('kind')}
         />
-        <Input label="Importe" required inputMode="decimal" error={errors.amount?.message} {...register('amount')} />
-        <Input label="Motivo" required maxLength={255} error={errors.reason?.message} {...register('reason')} />
-      </form>
+        <FormInput name="amount" label="Importe" required inputMode="decimal" />
+        <FormInput name="reason" label="Motivo" required maxLength={255} />
+      </Form>
     </Modal>
   );
 };

@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus, Trash2 } from 'lucide-react';
 import { useEffect } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
-import { Button, IconButton, Input, Modal, Select } from '../../../common/components/ui';
+import { Button, IconButton, Modal, FormInput, FormSelect, Form, FormError } from '../../../common/components/ui';
 import type { TruckLoad } from '../../../services/api/types';
 import { useReloadTruckLoad } from '../../../services/queries/truckLoads';
 import { notify } from '../../../utils/notifications';
@@ -20,20 +20,15 @@ export const ReloadModal = ({ open, onClose, load }: Props) => {
   const cylinders = useCylinderOptions();
   const reload = useReloadTruckLoad();
   const scope = `reload:${load.loadId}`;
-  const {
-    register,
-    handleSubmit,
-    reset,
-    control,
-    formState: { errors },
-  } = useForm<ReloadFormValues>({ resolver: zodResolver(reloadSchema) });
+  const methods = useForm<ReloadFormValues>({ resolver: zodResolver(reloadSchema) });
+  const { reset, control } = methods;
   const { fields, append, remove } = useFieldArray({ control, name: 'items' });
 
   useEffect(() => {
     if (open) reset({ items: [{ gasCylinderId: '', quantity: 1 }] });
   }, [open, reset]);
 
-  const onSubmit = handleSubmit((values) =>
+  const onSubmit = (values: ReloadFormValues) =>
     reload.mutate(
       { id: load.loadId, body: { items: values.items }, scope },
       {
@@ -43,8 +38,7 @@ export const ReloadModal = ({ open, onClose, load }: Props) => {
         },
         onError: notify.error,
       },
-    ),
-  );
+    );
 
   return (
     <Modal
@@ -72,22 +66,15 @@ export const ReloadModal = ({ open, onClose, load }: Props) => {
           </button>
         </p>
       ) : (
-        <form id="reload-form" onSubmit={(e) => void onSubmit(e)} className="space-y-3" noValidate>
+        <Form methods={methods} id="reload-form" onSubmit={onSubmit} className="space-y-3">
           {fields.map((field, index) => (
             <div key={field.id} className="grid grid-cols-1 gap-3 sm:grid-cols-[1.4fr_1fr_auto] sm:items-start">
-              <Select
+              <FormSelect
+                name={`items.${index}.gasCylinderId`}
                 label="Tipo"
                 options={withPlaceholder(cylinders.options)}
-                error={errors.items?.[index]?.gasCylinderId?.message}
-                {...register(`items.${index}.gasCylinderId`)}
               />
-              <Input
-                label="Llenas a reponer"
-                type="number"
-                min={1}
-                error={errors.items?.[index]?.quantity?.message}
-                {...register(`items.${index}.quantity`)}
-              />
+              <FormInput name={`items.${index}.quantity`} label="Llenas a reponer" type="number" min={1} />
               {fields.length > 1 && (
                 <IconButton
                   label={`Quitar garrafa ${index + 1}`}
@@ -98,11 +85,7 @@ export const ReloadModal = ({ open, onClose, load }: Props) => {
               )}
             </div>
           ))}
-          {errors.items?.root?.message && (
-            <p role="alert" className="text-xs text-danger">
-              {errors.items.root.message}
-            </p>
-          )}
+          <FormError name="items.root" />
           <Button
             variant="secondary"
             size="sm"
@@ -111,7 +94,7 @@ export const ReloadModal = ({ open, onClose, load }: Props) => {
           >
             Agregar otra garrafa
           </Button>
-        </form>
+        </Form>
       )}
     </Modal>
   );

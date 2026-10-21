@@ -1,6 +1,6 @@
 import { Send } from 'lucide-react';
 import { useState } from 'react';
-import { Badge, Button, Card } from '../../../common/components/ui';
+import { Badge, Button, Card, CardHeader } from '../../../common/components/ui';
 import { errorMessage } from '../../../services/api/errors';
 import type { Order, ResultadoDeEnvio } from '../../../services/api/types';
 import { useSendOrderConfirmation } from '../../../services/queries/notifications';
@@ -34,12 +34,11 @@ export const OrderConfirmationCard = () => {
 
   return (
     <Card className="space-y-4 p-5">
-      <div>
-        <h3 className="text-sm font-semibold text-ink">Reenviar confirmación de pedido</h3>
-        <p className="text-xs text-muted">
-          Vuelve a mandar el push de "pedido confirmado" al dispositivo guardado del cliente.
-        </p>
-      </div>
+      <CardHeader
+        title="Reenviar confirmación de pedido"
+        subtitle='Vuelve a mandar el push de "pedido confirmado" al dispositivo guardado del cliente.'
+        className=""
+      />
 
       <OrderPicker selected={order} onSelect={setOrder} />
 

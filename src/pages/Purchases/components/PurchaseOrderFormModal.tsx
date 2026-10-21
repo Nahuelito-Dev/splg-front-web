@@ -2,7 +2,16 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus, Trash2 } from 'lucide-react';
 import { useEffect } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
-import { Button, IconButton, Input, Modal, Select, TextArea } from '../../../common/components/ui';
+import {
+  Button,
+  IconButton,
+  Modal,
+  FormTextArea,
+  FormSelect,
+  FormInput,
+  Form,
+  FormError,
+} from '../../../common/components/ui';
 import type { PurchaseOrder } from '../../../services/api/types';
 import {
   useCreatePurchaseOrder,
@@ -34,14 +43,8 @@ export const PurchaseOrderFormModal = ({ open, onClose, order, onSaved }: Props)
   const create = useCreatePurchaseOrder();
   const update = useUpdatePurchaseOrder();
   const scope = 'order:new';
-  const {
-    register,
-    handleSubmit,
-    reset,
-    watch,
-    control,
-    formState: { errors },
-  } = useForm<OrderFormValues>({ resolver: zodResolver(orderSchema) });
+  const methods = useForm<OrderFormValues>({ resolver: zodResolver(orderSchema) });
+  const { reset, watch, control } = methods;
   const { fields, append, remove } = useFieldArray({ control, name: 'items' });
 
   useEffect(() => {
@@ -65,7 +68,7 @@ export const PurchaseOrderFormModal = ({ open, onClose, order, onSaved }: Props)
     items.map((i) => ({ quantity: Number(i.quantity) || 0, unitCost: Number(i.unitCost) || 0 })),
   );
 
-  const onSubmit = handleSubmit((values) => {
+  const onSubmit = (values: OrderFormValues) => {
     const options = {
       onSuccess: (saved: PurchaseOrder) => {
         notify.success(order ? 'Orden actualizada' : `Orden N° ${saved.number} creada en borrador`);
@@ -76,7 +79,7 @@ export const PurchaseOrderFormModal = ({ open, onClose, order, onSaved }: Props)
     };
     if (order) update.mutate({ id: order.purchaseOrderId, body: orderUpdateBody(values, order) }, options);
     else create.mutate({ body: orderCreateBody(values), scope }, options);
-  });
+  };
 
   const loadFailed = suppliers.isError || warehouses.failed || cylinders.failed;
 
@@ -114,54 +117,36 @@ export const PurchaseOrderFormModal = ({ open, onClose, order, onSaved }: Props)
           </button>
         </p>
       ) : (
-        <form id="order-form" onSubmit={(e) => void onSubmit(e)} className="space-y-4" noValidate>
+        <Form methods={methods} id="order-form" onSubmit={onSubmit} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-3">
-            <SupplierField
-              selectedId={watch('supplierId') ?? ''}
-              error={errors.supplierId?.message}
-              {...register('supplierId')}
-            />
-            <Select
+            <SupplierField name="supplierId" />
+            <FormSelect
+              name="destinationWarehouseId"
               label="Se recibe en"
               options={withPlaceholder(warehouses.options, 'Galpón predeterminado')}
-              {...register('destinationWarehouseId')}
             />
-            <Input label="Fecha esperada" type="date" {...register('expectedDate')} />
+            <FormInput name="expectedDate" label="Fecha esperada" type="date" />
           </div>
           <div className="space-y-3">
             {fields.map((field, index) => (
               <fieldset key={field.id} className="min-w-0 rounded-lg border border-outline p-3">
                 <legend className="px-1 text-xs font-medium text-muted">Garrafa {index + 1}</legend>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1.4fr_0.8fr_1fr_1fr_auto] sm:items-start">
-                  <Select
+                  <FormSelect
+                    name={`items.${index}.gasCylinderId`}
                     label="Tipo"
                     options={withPlaceholder(cylinders.options)}
                     hint={cylinders.limited ? 'Se muestran las primeras 100 garrafas.' : undefined}
-                    error={errors.items?.[index]?.gasCylinderId?.message}
-                    {...register(`items.${index}.gasCylinderId`)}
                   />
-                  <Input
-                    label="Cantidad"
-                    type="number"
-                    min={1}
-                    error={errors.items?.[index]?.quantity?.message}
-                    {...register(`items.${index}.quantity`)}
-                  />
-                  <Input
+                  <FormInput name={`items.${index}.quantity`} label="Cantidad" type="number" min={1} />
+                  <FormInput
+                    name={`items.${index}.unitCost`}
                     label="Costo unitario"
                     type="number"
                     min={0}
                     step="0.01"
-                    error={errors.items?.[index]?.unitCost?.message}
-                    {...register(`items.${index}.unitCost`)}
                   />
-                  <Input
-                    label="Vacías a canjear"
-                    type="number"
-                    min={0}
-                    error={errors.items?.[index]?.emptiesToExchange?.message}
-                    {...register(`items.${index}.emptiesToExchange`)}
-                  />
+                  <FormInput name={`items.${index}.emptiesToExchange`} label="Vacías a canjear" type="number" min={0} />
                   {fields.length > 1 && (
                     <IconButton
                       label={`Quitar garrafa ${index + 1}`}
@@ -173,11 +158,7 @@ export const PurchaseOrderFormModal = ({ open, onClose, order, onSaved }: Props)
                 </div>
               </fieldset>
             ))}
-            {errors.items?.message && (
-              <p role="alert" className="text-xs text-danger">
-                {errors.items.message}
-              </p>
-            )}
+            <FormError name="items" />
             <div className="flex flex-wrap items-center justify-between gap-3">
               <Button
                 variant="secondary"
@@ -193,8 +174,8 @@ export const PurchaseOrderFormModal = ({ open, onClose, order, onSaved }: Props)
               </p>
             </div>
           </div>
-          <TextArea label="Notas (opcional)" maxLength={500} error={errors.notes?.message} {...register('notes')} />
-        </form>
+          <FormTextArea name="notes" label="Notas (opcional)" maxLength={500} />
+        </Form>
       )}
     </Modal>
   );

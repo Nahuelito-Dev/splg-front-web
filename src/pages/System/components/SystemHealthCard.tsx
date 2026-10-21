@@ -1,5 +1,5 @@
 import { RotateCw } from 'lucide-react';
-import { Badge, Card, ErrorState, IconButton, LoadingState } from '../../../common/components/ui';
+import { Badge, Card, ErrorState, IconButton, LoadingState, CardHeader } from '../../../common/components/ui';
 import type { HealthReport } from '../../../services/api/health';
 import { useHealth, useReadiness, type TimedHealthReport } from '../../../services/queries/health';
 import { formatDateTime } from '../../../utils/format';
@@ -52,10 +52,7 @@ const HealthSection = ({ title, description, data, isLoading, error, onRefresh, 
   return (
     <div className="space-y-3">
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="text-sm font-semibold text-ink">{title}</h3>
-          <p className="text-xs text-muted">{description}</p>
-        </div>
+        <CardHeader title={title} subtitle={description} className="" />
         <div className="flex shrink-0 items-center gap-2">
           {report && <Badge label={labelOf(HEALTH_STATUS, overallUp ? 'up' : 'down')} />}
           <IconButton

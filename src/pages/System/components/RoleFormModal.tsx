@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, Input, Modal } from '../../../common/components/ui';
+import { Button, Modal, FormInput, Form } from '../../../common/components/ui';
 import type { Role } from '../../../services/api/types';
 import { useCreateRole, useUpdateRole } from '../../../services/queries/role';
 import { notify } from '../../../utils/notifications';
@@ -24,18 +24,14 @@ export const RoleFormModal = ({ open, onClose, role }: Props) => {
   const createRole = useCreateRole();
   const updateRole = useUpdateRole();
   const saving = createRole.isPending || updateRole.isPending;
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<RoleFormValues>({ resolver: zodResolver(roleSchema) });
+  const methods = useForm<RoleFormValues>({ resolver: zodResolver(roleSchema) });
+  const { reset } = methods;
 
   useEffect(() => {
     if (open) reset({ type: role?.type ?? '' });
   }, [open, role, reset]);
 
-  const onSubmit = handleSubmit(({ type }) => {
+  const onSubmit = ({ type }: RoleFormValues) => {
     const mutation = role
       ? updateRole.mutateAsync({ id: role.role_id, body: { type } })
       : createRole.mutateAsync({ type });
@@ -43,7 +39,7 @@ export const RoleFormModal = ({ open, onClose, role }: Props) => {
       notify.success(role ? 'Rol actualizado' : 'Rol creado');
       onClose();
     }, notify.error);
-  });
+  };
 
   return (
     <Modal
@@ -62,15 +58,9 @@ export const RoleFormModal = ({ open, onClose, role }: Props) => {
         </>
       }
     >
-      <form id="role-form" onSubmit={(e) => void onSubmit(e)} noValidate>
-        <Input
-          label="Nombre del rol"
-          required
-          placeholder="qa_pruebas"
-          error={errors.type?.message}
-          {...register('type')}
-        />
-      </form>
+      <Form methods={methods} id="role-form" onSubmit={onSubmit}>
+        <FormInput name="type" label="Nombre del rol" required placeholder="qa_pruebas" />
+      </Form>
     </Modal>
   );
 };

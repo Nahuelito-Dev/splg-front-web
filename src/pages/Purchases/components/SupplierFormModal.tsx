@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, Input, Modal, Select } from '../../../common/components/ui';
+import { Button, Modal, FormInput, FormSelect, Form } from '../../../common/components/ui';
 import type { Supplier } from '../../../services/api/types';
 import { useCreateSupplier, useUpdateSupplier } from '../../../services/queries/purchases';
 import { normalizeCuit } from '../../../utils/cuit';
@@ -25,12 +25,8 @@ export const SupplierFormModal = ({ open, onClose, supplier }: Props) => {
   const create = useCreateSupplier();
   const update = useUpdateSupplier();
   const scope = 'supplier:new';
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<SupplierFormValues>({ resolver: zodResolver(supplierSchema) });
+  const methods = useForm<SupplierFormValues>({ resolver: zodResolver(supplierSchema) });
+  const { reset } = methods;
 
   useEffect(() => {
     if (!open) return;
@@ -46,7 +42,7 @@ export const SupplierFormModal = ({ open, onClose, supplier }: Props) => {
     });
   }, [open, supplier, reset]);
 
-  const onSubmit = handleSubmit((values) => {
+  const onSubmit = (values: SupplierFormValues) => {
     const body = {
       businessName: values.businessName,
       cuit: normalizeCuit(values.cuit),
@@ -67,7 +63,7 @@ export const SupplierFormModal = ({ open, onClose, supplier }: Props) => {
     };
     if (supplier) update.mutate({ id: supplier.supplierId, body }, options);
     else create.mutate({ body, scope }, options);
-  });
+  };
 
   return (
     <Modal
@@ -87,41 +83,33 @@ export const SupplierFormModal = ({ open, onClose, supplier }: Props) => {
         </>
       }
     >
-      <form id="supplier-form" onSubmit={(e) => void onSubmit(e)} className="grid gap-4 sm:grid-cols-2" noValidate>
+      <Form methods={methods} id="supplier-form" onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
-          <Input
-            label="Razón social"
-            required
-            maxLength={120}
-            error={errors.businessName?.message}
-            {...register('businessName')}
-          />
+          <FormInput name="businessName" label="Razón social" required maxLength={120} />
         </div>
-        <Input
+        <FormInput
+          name="cuit"
           label="CUIT"
           required
           placeholder="30-71512345-9"
           hint="Se valida el dígito verificador. Único entre los proveedores vigentes."
-          error={errors.cuit?.message}
-          {...register('cuit')}
         />
-        <Select label="Tipo" options={KIND_OPTIONS} error={errors.kind?.message} {...register('kind')} />
-        <Input label="Contacto" maxLength={80} error={errors.contactName?.message} {...register('contactName')} />
-        <Input label="Teléfono" maxLength={30} error={errors.phone?.message} {...register('phone')} />
-        <Input label="Email" type="email" maxLength={120} error={errors.email?.message} {...register('email')} />
-        <Input
+        <FormSelect name="kind" label="Tipo" options={KIND_OPTIONS} />
+        <FormInput name="contactName" label="Contacto" maxLength={80} />
+        <FormInput name="phone" label="Teléfono" maxLength={30} />
+        <FormInput name="email" label="Email" type="email" maxLength={120} />
+        <FormInput
+          name="paymentTermsDays"
           label="Plazo de pago (días)"
           type="number"
           min={0}
           max={365}
           hint="0 = contado"
-          error={errors.paymentTermsDays?.message}
-          {...register('paymentTermsDays')}
         />
         <div className="sm:col-span-2">
-          <Input label="Dirección" maxLength={300} error={errors.address?.message} {...register('address')} />
+          <FormInput name="address" label="Dirección" maxLength={300} />
         </div>
-      </form>
+      </Form>
     </Modal>
   );
 };

@@ -614,7 +614,7 @@
                         }
                     },
                     "400": {
-                        "description": "Datos inválidos (p. ej.: property email should not exist)"
+                        "description": "Datos inválidos (p. ej.: property email should not exist; phone_number fuera del formato E.164 +549...)"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -626,7 +626,7 @@
                         "description": "No existe o es de otra distribuidora"
                     },
                     "409": {
-                        "description": "Teléfono en uso, o sin cuenta de acceso"
+                        "description": "Teléfono en uso por otro usuario (aunque esté dado de baja), o sin cuenta de acceso"
                     }
                 },
                 "security": [
@@ -4394,7 +4394,7 @@
                         }
                     },
                     "400": {
-                        "description": "La patente ya está registrada"
+                        "description": "Patente con formato inválido (AAA123 o AA123AA)"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -4404,6 +4404,9 @@
                     },
                     "404": {
                         "description": "El usuario no existe"
+                    },
+                    "409": {
+                        "description": "La patente ya está registrada en la distribuidora"
                     }
                 },
                 "security": [
@@ -4540,7 +4543,7 @@
                         }
                     },
                     "400": {
-                        "description": "La patente ya está registrada"
+                        "description": "Patente con formato inválido (AAA123 o AA123AA)"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -4552,7 +4555,7 @@
                         "description": "Car not found"
                     },
                     "409": {
-                        "description": "El vehículo está en uso por un chofer: no se le cambia la patente ni el tipo"
+                        "description": "La patente ya está registrada en la distribuidora, o el vehículo está en uso por un chofer: no se le cambia la patente ni el tipo"
                     }
                 },
                 "security": [
@@ -6990,7 +6993,7 @@
                         }
                     },
                     "400": {
-                        "description": "Datos inválidos, sin stock, o dirección fuera de cobertura"
+                        "description": "Datos inválidos, sin stock, dirección fuera de cobertura, scheduledDate pasada (día argentino) o items vacío"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -7076,7 +7079,7 @@
         },
         "/api/orders/{id}/status": {
             "patch": {
-                "description": "Idempotente vía header `Idempotency-Key`. Evita doble aceptación/entrega por reintento de red. Solo chofer/admin.\n\n- `status: cancelled` tiene EXACTAMENTE el mismo efecto que `PATCH /:id/cancel` (mismo código, mismo stock, mismos avisos): cancela con devolución de stock si lo pide un admin, o LIBERA el pedido a `pending` (sin devolver stock, sin motivo de cancelación) si lo pide el chofer — no cancela de verdad.\n- `status: pending` sobre un pedido ACCEPTED/ON_THE_WAY libera al chofer asignado (mismo camino que el punto anterior): limpia el chofer, corta su tracking, cierra cualquier oferta que hubiera quedado y avisa al chofer anterior, al cliente y al panel. `POST /:id/reject` sobre una asignación manual NO usa este camino: no libera, sólo avisa al panel (ver `/reject`).\n- `status: pending` sobre una RESERVA (pedido `reserved`) la ACTIVA a mano, con las mismas condiciones que el cron (seña paga y día agendado cumplido) — sólo admin/super_admin, 400 claro si no las cumple.\n- `status: accepted` sobre un pedido YA `accepted` con el MISMO chofer es idempotente: no regenera `acceptedAt` ni el código de entrega (pasa cuando el chofer \"acepta\" el aviso de una asignación manual).\n- `status: delivered` NO lo puede pedir el chofer (403): la entrega se confirma con el QR del cliente en `POST /:id/confirm-delivery`. El admin/super_admin sí puede marcarla por acá (cliente sin celular), pero tiene que mandar `reason` (mínimo 10 caracteres, 400 si falta): queda en el historial de estados (`order_status_history`) y en la auditoría de datos (campo `manualDeliveryReason` del `Order`).",
+                "description": "Idempotente vía header `Idempotency-Key`. Evita doble aceptación/entrega por reintento de red. Solo chofer/admin.\n\n- `status: cancelled` (cliente y admin: `reason` obligatorio, 400 si falta o está en blanco) tiene EXACTAMENTE el mismo efecto que `PATCH /:id/cancel` (mismo código, mismo stock, mismos avisos): cancela con devolución de stock si lo pide un admin, o LIBERA el pedido a `pending` (sin devolver stock, sin motivo de cancelación) si lo pide el chofer — no cancela de verdad.\n- `status: pending` sobre un pedido ACCEPTED/ON_THE_WAY libera al chofer asignado (mismo camino que el punto anterior): limpia el chofer, corta su tracking, cierra cualquier oferta que hubiera quedado y avisa al chofer anterior, al cliente y al panel. `POST /:id/reject` sobre una asignación manual NO usa este camino: no libera, sólo avisa al panel (ver `/reject`).\n- `status: pending` sobre una RESERVA (pedido `reserved`) la ACTIVA a mano, con las mismas condiciones que el cron (seña paga y día agendado cumplido) — sólo admin/super_admin, 400 claro si no las cumple.\n- `status: accepted` sobre un pedido YA `accepted` con el MISMO chofer es idempotente: no regenera `acceptedAt` ni el código de entrega (pasa cuando el chofer \"acepta\" el aviso de una asignación manual).\n- `status: delivered` NO lo puede pedir el chofer (403): la entrega se confirma con el QR del cliente en `POST /:id/confirm-delivery`. El admin/super_admin sí puede marcarla por acá (cliente sin celular), pero tiene que mandar `reason` (mínimo 10 caracteres, 400 si falta): queda en el historial de estados (`order_status_history`) y en la auditoría de datos (campo `manualDeliveryReason` del `Order`).",
                 "operationId": "OrderController_updateStatus",
                 "parameters": [
                     {
@@ -7902,7 +7905,7 @@
                         }
                     },
                     "400": {
-                        "description": "Datos inválidos (p. ej.: reason must be shorter than or equal to 500 characters)"
+                        "description": "Falta el motivo (`reason`: obligatorio para cliente y administrador, no para el chofer que libera el pedido), motivo en blanco, o datos inválidos (p. ej.: reason must be shorter than or equal to 500 characters)"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -8967,13 +8970,16 @@
                         }
                     },
                     "400": {
-                        "description": "Datos inválidos (p. ej.: name should not be empty; startTime must be in HH:MM format)"
+                        "description": "Datos inválidos (p. ej.: name should not be empty; startTime must be in HH:MM format), inicio >= fin o capacidad fuera de 1-10000"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
                     "403": {
                         "description": "Requiere rol: admin, super_admin"
+                    },
+                    "409": {
+                        "description": "La franja se solapa con otra franja activa de la distribuidora, o ya hay una activa con ese nombre"
                     }
                 },
                 "security": [
@@ -9186,6 +9192,9 @@
                     },
                     "404": {
                         "description": "La franja no existe o es de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "El nuevo horario se solapa con otra franja activa, el nombre ya lo tiene otra activa, o la capacidad queda por debajo de lo agendado"
                     }
                 },
                 "security": [
@@ -10076,6 +10085,9 @@
                     },
                     "403": {
                         "description": "Requiere rol: admin, super_admin"
+                    },
+                    "409": {
+                        "description": "Ya hay una zona activa con ese nombre (sin distinguir mayúsculas) o con esa prioridad; sin prioridad en el alta se asigna la siguiente"
                     }
                 },
                 "security": [
@@ -10303,6 +10315,9 @@
                     },
                     "404": {
                         "description": "La zona no existe o es de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "El nombre o la prioridad ya los tiene otra zona activa de la distribuidora"
                     }
                 },
                 "security": [
@@ -10875,7 +10890,7 @@
                         "description": "No existe o es de otra distribuidora"
                     },
                     "409": {
-                        "description": "Se cierra con saldo distinto de cero o con pedidos a cuenta sin entregar"
+                        "description": "Se cierra con saldo distinto de cero o con pedidos a cuenta sin entregar, o la transición de estado no está permitida (una cuenta cerrada sólo se reabre pasándola a active)"
                     },
                     "422": {
                         "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
@@ -14249,6 +14264,9 @@
                     },
                     "404": {
                         "description": "Tarea no encontrada"
+                    },
+                    "409": {
+                        "description": "La tarea ya está hecha o cancelada (la cerró otra operación mientras se editaba)"
                     }
                 },
                 "security": [
@@ -20681,7 +20699,7 @@
                         }
                     },
                     "400": {
-                        "description": "Dato obligatorio faltante o importe inválido"
+                        "description": "Dato obligatorio faltante, importe inválido, infracción futura, vencimiento anterior a la infracción o pago voluntario mayor al importe"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -20899,7 +20917,7 @@
                         }
                     },
                     "400": {
-                        "description": "Dato inválido"
+                        "description": "Dato inválido, infracción futura o vencimiento anterior a la infracción"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -20962,7 +20980,7 @@
                         }
                     },
                     "400": {
-                        "description": "Fecha de pago futura, importe inválido, falta la caja de efectivo o la caja no es de efectivo"
+                        "description": "Fecha de pago futura o anterior a la infracción, importe inválido, falta la caja de efectivo o la caja no es de efectivo"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -25379,7 +25397,7 @@
                     "tax_id": {
                         "type": "string",
                         "example": "30-12345678-9",
-                        "maxLength": 20
+                        "description": "CUIT: se acepta con guiones o espacios y se guarda sólo con los 11 dígitos"
                     },
                     "email": {
                         "type": "string",
@@ -25420,7 +25438,7 @@
                     "tax_id": {
                         "type": "string",
                         "example": "30-12345678-9",
-                        "maxLength": 20
+                        "description": "CUIT: se acepta con guiones o espacios y se guarda sólo con los 11 dígitos"
                     },
                     "email": {
                         "type": "string",
@@ -26313,8 +26331,10 @@
                     },
                     "car_patent": {
                         "type": "string",
-                        "description": "Patente. Se guarda en mayúsculas, sin espacios ni guiones, y tiene que quedar con al menos 4 letras o números. `null` (al editar) la borra.",
-                        "nullable": true
+                        "description": "Patente argentina: `AAA123` (formato anterior) o `AA123AA` (Mercosur). Se guarda en mayúsculas, sin espacios ni guiones (se aceptan al enviarla). Única entre los vehículos vigentes de la distribuidora. `null` (al editar) la borra.",
+                        "nullable": true,
+                        "example": "AB123CD",
+                        "pattern": "^([A-Z]{3}[0-9]{3}|[A-Z]{2}[0-9]{3}[A-Z]{2})$"
                     },
                     "car_brand": {
                         "type": "string",
@@ -26484,8 +26504,10 @@
                     },
                     "car_patent": {
                         "type": "string",
-                        "description": "Patente. Se guarda en mayúsculas, sin espacios ni guiones, y tiene que quedar con al menos 4 letras o números. `null` (al editar) la borra.",
-                        "nullable": true
+                        "description": "Patente argentina: `AAA123` (formato anterior) o `AA123AA` (Mercosur). Se guarda en mayúsculas, sin espacios ni guiones (se aceptan al enviarla). Única entre los vehículos vigentes de la distribuidora. `null` (al editar) la borra.",
+                        "nullable": true,
+                        "example": "AB123CD",
+                        "pattern": "^([A-Z]{3}[0-9]{3}|[A-Z]{2}[0-9]{3}[A-Z]{2})$"
                     },
                     "car_brand": {
                         "type": "string",
@@ -26704,8 +26726,9 @@
                     },
                     "discountPercentage": {
                         "type": "number",
-                        "description": "Descuento, en porcentaje",
-                        "example": 10
+                        "description": "Descuento, en porcentaje (hasta 99, 2 decimales)",
+                        "example": 10,
+                        "maximum": 99
                     }
                 },
                 "required": [
@@ -26722,11 +26745,11 @@
                     },
                     "weight": {
                         "type": "number",
-                        "description": "Peso en kg"
+                        "description": "Peso en kg (hasta 1000, 2 decimales)"
                     },
                     "price": {
                         "type": "number",
-                        "description": "Precio unitario"
+                        "description": "Precio unitario (hasta 10.000.000, 2 decimales)"
                     },
                     "stock": {
                         "type": "number",
@@ -26895,11 +26918,11 @@
                     },
                     "weight": {
                         "type": "number",
-                        "description": "Peso en kg"
+                        "description": "Peso en kg (hasta 1000, 2 decimales)"
                     },
                     "price": {
                         "type": "number",
-                        "description": "Precio unitario"
+                        "description": "Precio unitario (hasta 10.000.000, 2 decimales)"
                     },
                     "stock": {
                         "type": "number",
@@ -28528,7 +28551,7 @@
                     },
                     "reason": {
                         "type": "string",
-                        "description": "Motivo de la entrega manual. Obligatorio (mínimo 10 caracteres) cuando un admin/super_admin pasa el pedido a `delivered`; queda en el historial de estados y en la auditoría. Se ignora en los demás estados.",
+                        "description": "Motivo de la entrega manual. Obligatorio (mínimo 10 caracteres) cuando un admin/super_admin pasa el pedido a `delivered`; queda en el historial de estados y en la auditoría. Con `cancelled` es el motivo de la cancelación (obligatorio). Se ignora en los demás estados.",
                         "minLength": 10,
                         "maxLength": 500,
                         "example": "El cliente no tiene celular: confirmó la entrega por teléfono"
@@ -29192,7 +29215,8 @@
                 "properties": {
                     "reason": {
                         "type": "string",
-                        "description": "Motivo de la cancelación (opcional)",
+                        "description": "Motivo de la cancelación. Obligatorio para el cliente y el administrador (400 si falta o está en blanco); el chofer, que libera el pedido, no lo necesita",
+                        "maxLength": 500,
                         "example": "El cliente no se encontraba en el domicilio"
                     }
                 }
@@ -29771,7 +29795,9 @@
                         "type": "number",
                         "example": 50,
                         "default": 50,
-                        "description": "Capacidad máxima de pedidos (columna con default en la base)"
+                        "description": "Capacidad máxima de pedidos, de 1 a 10000 (columna con default en la base)",
+                        "minimum": 1,
+                        "maximum": 10000
                     }
                 },
                 "required": [
@@ -29890,7 +29916,9 @@
                         "type": "number",
                         "example": 50,
                         "default": 50,
-                        "description": "Capacidad máxima de pedidos (columna con default en la base)"
+                        "description": "Capacidad máxima de pedidos, de 1 a 10000 (columna con default en la base)",
+                        "minimum": 1,
+                        "maximum": 10000
                     },
                     "isActive": {
                         "type": "boolean",
@@ -29963,7 +29991,9 @@
                 "properties": {
                     "serial": {
                         "type": "string",
-                        "example": "SN-000123"
+                        "example": "SN-000123",
+                        "description": "Hasta 100 caracteres. Se guarda sin espacios en los bordes y en mayúsculas",
+                        "maxLength": 100
                     },
                     "gasCylinderId": {
                         "type": "string",

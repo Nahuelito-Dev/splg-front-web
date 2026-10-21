@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Mail } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Badge, Button, Card, Input } from '../../../common/components/ui';
+import { Badge, Button, Card, CardHeader, FormInput, Form } from '../../../common/components/ui';
 import { useTestEmailService } from '../../../services/queries/email';
 import type { PruebaDeEmail } from '../../../services/api/types';
 import { errorMessage } from '../../../services/api/errors';
@@ -22,13 +22,9 @@ const resultLabel = (result: PruebaDeEmail): Label =>
 export const EmailTestCard = () => {
   const [result, setResult] = useState<PruebaDeEmail | null>(null);
   const testEmail = useTestEmailService();
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<EmailTestFormValues>({ resolver: zodResolver(emailTestSchema) });
+  const methods = useForm<EmailTestFormValues>({ resolver: zodResolver(emailTestSchema) });
 
-  const onSubmit = handleSubmit(({ email }) => {
+  const onSubmit = ({ email }: EmailTestFormValues) => {
     setResult(null);
     testEmail.mutate(
       { email },
@@ -37,33 +33,24 @@ export const EmailTestCard = () => {
         onError: (error) => setResult({ success: false, message: errorMessage(error) }),
       },
     );
-  });
+  };
 
   return (
     <Card className="space-y-4 p-5">
-      <div>
-        <h3 className="text-sm font-semibold text-ink">Probar el correo</h3>
-        <p className="text-xs text-muted">
-          Manda un correo de prueba real a la dirección que pongas. Tiene que ser una cuenta que ya exista en Firebase
-          Auth: si no existe, la prueba contesta que falló sin romper nada.
-        </p>
-      </div>
+      <CardHeader
+        title="Probar el correo"
+        subtitle="Manda un correo de prueba real a la dirección que pongas. Tiene que ser una cuenta que ya exista en Firebase Auth: si no existe, la prueba contesta que falló sin romper nada."
+        className=""
+      />
 
-      <form onSubmit={(e) => void onSubmit(e)} className="flex flex-col gap-3 sm:flex-row sm:items-end" noValidate>
+      <Form methods={methods} onSubmit={onSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-end">
         <div className="flex-1">
-          <Input
-            label="Correo de destino"
-            type="email"
-            placeholder="admin@splg.com"
-            required
-            error={errors.email?.message}
-            {...register('email')}
-          />
+          <FormInput name="email" label="Correo de destino" type="email" placeholder="admin@splg.com" required />
         </div>
         <Button type="submit" icon={<Mail />} loading={testEmail.isPending}>
           Enviar prueba
         </Button>
-      </form>
+      </Form>
 
       {result && (
         <div className="space-y-1.5 rounded-xl border border-outline bg-surface-hover p-3.5">

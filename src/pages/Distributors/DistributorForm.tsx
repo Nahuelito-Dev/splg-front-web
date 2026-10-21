@@ -9,7 +9,9 @@ import {
   Form,
   FormActions,
   FormInput,
+  FormLoadWarning,
   FormSection,
+  type LoadWarning,
   LoadingState,
   PageContainer,
   PageHeader,
@@ -45,7 +47,8 @@ export const DistributorForm = () => {
       </PageContainer>
     );
   }
-  if (id && (isPending || error || !distributor)) {
+  // Un error de recarga con datos en caché no desmonta el formulario: se avisa en línea y se puede reintentar.
+  if (id && (isPending || !distributor)) {
     return (
       <PageContainer size="sm">
         <PageHeader title={title} />
@@ -59,8 +62,9 @@ export const DistributorForm = () => {
       </PageContainer>
     );
   }
+  const warning = id && error ? { text: 'No pudimos actualizar la empresa.', retry: () => void refetch() } : undefined;
   return distributor && id ? (
-    <EditDistributorForm key={distributor.distributor_id} distributor={distributor} />
+    <EditDistributorForm key={distributor.distributor_id} distributor={distributor} warning={warning} />
   ) : (
     <CreateDistributorForm />
   );
@@ -138,7 +142,7 @@ const CreateDistributorForm = () => {
   );
 };
 
-const EditDistributorForm = ({ distributor }: { distributor: Distributor }) => {
+const EditDistributorForm = ({ distributor, warning }: { distributor: Distributor; warning?: LoadWarning }) => {
   const navigate = useNavigate();
   const returnPath = useReturnPath(`${LIST_PATH}/${distributor.distributor_id}`);
   const updateDistributor = useUpdateDistributor();
@@ -182,6 +186,7 @@ const EditDistributorForm = ({ distributor }: { distributor: Distributor }) => {
   return (
     <PageContainer size="sm">
       <PageHeader title="Editar empresa" description={distributor.slug} />
+      {warning && <FormLoadWarning text={warning.text} onRetry={warning.retry} />}
       <Form methods={methods} onSubmit={onSubmit} id="distributor-edit" className="space-y-6">
         <FormSection title="Datos de la empresa">
           <FormInput name="name" label="Nombre" required />

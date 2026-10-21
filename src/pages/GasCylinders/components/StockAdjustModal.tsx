@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Button, Input, Modal } from '../../../common/components/ui';
+import { Button, Modal, FormInput, Form } from '../../../common/components/ui';
 import type { GasCylinder } from '../../../services/api/types';
 import { negativeStockMessage } from './stockAdjust';
 import { useGasCylinder, useUpdateGasCylinderStock } from '../../../services/queries/gasCylinders';
@@ -27,13 +27,8 @@ interface Props {
 export const StockAdjustModal = ({ open, onClose, cylinder }: Props) => {
   const updateStock = useUpdateGasCylinderStock();
   const current = useGasCylinder(cylinder?.gas_cylinder_id);
-  const {
-    register,
-    handleSubmit,
-    reset,
-    setError,
-    formState: { errors },
-  } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { quantity: 0 } });
+  const methods = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { quantity: 0 } });
+  const { reset, setError } = methods;
 
   useEffect(() => {
     if (open) reset({ quantity: 0 });
@@ -41,7 +36,7 @@ export const StockAdjustModal = ({ open, onClose, cylinder }: Props) => {
 
   if (!cylinder) return null;
 
-  const onSubmit = handleSubmit(async ({ quantity }) => {
+  const onSubmit = async ({ quantity }: FormValues) => {
     // Con el stock de ahora; si no se puede traer, decide el back (400).
     const stock = (await current.refetch()).data?.stock ?? cylinder.stock;
     const negative = negativeStockMessage(stock, quantity);
@@ -59,7 +54,7 @@ export const StockAdjustModal = ({ open, onClose, cylinder }: Props) => {
         onError: notify.error,
       },
     );
-  });
+  };
 
   return (
     <Modal
@@ -78,16 +73,15 @@ export const StockAdjustModal = ({ open, onClose, cylinder }: Props) => {
         </>
       }
     >
-      <form id="stock-adjust-form" onSubmit={(e) => void onSubmit(e)} noValidate>
-        <Input
+      <Form methods={methods} id="stock-adjust-form" onSubmit={onSubmit}>
+        <FormInput
+          name="quantity"
           label="Cantidad a sumar (o restar con signo negativo)"
           type="number"
           required
           hint="Ej: 50 para ingresar mercadería, -10 para dar de baja unidades dañadas."
-          error={errors.quantity?.message}
-          {...register('quantity')}
         />
-      </form>
+      </Form>
     </Modal>
   );
 };

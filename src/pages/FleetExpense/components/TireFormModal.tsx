@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, Input, Modal } from '../../../common/components/ui';
+import { Button, Modal, FormInput, Form } from '../../../common/components/ui';
 import { useCreateTire } from '../../../services/queries/fleetExpense';
 import { notify } from '../../../utils/notifications';
 import { tireSchema, type TireFormValues } from '../fleetExpenseSchemas';
@@ -14,26 +14,21 @@ interface Props {
 /** Registrar un neumático nuevo (CU-205): nace en depósito, sin vehículo ni posición. */
 export const TireFormModal = ({ open, onClose }: Props) => {
   const create = useCreateTire();
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<TireFormValues>({ resolver: zodResolver(tireSchema) });
+  const methods = useForm<TireFormValues>({ resolver: zodResolver(tireSchema) });
+  const { reset } = methods;
 
   useEffect(() => {
     if (open) reset({ serialNumber: '', brand: '', size: '', cost: 0 });
   }, [open, reset]);
 
-  const onSubmit = handleSubmit((values) =>
+  const onSubmit = (values: TireFormValues) =>
     create.mutate(values, {
       onSuccess: () => {
         notify.success('Neumático registrado');
         onClose();
       },
       onError: notify.error,
-    }),
-  );
+    });
 
   return (
     <Modal
@@ -53,36 +48,20 @@ export const TireFormModal = ({ open, onClose }: Props) => {
         </>
       }
     >
-      <form id="tire-form" onSubmit={(e) => void onSubmit(e)} className="grid gap-4 sm:grid-cols-2" noValidate>
+      <Form methods={methods} id="tire-form" onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
-          <Input
+          <FormInput
+            name="serialNumber"
             label="Número de serie"
             required
             maxLength={60}
             hint="Único en la distribuidora."
-            error={errors.serialNumber?.message}
-            {...register('serialNumber')}
           />
         </div>
-        <Input label="Marca" required maxLength={60} error={errors.brand?.message} {...register('brand')} />
-        <Input
-          label="Medida"
-          required
-          maxLength={40}
-          placeholder="215/75 R17.5"
-          error={errors.size?.message}
-          {...register('size')}
-        />
-        <Input
-          label="Costo"
-          type="number"
-          step="0.01"
-          min={0}
-          required
-          error={errors.cost?.message}
-          {...register('cost')}
-        />
-      </form>
+        <FormInput name="brand" label="Marca" required maxLength={60} />
+        <FormInput name="size" label="Medida" required maxLength={40} placeholder="215/75 R17.5" />
+        <FormInput name="cost" label="Costo" type="number" step="0.01" min={0} required />
+      </Form>
     </Modal>
   );
 };

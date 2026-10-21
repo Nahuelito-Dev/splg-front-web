@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Button, Modal, Select } from '../../../common/components/ui';
+import { Button, Modal, FormSelect, Form } from '../../../common/components/ui';
 import type { DriverLiquidation } from '../../../services/api/types';
 import { useCashBoxOptions, usePayDriverLiquidation } from '../../../services/queries/finance';
 import { formatCurrency } from '../../../utils/format';
@@ -21,18 +21,14 @@ interface Props {
 export const PayLiquidationModal = ({ open, onClose, liquidation }: Props) => {
   const pay = usePayDriverLiquidation();
   const boxes = useCashBoxOptions({ enabled: open });
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<Values>({ resolver: zodResolver(schema) });
+  const methods = useForm<Values>({ resolver: zodResolver(schema) });
+  const { reset } = methods;
 
   useEffect(() => {
     if (open) reset({ cashBoxId: '' });
   }, [open, reset]);
 
-  const onSubmit = handleSubmit((values) =>
+  const onSubmit = (values: Values) =>
     pay.mutate(
       { id: liquidation.liquidationId, body: values },
       {
@@ -42,8 +38,7 @@ export const PayLiquidationModal = ({ open, onClose, liquidation }: Props) => {
         },
         onError: notify.error,
       },
-    ),
-  );
+    );
 
   return (
     <Modal
@@ -63,8 +58,9 @@ export const PayLiquidationModal = ({ open, onClose, liquidation }: Props) => {
         </>
       }
     >
-      <form id="pay-liquidation-form" onSubmit={(e) => void onSubmit(e)} noValidate>
-        <Select
+      <Form methods={methods} id="pay-liquidation-form" onSubmit={onSubmit}>
+        <FormSelect
+          name="cashBoxId"
           label="Caja"
           required
           options={[
@@ -75,10 +71,8 @@ export const PayLiquidationModal = ({ open, onClose, liquidation }: Props) => {
             })),
           ]}
           hint="Una caja de efectivo necesita saldo y, si exige sesión, tenerla abierta."
-          error={errors.cashBoxId?.message}
-          {...register('cashBoxId')}
         />
-      </form>
+      </Form>
     </Modal>
   );
 };

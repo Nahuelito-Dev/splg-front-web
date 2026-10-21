@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Button, Checkbox, Input, Modal, Select } from '../../../common/components/ui';
+import { Button, Modal, FormInput, FormCheckbox, FormSelect, Form } from '../../../common/components/ui';
 import type { CashBox } from '../../../services/api/types';
 import { useCreateCashBox, useUpdateCashBox } from '../../../services/queries/finance';
 import { notify } from '../../../utils/notifications';
@@ -32,13 +32,8 @@ interface Props {
 export const CashBoxFormModal = ({ open, onClose, cashBox }: Props) => {
   const create = useCreateCashBox();
   const update = useUpdateCashBox();
-  const {
-    register,
-    handleSubmit,
-    reset,
-    watch,
-    formState: { errors },
-  } = useForm<Values>({ resolver: zodResolver(schema) });
+  const methods = useForm<Values>({ resolver: zodResolver(schema) });
+  const { reset, watch } = methods;
   const kind = watch('kind');
 
   useEffect(() => {
@@ -50,7 +45,7 @@ export const CashBoxFormModal = ({ open, onClose, cashBox }: Props) => {
     });
   }, [open, cashBox, reset]);
 
-  const onSubmit = handleSubmit((values) => {
+  const onSubmit = (values: Values) => {
     const options = {
       onSuccess: () => {
         notify.success(cashBox ? 'Caja actualizada' : 'Caja creada');
@@ -66,7 +61,7 @@ export const CashBoxFormModal = ({ open, onClose, cashBox }: Props) => {
     } else {
       create.mutate(values, options);
     }
-  });
+  };
 
   return (
     <Modal
@@ -86,26 +81,25 @@ export const CashBoxFormModal = ({ open, onClose, cashBox }: Props) => {
         </>
       }
     >
-      <form id="cash-box-form" onSubmit={(e) => void onSubmit(e)} className="grid gap-4" noValidate>
-        <Input label="Nombre" required maxLength={80} error={errors.name?.message} {...register('name')} />
-        <Select
+      <Form methods={methods} id="cash-box-form" onSubmit={onSubmit} className="grid gap-4">
+        <FormInput name="name" label="Nombre" required maxLength={80} />
+        <FormSelect
+          name="kind"
           label="Tipo"
           options={KIND_OPTIONS}
           disabled={cashBox !== null}
           hint={cashBox ? 'No se cambia una vez creada' : undefined}
-          error={errors.kind?.message}
-          {...register('kind')}
         />
-        <Checkbox
+        <FormCheckbox
+          name="requiresSession"
           label="Exige abrir y cerrar con arqueo"
           hint={
             kind === 'cash'
               ? 'Recomendado para efectivo: cada turno se abre con un monto y se cierra contando la plata.'
               : 'Banco y billetera normalmente no se abren ni se cierran.'
           }
-          {...register('requiresSession')}
         />
-      </form>
+      </Form>
     </Modal>
   );
 };

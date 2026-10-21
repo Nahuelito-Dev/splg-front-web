@@ -1,15 +1,12 @@
 import LocalOfferIcon from '@mui/icons-material/LocalOffer';
-import { Card, EmptyState } from '../../../../common/components/ui';
+import { Card, EmptyState, CardHeader } from '../../../../common/components/ui';
 import type { PromocionBody } from '../../../../services/api/types';
 import { formatCurrency } from '../../../../utils/format';
 import { discountedPrice } from '../pricing';
 
 export const PromotionsList = ({ promotions, price }: { promotions: PromocionBody[]; price: number }) => (
   <Card className="p-6">
-    <h3 className="flex items-center gap-2 text-base font-semibold text-ink">
-      <LocalOfferIcon aria-hidden="true" className="text-primary" fontSize="small" />
-      Promociones por cantidad
-    </h3>
+    <CardHeader title="Promociones por cantidad" icon={<LocalOfferIcon />} className="" />
 
     {promotions.length === 0 ? (
       <div className="mt-4">

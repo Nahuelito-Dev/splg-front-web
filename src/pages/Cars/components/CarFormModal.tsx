@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, Input, Modal, Select, type SelectOption } from '../../../common/components/ui';
+import { Button, Modal, type SelectOption, FormInput, FormSelect, Form } from '../../../common/components/ui';
 import type { Car } from '../../../services/api/types';
 import { useCreateCar, useUpdateCar } from '../../../services/queries/cars';
 import { notify } from '../../../utils/notifications';
@@ -26,12 +26,8 @@ export const CarFormModal = ({ open, onClose, car, fixedUserId, driverOptions, d
   const isEditing = Boolean(car);
   const saving = createCar.isPending || updateCar.isPending;
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<CarFormValues>({ resolver: zodResolver(carSchema) });
+  const methods = useForm<CarFormValues>({ resolver: zodResolver(carSchema) });
+  const { reset } = methods;
 
   useEffect(() => {
     if (!open) return;
@@ -49,7 +45,7 @@ export const CarFormModal = ({ open, onClose, car, fixedUserId, driverOptions, d
     });
   }, [open, car, fixedUserId, reset]);
 
-  const onSubmit = handleSubmit((values) => {
+  const onSubmit = (values: CarFormValues) => {
     const { fuel_type: fuelType, tank_capacity_liters: tank, ...rest } = values;
     const body = {
       ...rest,
@@ -67,7 +63,7 @@ export const CarFormModal = ({ open, onClose, car, fixedUserId, driverOptions, d
     };
     if (car) updateCar.mutate({ id: car.car_id, changes: body }, options);
     else createCar.mutate(body, options);
-  });
+  };
 
   return (
     <Modal
@@ -86,71 +82,39 @@ export const CarFormModal = ({ open, onClose, car, fixedUserId, driverOptions, d
         </>
       }
     >
-      <form id="car-form" onSubmit={(e) => void onSubmit(e)} className="grid gap-4 sm:grid-cols-2" noValidate>
+      <Form methods={methods} id="car-form" onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
         {driverOptions && (
           <div className="sm:col-span-2">
-            <Select
+            <FormSelect
+              name="user_id"
               label="Chofer asignado"
               required
               hint={driverOptionsHint}
               options={driverOptions}
-              error={errors.user_id?.message}
-              {...register('user_id')}
             />
           </div>
         )}
-        <Input
-          label="Marca"
-          required
-          placeholder="Honda"
-          error={errors.car_brand?.message}
-          {...register('car_brand')}
-        />
-        <Input
-          label="Modelo"
-          required
-          placeholder="Titan 150"
-          error={errors.car_model?.message}
-          {...register('car_model')}
-        />
-        <Input
-          label="Patente"
-          required
-          placeholder="AA123BB"
-          error={errors.car_patent?.message}
-          {...register('car_patent')}
-        />
-        <Select
-          label="Tipo de vehículo"
-          required
-          options={CAR_TYPE_OPTIONS}
-          error={errors.type_car?.message}
-          {...register('type_car')}
-        />
-        <Input label="Año" type="number" error={errors.car_year?.message} {...register('car_year')} />
-        <Input label="Color" placeholder="Rojo" error={errors.car_color?.message} {...register('car_color')} />
-        <Input
-          label="Capacidad de carga (kg)"
-          type="number"
-          error={errors.car_capacity?.message}
-          {...register('car_capacity')}
-        />
-        <Select
+        <FormInput name="car_brand" label="Marca" required placeholder="Honda" />
+        <FormInput name="car_model" label="Modelo" required placeholder="Titan 150" />
+        <FormInput name="car_patent" label="Patente" required placeholder="AA123BB" />
+        <FormSelect name="type_car" label="Tipo de vehículo" required options={CAR_TYPE_OPTIONS} />
+        <FormInput name="car_year" label="Año" type="number" />
+        <FormInput name="car_color" label="Color" placeholder="Rojo" />
+        <FormInput name="car_capacity" label="Capacidad de carga (kg)" type="number" />
+        <FormSelect
+          name="fuel_type"
           label="Combustible"
           options={FUEL_TYPE_OPTIONS}
           hint="El de las cargas que no indican otro."
-          error={errors.fuel_type?.message}
-          {...register('fuel_type')}
         />
-        <Input
+        <FormInput
+          name="tank_capacity_liters"
           label="Capacidad del tanque (L)"
           type="number"
           step="0.01"
           hint="Una carga no puede superarla en más de 5 %."
-          error={errors.tank_capacity_liters?.message}
-          {...register('tank_capacity_liters')}
         />
-      </form>
+      </Form>
     </Modal>
   );
 };

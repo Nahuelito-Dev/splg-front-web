@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { Button, Input, Modal, Select, TextArea } from '../../../common/components/ui';
+import { Button, Modal, FormInput, FormTextArea, FormSelect, Form } from '../../../common/components/ui';
 import { useResetOnOpen } from '../../../hooks/useResetOnOpen';
 import { useRegisterInspection } from '../../../services/queries/physicalCylinders';
 import { notify } from '../../../utils/notifications';
@@ -24,17 +24,15 @@ const RESULT_OPTIONS = INSPECTION_RESULTS.map((value) => ({ value, label: labelO
 /** Registra la revisión periódica (prueba hidráulica) de un envase: fecha, resultado y hasta cuándo puede circular. */
 export const InspectionFormModal = ({ open, onClose, cylinderId }: Props) => {
   const registerInspection = useRegisterInspection();
-  const {
-    register,
-    handleSubmit,
-    reset,
-    watch,
-    formState: { errors },
-  } = useForm<InspectionFormValues>({ resolver: zodResolver(inspectionSchema), defaultValues: inspectionDefaults() });
+  const methods = useForm<InspectionFormValues>({
+    resolver: zodResolver(inspectionSchema),
+    defaultValues: inspectionDefaults(),
+  });
+  const { reset, watch } = methods;
   useResetOnOpen(open, () => reset(inspectionDefaults()));
   const rejected = watch('result') === 'rejected';
 
-  const onSubmit = handleSubmit((values) =>
+  const onSubmit = (values: InspectionFormValues) =>
     registerInspection.mutate(
       { id: cylinderId, body: buildInspectionBody(values) },
       {
@@ -48,8 +46,7 @@ export const InspectionFormModal = ({ open, onClose, cylinderId }: Props) => {
         },
         onError: notify.error,
       },
-    ),
-  );
+    );
 
   return (
     <Modal
@@ -68,16 +65,10 @@ export const InspectionFormModal = ({ open, onClose, cylinderId }: Props) => {
         </>
       }
     >
-      <form id="inspection-form" onSubmit={(e) => void onSubmit(e)} className="space-y-4" noValidate>
+      <Form methods={methods} id="inspection-form" onSubmit={onSubmit} className="space-y-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Input
-            label="Fecha de la revisión"
-            type="date"
-            required
-            error={errors.inspectedAt?.message}
-            {...register('inspectedAt')}
-          />
-          <Select label="Resultado" options={RESULT_OPTIONS} {...register('result')} />
+          <FormInput name="inspectedAt" label="Fecha de la revisión" type="date" required />
+          <FormSelect name="result" label="Resultado" options={RESULT_OPTIONS} />
         </div>
         {rejected ? (
           <p className="rounded-lg bg-danger/10 p-3 text-sm text-danger" role="note">
@@ -85,16 +76,10 @@ export const InspectionFormModal = ({ open, onClose, cylinderId }: Props) => {
             cuando vuelva.
           </p>
         ) : (
-          <Input
-            label="Puede circular hasta"
-            type="date"
-            required
-            error={errors.nextDueAt?.message}
-            {...register('nextDueAt')}
-          />
+          <FormInput name="nextDueAt" label="Puede circular hasta" type="date" required />
         )}
-        <TextArea label="Notas" error={errors.notes?.message} {...register('notes')} />
-      </form>
+        <FormTextArea name="notes" label="Notas" />
+      </Form>
     </Modal>
   );
 };

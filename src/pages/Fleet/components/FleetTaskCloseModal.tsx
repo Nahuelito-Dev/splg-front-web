@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, Input, Modal, TextArea } from '../../../common/components/ui';
+import { Button, Modal, FormInput, FormTextArea, Form } from '../../../common/components/ui';
 import type { FleetTask } from '../../../services/api/types';
 import { useCloseFleetTask } from '../../../services/queries/fleet';
 import { daysAgo } from '../../../utils/dates';
@@ -17,12 +17,8 @@ interface Props {
 /** CU-141: registrar que la póliza/VTV/licencia/service se hizo (o se renovó). */
 export const FleetTaskCloseModal = ({ open, onClose, task }: Props) => {
   const closeTask = useCloseFleetTask();
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<FleetTaskCloseValues>({ resolver: zodResolver(fleetTaskCloseSchema) });
+  const methods = useForm<FleetTaskCloseValues>({ resolver: zodResolver(fleetTaskCloseSchema) });
+  const { reset } = methods;
 
   useEffect(() => {
     if (!open) return;
@@ -37,7 +33,7 @@ export const FleetTaskCloseModal = ({ open, onClose, task }: Props) => {
     });
   }, [open, task, reset]);
 
-  const onSubmit = handleSubmit((values) => {
+  const onSubmit = (values: FleetTaskCloseValues) => {
     if (!task) return;
     closeTask.mutate(
       { id: task.taskId, body: values },
@@ -49,7 +45,7 @@ export const FleetTaskCloseModal = ({ open, onClose, task }: Props) => {
         onError: notify.error,
       },
     );
-  });
+  };
 
   return (
     <Modal
@@ -68,39 +64,15 @@ export const FleetTaskCloseModal = ({ open, onClose, task }: Props) => {
         </>
       }
     >
-      <form
-        id="fleet-task-close-form"
-        onSubmit={(e) => void onSubmit(e)}
-        className="grid gap-4 sm:grid-cols-2"
-        noValidate
-      >
-        <Input
-          label="Se hizo el"
-          type="date"
-          required
-          error={errors.performedAt?.message}
-          {...register('performedAt')}
-        />
-        <Input
-          label="Kilometraje"
-          type="number"
-          min={0}
-          step={1}
-          error={errors.odometerKm?.message}
-          {...register('odometerKm')}
-        />
-        <Input label="Costo" type="number" min={0} step="0.01" error={errors.cost?.message} {...register('cost')} />
-        <Input
-          label="Proveedor"
-          placeholder="Si cambió respecto al de la tarea"
-          maxLength={120}
-          error={errors.provider?.message}
-          {...register('provider')}
-        />
+      <Form methods={methods} id="fleet-task-close-form" onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
+        <FormInput name="performedAt" label="Se hizo el" type="date" required />
+        <FormInput name="odometerKm" label="Kilometraje" type="number" min={0} step={1} />
+        <FormInput name="cost" label="Costo" type="number" min={0} step="0.01" />
+        <FormInput name="provider" label="Proveedor" placeholder="Si cambió respecto al de la tarea" maxLength={120} />
         <div className="sm:col-span-2">
-          <TextArea label="Notas" maxLength={2000} error={errors.notes?.message} {...register('notes')} />
+          <FormTextArea name="notes" label="Notas" maxLength={2000} />
         </div>
-      </form>
+      </Form>
     </Modal>
   );
 };

@@ -1,4 +1,4 @@
-import { Card, ErrorState, Skeleton, Switch } from '../../../common/components/ui';
+import { Card, ErrorState, Skeleton, Switch, CardHeader } from '../../../common/components/ui';
 import { usePermissions } from '../../../hooks';
 import { useStockControlSettings, useUpdateStockControlSettings } from '../../../services/queries/truckLoads';
 import { confirm, notify } from '../../../utils/notifications';
@@ -33,7 +33,7 @@ export const StockControlCard = () => {
 
   return (
     <Card className="p-6">
-      <h2 className="text-base font-semibold text-ink">Control de stock al despachar</h2>
+      <CardHeader title="Control de stock al despachar" className="" />
       {needsDistributor ? (
         <p className="mt-2 text-sm text-muted">
           Elegí una distribuidora con «Ver como» para ver y cambiar esta opción.

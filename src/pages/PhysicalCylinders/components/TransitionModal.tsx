@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Badge, Button, Input, Modal, Select, TextArea } from '../../../common/components/ui';
+import { Badge, Button, Modal, FormInput, FormTextArea, FormSelect, Form } from '../../../common/components/ui';
 import type { Cylinder } from '../../../services/api/types';
 import { useTransitionCylinder } from '../../../services/queries/physicalCylinders';
 import { CYLINDER_STATE, labelOf } from '../../../utils/statusLabels';
@@ -35,13 +35,8 @@ const NEEDS_ORDER: Cylinder['state'][] = ['dispatched', 'with_customer'];
 
 export const TransitionModal = ({ open, onClose, cylinder }: Props) => {
   const transitionCylinder = useTransitionCylinder();
-  const {
-    register,
-    handleSubmit,
-    reset,
-    watch,
-    formState: { errors },
-  } = useForm<FormValues>({ resolver: zodResolver(schema) });
+  const methods = useForm<FormValues>({ resolver: zodResolver(schema) });
+  const { reset, watch } = methods;
 
   const options = useMemo(() => (cylinder ? NEXT_STATES[cylinder.state] : []), [cylinder]);
 
@@ -53,7 +48,7 @@ export const TransitionModal = ({ open, onClose, cylinder }: Props) => {
 
   const toState = watch('toState');
 
-  const onSubmit = handleSubmit(({ toState: nextState, orderId, note }) =>
+  const onSubmit = ({ toState: nextState, orderId, note }: FormValues) =>
     transitionCylinder.mutate(
       {
         id: cylinder.cylinder_id,
@@ -66,8 +61,7 @@ export const TransitionModal = ({ open, onClose, cylinder }: Props) => {
         },
         onError: notify.error,
       },
-    ),
-  );
+    );
 
   return (
     <Modal
@@ -91,38 +85,35 @@ export const TransitionModal = ({ open, onClose, cylinder }: Props) => {
         </>
       }
     >
-      <form id="cylinder-transition-form" onSubmit={(e) => void onSubmit(e)} className="space-y-4" noValidate>
+      <Form methods={methods} id="cylinder-transition-form" onSubmit={onSubmit} className="space-y-4">
         <div className="flex items-center gap-2 text-sm text-muted">
           Estado actual: <Badge label={labelOf(CYLINDER_STATE, cylinder.state)} />
         </div>
 
         {options.length > 0 ? (
-          <Select
+          <FormSelect
+            name="toState"
             label="Nuevo estado"
             options={options.map((s) => ({ value: s, label: labelOf(CYLINDER_STATE, s).text }))}
-            error={errors.toState?.message}
-            {...register('toState')}
           />
         ) : (
           <p className="text-sm text-muted">Este envase no tiene próximos estados válidos.</p>
         )}
 
         {NEEDS_ORDER.includes(toState) && (
-          <Input
+          <FormInput
+            name="orderId"
             label={toState === 'with_customer' ? 'Pedido asociado (UUID)' : 'Pedido asociado (UUID, opcional)'}
             placeholder="Id del pedido"
-            error={errors.orderId?.message}
-            {...register('orderId')}
           />
         )}
 
-        <TextArea
+        <FormTextArea
+          name="note"
           label="Nota (opcional)"
           placeholder="Ej: recargada en planta / entregada al cliente…"
-          error={errors.note?.message}
-          {...register('note')}
         />
-      </form>
+      </Form>
     </Modal>
   );
 };
