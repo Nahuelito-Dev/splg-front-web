@@ -1927,8 +1927,8 @@ export interface paths {
     options?: never;
     head?: never;
     /**
-     * Confirmar la seña de una reserva cobrada en efectivo
-     * @description Marca deposit_paid=true. Habilita la activación AUTOMÁTICA de la reserva (el cron la despacha el día agendado). La seña por MercadoPago se confirma sola vía webhook.
+     * Confirmar la seña de una reserva cobrada en efectivo o por transferencia
+     * @description Marca deposit_paid=true para una seña recibida en efectivo o por transferencia. Habilita la activación AUTOMÁTICA de la reserva (el cron la despacha el día agendado). La seña por MercadoPago se confirma sola vía webhook: confirmarla a mano es 400.
      */
     patch: operations['OrderController_confirmDeposit'];
     trace?: never;
@@ -7383,6 +7383,7 @@ export interface components {
       /** Format: date-time */
       requested_delivery_date: string | null;
       order_items: components['schemas']['OrderItemResponseDto'][];
+      /** @description Enlace de pago de MercadoPago pendiente: en el alta y en `GET /orders/:id` mientras el cobro siga pendiente (no se devuelve al chofer). En una reserva es el de la seña. */
       payment_url?: string;
       /** Format: date */
       scheduledDate?: string | null;
@@ -7456,7 +7457,7 @@ export interface components {
       scheduledDate?: string;
       /** @description Marca el pedido como pre-reserva: reserva stock para la fecha agendada pero NO se despacha hasta que la seña esté paga y llegue el día (el sistema lo activa solo). Requiere scheduledDate. */
       isReservation?: boolean;
-      /** @description Monto de la seña de la reserva (obligatorio si isReservation). */
+      /** @description Monto de la seña de la reserva (obligatorio si isReservation). No puede superar el total del pedido (con recargos): 400 «La seña ($X) no puede superar el total del pedido ($Y)». */
       depositAmount?: number;
       /** @description Quién va a recibir el pedido (CU-128): mismas reglas que `PATCH /orders/:id/receiver`. */
       receiver?: components['schemas']['SetOrderReceiverDto'];
@@ -7495,7 +7496,7 @@ export interface components {
       scheduledDate?: string;
       /** @description Marca el pedido como pre-reserva: reserva stock para la fecha agendada pero NO se despacha hasta que la seña esté paga y llegue el día (el sistema lo activa solo). Requiere scheduledDate. */
       isReservation?: boolean;
-      /** @description Monto de la seña de la reserva (obligatorio si isReservation). */
+      /** @description Monto de la seña de la reserva (obligatorio si isReservation). No puede superar el total del pedido (con recargos): 400 «La seña ($X) no puede superar el total del pedido ($Y)». */
       depositAmount?: number;
       /** @description Quién va a recibir el pedido (CU-128): mismas reglas que `PATCH /orders/:id/receiver`. */
       receiver?: components['schemas']['SetOrderReceiverDto'];
@@ -7536,6 +7537,20 @@ export interface components {
       /** @example Abrí tu carga para recibir pedidos */
       message: string | null;
     };
+    FranjaDeReservaDto: {
+      /** @example Mañana */
+      name: string;
+      /**
+       * @description HH:MM
+       * @example 08:00
+       */
+      startTime: string;
+      /**
+       * @description HH:MM
+       * @example 12:00
+       */
+      endTime: string;
+    };
     RenglonDeReservaDto: {
       /** @example 2 */
       quantity: number;
@@ -7564,6 +7579,10 @@ export interface components {
        * @example 17600
        */
       remainingBalance: number;
+      /** @description Enlace de pago de MercadoPago de la seña mientras esté pendiente; `null` si la seña es en efectivo o por transferencia, ya está paga o no se generó */
+      paymentUrl: string | null;
+      /** @description Franja de entrega elegida; `null` si la reserva es sólo por día */
+      timeSlot: components['schemas']['FranjaDeReservaDto'] | null;
       /** Format: date-time */
       createdAt: string;
       items: components['schemas']['RenglonDeReservaDto'][];
@@ -7743,6 +7762,7 @@ export interface components {
       /** Format: date-time */
       requested_delivery_date: string | null;
       order_items: components['schemas']['OrderItemResponseDto'][];
+      /** @description Enlace de pago de MercadoPago pendiente: en el alta y en `GET /orders/:id` mientras el cobro siga pendiente (no se devuelve al chofer). En una reserva es el de la seña. */
       payment_url?: string;
       /** Format: date */
       scheduledDate?: string | null;
@@ -18714,6 +18734,13 @@ export interface operations {
           'application/json': components['schemas']['ReservaResponseDto'][];
         };
       };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Sin token o token inválido */
       401: {
         headers: {
@@ -18859,6 +18886,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['OrderResponseDto'];
         };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Sin token o token inválido */
       401: {
@@ -19882,7 +19916,7 @@ export interface operations {
           'application/json': components['schemas']['OrderResponseDto'];
         };
       };
-      /** @description El pedido no es una reserva pendiente */
+      /** @description El pedido no es una reserva pendiente, o la seña es de MercadoPago (la confirma la pasarela) */
       400: {
         headers: {
           [name: string]: unknown;

@@ -17,7 +17,7 @@ export const OrderInvoice = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { needsDistributor } = usePermissions();
-  const { data: order, isPending, error, refetch } = useOrder(id);
+  const { data: order, isPending, error, refetch } = useOrder(id, { enabled: !needsDistributor });
   const {
     data: distributor,
     isPending: loadingDistributor,
@@ -46,7 +46,7 @@ export const OrderInvoice = () => {
         </div>
         {needsDistributor && (
           <p role="status" className="mb-4 rounded-lg bg-warn-soft p-3 text-sm text-warn print:hidden">
-            Elegí una distribuidora con «Ver como» para que el remito lleve su membrete; así se imprime sin él.
+            Elegí una distribuidora con «Ver como» para ver el pedido y su remito.
           </p>
         )}
         {distributorError && (
@@ -58,7 +58,7 @@ export const OrderInvoice = () => {
             />
           </div>
         )}
-        {isPending ? (
+        {needsDistributor ? null : isPending ? (
           <LoadingState />
         ) : error || !order ? (
           <ErrorState error={error} resource="El pedido" onRetry={() => void refetch()} />

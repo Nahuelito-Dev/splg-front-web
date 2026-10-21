@@ -21,6 +21,8 @@ const reserva = (patch: Partial<Reserva>): Reserva => ({
   depositAmount: 5000,
   depositPaid: false,
   remainingBalance: 17600,
+  paymentUrl: null,
+  timeSlot: null,
   createdAt: '2026-10-01T10:00:00.000Z',
   items: [],
   ...patch,

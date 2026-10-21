@@ -55,4 +55,38 @@ describe('ReservationDetailDrawer', () => {
     renderDrawer(null);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
+
+  it('el saldo al entregar es total menos seña aunque la seña esté pendiente (el back sólo descuenta la cobrada)', () => {
+    renderDrawer(reservation({ total: 16700, depositAmount: 500, remainingBalance: 16700, depositPaid: false }));
+    expect(screen.getByText('Saldo al entregar').nextElementSibling).toHaveTextContent('16.200');
+  });
+
+  it('muestra la franja elegida, o que es sólo por el día', () => {
+    const { unmount } = renderDrawer(
+      reservation({ timeSlot: { name: 'Mañana', startTime: '08:00', endTime: '12:00' } }),
+    );
+    expect(screen.getByText('Mañana (08:00–12:00)')).toBeInTheDocument();
+    unmount();
+    renderDrawer(reservation({ timeSlot: null }));
+    expect(screen.getByText('Sólo el día')).toBeInTheDocument();
+  });
+
+  it('una seña por transferencia sin cobrar se confirma a mano, con su texto', () => {
+    const onConfirm = vi.fn();
+    renderDrawer(reservation({ paymentMethod: 'transfer' }), onConfirm);
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar transferencia recibida' }));
+    expect(onConfirm).toHaveBeenCalledWith('abcdef123456');
+  });
+
+  it('una seña por MercadoPago no se confirma a mano y muestra el enlace de pago', () => {
+    renderDrawer(reservation({ paymentMethod: 'mercadopago', paymentUrl: 'https://mp.test/checkout/9' }));
+    expect(screen.queryByRole('button', { name: /Confirmar/ })).not.toBeInTheDocument();
+    expect(screen.getByText('https://mp.test/checkout/9')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Abrir/ })).toHaveAttribute('href', 'https://mp.test/checkout/9');
+  });
+
+  it('una seña de MercadoPago sin enlace vigente lo explica', () => {
+    renderDrawer(reservation({ paymentMethod: 'mercadopago', paymentUrl: null }));
+    expect(screen.getByText(/No hay un enlace de pago vigente/)).toBeInTheDocument();
+  });
 });

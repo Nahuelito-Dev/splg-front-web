@@ -4,6 +4,8 @@ import type { Reserva } from '../../../services/api/types';
 import { formatCurrency, formatDateTime, formatDay, formatShortId } from '../../../utils/format';
 import { labelOf, PAYMENT_METHOD } from '../../../utils/statusLabels';
 import { isKnownPaymentMethod } from './paymentMethod';
+import { PaymentLink } from '../../Orders/components/PaymentLink';
+import { canConfirmDeposit, confirmDepositLabel, reservationBalance, slotLabel } from './reservationBalance';
 
 interface Props {
   reservation: Reserva | null;
@@ -12,11 +14,11 @@ interface Props {
   confirming: boolean;
 }
 
-/** Todo lo que la API devuelve de una reserva, y la confirmación de la seña en efectivo. */
+/** Todo lo que la API devuelve de una reserva, y la confirmación de la seña recibida en efectivo o por transferencia. */
 export const ReservationDetailDrawer = ({ reservation, onClose, onConfirmDeposit, confirming }: Props) => {
   const navigate = useNavigate();
   if (!reservation) return null;
-  const canConfirm = !reservation.depositPaid && reservation.paymentMethod === 'cash';
+  const canConfirm = canConfirmDeposit(reservation);
 
   return (
     <Drawer
@@ -41,7 +43,7 @@ export const ReservationDetailDrawer = ({ reservation, onClose, onConfirmDeposit
           </Button>
           {canConfirm && (
             <Button onClick={() => onConfirmDeposit(reservation.id)} loading={confirming}>
-              Confirmar seña cobrada
+              {confirmDepositLabel(reservation)}
             </Button>
           )}
         </>
@@ -53,6 +55,7 @@ export const ReservationDetailDrawer = ({ reservation, onClose, onConfirmDeposit
             { label: 'Cliente', value: reservation.customerName ?? 'Sin nombre' },
             { label: 'Teléfono', value: reservation.customerPhone ?? '—', mono: true },
             { label: 'Día agendado', value: formatDay(reservation.scheduledDate) },
+            { label: 'Franja horaria', value: slotLabel(reservation.timeSlot) },
             {
               label: 'Medio de pago',
               value: isKnownPaymentMethod(reservation.paymentMethod)
@@ -61,6 +64,17 @@ export const ReservationDetailDrawer = ({ reservation, onClose, onConfirmDeposit
             },
           ]}
         />
+        {!reservation.depositPaid && reservation.paymentMethod === 'mercadopago' && (
+          <div>
+            {reservation.paymentUrl ? (
+              <PaymentLink url={reservation.paymentUrl} title="Enlace de pago de la seña (MercadoPago)" />
+            ) : (
+              <p className="rounded-lg border border-outline bg-surface-hover p-3 text-xs text-muted">
+                No hay un enlace de pago vigente para la seña: se confirma sola cuando MercadoPago avisa el pago.
+              </p>
+            )}
+          </div>
+        )}
         <div className="rounded-xl border border-outline">
           <ul className="divide-y divide-outline-soft text-[13px]">
             {reservation.items.map((item, index) => (
@@ -81,7 +95,7 @@ export const ReservationDetailDrawer = ({ reservation, onClose, onConfirmDeposit
             </div>
             <div>
               <dt className="text-xs text-muted">Saldo al entregar</dt>
-              <dd className="font-mono font-semibold text-ink">{formatCurrency(reservation.remainingBalance)}</dd>
+              <dd className="font-mono font-semibold text-ink">{formatCurrency(reservationBalance(reservation))}</dd>
             </div>
           </dl>
         </div>

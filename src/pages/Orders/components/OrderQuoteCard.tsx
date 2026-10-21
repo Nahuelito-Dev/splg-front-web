@@ -61,6 +61,12 @@ export const OrderQuoteCard = ({ body, hint }: Props) => {
           <div className="border-t border-outline pt-1.5">
             <Line label="Total" amount={quote.total} strong />
           </div>
+          {body?.isReservation && (
+            <div className="space-y-1.5 border-t border-outline pt-1.5">
+              <Line label="Seña" amount={quote.deposit} />
+              <Line label="Saldo a cobrar" amount={quote.balance} />
+            </div>
+          )}
         </dl>
       ) : (
         <p className="text-sm text-muted">Calculando…</p>

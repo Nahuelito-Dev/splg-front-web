@@ -154,11 +154,11 @@ export const useOrderStatusCounts = (filters: Omit<OrderFilters, 'status'> = {})
  * cuando el socket de pedidos está desconectado (ver `OrderDetails`): con
  * socket online la ficha se refresca sola por evento, sin pedir de más.
  */
-export const useOrder = (id: string | undefined, { refetchInterval }: LiveOptions = {}) =>
+export const useOrder = (id: string | undefined, { refetchInterval, enabled = true }: LiveOptions = {}) =>
   useQuery({
     queryKey: keys.detail(id ?? ''),
     queryFn: () => getOrder(id ?? ''),
-    enabled: Boolean(id),
+    enabled: Boolean(id) && enabled,
     refetchInterval,
   });
 
@@ -265,7 +265,15 @@ export const useCreateOrder = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: CreateOrderBody) => createOrder(body),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
+    // Una reserva programada nace en Reservas: esa lista y los cupos de las franjas quedan viejos.
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: keys.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.reservations.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.timeSlots.all }),
+      ]),
+    // Si el alta falló por cupo (la franja se llenó mientras se cargaba), los cupos que se ven están viejos.
+    onError: () => queryClient.invalidateQueries({ queryKey: queryKeys.timeSlots.all }),
   });
 };
 

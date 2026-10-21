@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { CircleUser, Copy, ExternalLink, MapPin, Truck, UserCheck, Wallet } from 'lucide-react';
+import { CircleUser, MapPin, Truck, UserCheck, Wallet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Avatar, Badge, Button, Card, CardHeader, UserRefLink } from '../../../../common/components/ui';
 import type { Order } from '../../../../services/api/types';
@@ -9,6 +9,7 @@ import { formatCurrency, formatDateTime, formatDay } from '../../../../utils/for
 import { notify } from '../../../../utils/notifications';
 import { DELIVERY_MODE, labelOf, PAYMENT_METHOD, paymentStatusLabel } from '../../../../utils/statusLabels';
 import { isClosed } from '../orderStatus';
+import { PaymentLink } from '../PaymentLink';
 import { OrderMiniMap } from './OrderMiniMap';
 import { OrderRefunds } from './OrderRefunds';
 import { orderCoordinates } from './orderLocation';
@@ -167,36 +168,6 @@ const DriverSection = ({ order }: { order: Order }) => {
         <p className="text-sm text-muted">Todavía sin asignar</p>
       )}
     </Section>
-  );
-};
-
-/** Enlace de pago online pendiente: el operador lo copia o lo abre para reenviárselo al cliente. */
-const PaymentLink = ({ url }: { url: string }) => {
-  const copy = () => {
-    navigator.clipboard.writeText(url).then(
-      () => notify.success('Enlace de pago copiado'),
-      () => notify.error(new Error('No se pudo copiar el enlace')),
-    );
-  };
-
-  return (
-    <div className="mt-3 rounded-lg border border-outline bg-surface-hover p-3">
-      <p className="text-xs font-medium text-muted">Enlace de pago (MercadoPago)</p>
-      <p className="mt-1 break-all font-mono text-[11px] text-ink-2">{url}</p>
-      <div className="mt-2 flex flex-wrap gap-2">
-        <Button variant="secondary" size="sm" icon={<Copy />} onClick={copy}>
-          Copiar enlace
-        </Button>
-        <a
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex h-8 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-outline bg-surface px-3 text-xs font-semibold text-ink shadow-control transition hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 [&_svg]:h-4 [&_svg]:w-4"
-        >
-          <ExternalLink aria-hidden="true" /> Abrir
-        </a>
-      </div>
-    </div>
   );
 };
 

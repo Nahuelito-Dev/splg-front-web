@@ -188,6 +188,7 @@ export type FleetTaskAttachment = S['FleetTaskAttachmentResponseDto'];
 export type FleetTask = S['FleetTaskResponseDto'];
 export type FleetVehicleDocuments = S['FleetVehicleDocumentsResponseDto'];
 export type FleetVehicleExpirations = S['FleetVehicleExpirationsDto'];
+export type FranjaDeReserva = S['FranjaDeReservaDto'];
 export type FuelEfficiency = S['FuelEfficiencyDto'];
 export type FuelLoadPage = S['FuelLoadPageDto'];
 export type FuelLoad = S['FuelLoadResponseDto'];

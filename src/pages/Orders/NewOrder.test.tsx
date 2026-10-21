@@ -8,6 +8,10 @@ vi.mock('../../hooks', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   usePermissions: permissions,
 }));
+vi.mock('../../utils/notifications', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  notify: { success: vi.fn(), error: vi.fn() },
+}));
 const deliveryOptions = vi.hoisted(() => ({ data: undefined as unknown }));
 const quote = vi.hoisted(() => ({ data: undefined as unknown, body: vi.fn() }));
 vi.mock('../../services/queries/orders', () => ({
@@ -17,6 +21,14 @@ vi.mock('../../services/queries/orders', () => ({
     quote.body(body);
     return { data: quote.data, error: null, isFetching: false, stale: false };
   },
+}));
+vi.mock('../../services/queries/timeSlots', () => ({
+  useTimeSlotAvailability: () => ({
+    data: [
+      { timeSlotId: 't-1', name: 'Mañana', startTime: '09:00', endTime: '12:00', capacity: 5, booked: 1, remaining: 4 },
+      { timeSlotId: 't-2', name: 'Tarde', startTime: '16:00', endTime: '19:00', capacity: 5, booked: 5, remaining: 0 },
+    ],
+  }),
 }));
 vi.mock('../../services/queries/finance', () => ({
   useCustomerAccountOf: () => ({ data: null, isPending: false }),
@@ -185,6 +197,134 @@ describe('NewOrder: administrador general sin distribuidora elegida', () => {
       fillForm();
       expect(quote.body).toHaveBeenLastCalledWith(null);
       expect(screen.getAllByText(WRITE_HINT).length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('reserva programada con seña (CU-072)', () => {
+    it('sin marcar la reserva no muestra fecha ni seña', () => {
+      permissions.mockReturnValue({ canWrite: true, writeHint: undefined });
+      renderPage();
+      expect(screen.queryByLabelText(/Fecha de entrega/)).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/Monto de la seña/)).not.toBeInTheDocument();
+    });
+
+    it('al crear manda isReservation, la fecha, la franja y la seña', async () => {
+      permissions.mockReturnValue({ canWrite: true, writeHint: undefined });
+      renderPage();
+      fillForm();
+      fireEvent.click(screen.getByLabelText(/Es una reserva con seña/));
+      fireEvent.change(screen.getByLabelText(/Fecha de entrega/), { target: { value: '2999-01-15' } });
+      fireEvent.change(screen.getByLabelText('Franja horaria'), { target: { value: 't-1' } });
+      fireEvent.change(screen.getByLabelText(/Monto de la seña/), { target: { value: '1500' } });
+      expect(screen.getByRole('option', { name: /Mañana.*4 de 5 libres/ })).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Crear reserva' }));
+      await waitFor(() => expect(createOrder).toHaveBeenCalledTimes(1));
+      expect(createOrder).toHaveBeenCalledWith(
+        expect.objectContaining({
+          isReservation: true,
+          scheduledDate: '2999-01-15',
+          timeSlotId: 't-1',
+          depositAmount: 1500,
+        }),
+        expect.anything(),
+      );
+    });
+
+    it('sin fecha ni seña no se manda y marca los dos errores', async () => {
+      permissions.mockReturnValue({ canWrite: true, writeHint: undefined });
+      renderPage();
+      fillForm();
+      fireEvent.click(screen.getByLabelText(/Es una reserva con seña/));
+      fireEvent.click(screen.getByRole('button', { name: 'Crear reserva' }));
+      expect(await screen.findByText('Una reserva requiere fecha de entrega')).toBeInTheDocument();
+      expect(screen.getByText(/Indicá el monto de la seña/)).toBeInTheDocument();
+      expect(createOrder).not.toHaveBeenCalled();
+    });
+
+    it('una reserva no ofrece cuenta corriente y el express queda deshabilitado', () => {
+      permissions.mockReturnValue({ canWrite: true, writeHint: undefined });
+      deliveryOptions.data = {
+        addressId: 'a-1',
+        options: [
+          { mode: 'standard', available: true, reason: null, message: null, surchargeAmount: 0, estimatedMinutes: 180 },
+          {
+            mode: 'express',
+            available: true,
+            reason: null,
+            message: null,
+            surchargeAmount: 1500,
+            estimatedMinutes: 45,
+          },
+        ],
+      };
+      renderPage();
+      fillForm();
+      expect(screen.getByRole('option', { name: /cuenta corriente/i })).toBeInTheDocument();
+      fireEvent.click(screen.getByLabelText(/Es una reserva con seña/));
+      expect(screen.queryByRole('option', { name: /cuenta corriente/i })).not.toBeInTheDocument();
+      expect(screen.getByRole('radio', { name: /Express \(moto\)/ })).toBeDisabled();
+    });
+  });
+
+  describe('tope de la seña contra la cotización', () => {
+    const cotizacion = {
+      items: [],
+      subtotal: 100,
+      zoneSurcharge: 0,
+      paymentSurcharge: 0,
+      total: 1000,
+      deposit: 0,
+      balance: 1000,
+    };
+
+    it('una seña mayor al total cotizado marca el campo y no manda el alta', async () => {
+      permissions.mockReturnValue({ canWrite: true, writeHint: undefined });
+      quote.data = cotizacion;
+      renderPage();
+      fillForm();
+      fireEvent.click(screen.getByLabelText(/Es una reserva con seña/));
+      fireEvent.change(screen.getByLabelText(/Fecha de entrega/), { target: { value: '2999-01-15' } });
+      fireEvent.change(screen.getByLabelText(/Monto de la seña/), { target: { value: '1500' } });
+      expect(
+        await screen.findByText(/La seña \(.*1\.500,00\) no puede superar el total del pedido/),
+      ).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Crear reserva' }));
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(createOrder).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('franjas sin cupo y enlace de pago', () => {
+    it('una franja sin cupo no se ofrece y se avisa', () => {
+      permissions.mockReturnValue({ canWrite: true, writeHint: undefined });
+      renderPage();
+      fillForm();
+      fireEvent.click(screen.getByLabelText(/Es una reserva con seña/));
+      fireEvent.change(screen.getByLabelText(/Fecha de entrega/), { target: { value: '2999-01-15' } });
+      expect(screen.getByRole('option', { name: /Mañana/ })).toBeInTheDocument();
+      expect(screen.queryByRole('option', { name: /Tarde/ })).not.toBeInTheDocument();
+      expect(screen.getByText('1 franja(s) sin cupo no se ofrecen.')).toBeInTheDocument();
+    });
+
+    it('con la seña por MercadoPago explica que se genera el enlace', () => {
+      permissions.mockReturnValue({ canWrite: true, writeHint: undefined });
+      renderPage();
+      fireEvent.click(screen.getByLabelText(/Es una reserva con seña/));
+      fireEvent.change(screen.getByLabelText('Método de pago'), { target: { value: 'mercadopago' } });
+      expect(screen.getByText(/se genera el enlace de pago de la seña/)).toBeInTheDocument();
+    });
+
+    it('un alta de MercadoPago muestra el enlace de pago antes de salir de la pantalla', async () => {
+      permissions.mockReturnValue({ canWrite: true, writeHint: undefined });
+      createOrder.mockImplementation((_body: unknown, options: { onSuccess: (order: unknown) => void }) =>
+        options.onSuccess({ order_id: 'o-9', payment_url: 'https://mp.test/checkout/9' }),
+      );
+      renderPage();
+      fillForm();
+      fireEvent.change(screen.getByLabelText('Método de pago'), { target: { value: 'mercadopago' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Crear pedido' }));
+      expect(await screen.findByText('https://mp.test/checkout/9')).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /Abrir/ })).toHaveAttribute('href', 'https://mp.test/checkout/9');
     });
   });
 });

@@ -46,3 +46,34 @@ describe('buildQuoteBody', () => {
     expect(quoteHint(base)).toBeNull();
   });
 });
+
+describe('cotización de una reserva (CU-072)', () => {
+  const reservation = {
+    ...base,
+    deliveryMode: 'standard' as const,
+    isReservation: true,
+    scheduledDate: '2999-01-15',
+    timeSlotId: 't1',
+    depositAmount: '500,5',
+  };
+
+  it('manda la fecha, la franja y la seña para que el back calcule el saldo', () => {
+    expect(buildQuoteBody(reservation)).toMatchObject({
+      isReservation: true,
+      scheduledDate: '2999-01-15',
+      timeSlotId: 't1',
+      depositAmount: 500.5,
+    });
+  });
+
+  it('sin fecha no cotiza y lo explica', () => {
+    expect(buildQuoteBody({ ...reservation, scheduledDate: '' })).toBeNull();
+    expect(quoteHint({ ...reservation, scheduledDate: '' })).toMatch(/fecha de entrega/);
+  });
+
+  it('un pedido común no lleva campos de reserva', () => {
+    expect(buildQuoteBody({ ...base, scheduledDate: '2999-01-15', depositAmount: '10' })).not.toHaveProperty(
+      'isReservation',
+    );
+  });
+});

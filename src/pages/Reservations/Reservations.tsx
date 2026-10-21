@@ -20,7 +20,7 @@ import { ReservationCalendar } from './components/ReservationCalendar';
 import { ReservationDetailDrawer } from './components/ReservationDetailDrawer';
 import { ReservationsTable } from './components/ReservationsTable';
 import { filterReservations, type DepositFilter } from './reservationCalendar';
-import { countPendingCashDeposits } from './reservationStats';
+import { countPendingManualDeposits } from './reservationStats';
 
 type View = 'calendar' | 'list';
 
@@ -45,7 +45,7 @@ export const Reservations = () => {
   const [term, setTerm] = useState('');
 
   const rows = useMemo(() => filterReservations(reservations ?? [], { deposit, term }), [reservations, deposit, term]);
-  const pendingCount = countPendingCashDeposits(reservations ?? []);
+  const pendingCount = countPendingManualDeposits(reservations ?? []);
 
   const handleConfirmDeposit = (orderId: string) => {
     confirmDeposit.mutate(orderId, {
@@ -61,7 +61,7 @@ export const Reservations = () => {
     <PageContainer>
       <PageHeader
         title="Reservas"
-        description={`Pedidos agendados con seña. Confirmá la seña en efectivo para que se despachen solos el día agendado${
+        description={`Pedidos agendados con seña. Confirmá la seña recibida en efectivo o por transferencia para que se despachen solos el día agendado${
           pendingCount > 0 ? ` · ${pendingCount} seña(s) pendiente(s)` : ''
         }.`}
         actions={

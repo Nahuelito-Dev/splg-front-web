@@ -1,5 +1,5 @@
 import type { Reserva } from '../../services/api/types';
+import { canConfirmDeposit } from './components/reservationBalance';
 
-/** Señas en efectivo que todavía nadie cobró: son las únicas que requieren confirmación manual. */
-export const countPendingCashDeposits = (reservations: Reserva[]) =>
-  reservations.filter((r) => !r.depositPaid && r.paymentMethod === 'cash').length;
+/** Señas en efectivo o por transferencia que todavía nadie confirmó: son las que requieren confirmación manual. */
+export const countPendingManualDeposits = (reservations: Reserva[]) => reservations.filter(canConfirmDeposit).length;
