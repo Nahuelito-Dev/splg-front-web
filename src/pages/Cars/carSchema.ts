@@ -23,6 +23,9 @@ export const FUEL_TYPE_OPTIONS: SelectOption[] = [
   { value: 'lpg', label: 'GLP' },
 ];
 
+/** Formato argentino ya normalizado, igual que `PATENTE_ARGENTINA` del back. */
+export const ARGENTINE_PATENT = /^([A-Z]{3}[0-9]{3}|[A-Z]{2}[0-9]{3}[A-Z]{2})$/;
+
 export const carSchema = z.object({
   user_id: z.string().trim().min(1, 'Elegí un chofer'),
   type_car: z.string().min(1, 'Elegí el tipo de vehículo'),
@@ -35,7 +38,7 @@ export const carSchema = z.object({
       z
         .string()
         .min(1, 'Ingresá la patente')
-        .regex(/^[A-Z0-9]{4,20}$/, 'La patente tiene entre 4 y 20 letras o números'),
+        .regex(ARGENTINE_PATENT, 'La patente tiene que ser AAA123 (formato anterior) o AA123AA (Mercosur)'),
     ),
   car_brand: z.string().trim().min(1, 'Ingresá la marca'),
   car_model: z.string().trim().min(1, 'Ingresá el modelo'),

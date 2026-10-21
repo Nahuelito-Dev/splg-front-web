@@ -33,9 +33,43 @@ export const zoneSchema = z
     message: 'Un recargo porcentual tiene que estar entre 0 y 100',
     path: ['surchargeValue'],
   })
-  .refine((data) => !data.validFrom || !data.validUntil || data.validFrom <= data.validUntil, {
-    message: 'Tiene que ser posterior a la fecha "desde"',
+  .refine((data) => !data.validFrom || !data.validUntil || data.validFrom < data.validUntil, {
+    message: 'validUntil tiene que ser posterior a validFrom',
     path: ['validUntil'],
   });
 
 export type ZoneFormValues = z.infer<typeof zoneSchema>;
+
+interface ZoneLike {
+  coverage_zone_id: string;
+  name: string;
+  priority: number;
+  isActive: boolean;
+}
+
+/** La prioridad que propone el alta: por encima de las zonas activas que ya hay (igual que el back sin prioridad). */
+export const nextZonePriority = (zones: readonly ZoneLike[]): number =>
+  zones.filter((zone) => zone.isActive).reduce((max, zone) => Math.max(max, zone.priority + 1), 0);
+
+/**
+ * Lo que el back responde con 409: entre las zonas activas no se repiten el nombre (sin distinguir mayúsculas)
+ * ni la prioridad. Una zona inactiva no choca con nadie.
+ */
+export const findZoneConflict = (
+  values: Pick<ZoneFormValues, 'name' | 'priority' | 'isActive'>,
+  zones: readonly ZoneLike[],
+  editingId?: string,
+): { field: 'name' | 'priority'; message: string } | null => {
+  if (!values.isActive) return null;
+  const rest = zones.filter((zone) => zone.isActive && zone.coverage_zone_id !== editingId);
+  const sameName = rest.find((zone) => zone.name.trim().toLowerCase() === values.name.trim().toLowerCase());
+  if (sameName) return { field: 'name', message: `Ya existe una zona activa con el nombre «${sameName.name}»` };
+  const samePriority = rest.find((zone) => zone.priority === values.priority);
+  if (samePriority) {
+    return {
+      field: 'priority',
+      message: `La zona «${samePriority.name}» ya tiene la prioridad ${values.priority}: cada zona activa tiene una prioridad distinta`,
+    };
+  }
+  return null;
+};

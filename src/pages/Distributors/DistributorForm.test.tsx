@@ -100,7 +100,7 @@ describe('DistributorForm', () => {
     fireEvent.change(screen.getByLabelText(/^CUIT/), { target: { value: '3'.repeat(21) } });
     fireEvent.click(screen.getByRole('button', { name: 'Crear empresa' }));
     expect(await screen.findByText(/Minúsculas, números y guiones \(ej/)).toBeInTheDocument();
-    expect(screen.getByText('Hasta 20 caracteres')).toBeInTheDocument();
+    expect(screen.getByText('El CUIT tiene que tener 11 dígitos')).toBeInTheDocument();
     expect(create.mutate).not.toHaveBeenCalled();
   });
 

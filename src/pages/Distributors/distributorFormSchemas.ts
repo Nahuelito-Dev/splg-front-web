@@ -9,7 +9,14 @@ const optionalEmail = z.union([z.literal(''), z.string().trim().email('Email inv
 const businessFields = {
   name: z.string().trim().min(2, 'Ingresá el nombre (mínimo 2 caracteres)').max(120, 'Hasta 120 caracteres'),
   legal_name: optionalText(160),
-  tax_id: optionalText(20),
+  // El back acepta guiones o espacios y exige 11 dígitos (sin dígito verificador).
+  tax_id: z
+    .string()
+    .trim()
+    .refine(
+      (value) => value === '' || /^\d{11}$/.test(value.replace(/[\s-]/g, '')),
+      'El CUIT tiene que tener 11 dígitos',
+    ),
   email: optionalEmail,
   phone: z.string().trim(),
 };

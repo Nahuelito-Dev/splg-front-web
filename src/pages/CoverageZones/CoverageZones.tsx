@@ -195,6 +195,7 @@ export const CoverageZones = () => {
                 key={editingZone?.coverage_zone_id ?? `new-${formSession}`}
                 zone={editingZone}
                 polygon={polygon}
+                zones={zones}
                 onSaved={resetForm}
                 onCancel={resetForm}
               />

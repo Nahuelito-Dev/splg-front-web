@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isFutureMoment } from '../../../utils/dates';
 
 /** Un número opcional: en el formulario el campo puede quedar vacío. */
 const optionalNumber = (schema: z.ZodNumber) =>
@@ -46,7 +47,14 @@ export type FleetTaskCreateValues = z.infer<typeof fleetTaskCreateSchema>;
 
 /** Cómo cerrar una tarea (`CloseFleetTaskDto`, CU-141): cuándo se hizo es obligatorio. */
 export const fleetTaskCloseSchema = z.object({
-  performedAt: z.string().trim().min(1, 'Ingresá cuándo se hizo'),
+  performedAt: z
+    .string()
+    .trim()
+    .min(1, 'Ingresá cuándo se hizo')
+    .refine(
+      (value) => !isFutureMoment(value, 5 * 60 * 1000),
+      'performedAt no puede ser una fecha futura: registrá cuándo se hizo',
+    ),
   odometerKm: optionalInt(),
   cost: optionalNumber(z.coerce.number().nonnegative('No puede ser negativo')),
   provider: optionalText(120),

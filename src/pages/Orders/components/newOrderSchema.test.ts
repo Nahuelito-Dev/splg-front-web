@@ -32,6 +32,17 @@ describe('newOrderSchema (CU-072, alta telefónica)', () => {
     expect(result.success).toBe(false);
   });
 
+  it('la cantidad no tiene tope en el pedido (el 999 es del carrito)', () => {
+    expect(newOrderSchema.safeParse({ ...base, items: [{ ...base.items[0], quantity: 999 }] }).success).toBe(true);
+    expect(newOrderSchema.safeParse({ ...base, items: [{ ...base.items[0], quantity: 1000 }] }).success).toBe(true);
+  });
+
+  it('rechaza la misma garrafa en dos renglones', () => {
+    const result = newOrderSchema.safeParse({ ...base, items: [base.items[0], { ...base.items[0], quantity: 1 }] });
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error.issues[0].path).toEqual(['items', 1, 'gasCylinderId']);
+  });
+
   it('rechaza un método de pago fuera del enum', () => {
     expect(newOrderSchema.safeParse({ ...base, paymentMethod: 'bitcoin' }).success).toBe(false);
   });

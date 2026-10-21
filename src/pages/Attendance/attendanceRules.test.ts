@@ -62,3 +62,15 @@ describe('asistencia: reglas del formulario', () => {
     });
   });
 });
+
+describe('asistencia: nada hacia el futuro', () => {
+  it('ni el ingreso ni el egreso pueden ser futuros', () => {
+    const base = { employeeId: 'e1', checkInAt: '2026-03-02T08:00', checkOutAt: '' };
+    expect(attendanceRegisterSchema.safeParse({ ...base, checkInAt: '2099-01-01T08:00' }).success).toBe(false);
+    expect(attendanceRegisterSchema.safeParse({ ...base, checkOutAt: '2099-01-01T16:00' }).success).toBe(false);
+    expect(
+      attendanceCorrectSchema.safeParse({ checkInAt: '2026-03-02T08:00', checkOutAt: '2099-01-01T16:00', notes: 'x' })
+        .success,
+    ).toBe(false);
+  });
+});

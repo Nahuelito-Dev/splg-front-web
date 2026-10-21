@@ -3,9 +3,10 @@ import { Plus, Trash2 } from 'lucide-react';
 import { useEffect } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { Button, IconButton, Input, Modal, Select, TextArea } from '../../../common/components/ui';
-import { useCreateTransfer } from '../../../services/queries/stock';
+import { useCreateTransfer, useStockBalances } from '../../../services/queries/stock';
 import { useTruckStock } from '../../../services/queries/truckLoads';
 import { notify } from '../../../utils/notifications';
+import { findShortfalls } from '../stockAvailability';
 import { STOCK_CONDITION } from '../../../utils/statusLabels';
 import { transferSchema, type TransferFormValues } from './transferSchema';
 import { useCarOptions, useCylinderOptions, useWarehouseOptions, withPlaceholder } from './useStockOptions';
@@ -38,6 +39,7 @@ export const TransferFormModal = ({ open, onClose }: Props) => {
     reset,
     watch,
     control,
+    setError,
     formState: { errors },
   } = useForm<TransferFormValues>({ resolver: zodResolver(transferSchema) });
   const { fields, append, remove } = useFieldArray({ control, name: 'items' });
@@ -59,8 +61,30 @@ export const TransferFormModal = ({ open, onClose }: Props) => {
   const carId = watch('carId');
   const truck = useTruckStock(mode === 'truck' ? carId : undefined);
   const openLoad = truck.data?.openLoadId ?? null;
+  const fromWarehouseId = watch('fromWarehouseId');
+  const originFilter = mode === 'warehouses' ? { warehouseId: fromWarehouseId } : { carId };
+  const balances = useStockBalances(originFilter, {
+    enabled: open && Boolean(mode === 'warehouses' ? fromWarehouseId : carId),
+  });
 
-  const onSubmit = handleSubmit((values) =>
+  const onSubmit = handleSubmit(async (values) => {
+    // Igual que el back: el origen no puede quedar con un saldo negativo.
+    // Con los saldos de ahora; si no se pueden traer, decide el back (409).
+    const freshBalances = (await balances.refetch()).data ?? balances.data;
+    if (freshBalances) {
+      const shortfalls = findShortfalls(
+        freshBalances,
+        values.items.map((item) => ({
+          gasCylinderId: item.gasCylinderId,
+          condition: item.condition,
+          delta: -item.quantity,
+        })),
+      );
+      if (shortfalls.size > 0) {
+        shortfalls.forEach((message, index) => setError(`items.${index}.quantity`, { message }));
+        return;
+      }
+    }
     create.mutate(
       {
         scope,
@@ -78,8 +102,8 @@ export const TransferFormModal = ({ open, onClose }: Props) => {
         },
         onError: notify.error,
       },
-    ),
-  );
+    );
+  });
 
   const loadFailed = warehouses.failed || cylinders.failed || cars.failed;
 

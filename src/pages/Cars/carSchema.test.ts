@@ -26,11 +26,12 @@ describe('carSchema', () => {
     if (result.success) expect(result.data.car_patent).toBe('AB104EJ');
   });
 
-  it('la patente tiene entre 4 y 20 letras o números, como pide el back', () => {
-    expect(carSchema.safeParse({ ...valid, car_patent: 'ab1' }).success).toBe(false);
-    expect(carSchema.safeParse({ ...valid, car_patent: 'a'.repeat(21) }).success).toBe(false);
-    expect(carSchema.safeParse({ ...valid, car_patent: 'ab#104' }).success).toBe(false);
-    expect(carSchema.safeParse({ ...valid, car_patent: 'ab12' }).success).toBe(true);
+  it('la patente es argentina: AAA123 o AA123AA, como pide el back', () => {
+    expect(carSchema.safeParse({ ...valid, car_patent: 'abc123' }).success).toBe(true);
+    expect(carSchema.safeParse({ ...valid, car_patent: 'ab 123-cd' }).success).toBe(true);
+    for (const bad of ['ab12', 'ab1', 'a'.repeat(21), 'ab#104', 'ABCD123', 'A1B2C3', '123ABC', 'AB123C']) {
+      expect(carSchema.safeParse({ ...valid, car_patent: bad }).success, bad).toBe(false);
+    }
   });
 
   it('una patente de sólo guiones o espacios se rechaza', () => {

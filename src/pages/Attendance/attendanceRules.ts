@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isFutureMoment } from '../../utils/dates';
 
 /** El valor de un `<input type="datetime-local">` (hora local, sin zona) a un instante ISO. Vacío, `undefined`. */
 export const localToIso = (value: string): string | undefined => {
@@ -28,22 +29,28 @@ const egressAfterIngress = (values: { checkInAt: string; checkOutAt: string }): 
   return !out || !into || out > into;
 };
 
+/** El back no deja registrar ni corregir una jornada hacia el futuro (tolera un minuto de reloj). */
+const notFuture = (value: string): boolean => {
+  const iso = localToIso(value);
+  return !iso || !isFutureMoment(iso);
+};
+
 const EGRESS_ERROR = { message: 'El egreso tiene que ser posterior al ingreso', path: ['checkOutAt'] };
 
 /** Carga manual de una jornada (CU-189). */
 export const attendanceRegisterSchema = z
   .object({
     employeeId: z.string().min(1, 'Elegí al empleado'),
-    checkInAt: z.string().min(1, 'Ingresá el ingreso'),
-    checkOutAt: z.string(),
+    checkInAt: z.string().min(1, 'Ingresá el ingreso').refine(notFuture, 'El ingreso no puede ser futuro'),
+    checkOutAt: z.string().refine(notFuture, 'El egreso no puede ser futuro'),
   })
   .refine(egressAfterIngress, EGRESS_ERROR);
 
 /** Corrección de una jornada (CU-313): la nota que explica el cambio es obligatoria. */
 export const attendanceCorrectSchema = z
   .object({
-    checkInAt: z.string().min(1, 'Ingresá el ingreso'),
-    checkOutAt: z.string(),
+    checkInAt: z.string().min(1, 'Ingresá el ingreso').refine(notFuture, 'El ingreso no puede ser futuro'),
+    checkOutAt: z.string().refine(notFuture, 'El egreso no puede ser futuro'),
     notes: z.string().trim().min(1, 'Explicá el cambio en una nota').max(500, 'Hasta 500 caracteres'),
   })
   .refine(egressAfterIngress, EGRESS_ERROR);

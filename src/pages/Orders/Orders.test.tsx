@@ -138,7 +138,7 @@ describe('Orders: resumen analítico y selección múltiple', () => {
     expect(within(dialog).getByText(/Se van a afectar \(2\)/)).toBeInTheDocument();
     expect(within(dialog).getByText(/Ana Pérez/)).toBeInTheDocument();
     expect(within(dialog).getByText(/Beto Gómez/)).toBeInTheDocument();
-    fireEvent.change(within(dialog).getByLabelText('Motivo (opcional)'), { target: { value: 'Sin stock' } });
+    fireEvent.change(within(dialog).getByLabelText(/^Motivo/), { target: { value: 'Sin stock' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Cancelar 2 pedidos' }));
 
     expect(bulkCancel).toHaveBeenCalledOnce();
@@ -146,6 +146,18 @@ describe('Orders: resumen analítico y selección múltiple', () => {
     // El modal se cierra al confirmar y sólo queda marcado el que falló, para reintentar.
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(screen.getByText('1 pedido seleccionado')).toBeInTheDocument();
+  });
+
+  it('cancelar sin motivo no manda nada y deja el error visible', () => {
+    renderPage();
+    fireEvent.click(checkboxes()[0]);
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar pedidos' }));
+    const dialog = screen.getByRole('dialog', { name: 'Cancelar pedido' });
+    const confirm = within(dialog).getByRole('button', { name: 'Cancelar pedido' });
+    fireEvent.mouseDown(confirm);
+    fireEvent.click(confirm);
+    expect(bulkCancel).not.toHaveBeenCalled();
+    expect(within(dialog).getByText('Escribí el motivo')).toBeInTheDocument();
   });
 
   it('asignar en lote lista y manda sólo los pedidos que admiten chofer (no los reservados)', () => {

@@ -199,3 +199,62 @@ describe('neumáticos', () => {
     expect(tireEventSchema.safeParse({ ...base, type: 'unmount', position: 'demasiado-larga' }).success).toBe(false);
   });
 });
+
+describe('fechas que no pueden ser futuras', () => {
+  it('la carga de combustible no puede ser futura', () => {
+    expect(fuelLoadSchema.safeParse({ ...fuel, loadedAt: '2099-01-01T10:00' }).success).toBe(false);
+    expect(fuelLoadSchema.safeParse({ ...fuel, loadedAt: '2020-01-01T10:00' }).success).toBe(true);
+  });
+
+  it('la multa: infracción no futura y vencimiento no anterior a la infracción', () => {
+    const base = {
+      carId: 'c1',
+      occurredAt: '2026-03-10T10:00',
+      jurisdiction: 'Posadas',
+      actNumber: 'A-1',
+      infraction: 'Exceso de velocidad',
+      amount: '100000',
+      dueDate: '',
+      employeeId: '',
+    };
+    expect(trafficFineSchema.safeParse(base).success).toBe(true);
+    expect(trafficFineSchema.safeParse({ ...base, occurredAt: '2099-01-01T10:00' }).success).toBe(false);
+    expect(trafficFineSchema.safeParse({ ...base, dueDate: '2026-03-09' }).success).toBe(false);
+    expect(trafficFineSchema.safeParse({ ...base, dueDate: '2026-03-10' }).success).toBe(true);
+  });
+});
+
+describe('misma tolerancia que el back (5 minutos)', () => {
+  const inMinutes = (m: number) => new Date(Date.now() + m * 60_000).toISOString();
+  const accident = {
+    carId: 'c1',
+    occurredAt: '2026-03-10T10:00',
+    location: '',
+    address: '',
+    description: 'Choque',
+    injuries: false,
+    thirdPartiesInvolved: false,
+    hazmatRelease: false,
+    policeReportNumber: '',
+    insurerClaimNumber: '',
+    vehicleUnusable: false,
+    status: 'reported' as const,
+  };
+
+  it('el siniestro no puede ser futuro', () => {
+    expect(accidentSchema.safeParse(accident).success).toBe(true);
+    expect(accidentSchema.safeParse({ ...accident, occurredAt: '2099-01-01T10:00' }).success).toBe(false);
+  });
+
+  it('la carga acepta hasta 5 minutos de adelanto', () => {
+    expect(fuelLoadSchema.safeParse({ ...fuel, loadedAt: inMinutes(3) }).success).toBe(true);
+    expect(fuelLoadSchema.safeParse({ ...fuel, loadedAt: inMinutes(30) }).success).toBe(false);
+  });
+
+  it('el pago de la multa no puede ser anterior a la infracción', () => {
+    const schema = payFineSchema('2026-10-17', '2026-10-10T12:00:00.000Z');
+    const paid = { paidAmount: '100', paidInCash: false };
+    expect(schema.safeParse({ ...paid, paidAt: '2026-10-09' }).success).toBe(false);
+    expect(schema.safeParse({ ...paid, paidAt: '2026-10-10' }).success).toBe(true);
+  });
+});

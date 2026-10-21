@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isFutureMoment } from '../../../utils/dates';
 import { moneySchema } from './moneySchema';
 
 const units = z.coerce
@@ -19,7 +20,7 @@ export const receiptSchema = z
     warehouseId: z.string(),
     supplierDocumentType: z.enum(['delivery_note', 'invoice']),
     supplierDocumentNumber: z.string().trim().min(1, 'Ingresá el número del documento').max(30, 'Hasta 30 caracteres'),
-    receivedAt: z.string(),
+    receivedAt: z.string().refine((value) => !isFutureMoment(value, 5 * 60_000), 'La recepción no puede ser futura'),
     notes: z.string().trim().max(500, 'No puede tener más de 500 caracteres'),
     items: z
       .array(

@@ -9,6 +9,7 @@ import { useCreateCustomerAccount, useUpdateCustomerAccount } from '../../../ser
 import { useCustomers } from '../../../services/queries/customers';
 import { isValidCuit, normalizeCuit } from '../../../utils/cuit';
 import { notify } from '../../../utils/notifications';
+import { accountStatusError, accountStatusOptions } from '../customerAccountStatus';
 import { nonNegativeMoney, parseMoney, requiredText } from '../financeSchemas';
 
 const schema = z.object({
@@ -33,12 +34,6 @@ const TAX_OPTIONS = [
   { value: 'monotax', label: 'Monotributo' },
   { value: 'exempt', label: 'Exento' },
   { value: 'final_consumer', label: 'Consumidor final' },
-];
-
-const STATUS_OPTIONS = [
-  { value: 'active', label: 'Activa' },
-  { value: 'blocked', label: 'Bloqueada (no se le vende a cuenta)' },
-  { value: 'closed', label: 'Cerrada (exige saldo cero)' },
 ];
 
 interface Props {
@@ -95,6 +90,11 @@ export const CustomerAccountFormModal = ({ open, onClose, account, customer }: P
       onError: notify.error,
     };
     if (account) {
+      const statusError = accountStatusError(account.status, values.status);
+      if (statusError) {
+        setError('status', { message: statusError });
+        return;
+      }
       update.mutate({ id: account.accountId, body: { ...common, status: values.status } }, options);
       return;
     }
@@ -195,7 +195,12 @@ export const CustomerAccountFormModal = ({ open, onClose, account, customer }: P
         />
         {account && (
           <div className="sm:col-span-2">
-            <Select label="Estado" options={STATUS_OPTIONS} error={errors.status?.message} {...register('status')} />
+            <Select
+              label="Estado"
+              options={accountStatusOptions(account.status)}
+              error={errors.status?.message}
+              {...register('status')}
+            />
           </div>
         )}
       </form>

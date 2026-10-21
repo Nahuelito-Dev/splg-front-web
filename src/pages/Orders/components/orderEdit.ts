@@ -1,4 +1,6 @@
+import { z } from 'zod';
 import type { Order, UpdateOrderBody } from '../../../services/api/types';
+import { argentinaDay } from '../../../utils/format';
 
 /**
  * Por qué un pedido no se puede editar de antemano (la API contesta 409), o `null` si se puede intentar.
@@ -67,3 +69,64 @@ export const buildOrderUpdate = (initial: OrderEditInitial, values: OrderEditVal
   }
   return body;
 };
+
+/**
+ * Las mismas reglas que `UpdateOrderDto` y `UpdateOrderUseCase`: al menos un renglón, cantidades enteras de 1 a 999,
+ * sin repetir garrafa, y una fecha agendada nueva nunca pasada (con o sin franja). La fecha que ya tenía el pedido se
+ * deja como está aunque haya vencido: no se está cambiando.
+ */
+export const orderEditSchema = (initialScheduledDate: string) =>
+  z
+    .object({
+      addressId: z.string(),
+      timeSlotId: z.string(),
+      scheduledDate: z.string(),
+      paymentMethod: z.enum(['', 'cash', 'transfer']),
+      notes: z.string(),
+      items: z
+        .array(
+          z.object({
+            gasCylinderId: z.string().min(1, 'Elegí una garrafa'),
+            quantity: z
+              .number({ invalid_type_error: 'Ingresá la cantidad' })
+              .int('Tiene que ser un número entero')
+              .min(1, 'Mínimo 1 unidad'),
+          }),
+        )
+        .min(1, 'El pedido necesita al menos un renglón'),
+    })
+    .superRefine((values, ctx) => {
+      const seen = new Set<string>();
+      values.items.forEach((item, index) => {
+        if (!item.gasCylinderId) return;
+        if (seen.has(item.gasCylinderId)) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['items', index, 'gasCylinderId'],
+            message: 'Esta garrafa ya está en otro renglón: sumá las cantidades en uno solo',
+          });
+        }
+        seen.add(item.gasCylinderId);
+      });
+      const today = argentinaDay(new Date());
+      const dateChanged = Boolean(values.scheduledDate) && values.scheduledDate !== initialScheduledDate;
+      const slotChanged = values.timeSlotId !== '' && values.timeSlotId !== 'none';
+      if (dateChanged && values.scheduledDate < today) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['scheduledDate'],
+          message: 'scheduledDate no puede ser una fecha pasada',
+        });
+      } else if (
+        slotChanged &&
+        (values.scheduledDate || initialScheduledDate) < today &&
+        (values.scheduledDate || initialScheduledDate)
+      ) {
+        // Cambiar la franja valida la fecha contra hoy: con la fecha ya vencida hay que indicar una nueva.
+        ctx.addIssue({
+          code: 'custom',
+          path: ['scheduledDate'],
+          message: 'La fecha agendada del pedido ya pasó: indicá una fecha nueva para cambiar la franja',
+        });
+      }
+    });

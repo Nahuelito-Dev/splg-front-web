@@ -12,3 +12,12 @@ export const daysAgo = (days: number, from: Date = new Date()): string => {
   date.setDate(date.getDate() - days);
   return toIsoDay(date);
 };
+
+/**
+ * ¿Es un instante posterior a ahora (más la tolerancia del reloj)? Lo interpreta como el back: `new Date(value)`, así
+ * que un día `YYYY-MM-DD` es la medianoche UTC. Un texto vacío o inválido no es futuro: eso lo marca otra regla.
+ */
+export const isFutureMoment = (value: string, toleranceMs = 60_000, now: Date = new Date()): boolean => {
+  const time = new Date(value).getTime();
+  return !Number.isNaN(time) && time > now.getTime() + toleranceMs;
+};

@@ -6,7 +6,7 @@ import { Button, Input, Modal, Select } from '../../../common/components/ui';
 import type { CreateCashMovementBody } from '../../../services/api/types';
 import { useCashBoxOptions, useCashCategories, useCreateCashMovement } from '../../../services/queries/finance';
 import { notify } from '../../../utils/notifications';
-import { parseMoney, positiveMoney, requiredText } from '../financeSchemas';
+import { insufficientCashMessage, parseMoney, positiveMoney, requiredText } from '../financeSchemas';
 
 const schema = z.object({
   cashBoxId: z.string().min(1, 'Elegí la caja'),
@@ -43,6 +43,7 @@ export const CashMovementFormModal = ({ open, onClose, defaultCashBoxId }: Props
     handleSubmit,
     reset,
     watch,
+    setError,
     formState: { errors },
   } = useForm<Values>({ resolver: zodResolver(schema) });
   const direction = watch('direction');
@@ -67,7 +68,17 @@ export const CashMovementFormModal = ({ open, onClose, defaultCashBoxId }: Props
       .map((c) => ({ value: c.categoryId, label: c.name })),
   ];
 
-  const onSubmit = handleSubmit((values) => {
+  const onSubmit = handleSubmit(async (values) => {
+    if (values.direction === 'out') {
+      // Con el saldo de ahora; si no se puede traer, decide el back (409).
+      const fresh = (await boxes.refetch()).data ?? boxes.data;
+      const box = fresh?.data.find((b) => b.cashBoxId === values.cashBoxId);
+      const insufficient = insufficientCashMessage(box, parseMoney(values.amount));
+      if (insufficient) {
+        setError('amount', { message: insufficient });
+        return;
+      }
+    }
     const body: CreateCashMovementBody = { ...values, amount: parseMoney(values.amount) };
     create.mutate(body, {
       onSuccess: () => {
