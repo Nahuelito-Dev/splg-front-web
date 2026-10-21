@@ -17,6 +17,7 @@ const Customers = lazyPage(() => import('../pages/Customers/Customers'), 'Custom
 const CustomerDetails = lazyPage(() => import('../pages/Customers/CustomerDetails'), 'CustomerDetails');
 const Employees = lazyPage(() => import('../pages/Employees/Employees'), 'Employees');
 const JobPositions = lazyPage(() => import('../pages/Employees/JobPositions'), 'JobPositions');
+const EmployeeForm = lazyPage(() => import('../pages/Employees/EmployeeForm'), 'EmployeeForm');
 const EmployeeDetails = lazyPage(() => import('../pages/Employees/EmployeeDetails'), 'EmployeeDetails');
 const Attendance = lazyPage(() => import('../pages/Attendance/Attendance'), 'Attendance');
 const Leaves = lazyPage(() => import('../pages/Leaves/Leaves'), 'Leaves');
@@ -29,6 +30,7 @@ const CylinderExpirations = lazyPage(
   'CylinderExpirations',
 );
 const CylinderDetails = lazyPage(() => import('../pages/PhysicalCylinders/CylinderDetails'), 'CylinderDetails');
+const DeliveryForm = lazyPage(() => import('../pages/Deliveries/DeliveryForm'), 'DeliveryForm');
 const Deliveries = lazyPage(() => import('../pages/Deliveries/Deliveries'), 'Deliveries');
 const DeliveryDetails = lazyPage(() => import('../pages/Deliveries/DeliveryDetails'), 'DeliveryDetails');
 const Cars = lazyPage(() => import('../pages/Cars/Cars'), 'Cars');
@@ -40,8 +42,10 @@ const FleetPlanDetails = lazyPage(() => import('../pages/Fleet/FleetPlanDetails'
 const FleetTasks = lazyPage(() => import('../pages/Fleet/FleetTasks'), 'FleetTasks');
 const FleetTaskDetail = lazyPage(() => import('../pages/Fleet/FleetTaskDetail'), 'FleetTaskDetail');
 const FuelLoads = lazyPage(() => import('../pages/FleetExpense/FuelLoads'), 'FuelLoads');
+const FuelLoadForm = lazyPage(() => import('../pages/FleetExpense/FuelLoadForm'), 'FuelLoadForm');
 const TrafficFines = lazyPage(() => import('../pages/FleetExpense/TrafficFines'), 'TrafficFines');
 const VehicleAccidents = lazyPage(() => import('../pages/FleetExpense/VehicleAccidents'), 'VehicleAccidents');
+const VehicleAccidentForm = lazyPage(() => import('../pages/FleetExpense/VehicleAccidentForm'), 'VehicleAccidentForm');
 const FleetCosts = lazyPage(() => import('../pages/FleetExpense/FleetCosts'), 'FleetCosts');
 const Tires = lazyPage(() => import('../pages/FleetExpense/Tires'), 'Tires');
 const Configuration = lazyPage(() => import('../pages/Configuration/Configuration'), 'Configuration');
@@ -66,6 +70,7 @@ const Reservations = lazyPage(() => import('../pages/Reservations/Reservations')
 const Reports = lazyPage(() => import('../pages/Reports/Reports'), 'Reports');
 const Tracking = lazyPage(() => import('../pages/Tracking/Tracking'), 'Tracking');
 const Distributors = lazyPage(() => import('../pages/Distributors/Distributors'), 'Distributors');
+const DistributorForm = lazyPage(() => import('../pages/Distributors/DistributorForm'), 'DistributorForm');
 const DistributorDetails = lazyPage(() => import('../pages/Distributors/DistributorDetails'), 'DistributorDetails');
 const Admins = lazyPage(() => import('../pages/Admins/Admins'), 'Admins');
 const AdminDetails = lazyPage(() => import('../pages/Admins/AdminDetails'), 'AdminDetails');
@@ -170,6 +175,8 @@ export const DashboardRoutes = () => {
 
           {/* Legajos del personal */}
           <Route path="employees" element={<Employees />} />
+          <Route path="employees/new" element={<EmployeeForm />} />
+          <Route path="employees/:id/edit" element={<EmployeeForm />} />
           <Route path="employees/details/:id" element={<EmployeeDetails />} />
           <Route path="employees/positions" element={<JobPositions />} />
           <Route path="attendance" element={<Attendance />} />
@@ -177,6 +184,8 @@ export const DashboardRoutes = () => {
 
           {/* 5. Repartidores (Deliveries) */}
           <Route path="deliveries" element={<Deliveries />} />
+          <Route path="deliveries/new" element={<DeliveryForm />} />
+          <Route path="deliveries/:id/edit" element={<DeliveryForm />} />
           <Route path="deliveries/details/:id" element={<DeliveryDetails />} />
 
           {/* 6. Vehículos (Cars) - NUEVA RUTA */}
@@ -223,8 +232,12 @@ export const DashboardRoutes = () => {
             <Route path="purchases/receipts/:id" element={<PurchaseReceiptDetails />} />
             <Route path="purchases/costs" element={<AverageCosts />} />
             <Route path="fleet/fuel-loads" element={<FuelLoads />} />
+            <Route path="fleet/fuel-loads/new" element={<FuelLoadForm />} />
+            <Route path="fleet/fuel-loads/:id/edit" element={<FuelLoadForm />} />
             <Route path="fleet/fines" element={<TrafficFines />} />
             <Route path="fleet/accidents" element={<VehicleAccidents />} />
+            <Route path="fleet/accidents/new" element={<VehicleAccidentForm />} />
+            <Route path="fleet/accidents/:id/edit" element={<VehicleAccidentForm />} />
             <Route path="fleet/costs" element={<FleetCosts />} />
             <Route path="fleet/tires" element={<Tires />} />
             <Route path="finance" element={<FinanceDashboard />} />
@@ -259,7 +272,9 @@ export const DashboardRoutes = () => {
 
           {/* Gestión de empresas (multi-distribuidora) — super_admin */}
           <Route path="distributors" element={<Distributors />} />
+          <Route path="distributors/new" element={<DistributorForm />} />
           <Route path="distributors/:id" element={<DistributorDetails />} />
+          <Route path="distributors/:id/edit" element={<DistributorForm />} />
           {/* Gestión de admins por empresa — super_admin */}
           <Route path="admins" element={<Admins />} />
           <Route path="admins/:id" element={<AdminDetails />} />

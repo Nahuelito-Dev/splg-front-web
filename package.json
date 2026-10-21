@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "colors": "node scripts/check-colors.mjs",
-    "test": "vitest run",
+    "test": "TZ=America/Argentina/Buenos_Aires vitest run",
     "api:types": "node scripts/generate-types.mjs",
     "verify": "npm run typecheck && npm run lint && npm run format:check && npm run colors && npm run test && vite build",
     "format": "prettier --write src",

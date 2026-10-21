@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import type { GridColDef } from '@mui/x-data-grid';
 import { Fuel, Plus } from 'lucide-react';
 import {
@@ -25,7 +26,6 @@ import { formatCurrency, formatDateTime, formatNumber } from '../../utils/format
 import { confirm, notify } from '../../utils/notifications';
 import { FUEL_TYPE, labelOf } from '../../utils/statusLabels';
 import { FuelLoadDrawer } from './components/FuelLoadDrawer';
-import { FuelLoadFormModal } from './components/FuelLoadFormModal';
 import { useCarOptions } from './components/useCarOptions';
 import { csvDateTime } from '../../utils/csv';
 
@@ -37,8 +37,9 @@ export const FuelLoads = () => {
     10,
   );
   const { options: carOptions } = useCarOptions('Todos los vehículos');
-  const [creating, setCreating] = useState(false);
-  const [editing, setEditing] = useState<FuelLoad | null>(null);
+  const navigate = useNavigate();
+  const { pathname, search } = useLocation();
+  const openForm = (path: string) => navigate(path, { state: { from: `${pathname}${search}` } });
   const [viewing, setViewing] = useState<string | null>(null);
   const voidLoad = useVoidFuelLoad();
   const rangeInvalid = Boolean(filters.from && filters.to && filters.from > filters.to);
@@ -125,7 +126,7 @@ export const FuelLoads = () => {
         <RowActions
           rowLabel={`carga de ${row.carPatent ?? 'vehículo'}`}
           onView={() => setViewing(row.fuelLoadId)}
-          onEdit={canWrite ? () => setEditing(row) : undefined}
+          onEdit={canWrite ? () => openForm(`/fleet/fuel-loads/${row.fuelLoadId}/edit`) : undefined}
           onDelete={canWrite ? () => void handleVoid(row) : undefined}
           deleteLabel="Anular carga"
         />
@@ -139,7 +140,12 @@ export const FuelLoads = () => {
         title="Combustible"
         description="Las cargas de la flota: litros, importe y kilometraje. De acá salen el consumo y el costo por vehículo."
         actions={
-          <Button icon={<Plus />} disabled={!canWrite} title={writeHint} onClick={() => setCreating(true)}>
+          <Button
+            icon={<Plus />}
+            disabled={!canWrite}
+            title={writeHint}
+            onClick={() => openForm('/fleet/fuel-loads/new')}
+          >
             Nueva carga
           </Button>
         }
@@ -250,7 +256,11 @@ export const FuelLoads = () => {
                     Ver
                   </Button>
                   {canWrite && (
-                    <Button size="sm" variant="secondary" onClick={() => setEditing(row)}>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => openForm(`/fleet/fuel-loads/${row.fuelLoadId}/edit`)}
+                    >
                       Editar
                     </Button>
                   )}
@@ -265,14 +275,6 @@ export const FuelLoads = () => {
           />
         )}
       </Card>
-      <FuelLoadFormModal
-        open={creating || editing !== null}
-        onClose={() => {
-          setCreating(false);
-          setEditing(null);
-        }}
-        load={editing}
-      />
       <FuelLoadDrawer loadId={viewing} onClose={() => setViewing(null)} />
     </PageContainer>
   );

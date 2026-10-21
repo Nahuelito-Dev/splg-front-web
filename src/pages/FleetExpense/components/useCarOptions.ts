@@ -4,7 +4,7 @@ import { useCars } from '../../../services/queries/cars';
 
 /** Los vehículos de la distribuidora como opciones de un combo («AB123CD · Fiat Fiorino»). */
 export const useCarOptions = (placeholder?: string) => {
-  const { data: cars, isPending, error } = useCars();
+  const { data: cars, isPending, error, refetch } = useCars();
   const options = useMemo<SelectOption[]>(() => {
     const list = (cars ?? []).map((car) => ({
       value: car.car_id,
@@ -14,5 +14,5 @@ export const useCarOptions = (placeholder?: string) => {
     }));
     return placeholder === undefined ? list : [{ value: '', label: placeholder }, ...list];
   }, [cars, placeholder]);
-  return { cars: cars ?? [], options, isPending, error };
+  return { cars: cars ?? [], options, isPending, error, refetch, hasData: cars !== undefined };
 };

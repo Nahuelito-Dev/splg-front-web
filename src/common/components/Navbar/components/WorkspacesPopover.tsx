@@ -4,6 +4,7 @@ import { Building2, Check, ChevronsUpDown, Layers } from 'lucide-react';
 import { activeDistributor } from '../../../../services/api/activeDistributor';
 import { useDistributors } from '../../../../services/queries/distributors';
 import { initialsOf } from '../../../../utils/format';
+import { switchDistributor } from '../../../../utils/switchDistributor';
 
 const OPTION =
   'flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-surface-hover focus-visible:bg-surface-hover focus-visible:outline-none';
@@ -27,8 +28,7 @@ export const WorkspacesPopover = () => {
   const choose = (slug: string | null) => {
     handleClose();
     if (slug === currentSlug) return;
-    activeDistributor.set(slug);
-    window.location.reload();
+    void switchDistributor(slug);
   };
 
   return (

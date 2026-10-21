@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import type { GridColDef } from '@mui/x-data-grid';
 import { CircleCheck, Plus, TriangleAlert } from 'lucide-react';
 import {
@@ -24,7 +25,6 @@ import { formatCurrency, formatDateTime } from '../../utils/format';
 import { ACCIDENT_STATUS, labelOf, statusOptions, statusParam } from '../../utils/statusLabels';
 import { CloseAccidentModal } from './components/CloseAccidentModal';
 import { VehicleAccidentDrawer } from './components/VehicleAccidentDrawer';
-import { VehicleAccidentFormModal } from './components/VehicleAccidentFormModal';
 import { useCarOptions } from './components/useCarOptions';
 import { csvDateTime } from '../../utils/csv';
 
@@ -38,8 +38,9 @@ export const VehicleAccidents = () => {
   // Un estado inválido en la URL (enlace viejo o escrito a mano) se trata como «todos», en la consulta y en las pestañas.
   const status = statusParam(ACCIDENT_STATUS, filters.status);
   const { options: carOptions } = useCarOptions('Todos los vehículos');
-  const [creating, setCreating] = useState(false);
-  const [editing, setEditing] = useState<VehicleAccident | null>(null);
+  const navigate = useNavigate();
+  const { pathname, search } = useLocation();
+  const openForm = (path: string) => navigate(path, { state: { from: `${pathname}${search}` } });
   const [closing, setClosing] = useState<VehicleAccident | null>(null);
   const [viewing, setViewing] = useState<string | null>(null);
   const rangeInvalid = Boolean(filters.from && filters.to && filters.from > filters.to);
@@ -116,7 +117,7 @@ export const VehicleAccidents = () => {
         <RowActions
           rowLabel={`siniestro de ${row.carPatent ?? 'vehículo'}`}
           onView={() => setViewing(row.accidentId)}
-          onEdit={closable(row) ? () => setEditing(row) : undefined}
+          onEdit={closable(row) ? () => openForm(`/fleet/accidents/${row.accidentId}/edit`) : undefined}
           actions={
             closable(row) ? [{ label: 'Cerrar siniestro', icon: CircleCheck, onClick: () => setClosing(row) }] : []
           }
@@ -131,7 +132,12 @@ export const VehicleAccidents = () => {
         title="Siniestros"
         description="Choques, derrames y todo lo que le pasa a un vehículo. Si queda inutilizable, sale de servicio hasta reactivarlo."
         actions={
-          <Button icon={<Plus />} disabled={!canWrite} title={writeHint} onClick={() => setCreating(true)}>
+          <Button
+            icon={<Plus />}
+            disabled={!canWrite}
+            title={writeHint}
+            onClick={() => openForm('/fleet/accidents/new')}
+          >
             Nuevo siniestro
           </Button>
         }
@@ -221,7 +227,11 @@ export const VehicleAccidents = () => {
                     </Button>
                     {closable(row) && (
                       <>
-                        <Button size="sm" variant="secondary" onClick={() => setEditing(row)}>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => openForm(`/fleet/accidents/${row.accidentId}/edit`)}
+                        >
                           Editar
                         </Button>
                         <Button size="sm" variant="secondary" onClick={() => setClosing(row)}>
@@ -236,14 +246,6 @@ export const VehicleAccidents = () => {
           )}
         </StatusFilterTabs>
       </Card>
-      <VehicleAccidentFormModal
-        open={creating || editing !== null}
-        onClose={() => {
-          setCreating(false);
-          setEditing(null);
-        }}
-        accident={editing}
-      />
       <CloseAccidentModal accident={closing} onClose={() => setClosing(null)} />
       <VehicleAccidentDrawer accidentId={viewing} onClose={() => setViewing(null)} />
     </PageContainer>

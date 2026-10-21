@@ -6,15 +6,23 @@ import { App } from './App';
 import { Provider } from 'react-redux';
 import { store } from './store/store';
 import './styles/index.css';
-import { BrowserRouter } from 'react-router-dom';
+import { RouterProvider, createBrowserRouter } from 'react-router-dom';
+
+/** Router de datos (hace falta para `useBlocker`); todas las rutas siguen declaradas en `router/Navigation`. */
+const router = createBrowserRouter([
+  {
+    path: '*',
+    element: (
+      <Provider store={store}>
+        <App />
+      </Provider>
+    ),
+  },
+]);
 
 const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
 root.render(
   <React.StrictMode>
-    <Provider store={store}>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
-    </Provider>
+    <RouterProvider router={router} />
   </React.StrictMode>,
 );

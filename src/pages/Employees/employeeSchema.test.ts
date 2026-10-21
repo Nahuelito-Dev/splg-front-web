@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { employeeEditSchema, employeeSchema } from './employeeSchema';
+import { employeeEditSchema, employeeSchema, isValidCuil } from './employeeSchema';
 
 const valid = {
   firstName: 'Ana',
@@ -36,6 +36,20 @@ describe('employeeSchema', () => {
   it('pide un CUIL de once dígitos', () => {
     expect(employeeSchema.safeParse({ ...valid, cuil: '20-1234' }).success).toBe(false);
     expect(employeeSchema.safeParse({ ...valid, cuil: '20123456786' }).success).toBe(true);
+  });
+  it('rechaza un CUIL con el dígito verificador o el prefijo mal, como el back', () => {
+    expect(employeeSchema.safeParse({ ...valid, cuil: '20123456780' }).success).toBe(false);
+    expect(employeeSchema.safeParse({ ...valid, cuil: '30123456786' }).success).toBe(false);
+    expect(isValidCuil('20123456786')).toBe(true);
+  });
+  it('las fechas tienen que existir (el back las valida estricto)', () => {
+    expect(employeeSchema.safeParse({ ...valid, hireDate: '2026-02-30' }).success).toBe(false);
+    expect(employeeSchema.safeParse({ ...valid, birthDate: '1990-13-01' }).success).toBe(false);
+    expect(employeeSchema.safeParse({ ...valid, birthDate: '1990-05-17' }).success).toBe(true);
+  });
+  it('las notas admiten hasta 2000 caracteres, como el DTO', () => {
+    expect(employeeSchema.safeParse({ ...valid, notes: 'a'.repeat(2000) }).success).toBe(true);
+    expect(employeeSchema.safeParse({ ...valid, notes: 'a'.repeat(2001) }).success).toBe(false);
   });
   it('al editar exige el número de legajo, al crear no', () => {
     expect(employeeSchema.safeParse(valid).success).toBe(true);

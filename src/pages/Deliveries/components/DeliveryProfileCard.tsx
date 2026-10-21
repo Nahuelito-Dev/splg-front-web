@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { CheckCircle2, PencilLine, PiggyBank, Power, PowerOff, ShieldCheck, ShieldX, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { usePermissions } from '../../../hooks';
@@ -15,7 +16,6 @@ import { formatCurrency, formatDate } from '../../../utils/format';
 import { driverStatus } from '../../../utils/statusLabels';
 import { confirm, notify } from '../../../utils/notifications';
 import { BalanceAdjustModal } from './BalanceAdjustModal';
-import { DeliveryFormModal } from './DeliveryFormModal';
 
 interface Props {
   delivery: Delivery;
@@ -36,7 +36,8 @@ export const DeliveryProfileCard = ({ delivery, onDeleted, children }: Props) =>
   const toggleAvailability = useToggleDeliveryAvailability();
   const deleteDelivery = useDeleteDelivery();
   const [adjustingBalance, setAdjustingBalance] = useState(false);
-  const [editing, setEditing] = useState(false);
+  const navigate = useNavigate();
+  const { pathname, search } = useLocation();
 
   const handleToggleEnabled = async () => {
     const disabling = delivery.isEnabled;
@@ -137,7 +138,9 @@ export const DeliveryProfileCard = ({ delivery, onDeleted, children }: Props) =>
               size="sm"
               icon={<PencilLine />}
               blockedReason={blockedReason}
-              onClick={() => setEditing(true)}
+              onClick={() =>
+                navigate(`/deliveries/${delivery.delivery_id}/edit`, { state: { from: `${pathname}${search}` } })
+              }
             >
               Editar
             </Button>
@@ -197,7 +200,6 @@ export const DeliveryProfileCard = ({ delivery, onDeleted, children }: Props) =>
       </PageCover>
 
       <BalanceAdjustModal open={adjustingBalance} onClose={() => setAdjustingBalance(false)} delivery={delivery} />
-      <DeliveryFormModal open={editing} onClose={() => setEditing(false)} delivery={delivery} />
     </>
   );
 };
