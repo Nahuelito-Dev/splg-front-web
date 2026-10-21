@@ -228,6 +228,7 @@ export type PayDriverLiquidationBody = S['PayDriverLiquidationDto'];
 export type PayFuelLoadFromCashBoxBody = S['PayFuelLoadFromCashBoxDto'];
 export type PayTrafficFineBody = S['PayTrafficFineDto'];
 export type PedidoEntregadoSinMovimiento = S['PedidoEntregadoSinMovimientoDto'];
+export type PedidoNoDespachable = S['PedidoNoDespachableResponseDto'];
 export type PendingItem = S['PendingItemDto'];
 export type PersonnelDashboard = S['PersonnelDashboardDto'];
 export type PhotoLink = S['PhotoLinkResponseDto'];

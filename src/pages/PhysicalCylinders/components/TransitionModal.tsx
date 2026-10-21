@@ -11,11 +11,16 @@ import { NEXT_STATES } from '../cylinderTransitions';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-const schema = z.object({
-  toState: z.enum(['in_depot', 'filled', 'dispatched', 'with_customer', 'empty_returned']),
-  orderId: z.union([z.literal(''), z.string().trim().regex(UUID_RE, 'Tiene que ser un UUID válido')]),
-  note: z.string().trim().max(500, 'Máximo 500 caracteres'),
-});
+const schema = z
+  .object({
+    toState: z.enum(['in_depot', 'filled', 'dispatched', 'with_customer', 'empty_returned']),
+    orderId: z.union([z.literal(''), z.string().trim().regex(UUID_RE, 'Tiene que ser un UUID válido')]),
+    note: z.string().trim().max(500, 'Máximo 500 caracteres'),
+  })
+  .refine((v) => v.toState !== 'with_customer' || v.orderId !== '', {
+    path: ['orderId'],
+    message: 'Indicá el pedido: el envase queda a nombre de su cliente',
+  });
 
 type FormValues = z.infer<typeof schema>;
 
@@ -104,7 +109,7 @@ export const TransitionModal = ({ open, onClose, cylinder }: Props) => {
 
         {NEEDS_ORDER.includes(toState) && (
           <Input
-            label="Pedido asociado (UUID, opcional)"
+            label={toState === 'with_customer' ? 'Pedido asociado (UUID)' : 'Pedido asociado (UUID, opcional)'}
             placeholder="Id del pedido"
             error={errors.orderId?.message}
             {...register('orderId')}

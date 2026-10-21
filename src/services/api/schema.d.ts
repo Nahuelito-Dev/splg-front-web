@@ -8271,6 +8271,30 @@ export interface components {
        */
       isActive?: boolean;
     };
+    CylinderExpiredResponseDto: {
+      /** @example 409 */
+      statusCode: number;
+      /** @example Conflict */
+      error: string;
+      /** @example CYLINDER_EXPIRED */
+      code: string;
+      /** @example Envases con la revisión vencida: SN-000123 */
+      message: string;
+      /**
+       * @example [
+       *       "SN-000123"
+       *     ]
+       */
+      serials: string[];
+    };
+    PedidoNoDespachableResponseDto: {
+      /** @example 409 */
+      statusCode: number;
+      /** @example Conflict */
+      error: string;
+      /** @example El pedido está entregado: no se le pueden asignar envases */
+      message: string;
+    };
     CreateCylinderDto: {
       /** @example SN-000123 */
       serial: string;
@@ -8343,22 +8367,6 @@ export interface components {
     AssignCylindersDto: {
       /** Format: uuid */
       orderId: string;
-      /**
-       * @example [
-       *       "SN-000123"
-       *     ]
-       */
-      serials: string[];
-    };
-    CylinderExpiredResponseDto: {
-      /** @example 409 */
-      statusCode: number;
-      /** @example Conflict */
-      error: string;
-      /** @example CYLINDER_EXPIRED */
-      code: string;
-      /** @example Envases con la revisión vencida: SN-000123 */
-      message: string;
       /**
        * @example [
        *       "SN-000123"
@@ -8510,7 +8518,10 @@ export interface components {
     TransitionCylinderDto: {
       /** @enum {string} */
       toState: 'in_depot' | 'filled' | 'dispatched' | 'with_customer' | 'empty_returned' | 'retired';
-      /** Format: uuid */
+      /**
+       * Format: uuid
+       * @description Pedido de la transición. Obligatorio para `with_customer` (400 si falta): de ahí sale el cliente titular. En `dispatched` queda como pedido del envase
+       */
       orderId?: string;
       note?: string;
     };
@@ -12708,7 +12719,7 @@ export interface components {
       supplierId?: string;
       /**
        * Format: uuid
-       * @description Depósito destino. Con orden: el de la orden; sin orden: el predeterminado
+       * @description Depósito destino. Con orden: el de la orden (si se indica otro, 400); sin orden: el indicado o el predeterminado
        */
       warehouseId?: string;
       /**
@@ -21076,20 +21087,22 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Pedido o envase no encontrado */
+      /** @description Pedido o envase no encontrado. Un chofer que no es el asignado al pedido recibe el mismo 404: el pedido ajeno no existe para él */
       404: {
         headers: {
           [name: string]: unknown;
         };
         content?: never;
       };
-      /** @description Algún envase tiene la revisión vencida: se rechaza la asignación completa y no se asigna ninguno. El cuerpo trae `code: CYLINDER_EXPIRED` y `serials` con los vencidos. Los envases sin vencimiento cargado pasan. */
+      /** @description Algún envase tiene la revisión vencida: se rechaza la asignación completa y no se asigna ninguno. El cuerpo trae `code: CYLINDER_EXPIRED` y `serials` con los vencidos. Los envases sin vencimiento cargado pasan. También 409 si el pedido no admite la carga: sólo se asigna a pedidos pendientes, aceptados o en camino (no entregados, cancelados ni reservados a futuro). */
       409: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['CylinderExpiredResponseDto'];
+          'application/json':
+            | components['schemas']['CylinderExpiredResponseDto']
+            | components['schemas']['PedidoNoDespachableResponseDto'];
         };
       };
       /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
@@ -21518,7 +21531,7 @@ export interface operations {
           'application/json': components['schemas']['CylinderResponseDto'];
         };
       };
-      /** @description Transición inválida */
+      /** @description Transición inválida, o `with_customer` sin `orderId` (el pedido da el titular), o texto con caracteres no válidos en `note` */
       400: {
         headers: {
           [name: string]: unknown;
@@ -21539,20 +21552,22 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Envase no encontrado */
+      /** @description Envase o pedido no encontrado. Un chofer que indica el `orderId` de un pedido que no tiene asignado, o mueve un envase atado a un pedido de otro chofer, recibe el mismo 404 */
       404: {
         headers: {
           [name: string]: unknown;
         };
         content?: never;
       };
-      /** @description Despachar (`dispatched`) un envase con la revisión vencida: el mismo 409 `CYLINDER_EXPIRED` que la asignación a un pedido. */
+      /** @description Despachar (`dispatched`) un envase con la revisión vencida: el mismo 409 `CYLINDER_EXPIRED` que la asignación a un pedido. También 409 si se despacha con un `orderId` de un pedido que no admite la carga (entregado, cancelado o reservado a futuro). Un chofer que indica un `orderId` distinto del pedido al que ya está atado el envase también recibe 409. */
       409: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['CylinderExpiredResponseDto'];
+          'application/json':
+            | components['schemas']['CylinderExpiredResponseDto']
+            | components['schemas']['PedidoNoDespachableResponseDto'];
         };
       };
     };
@@ -32790,7 +32805,7 @@ export interface operations {
           'application/json': components['schemas']['PurchaseReceiptResponseDto'];
         };
       };
-      /** @description Sin `Idempotency-Key`, orden no recibible, la recepción se pasa de lo pendiente, fecha anterior al conteo inicial del depósito, no alcanzan las vacías o faltan datos */
+      /** @description Sin `Idempotency-Key`, orden no recibible, `warehouseId` distinto al depósito de la orden, la recepción se pasa de lo pendiente, fecha anterior al conteo inicial del depósito, no alcanzan las vacías o faltan datos */
       400: {
         headers: {
           [name: string]: unknown;
