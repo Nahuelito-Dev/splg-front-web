@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import type { GridPaginationModel } from '@mui/x-data-grid';
 import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
 import { SearchCheck, ShieldCheck, ShieldX } from 'lucide-react';
@@ -29,13 +30,10 @@ import type { BatchResult } from '../../utils/batch';
 import { driverStatus } from '../../utils/statusLabels';
 import { confirm, notify } from '../../utils/notifications';
 import { DeliveriesTable } from './components/DeliveriesTable';
-import { DeliveryFormModal } from './components/DeliveryFormModal';
 import { DELIVERY_TABS_ID, DeliveryStatusTabs } from './components/DeliveryStatusTabs';
 import { DELIVERY_TAB_LABELS, isDeliveriesStatusTab } from './deliveryTabs';
 import { FindDeliveryByUserModal } from './components/FindDeliveryByUserModal';
 import { asText } from '../../utils/csv';
-
-type FormState = { open: false } | { open: true; delivery: Delivery | null };
 
 export const Deliveries = () => {
   // Editar, dar de baja y validar piden la distribuidora (X-Distributor): sin «Ver como» la API contesta 400.
@@ -50,7 +48,9 @@ export const Deliveries = () => {
   const debouncedSearch = useDebounce(search.trim());
   const pagination: GridPaginationModel = { page: Math.max(0, Number(pageParam) - 1 || 0), pageSize: 10 };
   const setPagination = (model: GridPaginationModel) => setFilters({ page: String(model.page + 1) });
-  const [form, setForm] = useState<FormState>({ open: false });
+  const navigate = useNavigate();
+  const location = useLocation();
+  const openForm = (path: string) => navigate(path, { state: { from: `${location.pathname}${location.search}` } });
   const [findingByUser, setFindingByUser] = useState(false);
 
   const { data, isFetching } = useDeliveries(pagination, debouncedSearch, statusTab);
@@ -170,7 +170,7 @@ export const Deliveries = () => {
             <Button variant="secondary" icon={<SearchCheck />} onClick={() => setFindingByUser(true)}>
               Buscar por usuario
             </Button>
-            <Button icon={<PersonAddAlt1Icon />} onClick={() => setForm({ open: true, delivery: null })}>
+            <Button icon={<PersonAddAlt1Icon />} onClick={() => openForm('/deliveries/new')}>
               Nuevo chofer
             </Button>
           </div>
@@ -243,7 +243,7 @@ export const Deliveries = () => {
             loading={isFetching}
             pagination={pagination}
             onPaginationChange={setPagination}
-            onEdit={canOperate ? (delivery) => setForm({ open: true, delivery }) : undefined}
+            onEdit={canOperate ? (delivery) => openForm(`/deliveries/${delivery.delivery_id}/edit`) : undefined}
             onDelete={canOperate ? (delivery) => void handleDelete(delivery) : undefined}
             onToggleValidated={canOperate ? handleToggleValidated : undefined}
             filtered={chips.length > 0}
@@ -253,11 +253,6 @@ export const Deliveries = () => {
         </div>
       </Card>
 
-      <DeliveryFormModal
-        open={form.open}
-        onClose={() => setForm({ open: false })}
-        delivery={form.open ? form.delivery : null}
-      />
       <FindDeliveryByUserModal open={findingByUser} onClose={() => setFindingByUser(false)} />
     </PageContainer>
   );

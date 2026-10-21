@@ -15,6 +15,8 @@ export interface ConfirmOptions {
   confirmText?: string;
   /** Acción destructiva: el botón va en rojo y el foco arranca en Cancelar. */
   danger?: boolean;
+  /** Identifica la solicitud para poder cerrarla desde afuera (`dismissConfirm`). */
+  key?: string;
 }
 
 export interface PendingConfirm extends ConfirmOptions {
@@ -46,6 +48,14 @@ export const settleConfirm = (confirmed: boolean) => {
   if (!first) return;
   setQueue(rest);
   first.resolve(confirmed);
+};
+
+/** Cierra (como «cancelar») las solicitudes pendientes con esa `key`: por ejemplo cuando se desmonta quien las pidió. */
+export const dismissConfirm = (key: string) => {
+  const dismissed = queue.filter((pending) => pending.key === key);
+  if (dismissed.length === 0) return;
+  setQueue(queue.filter((pending) => pending.key !== key));
+  dismissed.forEach((pending) => pending.resolve(false));
 };
 
 /** Pide confirmación antes de una acción. Devuelve true si el usuario confirmó. */

@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { GridPaginationModel } from '@mui/x-data-grid';
 import { UserPlus } from 'lucide-react';
 import {
@@ -19,7 +20,6 @@ import { useDebounce, usePermissions, useUrlParams } from '../../hooks';
 import type { Employee, JobPosition } from '../../services/api/types';
 import { useEmployees, useEmployeeStatusCounts, useJobPositions } from '../../services/queries/employees';
 
-import { EmployeeFormModal } from './components/EmployeeFormModal';
 import { EmployeesTable } from './components/EmployeesTable';
 import { EMPLOYEE_STATUS_LABELS, POSITION_CATEGORY_LABELS, employeeFullName } from './employeeLabels';
 import { csvDay } from '../../utils/csv';
@@ -31,6 +31,7 @@ type Segment = (typeof STATUSES)[number];
 const SEGMENT_LABELS: Record<Segment, string> = { all: 'Todos', ...EMPLOYEE_STATUS_LABELS };
 
 export const Employees = () => {
+  const navigate = useNavigate();
   const { canWrite, writeHint, needsDistributor } = usePermissions();
   const [{ q: search, status: statusParam, category, position, page: pageParam }, setFilters] = useUrlParams({
     q: '',
@@ -41,7 +42,6 @@ export const Employees = () => {
   });
   const debouncedSearch = useDebounce(search.trim());
   const pagination: GridPaginationModel = { page: Math.max(0, Number(pageParam) - 1 || 0), pageSize: PAGE_SIZE };
-  const [creating, setCreating] = useState(false);
   const positions = useJobPositions(!needsDistributor);
 
   const segment: Segment = STATUSES.find((s) => s === statusParam) ?? 'all';
@@ -92,7 +92,7 @@ export const Employees = () => {
         title="Legajos"
         description="El personal de la distribuidora: datos, foto y documentación de cada legajo."
         actions={
-          <Button icon={<UserPlus />} blockedReason={writeHint} onClick={() => canWrite && setCreating(true)}>
+          <Button icon={<UserPlus />} blockedReason={writeHint} onClick={() => canWrite && navigate('/employees/new')}>
             Nuevo legajo
           </Button>
         }
@@ -174,7 +174,6 @@ export const Employees = () => {
           </div>
         </Card>
       )}
-      <EmployeeFormModal open={creating} onClose={() => setCreating(false)} employee={null} />
     </PageContainer>
   );
 };

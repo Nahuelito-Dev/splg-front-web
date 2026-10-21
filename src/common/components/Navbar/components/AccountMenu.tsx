@@ -58,7 +58,7 @@ export const AccountMenu = () => {
             type="button"
             onClick={() => {
               handleClose();
-              logout();
+              void logout();
             }}
             className={ITEM}
           >

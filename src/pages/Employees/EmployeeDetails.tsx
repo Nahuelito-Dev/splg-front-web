@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { KeyRound, LogOut, PencilLine, RotateCcw, Trash2 } from 'lucide-react';
 import {
   AuditHistoryLink,
@@ -28,7 +28,6 @@ import { formatDate } from '../../utils/format';
 import { confirm, notify } from '../../utils/notifications';
 import { EmployeeAttendanceTab } from './components/EmployeeAttendanceTab';
 import { EmployeeDocumentsTab } from './components/EmployeeDocumentsTab';
-import { EmployeeFormModal } from './components/EmployeeFormModal';
 import { EmployeeLeavesTab } from './components/EmployeeLeavesTab';
 import { GrantAccountModal } from './components/GrantAccountModal';
 import { ReinstateEmployeeModal } from './components/ReinstateEmployeeModal';
@@ -51,7 +50,8 @@ export const EmployeeDetails = () => {
   const { canWrite, writeHint } = usePermissions();
   const { data: employee, isPending, error, refetch } = useEmployee(id);
   const deleteEmployee = useDeleteEmployee();
-  const [editing, setEditing] = useState(false);
+  const { pathname, search } = useLocation();
+  const edit = () => navigate(`/employees/${id}/edit`, { state: { from: `${pathname}${search}` } });
   const [terminating, setTerminating] = useState(false);
   const [reinstating, setReinstating] = useState(false);
   const [granting, setGranting] = useState(false);
@@ -109,7 +109,7 @@ export const EmployeeDetails = () => {
           Reincorporar
         </Button>
       ) : (
-        <Button size="sm" icon={<PencilLine />} blockedReason={writeHint} onClick={() => canWrite && setEditing(true)}>
+        <Button size="sm" icon={<PencilLine />} blockedReason={writeHint} onClick={() => canWrite && edit()}>
           Editar legajo
         </Button>
       )}
@@ -123,7 +123,7 @@ export const EmployeeDetails = () => {
                 label: 'Editar legajo',
                 icon: <PencilLine />,
                 blockedReason: writeHint,
-                onClick: () => canWrite && setEditing(true),
+                onClick: () => canWrite && edit(),
               },
             ]
           : []),
@@ -289,7 +289,6 @@ export const EmployeeDetails = () => {
           <GrantAccountModal open={granting} onClose={() => setGranting(false)} employee={employee} />
         </>
       )}
-      <EmployeeFormModal open={editing} onClose={() => setEditing(false)} employee={employee ?? null} />
     </PageContainer>
   );
 };

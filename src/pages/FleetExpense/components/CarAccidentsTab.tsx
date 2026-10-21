@@ -1,11 +1,9 @@
-import { useState } from 'react';
 import { Plus } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Badge, Button, Card, EmptyState, ErrorState, LoadingState } from '../../../common/components/ui';
 import { useVehicleAccidents } from '../../../services/queries/fleetExpense';
 import { formatDateTime } from '../../../utils/format';
 import { ACCIDENT_STATUS, labelOf } from '../../../utils/statusLabels';
-import { VehicleAccidentFormModal } from './VehicleAccidentFormModal';
 
 interface Props {
   carId: string;
@@ -15,7 +13,7 @@ interface Props {
 
 /** Pestaña «Siniestros» de la ficha: los últimos; cerrarlos se hace desde la lista de siniestros. */
 export const CarAccidentsTab = ({ carId, canWrite, writeHint }: Props) => {
-  const [creating, setCreating] = useState(false);
+  const navigate = useNavigate();
   const { data, isPending, error, refetch } = useVehicleAccidents({ page: 0, pageSize: 10 }, { carId });
   return (
     <Card className="space-y-4 p-6">
@@ -23,7 +21,15 @@ export const CarAccidentsTab = ({ carId, canWrite, writeHint }: Props) => {
         <Link className="text-sm font-medium text-primary hover:underline" to={`/fleet/accidents?car=${carId}`}>
           Gestionar los siniestros de este vehículo
         </Link>
-        <Button icon={<Plus />} size="sm" disabled={!canWrite} title={writeHint} onClick={() => setCreating(true)}>
+        <Button
+          icon={<Plus />}
+          size="sm"
+          disabled={!canWrite}
+          title={writeHint}
+          onClick={() =>
+            navigate(`/fleet/accidents/new?carId=${carId}`, { state: { from: `/cars/details/${carId}?tab=accidents` } })
+          }
+        >
           Registrar siniestro
         </Button>
       </div>
@@ -44,7 +50,6 @@ export const CarAccidentsTab = ({ carId, canWrite, writeHint }: Props) => {
           ))}
         </ul>
       )}
-      <VehicleAccidentFormModal open={creating} onClose={() => setCreating(false)} accident={null} fixedCarId={carId} />
     </Card>
   );
 };

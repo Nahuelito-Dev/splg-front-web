@@ -3,14 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import AddBusinessIcon from '@mui/icons-material/AddBusiness';
 import { Button, Card, ErrorState, PageHeader, TableSkeleton, PageContainer } from '../../common/components/ui';
 import { FROM_LIST_STATE } from '../../hooks';
+import { switchDistributor } from '../../utils/switchDistributor';
 import { activeDistributor } from '../../services/api/activeDistributor';
-import type { Distributor } from '../../services/api/types';
 import { useDistributors } from '../../services/queries/distributors';
-import { DistributorFormModal } from './components/DistributorFormModal';
 import { DistributorsTable } from './components/DistributorsTable';
 import { useDistributorActions } from './useDistributorActions';
-
-type FormState = { open: false } | { open: true; distributor: Distributor | null };
 
 /**
  * Gestión de distribuidoras (empresas), sólo para el administrador general.
@@ -19,15 +16,14 @@ type FormState = { open: false } | { open: true; distributor: Distributor | null
  */
 export const Distributors = () => {
   const [viewingSlug, setViewingSlug] = useState(() => activeDistributor.get() ?? '');
-  const [form, setForm] = useState<FormState>({ open: false });
   const { data: distributors, isLoading, isFetching, error, refetch } = useDistributors();
   const navigate = useNavigate();
   const { toggleStatus, remove } = useDistributorActions({ onViewingChanged: () => setViewingSlug('') });
 
   const viewAs = (slug: string) => {
-    activeDistributor.set(slug || null);
-    setViewingSlug(slug);
-    window.location.reload();
+    void switchDistributor(slug || null).then((switched) => {
+      if (switched) setViewingSlug(slug);
+    });
   };
 
   return (
@@ -36,7 +32,7 @@ export const Distributors = () => {
         title="Distribuidoras"
         description="Cada empresa opera aislada: sus choferes, clientes, pedidos y catálogo."
         actions={
-          <Button icon={<AddBusinessIcon />} onClick={() => setForm({ open: true, distributor: null })}>
+          <Button icon={<AddBusinessIcon />} onClick={() => navigate('/distributors/new')}>
             Nueva empresa
           </Button>
         }
@@ -67,18 +63,12 @@ export const Distributors = () => {
             onView={(distributor) =>
               navigate(`/distributors/${distributor.distributor_id}`, { state: FROM_LIST_STATE })
             }
-            onEdit={(distributor) => setForm({ open: true, distributor })}
+            onEdit={(distributor) => navigate(`/distributors/${distributor.distributor_id}/edit`)}
             onToggleStatus={(distributor) => void toggleStatus(distributor)}
             onDelete={(distributor) => void remove(distributor)}
           />
         )}
       </Card>
-
-      <DistributorFormModal
-        open={form.open}
-        onClose={() => setForm({ open: false })}
-        distributor={form.open ? form.distributor : null}
-      />
     </PageContainer>
   );
 };

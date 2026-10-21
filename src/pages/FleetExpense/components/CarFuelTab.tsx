@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Fuel, Plus } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Badge,
   Button,
@@ -16,7 +16,6 @@ import type { Car } from '../../../services/api/types';
 import { useFuelEfficiency } from '../../../services/queries/fleetExpense';
 import { presetRange, type DayRange, type RangePresetId } from '../../../utils/dateRange';
 import { formatCurrency, formatNumber } from '../../../utils/format';
-import { FuelLoadFormModal } from './FuelLoadFormModal';
 
 interface Props {
   car: Car;
@@ -28,7 +27,7 @@ interface Props {
 export const CarFuelTab = ({ car, canWrite, writeHint }: Props) => {
   const [range, setRange] = useState<DayRange>(() => presetRange('last30'));
   const [preset, setPreset] = useState<RangePresetId | null>('last30');
-  const [creating, setCreating] = useState(false);
+  const navigate = useNavigate();
   const { data, isPending, error, refetch } = useFuelEfficiency(car.car_id, range);
 
   return (
@@ -46,7 +45,17 @@ export const CarFuelTab = ({ car, canWrite, writeHint }: Props) => {
               setPreset(nextPreset);
             }}
           />
-          <Button icon={<Plus />} size="sm" disabled={!canWrite} title={writeHint} onClick={() => setCreating(true)}>
+          <Button
+            icon={<Plus />}
+            size="sm"
+            disabled={!canWrite}
+            title={writeHint}
+            onClick={() =>
+              navigate(`/fleet/fuel-loads/new?carId=${car.car_id}`, {
+                state: { from: `/cars/details/${car.car_id}?tab=fuel` },
+              })
+            }
+          >
             Cargar combustible
           </Button>
         </div>
@@ -125,7 +134,6 @@ export const CarFuelTab = ({ car, canWrite, writeHint }: Props) => {
           )}
         </>
       )}
-      <FuelLoadFormModal open={creating} onClose={() => setCreating(false)} load={null} fixedCarId={car.car_id} />
     </div>
   );
 };

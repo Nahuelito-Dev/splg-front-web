@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Delivery } from '../../../services/api/types';
 
@@ -24,7 +25,6 @@ vi.mock('../../../utils/notifications', () => ({
   subscribeConfirmOpen: () => () => undefined,
 }));
 vi.mock('./BalanceAdjustModal', () => ({ BalanceAdjustModal: () => null }));
-vi.mock('./DeliveryFormModal', () => ({ DeliveryFormModal: () => null }));
 
 import { DeliveryProfileCard } from './DeliveryProfileCard';
 
@@ -51,7 +51,11 @@ afterEach(cleanup);
 describe('DeliveryProfileCard: administrador general sin distribuidora elegida', () => {
   it('todas las escrituras sobre el chofer quedan bloqueadas con su explicación y no hacen nada', () => {
     permissions.mockReturnValue({ canOperate: false, operateHint: HINT });
-    render(<DeliveryProfileCard delivery={delivery} onDeleted={vi.fn()} />);
+    render(
+      <MemoryRouter>
+        <DeliveryProfileCard delivery={delivery} onDeleted={vi.fn()} />
+      </MemoryRouter>,
+    );
     for (const name of ACTIONS) {
       const button = screen.getByRole('button', { name });
       expect(button).toHaveAttribute('aria-disabled', 'true');
@@ -64,7 +68,11 @@ describe('DeliveryProfileCard: administrador general sin distribuidora elegida',
 
   it('con distribuidora elegida las acciones están habilitadas', () => {
     permissions.mockReturnValue({ canOperate: true, operateHint: undefined });
-    render(<DeliveryProfileCard delivery={delivery} onDeleted={vi.fn()} />);
+    render(
+      <MemoryRouter>
+        <DeliveryProfileCard delivery={delivery} onDeleted={vi.fn()} />
+      </MemoryRouter>,
+    );
     for (const name of ACTIONS) expect(screen.getByRole('button', { name })).not.toHaveAttribute('aria-disabled');
     fireEvent.click(screen.getByRole('button', { name: 'Validar' }));
     expect(idle.mutate).toHaveBeenCalledTimes(1);

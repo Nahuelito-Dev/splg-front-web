@@ -25,11 +25,28 @@ const required = (label: string) =>
 const money = (label: string, places = 2) =>
   required(label).pipe(z.number().refine(decimals(places), `Hasta ${places} decimales`));
 
-/** Un kilometraje: entero y no negativo. */
+/** Tope del kilometraje que acepta el back (`MAXIMO_ODOMETRO_KM`): lo que pasa de acá es un error de tipeo. */
+export const MAX_ODOMETER_KM = 2_000_000;
+
+/** Un kilometraje: entero, no negativo y dentro del tope del back. */
 const kilometers = () =>
   required('el kilometraje').pipe(
-    z.number().int('Tiene que ser un número entero').nonnegative('No puede ser negativo'),
+    z
+      .number()
+      .int('Tiene que ser un número entero')
+      .nonnegative('No puede ser negativo')
+      .max(MAX_ODOMETER_KM, `No puede pasar de ${MAX_ODOMETER_KM.toLocaleString('es-AR')} km`),
   );
+
+/** El back tolera 5 minutos de adelanto del reloj antes de tomar una fecha como futura. */
+const CLOCK_TOLERANCE_MS = 5 * 60 * 1000;
+
+/** Un instante de un `datetime-local` que existe y no es futuro (vacío: se completa solo). */
+const isPastInstant = (value: string): boolean => {
+  if (value === '') return true;
+  const time = new Date(value).getTime();
+  return !Number.isNaN(time) && time <= Date.now() + CLOCK_TOLERANCE_MS;
+};
 
 /** Una fecha de calendario `YYYY-MM-DD` (lo que manda un `<input type="date">`). */
 const day = (message: string) =>
@@ -73,7 +90,7 @@ export const fuelFitsTank = (liters: number, capacity: number | null | undefined
 export const fuelLoadSchema = z
   .object({
     carId: z.string().trim().min(1, 'Elegí el vehículo'),
-    loadedAt: z.string().trim(),
+    loadedAt: z.string().trim().refine(isPastInstant, 'La carga no puede ser futura'),
     fuelType: z.union([z.literal(''), z.enum(['diesel', 'gasoline', 'cng', 'lpg'])]),
     liters: money('los litros').pipe(z.number().positive('Tienen que ser más que cero')),
     unitPrice: money('el precio por litro', 3).pipe(z.number().positive('Tiene que ser mayor a cero')),
@@ -154,7 +171,11 @@ export const parseLatLng = (text: string): { lat: number; lng: number } | null =
 
 export const accidentSchema = z.object({
   carId: z.string().trim().min(1, 'Elegí el vehículo'),
-  occurredAt: z.string().trim().min(1, 'Ingresá cuándo ocurrió'),
+  occurredAt: z
+    .string()
+    .trim()
+    .min(1, 'Ingresá cuándo ocurrió')
+    .refine(isPastInstant, 'El siniestro no puede ser futuro'),
   location: z
     .string()
     .trim()

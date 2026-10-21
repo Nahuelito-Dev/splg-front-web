@@ -25,7 +25,6 @@ vi.mock('./components/DeliveriesTable', () => ({
     return null;
   },
 }));
-vi.mock('./components/DeliveryFormModal', () => ({ DeliveryFormModal: () => null }));
 vi.mock('./components/FindDeliveryByUserModal', () => ({ FindDeliveryByUserModal: () => null }));
 
 import { Deliveries } from './Deliveries';

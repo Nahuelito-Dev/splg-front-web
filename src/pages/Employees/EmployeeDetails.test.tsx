@@ -25,7 +25,6 @@ vi.mock('../../services/queries/employees', () => ({
   useEmployee: () => state.employee() as unknown,
   useDeleteEmployee: () => mutation(),
 }));
-vi.mock('./components/EmployeeFormModal', () => ({ EmployeeFormModal: () => null }));
 vi.mock('./components/TerminateEmployeeModal', () => ({ TerminateEmployeeModal: () => null }));
 vi.mock('./components/ReinstateEmployeeModal', () => ({
   ReinstateEmployeeModal: ({ open }: { open: boolean }) => (open ? <p>Reincorporar (formulario)</p> : null),

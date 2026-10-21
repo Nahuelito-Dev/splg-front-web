@@ -61,6 +61,17 @@ describe('carga de combustible', () => {
     expect(fuelLoadSchema.safeParse({ ...fuel, odometerKm: '' }).success).toBe(false);
   });
 
+  it('el kilometraje tiene el tope del back y la carga no puede ser futura', () => {
+    expect(fuelLoadSchema.safeParse({ ...fuel, odometerKm: '2000000' }).success).toBe(true);
+    expect(fuelLoadSchema.safeParse({ ...fuel, odometerKm: '2000001' }).success).toBe(false);
+    const tomorrow = new Date(Date.now() + 24 * 3600 * 1000);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const future = `${tomorrow.getFullYear()}-${pad(tomorrow.getMonth() + 1)}-${pad(tomorrow.getDate())}T10:00`;
+    const res = fuelLoadSchema.safeParse({ ...fuel, loadedAt: future });
+    expect(res.error?.issues[0]).toMatchObject({ path: ['loadedAt'] });
+    expect(fuelLoadSchema.safeParse({ ...fuel, loadedAt: '2026-10-10T12:00' }).success).toBe(true);
+  });
+
   it('corregir el kilometraje exige la nota', () => {
     const res = fuelLoadSchema.safeParse({ ...fuel, odometerCorrection: true });
     expect(res.error?.issues[0]).toMatchObject({ path: ['odometerCorrectionNote'] });
@@ -134,6 +145,14 @@ describe('siniestro', () => {
     expect(accidentSchema.safeParse({ ...accident, location: 'acá' }).success).toBe(false);
     expect(parseLatLng(' -27.3, -55.9 ')).toEqual({ lat: -27.3, lng: -55.9 });
     expect(parseLatLng('12')).toBeNull();
+  });
+
+  it('el siniestro no puede ser futuro', () => {
+    const next = new Date(Date.now() + 24 * 3600 * 1000);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const future = `${next.getFullYear()}-${pad(next.getMonth() + 1)}-${pad(next.getDate())}T10:00`;
+    const res = accidentSchema.safeParse({ ...accident, occurredAt: future });
+    expect(res.error?.issues[0]).toMatchObject({ path: ['occurredAt'] });
   });
 
   it('exige la descripción', () => {

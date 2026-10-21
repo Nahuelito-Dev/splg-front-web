@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeftRight, Ban, CircleCheck, Pencil, Trash2 } from 'lucide-react';
 import {
@@ -17,12 +16,12 @@ import {
 } from '../../common/components/ui';
 import { useBackToList, usePermissions } from '../../hooks';
 import { useCrumbLeaf } from '../../common/components';
+import { switchDistributor } from '../../utils/switchDistributor';
 import { activeDistributor } from '../../services/api/activeDistributor';
 import { useDistributor } from '../../services/queries/distributors';
 import { formatDateTime } from '../../utils/format';
 import { DISTRIBUTOR_STATUS, labelOf } from '../../utils/statusLabels';
 import { DistributorAdmins } from './components/DistributorAdmins';
-import { DistributorFormModal } from './components/DistributorFormModal';
 import { useDistributorActions } from './useDistributorActions';
 
 /** La ficha de una empresa (`GET /distributor/:id`), sólo para el administrador general. */
@@ -34,11 +33,9 @@ export const DistributorDetails = () => {
   const { data: distributor, isPending, error, refetch } = useDistributor(id, isSuperAdmin);
   useCrumbLeaf(distributor?.name, goBack);
   const { toggleStatus, remove } = useDistributorActions({ onDeleted: () => navigate('/distributors') });
-  const [editing, setEditing] = useState(false);
 
   const viewAs = (slug: string) => {
-    activeDistributor.set(slug);
-    window.location.reload();
+    void switchDistributor(slug);
   };
 
   if (!isSuperAdmin) {
@@ -66,7 +63,11 @@ export const DistributorDetails = () => {
   ) : undefined;
   const headerSecondary: MenuAction[] = distributor
     ? [
-        { label: 'Editar', icon: <Pencil />, onClick: () => setEditing(true) },
+        {
+          label: 'Editar',
+          icon: <Pencil />,
+          onClick: () => navigate(`/distributors/${distributor.distributor_id}/edit`),
+        },
         distributor.status === 'active'
           ? { label: 'Suspender', icon: <Ban />, onClick: () => void toggleStatus(distributor) }
           : { label: 'Activar', icon: <CircleCheck />, onClick: () => void toggleStatus(distributor) },
@@ -122,8 +123,6 @@ export const DistributorDetails = () => {
           </div>
         </div>
       )}
-
-      <DistributorFormModal open={editing} onClose={() => setEditing(false)} distributor={distributor ?? null} />
     </PageContainer>
   );
 };

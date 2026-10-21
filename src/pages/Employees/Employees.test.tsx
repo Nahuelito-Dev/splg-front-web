@@ -15,7 +15,6 @@ vi.mock('../../services/queries/employees', () => ({
   useEmployeeStatusCounts: () => ({ all: 3, active: 2, terminated: 1 }),
   useJobPositions: (...args: unknown[]) => positions(...args) as unknown,
 }));
-vi.mock('./components/EmployeeFormModal', () => ({ EmployeeFormModal: () => null }));
 
 import { Employees } from './Employees';
 
