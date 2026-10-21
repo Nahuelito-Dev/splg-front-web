@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const handlers = vi.hoisted(() => new Map<string, (payload: unknown) => void>());
 const notifyInfo = vi.hoisted(() => vi.fn());
+const notifyError = vi.hoisted(() => vi.fn<[Error], void>());
 
 vi.mock('../../../../context/useSocketContext', () => ({
   useSocketContext: () => ({
@@ -25,7 +26,7 @@ vi.mock('../../../../hooks/useDistributorEventFilter', () => ({
 }));
 vi.mock('../../../../utils/notifications', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
-  notify: { info: notifyInfo, success: vi.fn(), error: vi.fn() },
+  notify: { info: notifyInfo, success: vi.fn(), error: notifyError },
 }));
 
 import { NotificationBell } from './NotificationBell';
@@ -48,6 +49,7 @@ const setup = () => {
 beforeEach(() => {
   handlers.clear();
   notifyInfo.mockReset();
+  notifyError.mockReset();
   scope.viewing = null;
   unsubscribed.mockReset();
 });
@@ -212,6 +214,41 @@ describe('NotificationBell: coverage:no-active-zones', () => {
     act(() => {
       handlers.get('coverage:no-active-zones')?.({ distributorId: 'otra', zoneIds: ['z1'] });
     });
+    expect(screen.queryByRole('button', { name: /sin leer/ })).not.toBeInTheDocument();
+  });
+});
+
+describe('NotificationBell: order:refund-failed', () => {
+  const payload = {
+    orderId: 'cccccccc-3333',
+    refundId: 'r-1',
+    kind: 'full',
+    amount: 1500,
+    reason: 'MercadoPago rechazó la devolución',
+    distributorId: 'd1',
+  };
+
+  it('avisa con un toast, deja la notificación con el pedido y refresca Reintegros y el pedido', () => {
+    const spy = setup();
+    act(() => {
+      handlers.get('order:refund-failed')?.(payload);
+    });
+    expect(notifyError.mock.calls[0]?.[0].message).toContain('Reintegros');
+    const keys = spy.mock.calls.map(([filters]) => filters?.queryKey as string[]);
+    expect(keys.map((k) => k[0])).toContain('refunds');
+    expect(keys).toContainEqual(['orders', 'detail', 'cccccccc-3333']);
+    fireEvent.click(screen.getByRole('button', { name: /1 sin leer/ }));
+    expect(screen.getByText('No se pudo devolver el pago: resolvelo a mano')).toBeInTheDocument();
+    expect(screen.getByText(/MercadoPago rechazó la devolución/)).toBeInTheDocument();
+  });
+
+  it('ignora el de otra distribuidora', () => {
+    scope.viewing = 'd-elegida';
+    setup();
+    act(() => {
+      handlers.get('order:refund-failed')?.({ ...payload, distributorId: 'otra' });
+    });
+    expect(notifyError).not.toHaveBeenCalled();
     expect(screen.queryByRole('button', { name: /sin leer/ })).not.toBeInTheDocument();
   });
 });

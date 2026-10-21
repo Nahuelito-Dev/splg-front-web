@@ -11,6 +11,7 @@ import {
   MapPinOff,
   PackagePlus,
   RotateCcw,
+  Undo2,
   ThumbsUp,
   Truck,
   UserRoundX,
@@ -26,7 +27,9 @@ import {
   INCIDENT_CREATED_EVENT,
   NO_ACTIVE_ZONES_EVENT,
   NO_DRIVERS_EVENT,
+  REFUND_FAILED_EVENT,
   type NoActiveZonesPayload,
+  type RefundFailedPayload,
   ORDER_SOCKET_EVENTS,
   type CylinderBlockedPayload,
   type IncidentCreatedPayload,
@@ -66,7 +69,8 @@ type NotificationEvent =
   | typeof INCIDENT_CREATED_EVENT
   | typeof NO_DRIVERS_EVENT
   | typeof CYLINDER_BLOCKED_EVENT
-  | typeof NO_ACTIVE_ZONES_EVENT;
+  | typeof NO_ACTIVE_ZONES_EVENT
+  | typeof REFUND_FAILED_EVENT;
 
 export interface OrderNotification {
   id: string;
@@ -83,6 +87,7 @@ const EVENT_LABELS: Record<NotificationEvent, string> = {
   [INCIDENT_CREATED_EVENT]: 'Cobro impago: el chofer no pudo cobrar',
   [NO_DRIVERS_EVENT]: 'Pedido sin chofer disponible',
   [CYLINDER_BLOCKED_EVENT]: 'Despacho bloqueado: envase con la revisión vencida',
+  [REFUND_FAILED_EVENT]: 'No se pudo devolver el pago: resolvelo a mano',
   [NO_ACTIVE_ZONES_EVENT]: 'Sin zonas de cobertura activas: no se aceptan pedidos nuevos',
   [ORDER_SOCKET_EVENTS.CREATED]: 'Nuevo pedido',
   [ORDER_SOCKET_EVENTS.ACCEPTED]: 'Pedido aceptado',
@@ -99,6 +104,7 @@ const EVENT_VISUALS: Record<NotificationEvent, { icon: LucideIcon; tone: Tone }>
   [NO_DRIVERS_EVENT]: { icon: UserRoundSearch, tone: 'warn' },
   [CYLINDER_BLOCKED_EVENT]: { icon: ShieldAlert, tone: 'danger' },
   [NO_ACTIVE_ZONES_EVENT]: { icon: MapPinOff, tone: 'danger' },
+  [REFUND_FAILED_EVENT]: { icon: Undo2, tone: 'danger' },
   [ORDER_SOCKET_EVENTS.CREATED]: { icon: PackagePlus, tone: 'primary' },
   [ORDER_SOCKET_EVENTS.ACCEPTED]: { icon: ThumbsUp, tone: 'info' },
   [ORDER_SOCKET_EVENTS.ON_THE_WAY]: { icon: Truck, tone: 'info' },
@@ -124,7 +130,7 @@ const buildDetail = (event: NotificationEvent, payload: OrderSocketPayload) => {
       ? (payload.serials ?? []).join(', ')
       : event === NO_DRIVERS_EVENT
         ? (NO_DRIVERS_REASONS[payload.reason as NoDriversReason] ?? payload.reason ?? '')
-        : event === ORDER_SOCKET_EVENTS.CANCELLED && payload.reason
+        : (event === ORDER_SOCKET_EVENTS.CANCELLED || event === REFUND_FAILED_EVENT) && payload.reason
           ? payload.reason
           : event === ORDER_SOCKET_EVENTS.ASSIGNMENT_DECLINED && payload.driverName
             ? payload.driverName
@@ -196,6 +202,22 @@ export const NotificationBell = () => {
         if (!belongsToView(payload)) return;
         pushNotification(NO_ACTIVE_ZONES_EVENT, { at: payload.at });
         void queryClient.invalidateQueries({ queryKey: queryKeys.coverageZones.all });
+      }),
+    );
+
+    // El reintegro automático falló: se avisa con un toast, queda en la campana (con enlace al pedido) y se refrescan
+    // Reintegros y el pedido.
+    unsubscribers.push(
+      subscribe<RefundFailedPayload>(REFUND_FAILED_EVENT, (payload) => {
+        if (!belongsToView(payload)) return;
+        pushNotification(REFUND_FAILED_EVENT, { orderId: payload.orderId, at: payload.at, reason: payload.reason });
+        notify.error(
+          new Error(
+            `No se pudo devolver el pago del pedido ${formatShortId(payload.orderId)}: resolvelo desde Reintegros`,
+          ),
+        );
+        void queryClient.invalidateQueries({ queryKey: queryKeys.refunds.all });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.orders.detail(payload.orderId) });
       }),
     );
 

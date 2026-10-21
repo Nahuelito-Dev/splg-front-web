@@ -24,8 +24,9 @@ interface Props {
 
 /** Vistazo a un pedido sin salir del listado o del tablero; la gestión completa vive en `/orders/:id`. */
 export const OrderQuickDrawer = ({ open, onClose, order: listed, onAssign }: Props) => {
-  const { data: fresh, error, refetch } = useOrder(open ? listed?.order_id : undefined);
-  const { operateHint } = usePermissions();
+  const { operateHint, needsDistributor } = usePermissions();
+  // El detalle exige distribuidora (el administrador general sin «Ver como» no lo lee): se usa lo del listado.
+  const { data: fresh, error, refetch } = useOrder(open ? listed?.order_id : undefined, { enabled: !needsDistributor });
   const order = fresh ?? listed;
   if (!order) return null;
 

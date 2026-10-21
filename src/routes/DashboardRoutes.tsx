@@ -83,6 +83,7 @@ const Thresholds = lazyPage(() => import('../pages/Stock/Thresholds'), 'Threshol
 const Reconciliation = lazyPage(() => import('../pages/Stock/Reconciliation'), 'Reconciliation');
 const FinanceDashboard = lazyPage(() => import('../pages/Finance/FinanceDashboard'), 'FinanceDashboard');
 const CashBoxes = lazyPage(() => import('../pages/Finance/CashBoxes'), 'CashBoxes');
+const CashBoxDetails = lazyPage(() => import('../pages/Finance/CashBoxDetails'), 'CashBoxDetails');
 const CashMovements = lazyPage(() => import('../pages/Finance/CashMovements'), 'CashMovements');
 const CashCategories = lazyPage(() => import('../pages/Finance/CashCategories'), 'CashCategories');
 const DriverSettlements = lazyPage(() => import('../pages/Finance/DriverSettlements'), 'DriverSettlements');
@@ -228,6 +229,7 @@ export const DashboardRoutes = () => {
             <Route path="fleet/tires" element={<Tires />} />
             <Route path="finance" element={<FinanceDashboard />} />
             <Route path="finance/boxes" element={<CashBoxes />} />
+            <Route path="finance/boxes/:id" element={<CashBoxDetails />} />
             <Route path="finance/movements" element={<CashMovements />} />
             <Route path="finance/categories" element={<CashCategories />} />
             <Route path="finance/settlements" element={<DriverSettlements />} />

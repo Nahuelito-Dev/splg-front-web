@@ -66,6 +66,7 @@ export const CashBoxes = () => {
       : [{ label: 'Abrir caja', icon: LockOpen, onClick: () => setOpening(row) }];
   };
 
+  const goToDetails = (row: CashBox) => navigate(`/finance/boxes/${row.cashBoxId}`);
   const goToMovements = (row: CashBox) => navigate(`/finance/movements?cashBoxId=${row.cashBoxId}`);
 
   const columns: GridColDef<CashBox>[] = [
@@ -98,7 +99,7 @@ export const CashBoxes = () => {
       renderCell: ({ row }) => (
         <RowActions
           rowLabel={`caja ${row.name}`}
-          onView={() => goToMovements(row)}
+          onView={() => goToDetails(row)}
           onEdit={canWrite ? () => setEditing(row) : undefined}
           actions={[
             { label: 'Ver movimientos', icon: BookOpen, onClick: () => goToMovements(row) },
@@ -168,7 +169,7 @@ export const CashBoxes = () => {
             getRowId={(row) => row.cashBoxId}
             loading={isFetching}
             pagination={{ model: pagination, onChange: setPagination, total: data?.total ?? 0 }}
-            onRowClick={goToMovements}
+            onRowClick={goToDetails}
             empty={
               filtered ? (
                 <EmptyState illustration="search" title="Sin resultados" description="Probá con otro filtro." />
@@ -188,6 +189,9 @@ export const CashBoxes = () => {
                   {status(row)}
                 </div>
                 <div className="flex flex-wrap gap-2">
+                  <Button size="sm" variant="secondary" onClick={() => goToDetails(row)}>
+                    Ver ficha
+                  </Button>
                   <Button size="sm" variant="secondary" onClick={() => goToMovements(row)}>
                     Movimientos
                   </Button>

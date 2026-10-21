@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Reserva } from '../../services/api/types';
-import { countPendingCashDeposits } from './reservationStats';
+import { countPendingManualDeposits } from './reservationStats';
 
 const reserva = (overrides: Partial<Reserva>): Reserva => ({
   id: 'r-1',
@@ -12,23 +12,26 @@ const reserva = (overrides: Partial<Reserva>): Reserva => ({
   depositAmount: 5000,
   depositPaid: false,
   remainingBalance: 17600,
+  paymentUrl: null,
+  timeSlot: null,
   createdAt: '2026-09-01T00:00:00.000Z',
   items: [{ quantity: 2, type: '10kg' }],
   ...overrides,
 });
 
-describe('countPendingCashDeposits', () => {
+describe('countPendingManualDeposits', () => {
   it('sin reservas no hay nada pendiente', () => {
-    expect(countPendingCashDeposits([])).toBe(0);
+    expect(countPendingManualDeposits([])).toBe(0);
   });
 
-  it('cuenta sólo las señas en efectivo sin cobrar', () => {
+  it('cuenta las señas en efectivo o por transferencia sin cobrar, no las de MercadoPago', () => {
     const reservations = [
       reserva({ id: 'a', paymentMethod: 'cash', depositPaid: false }),
       reserva({ id: 'b', paymentMethod: 'cash', depositPaid: true }),
       reserva({ id: 'c', paymentMethod: 'mercadopago', depositPaid: false }),
       reserva({ id: 'd', paymentMethod: 'cash', depositPaid: false }),
+      reserva({ id: 'e', paymentMethod: 'transfer', depositPaid: false }),
     ];
-    expect(countPendingCashDeposits(reservations)).toBe(2);
+    expect(countPendingManualDeposits(reservations)).toBe(3);
   });
 });

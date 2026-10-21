@@ -87,6 +87,23 @@ export interface IncidentCreatedPayload {
 }
 
 /**
+ * Evento que emite el back a los admins de la distribuidora cuando un reintegro automático falla (la devolución del
+ * pago de un pedido cancelado no se pudo hacer: hay que resolverla a mano).
+ */
+export const REFUND_FAILED_EVENT = 'order:refund-failed';
+
+/** Payload de REFUND_FAILED_EVENT. */
+export interface RefundFailedPayload {
+  orderId: string;
+  refundId?: string;
+  kind?: string;
+  amount?: number;
+  reason?: string;
+  distributorId?: string | null;
+  at?: string;
+}
+
+/**
  * Evento que emite el AdminGateway por cada pedido en curso cuyo chofer manda
  * su GPS. Se centraliza acá junto a ORDER_SOCKET_EVENTS (Tracking es hoy su
  * único consumidor).

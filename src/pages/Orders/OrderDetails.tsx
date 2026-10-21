@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { DetailSkeleton, ErrorState, PageHeader, PageContainer } from '../../common/components/ui';
-import { useBackToList } from '../../hooks';
+import { Card, DetailSkeleton, EmptyState, ErrorState, PageHeader, PageContainer } from '../../common/components/ui';
+import { useBackToList, usePermissions } from '../../hooks';
 import { formatShortId } from '../../utils/format';
 import { useCrumbLeaf } from '../../common/components';
 import { useSocketContext } from '../../context/useSocketContext';
@@ -33,7 +33,16 @@ export const OrderDetails = () => {
   const goBack = useBackToList('/orders');
   const queryClient = useQueryClient();
   const { isOnline, subscribe } = useSocketContext();
-  const { data: order, isPending, error, refetch } = useOrder(id, { refetchInterval: isOnline ? false : 20_000 });
+  const { needsDistributor } = usePermissions();
+  const {
+    data: order,
+    isPending,
+    error,
+    refetch,
+  } = useOrder(id, {
+    refetchInterval: isOnline ? false : 20_000,
+    enabled: !needsDistributor,
+  });
   useCrumbLeaf(id ? formatShortId(id) : undefined, goBack);
 
   useEffect(() => {
@@ -48,7 +57,17 @@ export const OrderDetails = () => {
 
   return (
     <PageContainer>
-      {isPending ? (
+      {needsDistributor ? (
+        <>
+          <PageHeader title="Pedido" />
+          <Card className="p-6">
+            <EmptyState
+              title="Elegí una distribuidora"
+              description="Como administrador general, elegí una con «Ver como» para ver el detalle de un pedido."
+            />
+          </Card>
+        </>
+      ) : isPending ? (
         <DetailSkeleton />
       ) : error || !order ? (
         <>
