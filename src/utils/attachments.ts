@@ -9,3 +9,6 @@ export const attachmentFileError = (file: File): string | null => {
   if (file.size > ATTACHMENT_MAX_BYTES) return 'El archivo no puede superar los 10 MB.';
   return null;
 };
+
+/** Formatos y tamaño máximo para mostrar junto al selector de adjuntos. */
+export const ATTACHMENT_LIMITS_TEXT = `PDF, JPG, PNG o WEBP, hasta ${ATTACHMENT_MAX_BYTES / (1024 * 1024)} MB`;

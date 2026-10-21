@@ -54,8 +54,10 @@ export const FleetTaskDetailModal = ({ task, onClose, canWrite, onEdit, onReques
       {task && (
         <div className="space-y-5">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge label={labelOf(FLEET_TASK_STATUS, task.status)} />
-            {task.expirationStatus && <Badge label={labelOf(FLEET_EXPIRATION_STATUS, task.expirationStatus)} />}
+            <Badge label={labelOf(FLEET_TASK_STATUS, task.status)} variant="critical" />
+            {task.expirationStatus && (
+              <Badge label={labelOf(FLEET_EXPIRATION_STATUS, task.expirationStatus)} variant="critical" />
+            )}
             {task.blocks && open && (
               <span className="text-xs font-medium text-danger">Sin esto vigente, no puede salir a operar.</span>
             )}

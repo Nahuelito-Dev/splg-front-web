@@ -68,7 +68,7 @@ export const FleetTaskDetail = () => {
           task && (
             <>
               <AuditHistoryLink entity="MaintenanceTask" recordId={task.taskId} />
-              <Badge label={labelOf(FLEET_TASK_STATUS, task.status)} />
+              <Badge label={labelOf(FLEET_TASK_STATUS, task.status)} variant="critical" />
             </>
           )
         }
@@ -82,7 +82,9 @@ export const FleetTaskDetail = () => {
         <>
           <Card className="space-y-5 p-4">
             <div className="flex flex-wrap items-center gap-2">
-              {task.expirationStatus && <Badge label={labelOf(FLEET_EXPIRATION_STATUS, task.expirationStatus)} />}
+              {task.expirationStatus && (
+                <Badge label={labelOf(FLEET_EXPIRATION_STATUS, task.expirationStatus)} variant="critical" />
+              )}
               {task.blocks && open && (
                 <span className="text-xs font-medium text-danger">Sin esto vigente, no puede salir a operar.</span>
               )}

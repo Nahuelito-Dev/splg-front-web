@@ -107,7 +107,7 @@ export const FleetPlans = () => {
         field: 'criticality',
         headerName: 'Criticidad',
         width: 150,
-        renderCell: ({ row }) => <Badge label={labelOf(FLEET_TASK_CRITICALITY, row.criticality)} />,
+        renderCell: ({ row }) => <Badge label={labelOf(FLEET_TASK_CRITICALITY, row.criticality)} variant="critical" />,
       },
       {
         field: 'carType',

@@ -2,6 +2,9 @@ import { PHOTO_ALLOWED_TYPES, photoMaxBytes, type PhotoKind } from '../services/
 
 const maxMb = (kind: PhotoKind) => Math.round(photoMaxBytes(kind) / (1024 * 1024));
 
+/** Formatos y tamaño máximo para mostrar junto al selector de fotos. */
+export const photoLimitsText = (kind: PhotoKind) => `JPG, PNG o WEBP, hasta ${maxMb(kind)} MB`;
+
 /** `null` si el archivo pasa las reglas que también valida el back; si no, el mensaje para el usuario. */
 export const photoFileError = (kind: PhotoKind, file: File): string | null => {
   if (!PHOTO_ALLOWED_TYPES.includes(file.type)) return 'La foto tiene que ser JPG, PNG o WEBP.';

@@ -35,7 +35,7 @@ interface Props {
   selection?: { ids: string[]; onChange: (ids: string[]) => void };
 }
 
-/** Pedidos: quién, adónde, quién lo lleva, en qué estado y cuánto. Ítems, pago y tiempos van en el detalle. */
+/** Pedidos: quién, adónde, quién lo lleva, en qué estado (con su cobro) y cuánto. Ítems, pago y tiempos van en el detalle. */
 export const OrdersTable = ({
   rows,
   total,
@@ -78,55 +78,39 @@ export const OrdersTable = ({
           return (
             <div className="min-w-0 leading-tight">
               <span className="block truncate text-ink">{row.delivery_address?.street ?? 'Sin dirección'}</span>
-              {zone ? (
+              {zone && (
                 <span className="mt-0.5 inline-flex max-w-full truncate rounded-md border border-outline-soft bg-bg px-1.5 py-px text-[11.5px] font-medium text-primary-strong">
                   {zone}
                 </span>
+              )}
+              {row.delivery_name ? (
+                <span className="mt-0.5 block truncate text-[11.5px] text-muted" title={row.delivery_name}>
+                  {row.delivery_name}
+                </span>
               ) : (
-                <span className="block truncate text-[11.5px] text-muted">{row.delivery_address?.city ?? '—'}</span>
+                !isClosed(row.status) && (
+                  <span className="mt-0.5 block truncate text-[11.5px] font-medium text-warn">Sin asignar</span>
+                )
               )}
             </div>
           );
         },
       },
       {
-        field: 'delivery_name',
-        headerName: 'Chofer',
-        flex: 1,
-        minWidth: 150,
-        valueGetter: ({ row }) => row.delivery_name ?? '',
-        renderCell: ({ row }) =>
-          row.delivery_name ? (
-            <span className="truncate text-ink" title={row.delivery_name}>
-              {row.delivery_name}
-            </span>
-          ) : (
-            <span className="font-medium text-warn">Sin asignar</span>
-          ),
-      },
-      {
         field: 'status',
         headerName: 'Estado',
-        width: 140,
-        renderCell: ({ row }) => <Badge label={labelOf(ORDER_STATUS, row.status)} />,
-      },
-      {
-        field: 'paymentStatus',
-        headerName: 'Cobro',
-        width: 120,
-        sortable: false,
-        valueGetter: ({ row }) => row.paymentStatus ?? '',
-        renderCell: ({ row }) =>
-          row.paymentStatus ? (
-            <Badge label={paymentStatusLabel(row.paymentStatus, row.paymentMethodDetail)} />
-          ) : (
-            <span>—</span>
-          ),
+        width: 150,
+        renderCell: ({ row }) => (
+          <div className="flex min-w-0 flex-col items-start gap-1 leading-none">
+            <Badge label={labelOf(ORDER_STATUS, row.status)} />
+            {row.paymentStatus && <Badge label={paymentStatusLabel(row.paymentStatus, row.paymentMethodDetail)} />}
+          </div>
+        ),
       },
       {
         field: 'total_amount',
         headerName: 'Total',
-        width: 120,
+        width: 110,
         align: 'right',
         headerAlign: 'right',
         renderCell: ({ row }) => (
@@ -136,7 +120,7 @@ export const OrdersTable = ({
       {
         field: 'actions',
         headerName: '',
-        width: 160,
+        width: 176,
         sortable: false,
         align: 'right',
         renderCell: ({ row }) => (

@@ -113,11 +113,20 @@ describe('AttachmentsPanel', () => {
     expect(api.deleteAttachment).toHaveBeenCalledTimes(1);
   });
 
+  it('con permiso de escritura ofrece la zona de subida', async () => {
+    api.listAttachments.mockResolvedValue([item]);
+    renderPanel();
+    await screen.findByText('DNI frente');
+    expect(screen.getByLabelText('Elegir el archivo a adjuntar')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Soltá el archivo/ })).toBeInTheDocument();
+  });
+
   it('sin permiso de escritura no ofrece subir ni borrar', async () => {
     api.listAttachments.mockResolvedValue([item]);
     renderPanel(false);
     await screen.findByText('DNI frente');
-    expect(screen.queryByText('Adjuntar archivo')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Elegir el archivo a adjuntar')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Soltá el archivo/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Borrar DNI frente' })).not.toBeInTheDocument();
   });
 });

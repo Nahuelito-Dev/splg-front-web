@@ -36,6 +36,14 @@
   }
 }
 
+/* Leaflet apila sus capas con z-index de 400 a 1000: aislado, el mapa no pasa por encima del header ni de los drawers. */
+@layer components {
+  .leaflet-container {
+    isolation: isolate;
+    z-index: 0;
+  }
+}
+
 /* El brillo cálido arriba del menú lateral: la brasa de la marca. */
 @layer components {
   .side-glow::before {

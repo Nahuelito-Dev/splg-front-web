@@ -76,7 +76,7 @@ export const LeavesTable = ({
         field: 'status',
         headerName: 'Estado',
         width: 130,
-        renderCell: ({ row }) => <Badge label={labelOf(LEAVE_STATUS, row.status)} />,
+        renderCell: ({ row }) => <Badge label={labelOf(LEAVE_STATUS, row.status)} variant="critical" />,
       },
       {
         field: 'reason',
@@ -139,7 +139,7 @@ export const LeavesTable = ({
               <p className="text-xs text-muted">{row.rejectionReason ?? row.reason}</p>
             )}
             <div className="flex flex-wrap items-center gap-2">
-              <Badge label={labelOf(LEAVE_STATUS, row.status)} />
+              <Badge label={labelOf(LEAVE_STATUS, row.status)} variant="critical" />
               {handlers && can?.approve && (
                 <Button size="sm" icon={<Check />} onClick={() => handlers.onApprove(row)}>
                   Aprobar

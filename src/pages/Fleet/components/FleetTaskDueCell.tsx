@@ -11,7 +11,7 @@ export const FleetTaskDueCell = ({ task }: { task: FleetTask }) => (
     </span>
     {task.expirationStatus && (
       <span className="mt-0.5 block">
-        <Badge label={labelOf(FLEET_EXPIRATION_STATUS, task.expirationStatus)} />
+        <Badge label={labelOf(FLEET_EXPIRATION_STATUS, task.expirationStatus)} variant="critical" />
       </span>
     )}
   </div>

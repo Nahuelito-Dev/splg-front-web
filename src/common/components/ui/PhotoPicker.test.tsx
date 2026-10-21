@@ -36,3 +36,21 @@ describe('PhotoPicker', () => {
     expect(onChange).toHaveBeenCalledWith(png);
   });
 });
+
+describe('PhotoPicker: zona de subida', () => {
+  it('muestra formatos y tamaño máximo, se activa con el teclado y acepta una foto soltada', () => {
+    const onChange = vi.fn();
+    render(<PhotoPicker kind="claim" file={null} onChange={onChange} />);
+    expect(screen.getByText(/JPG, PNG o WEBP, hasta \d+ MB/)).toBeInTheDocument();
+    const zone = screen.getByRole('button', { name: /Soltá la foto acá/ });
+    const click = vi.spyOn(screen.getByLabelText('Elegir la foto'), 'click');
+    fireEvent.keyDown(zone, { key: 'Enter' });
+    expect(click).toHaveBeenCalledTimes(1);
+    fireEvent.dragOver(zone);
+    expect(zone).toHaveAttribute('data-dragging');
+    const png = new File(['x'], 'a.png', { type: 'image/png' });
+    fireEvent.drop(zone, { dataTransfer: { files: [png] } });
+    expect(zone).not.toHaveAttribute('data-dragging');
+    expect(onChange).toHaveBeenCalledWith(png);
+  });
+});

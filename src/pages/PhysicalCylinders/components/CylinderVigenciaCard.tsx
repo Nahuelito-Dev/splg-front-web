@@ -38,7 +38,7 @@ export const CylinderVigenciaCard = ({ cylinderId, retired }: { cylinderId: stri
       ) : (
         <>
           <div className="flex flex-wrap items-center gap-3">
-            <Badge label={labelOf(CYLINDER_VIGENCIA, data.status)} />
+            <Badge label={labelOf(CYLINDER_VIGENCIA, data.status)} variant="critical" />
             <span className="text-sm text-ink">
               {daysLabel(data.status, data.daysRemaining)}
               {data.expiresAt ? ` · ${formatArgentinaDay(data.expiresAt)}` : ''}
@@ -62,7 +62,7 @@ export const CylinderVigenciaCard = ({ cylinderId, retired }: { cylinderId: stri
             <ul className="divide-y divide-outline">
               {data.inspections.map((inspection) => (
                 <li key={inspection.inspectionId} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2.5">
-                  <Badge label={labelOf(INSPECTION_RESULT, inspection.result)} />
+                  <Badge label={labelOf(INSPECTION_RESULT, inspection.result)} variant="critical" />
                   <span className="text-sm text-ink">{formatArgentinaDay(inspection.inspectedAt)}</span>
                   <span className="text-sm text-muted">
                     {inspection.nextDueAt

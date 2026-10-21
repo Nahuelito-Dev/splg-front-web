@@ -23,6 +23,7 @@ export * from './Modal';
 export * from './NotificationsDrawer';
 export * from './PageCover';
 export * from './PageHeader';
+export * from './DropZone';
 export * from './PhotoPicker';
 export * from './PhotoThumb';
 export * from './ProfileTabs';

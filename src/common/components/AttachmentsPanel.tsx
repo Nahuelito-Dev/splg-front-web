@@ -1,6 +1,6 @@
-import { useRef, useState, type ChangeEvent } from 'react';
-import { Download, Eye, Trash2, Upload } from 'lucide-react';
-import { Button, EmptyState, IconButton, Input, LoadingState } from './ui';
+import { useState } from 'react';
+import { Download, Eye, Trash2 } from 'lucide-react';
+import { Button, DropZone, EmptyState, IconButton, Input, LoadingState } from './ui';
 import { fleetAttachmentIcon, formatAttachmentSize } from '../../pages/Fleet/components/fleetAttachmentIcon';
 import type { AttachmentOwnerType } from '../../services/api/types';
 import {
@@ -9,7 +9,7 @@ import {
   useDeleteAttachment,
   useUploadAttachment,
 } from '../../services/queries/attachments';
-import { ATTACHMENT_ALLOWED_TYPES, attachmentFileError } from '../../utils/attachments';
+import { ATTACHMENT_ALLOWED_TYPES, ATTACHMENT_LIMITS_TEXT, attachmentFileError } from '../../utils/attachments';
 import { openFileSource, saveFileSource } from '../../utils/fileSource';
 import { formatDateTime } from '../../utils/format';
 import { confirm, notify } from '../../utils/notifications';
@@ -39,7 +39,6 @@ export const AttachmentsPanel = ({
   hint = 'DNI, licencia, contrato…',
   blockedReason,
 }: Props) => {
-  const fileInput = useRef<HTMLInputElement>(null);
   const [label, setLabel] = useState('');
   const [pendingId, setPendingId] = useState<string | null>(null);
   const { data: attachments = [], isPending, error, refetch } = useAttachments(ownerType, ownerId);
@@ -47,10 +46,7 @@ export const AttachmentsPanel = ({
   const remove = useDeleteAttachment(ownerType, ownerId);
   const fileSource = useAttachmentFile();
 
-  const handleFile = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = '';
-    if (!file) return;
+  const handleFile = (file: File) => {
     const invalid = attachmentFileError(file);
     if (invalid) {
       notify.error(new Error(invalid));
@@ -109,26 +105,20 @@ export const AttachmentsPanel = ({
               onChange={(e) => setLabel(e.target.value)}
               className="w-48"
             />
-            <input
-              ref={fileInput}
-              type="file"
-              accept={ATTACHMENT_ALLOWED_TYPES.join(',')}
-              className="hidden"
-              aria-label="Elegir el archivo a adjuntar"
-              onChange={handleFile}
-            />
-            <Button
-              variant="secondary"
-              icon={<Upload />}
-              loading={upload.isPending}
-              blockedReason={blockedReason}
-              onClick={() => fileInput.current?.click()}
-            >
-              Adjuntar archivo
-            </Button>
           </div>
         )}
       </div>
+      {canWrite && (
+        <DropZone
+          inputLabel="Elegir el archivo a adjuntar"
+          accept={ATTACHMENT_ALLOWED_TYPES}
+          onFile={handleFile}
+          onReject={(message) => notify.error(new Error(message))}
+          hint={ATTACHMENT_LIMITS_TEXT}
+          loading={upload.isPending}
+          blockedReason={blockedReason}
+        />
+      )}
       {isPending ? (
         <LoadingState label="Cargando adjuntos…" />
       ) : error ? (

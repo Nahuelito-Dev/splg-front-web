@@ -53,7 +53,7 @@ export const ExpiringCylindersTable = ({ rows, loading, empty, onView }: Props) 
         headerName: 'Vigencia',
         width: 190,
         sortable: false,
-        renderCell: ({ row }) => <Badge label={labelOf(CYLINDER_VIGENCIA, row.status)} />,
+        renderCell: ({ row }) => <Badge label={labelOf(CYLINDER_VIGENCIA, row.status)} variant="critical" />,
       },
       {
         field: 'actions',

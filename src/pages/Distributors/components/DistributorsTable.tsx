@@ -60,7 +60,7 @@ export const DistributorsTable = ({
         field: 'status',
         headerName: 'Estado',
         width: 130,
-        renderCell: ({ row }) => <Badge label={labelOf(DISTRIBUTOR_STATUS, row.status)} />,
+        renderCell: ({ row }) => <Badge label={labelOf(DISTRIBUTOR_STATUS, row.status)} variant="critical" />,
       },
       {
         field: 'actions',

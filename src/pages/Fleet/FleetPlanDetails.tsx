@@ -108,7 +108,10 @@ export const FleetPlanDetails = () => {
               items={[
                 { label: 'Vencimiento', value: intervalText(plan), wide: true },
                 { label: 'Aviso previo', value: `${plan.leadTimeDays} días` },
-                { label: 'Criticidad', value: <Badge label={labelOf(FLEET_TASK_CRITICALITY, plan.criticality)} /> },
+                {
+                  label: 'Criticidad',
+                  value: <Badge label={labelOf(FLEET_TASK_CRITICALITY, plan.criticality)} variant="critical" />,
+                },
                 { label: 'Tipo de vehículo', value: plan.carType ?? 'Todos' },
                 { label: 'ID del plan', value: plan.planId, mono: true, wide: true },
               ]}

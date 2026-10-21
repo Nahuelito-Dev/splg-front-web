@@ -44,7 +44,7 @@ export const EmployeeDocumentCard = ({ plan, task, canWrite, blockedReason, load
           <p className="mt-0.5 text-xs text-muted">{labelOf(FLEET_TASK_CRITICALITY, plan.criticality).text}</p>
         </div>
         {task?.expirationStatus ? (
-          <Badge label={labelOf(FLEET_EXPIRATION_STATUS, task.expirationStatus)} />
+          <Badge label={labelOf(FLEET_EXPIRATION_STATUS, task.expirationStatus)} variant="critical" />
         ) : (
           <Badge label={{ text: 'Falta cargar', tone: 'neutral' }} />
         )}

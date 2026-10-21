@@ -96,7 +96,7 @@ export const FleetDocuments = ({ subject, ownerId, carType, canWrite, writeHint 
             </span>
             {row.expirationStatus && (
               <span className="mt-0.5 block">
-                <Badge label={labelOf(FLEET_EXPIRATION_STATUS, row.expirationStatus)} />
+                <Badge label={labelOf(FLEET_EXPIRATION_STATUS, row.expirationStatus)} variant="critical" />
               </span>
             )}
           </div>
@@ -106,7 +106,7 @@ export const FleetDocuments = ({ subject, ownerId, carType, canWrite, writeHint 
         field: 'status',
         headerName: 'Estado',
         width: 130,
-        renderCell: ({ row }) => <Badge label={labelOf(FLEET_TASK_STATUS, row.status)} />,
+        renderCell: ({ row }) => <Badge label={labelOf(FLEET_TASK_STATUS, row.status)} variant="critical" />,
       },
       {
         field: 'actions',
