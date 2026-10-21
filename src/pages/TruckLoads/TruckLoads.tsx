@@ -8,13 +8,15 @@ import {
   Card,
   EmptyState,
   ErrorState,
-  FilterChips,
   IdentityCell,
-  Input,
   PageHeader,
   ResponsiveTable,
   RowActions,
   Select,
+  PageContainer,
+  TableToolbar,
+  DayFilter,
+  CardHeader,
 } from '../../common/components/ui';
 import { FROM_LIST_STATE, usePermissions, useClampPage, useUrlPagedParams } from '../../hooks';
 import type { TruckLoadSummary } from '../../services/api/types';
@@ -111,7 +113,7 @@ export const TruckLoads = () => {
   useClampPage(pagination, data?.total, setPagination);
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Cargas del camión"
         description="Cada jornada: se abre la carga, sale el camión, se entrega, vuelve y se rinde."
@@ -122,39 +124,38 @@ export const TruckLoads = () => {
         }
       />
       <Card className="mb-6">
-        <div className="grid grid-cols-1 gap-3 border-b border-outline p-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Input label="Día" type="date" value={filters.date} onChange={(e) => change({ date: e.target.value })} />
-          <Select
-            label="Camión"
-            options={[{ value: '', label: 'Todos los camiones' }, ...cars.options]}
-            hint={cars.failed ? 'No se pudieron cargar los camiones' : undefined}
-            value={filters.car}
-            onChange={(e) => change({ car: e.target.value })}
-          />
-          <Select
-            label="Chofer"
-            options={[{ value: '', label: 'Todos los choferes' }, ...drivers.options]}
-            hint={drivers.failed ? 'No se pudieron cargar los choferes' : undefined}
-            value={filters.driver}
-            onChange={(e) => change({ driver: e.target.value })}
-          />
-          <Select
-            label="Estado"
-            options={STATUS_OPTIONS}
-            value={filters.status}
-            onChange={(e) => change({ status: e.target.value })}
-          />
-        </div>
-        {chips.length > 0 && (
-          <div className="border-b border-outline px-4 py-3">
-            <FilterChips
-              items={chips}
-              resultCount={data?.total}
-              onRemove={(key) => change({ [key]: '' })}
-              onClearAll={() => change({ date: '', car: '', driver: '', status: '' })}
-            />
-          </div>
-        )}
+        <TableToolbar
+          filters={
+            <>
+              <DayFilter label="Día" value={filters.date} onChange={(day) => change({ date: day })} />
+              <Select
+                label="Camión"
+                options={[{ value: '', label: 'Todos los camiones' }, ...cars.options]}
+                hint={cars.failed ? 'No se pudieron cargar los camiones' : undefined}
+                value={filters.car}
+                onChange={(e) => change({ car: e.target.value })}
+              />
+              <Select
+                label="Chofer"
+                options={[{ value: '', label: 'Todos los choferes' }, ...drivers.options]}
+                hint={drivers.failed ? 'No se pudieron cargar los choferes' : undefined}
+                value={filters.driver}
+                onChange={(e) => change({ driver: e.target.value })}
+              />
+              <Select
+                label="Estado"
+                options={STATUS_OPTIONS}
+                value={filters.status}
+                onChange={(e) => change({ status: e.target.value })}
+              />
+            </>
+          }
+          chips={chips}
+          onRemoveChip={(key) => change({ [key]: '' })}
+          onClearChips={() => change({ date: '', car: '', driver: '', status: '' })}
+          resultCount={data?.total}
+          noun={['carga', 'cargas']}
+        />
         {error ? (
           <ErrorState error={error} resource="Las cargas" onRetry={() => void refetch()} />
         ) : (
@@ -198,7 +199,7 @@ export const TruckLoads = () => {
       </Card>
       <Card>
         <div className="grid grid-cols-1 items-end gap-3 border-b border-outline p-4 sm:grid-cols-[1fr_2fr]">
-          <h2 className="text-sm font-semibold text-ink sm:self-center">Stock actual del camión</h2>
+          <CardHeader title="Stock actual del camión" className="sm:self-center" />
           <Select
             label="Camión"
             options={[{ value: '', label: 'Elegí un camión' }, ...cars.options]}
@@ -213,6 +214,6 @@ export const TruckLoads = () => {
         onClose={() => setOpening(false)}
         onCreated={(load) => navigate(`/truck-loads/${load.loadId}`)}
       />
-    </div>
+    </PageContainer>
   );
 };

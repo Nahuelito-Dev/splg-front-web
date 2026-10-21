@@ -7,15 +7,16 @@ import {
   Card,
   Checkbox,
   EmptyState,
-  ExportCsvButton,
   ErrorState,
   IdentityCell,
-  Input,
   KpiCard,
   PageHeader,
   ResponsiveTable,
   RowActions,
   Select,
+  PageContainer,
+  TableToolbar,
+  DateRangeFilter,
 } from '../../common/components/ui';
 import { useClampPage, usePermissions, useUrlPagedParams } from '../../hooks';
 import type { FuelLoad } from '../../services/api/types';
@@ -133,7 +134,7 @@ export const FuelLoads = () => {
   ];
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Combustible"
         description="Las cargas de la flota: litros, importe y kilometraje. De acá salen el consumo y el costo por vehículo."
@@ -161,36 +162,26 @@ export const FuelLoads = () => {
         />
       </div>
       <Card>
-        <div className="grid grid-cols-1 items-end gap-3 border-b border-outline p-4 sm:grid-cols-[2fr_1fr_1fr_auto]">
-          <Select
-            label="Vehículo"
-            options={carOptions}
-            value={filters.car}
-            onChange={(e) => setFilters({ car: e.target.value })}
-          />
-          <Input
-            label="Desde"
-            type="date"
-            value={filters.from}
-            onChange={(e) => setFilters({ from: e.target.value })}
-          />
-          <Input
-            label="Hasta"
-            type="date"
-            value={filters.to}
-            error={rangeInvalid ? 'Es anterior al inicio' : undefined}
-            onChange={(e) => setFilters({ to: e.target.value })}
-          />
-          <Checkbox
-            label="Sólo anómalas"
-            checked={filters.anomaly === '1'}
-            onChange={(e) => setFilters({ anomaly: e.target.checked ? '1' : '' })}
-          />
-        </div>
-        <div className="flex justify-end border-b border-outline px-4 py-2">
-          <ExportCsvButton
-            filename="combustible"
-            headers={[
+        <TableToolbar
+          filters={
+            <>
+              <Select
+                label="Vehículo"
+                options={carOptions}
+                value={filters.car}
+                onChange={(e) => setFilters({ car: e.target.value })}
+              />
+              <DateRangeFilter from={filters.from} to={filters.to} onChange={(range) => setFilters({ ...range })} />
+              <Checkbox
+                label="Sólo anómalas"
+                checked={filters.anomaly === '1'}
+                onChange={(e) => setFilters({ anomaly: e.target.checked ? '1' : '' })}
+              />
+            </>
+          }
+          csv={{
+            filename: 'combustible',
+            headers: [
               'Fecha',
               'Vehículo',
               'Chofer',
@@ -200,8 +191,8 @@ export const FuelLoads = () => {
               'Km',
               'Tanque lleno',
               'Consumo anómalo',
-            ]}
-            rows={(data?.data ?? []).map((row) => [
+            ],
+            rows: (data?.data ?? []).map((row) => [
               csvDateTime(row.loadedAt),
               row.carPatent ?? '',
               row.employeeName ?? '',
@@ -211,9 +202,16 @@ export const FuelLoads = () => {
               row.odometerKm,
               row.isFullTank ? 'Sí' : 'No',
               row.anomaly ? 'Sí' : 'No',
-            ])}
-          />
-        </div>
+            ]),
+          }}
+          noun={['carga', 'cargas']}
+        >
+          {rangeInvalid && (
+            <p role="alert" className="text-xs text-danger">
+              {'Es anterior al inicio'}
+            </p>
+          )}
+        </TableToolbar>
         {error ? (
           <ErrorState error={error} resource="Las cargas de combustible" onRetry={() => void refetch()} />
         ) : (
@@ -276,6 +274,6 @@ export const FuelLoads = () => {
         load={editing}
       />
       <FuelLoadDrawer loadId={viewing} onClose={() => setViewing(null)} />
-    </div>
+    </PageContainer>
   );
 };

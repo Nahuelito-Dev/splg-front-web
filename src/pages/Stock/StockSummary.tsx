@@ -12,6 +12,8 @@ import {
   PageHeader,
   ResponsiveTable,
   Skeleton,
+  PageContainer,
+  CardHeader,
 } from '../../common/components/ui';
 import { usePermissions } from '../../hooks';
 import type { StockSummary as StockSummaryRow } from '../../services/api/types';
@@ -91,7 +93,7 @@ export const StockSummary = () => {
   const kpi = (value: number) => (summary.data ? formatNumber(value) : '—');
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Resumen de stock"
         description="Las garrafas que hay físicamente en galpones y camiones, y cuántas se pueden vender."
@@ -143,7 +145,7 @@ export const StockSummary = () => {
 
       <Card className="mb-6">
         <div className="border-b border-outline px-4 py-3">
-          <h2 className="text-sm font-semibold text-ink">Por tipo de garrafa</h2>
+          <CardHeader title="Por tipo de garrafa" className="" />
           <p className="text-xs text-muted">En galpones y camiones: llenas · vacías · defectuosas.</p>
         </div>
         {summary.isError ? (
@@ -189,7 +191,7 @@ export const StockSummary = () => {
       </Card>
 
       <Card>
-        <h2 className="border-b border-outline px-4 py-3 text-sm font-semibold text-ink">Por galpón y por camión</h2>
+        <CardHeader title="Por galpón y por camión" className="border-b border-outline px-4 py-3" />
         {balances.isError ? (
           <ErrorState error={balances.error} resource="Los saldos" onRetry={() => void balances.refetch()} />
         ) : balances.isPending ? (
@@ -225,6 +227,6 @@ export const StockSummary = () => {
           />
         )}
       </Card>
-    </div>
+    </PageContainer>
   );
 };

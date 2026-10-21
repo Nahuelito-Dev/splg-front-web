@@ -1,5 +1,13 @@
 import { useNavigate } from 'react-router-dom';
-import { Card, EmptyState, ErrorState, ListSkeleton, PageHeader, Select } from '../../common/components/ui';
+import {
+  Card,
+  EmptyState,
+  ErrorState,
+  ListSkeleton,
+  PageHeader,
+  Select,
+  PageContainer,
+} from '../../common/components/ui';
 import { FROM_LIST_STATE, useUrlParams } from '../../hooks';
 import type { CylinderVencimiento } from '../../services/api/types';
 import { useExpiringCylinders } from '../../services/queries/physicalCylinders';
@@ -50,7 +58,7 @@ export const CylinderExpirations = () => {
     navigate(`/physical-cylinders/${cylinder.cylinderId}`, { state: FROM_LIST_STATE });
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Vencimientos de envases"
         description="La revisión periódica de cada garrafa: los vencidos no se pueden despachar."
@@ -99,6 +107,6 @@ export const CylinderExpirations = () => {
           />
         </>
       )}
-    </div>
+    </PageContainer>
   );
 };

@@ -7,12 +7,13 @@ import {
   DateRangePicker,
   EmptyState,
   ErrorState,
-  ExportCsvButton,
   KpiCard,
   IdentityCell,
   PageHeader,
   ResponsiveTable,
   RowActions,
+  PageContainer,
+  TableToolbar,
 } from '../../common/components/ui';
 import type { FleetCostSummary } from '../../services/api/types';
 import { useFleetCosts } from '../../services/queries/fleetExpense';
@@ -86,7 +87,7 @@ export const FleetCosts = () => {
   ];
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Costos de la flota"
         description="Qué cuesta cada vehículo en el período: de mayor a menor costo por km, para ver cuáles conviene revisar."
@@ -128,19 +129,20 @@ export const FleetCosts = () => {
         />
       </div>
       <Card>
-        <div className="flex justify-end border-b border-outline px-4 py-2">
-          <ExportCsvButton
-            filename="costos-de-flota"
-            headers={['Vehículo', ...COST_RUBROS.map(({ label }) => label), 'Total', 'Km', '$/km']}
-            rows={(data ?? []).map((row) => [
+        <TableToolbar
+          csv={{
+            filename: 'costos-de-flota',
+            headers: ['Vehículo', ...COST_RUBROS.map(({ label }) => label), 'Total', 'Km', '$/km'],
+            rows: (data ?? []).map((row) => [
               row.carPatent ?? '',
               ...COST_RUBROS.map(({ key }) => row[key]),
               row.total,
               row.km,
               row.costPerKm ?? '',
-            ])}
-          />
-        </div>
+            ]),
+          }}
+          noun={['vehículo', 'vehículos']}
+        />
         {error ? (
           <ErrorState error={error} resource="Los costos" onRetry={() => void refetch()} />
         ) : (
@@ -175,6 +177,6 @@ export const FleetCosts = () => {
           />
         )}
       </Card>
-    </div>
+    </PageContainer>
   );
 };

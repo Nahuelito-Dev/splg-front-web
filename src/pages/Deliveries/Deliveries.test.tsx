@@ -89,7 +89,8 @@ describe('Deliveries: resumen, selección y exportación', () => {
       );
     renderIt();
     expect(tableProps.current.selection).toBeDefined();
-    expect(screen.getByRole('button', { name: 'Exportar CSV' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Más' }));
+    expect(screen.getByRole('menuitem', { name: 'Exportar CSV' })).toHaveAttribute('aria-disabled', 'true');
     cleanup();
     permissions.canOperate = false;
     renderIt();

@@ -10,6 +10,7 @@ import {
   IdentityCell,
   PageHeader,
   ResponsiveTable,
+  PageContainer,
 } from '../../common/components/ui';
 import { usePermissions, useClampPage, useUrlPagedParams } from '../../hooks';
 import { useBatchReversed, useStockMovements } from '../../services/queries/stock';
@@ -103,7 +104,7 @@ export const Transfers = () => {
   useClampPage(pagination, transfers.data?.total, setPagination);
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Transferencias"
         description="Movimientos de garrafas entre galpones. Cargar un camión se hace desde la carga del día."
@@ -144,6 +145,6 @@ export const Transfers = () => {
       </Card>
       <TransferFormModal open={creating} onClose={() => setCreating(false)} />
       <ReverseBatchModal batchId={reversing} onClose={() => setReversing(null)} />
-    </div>
+    </PageContainer>
   );
 };

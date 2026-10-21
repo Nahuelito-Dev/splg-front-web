@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Badge, Button, Input } from '../../../common/components/ui';
+import { Badge, Button, Input, CardHeader } from '../../../common/components/ui';
 import { useCheckCoverage } from '../../../services/queries/coverageZones';
 import { formatCurrency } from '../../../utils/format';
 import { notify } from '../../../utils/notifications';
@@ -62,7 +62,7 @@ export const CoverageCheckPanel = ({ pickedPoint, isPicking, onStartPicking, onS
   return (
     <div>
       <div className="mb-3 flex items-center justify-between gap-2">
-        <h3 className="font-semibold text-ink">Probar un punto</h3>
+        <CardHeader title="Probar un punto" as="h3" className="" />
         <Button type="button" variant="secondary" size="sm" onClick={isPicking ? onStopPicking : onStartPicking}>
           {isPicking ? 'Cancelar' : 'Elegir en el mapa'}
         </Button>

@@ -10,6 +10,8 @@ import {
   ErrorState,
   PageHeader,
   ResponsiveTable,
+  PageContainer,
+  CardHeader,
 } from '../../common/components/ui';
 import { useBackToList, usePermissions } from '../../hooks';
 import type { StockAdjustmentItem } from '../../services/api/types';
@@ -45,7 +47,7 @@ export const AdjustmentDetails = () => {
   useCrumbLeaf(adjustment ? `Ajuste N° ${adjustment.number}` : null, goBack);
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title={adjustment ? `Ajuste N° ${adjustment.number}` : 'Ajuste de stock'}
         badges={adjustment && <Badge label={labelOf(ADJUSTMENT_REASON, adjustment.reason)} />}
@@ -68,7 +70,7 @@ export const AdjustmentDetails = () => {
           </Card>
           <div className="min-w-0 space-y-6 lg:col-span-2">
             <Card>
-              <h2 className="border-b border-outline px-4 py-3 text-sm font-semibold text-ink">Qué cambió</h2>
+              <CardHeader title="Qué cambió" className="border-b border-outline px-4 py-3" />
               <ResponsiveTable
                 label="renglones"
                 rows={adjustment.items}
@@ -97,6 +99,6 @@ export const AdjustmentDetails = () => {
           </div>
         </div>
       )}
-    </div>
+    </PageContainer>
   );
 };

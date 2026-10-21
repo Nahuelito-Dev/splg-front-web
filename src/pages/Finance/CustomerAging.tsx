@@ -11,6 +11,7 @@ import {
   PageHeader,
   ResponsiveTable,
   RowActions,
+  PageContainer,
 } from '../../common/components/ui';
 import { useBackToList } from '../../hooks';
 import type { AgingAccountRow } from '../../services/api/types';
@@ -61,7 +62,7 @@ export const CustomerAging = () => {
   ];
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Antigüedad de la deuda"
         description="La deuda abierta repartida por la antigüedad de cada comprobante."
@@ -104,6 +105,6 @@ export const CustomerAging = () => {
           </Card>
         </div>
       )}
-    </div>
+    </PageContainer>
   );
 };

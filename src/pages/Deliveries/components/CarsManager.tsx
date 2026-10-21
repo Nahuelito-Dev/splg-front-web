@@ -5,7 +5,7 @@ import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import TwoWheelerIcon from '@mui/icons-material/TwoWheeler';
-import { Button, Card, EmptyState, IconButton, LoadingState } from '../../../common/components/ui';
+import { Button, Card, EmptyState, IconButton, LoadingState, CardHeader } from '../../../common/components/ui';
 import { CarFormModal } from '../../Cars/components/CarFormModal';
 import type { Car } from '../../../services/api/types';
 import { useCarsByUser, useDeleteCar } from '../../../services/queries/cars';
@@ -43,7 +43,7 @@ export const CarsManager = ({ userId }: { userId: string }) => {
     <Card className="p-6">
       <div className="mb-4 flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-base font-semibold text-ink">Vehículos asignados</h2>
+          <CardHeader title="Vehículos asignados" className="" />
           <p className="text-sm text-muted">La flota operativa de este chofer.</p>
         </div>
         <Button size="sm" icon={<AddCircleOutlineIcon />} onClick={() => setForm({ open: true, car: null })}>

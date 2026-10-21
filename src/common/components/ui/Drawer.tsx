@@ -1,7 +1,6 @@
-import { useId, useSyncExternalStore, type ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
 import { Drawer as MuiDrawer } from '@mui/material';
 import { X } from 'lucide-react';
-import { isConfirmOpen, subscribeConfirmOpen } from '../../../utils/notifications';
 import { IconButton } from './IconButton';
 
 interface Props {
@@ -24,19 +23,16 @@ const WIDTHS = { md: 'min(100%, 480px)', lg: 'min(100%, 640px)' } as const;
  */
 export const Drawer = ({ open, onClose, title, description, children, footer, size = 'md' }: Props) => {
   const titleId = useId();
-  // La confirmación (SweetAlert) vive fuera del panel: mientras está abierta, no le roba el foco.
-  const confirming = useSyncExternalStore(subscribeConfirmOpen, isConfirmOpen);
   return (
     <MuiDrawer
       open={open}
       onClose={onClose}
       anchor="right"
-      ModalProps={{ disableEnforceFocus: confirming }}
       PaperProps={{
         role: 'dialog',
         'aria-modal': true,
         'aria-labelledby': titleId,
-        sx: { width: WIDTHS[size], border: 0 },
+        sx: { width: WIDTHS[size] },
       }}
     >
       <div className="flex h-full flex-col bg-surface text-ink">

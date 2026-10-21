@@ -1,6 +1,6 @@
 import { useRef, useState, type ChangeEvent, type DragEvent } from 'react';
 import { Download, Eye, LayoutGrid, List, Paperclip, Trash2, Upload } from 'lucide-react';
-import { Button, EmptyState, IconButton, LoadingState, UserRefLink } from '../../../common/components/ui';
+import { Button, EmptyState, IconButton, LoadingState, UserRefLink, CardHeader } from '../../../common/components/ui';
 import type { FleetTaskAttachment } from '../../../services/api/types';
 import {
   useDeleteFleetTaskAttachment,
@@ -152,7 +152,7 @@ export const FleetTaskAttachments = ({ taskId, canWrite }: Props) => {
       onDrop={handleDrop}
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-sm font-semibold text-ink">Adjuntos</h3>
+        <CardHeader title="Adjuntos" as="h3" className="" />
         <div className="flex items-center gap-1.5">
           <div className="flex items-center gap-0.5 rounded-lg border border-outline p-0.5">
             <IconButton

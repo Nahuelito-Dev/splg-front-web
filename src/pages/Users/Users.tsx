@@ -6,14 +6,14 @@ import {
   Button,
   Card,
   ErrorState,
-  FilterChips,
   ListSkeleton,
   PageHeader,
-  SearchInput,
   Tabs,
   tabPanelProps,
   type FilterChip,
   type TabItem,
+  PageContainer,
+  TableToolbar,
 } from '../../common/components/ui';
 import { useDebounce, usePermissions, useUrlParams } from '../../hooks';
 import type { User } from '../../services/api/types';
@@ -109,7 +109,7 @@ export const Users = () => {
   };
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Usuarios"
         description="Todos los usuarios de la plataforma: clientes, choferes y administradores."
@@ -129,28 +129,21 @@ export const Users = () => {
           <>
             <Tabs items={tabs} value={role} onChange={handleRole} label="Filtrar usuarios por rol" idPrefix={TABS_ID} />
             <div {...tabPanelProps(TABS_ID, role)}>
-              <div className="flex flex-col gap-3 border-b border-outline p-4">
-                <SearchInput
-                  label="Buscar usuarios"
-                  placeholder="Nombre, email o teléfono"
-                  value={search}
-                  onChange={(e) => handleSearch(e.target.value)}
-                />
-                {chips.length > 0 ? (
-                  <FilterChips
-                    items={chips}
-                    onRemove={removeChip}
-                    onClearAll={() => {
-                      setFilters({ role: 'all', q: '', page: '1' });
-                    }}
-                    resultCount={data?.total}
-                  />
-                ) : (
-                  <p className="text-sm text-muted" aria-live="polite">
-                    {data ? `${data.total} ${data.total === 1 ? 'usuario' : 'usuarios'}` : ''}
-                  </p>
-                )}
-              </div>
+              <TableToolbar
+                search={{
+                  label: 'Buscar usuarios',
+                  placeholder: 'Nombre, email o teléfono',
+                  value: search,
+                  onChange: (value) => handleSearch(value),
+                }}
+                chips={chips}
+                onRemoveChip={removeChip}
+                onClearChips={() => {
+                  setFilters({ role: 'all', q: '', page: '1' });
+                }}
+                resultCount={data?.total}
+                noun={['usuario', 'usuarios']}
+              />
               <UsersTable
                 rows={data?.rows ?? []}
                 total={data?.total ?? 0}
@@ -175,6 +168,6 @@ export const Users = () => {
         onClose={() => setFindingByPhone(false)}
         onFound={(user) => navigate(`/users/details/${user.user_id}`)}
       />
-    </div>
+    </PageContainer>
   );
 };

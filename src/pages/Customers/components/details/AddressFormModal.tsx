@@ -4,13 +4,14 @@ import { useForm } from 'react-hook-form';
 import type { LatLngTuple } from 'leaflet';
 import {
   Button,
-  Checkbox,
   ErrorState,
-  Input,
+  Form,
+  FormCheckbox,
+  FormInput,
+  FormSelect,
+  FormTextArea,
   LoadingState,
   Modal,
-  Select,
-  TextArea,
 } from '../../../../common/components/ui';
 import type {
   CreateUserAddressBody,
@@ -66,14 +67,13 @@ export const AddressFormModal = ({ open, onClose, userId, address, isFirstAddres
   const source = isEditing ? (fresh.data ?? null) : null;
   const waitingForAddress = isEditing && !fresh.data;
 
+  const methods = useForm<AddressFormValues>({ resolver: zodResolver(addressSchema) });
   const {
-    register,
-    handleSubmit,
     reset,
     watch,
     setValue,
     formState: { errors, isDirty },
-  } = useForm<AddressFormValues>({ resolver: zodResolver(addressSchema) });
+  } = methods;
 
   useEffect(() => {
     if (open && !waitingForAddress) reset(defaultsFor(source, isFirstAddress));
@@ -84,7 +84,7 @@ export const AddressFormModal = ({ open, onClose, userId, address, isFirstAddres
   const point: LatLngTuple | null =
     Number.isFinite(latitude) && Number.isFinite(longitude) ? [latitude, longitude] : null;
 
-  const onSubmit = handleSubmit((values) => {
+  const onSubmit = (values: AddressFormValues) => {
     const base = {
       street: values.street.trim(),
       city: values.city.trim(),
@@ -132,7 +132,7 @@ export const AddressFormModal = ({ open, onClose, userId, address, isFirstAddres
       },
       onError: notify.error,
     });
-  });
+  };
 
   return (
     <Modal
@@ -161,7 +161,7 @@ export const AddressFormModal = ({ open, onClose, userId, address, isFirstAddres
         <ErrorState error={fresh.error} resource="La dirección" onRetry={() => void fresh.refetch()} />
       )}
       {!waitingForAddress && (
-        <form id="address-form" onSubmit={(e) => void onSubmit(e)} className="grid gap-4" noValidate>
+        <Form methods={methods} onSubmit={onSubmit} id="address-form" className="grid gap-4">
           <AddressLocationPicker
             value={point}
             onChange={([lat, lng]) => {
@@ -177,34 +177,31 @@ export const AddressFormModal = ({ open, onClose, userId, address, isFirstAddres
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <Input label="Calle y número" required error={errors.street?.message} {...register('street')} />
+              <FormInput label="Calle y número" required name="street" />
             </div>
-            <Input label="Ciudad" required error={errors.city?.message} {...register('city')} />
-            <Input label="Código postal" error={errors.postalCode?.message} {...register('postalCode')} />
-            <Input label="Piso" error={errors.floor?.message} {...register('floor')} />
-            <Input label="Departamento" error={errors.apartment?.message} {...register('apartment')} />
+            <FormInput label="Ciudad" required name="city" />
+            <FormInput label="Código postal" name="postalCode" />
+            <FormInput label="Piso" name="floor" />
+            <FormInput label="Departamento" name="apartment" />
           </div>
 
-          <Input
+          <FormInput
             label="Dirección formateada"
             hint="Como se le muestra al cliente y al chofer. Opcional."
-            error={errors.formattedAddress?.message}
-            {...register('formattedAddress')}
+            name="formattedAddress"
           />
 
-          <TextArea
+          <FormTextArea
             label="Instrucciones adicionales"
             hint='Por ejemplo: "Portón negro, tocar timbre dos veces".'
-            error={errors.additionalInstructions?.message}
-            {...register('additionalInstructions')}
+            name="additionalInstructions"
           />
 
-          <Select
+          <FormSelect
             label="Precisión de la ubicación"
             hint="El punto se eligió a mano en el mapa: no viene de un geocodificador."
             options={GEOCODE_PRECISION_OPTIONS}
-            error={errors.geocodePrecision?.message}
-            {...register('geocodePrecision')}
+            name="geocodePrecision"
           />
 
           {/*
@@ -213,10 +210,8 @@ export const AddressFormModal = ({ open, onClose, userId, address, isFirstAddres
           (sólo lo hace al borrarla), así que quedaría el cliente sin
           ninguna. Para cambiarla, se marca otra como principal.
         */}
-          {!(source ?? address)?.isDefault && (
-            <Checkbox label="Marcar como dirección principal" {...register('isDefault')} />
-          )}
-        </form>
+          {!(source ?? address)?.isDefault && <FormCheckbox label="Marcar como dirección principal" name="isDefault" />}
+        </Form>
       )}
     </Modal>
   );

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { GridPaginationModel } from '@mui/x-data-grid';
 import { useNavigate } from 'react-router-dom';
-import { Card, ErrorState, PageHeader } from '../../common/components/ui';
+import { Card, ErrorState, PageHeader, PageContainer } from '../../common/components/ui';
 import { usePermissions } from '../../hooks';
 import type { Incident, Order } from '../../services/api/types';
 import { useIncidents } from '../../services/queries/incidents';
@@ -42,7 +42,7 @@ export const UnpaidCollections = () => {
   const pageTotal = (data?.orders ?? []).reduce((acc, order) => acc + Number(order.total_amount), 0);
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Cobros impagos"
         description="Pedidos en efectivo que el chofer informó como no cobrados. Resolvelos como cobrados más tarde o dalos por perdidos."
@@ -86,6 +86,6 @@ export const UnpaidCollections = () => {
         )}
       </Card>
       <ResolveUnpaidModal open={resolving !== null} onClose={() => setResolving(null)} order={resolving} />
-    </div>
+    </PageContainer>
   );
 };

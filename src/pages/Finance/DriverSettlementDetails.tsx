@@ -14,6 +14,8 @@ import {
   KpiCard,
   PageHeader,
   ResponsiveTable,
+  PageContainer,
+  CardHeader,
 } from '../../common/components/ui';
 import { useBackToList, usePermissions } from '../../hooks';
 import type { SettlementCollection, SettlementExpense, SettlementOrder } from '../../services/api/types';
@@ -171,7 +173,7 @@ export const DriverSettlementDetails = () => {
   );
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title={settlement ? `Rendición N° ${settlement.number}` : 'Rendición'}
         eyebrow={
@@ -239,7 +241,7 @@ export const DriverSettlementDetails = () => {
             />
           </Card>
           <Card>
-            <h2 className="border-b border-outline px-5 py-3 text-base font-semibold">Pedidos en efectivo</h2>
+            <CardHeader title="Pedidos en efectivo" className="border-b border-outline px-5 py-3" />
             <ResponsiveTable
               label="pedidos de la rendición"
               rows={settlement.orders}
@@ -257,9 +259,7 @@ export const DriverSettlementDetails = () => {
             />
           </Card>
           <Card>
-            <h2 className="border-b border-outline px-5 py-3 text-base font-semibold">
-              Cobros de cuenta corriente en la calle
-            </h2>
+            <CardHeader title="Cobros de cuenta corriente en la calle" className="border-b border-outline px-5 py-3" />
             <ResponsiveTable
               label="cobros en la calle"
               rows={settlement.collections}
@@ -275,7 +275,7 @@ export const DriverSettlementDetails = () => {
             />
           </Card>
           <Card>
-            <h2 className="border-b border-outline px-5 py-3 text-base font-semibold">Gastos declarados</h2>
+            <CardHeader title="Gastos declarados" className="border-b border-outline px-5 py-3" />
             <ResponsiveTable
               label="gastos de la rendición"
               rows={settlement.expenses}
@@ -294,6 +294,6 @@ export const DriverSettlementDetails = () => {
           <ApproveSettlementModal open={approving} onClose={() => setApproving(false)} settlement={settlement} />
         </div>
       )}
-    </div>
+    </PageContainer>
   );
 };

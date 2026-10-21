@@ -7,14 +7,16 @@ import {
   Badge,
   Button,
   Card,
+  CardHeader,
   DetailList,
   DetailSkeleton,
   EmptyState,
   ErrorState,
-  Input,
   KpiCard,
   PageHeader,
   ResponsiveTable,
+  PageContainer,
+  DateRangeFilter,
 } from '../../common/components/ui';
 import { useBackToList, useClampPage, usePermissions, useUrlPagedParams } from '../../hooks';
 import type { CustomerEntry } from '../../services/api/types';
@@ -108,41 +110,41 @@ export const CustomerAccountDetails = () => {
   useClampPage(pagination, statement.data?.total, setPagination);
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title={account?.businessName ?? 'Cuenta corriente'}
         eyebrow={account ? account.customerName || undefined : undefined}
         badges={account && <Badge label={labelOf(ACCOUNT_STATUS, account.status)} />}
+        secondaryActions={
+          account
+            ? [
+                {
+                  label: 'Modificar',
+                  icon: <Pencil />,
+                  disabled: !canWrite,
+                  title: writeHint,
+                  onClick: () => setEditing(true),
+                },
+                {
+                  label: 'Ajuste',
+                  icon: <Scale />,
+                  disabled: !canWrite || account.status === 'closed',
+                  title: writeHint,
+                  onClick: () => setAdjusting(true),
+                },
+              ]
+            : []
+        }
         actions={
           account && (
-            <>
-              <Button
-                variant="secondary"
-                icon={<Pencil />}
-                disabled={!canWrite}
-                title={writeHint}
-                onClick={() => setEditing(true)}
-              >
-                Modificar
-              </Button>
-              <Button
-                variant="secondary"
-                icon={<Scale />}
-                disabled={!canWrite || account.status === 'closed'}
-                title={writeHint}
-                onClick={() => setAdjusting(true)}
-              >
-                Ajuste
-              </Button>
-              <Button
-                icon={<Banknote />}
-                disabled={!canWrite || account.status === 'closed'}
-                title={writeHint}
-                onClick={() => setPaying(true)}
-              >
-                Registrar pago
-              </Button>
-            </>
+            <Button
+              icon={<Banknote />}
+              disabled={!canWrite || account.status === 'closed'}
+              title={writeHint}
+              onClick={() => setPaying(true)}
+            >
+              Registrar pago
+            </Button>
           )
         }
       />
@@ -180,7 +182,7 @@ export const CustomerAccountDetails = () => {
           </div>
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <Card className="p-5">
-              <h2 className="mb-3 text-base font-semibold">Datos</h2>
+              <CardHeader title="Datos" className="mb-3" />
               <DetailList
                 items={[
                   { label: 'Cliente', value: account.customerName || '—' },
@@ -193,7 +195,7 @@ export const CustomerAccountDetails = () => {
               />
             </Card>
             <Card className="p-5">
-              <h2 className="mb-3 text-base font-semibold">Antigüedad de la deuda</h2>
+              <CardHeader title="Antigüedad de la deuda" className="mb-3" />
               <DetailList
                 items={[
                   { label: '0 a 30 días', value: formatCurrency(account.aging.upTo30Days), mono: true },
@@ -206,19 +208,16 @@ export const CustomerAccountDetails = () => {
             </Card>
           </div>
           <Card>
-            <div className="flex flex-wrap items-end justify-between gap-3 border-b border-outline px-5 py-4">
-              <h2 className="text-base font-semibold">Estado de cuenta</h2>
-              <div className="flex flex-wrap items-end gap-3">
-                <Input label="Desde" type="date" value={from} onChange={(e) => setFilters({ from: e.target.value })} />
-                <Input
-                  label="Hasta"
-                  type="date"
-                  value={to}
-                  onChange={(e) => setFilters({ to: e.target.value })}
-                  error={rangeInvalid ? 'Anterior a la fecha inicial' : undefined}
-                />
-              </div>
-            </div>
+            <CardHeader
+              title="Estado de cuenta"
+              action={<DateRangeFilter from={from} to={to} onChange={(range) => setFilters(range)} />}
+              className="border-b border-outline px-5 py-4"
+            />
+            {rangeInvalid && (
+              <p role="alert" className="border-b border-outline px-5 py-2 text-xs text-danger">
+                Anterior a la fecha inicial
+              </p>
+            )}
             {statement.data && (
               <p className="border-b border-outline px-5 py-2 font-mono text-sm text-muted">
                 Saldo inicial {formatCurrency(statement.data.openingBalance)} · saldo final{' '}
@@ -260,6 +259,6 @@ export const CustomerAccountDetails = () => {
           <CustomerAdjustmentModal open={adjusting} onClose={() => setAdjusting(false)} account={account} />
         </div>
       )}
-    </div>
+    </PageContainer>
   );
 };

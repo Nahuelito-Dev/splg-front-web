@@ -7,6 +7,7 @@ import {
   ErrorState,
   PageHeader,
   PhotoThumb,
+  PageContainer,
 } from '../../common/components/ui';
 import { useAppDispatch, useAppSelector } from '../../hooks';
 import { startLogOut } from '../../store/auth/thunks';
@@ -24,7 +25,7 @@ export const Account = () => {
   const currentEmail = user?.email ?? email ?? '';
 
   return (
-    <div className="mx-auto max-w-3xl p-4 md:p-8">
+    <PageContainer size="sm">
       <PageHeader title="Mi cuenta" description="Tus datos de acceso al panel." />
       {isPending ? (
         <DetailSkeleton />
@@ -56,6 +57,6 @@ export const Account = () => {
           <PasswordResetCard email={currentEmail} />
         </div>
       )}
-    </div>
+    </PageContainer>
   );
 };

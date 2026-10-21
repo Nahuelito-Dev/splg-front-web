@@ -2,7 +2,16 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useCallback, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { RotateCcw } from 'lucide-react';
-import { Button, Card, ErrorState, Input, PageHeader, Select, Skeleton } from '../../common/components/ui';
+import {
+  Button,
+  Card,
+  ErrorState,
+  Input,
+  PageHeader,
+  Select,
+  Skeleton,
+  PageContainer,
+} from '../../common/components/ui';
 import { usePermissions } from '../../hooks';
 import { errorMessage } from '../../services/api/errors';
 import type { ScheduledTasksConfig } from '../../services/api/types';
@@ -172,7 +181,7 @@ export const ScheduledTasksSettings = () => {
   const { needsDistributor, canWrite, writeHint } = usePermissions();
   const { data, isPending, error, refetch } = useScheduledTasksConfig({ enabled: !needsDistributor });
   return (
-    <div className="mx-auto max-w-3xl p-4 md:p-8">
+    <PageContainer size="sm">
       <PageHeader
         title="Tareas programadas"
         description="Cada cuánto el sistema reintenta el despacho, activa o vence reservas y pedidos sin pagar, y avisa de la flota."
@@ -186,6 +195,6 @@ export const ScheduledTasksSettings = () => {
       ) : (
         <ScheduledTasksForm config={data} canWrite={canWrite} writeHint={writeHint} />
       )}
-    </div>
+    </PageContainer>
   );
 };

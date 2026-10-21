@@ -20,6 +20,7 @@ import {
   ProfileTabs,
   type CoverStat,
   type ProfileTabItem,
+  PageContainer,
 } from '../../common/components/ui';
 import { useBackToList, usePermissions, useProfileTab } from '../../hooks';
 import { useCrumbLeaf } from '../../common/components';
@@ -103,43 +104,43 @@ export const UserDetails = () => {
     : [];
 
   return (
-    <div className="mx-auto max-w-5xl p-4 md:p-8">
+    <PageContainer size="md">
       <PageHeader
         title="Ficha del usuario"
+        secondaryActions={
+          user && canManage
+            ? [
+                {
+                  label: user.blocked ? 'Desbloquear' : 'Bloquear',
+                  icon: user.blocked ? <LockOpenOutlinedIcon /> : <BlockIcon />,
+                  disabled: Boolean(blockedReason),
+                  title: blockedReason,
+                  onClick: () => void handleToggleBlock(),
+                },
+                {
+                  label: 'Dar de baja',
+                  icon: <DeleteOutlineIcon />,
+                  tone: 'danger' as const,
+                  disabled: Boolean(blockedReason),
+                  title: blockedReason,
+                  onClick: () => void handleDelete(),
+                },
+              ]
+            : []
+        }
         actions={
           user && (
             <>
               <AuditHistoryLink entity="User" recordId={user.user_id} />
               {canManage && (
-                <>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    icon={<EditOutlinedIcon />}
-                    blockedReason={blockedReason}
-                    onClick={() => setEditing(true)}
-                  >
-                    Editar cuenta
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    icon={user?.blocked ? <LockOpenOutlinedIcon /> : <BlockIcon />}
-                    blockedReason={blockedReason}
-                    onClick={() => void handleToggleBlock()}
-                  >
-                    {user?.blocked ? 'Desbloquear' : 'Bloquear'}
-                  </Button>
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    icon={<DeleteOutlineIcon />}
-                    blockedReason={blockedReason}
-                    onClick={() => void handleDelete()}
-                  >
-                    Dar de baja
-                  </Button>
-                </>
+                <Button
+                  size="sm"
+                  icon={<EditOutlinedIcon />}
+                  blockedReason={blockedReason}
+                  onClick={() => setEditing(true)}
+                >
+                  Editar cuenta
+                </Button>
               )}
             </>
           )
@@ -204,6 +205,6 @@ export const UserDetails = () => {
       )}
 
       <UserEditModal open={editing} onClose={() => setEditing(false)} user={user ?? null} />
-    </div>
+    </PageContainer>
   );
 };

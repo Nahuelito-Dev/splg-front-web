@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AddBusinessIcon from '@mui/icons-material/AddBusiness';
-import { Button, Card, ErrorState, PageHeader, TableSkeleton } from '../../common/components/ui';
+import { Button, Card, ErrorState, PageHeader, TableSkeleton, PageContainer } from '../../common/components/ui';
 import { FROM_LIST_STATE } from '../../hooks';
 import { activeDistributor } from '../../services/api/activeDistributor';
 import type { Distributor } from '../../services/api/types';
@@ -31,7 +31,7 @@ export const Distributors = () => {
   };
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Distribuidoras"
         description="Cada empresa opera aislada: sus choferes, clientes, pedidos y catálogo."
@@ -79,6 +79,6 @@ export const Distributors = () => {
         onClose={() => setForm({ open: false })}
         distributor={form.open ? form.distributor : null}
       />
-    </div>
+    </PageContainer>
   );
 };

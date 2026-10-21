@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, Card, Input } from '../../../common/components/ui';
+import { Button, Card, Input, CardHeader } from '../../../common/components/ui';
 import { getCurrentIdToken, reauthenticateWithPassword } from '../../../firebase/providers';
 import { toApiError } from '../../../services/api/errors';
 import { useChangeEmail } from '../../../services/queries/email';
@@ -73,7 +73,7 @@ export const ChangeEmailForm = ({ currentEmail, onChanged }: Props) => {
 
   return (
     <Card className="p-6">
-      <h2 className="text-base font-semibold text-ink">Correo de acceso</h2>
+      <CardHeader title="Correo de acceso" className="" />
       <p className="mt-1 text-[13px] text-muted">
         Hoy entrás con <span className="font-medium text-ink">{currentEmail}</span>. Al cambiarlo se cierra la sesión.
       </p>

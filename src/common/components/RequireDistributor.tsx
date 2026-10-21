@@ -1,6 +1,6 @@
 import { Outlet } from 'react-router-dom';
 import { usePermissions } from '../../hooks';
-import { EmptyState } from './ui';
+import { EmptyState, PageContainer } from './ui';
 
 /**
  * Ruta que sólo tiene sentido dentro de una distribuidora (stock, compras, cargas): el administrador general sin
@@ -10,12 +10,12 @@ export const RequireDistributor = () => {
   const { needsDistributor } = usePermissions();
   if (needsDistributor) {
     return (
-      <div className="mx-auto max-w-7xl p-4 md:p-8">
+      <PageContainer>
         <EmptyState
           title="Elegí una distribuidora"
           description="Como administrador general, elegí una con «Ver como» para ver su stock, sus compras y sus cargas."
         />
-      </div>
+      </PageContainer>
     );
   }
   return <Outlet />;

@@ -1,4 +1,4 @@
-import { Card, Input, Select, type SelectOption } from '../../../common/components/ui';
+import { DateRangeFilter, Input, Select, type SelectOption } from '../../../common/components/ui';
 import { AUDIT_ENTITY_OPTIONS } from '../../../utils/auditLabels';
 import { dataAuditErrors, RECORD_ID_MAX, type DataAuditFilters } from './dataAuditFilters';
 
@@ -19,7 +19,7 @@ export const DataAuditFiltersBar = ({ value, onChange, actionOptions }: Props) =
   ];
   const errors = dataAuditErrors(value);
   return (
-    <Card className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-6">
+    <>
       <Select
         label="Entidad"
         value={value.entity}
@@ -46,8 +46,7 @@ export const DataAuditFiltersBar = ({ value, onChange, actionOptions }: Props) =
         value={value.userId}
         onChange={(e) => onChange({ userId: e.target.value })}
       />
-      <Input label="Desde" type="date" value={value.from} onChange={(e) => onChange({ from: e.target.value })} />
-      <Input label="Hasta" type="date" value={value.to} onChange={(e) => onChange({ to: e.target.value })} />
-    </Card>
+      <DateRangeFilter from={value.from} to={value.to} onChange={(range) => onChange(range)} />
+    </>
   );
 };

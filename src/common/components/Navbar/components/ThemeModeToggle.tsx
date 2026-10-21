@@ -44,10 +44,9 @@ export const ThemeModeToggle = () => {
         onClose={handleClose}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-        slotProps={{ paper: { className: '!mt-1 !min-w-[190px] !rounded-xl !border !border-outline !shadow-lg' } }}
       >
         {OPTIONS.map(({ value, label, icon: Icon }) => (
-          <MenuItem key={value} onClick={() => handleSelect(value)} className="!gap-2.5 !py-2 !text-[13px] !text-ink">
+          <MenuItem key={value} onClick={() => handleSelect(value)}>
             <ListItemIcon className={cx(mode === value ? 'text-primary' : 'text-ink-2')}>
               <Icon aria-hidden="true" className="h-4 w-4" strokeWidth={1.8} />
             </ListItemIcon>

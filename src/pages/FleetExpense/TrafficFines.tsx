@@ -8,14 +8,15 @@ import {
   EmptyState,
   ErrorState,
   IdentityCell,
-  Input,
   PageHeader,
   ReasonModal,
   ResponsiveTable,
   RowActions,
   Select,
-  ExportCsvButton,
   StatusFilterTabs,
+  PageContainer,
+  TableToolbar,
+  DateRangeFilter,
 } from '../../common/components/ui';
 import { useClampPage, usePermissions, useUrlPagedParams } from '../../hooks';
 import type { TrafficFine } from '../../services/api/types';
@@ -157,7 +158,7 @@ export const TrafficFines = () => {
   ];
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Multas"
         description="Las multas de tránsito de los vehículos. Una pagada sin imputar al chofer cuenta en el costo del vehículo."
@@ -176,32 +177,22 @@ export const TrafficFines = () => {
           label="Filtrar multas por estado"
           idPrefix="traffic-fines"
         >
-          <div className="grid grid-cols-1 items-end gap-3 border-b border-outline p-4 sm:grid-cols-3">
-            <Select
-              label="Vehículo"
-              options={carOptions}
-              value={filters.car}
-              onChange={(e) => setFilters({ car: e.target.value })}
-            />
-            <Input
-              label="Desde"
-              type="date"
-              value={filters.from}
-              onChange={(e) => setFilters({ from: e.target.value })}
-            />
-            <Input
-              label="Hasta"
-              type="date"
-              value={filters.to}
-              error={rangeInvalid ? 'Es anterior al inicio' : undefined}
-              onChange={(e) => setFilters({ to: e.target.value })}
-            />
-          </div>
-          <div className="flex justify-end border-b border-outline px-4 py-2">
-            <ExportCsvButton
-              filename="multas"
-              headers={['Acta', 'Vehículo', 'Chofer', 'Fecha', 'Infracción', 'Importe', 'Vencimiento', 'Estado']}
-              rows={(data?.data ?? []).map((row) => [
+          <TableToolbar
+            filters={
+              <>
+                <Select
+                  label="Vehículo"
+                  options={carOptions}
+                  value={filters.car}
+                  onChange={(e) => setFilters({ car: e.target.value })}
+                />
+                <DateRangeFilter from={filters.from} to={filters.to} onChange={(range) => setFilters({ ...range })} />
+              </>
+            }
+            csv={{
+              filename: 'multas',
+              headers: ['Acta', 'Vehículo', 'Chofer', 'Fecha', 'Infracción', 'Importe', 'Vencimiento', 'Estado'],
+              rows: (data?.data ?? []).map((row) => [
                 asText(row.actNumber),
                 row.carPatent ?? '',
                 row.employeeName ?? '',
@@ -210,9 +201,16 @@ export const TrafficFines = () => {
                 row.amount,
                 row.dueDate ? csvDay(row.dueDate) : '',
                 labelOf(TRAFFIC_FINE_STATUS, row.status).text,
-              ])}
-            />
-          </div>
+              ]),
+            }}
+            noun={['multa', 'multas']}
+          >
+            {rangeInvalid && (
+              <p role="alert" className="text-xs text-danger">
+                {'Es anterior al inicio'}
+              </p>
+            )}
+          </TableToolbar>
           {error ? (
             <ErrorState error={error} resource="Las multas" onRetry={() => void refetch()} />
           ) : (
@@ -294,6 +292,6 @@ export const TrafficFines = () => {
         }
       />
       <TrafficFineDrawer fineId={viewing} onClose={() => setViewing(null)} />
-    </div>
+    </PageContainer>
   );
 };

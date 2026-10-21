@@ -1,7 +1,7 @@
 import type { GridColDef, GridPaginationModel } from '@mui/x-data-grid';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Badge, Card, DataTable, EmptyState, ErrorState, RowActions } from '../../../common/components/ui';
+import { Badge, Card, DataTable, EmptyState, ErrorState, RowActions, CardHeader } from '../../../common/components/ui';
 import type { FleetTask } from '../../../services/api/types';
 import { useFleetTasks } from '../../../services/queries/fleet';
 import { formatDay } from '../../../utils/format';
@@ -60,7 +60,7 @@ export const FleetPlanTasks = ({ planId }: { planId: string }) => {
 
   return (
     <Card>
-      <h2 className="p-6 pb-2 text-base font-semibold text-ink">Tareas del plan</h2>
+      <CardHeader title="Tareas del plan" className="p-6 pb-2" />
       {error ? (
         <div className="p-4">
           <ErrorState error={error} resource="Las tareas" onRetry={() => void refetch()} />

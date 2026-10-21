@@ -12,7 +12,7 @@ describe('rango de fechas de Pedidos', () => {
     expect(isInvertedRange({ from: '2026-09-15', to: '' })).toBe(false);
   });
 
-  it('avisa en «Hasta» cuando queda antes de «Desde»', () => {
+  it('avisa cuando el rango de la URL viene invertido', () => {
     render(
       <OrdersFilters values={{ search: '', payment: '', from: '2026-09-10', to: '2026-09-01' }} onChange={vi.fn()} />,
     );

@@ -1,4 +1,4 @@
-import { Card, EntityPhoto, PageHeader } from '../../common/components/ui';
+import { Card, EntityPhoto, PageHeader, PageContainer } from '../../common/components/ui';
 import { usePermissions } from '../../hooks';
 import { useCurrentDistributor } from '../../services/queries/distributors';
 import { StockControlCard } from './components/StockControlCard';
@@ -9,7 +9,7 @@ export const Configuration = () => {
   const { needsDistributor } = usePermissions();
   const { data: distributor } = useCurrentDistributor(!needsDistributor);
   return (
-    <div className="mx-auto max-w-5xl p-4 md:p-8">
+    <PageContainer size="md">
       <PageHeader title="Configuración" description="Parámetros operativos de la distribuidora." />
       <div className="space-y-6">
         {distributor && (
@@ -30,6 +30,6 @@ export const Configuration = () => {
         <TimeSlotsManager />
         <SlotAvailabilityPanel />
       </div>
-    </div>
+    </PageContainer>
   );
 };

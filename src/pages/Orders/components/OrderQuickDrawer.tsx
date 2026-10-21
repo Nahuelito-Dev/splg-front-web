@@ -1,5 +1,5 @@
 import { UserRoundCog } from 'lucide-react';
-import { Badge, Button, DetailList, RecordDrawer } from '../../../common/components/ui';
+import { Badge, Button, CardHeader, DetailList, RecordDrawer } from '../../../common/components/ui';
 import { usePermissions } from '../../../hooks';
 import type { Order } from '../../../services/api/types';
 import { useOrder } from '../../../services/queries/orders';
@@ -80,7 +80,7 @@ export const OrderQuickDrawer = ({ open, onClose, order: listed, onAssign }: Pro
         />
 
         <div>
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Ítems</h3>
+          <CardHeader title="Ítems" as="h3" className="mb-2" />
           <ul className="divide-y divide-outline-soft rounded-xl border border-outline">
             {order.order_items.map((item, index) => (
               <li

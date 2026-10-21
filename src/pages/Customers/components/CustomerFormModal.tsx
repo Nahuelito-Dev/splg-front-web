@@ -8,7 +8,7 @@ import {
   newPassword,
   type NewAccountValues,
 } from '../../../common/forms/accountSchema';
-import { Button, Input, Modal } from '../../../common/components/ui';
+import { Button, Form, FormInput, Modal } from '../../../common/components/ui';
 import type { Customer } from '../../../services/api/types';
 import { useCreateCustomer, useUpdateCustomerAccount } from '../../../services/queries/customers';
 import { notify } from '../../../utils/notifications';
@@ -43,26 +43,21 @@ export const CustomerFormModal = ({ open, onClose, customer }: Props) =>
 
 const CreateCustomerForm = ({ open, onClose }: Omit<Props, 'customer'>) => {
   const createCustomer = useCreateCustomer();
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<NewAccountValues>({ resolver: zodResolver(newAccountSchema) });
+  const methods = useForm<NewAccountValues>({ resolver: zodResolver(newAccountSchema) });
+  const { reset } = methods;
 
   useEffect(() => {
     if (open) reset();
   }, [open, reset]);
 
-  const onSubmit = handleSubmit(({ confirmPassword: _, ...account }) =>
+  const onSubmit = ({ confirmPassword: _, ...account }: NewAccountValues) =>
     createCustomer.mutate(account, {
       onSuccess: () => {
         notify.success('Cliente creado');
         onClose();
       },
       onError: notify.error,
-    }),
-  );
+    });
 
   return (
     <Modal
@@ -81,61 +76,32 @@ const CreateCustomerForm = ({ open, onClose }: Omit<Props, 'customer'>) => {
         </>
       }
     >
-      <form id="customer-create" onSubmit={(e) => void onSubmit(e)} className="grid gap-4 sm:grid-cols-2" noValidate>
-        <Input
-          label="Nombre completo"
-          required
-          autoComplete="name"
-          error={errors.full_name?.message}
-          {...register('full_name')}
-        />
-        <Input
-          label="Teléfono"
-          required
-          type="tel"
-          placeholder="+5493764000000"
-          error={errors.phone_number?.message}
-          {...register('phone_number')}
-        />
+      <Form methods={methods} onSubmit={onSubmit} id="customer-create" className="grid gap-4 sm:grid-cols-2">
+        <FormInput label="Nombre completo" required autoComplete="name" name="full_name" />
+        <FormInput label="Teléfono" required type="tel" placeholder="+5493764000000" name="phone_number" />
         <div className="sm:col-span-2">
-          <Input
-            label="Email"
-            required
-            type="email"
-            autoComplete="email"
-            error={errors.email?.message}
-            {...register('email')}
-          />
+          <FormInput label="Email" required type="email" autoComplete="email" name="email" />
         </div>
-        <Input
-          label="Contraseña"
-          required
-          type="password"
-          autoComplete="new-password"
-          error={errors.password?.message}
-          {...register('password')}
-        />
-        <Input
+        <FormInput label="Contraseña" required type="password" autoComplete="new-password" name="password" />
+        <FormInput
           label="Repetir contraseña"
           required
           type="password"
           autoComplete="new-password"
-          error={errors.confirmPassword?.message}
-          {...register('confirmPassword')}
+          name="confirmPassword"
         />
-      </form>
+      </Form>
     </Modal>
   );
 };
 
 const EditCustomerForm = ({ open, onClose, customer }: Omit<Props, 'customer'> & { customer: Customer }) => {
   const updateAccount = useUpdateCustomerAccount();
+  const methods = useForm<EditValues>({ resolver: zodResolver(editSchema) });
   const {
-    register,
-    handleSubmit,
     reset,
-    formState: { errors, isDirty },
-  } = useForm<EditValues>({ resolver: zodResolver(editSchema) });
+    formState: { isDirty },
+  } = methods;
 
   useEffect(() => {
     if (open) {
@@ -148,7 +114,7 @@ const EditCustomerForm = ({ open, onClose, customer }: Omit<Props, 'customer'> &
     }
   }, [open, customer, reset]);
 
-  const onSubmit = handleSubmit(({ full_name, phone_number, password }) =>
+  const onSubmit = ({ full_name, phone_number, password }: EditValues) =>
     updateAccount.mutate(
       {
         userId: customer.user_id,
@@ -161,8 +127,7 @@ const EditCustomerForm = ({ open, onClose, customer }: Omit<Props, 'customer'> &
         },
         onError: notify.error,
       },
-    ),
-  );
+    );
 
   return (
     <Modal
@@ -181,39 +146,15 @@ const EditCustomerForm = ({ open, onClose, customer }: Omit<Props, 'customer'> &
         </>
       }
     >
-      <form id="customer-edit" onSubmit={(e) => void onSubmit(e)} className="grid gap-4 sm:grid-cols-2" noValidate>
-        <Input
-          label="Nombre completo"
-          required
-          autoComplete="name"
-          error={errors.full_name?.message}
-          {...register('full_name')}
-        />
-        <Input
-          label="Teléfono"
-          required
-          type="tel"
-          error={errors.phone_number?.message}
-          {...register('phone_number')}
-        />
+      <Form methods={methods} onSubmit={onSubmit} id="customer-edit" className="grid gap-4 sm:grid-cols-2">
+        <FormInput label="Nombre completo" required autoComplete="name" name="full_name" />
+        <FormInput label="Teléfono" required type="tel" name="phone_number" />
         <fieldset className="grid gap-4 rounded-xl border border-outline p-4 sm:col-span-2 sm:grid-cols-2">
           <legend className="px-1 text-sm font-medium text-ink">Contraseña nueva (opcional)</legend>
-          <Input
-            label="Contraseña nueva"
-            type="password"
-            autoComplete="new-password"
-            error={errors.password?.message}
-            {...register('password')}
-          />
-          <Input
-            label="Repetir contraseña"
-            type="password"
-            autoComplete="new-password"
-            error={errors.confirmPassword?.message}
-            {...register('confirmPassword')}
-          />
+          <FormInput label="Contraseña nueva" type="password" autoComplete="new-password" name="password" />
+          <FormInput label="Repetir contraseña" type="password" autoComplete="new-password" name="confirmPassword" />
         </fieldset>
-      </form>
+      </Form>
     </Modal>
   );
 };

@@ -1,7 +1,7 @@
 import type { GridColDef, GridPaginationModel } from '@mui/x-data-grid';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Badge, Card, DataTable, EmptyState, IdentityCell } from '../../../common/components/ui';
+import { Badge, Card, DataTable, EmptyState, IdentityCell, CardHeader } from '../../../common/components/ui';
 import type { VehicleAssignmentHistory } from '../../../services/api/types';
 import { formatDateTime } from '../../../utils/format';
 import { vehicleAssignmentStatus } from '../../../utils/statusLabels';
@@ -94,9 +94,7 @@ export const VehicleAssignmentHistoryTable = ({
   return (
     <Card>
       <div className="flex items-center justify-between border-b border-outline p-4">
-        <h2 className="text-base font-semibold text-ink">
-          {variant === 'driver' ? 'Historial de vehículos' : 'Historial de choferes'}
-        </h2>
+        <CardHeader title={variant === 'driver' ? 'Historial de vehículos' : 'Historial de choferes'} className="" />
         <span className="text-sm text-muted">{total} en total</span>
       </div>
       <DataTable

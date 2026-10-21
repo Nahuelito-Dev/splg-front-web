@@ -8,15 +8,15 @@ import {
   Card,
   EmptyState,
   ErrorState,
-  FilterChips,
   IdentityCell,
-  Input,
   PageHeader,
   ResponsiveTable,
   RowActions,
   Select,
-  ExportCsvButton,
   StatusFilterTabs,
+  PageContainer,
+  TableToolbar,
+  DateRangeFilter,
 } from '../../common/components/ui';
 import { FROM_LIST_STATE, usePermissions, useClampPage, useUrlPagedParams } from '../../hooks';
 import type { PurchaseOrderSummary } from '../../services/api/types';
@@ -124,7 +124,7 @@ export const PurchaseOrders = () => {
   useClampPage(pagination, data?.total, setPagination);
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Órdenes de compra"
         description="Lo que se le pide a cada proveedor y cuánto de eso ya llegó."
@@ -143,41 +143,26 @@ export const PurchaseOrders = () => {
           label="Filtrar órdenes por estado"
           idPrefix="purchase-orders"
         >
-          <div className="grid grid-cols-1 gap-3 border-b border-outline p-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Select
-              label="Proveedor"
-              options={[
-                { value: '', label: 'Todos los proveedores' },
-                ...(suppliers.data?.data ?? []).map((s) => ({ value: s.supplierId, label: s.businessName })),
-              ]}
-              hint={suppliers.isError ? 'No se pudieron cargar los proveedores' : undefined}
-              value={filters.supplier}
-              onChange={(e) => change({ supplier: e.target.value })}
-            />
-            <Input label="Desde" type="date" value={filters.from} onChange={(e) => change({ from: e.target.value })} />
-            <Input
-              label="Hasta"
-              type="date"
-              value={filters.to}
-              onChange={(e) => change({ to: e.target.value })}
-              error={rangeInvalid ? 'Es anterior al inicio' : undefined}
-            />
-          </div>
-          {chips.length > 0 && (
-            <div className="border-b border-outline px-4 py-3">
-              <FilterChips
-                items={chips}
-                resultCount={data?.total}
-                onRemove={(key) => change({ [key]: '' })}
-                onClearAll={() => change({ status: '', supplier: '', from: '', to: '' })}
-              />
-            </div>
-          )}
-          <div className="flex justify-end border-b border-outline px-4 py-2">
-            <ExportCsvButton
-              filename="ordenes-de-compra"
-              headers={['Orden', 'Proveedor', 'Destino', 'Estado', 'Pedidas', 'Recibidas', 'Pendientes', 'Total']}
-              rows={(data?.data ?? []).map((row) => [
+          <TableToolbar
+            filters={
+              <>
+                <Select
+                  label="Proveedor"
+                  options={[
+                    { value: '', label: 'Todos los proveedores' },
+                    ...(suppliers.data?.data ?? []).map((s) => ({ value: s.supplierId, label: s.businessName })),
+                  ]}
+                  hint={suppliers.isError ? 'No se pudieron cargar los proveedores' : undefined}
+                  value={filters.supplier}
+                  onChange={(e) => change({ supplier: e.target.value })}
+                />
+                <DateRangeFilter from={filters.from} to={filters.to} onChange={(range) => change({ ...range })} />
+              </>
+            }
+            csv={{
+              filename: 'ordenes-de-compra',
+              headers: ['Orden', 'Proveedor', 'Destino', 'Estado', 'Pedidas', 'Recibidas', 'Pendientes', 'Total'],
+              rows: (data?.data ?? []).map((row) => [
                 row.number,
                 row.supplierName,
                 row.destinationWarehouseName,
@@ -186,9 +171,20 @@ export const PurchaseOrders = () => {
                 row.receivedQuantity,
                 row.pendingQuantity,
                 row.totalAmount,
-              ])}
-            />
-          </div>
+              ]),
+            }}
+            chips={chips}
+            onRemoveChip={(key) => change({ [key]: '' })}
+            onClearChips={() => change({ status: '', supplier: '', from: '', to: '' })}
+            resultCount={data?.total}
+            noun={['orden', 'órdenes']}
+          >
+            {rangeInvalid && (
+              <p role="alert" className="text-xs text-danger">
+                {'Es anterior al inicio'}
+              </p>
+            )}
+          </TableToolbar>
           {error ? (
             <ErrorState error={error} resource="Las órdenes" onRetry={() => void refetch()} />
           ) : (
@@ -239,6 +235,6 @@ export const PurchaseOrders = () => {
         order={null}
         onSaved={(order) => navigate(`/purchases/orders/${order.purchaseOrderId}`)}
       />
-    </div>
+    </PageContainer>
   );
 };

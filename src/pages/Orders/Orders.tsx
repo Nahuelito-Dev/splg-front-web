@@ -5,13 +5,13 @@ import {
   AnalyticSummary,
   Button,
   Card,
-  ExportCsvButton,
-  FilterChips,
   PageHeader,
   SelectionBar,
+  TableToolbar,
   tabPanelProps,
   type AnalyticItem,
   type FilterChip,
+  PageContainer,
 } from '../../common/components/ui';
 import { useDebounce, usePermissions, useUrlPagedParams } from '../../hooks';
 import type { Order } from '../../services/api/types';
@@ -24,7 +24,7 @@ import {
   useOrders,
 } from '../../services/queries/orders';
 import type { BatchResult } from '../../utils/batch';
-import { formatShortId } from '../../utils/format';
+import { formatDay, formatShortId } from '../../utils/format';
 import {
   labelOf,
   ORDER_FLOW,
@@ -164,8 +164,8 @@ export const Orders = () => {
   const chips: FilterChip[] = [];
   if (toolbar.search) chips.push({ key: 'search', label: `"${toolbar.search}"` });
   if (toolbar.payment) chips.push({ key: 'payment', label: `Cobro: ${paymentFilterLabel(toolbar.payment).text}` });
-  if (toolbar.from) chips.push({ key: 'from', label: `Desde ${toolbar.from}` });
-  if (toolbar.to) chips.push({ key: 'to', label: `Hasta ${toolbar.to}` });
+  if (toolbar.from) chips.push({ key: 'from', label: `Desde ${formatDay(toolbar.from)}` });
+  if (toolbar.to) chips.push({ key: 'to', label: `Hasta ${formatDay(toolbar.to)}` });
 
   // El estado vive en las pestañas; sólo se repite como chip cuando hay otros filtros, para sacarlo junto con ellos.
   if (chips.length > 0 && status)
@@ -229,7 +229,7 @@ export const Orders = () => {
   };
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Pedidos"
         description="Pedidos en curso y su historial. La asignación de chofer es automática; acá se puede forzar o cancelar."
@@ -255,40 +255,29 @@ export const Orders = () => {
         <OrderStatusTabs value={status} counts={counts} total={totalAll} onChange={handleStatus} />
 
         <div {...tabPanelProps(ORDER_TABS_ID, status || 'all')}>
-          <div className="border-b border-outline p-4">
-            <OrdersFilters values={toolbar} onChange={handleToolbar} />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 px-4 py-3">
-            {chips.length === 0 && (
-              <p className="text-sm text-muted" aria-live="polite">
-                {data ? (
-                  <>
-                    <b className="font-semibold text-ink">{data.total}</b> {data.total === 1 ? 'pedido' : 'pedidos'}
-                  </>
-                ) : (
-                  <span>Cargando pedidos…</span>
-                )}
-              </p>
-            )}
-            <FilterChips
-              items={chips}
-              onRemove={removeChip}
-              onClearAll={() => {
-                clearSelection();
-                setUrlFilters({ status: '', q: '', payment: '', from: '', to: '' });
-              }}
-              resultCount={data?.total}
-            />
-            <span className="ml-auto">
-              <ExportCsvButton
-                filename="pedidos"
-                label={selectedOrders.length > 0 ? 'Exportar selección' : 'Exportar CSV'}
-                headers={['Pedido', 'Fecha', 'Cliente', 'Entrega', 'Chofer', 'Estado', 'Cobro', 'Total']}
-                rows={exportRows}
-              />
-            </span>
-          </div>
+          <TableToolbar
+            filters={<OrdersFilters values={toolbar} onChange={handleToolbar} />}
+            search={{
+              label: 'Buscar pedidos',
+              placeholder: 'Cliente, teléfono o n.º de pedido',
+              value: toolbar.search,
+              onChange: (value) => handleToolbar({ ...toolbar, search: value }),
+            }}
+            csv={{
+              filename: 'pedidos',
+              label: selectedOrders.length > 0 ? 'Exportar selección' : 'Exportar CSV',
+              headers: ['Pedido', 'Fecha', 'Cliente', 'Entrega', 'Chofer', 'Estado', 'Cobro', 'Total'],
+              rows: exportRows,
+            }}
+            chips={chips}
+            onRemoveChip={removeChip}
+            onClearChips={() => {
+              clearSelection();
+              setUrlFilters({ status: '', q: '', payment: '', from: '', to: '' });
+            }}
+            resultCount={data?.total}
+            noun={['pedido', 'pedidos']}
+          />
 
           <SelectionBar
             count={selectedOrders.length}
@@ -375,6 +364,6 @@ export const Orders = () => {
         count={modal.kind === 'bulk-cancel' ? selectedOrders.length : 1}
         affected={modal.kind === 'bulk-cancel' ? selectedOrders.map(label) : undefined}
       />
-    </div>
+    </PageContainer>
   );
 };

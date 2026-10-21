@@ -13,9 +13,9 @@ import {
   PageHeader,
   ResponsiveTable,
   RowActions,
-  SearchInput,
-  ExportCsvButton,
   StatusFilterTabs,
+  PageContainer,
+  TableToolbar,
 } from '../../common/components/ui';
 import { FROM_LIST_STATE, useClampPage, useDebounce, usePermissions, useUrlPagedParams } from '../../hooks';
 import type { CustomerAccount } from '../../services/api/types';
@@ -118,7 +118,7 @@ export const CustomerAccounts = () => {
   useClampPage(pagination, data?.total, setPagination);
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Cuentas corrientes"
         description="Los clientes que compran a crédito: lo que deben, lo que pueden comprar y lo que ya venció."
@@ -147,34 +147,36 @@ export const CustomerAccounts = () => {
           label="Filtrar cuentas por estado"
           idPrefix="customer-accounts"
         >
-          <div className="grid grid-cols-1 items-end gap-3 border-b border-outline p-4 sm:grid-cols-[2fr_auto]">
-            <SearchInput
-              value={filters.q}
-              onChange={(e) => setFilters({ q: e.target.value })}
-              placeholder="Razón social, CUIT, nombre o correo"
-              label="Buscar cuentas"
-              className="sm:w-full"
-            />
-            <Checkbox
-              label="Con deuda vencida"
-              checked={filters.overdue === '1'}
-              onChange={(e) => setFilters({ overdue: e.target.checked ? '1' : '' })}
-            />
-          </div>
-          <div className="flex justify-end border-b border-outline px-4 py-2">
-            <ExportCsvButton
-              filename="cuentas-corrientes"
-              headers={['Cuenta', 'Cliente', 'Saldo', 'Disponible', 'Vencido', 'Estado']}
-              rows={(data?.data ?? []).map((row) => [
+          <TableToolbar
+            filters={
+              <>
+                <Checkbox
+                  label="Con deuda vencida"
+                  checked={filters.overdue === '1'}
+                  onChange={(e) => setFilters({ overdue: e.target.checked ? '1' : '' })}
+                />
+              </>
+            }
+            search={{
+              label: 'Buscar cuentas',
+              placeholder: 'Razón social, CUIT, nombre o correo',
+              value: filters.q,
+              onChange: (value) => setFilters({ q: value }),
+            }}
+            csv={{
+              filename: 'cuentas-corrientes',
+              headers: ['Cuenta', 'Cliente', 'Saldo', 'Disponible', 'Vencido', 'Estado'],
+              rows: (data?.data ?? []).map((row) => [
                 row.businessName,
                 row.customerName || row.customerEmail || '',
                 row.balance,
                 row.availableCredit,
                 row.overdueAmount,
                 labelOf(ACCOUNT_STATUS, row.status).text,
-              ])}
-            />
-          </div>
+              ]),
+            }}
+            noun={['cuenta', 'cuentas']}
+          />
           {error ? (
             <ErrorState error={error} resource="Las cuentas corrientes" onRetry={() => void refetch()} />
           ) : (
@@ -223,6 +225,6 @@ export const CustomerAccounts = () => {
         </StatusFilterTabs>
       </Card>
       <CustomerAccountFormModal open={creating} onClose={() => setCreating(false)} account={null} />
-    </div>
+    </PageContainer>
   );
 };

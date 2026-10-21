@@ -54,4 +54,18 @@ describe('DateRangePicker', () => {
     render(<DateRangePicker value={{ from: day, to: day }} preset="thisMonth" onChange={vi.fn()} />);
     expect(screen.getByRole('button', { name: /Período:/ })).toHaveTextContent('Este mes');
   });
+
+  it('sin período el botón lo dice y «Quitar» vuelve a no filtrar', () => {
+    const onClear = vi.fn();
+    render(<DateRangePicker value={null} onChange={vi.fn()} emptyLabel="Fechas" />);
+    expect(screen.getByRole('button', { name: 'Período: sin elegir' })).toHaveTextContent('Fechas');
+    fireEvent.click(screen.getByRole('button', { name: /Período:/ }));
+    expect(screen.queryByRole('button', { name: 'Quitar' })).not.toBeInTheDocument();
+    cleanup();
+    render(<DateRangePicker value={VALUE} onChange={vi.fn()} onClear={onClear} />);
+    fireEvent.click(screen.getByRole('button', { name: /Período:/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Quitar' }));
+    expect(onClear).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
 });

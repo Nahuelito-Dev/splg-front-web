@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import EventAvailableIcon from '@mui/icons-material/EventAvailable';
-import { Badge, Card, EmptyState, Input, LoadingState } from '../../../common/components/ui';
+import { Badge, Card, EmptyState, LoadingState, DayFilter, CardHeader } from '../../../common/components/ui';
 import { useTimeSlotAvailability } from '../../../services/queries/timeSlots';
 import type { Label } from '../../../utils/statusLabels';
 
@@ -19,16 +19,13 @@ export const SlotAvailabilityPanel = () => {
 
   return (
     <Card className="p-6">
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h3 className="flex items-center gap-2 font-semibold text-ink">
-            <EventAvailableIcon aria-hidden="true" className="text-primary" fontSize="small" />
-            Disponibilidad por día
-          </h3>
-          <p className="text-sm text-muted">Cupos reservados y libres por franja.</p>
-        </div>
-        <Input label="Fecha" type="date" value={date} onChange={(e) => setDate(e.target.value)} className="sm:w-48" />
-      </div>
+      <CardHeader
+        title="Disponibilidad por día"
+        subtitle="Cupos reservados y libres por franja."
+        icon={<EventAvailableIcon />}
+        as="h3"
+        action={<DayFilter label="Fecha" value={date} onChange={(day) => setDate(day || date)} />}
+      />
 
       {isPending ? (
         <LoadingState />

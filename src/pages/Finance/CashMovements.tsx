@@ -5,17 +5,18 @@ import {
   Badge,
   Button,
   Card,
+  DateRangeFilter,
   EmptyState,
   ErrorState,
-  ExportCsvButton,
-  FilterChips,
   IdentityCell,
-  Input,
   PageHeader,
   ReasonModal,
   ResponsiveTable,
   RowActions,
   Select,
+  PageContainer,
+  TableToolbar,
+  type FilterChip,
 } from '../../common/components/ui';
 import { useClampPage, usePermissions, useUrlPagedParams } from '../../hooks';
 import { toApiError } from '../../services/api/errors';
@@ -27,7 +28,7 @@ import {
   useReverseCashMovement,
   useReverseCashTransfer,
 } from '../../services/queries/finance';
-import { formatCurrency, formatDateTime } from '../../utils/format';
+import { formatCurrency, formatDateTime, formatDay } from '../../utils/format';
 import { notify } from '../../utils/notifications';
 import { CASH_REFERENCE, labelOf } from '../../utils/statusLabels';
 import { FinanceSummary } from './components/FinanceSummary';
@@ -74,11 +75,15 @@ export const CashMovements = () => {
   const categoryName = (id: string) => categories.data?.data.find((c) => c.categoryId === id)?.name;
   const chips = [
     filters.cashBoxId && { key: 'cashBoxId', label: `Caja: ${boxName(filters.cashBoxId) ?? '…'}` },
-    filters.direction && { key: 'direction', label: filters.direction === 'in' ? 'Entradas' : 'Salidas' },
+    filters.direction && {
+      key: 'direction',
+      name: 'Sentido',
+      label: filters.direction === 'in' ? 'Entradas' : 'Salidas',
+    },
     filters.categoryId && { key: 'categoryId', label: `Categoría: ${categoryName(filters.categoryId) ?? '…'}` },
-    filters.from && { key: 'from', label: `Desde ${filters.from}` },
-    filters.to && { key: 'to', label: `Hasta ${filters.to}` },
-  ].filter((c): c is { key: string; label: string } => Boolean(c));
+    filters.from && { key: 'from', label: `Desde ${formatDay(filters.from)}` },
+    filters.to && { key: 'to', label: `Hasta ${formatDay(filters.to)}` },
+  ].filter((c): c is FilterChip => Boolean(c));
 
   const reversingKind = reversing ? reverseKindOf(reversing) : null;
   const reversePending = reversingKind === 'transfer' ? reverseTransfer.isPending : reverseMovement.isPending;
@@ -165,7 +170,7 @@ export const CashMovements = () => {
   useClampPage(pagination, data?.total, setPagination);
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Movimientos de caja"
         description="El libro de la plata: solo se agrega, y lo que está mal se anula con otro movimiento."
@@ -188,55 +193,40 @@ export const CashMovements = () => {
       />
       <FinanceSummary kind="movements" />
       <Card>
-        <div className="grid grid-cols-1 items-end gap-3 border-b border-outline p-4 sm:grid-cols-2 lg:grid-cols-5">
-          <Select
-            label="Caja"
-            options={[
-              { value: '', label: 'Todas las cajas' },
-              ...(boxes.data?.data ?? []).map((b) => ({ value: b.cashBoxId, label: b.name })),
-            ]}
-            value={filters.cashBoxId}
-            onChange={(e) => setFilters({ cashBoxId: e.target.value })}
-          />
-          <Select
-            label="Sentido"
-            options={DIRECTIONS}
-            value={filters.direction}
-            onChange={(e) => setFilters({ direction: e.target.value })}
-          />
-          <Select
-            label="Categoría"
-            options={[
-              { value: '', label: 'Todas' },
-              ...(categories.data?.data ?? []).map((c) => ({ value: c.categoryId, label: c.name })),
-            ]}
-            value={filters.categoryId}
-            onChange={(e) => setFilters({ categoryId: e.target.value })}
-          />
-          <Input
-            label="Desde"
-            type="date"
-            value={filters.from}
-            onChange={(e) => setFilters({ from: e.target.value })}
-            error={rangeInvalid ? 'La fecha inicial no puede ser posterior a la final' : undefined}
-          />
-          <Input label="Hasta" type="date" value={filters.to} onChange={(e) => setFilters({ to: e.target.value })} />
-        </div>
-        {chips.length > 0 && (
-          <div className="border-b border-outline px-4 py-2">
-            <FilterChips
-              items={chips}
-              resultCount={data?.total}
-              onRemove={(key) => setFilters({ [key]: '' })}
-              onClearAll={() => setFilters({ cashBoxId: '', direction: '', categoryId: '', from: '', to: '' })}
-            />
-          </div>
-        )}
-        <div className="flex justify-end border-b border-outline px-4 py-2">
-          <ExportCsvButton
-            filename="movimientos-de-caja"
-            headers={['Fecha', 'Caja', 'Categoría', 'Descripción', 'Sentido', 'Importe', 'Origen']}
-            rows={(data?.data ?? []).map((row) => [
+        <TableToolbar
+          filters={
+            <>
+              <Select
+                label="Caja"
+                options={[
+                  { value: '', label: 'Todas las cajas' },
+                  ...(boxes.data?.data ?? []).map((b) => ({ value: b.cashBoxId, label: b.name })),
+                ]}
+                value={filters.cashBoxId}
+                onChange={(e) => setFilters({ cashBoxId: e.target.value })}
+              />
+              <Select
+                label="Sentido"
+                options={DIRECTIONS}
+                value={filters.direction}
+                onChange={(e) => setFilters({ direction: e.target.value })}
+              />
+              <Select
+                label="Categoría"
+                options={[
+                  { value: '', label: 'Todas' },
+                  ...(categories.data?.data ?? []).map((c) => ({ value: c.categoryId, label: c.name })),
+                ]}
+                value={filters.categoryId}
+                onChange={(e) => setFilters({ categoryId: e.target.value })}
+              />
+              <DateRangeFilter from={filters.from} to={filters.to} onChange={(range) => setFilters(range)} />
+            </>
+          }
+          csv={{
+            filename: 'movimientos-de-caja',
+            headers: ['Fecha', 'Caja', 'Categoría', 'Descripción', 'Sentido', 'Importe', 'Origen'],
+            rows: (data?.data ?? []).map((row) => [
               csvDateTime(row.occurredAt),
               row.cashBoxName,
               row.categoryName,
@@ -248,9 +238,20 @@ export const CashMovements = () => {
                 : row.reversesMovementId
                   ? 'Anulación'
                   : labelOf(CASH_REFERENCE, row.referenceType).text,
-            ])}
-          />
-        </div>
+            ]),
+          }}
+          chips={chips}
+          onRemoveChip={(key) => setFilters({ [key]: '' })}
+          onClearChips={() => setFilters({ cashBoxId: '', direction: '', categoryId: '', from: '', to: '' })}
+          resultCount={data?.total}
+          noun={['movimiento', 'movimientos']}
+        >
+          {rangeInvalid && (
+            <p role="alert" className="text-xs text-danger">
+              La fecha inicial no puede ser posterior a la final
+            </p>
+          )}
+        </TableToolbar>
         {error ? (
           <ErrorState error={error} resource="Los movimientos" onRetry={() => void refetch()} />
         ) : (
@@ -323,6 +324,6 @@ export const CashMovements = () => {
         onReasonChange={() => setServerError(null)}
         loading={reversePending}
       />
-    </div>
+    </PageContainer>
   );
 };

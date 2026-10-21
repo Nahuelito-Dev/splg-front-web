@@ -1,5 +1,5 @@
 import { Flame } from 'lucide-react';
-import { Badge, Card } from '../../../../common/components/ui';
+import { Badge, Card, CardHeader } from '../../../../common/components/ui';
 import type { Order } from '../../../../services/api/types';
 import { formatCurrency } from '../../../../utils/format';
 import { labelOf, PAYMENT_METHOD } from '../../../../utils/statusLabels';
@@ -19,10 +19,11 @@ export const OrderItemsSummary = ({ order }: { order: Order }) => {
 
   return (
     <Card>
-      <div className="flex items-center justify-between gap-3 p-5 pb-3">
-        <h2 className="text-base font-semibold text-ink">Detalle</h2>
-        <Badge label={labelOf(PAYMENT_METHOD, order.paymentMethodDetail)} />
-      </div>
+      <CardHeader
+        title="Detalle"
+        action={<Badge label={labelOf(PAYMENT_METHOD, order.paymentMethodDetail)} />}
+        className="p-5 pb-3"
+      />
 
       <ul className="px-5">
         {order.order_items.map((item, index) => {

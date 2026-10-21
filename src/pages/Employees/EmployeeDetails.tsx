@@ -18,6 +18,8 @@ import {
   ProfileTabs,
   type CoverStat,
   type ProfileTabItem,
+  PageContainer,
+  type MenuAction,
 } from '../../common/components/ui';
 import { useCrumbLeaf } from '../../common/components';
 import { useBackToList, usePermissions, useProfileTab } from '../../hooks';
@@ -91,71 +93,77 @@ export const EmployeeDetails = () => {
     : [];
   const photoOwner = employeePhotoOwner(employee ?? { employeeId: '', hasAccount: false, userId: null });
 
+  // La primaria depende del estado: un legajo activo se edita; uno egresado se reincorpora. Egreso, cuenta y baja van al menú ⋮.
+  const canCreateAccount =
+    employee?.status === 'active' && !employee.hasAccount && employee.position.category === 'driver';
+  const headerPrimary = employee ? (
+    <>
+      <AuditHistoryLink entity="Employee" recordId={employee.employeeId} />
+      {employee.status === 'terminated' ? (
+        <Button
+          size="sm"
+          icon={<RotateCcw />}
+          blockedReason={writeHint}
+          onClick={() => canWrite && setReinstating(true)}
+        >
+          Reincorporar
+        </Button>
+      ) : (
+        <Button size="sm" icon={<PencilLine />} blockedReason={writeHint} onClick={() => canWrite && setEditing(true)}>
+          Editar legajo
+        </Button>
+      )}
+    </>
+  ) : undefined;
+  const headerSecondary: MenuAction[] = employee
+    ? [
+        ...(employee.status === 'terminated'
+          ? [
+              {
+                label: 'Editar legajo',
+                icon: <PencilLine />,
+                blockedReason: writeHint,
+                onClick: () => canWrite && setEditing(true),
+              },
+            ]
+          : []),
+        ...(employee.status === 'active'
+          ? [
+              {
+                label: 'Registrar egreso',
+                icon: <LogOut />,
+                blockedReason: writeHint,
+                onClick: () => canWrite && setTerminating(true),
+              },
+            ]
+          : []),
+        ...(canCreateAccount
+          ? [
+              {
+                label: 'Crear cuenta de acceso',
+                icon: <KeyRound />,
+                blockedReason: writeHint,
+                onClick: () => canWrite && setGranting(true),
+              },
+            ]
+          : []),
+        ...(!employee.hasAccount
+          ? [
+              {
+                label: 'Eliminar',
+                icon: <Trash2 />,
+                tone: 'danger' as const,
+                blockedReason: writeHint,
+                onClick: () => canWrite && void handleDelete(),
+              },
+            ]
+          : []),
+      ]
+    : [];
+
   return (
-    <div className="mx-auto max-w-5xl p-4 md:p-8">
-      <PageHeader
-        title="Legajo"
-        actions={
-          employee && (
-            <>
-              <AuditHistoryLink entity="Employee" recordId={employee.employeeId} />
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={<PencilLine />}
-                blockedReason={writeHint}
-                onClick={() => canWrite && setEditing(true)}
-              >
-                Editar legajo
-              </Button>
-              {employee.status === 'active' && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  icon={<LogOut />}
-                  blockedReason={writeHint}
-                  onClick={() => canWrite && setTerminating(true)}
-                >
-                  Registrar egreso
-                </Button>
-              )}
-              {employee.status === 'terminated' && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  icon={<RotateCcw />}
-                  blockedReason={writeHint}
-                  onClick={() => canWrite && setReinstating(true)}
-                >
-                  Reincorporar
-                </Button>
-              )}
-              {employee.status === 'active' && !employee.hasAccount && employee.position.category === 'driver' && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  icon={<KeyRound />}
-                  blockedReason={writeHint}
-                  onClick={() => canWrite && setGranting(true)}
-                >
-                  Crear cuenta de acceso
-                </Button>
-              )}
-              {!employee.hasAccount && (
-                <Button
-                  variant="danger"
-                  size="sm"
-                  icon={<Trash2 />}
-                  blockedReason={writeHint}
-                  onClick={() => canWrite && void handleDelete()}
-                >
-                  Eliminar
-                </Button>
-              )}
-            </>
-          )
-        }
-      />
+    <PageContainer size="md">
+      <PageHeader title="Legajo" actions={headerPrimary} secondaryActions={headerSecondary} />
       {isPending ? (
         <ProfileSkeleton />
       ) : error || !employee ? (
@@ -282,6 +290,6 @@ export const EmployeeDetails = () => {
         </>
       )}
       <EmployeeFormModal open={editing} onClose={() => setEditing(false)} employee={employee ?? null} />
-    </div>
+    </PageContainer>
   );
 };

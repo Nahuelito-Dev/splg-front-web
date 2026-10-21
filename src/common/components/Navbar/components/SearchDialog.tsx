@@ -76,7 +76,7 @@ export const SearchDialog = ({ open, onClose }: Props) => {
       sx={{ '& .MuiDialog-container': { alignItems: 'flex-start' } }}
       PaperProps={{
         'data-search-dialog': true,
-        className: '!m-4 !mt-[10vh] !w-full !max-w-xl !rounded-card !shadow-2xl',
+        className: '!m-4 !mt-[10vh] !w-full !max-w-xl',
       }}
     >
       <h2 id={titleId} className="sr-only">

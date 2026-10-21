@@ -11,6 +11,8 @@ import {
   Tabs,
   tabPanelProps,
   type TabItem,
+  PageContainer,
+  CardHeader,
 } from '../../common/components/ui';
 import { usePermissions, useUrlParams } from '../../hooks';
 import { useFleetExpirations } from '../../services/queries/fleet';
@@ -107,7 +109,7 @@ export const FleetExpirations = () => {
   const filteredStaff = staffRows.filter(matches);
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
+    <PageContainer stack>
       <PageHeader
         title="Vencimientos"
         description="Lo vencido y lo que vence pronto, de vehículos, choferes y personal."
@@ -173,7 +175,7 @@ export const FleetExpirations = () => {
               </p>
               <Card>
                 <div className="border-b border-outline p-4">
-                  <h2 className="text-base font-semibold text-ink">Personal</h2>
+                  <CardHeader title="Personal" className="" />
                   <p className="text-xs text-muted">
                     Incluye la licencia de conducir de los choferes. Los empleados con documentación bloqueante vencida
                     no reciben pedidos.
@@ -196,7 +198,7 @@ export const FleetExpirations = () => {
 
               <Card>
                 <div className="border-b border-outline p-4">
-                  <h2 className="text-base font-semibold text-ink">Vehículos</h2>
+                  <CardHeader title="Vehículos" className="" />
                 </div>
                 <ExpirationsTable
                   rows={filteredVehicles}
@@ -209,7 +211,7 @@ export const FleetExpirations = () => {
 
               <Card>
                 <div className="border-b border-outline p-4">
-                  <h2 className="text-base font-semibold text-ink">Choferes</h2>
+                  <CardHeader title="Choferes" className="" />
                 </div>
                 <ExpirationsTable
                   rows={filteredDrivers}
@@ -223,6 +225,6 @@ export const FleetExpirations = () => {
           )}
         </>
       )}
-    </div>
+    </PageContainer>
   );
 };

@@ -6,16 +6,15 @@ import {
   AnalyticSummary,
   Button,
   Card,
-  ExportCsvButton,
-  FilterChips,
   PageHeader,
-  SearchInput,
   SelectionBar,
+  TableToolbar,
   Tabs,
   tabPanelProps,
   type AnalyticItem,
   type FilterChip,
   type TabItem,
+  PageContainer,
 } from '../../common/components/ui';
 import { useDebounce, usePermissions, useUrlParams } from '../../hooks';
 import type { Customer } from '../../services/api/types';
@@ -116,7 +115,7 @@ export const Customers = () => {
   };
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Clientes"
         description="Los clientes que le compraron a la distribuidora."
@@ -148,29 +147,20 @@ export const Customers = () => {
           idPrefix={TABS_ID}
         />
         <div {...tabPanelProps(TABS_ID, segment)}>
-          <div className="flex flex-col gap-3 border-b border-outline p-4">
-            <SearchInput
-              label="Buscar clientes"
-              placeholder="Nombre, email o teléfono"
-              value={search}
-              onChange={(e) => changeFilters({ q: e.target.value, page: '1' })}
-            />
-            {chips.length > 0 ? (
-              <FilterChips
-                items={chips}
-                onRemove={removeChip}
-                onClearAll={() => changeFilters({ q: '', status: 'all', page: '1' })}
-                resultCount={server.data ? total : undefined}
-              />
-            ) : (
-              <p className="text-sm text-muted" aria-live="polite">
-                {server.data ? `${total} ${total === 1 ? 'cliente' : 'clientes'}` : ''}
-              </p>
-            )}
-            <div>
-              <ExportCsvButton filename="clientes" headers={CSV_HEADERS} rows={toCsvRows(rows)} />
-            </div>
-          </div>
+          <TableToolbar
+            search={{
+              label: 'Buscar clientes',
+              placeholder: 'Nombre, email o teléfono',
+              value: search,
+              onChange: (value) => changeFilters({ q: value, page: '1' }),
+            }}
+            csv={{ filename: 'clientes', headers: CSV_HEADERS, rows: toCsvRows(rows) }}
+            chips={chips}
+            onRemoveChip={removeChip}
+            onClearChips={() => changeFilters({ q: '', status: 'all', page: '1' })}
+            resultCount={server.data ? total : undefined}
+            noun={['cliente', 'clientes']}
+          />
           <SelectionBar count={selectedCustomers.length} noun={['cliente', 'clientes']} onClear={clearSelection}>
             <span className="text-sm text-primary-strong">Se exporta sólo la selección.</span>
           </SelectionBar>
@@ -195,6 +185,6 @@ export const Customers = () => {
         customer={form.open ? form.customer : null}
       />
       <FindCustomerByUserModal open={findingByUser} onClose={() => setFindingByUser(false)} />
-    </div>
+    </PageContainer>
   );
 };

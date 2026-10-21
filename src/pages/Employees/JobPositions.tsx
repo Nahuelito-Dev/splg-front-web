@@ -11,6 +11,7 @@ import {
   PageHeader,
   ResponsiveTable,
   RowActions,
+  PageContainer,
 } from '../../common/components/ui';
 import { usePermissions } from '../../hooks';
 import type { JobPosition } from '../../services/api/types';
@@ -129,7 +130,7 @@ export const JobPositions = () => {
   ];
 
   return (
-    <div className="mx-auto max-w-5xl p-4 md:p-8">
+    <PageContainer size="md">
       <PageHeader
         title="Puestos"
         description="Los puestos de trabajo del personal. La categoría define el rol de acceso y la documentación."
@@ -200,6 +201,6 @@ export const JobPositions = () => {
       )}
       <JobPositionFormModal open={creating} onClose={() => setCreating(false)} position={null} />
       <JobPositionFormModal open={Boolean(editing)} onClose={() => setEditing(null)} position={editing} />
-    </div>
+    </PageContainer>
   );
 };

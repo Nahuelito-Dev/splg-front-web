@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { CircleUser, Copy, ExternalLink, MapPin, Truck, UserCheck, Wallet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Avatar, Badge, Button, Card, UserRefLink } from '../../../../common/components/ui';
+import { Avatar, Badge, Button, Card, CardHeader, UserRefLink } from '../../../../common/components/ui';
 import type { Order } from '../../../../services/api/types';
 import { useFindCustomerByUserId } from '../../../../services/queries/customers';
 import { useUser } from '../../../../services/queries/users';
@@ -15,9 +15,7 @@ import { orderCoordinates } from './orderLocation';
 
 const Section = ({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) => (
   <section className="p-5">
-    <h3 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted">
-      {icon} {title}
-    </h3>
+    <CardHeader title={title} icon={icon} as="h3" className="mb-3" />
     {children}
   </section>
 );

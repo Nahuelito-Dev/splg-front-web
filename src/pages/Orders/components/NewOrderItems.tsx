@@ -7,7 +7,7 @@ import {
   type UseFormSetValue,
 } from 'react-hook-form';
 import { CirclePlus, Trash2 } from 'lucide-react';
-import { Button, IconButton, Input, Select } from '../../../common/components/ui';
+import { Button, IconButton, Input, Select, CardHeader } from '../../../common/components/ui';
 import { useGasCylinders } from '../../../services/queries/gasCylinders';
 import { formatCurrency } from '../../../utils/format';
 import type { NewOrderValues } from './newOrderSchema';
@@ -40,7 +40,7 @@ export const NewOrderItems = ({ control, register, setValue, errors }: Props) =>
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-ink">Ítems</h3>
+        <CardHeader title="Ítems" as="h3" className="" />
         <Button
           type="button"
           size="sm"

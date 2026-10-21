@@ -12,6 +12,8 @@ import {
   EntityPhoto,
   ErrorState,
   PageHeader,
+  PageContainer,
+  type MenuAction,
 } from '../../common/components/ui';
 import { useBackToList, usePermissions } from '../../hooks';
 import { useCrumbLeaf } from '../../common/components';
@@ -41,60 +43,40 @@ export const DistributorDetails = () => {
 
   if (!isSuperAdmin) {
     return (
-      <div className="mx-auto max-w-7xl p-4 md:p-8">
+      <PageContainer>
         <EmptyState title="Sin acceso" description="Sólo el administrador general ve las distribuidoras." />
-      </div>
+      </PageContainer>
     );
   }
 
   const isViewing = distributor ? activeDistributor.get() === distributor.slug : false;
 
+  // La primaria es entrar a operar la empresa («Ver como»); el resto de la gestión va al menú ⋮.
+  const headerPrimary = distributor ? (
+    <>
+      <AuditHistoryLink entity="Distributor" recordId={distributor.distributor_id} />
+      {isViewing ? (
+        <span className="self-center px-2 text-xs font-semibold text-primary-strong">Viendo como esta empresa</span>
+      ) : (
+        <Button size="sm" icon={<ArrowLeftRight />} onClick={() => viewAs(distributor.slug)}>
+          Ver como
+        </Button>
+      )}
+    </>
+  ) : undefined;
+  const headerSecondary: MenuAction[] = distributor
+    ? [
+        { label: 'Editar', icon: <Pencil />, onClick: () => setEditing(true) },
+        distributor.status === 'active'
+          ? { label: 'Suspender', icon: <Ban />, onClick: () => void toggleStatus(distributor) }
+          : { label: 'Activar', icon: <CircleCheck />, onClick: () => void toggleStatus(distributor) },
+        { label: 'Dar de baja', icon: <Trash2 />, tone: 'danger' as const, onClick: () => void remove(distributor) },
+      ]
+    : [];
+
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
-      <PageHeader
-        title="Ficha de la empresa"
-        actions={
-          distributor && (
-            <>
-              <AuditHistoryLink entity="Distributor" recordId={distributor.distributor_id} />
-              {isViewing ? (
-                <span className="self-center px-2 text-xs font-semibold text-primary-strong">
-                  Viendo como esta empresa
-                </span>
-              ) : (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  icon={<ArrowLeftRight />}
-                  onClick={() => viewAs(distributor.slug)}
-                >
-                  Ver como
-                </Button>
-              )}
-              <Button variant="secondary" size="sm" icon={<Pencil />} onClick={() => setEditing(true)}>
-                Editar
-              </Button>
-              {distributor.status === 'active' ? (
-                <Button variant="secondary" size="sm" icon={<Ban />} onClick={() => void toggleStatus(distributor)}>
-                  Suspender
-                </Button>
-              ) : (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  icon={<CircleCheck />}
-                  onClick={() => void toggleStatus(distributor)}
-                >
-                  Activar
-                </Button>
-              )}
-              <Button variant="danger" size="sm" icon={<Trash2 />} onClick={() => void remove(distributor)}>
-                Dar de baja
-              </Button>
-            </>
-          )
-        }
-      />
+    <PageContainer>
+      <PageHeader title="Ficha de la empresa" actions={headerPrimary} secondaryActions={headerSecondary} />
 
       {isPending ? (
         <DetailSkeleton />
@@ -142,6 +124,6 @@ export const DistributorDetails = () => {
       )}
 
       <DistributorFormModal open={editing} onClose={() => setEditing(false)} distributor={distributor ?? null} />
-    </div>
+    </PageContainer>
   );
 };

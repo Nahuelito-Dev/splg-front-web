@@ -69,6 +69,12 @@ src/
   DTO del back; las reglas de cuenta están en `common/forms/accountSchema.ts`.
 - Campos del kit (`Input`, `Select`, `TextArea`, `Checkbox`): traen etiqueta
   asociada, error anunciado (`role="alert"`) y `aria-invalid`.
+- **Campos conectados:** `<Form methods={methods} onSubmit={onSubmit} id="…">` (pone el
+  `id` y `noValidate`) con `FormInput`, `FormSelect`, `FormTextArea` y `FormCheckbox`
+  (las fechas son `FormInput type="date"`). Leen `name` del contexto y sacan el error
+  del `formState`: no se escribe `error={errors.x?.message}` ni `{...register('x')}`.
+  `registerOptions` pasa `valueAsNumber` y similares. `onSubmit` recibe los valores ya
+  validados (no se envuelve en `handleSubmit`).
 - El botón de enviar muestra `loading` con `mutation.isPending`.
 
 ## 6. Interfaz
@@ -82,6 +88,22 @@ src/
   `IconButton` (con `label` obligatorio), `Badge` (con `labelOf` de
   `statusLabels`), `DataTable`, `Modal`, `SearchInput`, `EmptyState`,
   `LoadingState`, `ErrorState`.
+- **Contenedor y encabezados:** cada página va en `PageContainer` (`size` `sm|md|lg|xl|full`,
+  `lg` por defecto; `stack` separa los bloques), no en un `div` con `mx-auto max-w-*`.
+  Las tarjetas de una ficha abren con `CardHeader` (título, `subtitle`, `icon`, `badge`,
+  `action`); no se arma el `h2` a mano. `PageHeader` pone la acción primaria en `actions`
+  y las demás en `secondaryActions` (`{ label, icon, onClick, tone, blockedReason }`): con
+  una se ve como botón y con dos o más (3 en total) van en el menú ⋮ «Más acciones».
+- **Barra de un listado:** `TableToolbar` (`filters` con selects y `DateRangeFilter`,
+  `search` que ocupa el resto, `csv` / `actions` en el menú ⋮ «Más», y debajo los chips o
+  «N resultados»). Las fechas de un filtro son `DateRangeFilter` (o `DateRangePicker`),
+  no un par de `type="date"`. Los chips dicen el filtro («Estado: Bloqueado», «Búsqueda:
+  "juan"»): `FilterChips` deduce el nombre de `key` (`chipText`) o se pasa `name`.
+- **Densidad:** `DataTable` trae el interruptor «Denso» en el pie (filas de 60 a 44 px);
+  se recuerda por dispositivo (`TABLE_DENSE_KEY`).
+- **Estilos de MUI:** menús, popovers, diálogos, paneles, fondo, casillas y la grilla se
+  estilan una vez en `theme/components/*` leyendo `brand.json`. En el componente no van
+  clases con `!` para pelear con MUI; sólo posición (`!mt-2`, `!w-[260px]`).
 - **Patrones de listado:** `Tabs` con contador (la cantidad sale de la API:
   `X-Total-Count` con una página mínima, o los endpoints de stats; sin dato es un
   guion, nunca 0), `FilterChips` con `resultCount` («N resultados» y limpiar),
@@ -101,7 +123,9 @@ src/
 - **Formato:** moneda y fechas con `utils/format` (es-AR). Estados con
   `utils/statusLabels`: nunca un `switch` de colores dentro de un componente.
 - **Avisos:** `notify.success/error` (toasts) y `confirm({ danger: true })`
-  antes de cualquier acción destructiva. No `Swal.fire` suelto ni `alert`.
+  antes de cualquier acción destructiva (un `Dialog` de MUI con promesa, dibujado por
+  `ConfirmDialogHost`, montado una vez en `App`; en una baja el foco arranca en Cancelar).
+  No `alert`.
 - **Permisos:** `usePermissions()`. Lo que el rol no puede hacer no se muestra
   (la API igual lo rechaza).
 - **Distribuidora activa:** el administrador general sin "Ver como" no puede

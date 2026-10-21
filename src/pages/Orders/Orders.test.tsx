@@ -257,9 +257,12 @@ describe('Orders: filtros en la URL y exportación', () => {
 
   it('ofrece exportar el listado visible y, con filas marcadas, la selección', () => {
     renderPage();
-    expect(screen.getByRole('button', { name: 'Exportar CSV' })).toBeEnabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Más' }));
+    expect(screen.getByRole('menuitem', { name: 'Exportar CSV' })).not.toHaveAttribute('aria-disabled', 'true');
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
     fireEvent.click(checkboxes()[0]);
-    expect(screen.getByRole('button', { name: 'Exportar selección' })).toBeEnabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Más' }));
+    expect(screen.getByRole('menuitem', { name: 'Exportar selección' })).not.toHaveAttribute('aria-disabled', 'true');
   });
 });
 

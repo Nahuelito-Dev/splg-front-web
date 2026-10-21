@@ -11,10 +11,12 @@ import {
   DetailSkeleton,
   EmptyState,
   ErrorState,
-  Input,
   KpiCard,
   PageHeader,
   ResponsiveTable,
+  PageContainer,
+  DateRangeFilter,
+  CardHeader,
 } from '../../common/components/ui';
 import { useBackToList, usePermissions, useClampPage, useUrlPagedParams } from '../../hooks';
 import type { PurchaseReceiptSummary } from '../../services/api/types';
@@ -91,7 +93,7 @@ export const SupplierDetails = () => {
   useClampPage(pagination, history.data?.total, setPagination);
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title={supplier?.businessName ?? 'Ficha del proveedor'}
         badges={
@@ -160,23 +162,11 @@ export const SupplierDetails = () => {
               />
             </div>
             <Card>
-              <div className="flex flex-wrap items-end justify-between gap-3 border-b border-outline px-4 py-3">
-                <h2 className="text-sm font-semibold text-ink">Historial de compras</h2>
-                <div className="grid w-full gap-3 sm:w-auto sm:grid-cols-2">
-                  <Input
-                    label="Desde"
-                    type="date"
-                    value={from}
-                    onChange={(event) => setFilters({ from: event.target.value })}
-                  />
-                  <Input
-                    label="Hasta"
-                    type="date"
-                    value={to}
-                    onChange={(event) => setFilters({ to: event.target.value })}
-                  />
-                </div>
-              </div>
+              <CardHeader
+                title="Historial de compras"
+                action={<DateRangeFilter from={from} to={to} onChange={(range) => setFilters(range)} />}
+                className="border-b border-outline px-4 py-3"
+              />
               {history.error ? (
                 <ErrorState error={history.error} resource="El historial" onRetry={() => void history.refetch()} />
               ) : (
@@ -224,6 +214,6 @@ export const SupplierDetails = () => {
         </div>
       )}
       {supplier && <SupplierFormModal open={editing} onClose={() => setEditing(false)} supplier={supplier} />}
-    </div>
+    </PageContainer>
   );
 };

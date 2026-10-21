@@ -11,7 +11,10 @@ const CLASE = new RegExp(
   'g',
 );
 const HEX = /['"`]#[0-9a-fA-F]{3,8}['"`]|\[#[0-9a-fA-F]{3,8}\]/g;
+const RGB = /\brgba?\(\s*\d/g;
+// El tema define los colores (brand.json, muiTheme.ts); sus overrides de componentes se revisan como el resto.
 const EXENTOS = [join('src', 'theme')];
+const REVISADOS = [join('src', 'theme', 'components')];
 
 const archivos = (dir) =>
   readdirSync(dir).flatMap((n) => {
@@ -22,11 +25,12 @@ const archivos = (dir) =>
 
 const fallas = [];
 for (const archivo of archivos('src')) {
-  if (EXENTOS.some((e) => archivo.startsWith(e))) continue;
+  if (EXENTOS.some((e) => archivo.startsWith(e)) && !REVISADOS.some((r) => archivo.startsWith(r))) continue;
   readFileSync(archivo, 'utf8')
     .split('\n')
     .forEach((linea, i) => {
-      for (const m of [...linea.matchAll(CLASE), ...linea.matchAll(HEX)]) fallas.push(`${archivo}:${i + 1}  ${m[0]}`);
+      const rgb = REVISADOS.some((r) => archivo.startsWith(r)) ? [...linea.matchAll(RGB)] : [];
+      for (const m of [...linea.matchAll(CLASE), ...linea.matchAll(HEX), ...rgb]) fallas.push(`${archivo}:${i + 1}  ${m[0]}`);
     });
 }
 if (fallas.length) {

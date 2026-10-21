@@ -13,6 +13,9 @@ import {
   ErrorState,
   PageHeader,
   ResponsiveTable,
+  PageContainer,
+  CardHeader,
+  type MenuAction,
 } from '../../common/components/ui';
 import { useBackToList, usePermissions } from '../../hooks';
 import { useInitialCount, useUpdateWarehouse, useWarehouse } from '../../services/queries/stock';
@@ -59,8 +62,30 @@ export const WarehouseDetails = () => {
 
   const rows = warehouse ? pivotBalances(warehouse.balances) : [];
 
+  // La primaria es el conteo inicial mientras falta (deja la ficha lista para operar); después, editar.
+  const canCount = canWrite && counts.isSuccess && !initialCount && Boolean(warehouse?.isActive);
+  const headerPrimary = warehouse ? (
+    canCount ? (
+      <Button size="sm" icon={<ClipboardCheck />} onClick={() => setCounting(true)}>
+        Conteo inicial
+      </Button>
+    ) : (
+      <Button size="sm" icon={<Pencil />} disabled={!canWrite} title={writeHint} onClick={() => setEditing(true)}>
+        Editar
+      </Button>
+    )
+  ) : undefined;
+  const headerSecondary: MenuAction[] = warehouse
+    ? [
+        ...(canCount ? [{ label: 'Editar', icon: <Pencil />, onClick: () => setEditing(true) }] : []),
+        ...(canWrite && warehouse.isActive && !warehouse.isDefault
+          ? [{ label: 'Marcar predeterminado', icon: <Star />, onClick: () => void setDefault() }]
+          : []),
+      ]
+    : [];
+
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title={warehouse?.name ?? 'Ficha del galpón'}
         badges={
@@ -73,31 +98,8 @@ export const WarehouseDetails = () => {
             </>
           )
         }
-        actions={
-          warehouse && (
-            <>
-              {canWrite && warehouse.isActive && !warehouse.isDefault && (
-                <Button variant="secondary" size="sm" icon={<Star />} onClick={() => void setDefault()}>
-                  Marcar predeterminado
-                </Button>
-              )}
-              {canWrite && counts.isSuccess && !initialCount && warehouse.isActive && (
-                <Button variant="secondary" size="sm" icon={<ClipboardCheck />} onClick={() => setCounting(true)}>
-                  Conteo inicial
-                </Button>
-              )}
-              <Button
-                size="sm"
-                icon={<Pencil />}
-                disabled={!canWrite}
-                title={writeHint}
-                onClick={() => setEditing(true)}
-              >
-                Editar
-              </Button>
-            </>
-          )
-        }
+        actions={headerPrimary}
+        secondaryActions={headerSecondary}
       />
       {isPending ? (
         <DetailSkeleton />
@@ -151,7 +153,7 @@ export const WarehouseDetails = () => {
             </div>
           </Card>
           <Card className="min-w-0 lg:col-span-2">
-            <h2 className="border-b border-outline px-4 py-3 text-sm font-semibold text-ink">Saldos por garrafa</h2>
+            <CardHeader title="Saldos por garrafa" className="border-b border-outline px-4 py-3" />
             <ResponsiveTable
               label="saldos"
               rows={rows}
@@ -182,6 +184,6 @@ export const WarehouseDetails = () => {
           <InitialCountModal open={counting} onClose={() => setCounting(false)} warehouse={warehouse} />
         </>
       )}
-    </div>
+    </PageContainer>
   );
 };

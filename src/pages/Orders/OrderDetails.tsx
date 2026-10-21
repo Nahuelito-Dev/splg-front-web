@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { DetailSkeleton, ErrorState, PageHeader } from '../../common/components/ui';
+import { DetailSkeleton, ErrorState, PageHeader, PageContainer } from '../../common/components/ui';
 import { useBackToList } from '../../hooks';
 import { formatShortId } from '../../utils/format';
 import { useCrumbLeaf } from '../../common/components';
@@ -47,7 +47,7 @@ export const OrderDetails = () => {
   }, [id, subscribe, queryClient]);
 
   return (
-    <div className="mx-auto max-w-6xl p-4 md:p-8">
+    <PageContainer>
       {isPending ? (
         <DetailSkeleton />
       ) : error || !order ? (
@@ -78,6 +78,6 @@ export const OrderDetails = () => {
           </div>
         </>
       )}
-    </div>
+    </PageContainer>
   );
 };

@@ -9,6 +9,7 @@ import {
   IconButton,
   LoadingState,
   RowActions,
+  CardHeader,
 } from '../../../../common/components/ui';
 import { usePermissions } from '../../../../hooks';
 import type { UserAddressConUsuario } from '../../../../services/api/types';
@@ -92,16 +93,19 @@ export const CustomerAddresses = ({ userId }: { userId: string }) => {
 
   return (
     <Card className="p-6">
-      <div className="mb-4 flex items-center justify-between gap-2">
-        <h2 className="text-base font-semibold text-ink">Direcciones</h2>
-        {canManageCustomerAccounts && addresses.length > 0 && (
-          <IconButton
-            label="Agregar dirección"
-            icon={<Plus />}
-            onClick={() => setForm({ open: true, address: null })}
-          />
-        )}
-      </div>
+      <CardHeader
+        title="Direcciones"
+        action={
+          canManageCustomerAccounts &&
+          addresses.length > 0 && (
+            <IconButton
+              label="Agregar dirección"
+              icon={<Plus />}
+              onClick={() => setForm({ open: true, address: null })}
+            />
+          )
+        }
+      />
 
       {isPending ? (
         <LoadingState label="Cargando direcciones…" />

@@ -1,4 +1,4 @@
-import { Card, EmptyState, PageHeader, Tabs, tabPanelProps } from '../../common/components/ui';
+import { Card, EmptyState, PageHeader, Tabs, tabPanelProps, PageContainer } from '../../common/components/ui';
 import { usePermissions, useProfileTab } from '../../hooks';
 import { DataAuditTab } from './components/DataAuditTab';
 import { OperationsAuditTab } from './components/OperationsAuditTab';
@@ -22,15 +22,15 @@ export const Audit = () => {
 
   if (!canViewAudit) {
     return (
-      <div className="mx-auto max-w-7xl p-4 md:p-8">
+      <PageContainer>
         <PageHeader title="Auditoría" />
         <EmptyState title="Sin acceso" description="Sólo un administrador puede ver el registro de auditoría." />
-      </div>
+      </PageContainer>
     );
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
+    <PageContainer stack>
       <PageHeader
         title="Auditoría"
         description="Quién cambió qué, cuándo y desde dónde. Nada se borra: las bajas son lógicas y quedan registradas."
@@ -39,6 +39,6 @@ export const Audit = () => {
         <Tabs items={TABS} value={tab} onChange={setTab} label="Tipo de auditoría" idPrefix={TABS_ID} />
       </Card>
       <div {...tabPanelProps(TABS_ID, tab)}>{tab === 'data' ? <DataAuditTab /> : <OperationsAuditTab />}</div>
-    </div>
+    </PageContainer>
   );
 };

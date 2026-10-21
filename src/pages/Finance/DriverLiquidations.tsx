@@ -12,8 +12,9 @@ import {
   PageHeader,
   ResponsiveTable,
   RowActions,
-  ExportCsvButton,
   StatusFilterTabs,
+  PageContainer,
+  TableToolbar,
 } from '../../common/components/ui';
 import { FROM_LIST_STATE, useClampPage, usePermissions, useUrlPagedParams } from '../../hooks';
 import type { DriverLiquidation } from '../../services/api/types';
@@ -99,7 +100,7 @@ export const DriverLiquidations = () => {
   useClampPage(pagination, data?.total, setPagination);
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Liquidaciones"
         description="El pago de las comisiones de cada chofer: se arma en borrador, se aprueba y se paga desde una caja."
@@ -118,12 +119,11 @@ export const DriverLiquidations = () => {
           label="Filtrar liquidaciones por estado"
           idPrefix="driver-liquidations"
         >
-          <div className="border-b border-outline p-4 sm:max-w-xs"></div>
-          <div className="flex justify-end border-b border-outline px-4 py-2">
-            <ExportCsvButton
-              filename="liquidaciones"
-              headers={['Liquidación', 'Chofer', 'Desde', 'Hasta', 'Bruto', 'Deducciones', 'Neto', 'Estado']}
-              rows={(data?.data ?? []).map((row) => [
+          <TableToolbar
+            csv={{
+              filename: 'liquidaciones',
+              headers: ['Liquidación', 'Chofer', 'Desde', 'Hasta', 'Bruto', 'Deducciones', 'Neto', 'Estado'],
+              rows: (data?.data ?? []).map((row) => [
                 row.number,
                 row.employeeName,
                 csvDay(row.periodFrom),
@@ -132,9 +132,10 @@ export const DriverLiquidations = () => {
                 row.deductions,
                 row.net,
                 labelOf(LIQUIDATION_STATUS, row.status).text,
-              ])}
-            />
-          </div>
+              ]),
+            }}
+            noun={['liquidación', 'liquidaciones']}
+          />
           {error ? (
             <ErrorState error={error} resource="Las liquidaciones" onRetry={() => void refetch()} />
           ) : (
@@ -176,6 +177,6 @@ export const DriverLiquidations = () => {
         </StatusFilterTabs>
       </Card>
       <LiquidationFormModal open={creating} onClose={() => setCreating(false)} />
-    </div>
+    </PageContainer>
   );
 };

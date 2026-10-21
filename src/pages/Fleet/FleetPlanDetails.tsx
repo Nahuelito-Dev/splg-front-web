@@ -11,6 +11,7 @@ import {
   EmptyState,
   ErrorState,
   PageHeader,
+  PageContainer,
 } from '../../common/components/ui';
 import { useBackToList, usePermissions } from '../../hooks';
 import { useCrumbLeaf } from '../../common/components';
@@ -49,17 +50,17 @@ export const FleetPlanDetails = () => {
 
   if (needsDistributor) {
     return (
-      <div className="mx-auto max-w-7xl p-4 md:p-8">
+      <PageContainer>
         <EmptyState
           title="Elegí una distribuidora"
           description="Como administrador general, elegí una con «Ver como» para ver sus planes."
         />
-      </div>
+      </PageContainer>
     );
   }
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Ficha del plan"
         actions={
@@ -125,6 +126,6 @@ export const FleetPlanDetails = () => {
       )}
 
       <FleetPlanFormModal open={editing} onClose={() => setEditing(false)} plan={plan ?? null} />
-    </div>
+    </PageContainer>
   );
 };

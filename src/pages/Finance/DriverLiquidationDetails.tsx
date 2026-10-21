@@ -15,6 +15,8 @@ import {
   PageHeader,
   ReasonModal,
   ResponsiveTable,
+  PageContainer,
+  CardHeader,
 } from '../../common/components/ui';
 import { useBackToList, usePermissions } from '../../hooks';
 import { toApiError } from '../../services/api/errors';
@@ -173,7 +175,7 @@ export const DriverLiquidationDetails = () => {
   );
 
   return (
-    <div className="mx-auto max-w-5xl p-4 md:p-8">
+    <PageContainer size="md">
       <PageHeader
         title={liquidation ? `Liquidación N° ${liquidation.number}` : 'Liquidación'}
         eyebrow={
@@ -206,7 +208,7 @@ export const DriverLiquidationDetails = () => {
             />
           </Card>
           <Card>
-            <h2 className="border-b border-outline px-5 py-3 text-base font-semibold">Asientos incluidos</h2>
+            <CardHeader title="Asientos incluidos" className="border-b border-outline px-5 py-3" />
             <ResponsiveTable
               label="asientos de la liquidación"
               rows={liquidation.entries}
@@ -239,6 +241,6 @@ export const DriverLiquidationDetails = () => {
           />
         </div>
       )}
-    </div>
+    </PageContainer>
   );
 };

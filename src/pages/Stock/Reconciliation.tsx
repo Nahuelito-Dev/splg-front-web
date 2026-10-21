@@ -10,6 +10,8 @@ import {
   PageHeader,
   ResponsiveTable,
   Skeleton,
+  PageContainer,
+  CardHeader,
 } from '../../common/components/ui';
 import { usePermissions } from '../../hooks';
 import type { DiferenciaDeVendible, PedidoEntregadoSinMovimiento } from '../../services/api/types';
@@ -99,7 +101,7 @@ export const Reconciliation = () => {
   ];
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Conciliación"
         description="Verifica que el vendible coincida con las llenas físicas menos lo reservado. Corre sola todas las noches y avisa si hay diferencias."
@@ -157,7 +159,7 @@ export const Reconciliation = () => {
             </div>
           )}
           <Card>
-            <h2 className="border-b border-outline px-4 py-3 text-sm font-semibold text-ink">Vendible por garrafa</h2>
+            <CardHeader title="Vendible por garrafa" className="border-b border-outline px-4 py-3" />
             <ResponsiveTable
               label="la conciliación"
               rows={data.cylinders}
@@ -191,7 +193,7 @@ export const Reconciliation = () => {
           </Card>
           <Card>
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-outline px-4 py-3">
-              <h2 className="text-sm font-semibold text-ink">Entregas sin movimiento de stock</h2>
+              <CardHeader title="Entregas sin movimiento de stock" className="" />
               <Button
                 size="sm"
                 variant="secondary"
@@ -227,6 +229,6 @@ export const Reconciliation = () => {
         </div>
       )}
       <ReconciliationAdjustModal difference={adjusting} onClose={() => setAdjusting(null)} />
-    </div>
+    </PageContainer>
   );
 };

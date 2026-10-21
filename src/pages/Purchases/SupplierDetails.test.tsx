@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { receiptSummary, supplier } from '../../test/fixtures';
+import { presetRange } from '../../utils/dateRange';
 import { failed, loading, ok, renderPage } from '../../test/pageTest';
 
 const state = vi.hoisted(() => ({ supplier: vi.fn(), history: vi.fn(), canWrite: true }));
@@ -62,16 +63,14 @@ describe('SupplierDetails', () => {
     );
   });
 
-  it('cambiar «Desde» filtra el historial y vuelve a la primera página', () => {
+  it('elegir un período filtra el historial y vuelve a la primera página', () => {
     state.supplier.mockReturnValue(ok(supplier()));
     state.history.mockReturnValue(ok({ ...HISTORY, total: 30 }));
     draw('/purchases/suppliers/s-1?page=3');
-    fireEvent.change(screen.getByLabelText('Desde'), { target: { value: '2026-10-05' } });
-    expect(state.history).toHaveBeenLastCalledWith(
-      's-1',
-      { page: 0, pageSize: 10 },
-      { from: '2026-10-05', to: undefined },
-    );
+    fireEvent.click(screen.getByRole('button', { name: /Fechas:/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Últimos 7 días' }));
+    const week = presetRange('last7');
+    expect(state.history).toHaveBeenLastCalledWith('s-1', { page: 0, pageSize: 10 }, week);
   });
 
   it('con un período sin compras no dice que nunca se le compró', () => {

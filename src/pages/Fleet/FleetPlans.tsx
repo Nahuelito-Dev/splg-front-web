@@ -13,6 +13,7 @@ import {
   PageHeader,
   RowActions,
   Select,
+  PageContainer,
 } from '../../common/components/ui';
 import { FROM_LIST_STATE, usePermissions, useUrlParam } from '../../hooks';
 import type { FleetPlan } from '../../services/api/types';
@@ -151,7 +152,7 @@ export const FleetPlans = () => {
   );
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 p-4 md:p-8">
+    <PageContainer stack>
       <PageHeader
         title="Planes de flota"
         description="Las reglas de mantenimiento y habilitación: cada una dispara sus propias tareas (CU-105/140)."
@@ -217,6 +218,6 @@ export const FleetPlans = () => {
         onClose={() => setForm({ open: false })}
         plan={form.open ? form.plan : null}
       />
-    </div>
+    </PageContainer>
   );
 };

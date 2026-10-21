@@ -1,6 +1,17 @@
 import { useState } from 'react';
 import { AlertTriangle, Save } from 'lucide-react';
-import { Badge, Button, Card, EmptyState, ErrorState, Input, PageHeader, Skeleton } from '../../common/components/ui';
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  ErrorState,
+  Input,
+  PageHeader,
+  Skeleton,
+  PageContainer,
+  CardHeader,
+} from '../../common/components/ui';
 import { usePermissions } from '../../hooks';
 import { useThresholds, useUpsertThresholds, useWarehouses } from '../../services/queries/stock';
 import { notify } from '../../utils/notifications';
@@ -41,7 +52,7 @@ export const Thresholds = () => {
     );
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Mínimos de stock"
         description="Cuántas llenas tiene que haber como mínimo en cada galpón. Si bajan de ahí, el sistema avisa a los administradores."
@@ -76,7 +87,7 @@ export const Thresholds = () => {
         <div className="space-y-6">
           {(warehouses.data ?? []).map((warehouse) => (
             <Card key={warehouse.warehouseId}>
-              <h2 className="border-b border-outline px-4 py-3 text-sm font-semibold text-ink">{warehouse.name}</h2>
+              <CardHeader title={warehouse.name} className="border-b border-outline px-4 py-3" />
               <ul className="divide-y divide-outline">
                 {cylinders.options.map((cylinder) => {
                   const key = thresholdCellKey(warehouse.warehouseId, cylinder.value);
@@ -111,6 +122,6 @@ export const Thresholds = () => {
           ))}
         </div>
       )}
-    </div>
+    </PageContainer>
   );
 };

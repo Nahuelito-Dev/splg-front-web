@@ -16,6 +16,7 @@ import {
   RowActions,
   SearchInput,
   Select,
+  PageContainer,
 } from '../../common/components/ui';
 import { usePermissions } from '../../hooks';
 import type { FleetTask } from '../../services/api/types';
@@ -170,7 +171,7 @@ export const FleetTasks = () => {
   );
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
+    <PageContainer stack>
       <PageHeader
         title="Tareas de flota"
         description="Vencimientos y mantenimientos de toda la flota, en un solo lugar."
@@ -294,6 +295,6 @@ export const FleetTasks = () => {
         task={editing}
       />
       <FleetTaskCloseModal open={Boolean(closing)} onClose={() => setClosing(null)} task={closing} />
-    </div>
+    </PageContainer>
   );
 };

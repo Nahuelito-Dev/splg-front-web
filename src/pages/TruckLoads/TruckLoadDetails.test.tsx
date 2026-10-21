@@ -123,7 +123,8 @@ describe('TruckLoadDetails', () => {
     state.load.mockReturnValue(ok(LOAD()));
     state.depart.mockReturnValue(mutation());
     draw();
-    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Más acciones' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Cancelar' }));
     expect(screen.getByText('Cancelar carga')).toBeInTheDocument();
   });
 

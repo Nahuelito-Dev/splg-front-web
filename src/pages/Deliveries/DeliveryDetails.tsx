@@ -7,6 +7,7 @@ import {
   ProfileTabPanel,
   ProfileTabs,
   type ProfileTabItem,
+  PageContainer,
 } from '../../common/components/ui';
 import { useBackToList, usePermissions, useProfileTab } from '../../hooks';
 import { useCrumbLeaf } from '../../common/components';
@@ -42,7 +43,7 @@ export const DeliveryDetails = () => {
   );
 
   return (
-    <div className="mx-auto max-w-5xl p-4 md:p-8">
+    <PageContainer size="md">
       <PageHeader
         title="Ficha del chofer"
         actions={delivery && <AuditHistoryLink entity="Delivery" recordId={delivery.delivery_id} />}
@@ -78,6 +79,6 @@ export const DeliveryDetails = () => {
           </ProfileTabPanel>
         </>
       )}
-    </div>
+    </PageContainer>
   );
 };

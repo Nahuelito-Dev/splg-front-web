@@ -1,6 +1,14 @@
 import { useMemo, useState } from 'react';
 import { FolderOpen } from 'lucide-react';
-import { Card, EmptyState, PageHeader, Tabs, tabPanelProps, type TabItem } from '../../common/components/ui';
+import {
+  Card,
+  EmptyState,
+  PageHeader,
+  Tabs,
+  tabPanelProps,
+  type TabItem,
+  PageContainer,
+} from '../../common/components/ui';
 import { useDebounce, usePermissions, useUrlParams } from '../../hooks';
 import { useCars } from '../../services/queries/cars';
 import { useEmployee, useEmployees } from '../../services/queries/employees';
@@ -85,7 +93,7 @@ export const FleetFiles = () => {
   };
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
+    <PageContainer stack>
       <PageHeader
         title="Archivos de documentación"
         description="Seguro, VTV, licencia, DNI y demás archivos de cada vehículo y legajo, con su vencimiento."
@@ -142,6 +150,6 @@ export const FleetFiles = () => {
           </div>
         </Card>
       )}
-    </div>
+    </PageContainer>
   );
 };

@@ -1,5 +1,5 @@
 import { useSearchParams } from 'react-router-dom';
-import { DateRangePicker, PageHeader } from '../../common/components/ui';
+import { DateRangePicker, PageHeader, PageContainer } from '../../common/components/ui';
 import {
   presetRange,
   isReportableDay,
@@ -63,7 +63,7 @@ export const Reports = () => {
   const { range, preset, granularity, setRange, setGranularity } = useReportsParams();
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
+    <PageContainer stack>
       <PageHeader
         title="Reportes"
         description={`Ventas cobradas del ${formatDay(range.from)} al ${formatDay(range.to)}: el efectivo cuenta recién cuando el chofer confirma el cobro o un administrador lo registra, y la transferencia, cuando un administrador confirma que llegó.`}
@@ -77,6 +77,6 @@ export const Reports = () => {
         <DriverSales range={range} />
         <PaymentSales range={range} />
       </div>
-    </div>
+    </PageContainer>
   );
 };

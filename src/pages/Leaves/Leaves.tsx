@@ -6,14 +6,15 @@ import {
   Card,
   EmptyState,
   ErrorState,
-  FilterChips,
-  Input,
   PageHeader,
   Select,
   Tabs,
   tabPanelProps,
   type FilterChip,
   type TabItem,
+  PageContainer,
+  TableToolbar,
+  DateRangeFilter,
 } from '../../common/components/ui';
 import { usePermissions, useUrlParams } from '../../hooks';
 import type { Leave } from '../../services/api/types';
@@ -82,7 +83,7 @@ export const Leaves = () => {
   if (to) chips.push({ key: 'to', label: `Hasta ${formatDay(to)}` });
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Licencias"
         description="Las solicitudes de licencia y ausencia del personal: se aprueban, se rechazan o se cancelan desde acá."
@@ -109,53 +110,42 @@ export const Leaves = () => {
             idPrefix={TABS_ID}
           />
           <div {...tabPanelProps(TABS_ID, segment)}>
-            <div className="flex flex-col gap-3 border-b border-outline p-4">
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <Select
-                  label="Empleado"
-                  value={employee}
-                  onChange={(e) => setFilters({ employee: e.target.value, page: '1' })}
-                  options={[
-                    { value: '', label: 'Todos' },
-                    ...(employees.data?.rows ?? []).map((e) => ({ value: e.employeeId, label: employeeFullName(e) })),
-                  ]}
-                />
-                <Select
-                  label="Tipo"
-                  value={type}
-                  onChange={(e) => setFilters({ type: e.target.value, page: '1' })}
-                  options={[
-                    { value: '', label: 'Todos' },
-                    ...Object.entries(LEAVE_TYPE).map(([value, label]) => ({ value, label })),
-                  ]}
-                />
-                <Input
-                  label="Desde"
-                  type="date"
-                  value={from}
-                  onChange={(e) => setFilters({ from: e.target.value, page: '1' })}
-                />
-                <Input
-                  label="Hasta"
-                  type="date"
-                  value={to}
-                  error={invalidPeriod ? 'No puede ser anterior al inicio' : undefined}
-                  onChange={(e) => setFilters({ to: e.target.value, page: '1' })}
-                />
-              </div>
-              {chips.length > 0 ? (
-                <FilterChips
-                  items={chips}
-                  onRemove={(key) => setFilters({ [key]: '', page: '1' })}
-                  onClearAll={() => setFilters({ type: '', employee: '', from: '', to: '', page: '1' })}
-                  resultCount={server.data?.total}
-                />
-              ) : (
-                <p className="text-sm text-muted" aria-live="polite">
-                  {server.data ? `${server.data.total} ${server.data.total === 1 ? 'licencia' : 'licencias'}` : ''}
+            <TableToolbar
+              filters={
+                <>
+                  <Select
+                    label="Empleado"
+                    value={employee}
+                    onChange={(e) => setFilters({ employee: e.target.value, page: '1' })}
+                    options={[
+                      { value: '', label: 'Todos' },
+                      ...(employees.data?.rows ?? []).map((e) => ({ value: e.employeeId, label: employeeFullName(e) })),
+                    ]}
+                  />
+                  <Select
+                    label="Tipo"
+                    value={type}
+                    onChange={(e) => setFilters({ type: e.target.value, page: '1' })}
+                    options={[
+                      { value: '', label: 'Todos' },
+                      ...Object.entries(LEAVE_TYPE).map(([value, label]) => ({ value, label })),
+                    ]}
+                  />
+                  <DateRangeFilter from={from} to={to} onChange={(range) => setFilters({ ...range, page: '1' })} />
+                </>
+              }
+              chips={chips}
+              onRemoveChip={(key) => setFilters({ [key]: '', page: '1' })}
+              onClearChips={() => setFilters({ type: '', employee: '', from: '', to: '', page: '1' })}
+              resultCount={server.data?.total}
+              noun={['licencia', 'licencias']}
+            >
+              {invalidPeriod && (
+                <p role="alert" className="text-xs text-danger">
+                  No puede ser anterior al inicio
                 </p>
               )}
-            </div>
+            </TableToolbar>
             {server.error ? (
               <div className="p-4">
                 <ErrorState error={server.error} resource="Las licencias" onRetry={() => void server.refetch()} />
@@ -177,6 +167,6 @@ export const Leaves = () => {
       )}
       <LeaveFormModal open={creating} onClose={() => setCreating(false)} leave={null} />
       {modals}
-    </div>
+    </PageContainer>
   );
 };

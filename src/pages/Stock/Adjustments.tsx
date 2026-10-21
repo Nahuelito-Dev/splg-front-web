@@ -7,13 +7,14 @@ import {
   Card,
   EmptyState,
   ErrorState,
-  FilterChips,
   IdentityCell,
-  Input,
   PageHeader,
   ResponsiveTable,
   RowActions,
   Select,
+  PageContainer,
+  TableToolbar,
+  DateRangeFilter,
 } from '../../common/components/ui';
 import { FROM_LIST_STATE, useClampPage, useUrlPagedParams, usePermissions } from '../../hooks';
 import type { StockAdjustment } from '../../services/api/types';
@@ -106,7 +107,7 @@ export const Adjustments = () => {
   useClampPage(pagination, data?.total, setPagination);
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Ajustes de stock"
         description="Mermas, fugas, roturas, pérdidas y correcciones. Cada ajuste lleva una nota y puede tener su foto o acta."
@@ -122,26 +123,24 @@ export const Adjustments = () => {
         }
       />
       <Card>
-        <div className="grid grid-cols-1 gap-3 border-b border-outline p-4 sm:grid-cols-3">
-          <Select
-            label="Motivo"
-            options={REASON_FILTER}
-            value={filters.reason}
-            onChange={(e) => change({ reason: e.target.value })}
-          />
-          <Input label="Desde" type="date" value={filters.from} onChange={(e) => change({ from: e.target.value })} />
-          <Input label="Hasta" type="date" value={filters.to} onChange={(e) => change({ to: e.target.value })} />
-        </div>
-        {chips.length > 0 && (
-          <div className="border-b border-outline px-4 py-3">
-            <FilterChips
-              items={chips}
-              resultCount={data?.total}
-              onRemove={(key) => change({ [key]: '' })}
-              onClearAll={() => change({ reason: '', from: '', to: '' })}
-            />
-          </div>
-        )}
+        <TableToolbar
+          filters={
+            <>
+              <Select
+                label="Motivo"
+                options={REASON_FILTER}
+                value={filters.reason}
+                onChange={(e) => change({ reason: e.target.value })}
+              />
+              <DateRangeFilter from={filters.from} to={filters.to} onChange={(range) => change({ ...range })} />
+            </>
+          }
+          chips={chips}
+          onRemoveChip={(key) => change({ [key]: '' })}
+          onClearChips={() => change({ reason: '', from: '', to: '' })}
+          resultCount={data?.total}
+          noun={['ajuste', 'ajustes']}
+        />
         {error ? (
           <ErrorState error={error} resource="Los ajustes" onRetry={() => void refetch()} />
         ) : (
@@ -189,6 +188,6 @@ export const Adjustments = () => {
         onClose={() => setFilters({ new: '' }, { keepPage: true })}
         onCreated={(adjustment) => navigate(`/stock/adjustments/${adjustment.adjustmentId}`)}
       />
-    </div>
+    </PageContainer>
   );
 };

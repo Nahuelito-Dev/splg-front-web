@@ -1,6 +1,6 @@
 import { CirclePlus, ExternalLink, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Badge, Button, Card } from '../../../common/components/ui';
+import { Badge, Button, Card, CardHeader } from '../../../common/components/ui';
 import type { FleetPlan, FleetTask } from '../../../services/api/types';
 import { formatDay } from '../../../utils/format';
 import { FLEET_EXPIRATION_STATUS, FLEET_TASK_CRITICALITY, labelOf } from '../../../utils/statusLabels';
@@ -40,7 +40,7 @@ export const EmployeeDocumentCard = ({ plan, task, canWrite, blockedReason, load
     <Card className={expired ? 'border-danger/40 p-4' : 'p-4'}>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-ink">{plan.name}</h3>
+          <CardHeader title={plan.name} as="h3" className="" />
           <p className="mt-0.5 text-xs text-muted">{labelOf(FLEET_TASK_CRITICALITY, plan.criticality).text}</p>
         </div>
         {task?.expirationStatus ? (

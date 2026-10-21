@@ -14,6 +14,9 @@ import {
   KpiCard,
   PageHeader,
   ResponsiveTable,
+  PageContainer,
+  CardHeader,
+  type MenuAction,
 } from '../../common/components/ui';
 import { useBackToList, usePermissions } from '../../hooks';
 import type { StockMovement, TruckLoadItem, TruckLoadOrder } from '../../services/api/types';
@@ -162,49 +165,57 @@ export const TruckLoadDetails = () => {
 
   const can = load ? loadActions(load.status) : null;
 
+  // La primaria es la acción que avanza la carga según su estado (salida, rendir, declarar la vuelta, reposición).
+  const returnLabel = load?.status === 'returned' ? 'Volver a declarar' : 'Declarar la vuelta';
+  const advance = !can
+    ? null
+    : can.canDepart
+      ? 'depart'
+      : can.canClose
+        ? 'close'
+        : can.canDeclareReturn
+          ? 'return'
+          : can.canReload
+            ? 'reload'
+            : null;
+  const advanceAction = {
+    depart: { label: 'Salida', icon: <Rocket />, loading: depart.isPending, run: () => void handleDepart() },
+    close: { label: 'Rendir', icon: <ClipboardCheck />, loading: false, run: () => setClosing(true) },
+    return: { label: returnLabel, icon: <Undo2 />, loading: false, run: () => setReturning(true) },
+    reload: { label: 'Reposición', icon: <PackagePlus />, loading: false, run: () => setReloading(true) },
+  };
+  const primary = advance ? advanceAction[advance] : null;
+  const headerPrimary =
+    canWrite && primary ? (
+      <Button size="sm" icon={primary.icon} loading={primary.loading} onClick={primary.run}>
+        {primary.label}
+      </Button>
+    ) : undefined;
+  const headerSecondary: MenuAction[] =
+    canWrite && can
+      ? [
+          ...(['reload', 'return', 'close'] as const).flatMap((key) =>
+            (key === 'reload' ? can.canReload : key === 'return' ? can.canDeclareReturn : can.canClose) &&
+            advance !== key
+              ? [{ label: advanceAction[key].label, icon: advanceAction[key].icon, onClick: advanceAction[key].run }]
+              : [],
+          ),
+          ...(can.canEditItems
+            ? [{ label: 'Editar renglones', icon: <Pencil />, onClick: () => setEditing(true) }]
+            : []),
+          ...(can.canCancel
+            ? [{ label: 'Cancelar', icon: <Ban />, tone: 'danger' as const, onClick: () => setCancelling(true) }]
+            : []),
+        ]
+      : [];
+
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title={load ? `Carga N° ${load.number}` : 'Carga del camión'}
         badges={load && <Badge label={labelOf(TRUCK_LOAD_STATUS, load.status)} />}
-        actions={
-          load &&
-          can &&
-          canWrite && (
-            <>
-              {can.canDepart && (
-                <Button size="sm" icon={<Rocket />} loading={depart.isPending} onClick={() => void handleDepart()}>
-                  Salida
-                </Button>
-              )}
-              {can.canReload && (
-                <Button size="sm" variant="secondary" icon={<PackagePlus />} onClick={() => setReloading(true)}>
-                  Reposición
-                </Button>
-              )}
-              {can.canDeclareReturn && (
-                <Button size="sm" variant="secondary" icon={<Undo2 />} onClick={() => setReturning(true)}>
-                  {load.status === 'returned' ? 'Volver a declarar' : 'Declarar la vuelta'}
-                </Button>
-              )}
-              {can.canClose && (
-                <Button size="sm" icon={<ClipboardCheck />} onClick={() => setClosing(true)}>
-                  Rendir
-                </Button>
-              )}
-              {can.canEditItems && (
-                <Button size="sm" variant="secondary" icon={<Pencil />} onClick={() => setEditing(true)}>
-                  Editar renglones
-                </Button>
-              )}
-              {can.canCancel && (
-                <Button size="sm" variant="danger" icon={<Ban />} onClick={() => setCancelling(true)}>
-                  Cancelar
-                </Button>
-              )}
-            </>
-          )
-        }
+        actions={headerPrimary}
+        secondaryActions={headerSecondary}
       />
       {isPending ? (
         <DetailSkeleton />
@@ -214,7 +225,7 @@ export const TruckLoadDetails = () => {
         <div className="space-y-6">
           <Card>
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-outline px-4 py-3">
-              <h2 className="text-sm font-semibold text-ink">Renglones</h2>
+              <CardHeader title="Renglones" className="" />
               {load.status === 'returned' && !hasDeclared(load.items) && (
                 <span className="text-xs text-muted">Todavía no se declaró la vuelta de todos los tipos.</span>
               )}
@@ -296,16 +307,12 @@ export const TruckLoadDetails = () => {
               </div>
               {can?.isOpen && (
                 <Card>
-                  <h2 className="border-b border-outline px-4 py-3 text-sm font-semibold text-ink">
-                    Stock actual del camión
-                  </h2>
+                  <CardHeader title="Stock actual del camión" className="border-b border-outline px-4 py-3" />
                   <TruckStockCard carId={load.carId} />
                 </Card>
               )}
               <Card>
-                <h2 className="border-b border-outline px-4 py-3 text-sm font-semibold text-ink">
-                  Pedidos entregados en la jornada
-                </h2>
+                <CardHeader title="Pedidos entregados en la jornada" className="border-b border-outline px-4 py-3" />
                 <ResponsiveTable
                   label="pedidos"
                   rows={load.orders}
@@ -327,9 +334,7 @@ export const TruckLoadDetails = () => {
                 />
               </Card>
               <Card>
-                <h2 className="border-b border-outline px-4 py-3 text-sm font-semibold text-ink">
-                  Movimientos de la carga
-                </h2>
+                <CardHeader title="Movimientos de la carga" className="border-b border-outline px-4 py-3" />
                 <ResponsiveTable
                   label="movimientos"
                   rows={load.movements}
@@ -360,6 +365,6 @@ export const TruckLoadDetails = () => {
           <CancelLoadModal load={cancelling ? load : null} onClose={() => setCancelling(false)} />
         </>
       )}
-    </div>
+    </PageContainer>
   );
 };

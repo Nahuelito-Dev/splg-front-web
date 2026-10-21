@@ -57,7 +57,7 @@ export const WorkspacesPopover = () => {
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
         slotProps={{
-          paper: { className: '!mt-2 !w-[280px] !rounded-xl !border !border-outline !bg-surface !shadow-lg' },
+          paper: { className: '!mt-2 !w-[280px]' },
         }}
       >
         <p className="border-b border-outline px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted">

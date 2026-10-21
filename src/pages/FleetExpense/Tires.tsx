@@ -12,8 +12,9 @@ import {
   ResponsiveTable,
   RowActions,
   Select,
-  ExportCsvButton,
   StatusFilterTabs,
+  PageContainer,
+  TableToolbar,
 } from '../../common/components/ui';
 import { useClampPage, usePermissions, useUrlPagedParams } from '../../hooks';
 import type { Tire } from '../../services/api/types';
@@ -105,7 +106,7 @@ export const Tires = () => {
   ];
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Neumáticos"
         description="El inventario de neumáticos y sus movimientos. Nunca se editan: cada cambio es un asiento del historial."
@@ -124,19 +125,21 @@ export const Tires = () => {
           label="Filtrar neumáticos por estado"
           idPrefix="tires"
         >
-          <div className="grid grid-cols-1 items-end gap-3 border-b border-outline p-4 sm:grid-cols-1">
-            <Select
-              label="Vehículo"
-              options={carOptions}
-              value={filters.car}
-              onChange={(e) => setFilters({ car: e.target.value })}
-            />
-          </div>
-          <div className="flex justify-end border-b border-outline px-4 py-2">
-            <ExportCsvButton
-              filename="neumaticos"
-              headers={['Serie', 'Marca', 'Medida', 'Estado', 'Vehículo', 'Posición', 'Km recorridos', 'Costo']}
-              rows={(data?.data ?? []).map((row) => [
+          <TableToolbar
+            filters={
+              <>
+                <Select
+                  label="Vehículo"
+                  options={carOptions}
+                  value={filters.car}
+                  onChange={(e) => setFilters({ car: e.target.value })}
+                />
+              </>
+            }
+            csv={{
+              filename: 'neumaticos',
+              headers: ['Serie', 'Marca', 'Medida', 'Estado', 'Vehículo', 'Posición', 'Km recorridos', 'Costo'],
+              rows: (data?.data ?? []).map((row) => [
                 asText(row.serialNumber),
                 row.brand,
                 row.size,
@@ -145,9 +148,10 @@ export const Tires = () => {
                 row.position ?? '',
                 row.kmTraveled ?? '',
                 row.cost,
-              ])}
-            />
-          </div>
+              ]),
+            }}
+            noun={['neumático', 'neumáticos']}
+          />
           {error ? (
             <ErrorState error={error} resource="Los neumáticos" onRetry={() => void refetch()} />
           ) : (
@@ -194,6 +198,6 @@ export const Tires = () => {
       <TireFormModal open={creating} onClose={() => setCreating(false)} />
       <TireEventModal tire={moving} onClose={() => setMoving(null)} />
       <TireDrawer tireId={viewing} onClose={() => setViewing(null)} />
-    </div>
+    </PageContainer>
   );
 };

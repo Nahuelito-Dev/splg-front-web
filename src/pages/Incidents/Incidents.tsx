@@ -5,17 +5,16 @@ import {
   Button,
   Card,
   ErrorState,
-  ExportCsvButton,
-  FilterChips,
   ListSkeleton,
   PageHeader,
-  SearchInput,
   Select,
   Tabs,
   tabPanelProps,
   type AnalyticItem,
   type FilterChip,
   type TabItem,
+  PageContainer,
+  TableToolbar,
 } from '../../common/components/ui';
 import { usePermissions, useUrlParams } from '../../hooks';
 import { useIncident, useIncidents } from '../../services/queries/incidents';
@@ -103,7 +102,7 @@ export const Incidents = () => {
   const clearAll = () => setFilters({ status: 'all', type: 'all', q: '' });
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Incidencias de reparto"
         description="Problemas reportados por los choferes durante la entrega."
@@ -139,37 +138,41 @@ export const Incidents = () => {
               idPrefix={TABS_ID}
             />
             <div {...tabPanelProps(TABS_ID, status)}>
-              <div className="flex flex-col gap-3 border-b border-outline p-4">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-                  <SearchInput
-                    label="Buscar incidencias"
-                    placeholder="Cliente, teléfono o n.º de pedido"
-                    value={term}
-                    onChange={(e) => setTerm(e.target.value)}
-                  />
-                  <Select
-                    label="Tipo"
-                    className="sm:w-48"
-                    value={type}
-                    options={TYPE_OPTIONS}
-                    onChange={(e) => setType(e.target.value)}
-                  />
-                </div>
-                <FilterChips items={chips} onRemove={removeChip} onClearAll={clearAll} resultCount={rows.length} />
-                <div>
-                  <ExportCsvButton
-                    filename="incidencias"
-                    headers={['Cliente', 'Pedido', 'Tipo', 'Fecha', 'Estado']}
-                    rows={rows.map((incident) => [
-                      incident.order?.customer?.full_name ?? '',
-                      formatShortId(incident.order_id),
-                      labelOf(INCIDENT_TYPE, incident.type).text,
-                      csvDateTime(incident.createdAt),
-                      labelOf(INCIDENT_STATUS, incident.status).text,
-                    ])}
-                  />
-                </div>
-              </div>
+              <TableToolbar
+                filters={
+                  <>
+                    <Select
+                      label="Tipo"
+                      className="sm:w-48"
+                      value={type}
+                      options={TYPE_OPTIONS}
+                      onChange={(e) => setType(e.target.value)}
+                    />
+                  </>
+                }
+                search={{
+                  label: 'Buscar incidencias',
+                  placeholder: 'Cliente, teléfono o n.º de pedido',
+                  value: term,
+                  onChange: (value) => setTerm(value),
+                }}
+                csv={{
+                  filename: 'incidencias',
+                  headers: ['Cliente', 'Pedido', 'Tipo', 'Fecha', 'Estado'],
+                  rows: rows.map((incident) => [
+                    incident.order?.customer?.full_name ?? '',
+                    formatShortId(incident.order_id),
+                    labelOf(INCIDENT_TYPE, incident.type).text,
+                    csvDateTime(incident.createdAt),
+                    labelOf(INCIDENT_STATUS, incident.status).text,
+                  ]),
+                }}
+                chips={chips}
+                onRemoveChip={removeChip}
+                onClearChips={clearAll}
+                resultCount={rows.length}
+                noun={['incidencia', 'incidencias']}
+              />
               <IncidentsTable
                 rows={rows}
                 loading={isFetching}
@@ -193,6 +196,6 @@ export const Incidents = () => {
       <EditIncidentModal incident={editing} onClose={() => setEditing(null)} />
       <DiscardIncidentModal incident={discarding} onClose={() => setDiscarding(null)} />
       <CreateIncidentModal open={creating} onClose={() => setCreating(false)} />
-    </div>
+    </PageContainer>
   );
 };

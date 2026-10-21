@@ -1,6 +1,6 @@
 import type { GridPaginationModel } from '@mui/x-data-grid';
 import { useMemo, useState } from 'react';
-import { Card, ErrorState, FilterChips, type SelectOption } from '../../../common/components/ui';
+import { Card, ErrorState, TableToolbar, type SelectOption } from '../../../common/components/ui';
 import { useDebounce, useUrlParams } from '../../../hooks';
 import type { AuditEntry } from '../../../services/api/types';
 import { useAuditActionTypes, useAuditEntries } from '../../../services/queries/audit';
@@ -48,14 +48,15 @@ export const DataAuditTab = () => {
 
   return (
     <div className="space-y-6">
-      <DataAuditFiltersBar value={filters} onChange={change} actionOptions={actionOptions} />
-      <FilterChips
-        items={chips}
-        onRemove={(key) => change({ [key]: '' })}
-        onClearAll={() => change(EMPTY_DATA_AUDIT_FILTERS)}
-        resultCount={data?.total}
-      />
       <Card>
+        <TableToolbar
+          filters={<DataAuditFiltersBar value={filters} onChange={change} actionOptions={actionOptions} />}
+          chips={chips}
+          onRemoveChip={(key) => change({ [key]: '' })}
+          onClearChips={() => change(EMPTY_DATA_AUDIT_FILTERS)}
+          resultCount={data?.total}
+          noun={['registro', 'registros']}
+        />
         {error ? (
           <ErrorState error={error} resource="La auditoría" onRetry={() => void refetch()} />
         ) : (

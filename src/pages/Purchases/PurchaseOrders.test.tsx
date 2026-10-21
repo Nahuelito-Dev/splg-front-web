@@ -60,7 +60,8 @@ describe('PurchaseOrders', () => {
       expect.objectContaining({ status: 'sent' }),
       expect.anything(),
     );
-    expect(screen.getByRole('button', { name: 'Exportar CSV' })).toBeEnabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Más' }));
+    expect(screen.getByRole('menuitem', { name: 'Exportar CSV' })).not.toHaveAttribute('aria-disabled', 'true');
   });
 
   it('un estado inválido en la URL se trata como «todos» en la consulta y en las pestañas', () => {

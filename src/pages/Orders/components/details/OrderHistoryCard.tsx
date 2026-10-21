@@ -1,4 +1,4 @@
-import { Card, FichaTimeline } from '../../../../common/components/ui';
+import { Card, CardHeader, FichaTimeline } from '../../../../common/components/ui';
 import { errorMessage, toApiError } from '../../../../services/api/errors';
 import { useOrderStatusHistory } from '../../../../services/queries/orders';
 import { buildOrderHistory } from './orderHistory';
@@ -9,7 +9,7 @@ export const OrderHistoryCard = ({ orderId }: { orderId: string }) => {
 
   return (
     <Card className="p-5">
-      <h2 className="mb-4 text-base font-semibold text-ink">Historial</h2>
+      <CardHeader title="Historial" />
       {isPending ? (
         <p className="text-sm text-muted">Cargando el historial…</p>
       ) : isError && toApiError(error).missingDistributor ? (

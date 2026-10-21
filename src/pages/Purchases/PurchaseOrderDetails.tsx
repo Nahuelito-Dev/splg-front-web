@@ -13,6 +13,9 @@ import {
   ErrorState,
   PageHeader,
   ResponsiveTable,
+  PageContainer,
+  CardHeader,
+  type MenuAction,
 } from '../../common/components/ui';
 import { useBackToList, usePermissions } from '../../hooks';
 import type { PurchaseOrder, PurchaseOrderItem, PurchaseReceiptSummary } from '../../services/api/types';
@@ -114,44 +117,43 @@ export const PurchaseOrderDetails = () => {
     },
   ];
 
+  // La primaria es la que avanza el flujo según el estado; editar, cerrar con faltante y cancelar van al menú ⋮.
+  const canAct = Boolean(order && can && canWrite);
+  const headerPrimary =
+    order && can && canAct ? (
+      can.canReceive ? (
+        <Button size="sm" icon={<PackageCheck />} onClick={() => setReceiving(true)}>
+          Registrar recepción
+        </Button>
+      ) : can.canSend ? (
+        <Button size="sm" icon={<Send />} loading={send.isPending} onClick={() => void handleSend()}>
+          Enviar
+        </Button>
+      ) : undefined
+    ) : undefined;
+  const headerSecondary: MenuAction[] =
+    order && can && canAct
+      ? [
+          ...(can.canReceive && can.canSend
+            ? [{ label: 'Enviar', icon: <Send />, disabled: send.isPending, onClick: () => void handleSend() }]
+            : []),
+          ...(can.canEdit ? [{ label: 'Editar', icon: <Pencil />, onClick: () => setEditing(true) }] : []),
+          ...(can.canCloseShort
+            ? [{ label: 'Cerrar con faltante', icon: <Slash />, onClick: () => setClosing(order) }]
+            : []),
+          ...(can.canCancel
+            ? [{ label: 'Cancelar', icon: <Ban />, tone: 'danger' as const, onClick: () => setCancelling(order) }]
+            : []),
+        ]
+      : [];
+
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title={order ? `Orden de compra N° ${order.number}` : 'Orden de compra'}
         badges={order && <Badge label={labelOf(PURCHASE_ORDER_STATUS, order.status)} />}
-        actions={
-          order &&
-          can &&
-          canWrite && (
-            <>
-              {can.canReceive && (
-                <Button size="sm" icon={<PackageCheck />} onClick={() => setReceiving(true)}>
-                  Registrar recepción
-                </Button>
-              )}
-              {can.canSend && (
-                <Button size="sm" icon={<Send />} loading={send.isPending} onClick={() => void handleSend()}>
-                  Enviar
-                </Button>
-              )}
-              {can.canEdit && (
-                <Button size="sm" variant="secondary" icon={<Pencil />} onClick={() => setEditing(true)}>
-                  Editar
-                </Button>
-              )}
-              {can.canCloseShort && (
-                <Button size="sm" variant="secondary" icon={<Slash />} onClick={() => setClosing(order)}>
-                  Cerrar con faltante
-                </Button>
-              )}
-              {can.canCancel && (
-                <Button size="sm" variant="danger" icon={<Ban />} onClick={() => setCancelling(order)}>
-                  Cancelar
-                </Button>
-              )}
-            </>
-          )
-        }
+        actions={headerPrimary}
+        secondaryActions={headerSecondary}
       />
       {!canWrite && writeHint && <p className="-mt-3 mb-4 text-sm text-muted">{writeHint} para operar esta orden.</p>}
       {isPending ? (
@@ -182,9 +184,7 @@ export const PurchaseOrderDetails = () => {
           </Card>
           <div className="min-w-0 space-y-6 lg:col-span-2">
             <Card>
-              <h2 className="border-b border-outline px-4 py-3 text-sm font-semibold text-ink">
-                Renglones y pendiente
-              </h2>
+              <CardHeader title="Renglones y pendiente" className="border-b border-outline px-4 py-3" />
               <ResponsiveTable
                 label="renglones"
                 rows={order.items}
@@ -204,7 +204,7 @@ export const PurchaseOrderDetails = () => {
               />
             </Card>
             <Card>
-              <h2 className="border-b border-outline px-4 py-3 text-sm font-semibold text-ink">Recepciones</h2>
+              <CardHeader title="Recepciones" className="border-b border-outline px-4 py-3" />
               <ResponsiveTable
                 label="recepciones"
                 rows={order.receipts}
@@ -248,6 +248,6 @@ export const PurchaseOrderDetails = () => {
           <CloseShortModal order={closing} onClose={() => setClosing(null)} />
         </>
       )}
-    </div>
+    </PageContainer>
   );
 };

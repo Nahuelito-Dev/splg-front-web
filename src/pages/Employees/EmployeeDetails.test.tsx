@@ -67,7 +67,8 @@ describe('EmployeeDetails: reincorporación y cuenta de acceso', () => {
   it('un chofer activo sin cuenta ofrece crearla y abre el formulario', () => {
     state.employee.mockReturnValue(ok(EMPLEADO()));
     draw();
-    fireEvent.click(screen.getByRole('button', { name: 'Crear cuenta de acceso' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Más acciones' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Crear cuenta de acceso' }));
     expect(screen.getByText('Cuenta de acceso (formulario)')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Reincorporar' })).not.toBeInTheDocument();
   });

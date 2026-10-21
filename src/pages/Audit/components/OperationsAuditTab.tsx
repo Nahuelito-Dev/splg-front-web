@@ -1,6 +1,6 @@
 import type { GridPaginationModel } from '@mui/x-data-grid';
 import { useState } from 'react';
-import { Card, FilterChips } from '../../../common/components/ui';
+import { Card, TableToolbar } from '../../../common/components/ui';
 import { useDebounce } from '../../../hooks';
 import { useAudit } from '../../../services/queries/audit';
 import type { AsientoDeAuditoria } from '../../../services/api/types';
@@ -30,18 +30,17 @@ export const OperationsAuditTab = () => {
 
   return (
     <div className="space-y-6">
-      <AuditFilters value={filters} onChange={handleFiltersChange} />
-
-      <FilterChips
-        items={auditFilterChips(filters)}
-        onRemove={(key) =>
-          handleFiltersChange({ ...filters, [key]: EMPTY_AUDIT_FILTERS[key as keyof AuditFiltersState] })
-        }
-        onClearAll={() => handleFiltersChange(EMPTY_AUDIT_FILTERS)}
-        resultCount={data?.total}
-      />
-
       <Card>
+        <TableToolbar
+          filters={<AuditFilters value={filters} onChange={handleFiltersChange} />}
+          chips={auditFilterChips(filters)}
+          onRemoveChip={(key) =>
+            handleFiltersChange({ ...filters, [key]: EMPTY_AUDIT_FILTERS[key as keyof AuditFiltersState] })
+          }
+          onClearChips={() => handleFiltersChange(EMPTY_AUDIT_FILTERS)}
+          resultCount={data?.total}
+          noun={['asiento', 'asientos']}
+        />
         <AuditTable
           rows={data?.rows ?? []}
           total={data?.total ?? 0}

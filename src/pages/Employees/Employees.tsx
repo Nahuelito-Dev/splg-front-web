@@ -6,15 +6,14 @@ import {
   Card,
   EmptyState,
   ErrorState,
-  ExportCsvButton,
-  FilterChips,
   PageHeader,
-  SearchInput,
   Select,
   Tabs,
   tabPanelProps,
   type FilterChip,
   type TabItem,
+  PageContainer,
+  TableToolbar,
 } from '../../common/components/ui';
 import { useDebounce, usePermissions, useUrlParams } from '../../hooks';
 import type { Employee, JobPosition } from '../../services/api/types';
@@ -88,7 +87,7 @@ export const Employees = () => {
   const removeChip = (key: string) => setFilters({ [key]: key === 'status' ? 'all' : '', page: '1' });
 
   return (
-    <div className="mx-auto max-w-7xl p-4 md:p-8">
+    <PageContainer>
       <PageHeader
         title="Legajos"
         description="El personal de la distribuidora: datos, foto y documentación de cada legajo."
@@ -119,58 +118,51 @@ export const Employees = () => {
             idPrefix={TABS_ID}
           />
           <div {...tabPanelProps(TABS_ID, segment)}>
-            <div className="flex flex-col gap-3 border-b border-outline p-4">
-              <div className="grid gap-3 sm:grid-cols-3">
-                <SearchInput
-                  label="Buscar legajos"
-                  placeholder="Nombre, apellido o número de legajo"
-                  value={search}
-                  onChange={(e) => setFilters({ q: e.target.value, page: '1' })}
-                />
-                <Select
-                  label="Categoría"
-                  value={category}
-                  onChange={(e) => setFilters({ category: e.target.value, page: '1' })}
-                  options={[
-                    { value: '', label: 'Todas' },
-                    ...Object.entries(POSITION_CATEGORY_LABELS).map(([value, label]) => ({ value, label })),
-                  ]}
-                />
-                <Select
-                  label="Puesto"
-                  value={position}
-                  onChange={(e) => setFilters({ position: e.target.value, page: '1' })}
-                  options={[
-                    { value: '', label: 'Todos' },
-                    ...(positions.data ?? []).map((p) => ({ value: p.positionId, label: p.name })),
-                  ]}
-                />
-              </div>
-              {chips.length > 0 ? (
-                <FilterChips
-                  items={chips}
-                  onRemove={removeChip}
-                  onClearAll={() => setFilters({ q: '', status: 'all', category: '', position: '', page: '1' })}
-                  resultCount={server.data ? total : undefined}
-                />
-              ) : (
-                <p className="text-sm text-muted" aria-live="polite">
-                  {server.data ? `${total} ${total === 1 ? 'legajo' : 'legajos'}` : ''}
-                </p>
-              )}
-              <div>
-                <ExportCsvButton
-                  filename="legajos"
-                  headers={['Empleado', 'Puesto', 'Estado', 'Ingreso']}
-                  rows={rows.map((employee) => [
-                    employeeFullName(employee),
-                    employee.position.name,
-                    EMPLOYEE_STATUS_LABELS[employee.status],
-                    csvDay(employee.hireDate),
-                  ])}
-                />
-              </div>
-            </div>
+            <TableToolbar
+              filters={
+                <>
+                  <Select
+                    label="Categoría"
+                    value={category}
+                    onChange={(e) => setFilters({ category: e.target.value, page: '1' })}
+                    options={[
+                      { value: '', label: 'Todas' },
+                      ...Object.entries(POSITION_CATEGORY_LABELS).map(([value, label]) => ({ value, label })),
+                    ]}
+                  />
+                  <Select
+                    label="Puesto"
+                    value={position}
+                    onChange={(e) => setFilters({ position: e.target.value, page: '1' })}
+                    options={[
+                      { value: '', label: 'Todos' },
+                      ...(positions.data ?? []).map((p) => ({ value: p.positionId, label: p.name })),
+                    ]}
+                  />
+                </>
+              }
+              search={{
+                label: 'Buscar legajos',
+                placeholder: 'Nombre, apellido o número de legajo',
+                value: search,
+                onChange: (value) => setFilters({ q: value, page: '1' }),
+              }}
+              csv={{
+                filename: 'legajos',
+                headers: ['Empleado', 'Puesto', 'Estado', 'Ingreso'],
+                rows: rows.map((employee) => [
+                  employeeFullName(employee),
+                  employee.position.name,
+                  EMPLOYEE_STATUS_LABELS[employee.status],
+                  csvDay(employee.hireDate),
+                ]),
+              }}
+              chips={chips}
+              onRemoveChip={removeChip}
+              onClearChips={() => setFilters({ q: '', status: 'all', category: '', position: '', page: '1' })}
+              resultCount={server.data ? total : undefined}
+              noun={['legajo', 'legajos']}
+            />
             <EmployeesTable
               rows={rows}
               total={total}
@@ -183,6 +175,6 @@ export const Employees = () => {
         </Card>
       )}
       <EmployeeFormModal open={creating} onClose={() => setCreating(false)} employee={null} />
-    </div>
+    </PageContainer>
   );
 };

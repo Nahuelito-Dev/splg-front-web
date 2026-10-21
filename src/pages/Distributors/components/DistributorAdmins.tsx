@@ -1,5 +1,13 @@
 import { useNavigate } from 'react-router-dom';
-import { Badge, Card, EmptyState, ErrorState, IdentityCell, LoadingState } from '../../../common/components/ui';
+import {
+  Badge,
+  Card,
+  EmptyState,
+  ErrorState,
+  IdentityCell,
+  LoadingState,
+  CardHeader,
+} from '../../../common/components/ui';
 import { useAdmins } from '../../../services/queries/admins';
 import { roleLabel } from '../../Users/roleLabel';
 
@@ -11,7 +19,7 @@ export const DistributorAdmins = ({ distributorId }: { distributorId: string }) 
 
   return (
     <Card className="p-6">
-      <h2 className="mb-4 text-base font-semibold text-ink">Administradores</h2>
+      <CardHeader title="Administradores" className="mb-4" />
       {isPending ? (
         <LoadingState label="Cargando administradores…" />
       ) : error ? (
