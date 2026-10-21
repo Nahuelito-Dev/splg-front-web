@@ -1,6 +1,7 @@
 import { ReasonModal } from '../../../common/components/ui';
 import type { Rating } from '../../../services/api/types';
 import { useModerateRating } from '../../../services/queries/ratings';
+import { moderationReasonCounter, moderationReasonError } from '../moderationReason';
 import { notify } from '../../../utils/notifications';
 
 interface Props {
@@ -26,6 +27,8 @@ export const ModerateRatingModal = ({ rating, onClose }: Props) => {
       placeholder={hide ? 'Por ejemplo: lenguaje ofensivo' : 'Por ejemplo: se revisó y es válida'}
       confirmLabel={hide ? 'Ocultar' : 'Volver a mostrar'}
       danger={hide}
+      validateReason={moderationReasonError}
+      reasonHint={moderationReasonCounter}
       loading={moderate.isPending}
       onConfirm={(reason) => {
         if (!rating) return;

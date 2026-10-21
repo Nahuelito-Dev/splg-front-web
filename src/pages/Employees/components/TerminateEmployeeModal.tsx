@@ -1,18 +1,14 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
 import { Button, Input, Modal, Select } from '../../../common/components/ui';
 import type { Employee } from '../../../services/api/types';
 import { useTerminateEmployee } from '../../../services/queries/employees';
 import { notify } from '../../../utils/notifications';
+import { terminateSchema, type TerminateValues } from '../terminateSchema';
 import { TERMINATION_REASON_LABELS } from '../employeeLabels';
 
-const schema = z.object({
-  terminationDate: z.string().min(1, 'Ingresá la fecha de egreso'),
-  reason: z.enum(['resignation', 'dismissal', 'end_of_contract', 'retirement', 'other']),
-});
-type Values = z.infer<typeof schema>;
+type Values = TerminateValues;
 
 interface Props {
   open: boolean;
@@ -28,7 +24,10 @@ export const TerminateEmployeeModal = ({ open, onClose, employee }: Props) => {
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { terminationDate: '', reason: 'resignation' } });
+  } = useForm<Values>({
+    resolver: zodResolver(terminateSchema(employee.hireDate)),
+    defaultValues: { terminationDate: '', reason: 'resignation' },
+  });
 
   useEffect(() => {
     if (open) reset({ terminationDate: '', reason: 'resignation' });

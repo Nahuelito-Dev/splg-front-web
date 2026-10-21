@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { CirclePlus, Trash2 } from 'lucide-react';
 import { Button, IconButton, Input, Modal, Select, TextArea, CardHeader } from '../../../common/components/ui';
@@ -8,9 +9,9 @@ import { useUpdateOrder } from '../../../services/queries/orders';
 import { useTimeSlots } from '../../../services/queries/timeSlots';
 import { useUserAddresses } from '../../../services/queries/userAddresses';
 import { useResetOnOpen } from '../../../hooks/useResetOnOpen';
-import { formatCurrency } from '../../../utils/format';
+import { argentinaDay, formatCurrency } from '../../../utils/format';
 import { notify } from '../../../utils/notifications';
-import { buildOrderUpdate, type OrderEditInitial, type OrderEditValues } from './orderEdit';
+import { buildOrderUpdate, orderEditSchema, type OrderEditInitial, type OrderEditValues } from './orderEdit';
 
 const PAYMENT_OPTIONS = [
   { value: '', label: 'Sin cambios' },
@@ -47,7 +48,16 @@ export const EditOrderModal = ({ order, onClose }: Props) => {
   const { data: addresses } = useUserAddresses(order?.customer?.user_id);
   const { data: slots } = useTimeSlots();
   const { data: catalog } = useGasCylinders({ page: 0, pageSize: 100 });
-  const { register, control, handleSubmit, reset, watch } = useForm<OrderEditValues>({
+  const resolver = useMemo(() => zodResolver(orderEditSchema(order?.scheduledDate ?? '')), [order?.scheduledDate]);
+  const {
+    register,
+    control,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors },
+  } = useForm<OrderEditValues>({
+    resolver,
     defaultValues: order ? defaultsOf(order) : undefined,
   });
   const { fields, append, remove } = useFieldArray({ control, name: 'items' });
@@ -138,10 +148,16 @@ export const EditOrderModal = ({ order, onClose }: Props) => {
         )}
         <div className="grid gap-4 sm:grid-cols-2">
           <Select label="Franja horaria" options={slotOptions} {...register('timeSlotId')} />
-          <Input label="Fecha agendada" type="date" {...register('scheduledDate')} />
+          <Input
+            label="Fecha agendada"
+            type="date"
+            min={argentinaDay(new Date())}
+            error={errors.scheduledDate?.message}
+            {...register('scheduledDate')}
+          />
         </div>
         <Select label="Medio de pago" options={PAYMENT_OPTIONS} {...register('paymentMethod')} />
-        <TextArea label="Notas" maxLength={500} {...register('notes')} />
+        <TextArea label="Notas" {...register('notes')} />
 
         <div className="space-y-3">
           <div className="flex items-center justify-between">
@@ -160,7 +176,12 @@ export const EditOrderModal = ({ order, onClose }: Props) => {
             <div key={field.id} className="flex flex-wrap items-end gap-3 rounded-xl border border-outline p-3">
               <div className="min-w-[200px] flex-1">
                 {catalog ? (
-                  <Select label="Garrafa" options={productOptions} {...register(`items.${index}.gasCylinderId`)} />
+                  <Select
+                    label="Garrafa"
+                    options={productOptions}
+                    error={errors.items?.[index]?.gasCylinderId?.message}
+                    {...register(`items.${index}.gasCylinderId`)}
+                  />
                 ) : (
                   <p className="text-sm text-muted">Cargando garrafas…</p>
                 )}
@@ -171,6 +192,7 @@ export const EditOrderModal = ({ order, onClose }: Props) => {
                   type="number"
                   min={1}
                   step={1}
+                  error={errors.items?.[index]?.quantity?.message}
                   {...register(`items.${index}.quantity`, { valueAsNumber: true })}
                 />
               </div>

@@ -54,4 +54,26 @@ describe('gasCylinderSchema', () => {
   it('rechaza stock negativo', () => {
     expect(gasCylinderSchema.safeParse({ ...base, stock: -1, promotions: [] }).success).toBe(false);
   });
+
+  it('la promoción llega a 99 % con 2 decimales, como el back', () => {
+    const promo = (discountPercentage: number) => ({ ...base, promotions: [{ quantity: 2, discountPercentage }] });
+    expect(gasCylinderSchema.safeParse(promo(99)).success).toBe(true);
+    expect(gasCylinderSchema.safeParse(promo(99.5)).success).toBe(false);
+    expect(gasCylinderSchema.safeParse(promo(100)).success).toBe(false);
+    expect(gasCylinderSchema.safeParse(promo(10.123)).success).toBe(false);
+    expect(gasCylinderSchema.safeParse(promo(10.25)).success).toBe(true);
+  });
+
+  it('el precio llega a 10.000.000 con 2 decimales', () => {
+    expect(gasCylinderSchema.safeParse({ ...base, price: 10_000_000, promotions: [] }).success).toBe(true);
+    expect(gasCylinderSchema.safeParse({ ...base, price: 10_000_001, promotions: [] }).success).toBe(false);
+    expect(gasCylinderSchema.safeParse({ ...base, price: 100.125, promotions: [] }).success).toBe(false);
+    expect(gasCylinderSchema.safeParse({ ...base, price: 100.5, promotions: [] }).success).toBe(true);
+  });
+
+  it('el peso llega a 1000 kg con 2 decimales', () => {
+    expect(gasCylinderSchema.safeParse({ ...base, weight: 1000, promotions: [] }).success).toBe(true);
+    expect(gasCylinderSchema.safeParse({ ...base, weight: 1000.01, promotions: [] }).success).toBe(false);
+    expect(gasCylinderSchema.safeParse({ ...base, weight: 10.555, promotions: [] }).success).toBe(false);
+  });
 });

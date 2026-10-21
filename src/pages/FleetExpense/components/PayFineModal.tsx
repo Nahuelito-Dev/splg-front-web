@@ -4,10 +4,9 @@ import { useForm } from 'react-hook-form';
 import { Button, Checkbox, Input, Modal } from '../../../common/components/ui';
 import type { TrafficFine } from '../../../services/api/types';
 import { usePayTrafficFine } from '../../../services/queries/fleetExpense';
-import { toIsoDay } from '../../../utils/dates';
 import { CashBoxField } from '../../Orders/components/CashBoxField';
 import { useOrderCashBoxes } from '../../Orders/components/useOrderCashBoxes';
-import { formatCurrency } from '../../../utils/format';
+import { argentinaDay, formatCurrency } from '../../../utils/format';
 import { notify } from '../../../utils/notifications';
 import { payFineSchema, type PayFineFormValues } from '../fleetExpenseSchemas';
 
@@ -19,8 +18,9 @@ interface Props {
 /** Registrar el pago de una multa (CU-199): la fecha y lo efectivamente pagado, que suele ser el pago voluntario. */
 export const PayFineModal = ({ fine, onClose }: Props) => {
   const pay = usePayTrafficFine();
-  const today = toIsoDay(new Date());
-  const schema = useMemo(() => payFineSchema(today), [today]);
+  const today = argentinaDay(new Date());
+  const occurredAt = fine?.occurredAt;
+  const schema = useMemo(() => payFineSchema(today, occurredAt), [today, occurredAt]);
   const {
     register,
     handleSubmit,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatCuit, isValidCuit, normalizeCuit } from './cuit';
+import { formatCuit, isValidCuil, isValidCuit, normalizeCuit } from './cuit';
 
 describe('cuit', () => {
   it.each(['30715123459', '20123456786', '27-23456789-1'])('acepta %s', (cuit) =>
@@ -16,4 +16,15 @@ describe('cuit', () => {
   it('normaliza guiones y espacios', () => expect(normalizeCuit(' 30-71512345 9 ')).toBe('30715123459'));
 
   it('formatea con guiones', () => expect(formatCuit('30715123459')).toBe('30-71512345-9'));
+});
+
+describe('cuil', () => {
+  it('acepta uno de persona humana con dígito verificador correcto', () => {
+    expect(isValidCuil('20123456786')).toBe(true);
+  });
+
+  it('rechaza el prefijo de persona jurídica y el dígito verificador incorrecto', () => {
+    expect(isValidCuil('30715123459')).toBe(false);
+    expect(isValidCuil('20123456781')).toBe(false);
+  });
 });

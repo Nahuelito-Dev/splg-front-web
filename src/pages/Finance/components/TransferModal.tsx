@@ -6,7 +6,7 @@ import { Button, Input, Modal, Select } from '../../../common/components/ui';
 import { useCashBoxOptions, useTransferCash } from '../../../services/queries/finance';
 import { formatCurrency } from '../../../utils/format';
 import { notify } from '../../../utils/notifications';
-import { optionalText, parseMoney, positiveMoney } from '../financeSchemas';
+import { insufficientCashMessage, optionalText, parseMoney, positiveMoney } from '../financeSchemas';
 
 const schema = z
   .object({
@@ -34,6 +34,7 @@ export const TransferModal = ({ open, onClose }: Props) => {
     register,
     handleSubmit,
     reset,
+    setError,
     formState: { errors },
   } = useForm<Values>({ resolver: zodResolver(schema) });
 
@@ -49,7 +50,15 @@ export const TransferModal = ({ open, onClose }: Props) => {
     })),
   ];
 
-  const onSubmit = handleSubmit((values) => {
+  const onSubmit = handleSubmit(async (values) => {
+    // Con el saldo de ahora; si no se puede traer, decide el back (409).
+    const fresh = (await boxes.refetch()).data ?? boxes.data;
+    const origin = fresh?.data.find((b) => b.cashBoxId === values.fromCashBoxId);
+    const insufficient = insufficientCashMessage(origin, parseMoney(values.amount));
+    if (insufficient) {
+      setError('amount', { message: insufficient });
+      return;
+    }
     transfer.mutate(
       {
         fromCashBoxId: values.fromCashBoxId,

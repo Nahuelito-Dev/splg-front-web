@@ -2,28 +2,40 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
 import { Button, Checkbox, cx, Input } from '../../../common/components/ui';
 import type { CoverageZone } from '../../../services/api/types';
-import { useCreateCoverageZone, useUpdateCoverageZone } from '../../../services/queries/coverageZones';
+import {
+  useCoverageZones,
+  useCreateCoverageZone,
+  useUpdateCoverageZone,
+} from '../../../services/queries/coverageZones';
 import { DEFAULT_ZONE_COLOR } from '../../../theme/zoneColors';
 import { notify } from '../../../utils/notifications';
 import { hasEnoughVertices, MIN_POLYGON_VERTICES, toDateInputValue } from '../coverageZoneUtils';
-import { SURCHARGE_TYPE_OPTIONS, zoneSchema, type ZoneFormValues } from '../zoneSchema';
+import {
+  findZoneConflict,
+  nextZonePriority,
+  SURCHARGE_TYPE_OPTIONS,
+  zoneSchema,
+  type ZoneFormValues,
+} from '../zoneSchema';
 import { ZoneColorPicker } from './ZoneColorPicker';
 
 interface Props {
   /** Con zona es edición de esa zona; sin zona, alta con el `polygon` recién dibujado. */
   zone: CoverageZone | null;
   polygon: number[][] | null;
+  /** Las zonas de la distribuidora: para avisar antes de enviar si el nombre o la prioridad ya están usados. */
+  zones: readonly CoverageZone[];
   onSaved: () => void;
   onCancel: () => void;
 }
 
-const defaultsFor = (zone: CoverageZone | null): ZoneFormValues => ({
+const defaultsFor = (zone: CoverageZone | null, zones: readonly CoverageZone[]): ZoneFormValues => ({
   name: zone?.name ?? '',
   label: zone?.label ?? '',
   surchargeType: zone?.surchargeType ?? 'percentage',
   surchargeValue: zone?.surchargeValue ?? 0,
   color: zone?.color ?? DEFAULT_ZONE_COLOR,
-  priority: zone?.priority ?? 0,
+  priority: zone?.priority ?? nextZonePriority(zones),
   validFrom: toDateInputValue(zone?.validFrom ?? null),
   validUntil: toDateInputValue(zone?.validUntil ?? null),
   isActive: zone?.isActive ?? true,
@@ -34,7 +46,8 @@ const defaultsFor = (zone: CoverageZone | null): ZoneFormValues => ({
  * editando el polígono en `<ZoneMap>`: `polygon` llega actualizado en cada
  * ajuste de vértice y es lo que se manda al guardar.
  */
-export const ZoneFormPanel = ({ zone, polygon, onSaved, onCancel }: Props) => {
+export const ZoneFormPanel = ({ zone, polygon, zones, onSaved, onCancel }: Props) => {
+  const zonesQuery = useCoverageZones();
   const createZone = useCreateCoverageZone();
   const updateZone = useUpdateCoverageZone();
   const saving = createZone.isPending || updateZone.isPending;
@@ -45,14 +58,22 @@ export const ZoneFormPanel = ({ zone, polygon, onSaved, onCancel }: Props) => {
     handleSubmit,
     control,
     watch,
+    setError,
     formState: { errors },
-  } = useForm<ZoneFormValues>({ resolver: zodResolver(zoneSchema), defaultValues: defaultsFor(zone) });
+  } = useForm<ZoneFormValues>({ resolver: zodResolver(zoneSchema), defaultValues: defaultsFor(zone, zones) });
 
   const surchargeType = watch('surchargeType');
 
-  const onSubmit = handleSubmit((values) => {
+  const onSubmit = handleSubmit(async (values) => {
     if (!canSubmit) {
       notify.error(new Error(`Dibujá el polígono en el mapa (mínimo ${MIN_POLYGON_VERTICES} vértices)`));
+      return;
+    }
+    // Con las zonas de ahora; si no se pueden traer, decide el back.
+    const fresh = (await zonesQuery.refetch()).data?.rows ?? zones;
+    const conflict = findZoneConflict(values, fresh, zone?.coverage_zone_id);
+    if (conflict) {
+      setError(conflict.field, { message: conflict.message });
       return;
     }
     const payload = {

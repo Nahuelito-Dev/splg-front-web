@@ -15,6 +15,9 @@ export const isValidCuit = (cuit: string): boolean => {
   return check < 10 && check === Number(cuit[10]);
 };
 
+/** ¿Es un CUIL bien formado? Como el CUIT, pero sólo con prefijo de persona humana (20, 23, 24, 27): `esCuilValido` del back. */
+export const isValidCuil = (cuil: string): boolean => /^(20|23|24|27)/.test(cuil) && isValidCuit(cuil);
+
 /** 30-71234567-1 */
 export const formatCuit = (cuit: string): string =>
   /^\d{11}$/.test(cuit) ? `${cuit.slice(0, 2)}-${cuit.slice(2, 10)}-${cuit.slice(10)}` : cuit;

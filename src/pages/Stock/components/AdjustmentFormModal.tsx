@@ -4,10 +4,11 @@ import { useEffect } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { Button, IconButton, Input, Modal, Select, TextArea } from '../../../common/components/ui';
 import type { StockAdjustment } from '../../../services/api/types';
-import { useCreateAdjustment, useStockLocations } from '../../../services/queries/stock';
+import { useCreateAdjustment, useStockBalances, useStockLocations } from '../../../services/queries/stock';
 import { notify } from '../../../utils/notifications';
 import { ADJUSTMENT_REASON, MANUAL_ADJUSTMENT_REASONS, STOCK_CONDITION } from '../../../utils/statusLabels';
 import { adjustmentCondition, adjustmentDelta } from '../stockMath';
+import { findShortfalls } from '../stockAvailability';
 import { adjustmentSchema, type AdjustmentFormValues } from './adjustmentSchema';
 import { useCylinderOptions, withPlaceholder } from './useStockOptions';
 
@@ -38,6 +39,7 @@ export const AdjustmentFormModal = ({ open, onClose, onCreated }: Props) => {
     reset,
     watch,
     control,
+    setError,
     formState: { errors },
   } = useForm<AdjustmentFormValues>({ resolver: zodResolver(adjustmentSchema) });
   const { fields, append, remove } = useFieldArray({ control, name: 'items' });
@@ -47,6 +49,8 @@ export const AdjustmentFormModal = ({ open, onClose, onCreated }: Props) => {
   }, [open, reset]);
 
   const reason = watch('reason');
+  const locationId = watch('locationId');
+  const balances = useStockBalances({ locationId }, { enabled: open && Boolean(locationId) });
   const locationOptions = withPlaceholder(
     (locations.data ?? []).map((l) => ({
       value: l.locationId,
@@ -55,9 +59,26 @@ export const AdjustmentFormModal = ({ open, onClose, onCreated }: Props) => {
     'Elegí la ubicación',
   );
 
-  const onSubmit = handleSubmit((values) => {
+  const onSubmit = handleSubmit(async (values) => {
     const location = (locations.data ?? []).find((l) => l.locationId === values.locationId);
     if (!location) return;
+    // Igual que el back: ningún saldo de la ubicación puede quedar en negativo.
+    // Con los saldos de ahora; si no se pueden traer, decide el back (409).
+    const freshBalances = (await balances.refetch()).data ?? balances.data;
+    if (freshBalances) {
+      const shortfalls = findShortfalls(
+        freshBalances,
+        values.items.map((item) => ({
+          gasCylinderId: item.gasCylinderId,
+          condition: adjustmentCondition(values.reason, item.condition),
+          delta: adjustmentDelta(values.reason, item.amount),
+        })),
+      );
+      if (shortfalls.size > 0) {
+        shortfalls.forEach((message, index) => setError(`items.${index}.amount`, { message }));
+        return;
+      }
+    }
     create.mutate(
       {
         scope,

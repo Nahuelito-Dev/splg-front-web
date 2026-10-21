@@ -35,6 +35,19 @@ export const newOrderSchema = z
     depositAmount: z.string().optional(),
   })
   .superRefine((values, ctx) => {
+    // El back rechaza la misma garrafa repetida (`items no puede repetir la misma garrafa`): se suman en un solo renglón.
+    const seen = new Set<string>();
+    values.items.forEach((item, index) => {
+      if (!item.gasCylinderId) return;
+      if (seen.has(item.gasCylinderId)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['items', index, 'gasCylinderId'],
+          message: 'Esta garrafa ya está en otro renglón: sumá las cantidades en uno solo',
+        });
+      }
+      seen.add(item.gasCylinderId);
+    });
     if (!values.isReservation) return;
     const date = values.scheduledDate ?? '';
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {

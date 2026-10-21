@@ -1,18 +1,9 @@
 import { z } from 'zod';
+import { isValidCuil } from '../../utils/cuit';
+
+export { isValidCuil };
 
 const optionalText = (max: number) => z.string().trim().max(max, `Hasta ${max} caracteres`);
-
-const CUIL_PREFIXES = ['20', '23', '24', '27'];
-const CUIL_FACTORS = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2];
-
-/** Lo mismo que `esCuilValido` del back: prefijo de persona humana y dígito verificador módulo 11. */
-export const isValidCuil = (cuil: string): boolean => {
-  if (!/^\d{11}$/.test(cuil) || !CUIL_PREFIXES.includes(cuil.slice(0, 2))) return false;
-  const sum = CUIL_FACTORS.reduce((acc, factor, i) => acc + factor * Number(cuil[i]), 0);
-  const rest = sum % 11;
-  const check = rest === 0 ? 0 : 11 - rest;
-  return check < 10 && check === Number(cuil[10]);
-};
 
 /** Fecha de calendario `YYYY-MM-DD` que existe (el back usa `IsISO8601` estricto). */
 export const isRealDay = (value: string): boolean => {
@@ -24,7 +15,7 @@ export const isRealDay = (value: string): boolean => {
 const DAY_MESSAGE = 'Fecha inválida';
 
 /** Reglas del legajo; repiten las del DTO del back (que valida de nuevo, incluido el dígito del CUIL). */
-export const employeeSchema = z.object({
+const employeeFields = z.object({
   firstName: z.string().trim().min(1, 'Ingresá el nombre').max(80, 'Hasta 80 caracteres'),
   lastName: z.string().trim().min(1, 'Ingresá el apellido').max(80, 'Hasta 80 caracteres'),
   positionId: z.string().min(1, 'Elegí el puesto'),
@@ -57,9 +48,22 @@ export const employeeSchema = z.object({
   notes: z.string().trim().max(2000, 'Hasta 2000 caracteres'),
 });
 
-/** Al editar, el legajo ya tiene número y no puede quedar vacío. */
-export const employeeEditSchema = employeeSchema.extend({
-  fileNumber: z.string().trim().min(1, 'El número de legajo no puede quedar vacío').max(20, 'Hasta 20 caracteres'),
-});
+/** El back rechaza (400) un nacimiento que no sea anterior al ingreso. */
+const birthBeforeHire = <T extends { birthDate: string; hireDate: string }>(
+  schema: z.ZodType<T, z.ZodTypeDef, unknown>,
+) =>
+  schema.refine((values) => !values.birthDate || !values.hireDate || values.birthDate < values.hireDate, {
+    message: 'El nacimiento tiene que ser anterior al ingreso',
+    path: ['birthDate'],
+  });
 
-export type EmployeeFormValues = z.infer<typeof employeeSchema>;
+export const employeeSchema = birthBeforeHire(employeeFields);
+
+/** Al editar, el legajo ya tiene número y no puede quedar vacío. */
+export const employeeEditSchema = birthBeforeHire(
+  employeeFields.extend({
+    fileNumber: z.string().trim().min(1, 'El número de legajo no puede quedar vacío').max(20, 'Hasta 20 caracteres'),
+  }),
+);
+
+export type EmployeeFormValues = z.infer<typeof employeeFields>;

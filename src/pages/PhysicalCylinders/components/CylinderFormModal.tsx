@@ -8,10 +8,11 @@ import { useGasCylinders } from '../../../services/queries/gasCylinders';
 import { useCreateCylinder, useUpdateCylinder } from '../../../services/queries/physicalCylinders';
 import { useResetOnOpen } from '../../../hooks/useResetOnOpen';
 import { notify } from '../../../utils/notifications';
+import { SERIAL_MAX, serialSchema } from '../parseSerials';
 import { buildCylinderUpdate, cylinderEditDefaults } from '../cylinderEdit';
 
 const schema = z.object({
-  serial: z.string().trim().min(1, 'El serial es obligatorio'),
+  serial: serialSchema,
   gasCylinderId: z.string(),
   deposit: z.coerce.number({ invalid_type_error: 'Ingresá un número' }).min(0, 'No puede ser negativo'),
   manufacturedAt: z.string(),
@@ -96,6 +97,8 @@ export const CylinderFormModal = ({ open, onClose, cylinder }: Props) => {
           label="Número de serie"
           required
           placeholder="Ej: SN-000123"
+          hint="Se guarda en mayúsculas."
+          maxLength={SERIAL_MAX}
           error={errors.serial?.message}
           {...register('serial')}
         />

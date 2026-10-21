@@ -51,6 +51,15 @@ describe('employeeSchema', () => {
     expect(employeeSchema.safeParse({ ...valid, notes: 'a'.repeat(2000) }).success).toBe(true);
     expect(employeeSchema.safeParse({ ...valid, notes: 'a'.repeat(2001) }).success).toBe(false);
   });
+  it('el CUIL lleva dígito verificador y prefijo de persona humana', () => {
+    expect(employeeSchema.safeParse({ ...valid, cuil: '20123456781' }).success).toBe(false);
+    expect(employeeSchema.safeParse({ ...valid, cuil: '30715123459' }).success).toBe(false);
+  });
+  it('el nacimiento es anterior al ingreso', () => {
+    expect(employeeSchema.safeParse({ ...valid, birthDate: '1990-05-01' }).success).toBe(true);
+    expect(employeeSchema.safeParse({ ...valid, birthDate: '2026-03-01' }).success).toBe(false);
+    expect(employeeEditSchema.safeParse({ ...valid, fileNumber: 'L-1', birthDate: '2027-01-01' }).success).toBe(false);
+  });
   it('al editar exige el número de legajo, al crear no', () => {
     expect(employeeSchema.safeParse(valid).success).toBe(true);
     const result = employeeEditSchema.safeParse(valid);

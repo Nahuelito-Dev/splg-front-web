@@ -90,3 +90,19 @@ describe('cuerpo de la orden', () => {
     expect(orderUpdateBody(values, { supplierId: 's0' })).toHaveProperty('supplierId', 's1'));
   it('al crear siempre lo manda', () => expect(orderCreateBody(values)).toHaveProperty('supplierId', 's1'));
 });
+
+describe('receiptSchema: fecha de recepción', () => {
+  it('no puede ser futura', () => {
+    const base = {
+      mode: 'direct',
+      supplierId: 's',
+      warehouseId: '',
+      supplierDocumentType: 'delivery_note',
+      supplierDocumentNumber: 'R-1',
+      notes: '',
+      items: [{ gasCylinderId: 'g', type: '10kg', quantityFull: 5, quantityEmptyOut: 0, unitCost: 100 }],
+    };
+    expect(receiptSchema.safeParse({ ...base, receivedAt: '2099-01-01T10:00' }).success).toBe(false);
+    expect(receiptSchema.safeParse({ ...base, receivedAt: '2020-01-01T10:00' }).success).toBe(true);
+  });
+});

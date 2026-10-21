@@ -5,13 +5,13 @@ import { z } from 'zod';
 import { Button, Input, Modal, TextArea } from '../../../common/components/ui';
 import { useAssignCylinders } from '../../../services/queries/physicalCylinders';
 import { notify } from '../../../utils/notifications';
-import { parseSerials } from '../parseSerials';
+import { parseSerials, serialListSchema } from '../parseSerials';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const schema = z.object({
   orderId: z.string().trim().regex(UUID_RE, 'Tiene que ser el UUID del pedido'),
-  serials: z.string().trim().min(1, 'Ingresá al menos un serial'),
+  serials: serialListSchema,
 });
 
 type FormValues = z.infer<typeof schema>;

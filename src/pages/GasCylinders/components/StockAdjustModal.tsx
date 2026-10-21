@@ -4,7 +4,8 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Button, Input, Modal } from '../../../common/components/ui';
 import type { GasCylinder } from '../../../services/api/types';
-import { useUpdateGasCylinderStock } from '../../../services/queries/gasCylinders';
+import { negativeStockMessage } from './stockAdjust';
+import { useGasCylinder, useUpdateGasCylinderStock } from '../../../services/queries/gasCylinders';
 import { notify } from '../../../utils/notifications';
 
 const schema = z.object({
@@ -25,10 +26,12 @@ interface Props {
 /** Ingreso o egreso de mercadería: suma (positivo) o resta (negativo) del stock actual. */
 export const StockAdjustModal = ({ open, onClose, cylinder }: Props) => {
   const updateStock = useUpdateGasCylinderStock();
+  const current = useGasCylinder(cylinder?.gas_cylinder_id);
   const {
     register,
     handleSubmit,
     reset,
+    setError,
     formState: { errors },
   } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { quantity: 0 } });
 
@@ -38,7 +41,14 @@ export const StockAdjustModal = ({ open, onClose, cylinder }: Props) => {
 
   if (!cylinder) return null;
 
-  const onSubmit = handleSubmit(({ quantity }) =>
+  const onSubmit = handleSubmit(async ({ quantity }) => {
+    // Con el stock de ahora; si no se puede traer, decide el back (400).
+    const stock = (await current.refetch()).data?.stock ?? cylinder.stock;
+    const negative = negativeStockMessage(stock, quantity);
+    if (negative) {
+      setError('quantity', { message: negative });
+      return;
+    }
     updateStock.mutate(
       { id: cylinder.gas_cylinder_id, body: { quantity } },
       {
@@ -48,8 +58,8 @@ export const StockAdjustModal = ({ open, onClose, cylinder }: Props) => {
         },
         onError: notify.error,
       },
-    ),
-  );
+    );
+  });
 
   return (
     <Modal

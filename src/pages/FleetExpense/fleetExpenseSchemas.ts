@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { isFutureMoment } from '../../utils/dates';
+import { argentinaDay } from '../../utils/format';
 
 /** Un número opcional: en el formulario el campo puede quedar vacío. */
 const optionalNumber = (schema: z.ZodNumber) =>
@@ -6,6 +8,9 @@ const optionalNumber = (schema: z.ZodNumber) =>
     (value) => (value === '' || value === undefined || value === null ? undefined : value),
     schema.optional(),
   );
+
+/** La misma tolerancia de reloj del back (5 minutos) para fechas que no pueden ser futuras. */
+const FUTURE_TOLERANCE_MS = 5 * 60 * 1000;
 
 const optionalText = (max: number) => z.string().trim().max(max, `No puede tener más de ${max} caracteres`);
 
@@ -37,16 +42,6 @@ const kilometers = () =>
       .nonnegative('No puede ser negativo')
       .max(MAX_ODOMETER_KM, `No puede pasar de ${MAX_ODOMETER_KM.toLocaleString('es-AR')} km`),
   );
-
-/** El back tolera 5 minutos de adelanto del reloj antes de tomar una fecha como futura. */
-const CLOCK_TOLERANCE_MS = 5 * 60 * 1000;
-
-/** Un instante de un `datetime-local` que existe y no es futuro (vacío: se completa solo). */
-const isPastInstant = (value: string): boolean => {
-  if (value === '') return true;
-  const time = new Date(value).getTime();
-  return !Number.isNaN(time) && time <= Date.now() + CLOCK_TOLERANCE_MS;
-};
 
 /** Una fecha de calendario `YYYY-MM-DD` (lo que manda un `<input type="date">`). */
 const day = (message: string) =>
@@ -90,7 +85,10 @@ export const fuelFitsTank = (liters: number, capacity: number | null | undefined
 export const fuelLoadSchema = z
   .object({
     carId: z.string().trim().min(1, 'Elegí el vehículo'),
-    loadedAt: z.string().trim().refine(isPastInstant, 'La carga no puede ser futura'),
+    loadedAt: z
+      .string()
+      .trim()
+      .refine((value) => !isFutureMoment(value, FUTURE_TOLERANCE_MS), 'La carga no puede ser futura'),
     fuelType: z.union([z.literal(''), z.enum(['diesel', 'gasoline', 'cng', 'lpg'])]),
     liters: money('los litros').pipe(z.number().positive('Tienen que ser más que cero')),
     unitPrice: money('el precio por litro', 3).pipe(z.number().positive('Tiene que ser mayor a cero')),
@@ -127,7 +125,11 @@ export type FuelLoadFormValues = z.infer<typeof fuelLoadSchema>;
 export const trafficFineSchema = z
   .object({
     carId: z.string().trim().min(1, 'Elegí el vehículo'),
-    occurredAt: z.string().trim().min(1, 'Ingresá cuándo ocurrió'),
+    occurredAt: z
+      .string()
+      .trim()
+      .min(1, 'Ingresá cuándo ocurrió')
+      .refine((value) => !isFutureMoment(value, FUTURE_TOLERANCE_MS), 'La infracción no puede ser futura'),
     jurisdiction: requiredText(80, 'Ingresá la jurisdicción'),
     actNumber: requiredText(40, 'Ingresá el número de acta'),
     infraction: requiredText(1000, 'Ingresá la infracción'),
@@ -146,14 +148,33 @@ export const trafficFineSchema = z
         message: 'No puede superar el importe de la multa',
       });
     }
+    // Igual que el back: el vencimiento no puede ser anterior al día de la infracción.
+    if (values.dueDate && values.occurredAt) {
+      const occurred = new Date(values.occurredAt);
+      if (!Number.isNaN(occurred.getTime()) && values.dueDate < argentinaDay(occurred)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['dueDate'],
+          message: 'El vencimiento no puede ser anterior a la fecha de la infracción',
+        });
+      }
+    }
   });
 
 export type TrafficFineFormValues = z.infer<typeof trafficFineSchema>;
 
-/** `PayTrafficFineDto`: la fecha de pago no puede ser posterior a hoy. */
-export const payFineSchema = (today: string) =>
+/**
+ * `PayTrafficFineDto`: la fecha de pago no puede ser posterior a hoy ni anterior a la infracción (días argentinos,
+ * como `TrafficFineService.pagar`).
+ */
+export const payFineSchema = (today: string, occurredAt?: string | null) =>
   z.object({
-    paidAt: day('Ingresá la fecha de pago').refine((value) => value <= today, 'No puede ser posterior a hoy'),
+    paidAt: day('Ingresá la fecha de pago')
+      .refine((value) => value <= today, 'El pago no puede ser posterior a hoy')
+      .refine(
+        (value) => !occurredAt || value >= argentinaDay(occurredAt),
+        'El pago no puede ser anterior a la fecha de la infracción',
+      ),
     paidAmount: money('lo pagado').pipe(z.number().positive('Tiene que ser mayor a cero')),
     paidInCash: z.boolean(),
   });
@@ -175,7 +196,7 @@ export const accidentSchema = z.object({
     .string()
     .trim()
     .min(1, 'Ingresá cuándo ocurrió')
-    .refine(isPastInstant, 'El siniestro no puede ser futuro'),
+    .refine((value) => !isFutureMoment(value, FUTURE_TOLERANCE_MS), 'El siniestro no puede ser futuro'),
   location: z
     .string()
     .trim()

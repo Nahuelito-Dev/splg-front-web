@@ -82,3 +82,19 @@ describe('fleetTaskCloseSchema (CU-141)', () => {
     expect(fleetTaskCloseSchema.safeParse({ performedAt: '2026-09-30', odometerKm: 45000.5 }).success).toBe(false);
   });
 });
+
+describe('fleetTaskCloseSchema: fecha de cierre', () => {
+  it('no puede ser futura, como en el back', () => {
+    expect(fleetTaskCloseSchema.safeParse({ performedAt: '2099-01-01' }).success).toBe(false);
+  });
+});
+
+describe('fleetTaskCloseSchema: tolerancia', () => {
+  it('interpreta la fecha como el back (new Date) con 5 minutos de margen', () => {
+    const tomorrow = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+    expect(fleetTaskCloseSchema.safeParse({ performedAt: tomorrow }).success).toBe(false);
+    expect(fleetTaskCloseSchema.safeParse({ performedAt: new Date(Date.now() + 120_000).toISOString() }).success).toBe(
+      true,
+    );
+  });
+});
