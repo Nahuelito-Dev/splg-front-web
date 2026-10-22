@@ -7469,7 +7469,7 @@ export interface components {
       scheduledDate?: string;
       /** @description Marca el pedido como pre-reserva: reserva stock para la fecha agendada pero NO se despacha hasta que la seña esté paga y llegue el día (el sistema lo activa solo). Requiere scheduledDate. */
       isReservation?: boolean;
-      /** @description Monto de la seña de la reserva (obligatorio si isReservation). No puede superar el total del pedido (con recargos): 400 «La seña ($X) no puede superar el total del pedido ($Y)». */
+      /** @description Monto de la seña de la reserva. Con MercadoPago es obligatorio y mayor a cero (se cobra online y activa la reserva): 400 si falta o es 0. Con otros medios, omitirlo equivale a 0. No puede superar el total del pedido (con recargos): 400 «La seña ($X) no puede superar el total del pedido ($Y)». */
       depositAmount?: number;
       /** @description Quién va a recibir el pedido (CU-128): mismas reglas que `PATCH /orders/:id/receiver`. */
       receiver?: components['schemas']['SetOrderReceiverDto'];
@@ -7508,7 +7508,7 @@ export interface components {
       scheduledDate?: string;
       /** @description Marca el pedido como pre-reserva: reserva stock para la fecha agendada pero NO se despacha hasta que la seña esté paga y llegue el día (el sistema lo activa solo). Requiere scheduledDate. */
       isReservation?: boolean;
-      /** @description Monto de la seña de la reserva (obligatorio si isReservation). No puede superar el total del pedido (con recargos): 400 «La seña ($X) no puede superar el total del pedido ($Y)». */
+      /** @description Monto de la seña de la reserva. Con MercadoPago es obligatorio y mayor a cero (se cobra online y activa la reserva): 400 si falta o es 0. Con otros medios, omitirlo equivale a 0. No puede superar el total del pedido (con recargos): 400 «La seña ($X) no puede superar el total del pedido ($Y)». */
       depositAmount?: number;
       /** @description Quién va a recibir el pedido (CU-128): mismas reglas que `PATCH /orders/:id/receiver`. */
       receiver?: components['schemas']['SetOrderReceiverDto'];
