@@ -4,7 +4,7 @@
  */
 
 export interface paths {
-  '/api/users/email/{email}': {
+  '/api/v1/users/email/{email}': {
     parameters: {
       query?: never;
       header?: never;
@@ -24,7 +24,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/users': {
+  '/api/v1/users': {
     parameters: {
       query?: never;
       header?: never;
@@ -48,7 +48,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/users/me/photo': {
+  '/api/v1/users/me/photo': {
     parameters: {
       query?: never;
       header?: never;
@@ -76,7 +76,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/users/me': {
+  '/api/v1/users/me': {
     parameters: {
       query?: never;
       header?: never;
@@ -96,7 +96,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/users/{id}/photo': {
+  '/api/v1/users/{id}/photo': {
     parameters: {
       query?: never;
       header?: never;
@@ -124,7 +124,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/users/{id}': {
+  '/api/v1/users/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -146,7 +146,7 @@ export interface paths {
     patch: operations['UsersController_update'];
     trace?: never;
   };
-  '/api/users/phone/{phoneNumber}': {
+  '/api/v1/users/phone/{phoneNumber}': {
     parameters: {
       query?: never;
       header?: never;
@@ -163,7 +163,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/users/check-exists': {
+  '/api/v1/users/check-exists': {
     parameters: {
       query?: never;
       header?: never;
@@ -183,7 +183,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/users/{id}/block': {
+  '/api/v1/users/{id}/block': {
     parameters: {
       query?: never;
       header?: never;
@@ -203,7 +203,7 @@ export interface paths {
     patch: operations['UsersController_blockUser'];
     trace?: never;
   };
-  '/api/admin': {
+  '/api/v1/admin': {
     parameters: {
       query?: never;
       header?: never;
@@ -224,7 +224,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/admin/term/{term}': {
+  '/api/v1/admin/term/{term}': {
     parameters: {
       query?: never;
       header?: never;
@@ -241,7 +241,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/admin/{id}': {
+  '/api/v1/admin/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -269,7 +269,7 @@ export interface paths {
     patch: operations['AdminController_update'];
     trace?: never;
   };
-  '/api/role': {
+  '/api/v1/role': {
     parameters: {
       query?: never;
       header?: never;
@@ -287,7 +287,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/role/{id}': {
+  '/api/v1/role/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -306,7 +306,7 @@ export interface paths {
     patch: operations['RoleController_update'];
     trace?: never;
   };
-  '/api/role/seed': {
+  '/api/v1/role/seed': {
     parameters: {
       query?: never;
       header?: never;
@@ -323,7 +323,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/auth/registro': {
+  '/api/v1/auth/registro': {
     parameters: {
       query?: never;
       header?: never;
@@ -340,7 +340,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/users/customer-registration': {
+  '/api/v1/users/customer-registration': {
     parameters: {
       query?: never;
       header?: never;
@@ -360,7 +360,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/employees/{id}/account': {
+  '/api/v1/employees/{id}/account': {
     parameters: {
       query?: never;
       header?: never;
@@ -380,7 +380,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/customers': {
+  '/api/v1/customers': {
     parameters: {
       query?: never;
       header?: never;
@@ -397,7 +397,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/customers/{id}': {
+  '/api/v1/customers/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -416,7 +416,7 @@ export interface paths {
     patch: operations['CustomersController_update'];
     trace?: never;
   };
-  '/api/customers/user/{userId}': {
+  '/api/v1/customers/user/{userId}': {
     parameters: {
       query?: never;
       header?: never;
@@ -433,7 +433,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/customers/{id}/location': {
+  '/api/v1/customers/{id}/location': {
     parameters: {
       query?: never;
       header?: never;
@@ -450,7 +450,7 @@ export interface paths {
     patch: operations['CustomersController_updateLocation'];
     trace?: never;
   };
-  '/api/delivery': {
+  '/api/v1/delivery': {
     parameters: {
       query?: never;
       header?: never;
@@ -470,7 +470,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/delivery/active': {
+  '/api/v1/delivery/active': {
     parameters: {
       query?: never;
       header?: never;
@@ -490,7 +490,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/delivery/{id}': {
+  '/api/v1/delivery/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -509,7 +509,7 @@ export interface paths {
     patch: operations['DeliveryController_update'];
     trace?: never;
   };
-  '/api/delivery/user/{userId}': {
+  '/api/v1/delivery/user/{userId}': {
     parameters: {
       query?: never;
       header?: never;
@@ -526,7 +526,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/delivery/{id}/validate': {
+  '/api/v1/delivery/{id}/validate': {
     parameters: {
       query?: never;
       header?: never;
@@ -543,7 +543,7 @@ export interface paths {
     patch: operations['DeliveryController_validateDelivery'];
     trace?: never;
   };
-  '/api/delivery/{id}/invalidate': {
+  '/api/v1/delivery/{id}/invalidate': {
     parameters: {
       query?: never;
       header?: never;
@@ -560,7 +560,7 @@ export interface paths {
     patch: operations['DeliveryController_invalidateDelivery'];
     trace?: never;
   };
-  '/api/delivery/{id}/location': {
+  '/api/v1/delivery/{id}/location': {
     parameters: {
       query?: never;
       header?: never;
@@ -577,7 +577,7 @@ export interface paths {
     patch: operations['DeliveryController_updateLocation'];
     trace?: never;
   };
-  '/api/delivery/{id}/balance': {
+  '/api/v1/delivery/{id}/balance': {
     parameters: {
       query?: never;
       header?: never;
@@ -594,7 +594,7 @@ export interface paths {
     patch: operations['DeliveryController_updateBalance'];
     trace?: never;
   };
-  '/api/delivery/{id}/status': {
+  '/api/v1/delivery/{id}/status': {
     parameters: {
       query?: never;
       header?: never;
@@ -614,7 +614,7 @@ export interface paths {
     patch: operations['DeliveryController_toggleStatus'];
     trace?: never;
   };
-  '/api/delivery/user/{userId}/availability': {
+  '/api/v1/delivery/user/{userId}/availability': {
     parameters: {
       query?: never;
       header?: never;
@@ -634,7 +634,7 @@ export interface paths {
     patch: operations['DeliveryController_toggleAvailability'];
     trace?: never;
   };
-  '/api/distributor': {
+  '/api/v1/distributor': {
     parameters: {
       query?: never;
       header?: never;
@@ -652,7 +652,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/distributor/current': {
+  '/api/v1/distributor/current': {
     parameters: {
       query?: never;
       header?: never;
@@ -672,7 +672,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/distributor/{id}': {
+  '/api/v1/distributor/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -691,7 +691,7 @@ export interface paths {
     patch: operations['DistributorController_update'];
     trace?: never;
   };
-  '/api/distributor/{id}/logo': {
+  '/api/v1/distributor/{id}/logo': {
     parameters: {
       query?: never;
       header?: never;
@@ -719,7 +719,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/module-config/express_dispatch': {
+  '/api/v1/module-config/express_dispatch': {
     parameters: {
       query?: never;
       header?: never;
@@ -743,7 +743,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/module-config/dispatch': {
+  '/api/v1/module-config/dispatch': {
     parameters: {
       query?: never;
       header?: never;
@@ -767,7 +767,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/module-config/scheduled_tasks': {
+  '/api/v1/module-config/scheduled_tasks': {
     parameters: {
       query?: never;
       header?: never;
@@ -791,7 +791,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/module-config/processes': {
+  '/api/v1/module-config/processes': {
     parameters: {
       query?: never;
       header?: never;
@@ -811,7 +811,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/module-config/{process}': {
+  '/api/v1/module-config/{process}': {
     parameters: {
       query?: never;
       header?: never;
@@ -835,7 +835,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/job-positions': {
+  '/api/v1/job-positions': {
     parameters: {
       query?: never;
       header?: never;
@@ -853,7 +853,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/job-positions/{id}': {
+  '/api/v1/job-positions/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -871,7 +871,7 @@ export interface paths {
     patch: operations['JobPositionController_update'];
     trace?: never;
   };
-  '/api/employees': {
+  '/api/v1/employees': {
     parameters: {
       query?: never;
       header?: never;
@@ -889,7 +889,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/employees/{id}': {
+  '/api/v1/employees/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -908,7 +908,7 @@ export interface paths {
     patch: operations['EmployeeController_update'];
     trace?: never;
   };
-  '/api/employees/{id}/photo': {
+  '/api/v1/employees/{id}/photo': {
     parameters: {
       query?: never;
       header?: never;
@@ -936,7 +936,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/employees/{id}/termination': {
+  '/api/v1/employees/{id}/termination': {
     parameters: {
       query?: never;
       header?: never;
@@ -953,7 +953,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/employees/{id}/reinstatement': {
+  '/api/v1/employees/{id}/reinstatement': {
     parameters: {
       query?: never;
       header?: never;
@@ -970,7 +970,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/car': {
+  '/api/v1/car': {
     parameters: {
       query?: never;
       header?: never;
@@ -988,7 +988,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/car/{id}': {
+  '/api/v1/car/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -1007,7 +1007,7 @@ export interface paths {
     patch: operations['CarController_update'];
     trace?: never;
   };
-  '/api/car/user/{userId}': {
+  '/api/v1/car/user/{userId}': {
     parameters: {
       query?: never;
       header?: never;
@@ -1024,7 +1024,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/car/patent/{patent}': {
+  '/api/v1/car/patent/{patent}': {
     parameters: {
       query?: never;
       header?: never;
@@ -1041,7 +1041,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/car/{id}/photo': {
+  '/api/v1/car/{id}/photo': {
     parameters: {
       query?: never;
       header?: never;
@@ -1069,7 +1069,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/attachments/{ownerType}/{ownerId}': {
+  '/api/v1/attachments/{ownerType}/{ownerId}': {
     parameters: {
       query?: never;
       header?: never;
@@ -1087,7 +1087,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/attachments/{attachmentId}/download': {
+  '/api/v1/attachments/{attachmentId}/download': {
     parameters: {
       query?: never;
       header?: never;
@@ -1107,7 +1107,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/attachments/{attachmentId}': {
+  '/api/v1/attachments/{attachmentId}': {
     parameters: {
       query?: never;
       header?: never;
@@ -1124,7 +1124,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/customers/me/consumption': {
+  '/api/v1/customers/me/consumption': {
     parameters: {
       query?: never;
       header?: never;
@@ -1145,7 +1145,7 @@ export interface paths {
     patch: operations['ConsumptionController_actualizar'];
     trace?: never;
   };
-  '/api/gascylinder': {
+  '/api/v1/gascylinder': {
     parameters: {
       query?: never;
       header?: never;
@@ -1166,7 +1166,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/gascylinder/inactive': {
+  '/api/v1/gascylinder/inactive': {
     parameters: {
       query?: never;
       header?: never;
@@ -1186,7 +1186,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/gascylinder/{id}': {
+  '/api/v1/gascylinder/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -1205,7 +1205,7 @@ export interface paths {
     patch: operations['GasCylinderController_update'];
     trace?: never;
   };
-  '/api/gascylinder/type/{type}': {
+  '/api/v1/gascylinder/type/{type}': {
     parameters: {
       query?: never;
       header?: never;
@@ -1222,7 +1222,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/gascylinder/available/list': {
+  '/api/v1/gascylinder/available/list': {
     parameters: {
       query?: never;
       header?: never;
@@ -1242,7 +1242,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/gascylinder/{id}/reactivate': {
+  '/api/v1/gascylinder/{id}/reactivate': {
     parameters: {
       query?: never;
       header?: never;
@@ -1262,7 +1262,7 @@ export interface paths {
     patch: operations['GasCylinderController_reactivate'];
     trace?: never;
   };
-  '/api/gascylinder/{id}/photo': {
+  '/api/v1/gascylinder/{id}/photo': {
     parameters: {
       query?: never;
       header?: never;
@@ -1290,7 +1290,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/auth': {
+  '/api/v1/auth': {
     parameters: {
       query?: never;
       header?: never;
@@ -1310,7 +1310,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/auth/login': {
+  '/api/v1/auth/login': {
     parameters: {
       query?: never;
       header?: never;
@@ -1327,7 +1327,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/auth/login/dashboard': {
+  '/api/v1/auth/login/dashboard': {
     parameters: {
       query?: never;
       header?: never;
@@ -1344,7 +1344,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/orders/delivery-options': {
+  '/api/v1/orders/delivery-options': {
     parameters: {
       query?: never;
       header?: never;
@@ -1364,7 +1364,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/orders/express/quote': {
+  '/api/v1/orders/express/quote': {
     parameters: {
       query?: never;
       header?: never;
@@ -1384,7 +1384,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/orders/express': {
+  '/api/v1/orders/express': {
     parameters: {
       query?: never;
       header?: never;
@@ -1404,7 +1404,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/orders': {
+  '/api/v1/orders': {
     parameters: {
       query?: never;
       header?: never;
@@ -1428,7 +1428,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/orders/quote': {
+  '/api/v1/orders/quote': {
     parameters: {
       query?: never;
       header?: never;
@@ -1448,7 +1448,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/orders/customer/{customerId}': {
+  '/api/v1/orders/customer/{customerId}': {
     parameters: {
       query?: never;
       header?: never;
@@ -1468,7 +1468,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/orders/delivery/me/active': {
+  '/api/v1/orders/delivery/me/active': {
     parameters: {
       query?: never;
       header?: never;
@@ -1488,7 +1488,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/orders/delivery/{deliveryId}': {
+  '/api/v1/orders/delivery/{deliveryId}': {
     parameters: {
       query?: never;
       header?: never;
@@ -1505,7 +1505,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/orders/available': {
+  '/api/v1/orders/available': {
     parameters: {
       query?: never;
       header?: never;
@@ -1522,7 +1522,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/orders/reservations': {
+  '/api/v1/orders/reservations': {
     parameters: {
       query?: never;
       header?: never;
@@ -1539,7 +1539,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/orders/{id}/driver-photo': {
+  '/api/v1/orders/{id}/driver-photo': {
     parameters: {
       query?: never;
       header?: never;
@@ -1559,7 +1559,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/orders/{id}/status-history': {
+  '/api/v1/orders/{id}/status-history': {
     parameters: {
       query?: never;
       header?: never;
@@ -1579,7 +1579,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/orders/{id}': {
+  '/api/v1/orders/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -1608,7 +1608,7 @@ export interface paths {
     patch: operations['OrderController_update'];
     trace?: never;
   };
-  '/api/orders/{id}/status': {
+  '/api/v1/orders/{id}/status': {
     parameters: {
       query?: never;
       header?: never;
@@ -1634,7 +1634,7 @@ export interface paths {
     patch: operations['OrderController_updateStatus'];
     trace?: never;
   };
-  '/api/orders/{id}/reject': {
+  '/api/v1/orders/{id}/reject': {
     parameters: {
       query?: never;
       header?: never;
@@ -1656,7 +1656,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/orders/{id}/delivery-code': {
+  '/api/v1/orders/{id}/delivery-code': {
     parameters: {
       query?: never;
       header?: never;
@@ -1676,7 +1676,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/orders/{id}/confirm-delivery': {
+  '/api/v1/orders/{id}/confirm-delivery': {
     parameters: {
       query?: never;
       header?: never;
@@ -1696,7 +1696,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/orders/{id}/payment/cash-received': {
+  '/api/v1/orders/{id}/payment/cash-received': {
     parameters: {
       query?: never;
       header?: never;
@@ -1716,7 +1716,7 @@ export interface paths {
     patch: operations['OrderController_confirmCashReceived'];
     trace?: never;
   };
-  '/api/orders/{id}/payment/resolve-unpaid': {
+  '/api/v1/orders/{id}/payment/resolve-unpaid': {
     parameters: {
       query?: never;
       header?: never;
@@ -1736,7 +1736,7 @@ export interface paths {
     patch: operations['OrderController_resolveUnpaid'];
     trace?: never;
   };
-  '/api/orders/{id}/payment/register-cash': {
+  '/api/v1/orders/{id}/payment/register-cash': {
     parameters: {
       query?: never;
       header?: never;
@@ -1756,7 +1756,7 @@ export interface paths {
     patch: operations['OrderController_registerCash'];
     trace?: never;
   };
-  '/api/orders/{id}/payment/confirm-transfer': {
+  '/api/v1/orders/{id}/payment/confirm-transfer': {
     parameters: {
       query?: never;
       header?: never;
@@ -1776,7 +1776,7 @@ export interface paths {
     patch: operations['OrderController_confirmTransfer'];
     trace?: never;
   };
-  '/api/orders/{id}/assign/{deliveryId}': {
+  '/api/v1/orders/{id}/assign/{deliveryId}': {
     parameters: {
       query?: never;
       header?: never;
@@ -1796,7 +1796,7 @@ export interface paths {
     patch: operations['OrderController_assignDelivery'];
     trace?: never;
   };
-  '/api/orders/{id}/location': {
+  '/api/v1/orders/{id}/location': {
     parameters: {
       query?: never;
       header?: never;
@@ -1816,7 +1816,7 @@ export interface paths {
     patch: operations['OrderController_updateLocation'];
     trace?: never;
   };
-  '/api/orders/stats/summary': {
+  '/api/v1/orders/stats/summary': {
     parameters: {
       query?: never;
       header?: never;
@@ -1833,7 +1833,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/orders/{id}/address': {
+  '/api/v1/orders/{id}/address': {
     parameters: {
       query?: never;
       header?: never;
@@ -1853,7 +1853,7 @@ export interface paths {
     patch: operations['OrderController_changeAddress'];
     trace?: never;
   };
-  '/api/orders/{id}/receiver': {
+  '/api/v1/orders/{id}/receiver': {
     parameters: {
       query?: never;
       header?: never;
@@ -1873,7 +1873,7 @@ export interface paths {
     patch: operations['OrderController_setReceiver'];
     trace?: never;
   };
-  '/api/orders/{id}/cancel': {
+  '/api/v1/orders/{id}/cancel': {
     parameters: {
       query?: never;
       header?: never;
@@ -1893,7 +1893,7 @@ export interface paths {
     patch: operations['OrderController_cancel'];
     trace?: never;
   };
-  '/api/orders/{id}/arrived': {
+  '/api/v1/orders/{id}/arrived': {
     parameters: {
       query?: never;
       header?: never;
@@ -1913,7 +1913,7 @@ export interface paths {
     patch: operations['OrderController_notifyArrival'];
     trace?: never;
   };
-  '/api/orders/{id}/confirm-deposit': {
+  '/api/v1/orders/{id}/confirm-deposit': {
     parameters: {
       query?: never;
       header?: never;
@@ -1933,7 +1933,7 @@ export interface paths {
     patch: operations['OrderController_confirmDeposit'];
     trace?: never;
   };
-  '/api/orders/stats/chart': {
+  '/api/v1/orders/stats/chart': {
     parameters: {
       query?: never;
       header?: never;
@@ -1950,7 +1950,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/cart': {
+  '/api/v1/cart': {
     parameters: {
       query?: never;
       header?: never;
@@ -1974,7 +1974,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/cart/items': {
+  '/api/v1/cart/items': {
     parameters: {
       query?: never;
       header?: never;
@@ -1994,7 +1994,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/cart/items/{itemId}': {
+  '/api/v1/cart/items/{itemId}': {
     parameters: {
       query?: never;
       header?: never;
@@ -2012,7 +2012,7 @@ export interface paths {
     patch: operations['CartController_cambiarCantidad'];
     trace?: never;
   };
-  '/api/user-address': {
+  '/api/v1/user-address': {
     parameters: {
       query?: never;
       header?: never;
@@ -2030,7 +2030,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/user-address/{id}': {
+  '/api/v1/user-address/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -2049,7 +2049,7 @@ export interface paths {
     patch: operations['UserAddressController_update'];
     trace?: never;
   };
-  '/api/user-address/user/{userId}': {
+  '/api/v1/user-address/user/{userId}': {
     parameters: {
       query?: never;
       header?: never;
@@ -2066,7 +2066,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/user-address/user/{userId}/default': {
+  '/api/v1/user-address/user/{userId}/default': {
     parameters: {
       query?: never;
       header?: never;
@@ -2083,7 +2083,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/user-address/{id}/set-default': {
+  '/api/v1/user-address/{id}/set-default': {
     parameters: {
       query?: never;
       header?: never;
@@ -2100,7 +2100,7 @@ export interface paths {
     patch: operations['UserAddressController_setAsDefault'];
     trace?: never;
   };
-  '/api/notifications/send-test': {
+  '/api/v1/notifications/send-test': {
     parameters: {
       query?: never;
       header?: never;
@@ -2117,7 +2117,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/notifications/order-confirmation': {
+  '/api/v1/notifications/order-confirmation': {
     parameters: {
       query?: never;
       header?: never;
@@ -2134,7 +2134,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/notifications/user/{userId}': {
+  '/api/v1/notifications/user/{userId}': {
     parameters: {
       query?: never;
       header?: never;
@@ -2151,7 +2151,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/notifications/token': {
+  '/api/v1/notifications/token': {
     parameters: {
       query?: never;
       header?: never;
@@ -2168,7 +2168,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/time-slot': {
+  '/api/v1/time-slot': {
     parameters: {
       query?: never;
       header?: never;
@@ -2189,7 +2189,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/time-slot/availability': {
+  '/api/v1/time-slot/availability': {
     parameters: {
       query?: never;
       header?: never;
@@ -2209,7 +2209,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/time-slot/{id}': {
+  '/api/v1/time-slot/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -2228,7 +2228,7 @@ export interface paths {
     patch: operations['TimeSlotController_update'];
     trace?: never;
   };
-  '/api/cylinders': {
+  '/api/v1/cylinders': {
     parameters: {
       query?: never;
       header?: never;
@@ -2249,7 +2249,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/cylinders/assign': {
+  '/api/v1/cylinders/assign': {
     parameters: {
       query?: never;
       header?: never;
@@ -2266,7 +2266,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/cylinders/vigencia/proximos-a-vencer': {
+  '/api/v1/cylinders/vigencia/proximos-a-vencer': {
     parameters: {
       query?: never;
       header?: never;
@@ -2286,7 +2286,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/cylinders/vigencia/serial/{serial}': {
+  '/api/v1/cylinders/vigencia/serial/{serial}': {
     parameters: {
       query?: never;
       header?: never;
@@ -2306,7 +2306,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/cylinders/{id}': {
+  '/api/v1/cylinders/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -2327,7 +2327,7 @@ export interface paths {
     patch: operations['CylinderController_update'];
     trace?: never;
   };
-  '/api/cylinders/{id}/vigencia': {
+  '/api/v1/cylinders/{id}/vigencia': {
     parameters: {
       query?: never;
       header?: never;
@@ -2347,7 +2347,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/cylinders/{id}/inspections': {
+  '/api/v1/cylinders/{id}/inspections': {
     parameters: {
       query?: never;
       header?: never;
@@ -2367,7 +2367,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/cylinders/{id}/history': {
+  '/api/v1/cylinders/{id}/history': {
     parameters: {
       query?: never;
       header?: never;
@@ -2384,7 +2384,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/cylinders/{id}/retire': {
+  '/api/v1/cylinders/{id}/retire': {
     parameters: {
       query?: never;
       header?: never;
@@ -2404,7 +2404,7 @@ export interface paths {
     patch: operations['CylinderController_retire'];
     trace?: never;
   };
-  '/api/cylinders/{id}/transition': {
+  '/api/v1/cylinders/{id}/transition': {
     parameters: {
       query?: never;
       header?: never;
@@ -2421,7 +2421,7 @@ export interface paths {
     patch: operations['CylinderController_transition'];
     trace?: never;
   };
-  '/api/coverage-zones': {
+  '/api/v1/coverage-zones': {
     parameters: {
       query?: never;
       header?: never;
@@ -2442,7 +2442,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/coverage-zones/check': {
+  '/api/v1/coverage-zones/check': {
     parameters: {
       query?: never;
       header?: never;
@@ -2462,7 +2462,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/coverage-zones/{id}': {
+  '/api/v1/coverage-zones/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -2484,7 +2484,7 @@ export interface paths {
     patch: operations['CoverageZoneController_update'];
     trace?: never;
   };
-  '/api/refunds': {
+  '/api/v1/refunds': {
     parameters: {
       query?: never;
       header?: never;
@@ -2504,7 +2504,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/orders/{id}/refunds': {
+  '/api/v1/orders/{id}/refunds': {
     parameters: {
       query?: never;
       header?: never;
@@ -2521,7 +2521,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/orders/{id}/refunds/retry': {
+  '/api/v1/orders/{id}/refunds/retry': {
     parameters: {
       query?: never;
       header?: never;
@@ -2541,7 +2541,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/orders/{id}/refunds/mine': {
+  '/api/v1/orders/{id}/refunds/mine': {
     parameters: {
       query?: never;
       header?: never;
@@ -2561,7 +2561,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/customer-accounts': {
+  '/api/v1/customer-accounts': {
     parameters: {
       query?: never;
       header?: never;
@@ -2585,7 +2585,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/customer-accounts/aging': {
+  '/api/v1/customer-accounts/aging': {
     parameters: {
       query?: never;
       header?: never;
@@ -2605,7 +2605,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/customer-accounts/{id}': {
+  '/api/v1/customer-accounts/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -2626,7 +2626,7 @@ export interface paths {
     patch: operations['CustomerAccountController_update'];
     trace?: never;
   };
-  '/api/customer-accounts/{id}/entries': {
+  '/api/v1/customer-accounts/{id}/entries': {
     parameters: {
       query?: never;
       header?: never;
@@ -2646,7 +2646,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/customer-accounts/{id}/payments': {
+  '/api/v1/customer-accounts/{id}/payments': {
     parameters: {
       query?: never;
       header?: never;
@@ -2666,7 +2666,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/customer-accounts/{id}/adjustments': {
+  '/api/v1/customer-accounts/{id}/adjustments': {
     parameters: {
       query?: never;
       header?: never;
@@ -2686,7 +2686,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/cash-boxes': {
+  '/api/v1/cash-boxes': {
     parameters: {
       query?: never;
       header?: never;
@@ -2707,7 +2707,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/cash-boxes/{id}': {
+  '/api/v1/cash-boxes/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -2728,7 +2728,7 @@ export interface paths {
     patch: operations['CashBoxController_update'];
     trace?: never;
   };
-  '/api/cash-boxes/{id}/sessions': {
+  '/api/v1/cash-boxes/{id}/sessions': {
     parameters: {
       query?: never;
       header?: never;
@@ -2749,7 +2749,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/cash-sessions/{id}': {
+  '/api/v1/cash-sessions/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -2769,7 +2769,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/cash-sessions/{id}/close': {
+  '/api/v1/cash-sessions/{id}/close': {
     parameters: {
       query?: never;
       header?: never;
@@ -2789,7 +2789,7 @@ export interface paths {
     patch: operations['CashSessionController_close'];
     trace?: never;
   };
-  '/api/cash-movements': {
+  '/api/v1/cash-movements': {
     parameters: {
       query?: never;
       header?: never;
@@ -2813,7 +2813,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/cash-movements/transfer': {
+  '/api/v1/cash-movements/transfer': {
     parameters: {
       query?: never;
       header?: never;
@@ -2833,7 +2833,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/cash-movements/{id}/reverse': {
+  '/api/v1/cash-movements/{id}/reverse': {
     parameters: {
       query?: never;
       header?: never;
@@ -2853,7 +2853,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/cash-movements/{id}/reverse-transfer': {
+  '/api/v1/cash-movements/{id}/reverse-transfer': {
     parameters: {
       query?: never;
       header?: never;
@@ -2873,7 +2873,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/cash-categories': {
+  '/api/v1/cash-categories': {
     parameters: {
       query?: never;
       header?: never;
@@ -2891,7 +2891,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/cash-categories/{id}': {
+  '/api/v1/cash-categories/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -2912,7 +2912,7 @@ export interface paths {
     patch: operations['CashCategoryController_update'];
     trace?: never;
   };
-  '/api/driver-settlements': {
+  '/api/v1/driver-settlements': {
     parameters: {
       query?: never;
       header?: never;
@@ -2936,7 +2936,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/driver-settlements/mine': {
+  '/api/v1/driver-settlements/mine': {
     parameters: {
       query?: never;
       header?: never;
@@ -2956,7 +2956,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/driver-settlements/{id}': {
+  '/api/v1/driver-settlements/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -2976,7 +2976,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/driver-settlements/{id}/submit': {
+  '/api/v1/driver-settlements/{id}/submit': {
     parameters: {
       query?: never;
       header?: never;
@@ -2996,7 +2996,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/driver-settlements/{id}/approve': {
+  '/api/v1/driver-settlements/{id}/approve': {
     parameters: {
       query?: never;
       header?: never;
@@ -3016,7 +3016,7 @@ export interface paths {
     patch: operations['DriverSettlementController_approve'];
     trace?: never;
   };
-  '/api/driver-settlements/{id}/reopen': {
+  '/api/v1/driver-settlements/{id}/reopen': {
     parameters: {
       query?: never;
       header?: never;
@@ -3036,7 +3036,7 @@ export interface paths {
     patch: operations['DriverSettlementController_reopen'];
     trace?: never;
   };
-  '/api/commission-rules': {
+  '/api/v1/commission-rules': {
     parameters: {
       query?: never;
       header?: never;
@@ -3057,7 +3057,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/commission-rules/{id}': {
+  '/api/v1/commission-rules/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -3077,7 +3077,7 @@ export interface paths {
     patch: operations['CommissionRuleController_update'];
     trace?: never;
   };
-  '/api/commissions': {
+  '/api/v1/commissions': {
     parameters: {
       query?: never;
       header?: never;
@@ -3097,7 +3097,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/commissions/mine': {
+  '/api/v1/commissions/mine': {
     parameters: {
       query?: never;
       header?: never;
@@ -3117,7 +3117,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/driver-liquidations': {
+  '/api/v1/driver-liquidations': {
     parameters: {
       query?: never;
       header?: never;
@@ -3138,7 +3138,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/driver-liquidations/{id}': {
+  '/api/v1/driver-liquidations/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -3155,7 +3155,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/driver-liquidations/{id}/approve': {
+  '/api/v1/driver-liquidations/{id}/approve': {
     parameters: {
       query?: never;
       header?: never;
@@ -3172,7 +3172,7 @@ export interface paths {
     patch: operations['DriverLiquidationController_approve'];
     trace?: never;
   };
-  '/api/driver-liquidations/{id}/pay': {
+  '/api/v1/driver-liquidations/{id}/pay': {
     parameters: {
       query?: never;
       header?: never;
@@ -3192,7 +3192,7 @@ export interface paths {
     patch: operations['DriverLiquidationController_pay'];
     trace?: never;
   };
-  '/api/driver-liquidations/{id}/unpay': {
+  '/api/v1/driver-liquidations/{id}/unpay': {
     parameters: {
       query?: never;
       header?: never;
@@ -3212,7 +3212,7 @@ export interface paths {
     patch: operations['DriverLiquidationController_unpay'];
     trace?: never;
   };
-  '/api/driver-liquidations/{id}/void': {
+  '/api/v1/driver-liquidations/{id}/void': {
     parameters: {
       query?: never;
       header?: never;
@@ -3232,7 +3232,7 @@ export interface paths {
     patch: operations['DriverLiquidationController_void'];
     trace?: never;
   };
-  '/api/email/password-reset': {
+  '/api/v1/email/password-reset': {
     parameters: {
       query?: never;
       header?: never;
@@ -3249,7 +3249,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/email/change-email': {
+  '/api/v1/email/change-email': {
     parameters: {
       query?: never;
       header?: never;
@@ -3266,7 +3266,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/email/test': {
+  '/api/v1/email/test': {
     parameters: {
       query?: never;
       header?: never;
@@ -3283,7 +3283,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/fleet/plans': {
+  '/api/v1/fleet/plans': {
     parameters: {
       query?: never;
       header?: never;
@@ -3301,7 +3301,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/fleet/plans/{id}': {
+  '/api/v1/fleet/plans/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -3319,7 +3319,7 @@ export interface paths {
     patch: operations['FleetPlanController_update'];
     trace?: never;
   };
-  '/api/fleet/tasks': {
+  '/api/v1/fleet/tasks': {
     parameters: {
       query?: never;
       header?: never;
@@ -3337,7 +3337,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/fleet/tasks/{id}': {
+  '/api/v1/fleet/tasks/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -3355,7 +3355,7 @@ export interface paths {
     patch: operations['FleetTaskController_update'];
     trace?: never;
   };
-  '/api/fleet/tasks/{id}/close': {
+  '/api/v1/fleet/tasks/{id}/close': {
     parameters: {
       query?: never;
       header?: never;
@@ -3372,7 +3372,7 @@ export interface paths {
     patch: operations['FleetTaskController_close'];
     trace?: never;
   };
-  '/api/fleet/tasks/{id}/cancel': {
+  '/api/v1/fleet/tasks/{id}/cancel': {
     parameters: {
       query?: never;
       header?: never;
@@ -3389,7 +3389,7 @@ export interface paths {
     patch: operations['FleetTaskController_cancel'];
     trace?: never;
   };
-  '/api/fleet/tasks/{id}/attachments': {
+  '/api/v1/fleet/tasks/{id}/attachments': {
     parameters: {
       query?: never;
       header?: never;
@@ -3407,7 +3407,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/fleet/tasks/{id}/attachments/{attachmentId}/download': {
+  '/api/v1/fleet/tasks/{id}/attachments/{attachmentId}/download': {
     parameters: {
       query?: never;
       header?: never;
@@ -3427,7 +3427,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/fleet/tasks/{id}/attachments/{attachmentId}': {
+  '/api/v1/fleet/tasks/{id}/attachments/{attachmentId}': {
     parameters: {
       query?: never;
       header?: never;
@@ -3444,7 +3444,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/fleet/expirations': {
+  '/api/v1/fleet/expirations': {
     parameters: {
       query?: never;
       header?: never;
@@ -3464,7 +3464,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/cars/{carId}/documents': {
+  '/api/v1/cars/{carId}/documents': {
     parameters: {
       query?: never;
       header?: never;
@@ -3481,7 +3481,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/delivery/{id}/documents': {
+  '/api/v1/delivery/{id}/documents': {
     parameters: {
       query?: never;
       header?: never;
@@ -3498,7 +3498,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/delivery/me/vehicle': {
+  '/api/v1/delivery/me/vehicle': {
     parameters: {
       query?: never;
       header?: never;
@@ -3515,7 +3515,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/delivery/{id}/vehicle': {
+  '/api/v1/delivery/{id}/vehicle': {
     parameters: {
       query?: never;
       header?: never;
@@ -3537,7 +3537,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/delivery/{id}/vehicle-history': {
+  '/api/v1/delivery/{id}/vehicle-history': {
     parameters: {
       query?: never;
       header?: never;
@@ -3554,7 +3554,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/car/{id}/assignments': {
+  '/api/v1/car/{id}/assignments': {
     parameters: {
       query?: never;
       header?: never;
@@ -3571,7 +3571,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/employees/{id}/documents': {
+  '/api/v1/employees/{id}/documents': {
     parameters: {
       query?: never;
       header?: never;
@@ -3591,7 +3591,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/car/{id}/reactivate': {
+  '/api/v1/car/{id}/reactivate': {
     parameters: {
       query?: never;
       header?: never;
@@ -3611,7 +3611,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/employees/{id}/leaves': {
+  '/api/v1/employees/{id}/leaves': {
     parameters: {
       query?: never;
       header?: never;
@@ -3628,7 +3628,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/employees/{id}/vacation-balance': {
+  '/api/v1/employees/{id}/vacation-balance': {
     parameters: {
       query?: never;
       header?: never;
@@ -3648,7 +3648,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/leaves': {
+  '/api/v1/leaves': {
     parameters: {
       query?: never;
       header?: never;
@@ -3665,7 +3665,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/leaves/{id}': {
+  '/api/v1/leaves/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -3682,7 +3682,7 @@ export interface paths {
     patch: operations['LeaveController_update'];
     trace?: never;
   };
-  '/api/leaves/{id}/approve': {
+  '/api/v1/leaves/{id}/approve': {
     parameters: {
       query?: never;
       header?: never;
@@ -3699,7 +3699,7 @@ export interface paths {
     patch: operations['LeaveController_approve'];
     trace?: never;
   };
-  '/api/leaves/{id}/reject': {
+  '/api/v1/leaves/{id}/reject': {
     parameters: {
       query?: never;
       header?: never;
@@ -3716,7 +3716,7 @@ export interface paths {
     patch: operations['LeaveController_reject'];
     trace?: never;
   };
-  '/api/leaves/{id}/cancel': {
+  '/api/v1/leaves/{id}/cancel': {
     parameters: {
       query?: never;
       header?: never;
@@ -3733,7 +3733,7 @@ export interface paths {
     patch: operations['LeaveController_cancel'];
     trace?: never;
   };
-  '/api/warehouses': {
+  '/api/v1/warehouses': {
     parameters: {
       query?: never;
       header?: never;
@@ -3751,7 +3751,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/warehouses/{id}': {
+  '/api/v1/warehouses/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -3770,7 +3770,7 @@ export interface paths {
     patch: operations['WarehouseController_update'];
     trace?: never;
   };
-  '/api/stock': {
+  '/api/v1/stock': {
     parameters: {
       query?: never;
       header?: never;
@@ -3787,7 +3787,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/stock/summary': {
+  '/api/v1/stock/summary': {
     parameters: {
       query?: never;
       header?: never;
@@ -3807,7 +3807,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/stock/locations': {
+  '/api/v1/stock/locations': {
     parameters: {
       query?: never;
       header?: never;
@@ -3824,7 +3824,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/stock/movements': {
+  '/api/v1/stock/movements': {
     parameters: {
       query?: never;
       header?: never;
@@ -3844,7 +3844,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/stock/movements/batches/{batchId}/reverse': {
+  '/api/v1/stock/movements/batches/{batchId}/reverse': {
     parameters: {
       query?: never;
       header?: never;
@@ -3864,7 +3864,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/stock/transfers': {
+  '/api/v1/stock/transfers': {
     parameters: {
       query?: never;
       header?: never;
@@ -3884,7 +3884,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/stock/initial-counts': {
+  '/api/v1/stock/initial-counts': {
     parameters: {
       query?: never;
       header?: never;
@@ -3904,7 +3904,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/stock/adjustments': {
+  '/api/v1/stock/adjustments': {
     parameters: {
       query?: never;
       header?: never;
@@ -3925,7 +3925,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/stock/adjustments/{id}': {
+  '/api/v1/stock/adjustments/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -3942,7 +3942,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/stock/thresholds': {
+  '/api/v1/stock/thresholds': {
     parameters: {
       query?: never;
       header?: never;
@@ -3963,7 +3963,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/stock/reconciliation': {
+  '/api/v1/stock/reconciliation': {
     parameters: {
       query?: never;
       header?: never;
@@ -3983,7 +3983,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/stock/reconciliation/reapply-deliveries': {
+  '/api/v1/stock/reconciliation/reapply-deliveries': {
     parameters: {
       query?: never;
       header?: never;
@@ -4003,7 +4003,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/stock/reconciliation/adjustments': {
+  '/api/v1/stock/reconciliation/adjustments': {
     parameters: {
       query?: never;
       header?: never;
@@ -4023,7 +4023,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/gascylinder/{id}/stock': {
+  '/api/v1/gascylinder/{id}/stock': {
     parameters: {
       query?: never;
       header?: never;
@@ -4045,7 +4045,7 @@ export interface paths {
     patch: operations['CatalogStockController_updateStock'];
     trace?: never;
   };
-  '/api/truck-loads/mine': {
+  '/api/v1/truck-loads/mine': {
     parameters: {
       query?: never;
       header?: never;
@@ -4065,7 +4065,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/truck-loads/settings': {
+  '/api/v1/truck-loads/settings': {
     parameters: {
       query?: never;
       header?: never;
@@ -4086,7 +4086,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/truck-loads/cars/{carId}/stock': {
+  '/api/v1/truck-loads/cars/{carId}/stock': {
     parameters: {
       query?: never;
       header?: never;
@@ -4106,7 +4106,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/truck-loads': {
+  '/api/v1/truck-loads': {
     parameters: {
       query?: never;
       header?: never;
@@ -4127,7 +4127,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/truck-loads/{id}': {
+  '/api/v1/truck-loads/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -4147,7 +4147,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/truck-loads/{id}/items': {
+  '/api/v1/truck-loads/{id}/items': {
     parameters: {
       query?: never;
       header?: never;
@@ -4164,7 +4164,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/truck-loads/{id}/depart': {
+  '/api/v1/truck-loads/{id}/depart': {
     parameters: {
       query?: never;
       header?: never;
@@ -4184,7 +4184,7 @@ export interface paths {
     patch: operations['TruckLoadController_departAction'];
     trace?: never;
   };
-  '/api/truck-loads/{id}/reload': {
+  '/api/v1/truck-loads/{id}/reload': {
     parameters: {
       query?: never;
       header?: never;
@@ -4204,7 +4204,7 @@ export interface paths {
     patch: operations['TruckLoadController_reloadAction'];
     trace?: never;
   };
-  '/api/truck-loads/{id}/return': {
+  '/api/v1/truck-loads/{id}/return': {
     parameters: {
       query?: never;
       header?: never;
@@ -4224,7 +4224,7 @@ export interface paths {
     patch: operations['TruckLoadController_returnAction'];
     trace?: never;
   };
-  '/api/truck-loads/{id}/close': {
+  '/api/v1/truck-loads/{id}/close': {
     parameters: {
       query?: never;
       header?: never;
@@ -4244,7 +4244,7 @@ export interface paths {
     patch: operations['TruckLoadController_closeAction'];
     trace?: never;
   };
-  '/api/truck-loads/{id}/cancel': {
+  '/api/v1/truck-loads/{id}/cancel': {
     parameters: {
       query?: never;
       header?: never;
@@ -4264,7 +4264,7 @@ export interface paths {
     patch: operations['TruckLoadController_cancelAction'];
     trace?: never;
   };
-  '/api/claims': {
+  '/api/v1/claims': {
     parameters: {
       query?: never;
       header?: never;
@@ -4282,7 +4282,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/claims/mine': {
+  '/api/v1/claims/mine': {
     parameters: {
       query?: never;
       header?: never;
@@ -4302,7 +4302,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/claims/{id}': {
+  '/api/v1/claims/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -4323,7 +4323,7 @@ export interface paths {
     patch: operations['ClaimsController_update'];
     trace?: never;
   };
-  '/api/claims/{id}/resolve': {
+  '/api/v1/claims/{id}/resolve': {
     parameters: {
       query?: never;
       header?: never;
@@ -4343,7 +4343,7 @@ export interface paths {
     patch: operations['ClaimsController_resolve'];
     trace?: never;
   };
-  '/api/claims/{id}/take': {
+  '/api/v1/claims/{id}/take': {
     parameters: {
       query?: never;
       header?: never;
@@ -4363,7 +4363,7 @@ export interface paths {
     patch: operations['ClaimsController_take'];
     trace?: never;
   };
-  '/api/claims/{id}/reopen': {
+  '/api/v1/claims/{id}/reopen': {
     parameters: {
       query?: never;
       header?: never;
@@ -4383,7 +4383,7 @@ export interface paths {
     patch: operations['ClaimsController_reopen'];
     trace?: never;
   };
-  '/api/claims/{id}/photo': {
+  '/api/v1/claims/{id}/photo': {
     parameters: {
       query?: never;
       header?: never;
@@ -4411,7 +4411,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/reports/sales-by-driver': {
+  '/api/v1/reports/sales-by-driver': {
     parameters: {
       query?: never;
       header?: never;
@@ -4431,7 +4431,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/reports/sales-by-product': {
+  '/api/v1/reports/sales-by-product': {
     parameters: {
       query?: never;
       header?: never;
@@ -4451,7 +4451,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/reports/sales-by-payment': {
+  '/api/v1/reports/sales-by-payment': {
     parameters: {
       query?: never;
       header?: never;
@@ -4471,7 +4471,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/reports/sales-evolution': {
+  '/api/v1/reports/sales-evolution': {
     parameters: {
       query?: never;
       header?: never;
@@ -4491,7 +4491,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/reports/collections': {
+  '/api/v1/reports/collections': {
     parameters: {
       query?: never;
       header?: never;
@@ -4511,7 +4511,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/health': {
+  '/api/v1/health': {
     parameters: {
       query?: never;
       header?: never;
@@ -4528,7 +4528,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/health/live': {
+  '/api/v1/health/live': {
     parameters: {
       query?: never;
       header?: never;
@@ -4545,7 +4545,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/health/ready': {
+  '/api/v1/health/ready': {
     parameters: {
       query?: never;
       header?: never;
@@ -4562,7 +4562,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/routes/driving': {
+  '/api/v1/routes/driving': {
     parameters: {
       query?: never;
       header?: never;
@@ -4582,7 +4582,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/ratings': {
+  '/api/v1/ratings': {
     parameters: {
       query?: never;
       header?: never;
@@ -4602,7 +4602,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/ratings/user/{userId}/summary': {
+  '/api/v1/ratings/user/{userId}/summary': {
     parameters: {
       query?: never;
       header?: never;
@@ -4619,7 +4619,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/ratings/user/{userId}': {
+  '/api/v1/ratings/user/{userId}': {
     parameters: {
       query?: never;
       header?: never;
@@ -4636,7 +4636,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/ratings/{id}': {
+  '/api/v1/ratings/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -4653,7 +4653,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/ratings/{id}/hide': {
+  '/api/v1/ratings/{id}/hide': {
     parameters: {
       query?: never;
       header?: never;
@@ -4673,7 +4673,7 @@ export interface paths {
     patch: operations['RatingController_hide'];
     trace?: never;
   };
-  '/api/ratings/{id}/unhide': {
+  '/api/v1/ratings/{id}/unhide': {
     parameters: {
       query?: never;
       header?: never;
@@ -4693,7 +4693,7 @@ export interface paths {
     patch: operations['RatingController_unhide'];
     trace?: never;
   };
-  '/api/incidents': {
+  '/api/v1/incidents': {
     parameters: {
       query?: never;
       header?: never;
@@ -4711,7 +4711,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/incidents/order/{orderId}': {
+  '/api/v1/incidents/order/{orderId}': {
     parameters: {
       query?: never;
       header?: never;
@@ -4728,7 +4728,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/incidents/{id}': {
+  '/api/v1/incidents/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -4749,7 +4749,7 @@ export interface paths {
     patch: operations['IncidentController_update'];
     trace?: never;
   };
-  '/api/incidents/{id}/resolve': {
+  '/api/v1/incidents/{id}/resolve': {
     parameters: {
       query?: never;
       header?: never;
@@ -4769,7 +4769,7 @@ export interface paths {
     patch: operations['IncidentController_resolve'];
     trace?: never;
   };
-  '/api/incidents/{id}/photo': {
+  '/api/v1/incidents/{id}/photo': {
     parameters: {
       query?: never;
       header?: never;
@@ -4797,7 +4797,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/orders/{id}/payment/unpaid': {
+  '/api/v1/orders/{id}/payment/unpaid': {
     parameters: {
       query?: never;
       header?: never;
@@ -4817,7 +4817,7 @@ export interface paths {
     patch: operations['UnpaidCashController_report'];
     trace?: never;
   };
-  '/api/orders/{id}/payment/register-unpaid': {
+  '/api/v1/orders/{id}/payment/register-unpaid': {
     parameters: {
       query?: never;
       header?: never;
@@ -4837,7 +4837,7 @@ export interface paths {
     patch: operations['UnpaidCashController_registerUnpaid'];
     trace?: never;
   };
-  '/api/fleet/fuel-loads': {
+  '/api/v1/fleet/fuel-loads': {
     parameters: {
       query?: never;
       header?: never;
@@ -4861,7 +4861,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/fleet/fuel-loads/mine': {
+  '/api/v1/fleet/fuel-loads/mine': {
     parameters: {
       query?: never;
       header?: never;
@@ -4881,7 +4881,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/fleet/fuel-loads/{id}': {
+  '/api/v1/fleet/fuel-loads/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -4906,7 +4906,7 @@ export interface paths {
     patch: operations['FuelLoadController_update'];
     trace?: never;
   };
-  '/api/fleet/fuel-loads/{id}/cash-payment': {
+  '/api/v1/fleet/fuel-loads/{id}/cash-payment': {
     parameters: {
       query?: never;
       header?: never;
@@ -4926,7 +4926,7 @@ export interface paths {
     patch: operations['FuelLoadController_payFromCashBox'];
     trace?: never;
   };
-  '/api/fleet/fines': {
+  '/api/v1/fleet/fines': {
     parameters: {
       query?: never;
       header?: never;
@@ -4947,7 +4947,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/fleet/fines/{id}': {
+  '/api/v1/fleet/fines/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -4968,7 +4968,7 @@ export interface paths {
     patch: operations['TrafficFineController_update'];
     trace?: never;
   };
-  '/api/fleet/fines/{id}/pay': {
+  '/api/v1/fleet/fines/{id}/pay': {
     parameters: {
       query?: never;
       header?: never;
@@ -4988,7 +4988,7 @@ export interface paths {
     patch: operations['TrafficFineController_pay'];
     trace?: never;
   };
-  '/api/fleet/fines/{id}/charge-to-employee': {
+  '/api/v1/fleet/fines/{id}/charge-to-employee': {
     parameters: {
       query?: never;
       header?: never;
@@ -5008,7 +5008,7 @@ export interface paths {
     patch: operations['TrafficFineController_chargeToEmployee'];
     trace?: never;
   };
-  '/api/fleet/fines/{id}/void': {
+  '/api/v1/fleet/fines/{id}/void': {
     parameters: {
       query?: never;
       header?: never;
@@ -5028,7 +5028,7 @@ export interface paths {
     patch: operations['TrafficFineController_void'];
     trace?: never;
   };
-  '/api/fleet/accidents': {
+  '/api/v1/fleet/accidents': {
     parameters: {
       query?: never;
       header?: never;
@@ -5049,7 +5049,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/fleet/accidents/mine': {
+  '/api/v1/fleet/accidents/mine': {
     parameters: {
       query?: never;
       header?: never;
@@ -5069,7 +5069,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/fleet/accidents/{id}': {
+  '/api/v1/fleet/accidents/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -5090,7 +5090,7 @@ export interface paths {
     patch: operations['VehicleAccidentController_update'];
     trace?: never;
   };
-  '/api/fleet/accidents/{id}/close': {
+  '/api/v1/fleet/accidents/{id}/close': {
     parameters: {
       query?: never;
       header?: never;
@@ -5110,7 +5110,7 @@ export interface paths {
     patch: operations['VehicleAccidentController_close'];
     trace?: never;
   };
-  '/api/fleet/tires': {
+  '/api/v1/fleet/tires': {
     parameters: {
       query?: never;
       header?: never;
@@ -5131,7 +5131,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/fleet/tires/{id}': {
+  '/api/v1/fleet/tires/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -5148,7 +5148,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/fleet/tires/{id}/events': {
+  '/api/v1/fleet/tires/{id}/events': {
     parameters: {
       query?: never;
       header?: never;
@@ -5168,7 +5168,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/cars/{carId}/fuel-efficiency': {
+  '/api/v1/cars/{carId}/fuel-efficiency': {
     parameters: {
       query?: never;
       header?: never;
@@ -5188,7 +5188,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/cars/{carId}/costs': {
+  '/api/v1/cars/{carId}/costs': {
     parameters: {
       query?: never;
       header?: never;
@@ -5208,7 +5208,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/fleet/costs': {
+  '/api/v1/fleet/costs': {
     parameters: {
       query?: never;
       header?: never;
@@ -5228,7 +5228,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/cars/{carId}/tires': {
+  '/api/v1/cars/{carId}/tires': {
     parameters: {
       query?: never;
       header?: never;
@@ -5245,7 +5245,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/audit': {
+  '/api/v1/audit': {
     parameters: {
       query?: never;
       header?: never;
@@ -5265,7 +5265,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/audit/entries': {
+  '/api/v1/audit/entries': {
     parameters: {
       query?: never;
       header?: never;
@@ -5285,7 +5285,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/audit/entries/{id}': {
+  '/api/v1/audit/entries/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -5305,7 +5305,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/audit/action-types': {
+  '/api/v1/audit/action-types': {
     parameters: {
       query?: never;
       header?: never;
@@ -5325,7 +5325,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/employees/{id}/attendance': {
+  '/api/v1/employees/{id}/attendance': {
     parameters: {
       query?: never;
       header?: never;
@@ -5342,7 +5342,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/attendance': {
+  '/api/v1/attendance': {
     parameters: {
       query?: never;
       header?: never;
@@ -5362,7 +5362,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/attendance/{id}': {
+  '/api/v1/attendance/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -5379,7 +5379,7 @@ export interface paths {
     patch: operations['AttendanceController_correct'];
     trace?: never;
   };
-  '/api/attendance/mine/current': {
+  '/api/v1/attendance/mine/current': {
     parameters: {
       query?: never;
       header?: never;
@@ -5399,7 +5399,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/attendance/mine/check-in': {
+  '/api/v1/attendance/mine/check-in': {
     parameters: {
       query?: never;
       header?: never;
@@ -5419,7 +5419,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/attendance/mine/check-out': {
+  '/api/v1/attendance/mine/check-out': {
     parameters: {
       query?: never;
       header?: never;
@@ -5436,7 +5436,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/personnel/dashboard': {
+  '/api/v1/personnel/dashboard': {
     parameters: {
       query?: never;
       header?: never;
@@ -5456,7 +5456,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/suppliers': {
+  '/api/v1/suppliers': {
     parameters: {
       query?: never;
       header?: never;
@@ -5477,7 +5477,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/suppliers/{id}': {
+  '/api/v1/suppliers/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -5496,7 +5496,7 @@ export interface paths {
     patch: operations['SupplierController_update'];
     trace?: never;
   };
-  '/api/suppliers/{id}/purchase-history': {
+  '/api/v1/suppliers/{id}/purchase-history': {
     parameters: {
       query?: never;
       header?: never;
@@ -5516,7 +5516,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/purchase-orders': {
+  '/api/v1/purchase-orders': {
     parameters: {
       query?: never;
       header?: never;
@@ -5537,7 +5537,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/purchase-orders/{id}': {
+  '/api/v1/purchase-orders/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -5558,7 +5558,7 @@ export interface paths {
     patch: operations['PurchaseOrderController_update'];
     trace?: never;
   };
-  '/api/purchase-orders/{id}/pending': {
+  '/api/v1/purchase-orders/{id}/pending': {
     parameters: {
       query?: never;
       header?: never;
@@ -5578,7 +5578,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/purchase-orders/{id}/send': {
+  '/api/v1/purchase-orders/{id}/send': {
     parameters: {
       query?: never;
       header?: never;
@@ -5595,7 +5595,7 @@ export interface paths {
     patch: operations['PurchaseOrderController_send'];
     trace?: never;
   };
-  '/api/purchase-orders/{id}/cancel': {
+  '/api/v1/purchase-orders/{id}/cancel': {
     parameters: {
       query?: never;
       header?: never;
@@ -5615,7 +5615,7 @@ export interface paths {
     patch: operations['PurchaseOrderController_cancel'];
     trace?: never;
   };
-  '/api/purchase-orders/{id}/close-short': {
+  '/api/v1/purchase-orders/{id}/close-short': {
     parameters: {
       query?: never;
       header?: never;
@@ -5635,7 +5635,7 @@ export interface paths {
     patch: operations['PurchaseOrderController_closeShort'];
     trace?: never;
   };
-  '/api/purchase-receipts': {
+  '/api/v1/purchase-receipts': {
     parameters: {
       query?: never;
       header?: never;
@@ -5656,7 +5656,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/purchase-receipts/average-costs': {
+  '/api/v1/purchase-receipts/average-costs': {
     parameters: {
       query?: never;
       header?: never;
@@ -5676,7 +5676,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/purchase-receipts/{id}': {
+  '/api/v1/purchase-receipts/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -5693,7 +5693,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/purchase-receipts/{id}/void': {
+  '/api/v1/purchase-receipts/{id}/void': {
     parameters: {
       query?: never;
       header?: never;
@@ -5713,7 +5713,7 @@ export interface paths {
     patch: operations['PurchaseReceiptController_void'];
     trace?: never;
   };
-  '/api/purchase-receipts/{id}/payment-status': {
+  '/api/v1/purchase-receipts/{id}/payment-status': {
     parameters: {
       query?: never;
       header?: never;
@@ -5733,7 +5733,7 @@ export interface paths {
     patch: operations['PurchaseReceiptController_paymentStatus'];
     trace?: never;
   };
-  '/api/finance/dashboard': {
+  '/api/v1/finance/dashboard': {
     parameters: {
       query?: never;
       header?: never;

@@ -11,7 +11,7 @@ import type {
 } from './types';
 
 /** Tipos de rol que acepta `?role=` de GET /users. */
-export type UserRoleFilter = NonNullable<NonNullable<paths['/api/users']['get']['parameters']['query']>['role']>;
+export type UserRoleFilter = NonNullable<NonNullable<paths['/api/v1/users']['get']['parameters']['query']>['role']>;
 
 /** GET /users: paginados, con búsqueda por término y filtro opcional por tipo de rol (total real de la API). */
 export const listUsers = async (params: PageParams, search?: string, role?: UserRoleFilter): Promise<Page<User>> => {
