@@ -19,7 +19,7 @@ Login: `admin@splg.com` / `Test1234` o `superadmin@splg.com`.
 
 ## Convenciones
 
-**`CONVENCIONES.md` manda.** Código en inglés, textos de interfaz y commits en castellano.
+**`CONVENCIONES.md` manda** (está en `splg-docs/sistema/panel/CONVENCIONES.md`). Código en inglés, textos de interfaz y commits en castellano.
 La página de **Clientes** (`src/pages/Customers`) es la implementación de referencia: ante
 la duda, se hace como ahí.
 
