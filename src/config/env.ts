@@ -10,11 +10,14 @@ const required = (name: keyof ImportMetaEnv): string => {
   return value;
 };
 
-const apiUrl = required('VITE_APP_API_URL').replace(/\/+$/, '');
+const apiBase = required('VITE_APP_API_URL').replace(/\/+$/, '');
+
+/** Versión de la API que consume el panel (ver «Versiones de la API» en el back). */
+const API_VERSION = 'v1';
 
 export const env = {
-  /** Base de la API REST, con el sufijo /api. */
-  apiUrl,
+  /** Base de la API REST versionada: `VITE_APP_API_URL` (con /api) + /v1. */
+  apiUrl: `${apiBase}/${API_VERSION}`,
   /** Servidor de sockets; por defecto, la API sin el sufijo /api. */
-  socketUrl: import.meta.env.VITE_APP_SOCKET_URL ?? apiUrl.replace(/\/api$/, ''),
+  socketUrl: import.meta.env.VITE_APP_SOCKET_URL ?? apiBase.replace(/\/api$/, ''),
 } as const;
