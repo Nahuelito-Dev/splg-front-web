@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Claim, Customer, Order } from '../../services/api/types';
@@ -37,16 +37,21 @@ const claim = (id: string, customerId: string) =>
     createdAt: '2026-10-01T10:00:00Z',
   }) as unknown as Claim;
 
+vi.mock('../../utils/notifications', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  confirm: removal.confirm,
+}));
 vi.mock('../../hooks', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   usePermissions: () => ({
     canManageCustomerAccounts: true,
     canOperate: !perms.needsDistributor,
     needsDistributor: perms.needsDistributor,
-    operateHint: undefined,
+    operateHint: perms.needsDistributor ? 'Elegí una distribuidora en «Ver como» para operar' : undefined,
   }),
 }));
 const perms = vi.hoisted(() => ({ needsDistributor: false }));
+const removal = vi.hoisted(() => ({ confirm: vi.fn(), mutate: vi.fn() }));
 const custo = vi.hoisted(() => ({ consumption: null as number | null, orderTotal: 3 }));
 const accountOf = vi.hoisted(() => vi.fn<[], Record<string, unknown>>());
 vi.mock('../../services/queries/finance', () => ({
@@ -99,7 +104,7 @@ vi.mock('../../services/queries/customers', () => ({
     },
   }),
   useCustomerOrders: () => ({ data: { orders: [], total: 0 }, isFetching: false }),
-  useDeleteCustomer: () => ({ mutate: vi.fn() }),
+  useRemoveCustomer: () => ({ mutate: removal.mutate }),
 }));
 vi.mock('../../services/queries/userAddresses', () => ({
   useUserAddresses: () => ({ data: [{ address_id: 'a-1' }, { address_id: 'a-2' }], isPending: false }),
@@ -156,9 +161,11 @@ vi.mock('../Claims/components/ClaimHistory', () => ({ ClaimHistory: () => null }
 import { Breadcrumbs } from '../../common/components/Navbar/components/Breadcrumbs';
 import { CrumbProvider } from '../../common/components/Navbar/CrumbProvider';
 import { CustomerDetails } from './CustomerDetails';
+import { notify } from '../../utils/notifications';
 
 afterEach(cleanup);
 beforeEach(() => {
+  vi.clearAllMocks();
   perms.needsDistributor = false;
   custo.consumption = null;
   custo.orderTotal = 3;
@@ -334,5 +341,50 @@ describe('CustomerDetails: portada con KPIs y pestañas', () => {
     expect(screen.getByText('Cuenta corriente', { selector: 'dt' }).closest('div')).toHaveTextContent(
       'Elegí distribuidora',
     );
+  });
+});
+
+describe('CustomerDetails: baja en la distribuidora', () => {
+  it('pide confirmación aclarando que es de esta distribuidora y da de baja con la ruta de la distribuidora', async () => {
+    removal.confirm.mockResolvedValue(true);
+    removal.mutate.mockImplementation((_id: string, options: { onSuccess: () => void }) => options.onSuccess());
+    const success = vi.spyOn(notify, 'success').mockImplementation(() => 'x');
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Dar de baja' }));
+    await waitFor(() => expect(removal.mutate).toHaveBeenCalledWith('c-1', expect.anything()));
+    expect(removal.confirm).toHaveBeenCalledWith(
+      expect.objectContaining({ text: expect.stringContaining('de esta distribuidora') as string, danger: true }),
+    );
+    expect(success).toHaveBeenCalledWith('Cliente dado de baja');
+  });
+
+  it('si el back rechaza con 409 muestra su mensaje tal cual', async () => {
+    removal.confirm.mockResolvedValue(true);
+    const conflict = new Error('El cliente tiene pedidos en curso');
+    removal.mutate.mockImplementation((_id: string, options: { onError: (error: unknown) => void }) =>
+      options.onError(conflict),
+    );
+    const failure = vi.spyOn(notify, 'error').mockImplementation(() => 'x');
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Dar de baja' }));
+    await waitFor(() => expect(failure).toHaveBeenCalledWith(conflict));
+  });
+
+  it('si se cancela no se da de baja', async () => {
+    removal.confirm.mockResolvedValue(false);
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Dar de baja' }));
+    await waitFor(() => expect(removal.confirm).toHaveBeenCalled());
+    expect(removal.mutate).not.toHaveBeenCalled();
+  });
+
+  it('el administrador general sin distribuidora tiene la baja bloqueada con el motivo', () => {
+    perms.needsDistributor = true;
+    renderPage();
+    const button = screen.getByRole('button', { name: 'Dar de baja' });
+    expect(button).toHaveAttribute('aria-disabled', 'true');
+    expect(button).toHaveAttribute('title', expect.stringContaining('Ver como') as string);
+    fireEvent.click(button);
+    expect(removal.confirm).not.toHaveBeenCalled();
   });
 });

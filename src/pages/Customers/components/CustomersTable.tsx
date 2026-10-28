@@ -16,7 +16,10 @@ interface Props {
   onPaginationChange: (model: GridPaginationModel) => void;
   /** Sin permiso para administrar cuentas (admin de empresa) no se muestran. */
   onEdit?: (customer: Customer) => void;
+  /** Dar de baja en la distribuidora. */
   onDelete?: (customer: Customer) => void;
+  /** Por qué la baja no se puede hoy (administrador general sin distribuidora elegida). */
+  deleteBlockedReason?: string;
   /** Selección múltiple para exportar lo marcado; sin esto la tabla no dibuja casillas. */
   selection?: { ids: string[]; onChange: (ids: string[]) => void };
   /** Avisa que se cambió de página, p. ej. para soltar la selección. */
@@ -32,6 +35,7 @@ export const CustomersTable = ({
   onPaginationChange,
   onEdit,
   onDelete,
+  deleteBlockedReason,
   selection,
   onPageChange,
 }: Props) => {
@@ -85,12 +89,13 @@ export const CustomersTable = ({
             onView={() => navigate(`/customers/details/${row.customer_id}`, { state: FROM_LIST_STATE })}
             onEdit={onEdit && (() => onEdit(row))}
             onDelete={onDelete && (() => onDelete(row))}
+            deleteBlockedReason={onDelete ? deleteBlockedReason : undefined}
             deleteLabel="Dar de baja"
           />
         ),
       },
     ],
-    [navigate, onEdit, onDelete],
+    [navigate, onEdit, onDelete, deleteBlockedReason],
   );
 
   return (

@@ -23,7 +23,7 @@ import { useBackToList, usePermissions, useProfileTab } from '../../hooks';
 import { useCrumbLeaf } from '../../common/components';
 import type { Claim } from '../../services/api/types';
 import { useClaims } from '../../services/queries/claims';
-import { useCustomer, useCustomerOrderSample, useDeleteCustomer } from '../../services/queries/customers';
+import { useCustomer, useCustomerOrderSample, useRemoveCustomer } from '../../services/queries/customers';
 import { useCustomerAccountOf } from '../../services/queries/finance';
 import { useCylinders } from '../../services/queries/physicalCylinders';
 import { useUserAddresses } from '../../services/queries/userAddresses';
@@ -42,6 +42,7 @@ import { CustomerClaims } from './components/details/CustomerClaims';
 import { CustomerLocationModal } from './components/details/CustomerLocationModal';
 import { CustomerOrders } from './components/details/CustomerOrders';
 import { CustomerSummary } from './components/details/CustomerSummary';
+import { removalConfirmation, removalError } from './customerRemoval';
 import { customerStats } from './customerStats';
 
 /** El texto sale del valor real en centavos: un saldo de $ 0,004 se muestra $ 0,00 y está al día. */
@@ -56,9 +57,9 @@ export const CustomerDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const goBack = useBackToList('/customers');
-  const { canManageCustomerAccounts, needsDistributor } = usePermissions();
+  const { canManageCustomerAccounts, needsDistributor, operateHint } = usePermissions();
   const { data: customer, isPending, error, refetch } = useCustomer(id);
-  const deleteCustomer = useDeleteCustomer();
+  const removeCustomer = useRemoveCustomer();
   const [editing, setEditing] = useState(false);
   const [editingLocation, setEditingLocation] = useState(false);
   const [claimId, setClaimId] = useState<string | null>(null);
@@ -86,19 +87,14 @@ export const CustomerDetails = () => {
 
   const handleDelete = async () => {
     if (!customer) return;
-    const confirmed = await confirm({
-      title: '¿Dar de baja al cliente?',
-      text: `${customer.user?.full_name ?? 'El cliente'} no va a poder volver a entrar. Su historial de pedidos se conserva.`,
-      confirmText: 'Dar de baja',
-      danger: true,
-    });
+    const confirmed = await confirm(removalConfirmation(customer.user?.full_name));
     if (!confirmed) return;
-    deleteCustomer.mutate(customer.customer_id, {
+    removeCustomer.mutate(customer.customer_id, {
       onSuccess: () => {
         notify.success('Cliente dado de baja');
         navigate('/customers');
       },
-      onError: notify.error,
+      onError: (error) => notify.error(removalError(error)),
     });
   };
 
@@ -159,15 +155,19 @@ export const CustomerDetails = () => {
               <AuditHistoryLink entity="Customer" recordId={customer.customer_id} />
               <CustomerAccountAction userId={customer.user_id} name={customer.user?.full_name ?? ''} />
               {canManageCustomerAccounts && (
-                <>
-                  <Button variant="secondary" size="sm" icon={<PencilLine />} onClick={() => setEditing(true)}>
-                    Editar cuenta
-                  </Button>
-                  <Button variant="danger" size="sm" icon={<Trash2 />} onClick={() => void handleDelete()}>
-                    Dar de baja
-                  </Button>
-                </>
+                <Button variant="secondary" size="sm" icon={<PencilLine />} onClick={() => setEditing(true)}>
+                  Editar cuenta
+                </Button>
               )}
+              <Button
+                variant="danger"
+                size="sm"
+                icon={<Trash2 />}
+                blockedReason={operateHint}
+                onClick={() => void handleDelete()}
+              >
+                Dar de baja
+              </Button>
             </>
           )
         }

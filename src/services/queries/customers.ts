@@ -2,10 +2,12 @@ import { keepPreviousData } from '@tanstack/react-query';
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createCustomer,
-  deleteCustomer,
   getCustomer,
   getCustomerByUserId,
   listCustomers,
+  listRemovedCustomers,
+  removeCustomerFromDistributor,
+  restoreCustomerInDistributor,
   updateCustomerLocation,
   type CustomerStatus,
 } from '../api/customers';
@@ -18,12 +20,34 @@ import { queryKeys } from './queryKeys';
 
 const keys = queryKeys.customers;
 
-export const useCustomers = (params: PageParams, search: string, status?: CustomerStatus) =>
+export const useCustomers = (params: PageParams, search: string, status?: CustomerStatus, enabled = true) =>
   useQuery({
     queryKey: keys.list({ ...params, search, status }),
     queryFn: () => listCustomers(params, search, status),
     placeholderData: keepPreviousData,
+    enabled,
   });
+
+/** Los clientes que la distribuidora dio de baja. */
+export const useRemovedCustomers = (params: PageParams, search: string, enabled = true) =>
+  useQuery({
+    queryKey: keys.list({ ...params, search, removed: true }),
+    queryFn: () => listRemovedCustomers(params, search),
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+
+/** Cuántos clientes dados de baja hay (con la búsqueda aplicada); `null` mientras no hay dato. */
+export const useRemovedCustomerCount = (search: string, enabled = true) => {
+  const { data } = useQuery({
+    queryKey: keys.list({ counts: 'removed', search }),
+    queryFn: () => listRemovedCustomers({ page: 0, pageSize: 1 }, search).then((page) => page.total),
+    staleTime: 30_000,
+    enabled,
+    placeholderData: keepPreviousData,
+  });
+  return data ?? null;
+};
 
 /**
  * Cuántos clientes hay en cada segmento (con la búsqueda aplicada): el `total` real de la API con una página mínima
@@ -78,11 +102,24 @@ export const useUpdateCustomerAccount = () => {
   });
 };
 
-export const useDeleteCustomer = () => {
+/** Baja del cliente en la distribuidora: cambian las dos listas (activos y dados de baja). */
+export const useRemoveCustomer = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => deleteCustomer(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
+    mutationFn: (id: string) => removeCustomerFromDistributor(id),
+    // Siempre, también si falló (un 404 es que la lista estaba vieja). Sin esperar: la ficha navega antes de
+    // que se vuelva a pedir el cliente que ya no está.
+    onSettled: () => void queryClient.invalidateQueries({ queryKey: keys.all }),
+  });
+};
+
+export const useRestoreCustomer = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => restoreCustomerInDistributor(id),
+    // Siempre, también si falló (un 404 es que la lista estaba vieja). Sin esperar: la ficha navega antes de
+    // que se vuelva a pedir el cliente que ya no está.
+    onSettled: () => void queryClient.invalidateQueries({ queryKey: keys.all }),
   });
 };
 
