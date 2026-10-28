@@ -59,7 +59,15 @@ describe('useDispatchBoardSync', () => {
   it('se suscribe a los eventos del ciclo de vida y los junta en una sola recarga de los listados', () => {
     const { handlers, invalidate } = setup(true);
     expect([...handlers.keys()]).toEqual(
-      expect.arrayContaining(['order:created', 'order:accepted', 'order:on-the-way', 'order:delivered']),
+      expect.arrayContaining([
+        'order:created',
+        'order:accepted',
+        'order:on-the-way',
+        'order:delivered',
+        'order:updated',
+        'order:payment-refunded',
+        'order:express-degraded',
+      ]),
     );
     act(() => {
       handlers.get('order:accepted')?.({ orderId: 'x' });
