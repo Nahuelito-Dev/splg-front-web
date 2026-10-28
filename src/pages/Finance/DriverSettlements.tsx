@@ -18,6 +18,7 @@ import {
   DayFilter,
 } from '../../common/components/ui';
 import { FROM_LIST_STATE, useClampPage, usePermissions, useUrlPagedParams } from '../../hooks';
+import { settlementQuery } from '../../services/api/finance';
 import type { DriverSettlement } from '../../services/api/types';
 import { useDriverSettlements, useSettlementCounts } from '../../services/queries/finance';
 import { toIsoDay } from '../../utils/dates';
@@ -25,7 +26,6 @@ import { formatCurrency, formatDay } from '../../utils/format';
 import { SETTLEMENT_STATUS, labelOf, statusOptions, statusParam } from '../../utils/statusLabels';
 import { FinanceSummary } from './components/FinanceSummary';
 import { OpenSettlementModal } from './components/OpenSettlementModal';
-import { csvDay } from '../../utils/csv';
 
 const differenceText = (row: DriverSettlement) =>
   row.difference === null ? '—' : row.difference === 0 ? 'Sin diferencia' : formatCurrency(row.difference);
@@ -40,10 +40,11 @@ export const DriverSettlements = () => {
   );
   // Un estado inválido en la URL (enlace viejo o escrito a mano) se trata como «todos», en la consulta y en las pestañas.
   const status = statusParam(SETTLEMENT_STATUS, filters.status);
-  const { data, isFetching, error, refetch } = useDriverSettlements(pagination, {
+  const listFilters = {
     date: filters.all === '1' ? undefined : filters.date || undefined,
     status: status || undefined,
-  });
+  };
+  const { data, isFetching, error, refetch } = useDriverSettlements(pagination, listFilters);
   const [creating, setCreating] = useState(false);
 
   const goTo = (row: DriverSettlement) =>
@@ -155,18 +156,9 @@ export const DriverSettlements = () => {
                 </Button>
               </>
             }
-            csv={{
-              filename: 'rendiciones',
-              headers: ['Rendición', 'Chofer', 'Fecha', 'Esperado', 'Declarado', 'Diferencia', 'Estado'],
-              rows: (data?.data ?? []).map((row) => [
-                row.number,
-                row.driverName,
-                csvDay(row.businessDate),
-                row.expectedCash,
-                row.declaredCash ?? '',
-                row.difference ?? '',
-                labelOf(SETTLEMENT_STATUS, row.status).text,
-              ]),
+            serverExport={{
+              resource: 'rendiciones',
+              params: settlementQuery(listFilters),
             }}
             noun={['rendición', 'rendiciones']}
           />

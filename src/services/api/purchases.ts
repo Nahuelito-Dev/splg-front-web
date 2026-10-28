@@ -45,9 +45,14 @@ export interface SupplierFilters {
   includeInactive?: boolean;
 }
 
+/** Los parámetros de GET /suppliers sin paginar: los mismos que usa el exporte completo. */
+export const supplierQuery = (filters: SupplierFilters) => ({ ...filters });
+
 /** GET /suppliers */
 export const listSuppliers = async (params: ListParams, filters: SupplierFilters): Promise<SupplierPage> => {
-  const { data } = await http.get<SupplierPage>('/suppliers', { params: { ...paging(params), ...filters } });
+  const { data } = await http.get<SupplierPage>('/suppliers', {
+    params: { ...paging(params), ...supplierQuery(filters) },
+  });
   return data;
 };
 
@@ -94,12 +99,17 @@ export interface PurchaseOrderFilters {
   to?: string;
 }
 
+/** Los parámetros de GET /purchase-orders sin paginar: los mismos que usa el exporte completo. */
+export const purchaseOrderQuery = (filters: PurchaseOrderFilters) => ({ ...filters });
+
 /** GET /purchase-orders */
 export const listPurchaseOrders = async (
   params: ListParams,
   filters: PurchaseOrderFilters,
 ): Promise<PurchaseOrderPage> => {
-  const { data } = await http.get<PurchaseOrderPage>('/purchase-orders', { params: { ...paging(params), ...filters } });
+  const { data } = await http.get<PurchaseOrderPage>('/purchase-orders', {
+    params: { ...paging(params), ...purchaseOrderQuery(filters) },
+  });
   return data;
 };
 
@@ -157,13 +167,16 @@ export interface PurchaseReceiptFilters {
   to?: string;
 }
 
+/** Los parámetros de GET /purchase-receipts sin paginar: los mismos que usa el exporte completo. */
+export const purchaseReceiptQuery = (filters: PurchaseReceiptFilters) => ({ ...filters });
+
 /** GET /purchase-receipts */
 export const listPurchaseReceipts = async (
   params: ListParams,
   filters: PurchaseReceiptFilters,
 ): Promise<PurchaseReceiptPage> => {
   const { data } = await http.get<PurchaseReceiptPage>('/purchase-receipts', {
-    params: { ...paging(params), ...filters },
+    params: { ...paging(params), ...purchaseReceiptQuery(filters) },
   });
   return data;
 };

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Card, TableToolbar } from '../../../common/components/ui';
 import { useDebounce } from '../../../hooks';
 import { useAudit } from '../../../services/queries/audit';
+import { auditQuery } from '../../../services/api/audit';
 import type { AsientoDeAuditoria } from '../../../services/api/types';
 import { AuditDetailDrawer } from './AuditDetailDrawer';
 import { AuditFilters } from './AuditFilters';
@@ -16,9 +17,9 @@ export const OperationsAuditTab = () => {
   const [detail, setDetail] = useState<AsientoDeAuditoria | null>(null);
   const debouncedFilters = useDebounce(filters, 500);
 
+  const listFilters = { ...debouncedFilters, result: debouncedFilters.result || undefined };
   const { data, isFetching } = useAudit({
-    ...debouncedFilters,
-    result: debouncedFilters.result || undefined,
+    ...listFilters,
     limit: pagination.pageSize,
     offset: pagination.page * pagination.pageSize,
   });
@@ -33,6 +34,7 @@ export const OperationsAuditTab = () => {
       <Card>
         <TableToolbar
           filters={<AuditFilters value={filters} onChange={handleFiltersChange} />}
+          serverExport={{ resource: 'auditoria', params: auditQuery(listFilters) }}
           chips={auditFilterChips(filters)}
           onRemoveChip={(key) =>
             handleFiltersChange({ ...filters, [key]: EMPTY_AUDIT_FILTERS[key as keyof AuditFiltersState] })

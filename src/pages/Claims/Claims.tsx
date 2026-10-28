@@ -18,14 +18,12 @@ import {
 import { usePermissions, useUrlParams } from '../../hooks';
 import type { Claim } from '../../services/api/types';
 import { useClaims } from '../../services/queries/claims';
-import { formatShortId } from '../../utils/format';
 import { CLAIM_STATUS, labelOf } from '../../utils/statusLabels';
 import { ClaimDetailDrawer, type PendingAction } from './components/ClaimDetailDrawer';
 import { ClaimsTable } from './components/ClaimsTable';
 import { EditClaimModal } from './components/EditClaimModal';
 import { CreateClaimModal } from './components/CreateClaimModal';
 import { CLAIM_STATUS_ORDER, countClaimsByStatus, filterClaims, type ClaimStatusFilter } from './claimFilters';
-import { csvDateTime } from '../../utils/csv';
 
 const TABS_ID = 'claims';
 
@@ -114,17 +112,12 @@ export const Claims = () => {
                   value: term,
                   onChange: (value) => setTerm(value),
                 }}
-                csv={{
-                  filename: 'reclamos',
-                  headers: ['Cliente', 'Pedido', 'Motivo', 'Descripción', 'Fecha', 'Estado'],
-                  rows: rows.map((claim) => [
-                    claim.customer?.full_name ?? '',
-                    formatShortId(claim.order_id),
-                    claim.reason,
-                    claim.description,
-                    csvDateTime(claim.createdAt),
-                    labelOf(CLAIM_STATUS, claim.status).text,
-                  ]),
+                serverExport={{
+                  resource: 'reclamos',
+                  blockedReason:
+                    status !== 'all' || term.trim()
+                      ? 'El exporte trae todos los reclamos: quitá los filtros para exportar'
+                      : undefined,
                 }}
                 chips={chips}
                 onRemoveChip={removeChip}

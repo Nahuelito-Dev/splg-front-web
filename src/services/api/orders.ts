@@ -39,22 +39,26 @@ export interface OrderFilters {
   order?: 'asc' | 'desc';
 }
 
+/** Los parámetros de GET /orders sin paginar: los mismos que usa el exporte completo. */
+export const orderQuery = (filters: OrderFilters = {}) => {
+  const { search, status, paymentStatus, from, to, deliveredFrom, deliveredTo, sort, order } = filters;
+  return {
+    term: search || undefined,
+    status,
+    paymentStatus,
+    from: from || undefined,
+    to: to || undefined,
+    deliveredFrom: deliveredFrom || undefined,
+    deliveredTo: deliveredTo || undefined,
+    sort,
+    order,
+  };
+};
+
 /** GET /orders: pedidos de la distribuidora, paginados y filtrados en la API. */
 export const listOrders = async (params: PageParams, filters: OrderFilters = {}): Promise<PaginatedOrders> => {
-  const { search, status, paymentStatus, from, to, deliveredFrom, deliveredTo, sort, order } = filters;
   const { data } = await http.get<PaginatedOrders>('/orders', {
-    params: {
-      ...toQuery(params),
-      term: search || undefined,
-      status,
-      paymentStatus,
-      from: from || undefined,
-      to: to || undefined,
-      deliveredFrom: deliveredFrom || undefined,
-      deliveredTo: deliveredTo || undefined,
-      sort,
-      order,
-    },
+    params: { ...toQuery(params), ...orderQuery(filters) },
   });
   return data;
 };

@@ -18,6 +18,8 @@ const API_VERSION = 'v1';
 export const env = {
   /** Base de la API REST versionada: `VITE_APP_API_URL` (con /api) + /v1. */
   apiUrl: `${apiBase}/${API_VERSION}`,
+  /** Base de la v2 de la API: los endpoints nuevos (exportes, …) sólo existen ahí. */
+  apiUrlV2: `${apiBase}/v2`,
   /** Servidor de sockets; por defecto, la API sin el sufijo /api. */
   socketUrl: import.meta.env.VITE_APP_SOCKET_URL ?? apiBase.replace(/\/api$/, ''),
 } as const;

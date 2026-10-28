@@ -43,9 +43,14 @@ export interface FuelLoadFilters {
   anomaly?: boolean;
 }
 
+/** Los parámetros de GET /fleet/fuel-loads sin paginar: los mismos que usa el exporte completo. */
+export const fuelLoadQuery = (filters: FuelLoadFilters) => ({ ...filters });
+
 /** GET /fleet/fuel-loads: las cargas vigentes con el total de litros e importe de lo filtrado. */
 export const listFuelLoads = async (params: PageParams, filters: FuelLoadFilters = {}): Promise<FuelLoadPage> => {
-  const { data } = await http.get<FuelLoadPage>('/fleet/fuel-loads', { params: { ...filters, ...toQuery(params) } });
+  const { data } = await http.get<FuelLoadPage>('/fleet/fuel-loads', {
+    params: { ...fuelLoadQuery(filters), ...toQuery(params) },
+  });
   return data;
 };
 
@@ -93,12 +98,17 @@ export interface TrafficFineFilters {
   to?: string;
 }
 
+/** Los parámetros de GET /fleet/fines sin paginar: los mismos que usa el exporte completo. */
+export const trafficFineQuery = (filters: TrafficFineFilters) => ({ ...filters });
+
 /** GET /fleet/fines (CU-325) */
 export const listTrafficFines = async (
   params: PageParams,
   filters: TrafficFineFilters = {},
 ): Promise<TrafficFinePage> => {
-  const { data } = await http.get<TrafficFinePage>('/fleet/fines', { params: { ...filters, ...toQuery(params) } });
+  const { data } = await http.get<TrafficFinePage>('/fleet/fines', {
+    params: { ...trafficFineQuery(filters), ...toQuery(params) },
+  });
   return data;
 };
 
@@ -145,13 +155,16 @@ export interface VehicleAccidentFilters {
   to?: string;
 }
 
+/** Los parámetros de GET /fleet/accidents sin paginar: los mismos que usa el exporte completo. */
+export const vehicleAccidentQuery = (filters: VehicleAccidentFilters) => ({ ...filters });
+
 /** GET /fleet/accidents (CU-328) */
 export const listVehicleAccidents = async (
   params: PageParams,
   filters: VehicleAccidentFilters = {},
 ): Promise<VehicleAccidentPage> => {
   const { data } = await http.get<VehicleAccidentPage>('/fleet/accidents', {
-    params: { ...filters, ...toQuery(params) },
+    params: { ...vehicleAccidentQuery(filters), ...toQuery(params) },
   });
   return data;
 };
@@ -192,9 +205,12 @@ export const getCarCosts = async (carId: string, range: DayRangeParams): Promise
   return data;
 };
 
+/** Los parámetros de GET /fleet/costs: los mismos que usa el exporte completo. */
+export const fleetCostQuery = (range: DayRangeParams) => ({ from: range.from, to: range.to });
+
 /** GET /fleet/costs (CU-204): un renglón por vehículo, de mayor a menor costo por km. */
 export const getFleetCosts = async (range: DayRangeParams): Promise<FleetCostSummary[]> => {
-  const { data } = await http.get<FleetCostSummary[]>('/fleet/costs', { params: range });
+  const { data } = await http.get<FleetCostSummary[]>('/fleet/costs', { params: fleetCostQuery(range) });
   return data;
 };
 
@@ -203,9 +219,14 @@ export interface TireFilters {
   carId?: string;
 }
 
+/** Los parámetros de GET /fleet/tires sin paginar: los mismos que usa el exporte completo. */
+export const tireQuery = (filters: TireFilters) => ({ ...filters });
+
 /** GET /fleet/tires */
 export const listTires = async (params: PageParams, filters: TireFilters = {}): Promise<TirePage> => {
-  const { data } = await http.get<TirePage>('/fleet/tires', { params: { ...filters, ...toQuery(params) } });
+  const { data } = await http.get<TirePage>('/fleet/tires', {
+    params: { ...tireQuery(filters), ...toQuery(params) },
+  });
   return data;
 };
 

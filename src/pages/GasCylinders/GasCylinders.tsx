@@ -13,6 +13,7 @@ import {
   TableToolbar,
 } from '../../common/components/ui';
 import { useDebounce, usePermissions, useUrlParams } from '../../hooks';
+import { gasCylinderQuery } from '../../services/api/gasCylinders';
 import type { GasCylinder } from '../../services/api/types';
 import {
   useAvailableGasCylinders,
@@ -222,6 +223,15 @@ export const GasCylinders = () => {
               setFilters({ q: value });
               setPagination((p) => ({ ...p, page: 0 }));
             },
+          }}
+          serverExport={{
+            resource: 'garrafas',
+            params: gasCylinderQuery(debouncedSearch),
+            // El exporte es del catálogo activo: no conoce las vistas por tipo, disponibles ni dadas de baja.
+            blockedReason:
+              typeSelected || onlyAvailable || onlyInactive
+                ? 'El exporte trae el catálogo activo: quitá el tipo, «Sólo disponibles» o «Dados de baja»'
+                : undefined,
           }}
           chips={loadFailed ? [] : chips}
           onRemoveChip={removeChip}

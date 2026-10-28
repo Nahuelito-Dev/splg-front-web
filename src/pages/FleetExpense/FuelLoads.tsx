@@ -20,6 +20,7 @@ import {
   DateRangeFilter,
 } from '../../common/components/ui';
 import { useClampPage, usePermissions, useUrlPagedParams } from '../../hooks';
+import { fuelLoadQuery } from '../../services/api/fleetExpense';
 import type { FuelLoad } from '../../services/api/types';
 import { useFuelLoads, useVoidFuelLoad } from '../../services/queries/fleetExpense';
 import { formatCurrency, formatDateTime, formatNumber } from '../../utils/format';
@@ -27,7 +28,6 @@ import { confirm, notify } from '../../utils/notifications';
 import { FUEL_TYPE, labelOf } from '../../utils/statusLabels';
 import { FuelLoadDrawer } from './components/FuelLoadDrawer';
 import { useCarOptions } from './components/useCarOptions';
-import { csvDateTime } from '../../utils/csv';
 
 /** Las cargas de combustible de la flota (CU-195, CU-320 a CU-322): registrar, corregir, anular y consultar. */
 export const FuelLoads = () => {
@@ -43,16 +43,13 @@ export const FuelLoads = () => {
   const [viewing, setViewing] = useState<string | null>(null);
   const voidLoad = useVoidFuelLoad();
   const rangeInvalid = Boolean(filters.from && filters.to && filters.from > filters.to);
-  const { data, isFetching, error, refetch } = useFuelLoads(
-    pagination,
-    {
-      carId: filters.car || undefined,
-      from: filters.from || undefined,
-      to: filters.to || undefined,
-      anomaly: filters.anomaly === '1' ? true : undefined,
-    },
-    { enabled: !rangeInvalid },
-  );
+  const listFilters = {
+    carId: filters.car || undefined,
+    from: filters.from || undefined,
+    to: filters.to || undefined,
+    anomaly: filters.anomaly === '1' ? true : undefined,
+  };
+  const { data, isFetching, error, refetch } = useFuelLoads(pagination, listFilters, { enabled: !rangeInvalid });
   const filtered = Boolean(filters.car || filters.from || filters.to || filters.anomaly);
   useClampPage(pagination, data?.total, setPagination);
 
@@ -185,30 +182,10 @@ export const FuelLoads = () => {
               />
             </>
           }
-          csv={{
-            filename: 'combustible',
-            headers: [
-              'Fecha',
-              'Vehículo',
-              'Chofer',
-              'Combustible',
-              'Litros',
-              'Importe',
-              'Km',
-              'Tanque lleno',
-              'Consumo anómalo',
-            ],
-            rows: (data?.data ?? []).map((row) => [
-              csvDateTime(row.loadedAt),
-              row.carPatent ?? '',
-              row.employeeName ?? '',
-              labelOf(FUEL_TYPE, row.fuelType).text,
-              row.liters,
-              row.totalAmount,
-              row.odometerKm,
-              row.isFullTank ? 'Sí' : 'No',
-              row.anomaly ? 'Sí' : 'No',
-            ]),
+          serverExport={{
+            resource: 'combustible',
+            params: fuelLoadQuery(listFilters),
+            blockedReason: rangeInvalid ? 'El rango de fechas es inválido' : undefined,
           }}
           noun={['carga', 'cargas']}
         >

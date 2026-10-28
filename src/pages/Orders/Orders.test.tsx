@@ -89,6 +89,7 @@ vi.mock('../../services/queries/orders', () => {
 
 vi.mock('./components/EditOrderModal', () => ({ EditOrderModal: () => null }));
 
+import { useServerExport } from '../../hooks/useServerExport';
 import { Orders } from './Orders';
 
 const renderPage = () =>
@@ -275,10 +276,12 @@ describe('Orders: filtros en la URL y exportación', () => {
     expect(screen.getByRole('tab', { name: /Todos/ })).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('ofrece exportar el listado visible y, con filas marcadas, la selección', () => {
+  it('ofrece exportar todo lo filtrado (CSV y Excel) y, sólo con filas marcadas, la selección', () => {
     renderPage();
     fireEvent.click(screen.getByRole('button', { name: 'Más' }));
     expect(screen.getByRole('menuitem', { name: 'Exportar CSV' })).not.toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByRole('menuitem', { name: 'Exportar Excel' })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: 'Exportar selección' })).not.toBeInTheDocument();
     fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
     fireEvent.click(checkboxes()[0]);
     fireEvent.click(screen.getByRole('button', { name: 'Más' }));
@@ -315,5 +318,16 @@ describe('Orders: panel lateral', () => {
     expect(
       within(screen.getByRole('dialog', { name: /Pedido #/ })).queryByRole('button', { name: /chofer/ }),
     ).not.toBeInTheDocument();
+  });
+
+  it('el exporte manda los mismos filtros que el listado', () => {
+    render(
+      <MemoryRouter initialEntries={['/orders?status=cancelled']}>
+        <Orders />
+      </MemoryRouter>,
+    );
+    const exporte = vi.mocked(useServerExport).mock.lastCall?.[0];
+    expect(exporte?.resource).toBe('pedidos');
+    expect(exporte?.params?.status).toBe('cancelled');
   });
 });

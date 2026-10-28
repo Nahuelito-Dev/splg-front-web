@@ -2,6 +2,7 @@ import type { GridPaginationModel } from '@mui/x-data-grid';
 import { useMemo, useState } from 'react';
 import { Card, ErrorState, TableToolbar, type SelectOption } from '../../../common/components/ui';
 import { useDebounce, useUrlParams } from '../../../hooks';
+import { auditEntriesQuery } from '../../../services/api/audit';
 import type { AuditEntry } from '../../../services/api/types';
 import { useAuditActionTypes, useAuditEntries } from '../../../services/queries/audit';
 import { DataAuditDrawer } from './DataAuditDrawer';
@@ -32,9 +33,8 @@ export const DataAuditTab = () => {
   // Un pedido por tecla no: se espera a que deje de escribir (los filtros se comparan por su contenido).
   const filtersKey = useDebounce(JSON.stringify(filters), 500);
   const applied = useMemo(() => JSON.parse(filtersKey) as DataAuditFilters, [filtersKey]);
-  const { data, isFetching, error, refetch } = useAuditEntries(
-    toAuditEntriesParams(applied, pagination.page + 1, pagination.pageSize),
-  );
+  const listParams = toAuditEntriesParams(applied, pagination.page + 1, pagination.pageSize);
+  const { data, isFetching, error, refetch } = useAuditEntries(listParams);
 
   const actionOptions = useMemo<SelectOption[]>(
     () => (actionTypes ?? []).map((a) => ({ value: String(a.id), label: a.name })),
@@ -51,6 +51,7 @@ export const DataAuditTab = () => {
       <Card>
         <TableToolbar
           filters={<DataAuditFiltersBar value={filters} onChange={change} actionOptions={actionOptions} />}
+          serverExport={{ resource: 'auditoria-datos', params: auditEntriesQuery(listParams) }}
           chips={chips}
           onRemoveChip={(key) => change({ [key]: '' })}
           onClearChips={() => change(EMPTY_DATA_AUDIT_FILTERS)}

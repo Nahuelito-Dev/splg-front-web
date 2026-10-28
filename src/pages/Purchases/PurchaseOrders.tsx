@@ -19,6 +19,7 @@ import {
   DateRangeFilter,
 } from '../../common/components/ui';
 import { FROM_LIST_STATE, usePermissions, useClampPage, useUrlPagedParams } from '../../hooks';
+import { purchaseOrderQuery } from '../../services/api/purchases';
 import type { PurchaseOrderSummary } from '../../services/api/types';
 import { usePurchaseOrders, useSupplierOptions, usePurchaseOrderStatusCounts } from '../../services/queries/purchases';
 import { formatCurrency, formatDay } from '../../utils/format';
@@ -39,16 +40,13 @@ export const PurchaseOrders = () => {
   const suppliers = useSupplierOptions();
   // Un rango invertido (desde > hasta) no se consulta: ni el listado ni los contadores.
   const rangeInvalid = Boolean(filters.from && filters.to && filters.from > filters.to);
-  const { data, isFetching, error, refetch } = usePurchaseOrders(
-    pagination,
-    {
-      status: status || undefined,
-      supplierId: filters.supplier || undefined,
-      from: filters.from || undefined,
-      to: filters.to || undefined,
-    },
-    { enabled: !rangeInvalid },
-  );
+  const listFilters = {
+    status: status || undefined,
+    supplierId: filters.supplier || undefined,
+    from: filters.from || undefined,
+    to: filters.to || undefined,
+  };
+  const { data, isFetching, error, refetch } = usePurchaseOrders(pagination, listFilters, { enabled: !rangeInvalid });
   const goTo = (row: PurchaseOrderSummary) =>
     navigate(`/purchases/orders/${row.purchaseOrderId}`, { state: FROM_LIST_STATE });
   const change = (patch: Partial<typeof filters>) => {
@@ -159,19 +157,10 @@ export const PurchaseOrders = () => {
                 <DateRangeFilter from={filters.from} to={filters.to} onChange={(range) => change({ ...range })} />
               </>
             }
-            csv={{
-              filename: 'ordenes-de-compra',
-              headers: ['Orden', 'Proveedor', 'Destino', 'Estado', 'Pedidas', 'Recibidas', 'Pendientes', 'Total'],
-              rows: (data?.data ?? []).map((row) => [
-                row.number,
-                row.supplierName,
-                row.destinationWarehouseName,
-                labelOf(PURCHASE_ORDER_STATUS, row.status).text,
-                row.orderedQuantity,
-                row.receivedQuantity,
-                row.pendingQuantity,
-                row.totalAmount,
-              ]),
+            serverExport={{
+              resource: 'ordenes-compra',
+              params: purchaseOrderQuery(listFilters),
+              blockedReason: rangeInvalid ? 'El rango de fechas es inválido' : undefined,
             }}
             chips={chips}
             onRemoveChip={(key) => change({ [key]: '' })}

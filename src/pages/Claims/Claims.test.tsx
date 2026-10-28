@@ -108,4 +108,15 @@ describe('Claims', () => {
     renderPage();
     expect(screen.getByRole('status', { name: 'Cargando listado' })).toBeInTheDocument();
   });
+
+  it('el exporte trae todos los reclamos: con un filtro activo queda bloqueado', () => {
+    claimsQuery.mockReturnValue({ data: CLAIMS, isLoading: false, isFetching: false });
+    renderPage('/claims?status=pending');
+    fireEvent.click(screen.getByRole('button', { name: 'Más' }));
+    expect(screen.getByRole('menuitem', { name: 'Exportar CSV' })).toHaveAttribute('aria-disabled', 'true');
+    cleanup();
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Más' }));
+    expect(screen.getByRole('menuitem', { name: 'Exportar CSV' })).not.toHaveAttribute('aria-disabled', 'true');
+  });
 });

@@ -1,7 +1,7 @@
 import { http, type Page } from './httpClient';
 import type { AsientoDeAuditoria, AuditActionType, AuditEntriesPage, AuditEntry, RegistroDeAuditoria } from './types';
 
-interface AuditFilters {
+export interface AuditFilters {
   actorUserId?: string;
   resource?: string;
   resourceId?: string;
@@ -17,9 +17,13 @@ export interface AuditParams extends AuditFilters {
   offset: number;
 }
 
-/** Saca los filtros vacíos: la API no distingue "" de "no filtrar por esto". */
+/** Los filtros de GET /audit sin vacíos ni paginación: la API no distingue "" de "no filtrar por esto". Es lo que usa el exporte completo. */
+export const auditQuery = (filters: AuditFilters): Record<string, string> =>
+  Object.fromEntries(Object.entries(filters).filter((entry): entry is [string, string] => Boolean(entry[1])));
+
+/** Los filtros no vacíos más la paginación. */
 export const buildAuditQuery = ({ limit, offset, ...filters }: AuditParams): Record<string, string | number> => ({
-  ...Object.fromEntries(Object.entries(filters).filter((entry): entry is [string, string] => Boolean(entry[1]))),
+  ...auditQuery(filters),
   limit,
   offset,
 });
@@ -44,11 +48,21 @@ export interface AuditEntriesParams {
   limit: number;
 }
 
-/** Saca los filtros vacíos de la auditoría de datos. */
-export const buildAuditEntriesQuery = (params: AuditEntriesParams): Record<string, string | number> =>
+/** Los filtros de GET /audit/entries sin vacíos ni paginación. Es lo que usa el exporte completo. */
+export const auditEntriesQuery = (params: AuditEntriesParams): Record<string, string | number> =>
   Object.fromEntries(
-    Object.entries(params).filter((entry): entry is [string, string | number] => entry[1] !== '' && entry[1] != null),
+    Object.entries(params).filter(
+      (entry): entry is [string, string | number] =>
+        entry[0] !== 'page' && entry[0] !== 'limit' && entry[1] !== '' && entry[1] != null,
+    ),
   );
+
+/** Los filtros no vacíos más la paginación. */
+export const buildAuditEntriesQuery = (params: AuditEntriesParams): Record<string, string | number> => ({
+  ...auditEntriesQuery(params),
+  page: params.page,
+  limit: params.limit,
+});
 
 /** GET /audit/entries: cada alta, cambio, baja o reactivación de un registro, con sus campos. */
 export const listAuditEntries = async (params: AuditEntriesParams): Promise<Page<AuditEntry>> => {

@@ -15,6 +15,12 @@ export interface NewDeliveryAccount extends AccountFields {
   isActive?: boolean;
 }
 
+/** Los parámetros de GET /delivery sin paginar: los mismos que usa el exporte completo. */
+export const deliveryQuery = (search?: string, status?: DeliveryStatusFilter) => ({
+  term: search || undefined,
+  status,
+});
+
 /** GET /delivery: la flota de choferes, paginada, con búsqueda y filtro por grupo administrativo. */
 export const listDeliveries = async (
   params: PageParams,
@@ -24,7 +30,7 @@ export const listDeliveries = async (
 ): Promise<Page<Delivery>> =>
   toPage(
     await http.get<Delivery[]>('/delivery', {
-      params: { ...toQuery(params), term: search || undefined, status },
+      params: { ...toQuery(params), ...deliveryQuery(search, status) },
       // El administrador general lista los choferes de una empresa puntual sin pasar por «Ver como».
       headers: distributorId ? { 'X-Distributor': distributorId } : undefined,
     }),

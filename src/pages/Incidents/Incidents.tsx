@@ -19,7 +19,6 @@ import {
 import { usePermissions, useUrlParams } from '../../hooks';
 import { useIncident, useIncidents } from '../../services/queries/incidents';
 import type { Incident } from '../../services/api/types';
-import { formatShortId } from '../../utils/format';
 import { INCIDENT_STATUS, INCIDENT_TYPE, labelOf } from '../../utils/statusLabels';
 import { CreateIncidentModal } from './components/CreateIncidentModal';
 import { DiscardIncidentModal } from './components/DiscardIncidentModal';
@@ -34,7 +33,6 @@ import {
   type IncidentStatusFilter,
   type IncidentTypeFilter,
 } from './incidentFilters';
-import { csvDateTime } from '../../utils/csv';
 
 const TABS_ID = 'incidents';
 
@@ -156,16 +154,12 @@ export const Incidents = () => {
                   value: term,
                   onChange: (value) => setTerm(value),
                 }}
-                csv={{
-                  filename: 'incidencias',
-                  headers: ['Cliente', 'Pedido', 'Tipo', 'Fecha', 'Estado'],
-                  rows: rows.map((incident) => [
-                    incident.order?.customer?.full_name ?? '',
-                    formatShortId(incident.order_id),
-                    labelOf(INCIDENT_TYPE, incident.type).text,
-                    csvDateTime(incident.createdAt),
-                    labelOf(INCIDENT_STATUS, incident.status).text,
-                  ]),
+                serverExport={{
+                  resource: 'incidencias',
+                  blockedReason:
+                    status !== 'all' || type !== 'all' || term.trim()
+                      ? 'El exporte trae todas las incidencias: quitá los filtros para exportar'
+                      : undefined,
                 }}
                 chips={chips}
                 onRemoveChip={removeChip}

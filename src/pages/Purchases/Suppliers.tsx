@@ -13,11 +13,12 @@ import {
   PageHeader,
   ResponsiveTable,
   RowActions,
-  SearchInput,
+  TableToolbar,
   Select,
   PageContainer,
 } from '../../common/components/ui';
 import { FROM_LIST_STATE, useDebounce, usePermissions, useClampPage, useUrlPagedParams } from '../../hooks';
+import { supplierQuery } from '../../services/api/purchases';
 import type { Supplier } from '../../services/api/types';
 import { useDeleteSupplier, useSuppliers, useUpdateSupplier } from '../../services/queries/purchases';
 import { formatCuit } from '../../utils/cuit';
@@ -39,11 +40,12 @@ export const Suppliers = () => {
   const term = useDebounce(filters.q, 300);
   const [editing, setEditing] = useState<Supplier | null>(null);
   const [creating, setCreating] = useState(false);
-  const { data, isFetching, error, refetch } = useSuppliers(pagination, {
+  const listFilters = {
     term: term || undefined,
     kind: (filters.kind || undefined) as Supplier['kind'] | undefined,
     includeInactive: filters.inactive === '1',
-  });
+  };
+  const { data, isFetching, error, refetch } = useSuppliers(pagination, listFilters);
   const update = useUpdateSupplier();
   const remove = useDeleteSupplier();
   const filtered = Boolean(filters.q || filters.kind || filters.inactive);
@@ -138,26 +140,32 @@ export const Suppliers = () => {
         }
       />
       <Card>
-        <div className="grid grid-cols-1 items-end gap-3 border-b border-outline p-4 sm:grid-cols-[2fr_1fr_auto]">
-          <SearchInput
-            value={filters.q}
-            onChange={(e) => change({ q: e.target.value })}
-            placeholder="Buscar por razón social o CUIT"
-            label="Buscar proveedores"
-            className="sm:w-full"
-          />
-          <Select
-            label="Tipo"
-            options={KIND_FILTER}
-            value={filters.kind}
-            onChange={(e) => change({ kind: e.target.value })}
-          />
-          <Checkbox
-            label="Ver dados de baja"
-            checked={filters.inactive === '1'}
-            onChange={(e) => change({ inactive: e.target.checked ? '1' : '' })}
-          />
-        </div>
+        <TableToolbar
+          search={{
+            label: 'Buscar proveedores',
+            placeholder: 'Razón social o CUIT',
+            value: filters.q,
+            onChange: (value) => change({ q: value }),
+          }}
+          filters={
+            <>
+              <Select
+                label="Tipo"
+                options={KIND_FILTER}
+                value={filters.kind}
+                onChange={(e) => change({ kind: e.target.value })}
+              />
+              <Checkbox
+                label="Ver dados de baja"
+                checked={filters.inactive === '1'}
+                onChange={(e) => change({ inactive: e.target.checked ? '1' : '' })}
+              />
+            </>
+          }
+          serverExport={{ resource: 'proveedores', params: supplierQuery(listFilters) }}
+          resultCount={data?.total}
+          noun={['proveedor', 'proveedores']}
+        />
         {error ? (
           <ErrorState error={error} resource="Los proveedores" onRetry={() => void refetch()} />
         ) : (

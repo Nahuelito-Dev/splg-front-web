@@ -18,6 +18,7 @@ import {
   TableToolbar,
 } from '../../common/components/ui';
 import { FROM_LIST_STATE, useClampPage, useDebounce, usePermissions, useUrlPagedParams } from '../../hooks';
+import { customerAccountQuery } from '../../services/api/finance';
 import type { CustomerAccount } from '../../services/api/types';
 import { useCustomerAccounts, useCustomerAccountStatusCounts } from '../../services/queries/finance';
 import { formatCurrency } from '../../utils/format';
@@ -33,11 +34,12 @@ export const CustomerAccounts = () => {
   // Un estado inválido en la URL (enlace viejo o escrito a mano) se trata como «todos», en la consulta y en las pestañas.
   const status = statusParam(ACCOUNT_STATUS, filters.status);
   const q = useDebounce(filters.q, 300);
-  const { data, isFetching, error, refetch } = useCustomerAccounts(pagination, {
+  const listFilters = {
     q: q || undefined,
     status: status || undefined,
     overdue: filters.overdue === '1' ? true : undefined,
-  });
+  };
+  const { data, isFetching, error, refetch } = useCustomerAccounts(pagination, listFilters);
   const [creating, setCreating] = useState(false);
   const filtered = Boolean(filters.q || status || filters.overdue);
 
@@ -163,17 +165,9 @@ export const CustomerAccounts = () => {
               value: filters.q,
               onChange: (value) => setFilters({ q: value }),
             }}
-            csv={{
-              filename: 'cuentas-corrientes',
-              headers: ['Cuenta', 'Cliente', 'Saldo', 'Disponible', 'Vencido', 'Estado'],
-              rows: (data?.data ?? []).map((row) => [
-                row.businessName,
-                row.customerName || row.customerEmail || '',
-                row.balance,
-                row.availableCredit,
-                row.overdueAmount,
-                labelOf(ACCOUNT_STATUS, row.status).text,
-              ]),
+            serverExport={{
+              resource: 'cuentas-corrientes',
+              params: customerAccountQuery(listFilters),
             }}
             noun={['cuenta', 'cuentas']}
           />

@@ -19,6 +19,7 @@ import {
   DateRangeFilter,
 } from '../../common/components/ui';
 import { useClampPage, usePermissions, useUrlPagedParams } from '../../hooks';
+import { vehicleAccidentQuery } from '../../services/api/fleetExpense';
 import type { VehicleAccident } from '../../services/api/types';
 import { useVehicleAccidents, useAccidentStatusCounts } from '../../services/queries/fleetExpense';
 import { formatCurrency, formatDateTime } from '../../utils/format';
@@ -26,7 +27,6 @@ import { ACCIDENT_STATUS, labelOf, statusOptions, statusParam } from '../../util
 import { CloseAccidentModal } from './components/CloseAccidentModal';
 import { VehicleAccidentDrawer } from './components/VehicleAccidentDrawer';
 import { useCarOptions } from './components/useCarOptions';
-import { csvDateTime } from '../../utils/csv';
 
 /** Los siniestros de la flota (CU-201, CU-202, CU-327, CU-328): registrar, avanzar el ciclo, cerrar y consultar. */
 export const VehicleAccidents = () => {
@@ -44,16 +44,13 @@ export const VehicleAccidents = () => {
   const [closing, setClosing] = useState<VehicleAccident | null>(null);
   const [viewing, setViewing] = useState<string | null>(null);
   const rangeInvalid = Boolean(filters.from && filters.to && filters.from > filters.to);
-  const { data, isFetching, error, refetch } = useVehicleAccidents(
-    pagination,
-    {
-      carId: filters.car || undefined,
-      status: status || undefined,
-      from: filters.from || undefined,
-      to: filters.to || undefined,
-    },
-    { enabled: !rangeInvalid },
-  );
+  const listFilters = {
+    carId: filters.car || undefined,
+    status: status || undefined,
+    from: filters.from || undefined,
+    to: filters.to || undefined,
+  };
+  const { data, isFetching, error, refetch } = useVehicleAccidents(pagination, listFilters, { enabled: !rangeInvalid });
   const filtered = Boolean(filters.car || status || filters.from || filters.to);
   useClampPage(pagination, data?.total, setPagination);
 
@@ -163,28 +160,10 @@ export const VehicleAccidents = () => {
                 <DateRangeFilter from={filters.from} to={filters.to} onChange={(range) => setFilters({ ...range })} />
               </>
             }
-            csv={{
-              filename: 'siniestros',
-              headers: [
-                'Vehículo',
-                'Chofer',
-                'Fecha',
-                'Lugar',
-                'Estado',
-                'Inutilizable',
-                'Costo de reparación',
-                'Costo neto',
-              ],
-              rows: (data?.data ?? []).map((row) => [
-                row.carPatent ?? '',
-                row.employeeName ?? '',
-                csvDateTime(row.occurredAt),
-                row.location ?? '',
-                labelOf(ACCIDENT_STATUS, row.status).text,
-                row.vehicleUnusable ? 'Sí' : 'No',
-                row.repairCost ?? '',
-                row.netCost ?? '',
-              ]),
+            serverExport={{
+              resource: 'siniestros',
+              params: vehicleAccidentQuery(listFilters),
+              blockedReason: rangeInvalid ? 'El rango de fechas es inválido' : undefined,
             }}
             noun={['siniestro', 'siniestros']}
           >

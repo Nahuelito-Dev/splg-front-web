@@ -17,6 +17,7 @@ import {
   PageContainer,
 } from '../../common/components/ui';
 import { useDebounce, usePermissions, useUrlParams } from '../../hooks';
+import { customerQuery } from '../../services/api/customers';
 import type { Customer } from '../../services/api/types';
 import { useCustomerStatusCounts, useCustomers, useDeleteCustomer } from '../../services/queries/customers';
 import { confirm, notify } from '../../utils/notifications';
@@ -154,7 +155,20 @@ export const Customers = () => {
               value: search,
               onChange: (value) => changeFilters({ q: value, page: '1' }),
             }}
-            csv={{ filename: 'clientes', headers: CSV_HEADERS, rows: toCsvRows(rows) }}
+            serverExport={{
+              resource: 'clientes',
+              params: customerQuery(debouncedSearch, segment === 'all' ? undefined : segment),
+            }}
+            csv={
+              selectedCustomers.length > 0
+                ? {
+                    filename: 'clientes',
+                    label: 'Exportar selección',
+                    headers: CSV_HEADERS,
+                    rows: toCsvRows(selectedCustomers),
+                  }
+                : undefined
+            }
             chips={chips}
             onRemoveChip={removeChip}
             onClearChips={() => changeFilters({ q: '', status: 'all', page: '1' })}

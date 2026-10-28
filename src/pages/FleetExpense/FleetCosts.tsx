@@ -15,6 +15,7 @@ import {
   PageContainer,
   TableToolbar,
 } from '../../common/components/ui';
+import { fleetCostQuery } from '../../services/api/fleetExpense';
 import type { FleetCostSummary } from '../../services/api/types';
 import { useFleetCosts } from '../../services/queries/fleetExpense';
 import { presetRange, type DayRange, type RangePresetId } from '../../utils/dateRange';
@@ -130,17 +131,7 @@ export const FleetCosts = () => {
       </div>
       <Card>
         <TableToolbar
-          csv={{
-            filename: 'costos-de-flota',
-            headers: ['Vehículo', ...COST_RUBROS.map(({ label }) => label), 'Total', 'Km', '$/km'],
-            rows: (data ?? []).map((row) => [
-              row.carPatent ?? '',
-              ...COST_RUBROS.map(({ key }) => row[key]),
-              row.total,
-              row.km,
-              row.costPerKm ?? '',
-            ]),
-          }}
+          serverExport={{ resource: 'costos-flota', params: fleetCostQuery(range) }}
           noun={['vehículo', 'vehículos']}
         />
         {error ? (
