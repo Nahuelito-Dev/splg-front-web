@@ -17,6 +17,7 @@ import {
   PageContainer,
   DateRangeFilter,
   CardHeader,
+  LinkedEntityPhoto,
 } from '../../common/components/ui';
 import { useBackToList, usePermissions, useClampPage, useUrlPagedParams } from '../../hooks';
 import type { PurchaseReceiptSummary } from '../../services/api/types';
@@ -138,6 +139,13 @@ export const SupplierDetails = () => {
                         : `${supplier.paymentTermsDays} días`,
                 },
               ]}
+            />
+            <LinkedEntityPhoto
+              kind="supplier"
+              id={supplier.supplierId}
+              subject="del proveedor"
+              canEdit={canWrite}
+              className="mt-5 border-t border-outline pt-5"
             />
           </Card>
           <div className="min-w-0 space-y-6 lg:col-span-2">

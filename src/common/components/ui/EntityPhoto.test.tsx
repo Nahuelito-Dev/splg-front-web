@@ -16,7 +16,7 @@ vi.mock('../../../utils/notifications', async (importOriginal) => ({
 }));
 
 import { ApiError } from '../../../services/api/errors';
-import { EntityPhoto } from './EntityPhoto';
+import { EntityPhoto, LinkedEntityPhoto } from './EntityPhoto';
 
 const SIGNED = 'https://splg.s3.amazonaws.com/cars/a.jpg?X-Amz-Signature=abc';
 const lastError = () => notify.error.mock.calls.at(-1)?.[0].message;
@@ -225,5 +225,36 @@ describe('EntityPhoto', () => {
     fireEvent.error(screen.getByAltText('Foto del vehículo, ampliada'));
     await waitFor(() => expect(screen.getByAltText('Foto del vehículo')).toHaveAttribute('src', renewed));
     expect(api.getPhotoLink).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('LinkedEntityPhoto (la ficha no trae la foto)', () => {
+  const renderLinked = () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+    const invalidate = vi.spyOn(client, 'invalidateQueries');
+    render(
+      <QueryClientProvider client={client}>
+        <LinkedEntityPhoto kind="supplier" id="s-1" subject="del proveedor" canEdit />
+      </QueryClientProvider>,
+    );
+    return invalidate;
+  };
+
+  it('pide el enlace de la foto y la muestra', async () => {
+    api.getPhotoLink.mockResolvedValue({ url: SIGNED, expiresAt: null, requiresAuth: false });
+    renderLinked();
+    expect(await screen.findByAltText('Foto del proveedor')).toHaveAttribute('src', SIGNED);
+    expect(api.getPhotoLink).toHaveBeenCalledWith('supplier', 's-1');
+  });
+
+  it('sin foto ofrece subirla, y al subir vuelve a pedir el enlace', async () => {
+    api.getPhotoLink.mockResolvedValue({ url: null, expiresAt: null, requiresAuth: false });
+    api.uploadPhoto.mockResolvedValue(undefined);
+    const invalidate = renderLinked();
+    await waitFor(() => expect(api.getPhotoLink).toHaveBeenCalled());
+    const input = document.querySelector('input[type=file]') as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [new File(['x'], 'f.jpg', { type: 'image/jpeg' })] } });
+    await waitFor(() => expect(api.uploadPhoto).toHaveBeenCalledWith('supplier', 's-1', expect.any(File)));
+    await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['photoLink', 'supplier'] }));
   });
 });

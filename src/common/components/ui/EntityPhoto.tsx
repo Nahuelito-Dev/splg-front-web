@@ -1,7 +1,13 @@
 import { useState } from 'react';
 import { photoRemovable, type PhotoKind } from '../../../services/api/photos';
 import { toApiError } from '../../../services/api/errors';
-import { isSignedPhotoUrl, useRemovePhoto, useRenewablePhoto, useUploadPhoto } from '../../../services/queries/photos';
+import {
+  isSignedPhotoUrl,
+  usePhotoLink,
+  useRemovePhoto,
+  useRenewablePhoto,
+  useUploadPhoto,
+} from '../../../services/queries/photos';
 import { confirm, notify } from '../../../utils/notifications';
 import { photoErrorMessage, photoFileError, photoLimitsText } from '../../../utils/photos';
 import { ImageInput } from './ImageInput';
@@ -139,4 +145,13 @@ export const EntityPhoto = ({
       </Modal>
     </div>
   );
+};
+
+/**
+ * `EntityPhoto` para los recursos cuya respuesta no trae `photoUrl` (proveedor, envase, carga): primero pide el
+ * enlace a la foto y después se comporta igual.
+ */
+export const LinkedEntityPhoto = (props: Omit<Props, 'url'>) => {
+  const link = usePhotoLink(props.kind, props.id);
+  return <EntityPhoto {...props} url={link.isPending ? undefined : (link.data?.url ?? null)} />;
 };

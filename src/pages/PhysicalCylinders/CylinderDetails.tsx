@@ -13,6 +13,7 @@ import {
   PageHeader,
   UserRefLink,
   PageContainer,
+  LinkedEntityPhoto,
 } from '../../common/components/ui';
 import { useBackToList, usePermissions } from '../../hooks';
 import { useCrumbLeaf } from '../../common/components';
@@ -139,6 +140,16 @@ export const CylinderDetails = () => {
                 { label: 'Última modificación', value: formatDateTime(cylinder.updatedAt) },
                 { label: 'ID del envase', value: cylinder.cylinder_id, mono: true, wide: true },
               ]}
+            />
+            <LinkedEntityPhoto
+              kind="cylinder"
+              id={cylinder.cylinder_id}
+              subject="del envase"
+              canEdit={canWrite}
+              blockedReason={
+                cylinder.state === 'retired' ? 'El envase está dado de baja: su foto ya no se cambia' : undefined
+              }
+              className="mt-5 border-t border-outline pt-5"
             />
           </Card>
 
