@@ -397,6 +397,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/customers/removed': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Clientes que la distribuidora dio de baja (búsqueda por nombre o teléfono) */
+    get: operations['CustomersController_findRemoved'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/customers/{id}': {
     parameters: {
       query?: never;
@@ -448,6 +465,24 @@ export interface paths {
     head?: never;
     /** Update customer location */
     patch: operations['CustomersController_updateLocation'];
+    trace?: never;
+  };
+  '/api/v2/customers/{id}/distributor': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Reactivar al cliente dado de baja en la distribuidora */
+    post: operations['CustomersController_restoreInDistributor'];
+    /** Dar de baja al cliente en la distribuidora (no toca su cuenta ni sus pedidos) */
+    delete: operations['CustomersController_removeFromDistributor'];
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
   '/api/v1/delivery': {
@@ -714,6 +749,30 @@ export interface paths {
      * @description Quita la referencia (el objeto se borra del bucket en segundo plano) y `photoUrl` queda en null. No da de baja la distribuidora.
      */
     delete: operations['DistributorController_removeLogo'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/distributor/bank-details': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Datos bancarios de la distribuidora
+     * @description CBU, alias y titular que ve el cliente cuando paga por transferencia. Cada dato es `null` si no se cargó.
+     */
+    get: operations['DistributorBankController_obtener'];
+    /**
+     * Cargar o cambiar los datos bancarios
+     * @description Reemplaza los tres datos: el que no se manda (o va `null` o vacío) queda sin cargar. El CBU se valida con sus dos dígitos verificadores; el alias lleva de 6 a 20 caracteres entre letras, números, punto y guion.
+     */
+    put: operations['DistributorBankController_guardar'];
+    post?: never;
+    delete?: never;
     options?: never;
     head?: never;
     patch?: never;
@@ -1079,7 +1138,10 @@ export interface paths {
     /** Listar los adjuntos de un dueño */
     get: operations['AttachmentController_list'];
     put?: never;
-    /** Subir un adjunto a un dueño (PDF, JPG, PNG, WEBP) */
+    /**
+     * Subir un adjunto a un dueño (PDF, JPG, PNG, WEBP, Word .docx, Excel .xlsx, CSV)
+     * @description Admin y super admin: PDF, JPG, PNG, WEBP, Word (.docx), Excel (.xlsx) y CSV (UTF-8 o Windows-1252; también se acepta `application/vnd.ms-excel` si el archivo se llama `.csv`), hasta 10 MB. Se valida el contenido por su estructura, no sólo el tipo declarado: un docx/xlsx con macros, ejecutables u objetos incrustados se rechaza. Chofer: sólo PDF y imágenes. Word, Excel y CSV se entregan siempre como descarga. Dueños (`ownerType`): employee, fuel_load, traffic_fine, vehicle_accident, purchase_receipt, stock_adjustment, driver_settlement, cash_movement, customer_account_entry y order.
+     */
     post: operations['AttachmentController_upload'];
     delete?: never;
     options?: never;
@@ -1942,6 +2004,50 @@ export interface paths {
     };
     /** Get sales chart data (Last 7 days, scopeado por distribuidora) */
     get: operations['OrderController_getChartData'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/orders/{id}/transfer-receipt': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Los comprobantes del pedido con su URL firmada
+     * @description Del más nuevo al más viejo. Admin y super admin (con `X-Distributor`) ven todos los adjuntos del pedido de su distribuidora, con `uploadedByUserId`. El cliente ve sólo los comprobantes de transferencia de sus pedidos (los que subió él o los que el admin adjuntó con `label` "Comprobante de transferencia" por `POST /attachments/order/:id`), sin `uploadedByUserId`. Cada `url` vence en `expiresAt`.
+     */
+    get: operations['OrderTransferReceiptController_listar'];
+    put?: never;
+    /**
+     * El cliente sube el comprobante de su transferencia
+     * @description Multipart con el campo `file` (imagen JPG, PNG, WEBP o PDF, hasta 10 MB). Sólo en un pedido propio que se paga por transferencia, no cancelado y con el pago `pending` o `failed` (marcado como no recibido: el comprobante sirve para corregirlo). Deja una nota en el historial del pedido y avisa al panel por socket (`order:transfer-receipt-uploaded` con `{ orderId, customerId, attachmentId, uploadedAt }`). Hasta 5 comprobantes por pedido. Idempotente vía `Idempotency-Key`.
+     */
+    post: operations['OrderTransferReceiptController_subir'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/orders/{id}/bank-details': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Datos bancarios para pagar el pedido por transferencia
+     * @description CBU, alias y titular de la distribuidora de ese pedido (nunca los de otra). Cada dato es `null` si la distribuidora no lo cargó.
+     */
+    get: operations['OrderTransferReceiptController_datosBancarios'];
     put?: never;
     post?: never;
     delete?: never;
@@ -4511,6 +4617,126 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/orders/{id}/remito.pdf': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Remito del pedido en PDF
+     * @description Ítems, cantidades, precios, recargos, total, cliente, dirección, chofer, vehículo y estado del pago. El código de entrega sólo sale para admin y super admin. El cliente baja sólo los suyos; el personal, los de su distribuidora (el super admin con `X-Distributor`). Lo ajeno responde 404.
+     */
+    get: operations['PdfController_remito'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/orders/{id}/recibo.pdf': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Recibo de pago del pedido en PDF
+     * @description Sólo si el pedido está pagado (`paymentStatus: paid`) y no está cancelado (un cancelado pagado se reintegra). Mismas reglas de acceso que el remito.
+     */
+    get: operations['PdfController_recibo'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/driver-settlements/{id}/pdf': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Rendición del chofer en PDF
+     * @description Pedidos en efectivo, cobros, gastos, esperado, declarado y diferencia. El chofer sólo baja las suyas.
+     */
+    get: operations['PdfController_rendicion'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/driver-liquidations/{id}/pdf': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Liquidación de comisiones en PDF
+     * @description Asientos del período, bruto, deducciones y neto.
+     */
+    get: operations['PdfController_liquidacion'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/cash-sessions/{id}/pdf': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Cierre de caja (sesión) en PDF
+     * @description Apertura, movimientos de la sesión, esperado, contado y diferencia. Si la sesión sigue abierta sale como arqueo, con el saldo actual.
+     */
+    get: operations['PdfController_cierreDeCaja'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/reports/sales.pdf': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Reporte de ventas del período en PDF
+     * @description Mismas cifras que los reportes del panel (pedidos entregados y cobrados, por fecha de entrega, en hora argentina; `hasta` inclusive). Sin fechas, hoy; con una sola, ese día.
+     */
+    get: operations['PdfController_ventas'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/health': {
     parameters: {
       query?: never;
@@ -5753,6 +5979,86 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/exports/{recurso}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Descargar todas las filas de un listado en CSV o Excel
+     * @description Acepta los mismos filtros que el listado de cada recurso y devuelve todas las filas que los cumplen, no sólo una página. Recursos: pedidos, clientes, choferes, vehiculos, garrafas, envases, stock-resumen, stock-movimientos, cajas, movimientos-caja, cuentas-corrientes, rendiciones, liquidaciones, combustible, multas, siniestros, neumaticos, costos-flota, reclamos, incidencias, ordenes-compra, recepciones, proveedores, legajos, auditoria y auditoria-datos. El CSV usa `;` y coma decimal, con BOM UTF-8. Un super admin necesita `X-Distributor`. `limit`, `offset` y `page` se ignoran.
+     */
+    get: operations['ExportsController_exportar'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/imports/{recurso}/template': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Descargar la plantilla de un recurso
+     * @description Encabezados en castellano y una fila de ejemplo (borrala antes de subir el archivo: se importa como cualquier otra). Recursos: `garrafas` (catálogo), `precios` (actualización por tipo), `stock` (stock inicial o ajuste por depósito) y `proveedores`.
+     */
+    get: operations['ImportController_template'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/imports/{recurso}/preview': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Subir el archivo y ver la vista previa
+     * @description Multipart, campo `file`: .xlsx o .csv de hasta 5 MB y 5000 filas. CSV con `;` o `,`, UTF-8 con o sin BOM, coma decimal. Valida TODAS las filas con las mismas reglas que el alta unitaria y devuelve los errores por fila y columna. No escribe nada del negocio: guarda la vista previa 24 h. Si no hay errores se confirma con `POST /imports/{importId}/confirm`.
+     */
+    post: operations['ImportController_preview'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/imports/{importId}/confirm': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Confirmar la importación
+     * @description Aplica la vista previa en UNA transacción: si una fila falla, no se guarda nada. Idempotente: confirmar dos veces la misma importación no duplica (la segunda devuelve el mismo resumen con `yaConfirmada: true`).
+     */
+    post: operations['ImportController_confirm'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -6294,6 +6600,31 @@ export interface components {
       /** @enum {string} */
       status?: 'active' | 'suspended';
       plan?: string;
+    };
+    BankDetailsResponseDto: {
+      /** @example 0170099220000067797370 */
+      cbu: string | null;
+      /** @example garrafas.splg */
+      alias: string | null;
+      /** @example Distribuidora Demo S.A. */
+      holder: string | null;
+    };
+    BankDetailsDto: {
+      /**
+       * @description CBU: 22 dígitos con los dígitos verificadores válidos
+       * @example 0170099220000067797370
+       */
+      cbu?: Record<string, never> | null;
+      /**
+       * @description Alias: 6 a 20 caracteres entre letras, números, punto y guion
+       * @example garrafas.splg
+       */
+      alias?: Record<string, never> | null;
+      /**
+       * @description Titular de la cuenta
+       * @example Distribuidora Demo S.A.
+       */
+      holder?: Record<string, never> | null;
     };
     ExpressConfigResponseDto: {
       /** @example false */
@@ -6845,7 +7176,8 @@ export interface components {
       | 'stock_adjustment'
       | 'driver_settlement'
       | 'cash_movement'
-      | 'customer_account_entry';
+      | 'customer_account_entry'
+      | 'order';
     AttachmentResponseDto: {
       /** Format: uuid */
       attachmentId: string;
@@ -7623,7 +7955,7 @@ export interface components {
        * @enum {string}
        */
       toStatus: 'reserved' | 'pending' | 'accepted' | 'out_for_delivery' | 'delivered' | 'cancelled';
-      /** @description `true` si es una anotación y no un cambio de estado (origen = destino): los cobros manuales del admin (`register-cash`, `register-unpaid`, `confirm-transfer`). Mostrarla como nota. */
+      /** @description `true` si es una anotación y no un cambio de estado (origen = destino): los cobros manuales del admin (`register-cash`, `register-unpaid`, `confirm-transfer`) y la reasignación de un pedido aceptado a otro chofer (`accepted → accepted`, motivo «Reasignación de chofer»). Mostrarla como nota. */
       isNote: boolean;
       /** @description Motivo: cancelación, entrega manual o texto del cobro manual. */
       reason: string | null;
@@ -7973,6 +8305,32 @@ export interface components {
       date: string;
       /** @example 576300 */
       sales: number;
+    };
+    OrderReceiptFileDto: {
+      /** Format: uuid */
+      attachmentId: string;
+      ownerType: components['schemas']['AttachmentOwnerType'];
+      /** Format: uuid */
+      ownerId: string;
+      /** @example Comprobante de transferencia */
+      label: string | null;
+      /** @example comprobante.jpg */
+      originalName: string;
+      /** @example image/jpeg */
+      mimeType: string;
+      /** @example 245678 */
+      sizeBytes: number;
+      /** Format: date-time */
+      uploadedAt: string;
+      /**
+       * Format: uuid
+       * @description Quién lo subió. Sólo lo ven admin y super admin.
+       */
+      uploadedByUserId?: string;
+      /** @description URL firmada de S3, se abre sin token. Los PDF y las imágenes se muestran en el navegador; cualquier otro tipo se descarga. */
+      url: string;
+      /** Format: date-time */
+      expiresAt: string;
     };
     CartItemResponseDto: {
       /** Format: uuid */
@@ -12971,6 +13329,82 @@ export interface components {
       receivables: components['schemas']['DashboardReceivablesDto'];
       commissions: components['schemas']['DashboardCommissionsDto'];
     };
+    ImportErrorDto: {
+      /**
+       * @description Fila del archivo (el encabezado es la 1)
+       * @example 4
+       */
+      fila: number;
+      /** @example Precio */
+      columna: string;
+      /** @example tiene que ser mayor que 0 */
+      mensaje: string;
+    };
+    ImportPreviewRowDto: {
+      /** @example 2 */
+      fila: number;
+      /**
+       * @description La fila ya normalizada, como se va a aplicar
+       * @example {
+       *       "type": "10 kg",
+       *       "weight": 10,
+       *       "price": 12500.5,
+       *       "stock": 0
+       *     }
+       */
+      datos: {
+        [key: string]: unknown;
+      };
+    };
+    ImportPreviewResponseDto: {
+      /** Format: uuid */
+      importId: string;
+      /** @enum {string} */
+      recurso: 'garrafas' | 'precios' | 'stock' | 'proveedores';
+      /**
+       * @description `pending` se puede confirmar; `with_errors` no: se corrige el archivo y se vuelve a subir
+       * @enum {string}
+       */
+      estado: 'pending' | 'with_errors' | 'confirmed';
+      /**
+       * @description Filas con datos del archivo
+       * @example 120
+       */
+      total: number;
+      /** @example 118 */
+      validas: number;
+      errores: components['schemas']['ImportErrorDto'][];
+      /** @description Las primeras 20 filas válidas, normalizadas */
+      vistaPrevia: components['schemas']['ImportPreviewRowDto'][];
+      /**
+       * Format: date-time
+       * @description Hasta cuándo se puede confirmar (24 h)
+       */
+      venceEn: string;
+    };
+    ImportConfirmResponseDto: {
+      /** Format: uuid */
+      importId: string;
+      /** @enum {string} */
+      recurso: 'garrafas' | 'precios' | 'stock' | 'proveedores';
+      /** @enum {string} */
+      estado: 'pending' | 'with_errors' | 'confirmed';
+      /** @example 120 */
+      total: number;
+      /**
+       * @description Cuánto se aplicó, por concepto (depende del recurso)
+       * @example {
+       *       "creadas": 120
+       *     }
+       */
+      resumen: {
+        [key: string]: number;
+      };
+      /** Format: date-time */
+      confirmadaEn: string;
+      /** @description true si esta importación ya estaba confirmada: no se aplicó de nuevo */
+      yaConfirmada: boolean;
+    };
   };
   responses: never;
   parameters: never;
@@ -14450,6 +14884,47 @@ export interface operations {
       };
     };
   };
+  CustomersController_findRemoved: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+        page?: number;
+        /** @description Texto a buscar */
+        term?: string;
+        /** @description Filtra por estado de la cuenta. Sin este parámetro devuelve todos. Los clientes dados de baja nunca se listan. Combinado con `limit=1`, el total en `X-Total-Count` sirve para el contador de cada pestaña. */
+        status?: 'active' | 'blocked';
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CustomerResponseDto'][];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   CustomersController_findOne: {
     parameters: {
       query?: never;
@@ -14680,6 +15155,99 @@ export interface operations {
       };
       /** @description Customer not found */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CustomersController_restoreInDistributor: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Customer UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MessageResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No hay un cliente dado de baja con esa distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CustomersController_removeFromDistributor: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Customer UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MessageResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El cliente no es de esa distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Tiene pedidos en curso */
+      409: {
         headers: {
           [name: string]: unknown;
         };
@@ -15685,6 +16253,90 @@ export interface operations {
       };
       /** @description La distribuidora no existe */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DistributorBankController_obtener: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BankDetailsResponseDto'];
+        };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DistributorBankController_guardar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['BankDetailsDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BankDetailsResponseDto'];
+        };
+      };
+      /** @description CBU, alias o titular inválidos, o Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
         headers: {
           [name: string]: unknown;
         };
@@ -17428,7 +18080,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Tipo de archivo no permitido (sólo PDF, JPG, PNG, WEBP) */
+      /** @description Tipo no permitido, contenido que no coincide con el tipo declarado, o (chofer) algo que no es PDF ni imagen */
       415: {
         headers: {
           [name: string]: unknown;
@@ -20001,6 +20653,191 @@ export interface operations {
       };
       /** @description Requiere rol: admin, super_admin */
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  OrderTransferReceiptController_listar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Order UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['OrderReceiptFileDto'][];
+        };
+      };
+      /** @description El super admin no mandó `X-Distributor` */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer, admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Pedido no encontrado */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  OrderTransferReceiptController_subir: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Order UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'multipart/form-data': {
+          /** Format: binary */
+          file: string;
+        };
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AttachmentResponseDto'];
+        };
+      };
+      /** @description Falta el archivo o el pedido no se paga por transferencia */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El pedido no existe o no es del cliente */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El pedido está cancelado, el pago ya se resolvió (`paid`, `unpaid`, `written_off`) o ya tiene 5 comprobantes */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El archivo supera el máximo permitido (10 MB) */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No es una imagen (JPG, PNG, WEBP) ni un PDF, o el contenido no coincide con el tipo declarado */
+      415: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro archivo u otros datos. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  OrderTransferReceiptController_datosBancarios: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Order UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BankDetailsResponseDto'];
+        };
+      };
+      /** @description El pedido no se paga por transferencia */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El pedido no existe o no es del cliente */
+      404: {
         headers: {
           [name: string]: unknown;
         };
@@ -28853,6 +29690,301 @@ export interface operations {
       };
     };
   };
+  PdfController_remito: {
+    parameters: {
+      query?: {
+        /** @description `attachment` (por defecto) baja el PDF; `inline` lo muestra en el navegador. */
+        disposicion?: components['schemas']['DownloadDisposition'];
+      };
+      header?: never;
+      path: {
+        /** @description Order UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description El PDF (A4) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/pdf': string;
+        };
+      };
+      /** @description El super admin no mandó `X-Distributor` */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer, admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Pedido no encontrado */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PdfController_recibo: {
+    parameters: {
+      query?: {
+        /** @description `attachment` (por defecto) baja el PDF; `inline` lo muestra en el navegador. */
+        disposicion?: components['schemas']['DownloadDisposition'];
+      };
+      header?: never;
+      path: {
+        /** @description Order UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description El PDF (A4) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/pdf': string;
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer, admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Pedido no encontrado */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El pedido todavía no está pagado, o está cancelado */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PdfController_rendicion: {
+    parameters: {
+      query?: {
+        /** @description `attachment` (por defecto) baja el PDF; `inline` lo muestra en el navegador. */
+        disposicion?: components['schemas']['DownloadDisposition'];
+      };
+      header?: never;
+      path: {
+        /** @description Rendición UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description El PDF (A4) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/pdf': string;
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin, delivery */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe, es de otra distribuidora o (chofer) de otro chofer */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PdfController_liquidacion: {
+    parameters: {
+      query?: {
+        /** @description `attachment` (por defecto) baja el PDF; `inline` lo muestra en el navegador. */
+        disposicion?: components['schemas']['DownloadDisposition'];
+      };
+      header?: never;
+      path: {
+        /** @description Liquidación UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description El PDF (A4) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/pdf': string;
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PdfController_cierreDeCaja: {
+    parameters: {
+      query?: {
+        /** @description `attachment` (por defecto) baja el PDF; `inline` lo muestra en el navegador. */
+        disposicion?: components['schemas']['DownloadDisposition'];
+      };
+      header?: never;
+      path: {
+        /** @description Sesión de caja UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description El PDF (A4) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/pdf': string;
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PdfController_ventas: {
+    parameters: {
+      query?: {
+        /** @description `attachment` (por defecto) baja el PDF; `inline` lo muestra en el navegador. */
+        disposicion?: components['schemas']['DownloadDisposition'];
+        desde?: string | null;
+        hasta?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description El PDF (A4) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/pdf': string;
+        };
+      };
+      /** @description Fecha inválida, `desde` posterior a `hasta` o falta `X-Distributor` */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   HealthController_check: {
     parameters: {
       query?: never;
@@ -33184,6 +34316,229 @@ export interface operations {
       };
       /** @description Requiere rol: admin, super_admin */
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ExportsController_exportar: {
+    parameters: {
+      query?: {
+        /** @description Por defecto `csv` */
+        format?: 'csv' | 'xlsx';
+      };
+      header?: never;
+      path: {
+        recurso: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description El archivo, con `Content-Disposition: attachment; filename="<recurso>-<AAAA-MM-DD>.<ext>"`. El total de filas va en `X-Total-Count`. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Formato o filtros inválidos, falta la distribuidora, o hay más filas que el tope (`EXPORT_MAX_ROWS`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El recurso no existe */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ImportController_template: {
+    parameters: {
+      query?: {
+        /** @description Formato de la plantilla */
+        format?: 'xlsx' | 'csv';
+      };
+      header?: never;
+      path: {
+        recurso: 'garrafas' | 'precios' | 'stock' | 'proveedores';
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description El archivo de la plantilla (.xlsx por defecto, o .csv) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': string;
+        };
+      };
+      /** @description Recurso o formato no válido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ImportController_preview: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        recurso: 'garrafas' | 'precios' | 'stock' | 'proveedores';
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'multipart/form-data': {
+          /** Format: binary */
+          file: string;
+        };
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ImportPreviewResponseDto'];
+        };
+      };
+      /** @description Falta el archivo, está vacío, supera las filas permitidas o el encabezado no coincide con la plantilla */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El archivo supera los 5 MB */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No es un .xlsx ni un .csv (o el contenido no coincide) */
+      415: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ImportController_confirm: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        importId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ImportConfirmResponseDto'];
+        };
+      };
+      /** @description La vista previa tiene errores, o una fila no se pudo aplicar (el mensaje dice cuál) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La vista previa venció (24 h) */
+      410: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
         headers: {
           [name: string]: unknown;
         };

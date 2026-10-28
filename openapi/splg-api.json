@@ -1682,6 +1682,96 @@
                 ]
             }
         },
+        "/api/v2/customers/removed": {
+            "get": {
+                "operationId": "CustomersController_findRemoved",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "maximum": 100,
+                            "default": 10,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 0,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 1,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "term",
+                        "required": false,
+                        "in": "query",
+                        "description": "Texto a buscar",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "required": false,
+                        "in": "query",
+                        "description": "Filtra por estado de la cuenta. Sin este parámetro devuelve todos. Los clientes dados de baja nunca se listan. Combinado con `limit=1`, el total en `X-Total-Count` sirve para el contador de cada pestaña.",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "active",
+                                "blocked"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/CustomerResponseDto"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Clientes que la distribuidora dio de baja (búsqueda por nombre o teléfono)",
+                "tags": [
+                    "Customers"
+                ]
+            }
+        },
         "/api/v1/customers/{id}": {
             "get": {
                 "operationId": "CustomersController_findOne",
@@ -1932,6 +2022,105 @@
                     }
                 ],
                 "summary": "Update customer location",
+                "tags": [
+                    "Customers"
+                ]
+            }
+        },
+        "/api/v2/customers/{id}/distributor": {
+            "delete": {
+                "operationId": "CustomersController_removeFromDistributor",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Customer UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MessageResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "El cliente no es de esa distribuidora"
+                    },
+                    "409": {
+                        "description": "Tiene pedidos en curso"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Dar de baja al cliente en la distribuidora (no toca su cuenta ni sus pedidos)",
+                "tags": [
+                    "Customers"
+                ]
+            },
+            "post": {
+                "operationId": "CustomersController_restoreInDistributor",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Customer UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MessageResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No hay un cliente dado de baja con esa distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Reactivar al cliente dado de baja en la distribuidora",
                 "tags": [
                     "Customers"
                 ]
@@ -3132,6 +3321,88 @@
                     }
                 ],
                 "summary": "Ver el logo de la distribuidora",
+                "tags": [
+                    "Distributors"
+                ]
+            }
+        },
+        "/api/v2/distributor/bank-details": {
+            "get": {
+                "description": "CBU, alias y titular que ve el cliente cuando paga por transferencia. Cada dato es `null` si no se cargó.",
+                "operationId": "DistributorBankController_obtener",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BankDetailsResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\")"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Datos bancarios de la distribuidora",
+                "tags": [
+                    "Distributors"
+                ]
+            },
+            "put": {
+                "description": "Reemplaza los tres datos: el que no se manda (o va `null` o vacío) queda sin cargar. El CBU se valida con sus dos dígitos verificadores; el alias lleva de 6 a 20 caracteres entre letras, números, punto y guion.",
+                "operationId": "DistributorBankController_guardar",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/BankDetailsDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BankDetailsResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "CBU, alias o titular inválidos, o Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\")"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Cargar o cambiar los datos bancarios",
                 "tags": [
                     "Distributors"
                 ]
@@ -4899,6 +5170,7 @@
         },
         "/api/v1/attachments/{ownerType}/{ownerId}": {
             "post": {
+                "description": "Admin y super admin: PDF, JPG, PNG, WEBP, Word (.docx), Excel (.xlsx) y CSV (UTF-8 o Windows-1252; también se acepta `application/vnd.ms-excel` si el archivo se llama `.csv`), hasta 10 MB. Se valida el contenido por su estructura, no sólo el tipo declarado: un docx/xlsx con macros, ejecutables u objetos incrustados se rechaza. Chofer: sólo PDF y imágenes. Word, Excel y CSV se entregan siempre como descarga. Dueños (`ownerType`): employee, fuel_load, traffic_fine, vehicle_accident, purchase_receipt, stock_adjustment, driver_settlement, cash_movement, customer_account_entry y order.",
                 "operationId": "AttachmentController_upload",
                 "parameters": [
                     {
@@ -4969,7 +5241,7 @@
                         "description": "El archivo supera el máximo permitido"
                     },
                     "415": {
-                        "description": "Tipo de archivo no permitido (sólo PDF, JPG, PNG, WEBP)"
+                        "description": "Tipo no permitido, contenido que no coincide con el tipo declarado, o (chofer) algo que no es PDF ni imagen"
                     },
                     "422": {
                         "description": "La `Idempotency-Key` ya se usó con otro archivo u otros datos."
@@ -4980,7 +5252,7 @@
                         "bearer": []
                     }
                 ],
-                "summary": "Subir un adjunto a un dueño (PDF, JPG, PNG, WEBP)",
+                "summary": "Subir un adjunto a un dueño (PDF, JPG, PNG, WEBP, Word .docx, Excel .xlsx, CSV)",
                 "tags": [
                     "Attachments"
                 ]
@@ -8077,6 +8349,188 @@
                     }
                 ],
                 "summary": "Get sales chart data (Last 7 days, scopeado por distribuidora)",
+                "tags": [
+                    "Orders"
+                ]
+            }
+        },
+        "/api/v2/orders/{id}/transfer-receipt": {
+            "post": {
+                "description": "Multipart con el campo `file` (imagen JPG, PNG, WEBP o PDF, hasta 10 MB). Sólo en un pedido propio que se paga por transferencia, no cancelado y con el pago `pending` o `failed` (marcado como no recibido: el comprobante sirve para corregirlo). Deja una nota en el historial del pedido y avisa al panel por socket (`order:transfer-receipt-uploaded` con `{ orderId, customerId, attachmentId, uploadedAt }`). Hasta 5 comprobantes por pedido. Idempotente vía `Idempotency-Key`.",
+                "operationId": "OrderTransferReceiptController_subir",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Order UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "required": [
+                                    "file"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AttachmentResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta el archivo o el pedido no se paga por transferencia"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: customer"
+                    },
+                    "404": {
+                        "description": "El pedido no existe o no es del cliente"
+                    },
+                    "409": {
+                        "description": "El pedido está cancelado, el pago ya se resolvió (`paid`, `unpaid`, `written_off`) o ya tiene 5 comprobantes"
+                    },
+                    "413": {
+                        "description": "El archivo supera el máximo permitido (10 MB)"
+                    },
+                    "415": {
+                        "description": "No es una imagen (JPG, PNG, WEBP) ni un PDF, o el contenido no coincide con el tipo declarado"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro archivo u otros datos."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "El cliente sube el comprobante de su transferencia",
+                "tags": [
+                    "Orders"
+                ]
+            },
+            "get": {
+                "description": "Del más nuevo al más viejo. Admin y super admin (con `X-Distributor`) ven todos los adjuntos del pedido de su distribuidora, con `uploadedByUserId`. El cliente ve sólo los comprobantes de transferencia de sus pedidos (los que subió él o los que el admin adjuntó con `label` \"Comprobante de transferencia\" por `POST /attachments/order/:id`), sin `uploadedByUserId`. Cada `url` vence en `expiresAt`.",
+                "operationId": "OrderTransferReceiptController_listar",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Order UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/OrderReceiptFileDto"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "El super admin no mandó `X-Distributor`"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: customer, admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Pedido no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Los comprobantes del pedido con su URL firmada",
+                "tags": [
+                    "Orders"
+                ]
+            }
+        },
+        "/api/v2/orders/{id}/bank-details": {
+            "get": {
+                "description": "CBU, alias y titular de la distribuidora de ese pedido (nunca los de otra). Cada dato es `null` si la distribuidora no lo cargó.",
+                "operationId": "OrderTransferReceiptController_datosBancarios",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Order UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BankDetailsResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "El pedido no se paga por transferencia"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: customer"
+                    },
+                    "404": {
+                        "description": "El pedido no existe o no es del cliente"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Datos bancarios para pagar el pedido por transferencia",
                 "tags": [
                     "Orders"
                 ]
@@ -18813,6 +19267,367 @@
                 ]
             }
         },
+        "/api/v2/orders/{id}/remito.pdf": {
+            "get": {
+                "description": "Ítems, cantidades, precios, recargos, total, cliente, dirección, chofer, vehículo y estado del pago. El código de entrega sólo sale para admin y super admin. El cliente baja sólo los suyos; el personal, los de su distribuidora (el super admin con `X-Distributor`). Lo ajeno responde 404.",
+                "operationId": "PdfController_remito",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Order UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "disposicion",
+                        "required": false,
+                        "in": "query",
+                        "description": "`attachment` (por defecto) baja el PDF; `inline` lo muestra en el navegador.",
+                        "schema": {
+                            "$ref": "#/components/schemas/DownloadDisposition"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "El PDF (A4)",
+                        "content": {
+                            "application/pdf": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "El super admin no mandó `X-Distributor`"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: customer, admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Pedido no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Remito del pedido en PDF",
+                "tags": [
+                    "Documentos PDF"
+                ]
+            }
+        },
+        "/api/v2/orders/{id}/recibo.pdf": {
+            "get": {
+                "description": "Sólo si el pedido está pagado (`paymentStatus: paid`) y no está cancelado (un cancelado pagado se reintegra). Mismas reglas de acceso que el remito.",
+                "operationId": "PdfController_recibo",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Order UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "disposicion",
+                        "required": false,
+                        "in": "query",
+                        "description": "`attachment` (por defecto) baja el PDF; `inline` lo muestra en el navegador.",
+                        "schema": {
+                            "$ref": "#/components/schemas/DownloadDisposition"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "El PDF (A4)",
+                        "content": {
+                            "application/pdf": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: customer, admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Pedido no encontrado"
+                    },
+                    "409": {
+                        "description": "El pedido todavía no está pagado, o está cancelado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Recibo de pago del pedido en PDF",
+                "tags": [
+                    "Documentos PDF"
+                ]
+            }
+        },
+        "/api/v2/driver-settlements/{id}/pdf": {
+            "get": {
+                "description": "Pedidos en efectivo, cobros, gastos, esperado, declarado y diferencia. El chofer sólo baja las suyas.",
+                "operationId": "PdfController_rendicion",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Rendición UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "disposicion",
+                        "required": false,
+                        "in": "query",
+                        "description": "`attachment` (por defecto) baja el PDF; `inline` lo muestra en el navegador.",
+                        "schema": {
+                            "$ref": "#/components/schemas/DownloadDisposition"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "El PDF (A4)",
+                        "content": {
+                            "application/pdf": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin, delivery"
+                    },
+                    "404": {
+                        "description": "No existe, es de otra distribuidora o (chofer) de otro chofer"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Rendición del chofer en PDF",
+                "tags": [
+                    "Documentos PDF"
+                ]
+            }
+        },
+        "/api/v2/driver-liquidations/{id}/pdf": {
+            "get": {
+                "description": "Asientos del período, bruto, deducciones y neto.",
+                "operationId": "PdfController_liquidacion",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Liquidación UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "disposicion",
+                        "required": false,
+                        "in": "query",
+                        "description": "`attachment` (por defecto) baja el PDF; `inline` lo muestra en el navegador.",
+                        "schema": {
+                            "$ref": "#/components/schemas/DownloadDisposition"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "El PDF (A4)",
+                        "content": {
+                            "application/pdf": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Liquidación de comisiones en PDF",
+                "tags": [
+                    "Documentos PDF"
+                ]
+            }
+        },
+        "/api/v2/cash-sessions/{id}/pdf": {
+            "get": {
+                "description": "Apertura, movimientos de la sesión, esperado, contado y diferencia. Si la sesión sigue abierta sale como arqueo, con el saldo actual.",
+                "operationId": "PdfController_cierreDeCaja",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Sesión de caja UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "disposicion",
+                        "required": false,
+                        "in": "query",
+                        "description": "`attachment` (por defecto) baja el PDF; `inline` lo muestra en el navegador.",
+                        "schema": {
+                            "$ref": "#/components/schemas/DownloadDisposition"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "El PDF (A4)",
+                        "content": {
+                            "application/pdf": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Cierre de caja (sesión) en PDF",
+                "tags": [
+                    "Documentos PDF"
+                ]
+            }
+        },
+        "/api/v2/reports/sales.pdf": {
+            "get": {
+                "description": "Mismas cifras que los reportes del panel (pedidos entregados y cobrados, por fecha de entrega, en hora argentina; `hasta` inclusive). Sin fechas, hoy; con una sola, ese día.",
+                "operationId": "PdfController_ventas",
+                "parameters": [
+                    {
+                        "name": "disposicion",
+                        "required": false,
+                        "in": "query",
+                        "description": "`attachment` (por defecto) baja el PDF; `inline` lo muestra en el navegador.",
+                        "schema": {
+                            "$ref": "#/components/schemas/DownloadDisposition"
+                        }
+                    },
+                    {
+                        "name": "desde",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "date",
+                            "nullable": true,
+                            "example": "2026-10-01",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "hasta",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "date",
+                            "nullable": true,
+                            "example": "2026-10-31",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "El PDF (A4)",
+                        "content": {
+                            "application/pdf": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Fecha inválida, `desde` posterior a `hasta` o falta `X-Distributor`"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Reporte de ventas del período en PDF",
+                "tags": [
+                    "Documentos PDF"
+                ]
+            }
+        },
         "/api/v1/health": {
             "get": {
                 "operationId": "HealthController_check",
@@ -24057,6 +24872,262 @@
                     "Finanzas · Tablero"
                 ]
             }
+        },
+        "/api/v2/exports/{recurso}": {
+            "get": {
+                "description": "Acepta los mismos filtros que el listado de cada recurso y devuelve todas las filas que los cumplen, no sólo una página. Recursos: pedidos, clientes, choferes, vehiculos, garrafas, envases, stock-resumen, stock-movimientos, cajas, movimientos-caja, cuentas-corrientes, rendiciones, liquidaciones, combustible, multas, siniestros, neumaticos, costos-flota, reclamos, incidencias, ordenes-compra, recepciones, proveedores, legajos, auditoria y auditoria-datos. El CSV usa `;` y coma decimal, con BOM UTF-8. Un super admin necesita `X-Distributor`. `limit`, `offset` y `page` se ignoran.",
+                "operationId": "ExportsController_exportar",
+                "parameters": [
+                    {
+                        "name": "recurso",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "example": "pedidos",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "format",
+                        "required": false,
+                        "in": "query",
+                        "description": "Por defecto `csv`",
+                        "schema": {
+                            "enum": [
+                                "csv",
+                                "xlsx"
+                            ],
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "El archivo, con `Content-Disposition: attachment; filename=\"<recurso>-<AAAA-MM-DD>.<ext>\"`. El total de filas va en `X-Total-Count`."
+                    },
+                    "400": {
+                        "description": "Formato o filtros inválidos, falta la distribuidora, o hay más filas que el tope (`EXPORT_MAX_ROWS`)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "El recurso no existe"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Descargar todas las filas de un listado en CSV o Excel",
+                "tags": [
+                    "Exportes"
+                ]
+            }
+        },
+        "/api/v2/imports/{recurso}/template": {
+            "get": {
+                "description": "Encabezados en castellano y una fila de ejemplo (borrala antes de subir el archivo: se importa como cualquier otra). Recursos: `garrafas` (catálogo), `precios` (actualización por tipo), `stock` (stock inicial o ajuste por depósito) y `proveedores`.",
+                "operationId": "ImportController_template",
+                "parameters": [
+                    {
+                        "name": "recurso",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "enum": [
+                                "garrafas",
+                                "precios",
+                                "stock",
+                                "proveedores"
+                            ],
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "format",
+                        "required": false,
+                        "in": "query",
+                        "description": "Formato de la plantilla",
+                        "schema": {
+                            "default": "xlsx",
+                            "type": "string",
+                            "enum": [
+                                "xlsx",
+                                "csv"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "El archivo de la plantilla (.xlsx por defecto, o .csv)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Recurso o formato no válido"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Descargar la plantilla de un recurso",
+                "tags": [
+                    "Importación masiva"
+                ]
+            }
+        },
+        "/api/v2/imports/{recurso}/preview": {
+            "post": {
+                "description": "Multipart, campo `file`: .xlsx o .csv de hasta 5 MB y 5000 filas. CSV con `;` o `,`, UTF-8 con o sin BOM, coma decimal. Valida TODAS las filas con las mismas reglas que el alta unitaria y devuelve los errores por fila y columna. No escribe nada del negocio: guarda la vista previa 24 h. Si no hay errores se confirma con `POST /imports/{importId}/confirm`.",
+                "operationId": "ImportController_preview",
+                "parameters": [
+                    {
+                        "name": "recurso",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "enum": [
+                                "garrafas",
+                                "precios",
+                                "stock",
+                                "proveedores"
+                            ],
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "required": [
+                                    "file"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ImportPreviewResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta el archivo, está vacío, supera las filas permitidas o el encabezado no coincide con la plantilla"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "413": {
+                        "description": "El archivo supera los 5 MB"
+                    },
+                    "415": {
+                        "description": "No es un .xlsx ni un .csv (o el contenido no coincide)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Subir el archivo y ver la vista previa",
+                "tags": [
+                    "Importación masiva"
+                ]
+            }
+        },
+        "/api/v2/imports/{importId}/confirm": {
+            "post": {
+                "description": "Aplica la vista previa en UNA transacción: si una fila falla, no se guarda nada. Idempotente: confirmar dos veces la misma importación no duplica (la segunda devuelve el mismo resumen con `yaConfirmada: true`).",
+                "operationId": "ImportController_confirm",
+                "parameters": [
+                    {
+                        "name": "importId",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ImportConfirmResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "La vista previa tiene errores, o una fila no se pudo aplicar (el mensaje dice cuál)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    },
+                    "410": {
+                        "description": "La vista previa venció (24 h)"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Confirmar la importación",
+                "tags": [
+                    "Importación masiva"
+                ]
+            }
         }
     },
     "info": {
@@ -25459,6 +26530,56 @@
                     }
                 }
             },
+            "BankDetailsResponseDto": {
+                "type": "object",
+                "properties": {
+                    "cbu": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "0170099220000067797370"
+                    },
+                    "alias": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "garrafas.splg"
+                    },
+                    "holder": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "Distribuidora Demo S.A."
+                    }
+                },
+                "required": [
+                    "cbu",
+                    "alias",
+                    "holder"
+                ]
+            },
+            "BankDetailsDto": {
+                "type": "object",
+                "properties": {
+                    "cbu": {
+                        "type": "object",
+                        "description": "CBU: 22 dígitos con los dígitos verificadores válidos",
+                        "example": "0170099220000067797370",
+                        "nullable": true
+                    },
+                    "alias": {
+                        "type": "object",
+                        "description": "Alias: 6 a 20 caracteres entre letras, números, punto y guion",
+                        "example": "garrafas.splg",
+                        "nullable": true
+                    },
+                    "holder": {
+                        "type": "object",
+                        "description": "Titular de la cuenta",
+                        "example": "Distribuidora Demo S.A.",
+                        "nullable": true,
+                        "minLength": 2,
+                        "maxLength": 120
+                    }
+                }
+            },
             "ExpressConfigResponseDto": {
                 "type": "object",
                 "properties": {
@@ -26572,7 +27693,8 @@
                     "stock_adjustment",
                     "driver_settlement",
                     "cash_movement",
-                    "customer_account_entry"
+                    "customer_account_entry",
+                    "order"
                 ]
             },
             "AttachmentResponseDto": {
@@ -28498,7 +29620,7 @@
                     },
                     "isNote": {
                         "type": "boolean",
-                        "description": "`true` si es una anotación y no un cambio de estado (origen = destino): los cobros manuales del admin (`register-cash`, `register-unpaid`, `confirm-transfer`). Mostrarla como nota."
+                        "description": "`true` si es una anotación y no un cambio de estado (origen = destino): los cobros manuales del admin (`register-cash`, `register-unpaid`, `confirm-transfer`) y la reasignación de un pedido aceptado a otro chofer (`accepted → accepted`, motivo «Reasignación de chofer»). Mostrarla como nota."
                     },
                     "reason": {
                         "type": "string",
@@ -29245,6 +30367,72 @@
                     "name",
                     "date",
                     "sales"
+                ]
+            },
+            "OrderReceiptFileDto": {
+                "type": "object",
+                "properties": {
+                    "attachmentId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "ownerType": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/AttachmentOwnerType"
+                            }
+                        ]
+                    },
+                    "ownerId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "label": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "Comprobante de transferencia"
+                    },
+                    "originalName": {
+                        "type": "string",
+                        "example": "comprobante.jpg"
+                    },
+                    "mimeType": {
+                        "type": "string",
+                        "example": "image/jpeg"
+                    },
+                    "sizeBytes": {
+                        "type": "number",
+                        "example": 245678
+                    },
+                    "uploadedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "uploadedByUserId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Quién lo subió. Sólo lo ven admin y super admin."
+                    },
+                    "url": {
+                        "type": "string",
+                        "description": "URL firmada de S3, se abre sin token. Los PDF y las imágenes se muestran en el navegador; cualquier otro tipo se descarga."
+                    },
+                    "expiresAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "attachmentId",
+                    "ownerType",
+                    "ownerId",
+                    "label",
+                    "originalName",
+                    "mimeType",
+                    "sizeBytes",
+                    "uploadedAt",
+                    "url",
+                    "expiresAt"
                 ]
             },
             "CartItemResponseDto": {
@@ -41442,6 +42630,174 @@
                     "settlements",
                     "receivables",
                     "commissions"
+                ]
+            },
+            "ImportErrorDto": {
+                "type": "object",
+                "properties": {
+                    "fila": {
+                        "type": "number",
+                        "example": 4,
+                        "description": "Fila del archivo (el encabezado es la 1)"
+                    },
+                    "columna": {
+                        "type": "string",
+                        "example": "Precio"
+                    },
+                    "mensaje": {
+                        "type": "string",
+                        "example": "tiene que ser mayor que 0"
+                    }
+                },
+                "required": [
+                    "fila",
+                    "columna",
+                    "mensaje"
+                ]
+            },
+            "ImportPreviewRowDto": {
+                "type": "object",
+                "properties": {
+                    "fila": {
+                        "type": "number",
+                        "example": 2
+                    },
+                    "datos": {
+                        "type": "object",
+                        "additionalProperties": true,
+                        "example": {
+                            "type": "10 kg",
+                            "weight": 10,
+                            "price": 12500.5,
+                            "stock": 0
+                        },
+                        "description": "La fila ya normalizada, como se va a aplicar"
+                    }
+                },
+                "required": [
+                    "fila",
+                    "datos"
+                ]
+            },
+            "ImportPreviewResponseDto": {
+                "type": "object",
+                "properties": {
+                    "importId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "recurso": {
+                        "type": "string",
+                        "enum": [
+                            "garrafas",
+                            "precios",
+                            "stock",
+                            "proveedores"
+                        ]
+                    },
+                    "estado": {
+                        "type": "string",
+                        "enum": [
+                            "pending",
+                            "with_errors",
+                            "confirmed"
+                        ],
+                        "description": "`pending` se puede confirmar; `with_errors` no: se corrige el archivo y se vuelve a subir"
+                    },
+                    "total": {
+                        "type": "number",
+                        "example": 120,
+                        "description": "Filas con datos del archivo"
+                    },
+                    "validas": {
+                        "type": "number",
+                        "example": 118
+                    },
+                    "errores": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ImportErrorDto"
+                        }
+                    },
+                    "vistaPrevia": {
+                        "description": "Las primeras 20 filas válidas, normalizadas",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ImportPreviewRowDto"
+                        }
+                    },
+                    "venceEn": {
+                        "format": "date-time",
+                        "type": "string",
+                        "description": "Hasta cuándo se puede confirmar (24 h)"
+                    }
+                },
+                "required": [
+                    "importId",
+                    "recurso",
+                    "estado",
+                    "total",
+                    "validas",
+                    "errores",
+                    "vistaPrevia",
+                    "venceEn"
+                ]
+            },
+            "ImportConfirmResponseDto": {
+                "type": "object",
+                "properties": {
+                    "importId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "recurso": {
+                        "type": "string",
+                        "enum": [
+                            "garrafas",
+                            "precios",
+                            "stock",
+                            "proveedores"
+                        ]
+                    },
+                    "estado": {
+                        "type": "string",
+                        "enum": [
+                            "pending",
+                            "with_errors",
+                            "confirmed"
+                        ]
+                    },
+                    "total": {
+                        "type": "number",
+                        "example": 120
+                    },
+                    "resumen": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "number"
+                        },
+                        "example": {
+                            "creadas": 120
+                        },
+                        "description": "Cuánto se aplicó, por concepto (depende del recurso)"
+                    },
+                    "confirmadaEn": {
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "yaConfirmada": {
+                        "type": "boolean",
+                        "description": "true si esta importación ya estaba confirmada: no se aplicó de nuevo"
+                    }
+                },
+                "required": [
+                    "importId",
+                    "recurso",
+                    "estado",
+                    "total",
+                    "resumen",
+                    "confirmadaEn",
+                    "yaConfirmada"
                 ]
             }
         }

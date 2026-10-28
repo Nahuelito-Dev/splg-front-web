@@ -18,6 +18,7 @@ import {
   PageContainer,
 } from '../../common/components/ui';
 import { FROM_LIST_STATE, useDebounce, usePermissions, useClampPage, useUrlPagedParams } from '../../hooks';
+import { useImportActions } from '../../hooks/useImportActions';
 import { supplierQuery } from '../../services/api/purchases';
 import type { Supplier } from '../../services/api/types';
 import { useDeleteSupplier, useSuppliers, useUpdateSupplier } from '../../services/queries/purchases';
@@ -36,6 +37,7 @@ const KIND_FILTER = [
 export const Suppliers = () => {
   const navigate = useNavigate();
   const { canWrite, writeHint } = usePermissions();
+  const importing = useImportActions([{ resource: 'proveedores', label: 'Importar proveedores' }]);
   const [filters, setFilters, pagination, setPagination] = useUrlPagedParams({ q: '', kind: '', inactive: '' }, 10);
   const term = useDebounce(filters.q, 300);
   const [editing, setEditing] = useState<Supplier | null>(null);
@@ -162,6 +164,7 @@ export const Suppliers = () => {
               />
             </>
           }
+          actions={importing.actions}
           serverExport={{ resource: 'proveedores', params: supplierQuery(listFilters) }}
           resultCount={data?.total}
           noun={['proveedor', 'proveedores']}
@@ -232,6 +235,7 @@ export const Suppliers = () => {
         }}
         supplier={editing}
       />
+      {importing.wizard}
     </PageContainer>
   );
 };

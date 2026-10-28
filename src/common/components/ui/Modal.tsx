@@ -47,7 +47,9 @@ export const Modal = ({
       </div>
       <div className="max-h-[70vh] overflow-y-auto px-6 py-5">{children}</div>
       {footer && (
-        <div className="flex justify-end gap-2 border-t border-outline bg-surface-hover px-6 py-4">{footer}</div>
+        <div className="flex flex-wrap justify-end gap-2 border-t border-outline bg-surface-hover px-6 py-4">
+          {footer}
+        </div>
       )}
     </Dialog>
   );

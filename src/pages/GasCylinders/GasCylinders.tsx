@@ -13,6 +13,7 @@ import {
   TableToolbar,
 } from '../../common/components/ui';
 import { useDebounce, usePermissions, useUrlParams } from '../../hooks';
+import { useImportActions } from '../../hooks/useImportActions';
 import { gasCylinderQuery } from '../../services/api/gasCylinders';
 import type { GasCylinder } from '../../services/api/types';
 import {
@@ -127,6 +128,10 @@ export const GasCylinders = () => {
   const deleteCylinder = useDeleteGasCylinder();
   const reactivateCylinder = useReactivateGasCylinder();
   const { canWrite, writeHint } = usePermissions();
+  const importing = useImportActions([
+    { resource: 'garrafas', label: 'Importar garrafas' },
+    { resource: 'precios', label: 'Importar precios' },
+  ]);
 
   const handleDelete = async (cylinder: GasCylinder) => {
     const confirmed = await confirm({
@@ -224,6 +229,7 @@ export const GasCylinders = () => {
               setPagination((p) => ({ ...p, page: 0 }));
             },
           }}
+          actions={importing.actions}
           serverExport={{
             resource: 'garrafas',
             params: gasCylinderQuery(debouncedSearch),
@@ -272,6 +278,7 @@ export const GasCylinders = () => {
         cylinder={form.open ? form.cylinder : null}
       />
       <StockAdjustModal open={Boolean(stockTarget)} onClose={() => setStockTarget(null)} cylinder={stockTarget} />
+      {importing.wizard}
     </PageContainer>
   );
 };
