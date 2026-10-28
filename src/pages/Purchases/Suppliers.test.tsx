@@ -16,6 +16,9 @@ vi.mock('../../hooks', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   usePermissions: () => ({ canWrite: state.canWrite, writeHint: undefined }),
 }));
+vi.mock('../../common/components/ImportWizard/ImportWizard', () => ({
+  ImportWizard: ({ resource }: { resource: string }) => <div role="dialog" aria-label={`Importar ${resource}`} />,
+}));
 vi.mock('../../services/queries/purchases', () => ({
   useSuppliers: (...args: unknown[]) => state.list(...args) as unknown,
   useUpdateSupplier: () => state.update() as unknown,
@@ -85,5 +88,17 @@ describe('Suppliers', () => {
     renderPage(<Suppliers />, { url: '/purchases/suppliers' });
     expect(screen.getByRole('button', { name: /Nuevo proveedor/ })).toBeDisabled();
     expect(screen.queryByRole('button', { name: 'Dar de baja' })).not.toBeInTheDocument();
+  });
+});
+
+describe('Suppliers: importación', () => {
+  afterEach(cleanup);
+
+  it('el menú «Más» ofrece importar proveedores y abre el asistente', async () => {
+    state.list.mockReturnValue(ok(pageOf([supplier()])));
+    renderPage(<Suppliers />, { url: '/purchases/suppliers' });
+    fireEvent.click(screen.getByRole('button', { name: 'Más' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Importar proveedores' }));
+    expect(await screen.findByRole('dialog', { name: 'Importar proveedores' })).toBeInTheDocument();
   });
 });

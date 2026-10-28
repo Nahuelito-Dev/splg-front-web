@@ -44,6 +44,9 @@ vi.mock('../../services/queries/gasCylinders', () => ({
   },
   useReactivateGasCylinder: () => state.reactivate,
 }));
+vi.mock('../../common/components/ImportWizard/ImportWizard', () => ({
+  ImportWizard: ({ resource }: { resource: string }) => <div role="dialog" aria-label={`Importar ${resource}`} />,
+}));
 vi.mock('./components/CylinderFormModal', () => ({ CylinderFormModal: () => null }));
 vi.mock('./components/StockAdjustModal', () => ({ StockAdjustModal: () => null }));
 const confirmed = vi.hoisted(() => ({ value: true }));
@@ -109,5 +112,15 @@ describe('GasCylinders: productos dados de baja (CU-268, CU-269)', () => {
     fireEvent.click(screen.getByRole('menuitem', { name: 'Reactivar' }));
     await new Promise((r) => setTimeout(r, 20));
     expect(reactivate.mutate).not.toHaveBeenCalled();
+  });
+});
+
+describe('GasCylinders: importación', () => {
+  it('el menú «Más» ofrece importar garrafas y precios', async () => {
+    setup();
+    fireEvent.click(screen.getByRole('button', { name: 'Más' }));
+    expect(screen.getByRole('menuitem', { name: 'Importar precios' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Importar garrafas' }));
+    expect(await screen.findByRole('dialog', { name: 'Importar garrafas' })).toBeInTheDocument();
   });
 });

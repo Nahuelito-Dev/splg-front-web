@@ -9,6 +9,9 @@ vi.mock('../../hooks', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   usePermissions: () => ({ canWrite: true }),
 }));
+vi.mock('../../common/components/ImportWizard/ImportWizard', () => ({
+  ImportWizard: ({ resource }: { resource: string }) => <div role="dialog" aria-label={`Importar ${resource}`} />,
+}));
 vi.mock('../../services/queries/stock', () => ({
   useStockSummary: () => state.summary() as unknown,
   useStockBalances: () => state.balances() as unknown,
@@ -105,5 +108,15 @@ describe('StockSummary', () => {
     renderPage(<StockSummary />, { url: '/stock' });
     fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
     expect(refetch).toHaveBeenCalled();
+  });
+});
+
+describe('StockSummary: importación', () => {
+  it('el menú «Más» ofrece importar stock y abre el asistente', async () => {
+    happy();
+    renderPage(<StockSummary />, { url: '/stock' });
+    fireEvent.click(screen.getByRole('button', { name: 'Más' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Importar stock' }));
+    expect(await screen.findByRole('dialog', { name: 'Importar stock' })).toBeInTheDocument();
   });
 });

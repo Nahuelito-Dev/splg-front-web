@@ -17,6 +17,7 @@ import {
   CardHeader,
 } from '../../common/components/ui';
 import { usePermissions } from '../../hooks';
+import { useImportActions } from '../../hooks/useImportActions';
 import type { StockSummary as StockSummaryRow } from '../../services/api/types';
 import { useStockBalances, useStockSummary, useThresholds } from '../../services/queries/stock';
 import { formatNumber } from '../../utils/format';
@@ -78,6 +79,7 @@ const SUMMARY_COLUMNS: GridColDef<StockSummaryRow>[] = [
 export const StockSummary = () => {
   const navigate = useNavigate();
   const { canWrite } = usePermissions();
+  const importing = useImportActions([{ resource: 'stock', label: 'Importar stock' }]);
   const summary = useStockSummary();
   const balances = useStockBalances();
   const thresholds = useThresholds();
@@ -149,7 +151,11 @@ export const StockSummary = () => {
           <CardHeader title="Por tipo de garrafa" className="" />
           <p className="text-xs text-muted">En galpones y camiones: llenas · vacías · defectuosas.</p>
         </div>
-        <TableToolbar serverExport={{ resource: 'stock-resumen' }} noun={['garrafa', 'garrafas']} />
+        <TableToolbar
+          serverExport={{ resource: 'stock-resumen' }}
+          actions={importing.actions}
+          noun={['garrafa', 'garrafas']}
+        />
         {summary.isError ? (
           <ErrorState error={summary.error} resource="El resumen" onRetry={() => void summary.refetch()} />
         ) : (
@@ -229,6 +235,7 @@ export const StockSummary = () => {
           />
         )}
       </Card>
+      {importing.wizard}
     </PageContainer>
   );
 };
