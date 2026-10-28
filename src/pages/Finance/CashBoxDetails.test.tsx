@@ -13,7 +13,11 @@ vi.mock('../../hooks', async (importOriginal) => ({
   usePermissions: permissions,
   useBackToList: () => () => undefined,
 }));
-vi.mock('../../common/components', () => ({ useCrumbLeaf: () => undefined }));
+vi.mock('../../common/components', () => ({
+  useCrumbLeaf: () => undefined,
+  PdfButton: ({ label }: { label?: string }) => <button type="button">{label ?? 'PDF'}</button>,
+}));
+vi.mock('../../services/queries/pdfs', () => ({ useDownloadPdf: () => ({ mutate: vi.fn(), isPending: false }) }));
 
 const finance = vi.hoisted(() => ({ box: undefined as unknown, sessions: undefined as unknown, sessionsId: vi.fn() }));
 vi.mock('../../services/queries/finance', () => ({
@@ -142,5 +146,17 @@ describe('CashBoxDetails (CU-225, 226, 227)', () => {
     expect(screen.getByText(/Contado/).parentElement).toHaveTextContent('7.000,50');
     expect(screen.getByText(/100,25/)).toBeInTheDocument();
     expect(screen.getByText('Faltante')).toBeInTheDocument();
+  });
+
+  it('en móvil el cierre en PDF se ofrece sólo en la sesión cerrada', () => {
+    narrow.value = true;
+    permissions.mockReturnValue({ canWrite: true, writeHint: undefined });
+    finance.box = box;
+    finance.sessions = {
+      data: [closedSession, { ...closedSession, sessionId: 's-2', status: 'open', closedAt: null }],
+      total: 2,
+    };
+    renderPage();
+    expect(screen.getAllByRole('button', { name: 'Cierre (PDF)' })).toHaveLength(1);
   });
 });

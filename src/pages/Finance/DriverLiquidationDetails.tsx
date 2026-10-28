@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { GridColDef } from '@mui/x-data-grid';
 import { Ban, Check, HandCoins, Scale, Undo2, Wallet } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
-import { useCrumbLeaf } from '../../common/components';
+import { PdfButton, useCrumbLeaf } from '../../common/components';
 import {
   Badge,
   Button,
@@ -132,6 +132,7 @@ export const DriverLiquidationDetails = () => {
 
   const actions = liquidation && (
     <>
+      <PdfButton request={{ kind: 'liquidation', liquidationId: liquidation.liquidationId }} />
       {liquidation.status === 'paid' && (
         <Button
           variant="secondary"

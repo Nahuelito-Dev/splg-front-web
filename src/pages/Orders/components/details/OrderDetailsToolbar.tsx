@@ -1,6 +1,15 @@
-import { BellRing, CircleX, KeyRound, PackageCheck, PencilLine, Printer, RefreshCw, UserRoundCog } from 'lucide-react';
+import {
+  BellRing,
+  CircleX,
+  KeyRound,
+  PackageCheck,
+  FileText,
+  PencilLine,
+  Receipt,
+  RefreshCw,
+  UserRoundCog,
+} from 'lucide-react';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   AuditHistoryLink,
   Badge,
@@ -9,7 +18,7 @@ import {
   ReasonModal,
   type MenuAction,
 } from '../../../../common/components/ui';
-import { usePermissions } from '../../../../hooks';
+import { usePdfDownload, usePermissions } from '../../../../hooks';
 import type { Order } from '../../../../services/api/types';
 import { formatDateTime, formatShortId } from '../../../../utils/format';
 import { labelOf, ORDER_STATUS, paymentStatusLabel } from '../../../../utils/statusLabels';
@@ -23,6 +32,7 @@ import {
   canAssignDriver,
   canCancel,
   canConfirmDelivery,
+  canIssueReceipt,
   canNotifyArrival,
   canViewDeliveryCode,
   manualStatusActionLabel,
@@ -34,8 +44,8 @@ import { useOrderActions } from './useOrderActions';
 
 /**
  * Encabezado de la ficha: ruta, número y estado del pedido, fecha y las
- * acciones que el estado permite (ver `orderStatus.ts`). El imprimir remito
- * está siempre disponible.
+ * acciones que el estado permite (ver `orderStatus.ts`). El remito (PDF) está siempre disponible; el recibo, sólo
+ * con el pedido cobrado y no cancelado.
  */
 export const OrderDetailsToolbar = ({ order }: { order: Order }) => {
   const actions = useOrderActions(order);
@@ -45,7 +55,7 @@ export const OrderDetailsToolbar = ({ order }: { order: Order }) => {
   const [editing, setEditing] = useState(false);
   const editBlocked = orderEditBlockedReason(order);
   const targets = manualStatusTargets(order.status);
-  const navigate = useNavigate();
+  const pdf = usePdfDownload();
 
   // La primaria es la que avanza el pedido según su estado: confirmar la entrega o, antes, asignar el chofer.
   const assignLabel = order.delivery_id ? 'Reasignar chofer' : 'Asignar chofer';
@@ -107,7 +117,25 @@ export const OrderDetailsToolbar = ({ order }: { order: Order }) => {
           },
         ]
       : []),
-    { label: 'Imprimir remito', icon: <Printer />, onClick: () => navigate(`/orders/${order.order_id}/remito`) },
+    {
+      label: 'Remito (PDF)',
+      icon: <FileText />,
+      disabled: pdf.pending,
+      // El back arma el PDF con la distribuidora del pedido: el administrador general tiene que elegirla.
+      blockedReason: operateHint,
+      onClick: () => pdf.download({ kind: 'order-remito', orderId: order.order_id }),
+    },
+    ...(canIssueReceipt(order)
+      ? [
+          {
+            label: 'Recibo (PDF)',
+            icon: <Receipt />,
+            disabled: pdf.pending,
+            blockedReason: operateHint,
+            onClick: () => pdf.download({ kind: 'order-recibo', orderId: order.order_id }),
+          },
+        ]
+      : []),
     ...(canCancel(order.status)
       ? [
           {

@@ -60,7 +60,6 @@ const ScheduledTasksSettings = lazyPage(
 const Orders = lazyPage(() => import('../pages/Orders/Orders'), 'Orders');
 const DispatchBoard = lazyPage(() => import('../pages/Orders/DispatchBoard'), 'DispatchBoard');
 const OrderDetails = lazyPage(() => import('../pages/Orders/OrderDetails'), 'OrderDetails');
-const OrderInvoice = lazyPage(() => import('../pages/Orders/OrderInvoice'), 'OrderInvoice');
 const NewOrder = lazyPage(() => import('../pages/Orders/NewOrder'), 'NewOrder');
 const UnpaidCollections = lazyPage(() => import('../pages/UnpaidCollections/UnpaidCollections'), 'UnpaidCollections');
 const Claims = lazyPage(() => import('../pages/Claims/Claims'), 'Claims');
@@ -211,7 +210,6 @@ export const DashboardRoutes = () => {
           <Route path="orders/dispatch" element={<DispatchBoard />} />
           <Route path="orders/new" element={<NewOrder />} />
           <Route path="orders/:id" element={<OrderDetails />} />
-          <Route path="orders/:id/remito" element={<OrderInvoice />} />
 
           {/* Stock físico, compras y cargas del camión: sólo dentro de una distribuidora */}
           <Route element={<RequireDistributor />}>

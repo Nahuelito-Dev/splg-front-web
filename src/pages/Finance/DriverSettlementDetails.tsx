@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { GridColDef } from '@mui/x-data-grid';
 import { Check, ClipboardCheck, Undo2 } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
-import { useCrumbLeaf } from '../../common/components';
+import { PdfButton, useCrumbLeaf } from '../../common/components';
 import {
   Badge,
   Button,
@@ -148,6 +148,7 @@ export const DriverSettlementDetails = () => {
 
   const actions = settlement && (
     <>
+      <PdfButton request={{ kind: 'settlement', settlementId: settlement.settlementId }} />
       {settlement.status === 'open' && (
         <Button icon={<ClipboardCheck />} disabled={!canWrite} title={writeHint} onClick={() => setSubmitting(true)}>
           Declarar efectivo

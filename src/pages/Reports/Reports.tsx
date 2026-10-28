@@ -1,4 +1,6 @@
 import { useSearchParams } from 'react-router-dom';
+import { PdfButton } from '../../common/components';
+import { usePermissions } from '../../hooks';
 import { DateRangePicker, PageHeader, PageContainer } from '../../common/components/ui';
 import {
   presetRange,
@@ -60,6 +62,8 @@ const useReportsParams = () => {
 };
 
 export const Reports = () => {
+  // El PDF es de una distribuidora; sin «Ver como» la pantalla muestra cifras globales que el PDF no puede repetir.
+  const { operateHint } = usePermissions();
   const { range, preset, granularity, setRange, setGranularity } = useReportsParams();
 
   return (
@@ -67,7 +71,16 @@ export const Reports = () => {
       <PageHeader
         title="Reportes"
         description={`Ventas cobradas del ${formatDay(range.from)} al ${formatDay(range.to)}: el efectivo cuenta recién cuando el chofer confirma el cobro o un administrador lo registra, y la transferencia, cuando un administrador confirma que llegó.`}
-        actions={<DateRangePicker value={range} preset={preset} onChange={setRange} />}
+        actions={
+          <>
+            <DateRangePicker value={range} preset={preset} onChange={setRange} />
+            <PdfButton
+              request={{ kind: 'sales', from: range.from, to: range.to }}
+              label="Descargar PDF"
+              blockedReason={operateHint}
+            />
+          </>
+        }
       />
       <SummaryCards range={range} />
       <CollectionsCards range={range} />

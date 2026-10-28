@@ -11,6 +11,7 @@ const api = vi.hoisted(() => ({
   updateOrderStatus: vi.fn(),
   confirmOrderDelivery: vi.fn(),
 }));
+const pdfApi = vi.hoisted(() => ({ downloadPdf: vi.fn() }));
 const notifications = vi.hoisted(() => ({
   confirm: vi.fn(() => Promise.resolve(true)),
   notify: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
@@ -24,6 +25,8 @@ vi.mock('../../../../services/api/orders', async (importOriginal) => ({
   updateOrderStatus: api.updateOrderStatus,
   confirmOrderDelivery: api.confirmOrderDelivery,
 }));
+vi.mock('../../../../services/api/pdfs', () => ({ downloadPdf: pdfApi.downloadPdf }));
+vi.mock('../../../../utils/fileSource', () => ({ openFileSource: vi.fn(() => true), saveFileSource: vi.fn() }));
 vi.mock('../../../../utils/notifications', () => ({
   confirm: notifications.confirm,
   notify: notifications.notify,
@@ -34,6 +37,7 @@ vi.mock('../../../../utils/notifications', () => ({
 afterEach(cleanup);
 beforeEach(() => {
   permissions.mockReturnValue({ canWrite: true, writeHint: undefined, canOperate: true, operateHint: undefined });
+  pdfApi.downloadPdf.mockReset().mockResolvedValue({ blob: new Blob(['x']), filename: 'x.pdf' });
   api.updateOrderStatus.mockReset().mockResolvedValue({ order_id: 'abcdef123456' });
   api.confirmOrderDelivery.mockReset().mockResolvedValue({ order_id: 'abcdef123456' });
   notifications.confirm.mockClear().mockResolvedValue(true);
@@ -43,19 +47,20 @@ beforeEach(() => {
 });
 
 const HINT = 'Elegí una distribuidora en «Ver como» para operar';
-const order = (status: Order['status'] = 'accepted') =>
+const order = (status: Order['status'] = 'accepted', paymentStatus?: Order['paymentStatus']) =>
   ({
     order_id: 'abcdef123456',
     status,
+    paymentStatus,
     created_at: '2026-10-01T13:00:00.000Z',
     delivery_id: null,
   }) as unknown as Order;
 
-const renderToolbar = (status: Order['status'] = 'accepted') =>
+const renderToolbar = (status: Order['status'] = 'accepted', paymentStatus?: Order['paymentStatus']) =>
   render(
     <QueryClientProvider client={new QueryClient()}>
       <MemoryRouter>
-        <OrderDetailsToolbar order={order(status)} />
+        <OrderDetailsToolbar order={order(status, paymentStatus)} />
       </MemoryRouter>
     </QueryClientProvider>,
   );
@@ -101,11 +106,11 @@ describe('OrderDetailsToolbar: permisos', () => {
     expect(api.updateOrderStatus).not.toHaveBeenCalled();
   });
 
-  it('lo que no escribe sigue disponible: el remito', () => {
+  it('sin distribuidora elegida el remito se ve pero queda bloqueado (el back la necesita)', () => {
     withoutDistributor();
     renderToolbar();
     fireEvent.click(screen.getByRole('button', { name: 'Más acciones' }));
-    expect(screen.getByRole('menuitem', { name: /Imprimir remito/ })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: /Remito \(PDF\)/ })).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('con distribuidora elegida las acciones están habilitadas y sin aviso', () => {
@@ -115,6 +120,29 @@ describe('OrderDetailsToolbar: permisos', () => {
     expect(assign).not.toHaveAttribute('title');
     fireEvent.click(screen.getByRole('button', { name: 'Más acciones' }));
     expect(screen.getByRole('menuitem', { name: /Cancelar pedido/ })).not.toHaveAttribute('aria-disabled');
+  });
+});
+
+describe('OrderDetailsToolbar: PDF', () => {
+  it('el remito se pide al back y el recibo no se ofrece sin cobro', () => {
+    renderToolbar('delivered', 'unpaid');
+    fireEvent.click(screen.getByRole('button', { name: 'Más acciones' }));
+    expect(screen.getByRole('menuitem', { name: /Remito \(PDF\)/ })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /Recibo \(PDF\)/ })).not.toBeInTheDocument();
+  });
+
+  it('el recibo se ofrece con el pedido cobrado y pide el PDF del recibo', async () => {
+    renderToolbar('delivered', 'paid');
+    clickMenu(/Recibo \(PDF\)/);
+    await waitFor(() =>
+      expect(pdfApi.downloadPdf).toHaveBeenCalledWith({ kind: 'order-recibo', orderId: 'abcdef123456' }),
+    );
+  });
+
+  it('el recibo no se ofrece en un pedido cancelado, aunque figure cobrado', () => {
+    renderToolbar('cancelled', 'paid');
+    fireEvent.click(screen.getByRole('button', { name: 'Más acciones' }));
+    expect(screen.queryByRole('menuitem', { name: /Recibo \(PDF\)/ })).not.toBeInTheDocument();
   });
 });
 

@@ -5,6 +5,10 @@ type OrderStatus = Order['status'];
 /** Un pedido entregado o cancelado ya terminó su recorrido: no se asigna ni se cancela de nuevo. */
 export const isClosed = (status: OrderStatus): boolean => status === 'delivered' || status === 'cancelled';
 
+/** El recibo (GET /v2/orders/:id/recibo.pdf) sólo existe con el pedido cobrado y no cancelado: si no, el back da 409. */
+export const canIssueReceipt = (order: { status: OrderStatus; paymentStatus?: string | null }): boolean =>
+  order.paymentStatus === 'paid' && order.status !== 'cancelled';
+
 /** Cancelar (PATCH /orders/:id/cancel) es válido en cualquier estado no terminal. */
 export const canCancel = (status: OrderStatus): boolean => !isClosed(status);
 
