@@ -1140,7 +1140,7 @@ export interface paths {
     put?: never;
     /**
      * Subir un adjunto a un dueño (PDF, JPG, PNG, WEBP, Word .docx, Excel .xlsx, CSV)
-     * @description Admin y super admin: PDF, JPG, PNG, WEBP, Word (.docx), Excel (.xlsx) y CSV (UTF-8 o Windows-1252; también se acepta `application/vnd.ms-excel` si el archivo se llama `.csv`), hasta 10 MB. Se valida el contenido por su estructura, no sólo el tipo declarado: un docx/xlsx con macros, ejecutables u objetos incrustados se rechaza. Chofer: sólo PDF y imágenes. Word, Excel y CSV se entregan siempre como descarga. Dueños (`ownerType`): employee, fuel_load, traffic_fine, vehicle_accident, purchase_receipt, stock_adjustment, driver_settlement, cash_movement, customer_account_entry y order.
+     * @description Admin y super admin: PDF, JPG, PNG, WEBP, Word (.docx), Excel (.xlsx) y CSV (UTF-8 o Windows-1252; también se acepta `application/vnd.ms-excel` si el archivo se llama `.csv`), hasta 10 MB. Se valida el contenido por su estructura, no sólo el tipo declarado: un docx/xlsx con macros, ejecutables u objetos incrustados se rechaza. Chofer: sólo PDF y imágenes. Word, Excel y CSV se entregan siempre como descarga. Dueños (`ownerType`): employee, fuel_load, traffic_fine, vehicle_accident, purchase_receipt, stock_adjustment, driver_settlement, cash_movement, customer_account_entry, order, insurance_policy e insurance_installment. Los de `insurance_installment` (comprobante de una cuota de seguro) no se suben ni se dan de baja por acá: entran sólo por `POST /api/v2/insurance-installments/:id/receipt`.
      */
     post: operations['AttachmentController_upload'];
     delete?: never;
@@ -5604,6 +5604,214 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/insurers': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Listar las aseguradoras
+     * @description Con `term` filtra por nombre. Orden alfabético.
+     */
+    get: operations['InsurerController_findAll'];
+    put?: never;
+    /**
+     * Dar de alta una aseguradora
+     * @description `paymentUrl` es la página de pago (https) que el aviso de cada cuota le muestra al admin. El nombre es único entre las aseguradoras vigentes de la distribuidora.
+     */
+    post: operations['InsurerController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/insurers/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Ver una aseguradora */
+    get: operations['InsurerController_findOne'];
+    put?: never;
+    post?: never;
+    /**
+     * Dar de baja una aseguradora
+     * @description Baja lógica: la aseguradora y sus pólizas vencidas o canceladas se conservan en el historial.
+     */
+    delete: operations['InsurerController_remove'];
+    options?: never;
+    head?: never;
+    /** Modificar una aseguradora */
+    patch: operations['InsurerController_update'];
+    trace?: never;
+  };
+  '/api/v2/cars/{carId}/insurance': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * El seguro de un vehículo
+     * @description La póliza que cubre hoy (o, si no hay, la próxima) con su aseguradora, el enlace de pago, el código de pago y sus cuotas (estado, vencimiento, gracia, comprobante y movimiento de caja), más el historial de las demás pólizas.
+     */
+    get: operations['InsurancePolicyController_ofCar'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/insurance-policies': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Dar de alta una póliza con su plan de cuotas
+     * @description Genera `installments.count` cuotas mensuales el mismo día de cada mes (si el mes no lo tiene, el último), cada una con su gracia. Deja la tarea de seguro del vehículo en la flota con el vencimiento de la póliza y cierra la anterior; `fleet` dice si se sincronizó o por qué no (por ejemplo, si la distribuidora no tiene plan de seguro). Renovar es dar de alta la póliza nueva: un vehículo no tiene dos pólizas no canceladas con vigencias solapadas.
+     */
+    post: operations['InsurancePolicyController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/insurance-policies/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Ver una póliza con sus cuotas */
+    get: operations['InsurancePolicyController_findOne'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Modificar una póliza
+     * @description Aseguradora, número, cobertura y código de pago. La vigencia y las cuotas no se editan: se cancela la póliza y se da de alta otra.
+     */
+    patch: operations['InsurancePolicyController_update'];
+    trace?: never;
+  };
+  '/api/v2/insurance-policies/{id}/cancel': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Cancelar una póliza
+     * @description Baja lógica con motivo. Las cuotas pendientes pasan a canceladas; las pagas se conservan con su comprobante y su egreso de caja. En la flota cancela la tarea de seguro que creó la póliza y reabre las que dio por hechas; una tarea que alguien cambió mientras tanto no se toca y `fleetRevert.notes` lo informa.
+     */
+    post: operations['InsurancePolicyController_cancel'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/insurance-installments': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Listar las cuotas de seguro
+     * @description Con la póliza, la aseguradora (y su enlace de pago) y el vehículo. Filtra por `status`, vencimiento (`dueFrom`/`dueTo`) y `carId`. Orden por vencimiento.
+     */
+    get: operations['InsuranceInstallmentController_findAll'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/insurance-installments/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Ver una cuota */
+    get: operations['InsuranceInstallmentController_findOne'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Corregir el vencimiento, la gracia o el importe de una cuota
+     * @description Sólo mientras la cuota está pendiente.
+     */
+    patch: operations['InsuranceInstallmentController_update'];
+    trace?: never;
+  };
+  '/api/v2/insurance-installments/{id}/receipt': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Subir el comprobante de pago de la cuota (se escanea solo)
+     * @description Multipart con el campo `file` (PDF, JPG, PNG o WEBP, hasta 10 MB). Guarda el comprobante como adjunto de la cuota y, en el mismo pedido, lo lee con el lector de comprobantes (pistas: el importe de la cuota y el nombre de la aseguradora). `scan.available` es `false` si no hay lector configurado, y `scan.data` es `null` si no hay lector o la lectura falló: en ambos casos la subida vale y los datos se cargan a mano. Lo leído sólo precarga el formulario: nada se guarda hasta `POST /insurance-installments/:id/pay`. Idempotente vía `Idempotency-Key`.
+     */
+    post: operations['InsuranceInstallmentController_uploadReceipt'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/insurance-installments/{id}/pay': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Pagar la cuota
+     * @description En una transacción con la cuota bloqueada: valida que esté pendiente y que el comprobante sea de ella, saca el egreso de la caja elegida (efectivo, banco o billetera; categoría «Seguros», referencia `insurance_installment`) y deja la cuota paga con el comprobante y el movimiento asociados. La descripción del egreso lleva vehículo, aseguradora y cuota: «Seguro OVQ621 — Seguros Rivadavia, cuota 5/6». Idempotente vía `Idempotency-Key`.
+     */
+    post: operations['InsuranceInstallmentController_pay'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/audit': {
     parameters: {
       query?: never;
@@ -7338,7 +7546,9 @@ export interface components {
       | 'driver_settlement'
       | 'cash_movement'
       | 'customer_account_entry'
-      | 'order';
+      | 'order'
+      | 'insurance_policy'
+      | 'insurance_installment';
     AttachmentResponseDto: {
       /** Format: uuid */
       attachmentId: string;
@@ -9723,7 +9933,8 @@ export interface components {
         | 'driver_liquidation'
         | 'box_transfer'
         | 'reversal'
-        | 'order_payment';
+        | 'order_payment'
+        | 'insurance_installment';
       referenceId: string | null;
       /** @description Si es una anulación, el movimiento que anula */
       reversesMovementId: string | null;
@@ -9841,6 +10052,7 @@ export interface components {
         | 'fuel'
         | 'traffic_fine'
         | 'order_payment'
+        | 'insurance'
         | null;
       isActive: boolean;
       /** Format: date-time */
@@ -12752,6 +12964,379 @@ export interface components {
       kmSource: 'usage_log' | 'odometer' | 'none';
       /** @description `null` si no hubo km */
       costPerKm: number | null;
+    };
+    InsurerResponseDto: {
+      /** Format: uuid */
+      insurerId: string;
+      name: string;
+      taxId: string | null;
+      phone: string | null;
+      email: string | null;
+      website: string | null;
+      paymentUrl: string | null;
+      notes: string | null;
+      /** Format: date-time */
+      createdAt: string;
+    };
+    InsurerPageDto: {
+      data: components['schemas']['InsurerResponseDto'][];
+      total: number;
+    };
+    CreateInsurerDto: {
+      /** @example Seguros Rivadavia */
+      name: string;
+      /**
+       * @description CUIT de 11 dígitos (se aceptan guiones)
+       * @example 30500050207
+       */
+      taxId?: string | null;
+      /** @example 0800-444-4000 */
+      phone?: string | null;
+      /** @example siniestros@aseguradora.com */
+      email?: string | null;
+      /** @example https://www.aseguradora.com */
+      website?: string | null;
+      /**
+       * @description Página de pago de la aseguradora (https). El aviso de la cuota se la muestra al admin
+       * @example https://pagos.aseguradora.com/cuotas
+       */
+      paymentUrl?: string | null;
+      notes?: string | null;
+    };
+    UpdateInsurerDto: {
+      /** @example Seguros Rivadavia */
+      name?: string;
+      /**
+       * @description CUIT de 11 dígitos (se aceptan guiones)
+       * @example 30500050207
+       */
+      taxId?: string | null;
+      /** @example 0800-444-4000 */
+      phone?: string | null;
+      /** @example siniestros@aseguradora.com */
+      email?: string | null;
+      /** @example https://www.aseguradora.com */
+      website?: string | null;
+      /**
+       * @description Página de pago de la aseguradora (https). El aviso de la cuota se la muestra al admin
+       * @example https://pagos.aseguradora.com/cuotas
+       */
+      paymentUrl?: string | null;
+      notes?: string | null;
+    };
+    InsuranceInstallmentResponseDto: {
+      /** Format: uuid */
+      installmentId: string;
+      /** Format: uuid */
+      policyId: string;
+      /** @example 5 */
+      number: number;
+      /** @example 6 */
+      total: number;
+      /** @example 5/6 */
+      label: string;
+      /** @example 2026-11-22 */
+      dueDate: string;
+      /** @example 2026-11-27 */
+      graceUntil: string;
+      /** @example 29958 */
+      amount: number;
+      /** @enum {string} */
+      status: 'pending' | 'paid' | 'cancelled';
+      /** Format: date-time */
+      paidAt: string | null;
+      paidAmount: number | null;
+      operationNumber: string | null;
+      /** Format: uuid */
+      paidByUserId: string | null;
+      /**
+       * Format: uuid
+       * @description Egreso de la caja con que se pagó
+       */
+      cashMovementId: string | null;
+      /** Format: uuid */
+      receiptAttachmentId: string | null;
+      /** Format: date-time */
+      createdAt: string;
+    };
+    InsurancePolicyResponseDto: {
+      /** Format: uuid */
+      policyId: string;
+      /** Format: uuid */
+      carId: string;
+      /** @example OVQ621 */
+      carPatent: string | null;
+      insurer: components['schemas']['InsurerResponseDto'];
+      /** @example 67/02/192143 */
+      policyNumber: string;
+      coverage: string;
+      /** @example 2026-06-22 */
+      validFrom: string;
+      /** @example 2026-12-22 */
+      validTo: string;
+      paymentCode: string | null;
+      /** @enum {string} */
+      status: 'active' | 'upcoming' | 'expired' | 'cancelled';
+      /** Format: date-time */
+      cancelledAt: string | null;
+      cancelReason: string | null;
+      installments: components['schemas']['InsuranceInstallmentResponseDto'][];
+      /** Format: date-time */
+      createdAt: string;
+    };
+    CarInsuranceResponseDto: {
+      /** Format: uuid */
+      carId: string;
+      /** @description La póliza que cubre hoy; si no hay, la próxima que empieza; si tampoco, `null` */
+      current: components['schemas']['InsurancePolicyResponseDto'] | null;
+      /** @description Las demás pólizas (vencidas, canceladas o futuras), la más nueva primero */
+      history: components['schemas']['InsurancePolicyResponseDto'][];
+    };
+    InstallmentPlanDto: {
+      /** @example 6 */
+      count: number;
+      /**
+       * @description Importe de cada cuota
+       * @example 29958
+       */
+      amount: number;
+      /**
+       * Format: date
+       * @example 2026-06-22
+       */
+      firstDueDate: string;
+      /**
+       * @description Días después del vencimiento en que el pago todavía se juzga en término
+       * @default 5
+       */
+      graceDays: number;
+    };
+    CreateInsurancePolicyDto: {
+      /** Format: uuid */
+      carId: string;
+      /** Format: uuid */
+      insurerId: string;
+      /** @example 67/02/192143 */
+      policyNumber: string;
+      /** @example Todo riesgo con franquicia */
+      coverage: string;
+      /**
+       * Format: date
+       * @example 2026-06-22
+       */
+      validFrom: string;
+      /**
+       * Format: date
+       * @example 2026-12-22
+       */
+      validTo: string;
+      /**
+       * @description Código de pago electrónico (Pago Fácil, Rapipago)
+       * @example 0001234567890123
+       */
+      paymentCode?: string | null;
+      /** @description Plan de cuotas: se generan `count` cuotas mensuales el mismo día de cada mes (si el mes no lo tiene, el último) */
+      installments: components['schemas']['InstallmentPlanDto'];
+    };
+    FleetSyncDto: {
+      /** @description `true` si la tarea de seguro del vehículo quedó con el vencimiento de la póliza */
+      synced: boolean;
+      /** @description `true` si la póliza empieza después de que vence el seguro actual de la flota: la tarea se actualiza cuando la póliza empiece (la actualiza el cron diario) */
+      pending: boolean;
+      /** Format: uuid */
+      taskId: string | null;
+      /** @description Por qué no se sincronizó, si `synced` es `false` */
+      reason: string | null;
+    };
+    CreatedInsurancePolicyDto: {
+      /** Format: uuid */
+      policyId: string;
+      /** Format: uuid */
+      carId: string;
+      /** @example OVQ621 */
+      carPatent: string | null;
+      insurer: components['schemas']['InsurerResponseDto'];
+      /** @example 67/02/192143 */
+      policyNumber: string;
+      coverage: string;
+      /** @example 2026-06-22 */
+      validFrom: string;
+      /** @example 2026-12-22 */
+      validTo: string;
+      paymentCode: string | null;
+      /** @enum {string} */
+      status: 'active' | 'upcoming' | 'expired' | 'cancelled';
+      /** Format: date-time */
+      cancelledAt: string | null;
+      cancelReason: string | null;
+      installments: components['schemas']['InsuranceInstallmentResponseDto'][];
+      /** Format: date-time */
+      createdAt: string;
+      fleet: components['schemas']['FleetSyncDto'];
+    };
+    UpdateInsurancePolicyDto: {
+      /** Format: uuid */
+      insurerId?: string;
+      /** @example 67/02/192143 */
+      policyNumber?: string;
+      /** @example Todo riesgo con franquicia */
+      coverage?: string;
+      /**
+       * @description Código de pago electrónico (Pago Fácil, Rapipago)
+       * @example 0001234567890123
+       */
+      paymentCode?: string | null;
+    };
+    CancelInsurancePolicyDto: {
+      /** @example Se vendió el vehículo */
+      reason: string;
+    };
+    FleetRevertDto: {
+      /** @description `true` si se deshizo lo que la póliza había hecho en la flota (tarea creada cancelada y anteriores reabiertas) */
+      reverted: boolean;
+      /** @description Lo que no se tocó porque alguien lo cambió mientras tanto, o por qué no se revirtió */
+      notes: string[];
+    };
+    CancelledInsurancePolicyDto: {
+      /** Format: uuid */
+      policyId: string;
+      /** Format: uuid */
+      carId: string;
+      /** @example OVQ621 */
+      carPatent: string | null;
+      insurer: components['schemas']['InsurerResponseDto'];
+      /** @example 67/02/192143 */
+      policyNumber: string;
+      coverage: string;
+      /** @example 2026-06-22 */
+      validFrom: string;
+      /** @example 2026-12-22 */
+      validTo: string;
+      paymentCode: string | null;
+      /** @enum {string} */
+      status: 'active' | 'upcoming' | 'expired' | 'cancelled';
+      /** Format: date-time */
+      cancelledAt: string | null;
+      cancelReason: string | null;
+      installments: components['schemas']['InsuranceInstallmentResponseDto'][];
+      /** Format: date-time */
+      createdAt: string;
+      fleetRevert: components['schemas']['FleetRevertDto'];
+    };
+    InsuranceInstallmentDetailDto: {
+      /** Format: uuid */
+      installmentId: string;
+      /** Format: uuid */
+      policyId: string;
+      /** @example 5 */
+      number: number;
+      /** @example 6 */
+      total: number;
+      /** @example 5/6 */
+      label: string;
+      /** @example 2026-11-22 */
+      dueDate: string;
+      /** @example 2026-11-27 */
+      graceUntil: string;
+      /** @example 29958 */
+      amount: number;
+      /** @enum {string} */
+      status: 'pending' | 'paid' | 'cancelled';
+      /** Format: date-time */
+      paidAt: string | null;
+      paidAmount: number | null;
+      operationNumber: string | null;
+      /** Format: uuid */
+      paidByUserId: string | null;
+      /**
+       * Format: uuid
+       * @description Egreso de la caja con que se pagó
+       */
+      cashMovementId: string | null;
+      /** Format: uuid */
+      receiptAttachmentId: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: uuid */
+      carId: string;
+      /** @example OVQ621 */
+      carPatent: string | null;
+      /** @example 67/02/192143 */
+      policyNumber: string;
+      /** Format: uuid */
+      insurerId: string;
+      /** @example Seguros Rivadavia */
+      insurerName: string;
+      paymentUrl: string | null;
+    };
+    InsuranceInstallmentPageDto: {
+      data: components['schemas']['InsuranceInstallmentDetailDto'][];
+      total: number;
+    };
+    UpdateInsuranceInstallmentDto: {
+      /**
+       * Format: date
+       * @example 2026-11-22
+       */
+      dueDate?: string | null;
+      /**
+       * Format: date
+       * @example 2026-11-27
+       */
+      graceUntil?: string | null;
+      /** @example 31200 */
+      amount?: number;
+    };
+    ReceiptScanDataDto: {
+      /** @example 29958.00 */
+      amount: string | null;
+      /** @example 2026-11-20T14:30:00-03:00 */
+      paidAt: string | null;
+      operationNumber: string | null;
+      payee: string | null;
+      payeeTaxId: string | null;
+      /** @example 2026-11 */
+      period: string | null;
+      /** @enum {string} */
+      confidence: 'high' | 'medium' | 'low';
+      warnings: string[];
+    };
+    ReceiptScanDto: {
+      /** @description `false` si no hay lector de comprobantes configurado: los datos se cargan a mano */
+      available: boolean;
+      /** @description Lo que se leyó, para precargar el formulario; `null` si no hay lector o no se pudo leer */
+      data: components['schemas']['ReceiptScanDataDto'] | null;
+      /** @description Aviso cuando el lector estaba disponible pero falló o tardó más de 30 s: el comprobante quedó guardado y los datos se cargan a mano */
+      warning?: string | null;
+    };
+    UploadedReceiptDto: {
+      /** Format: uuid */
+      attachmentId: string;
+      scan: components['schemas']['ReceiptScanDto'];
+    };
+    PayInsuranceInstallmentDto: {
+      /**
+       * Format: uuid
+       * @description Comprobante subido con `POST /insurance-installments/:id/receipt`
+       */
+      attachmentId: string;
+      /**
+       * @description Cuándo se pagó (fecha o fecha y hora ISO 8601); no puede ser futura
+       * @example 2026-11-20T14:30:00-03:00
+       */
+      paidAt: string;
+      /**
+       * @description Lo efectivamente pagado (puede diferir del importe de la cuota)
+       * @example 29958
+       */
+      amount: number;
+      /** @example 88123456 */
+      operationNumber?: string | null;
+      /**
+       * Format: uuid
+       * @description Caja de la que sale el pago: efectivo, banco o billetera de la distribuidora
+       */
+      cashBoxId: string;
     };
     AsientoDeAuditoriaDto: {
       /** Format: uuid */
@@ -18386,6 +18971,13 @@ export interface operations {
     responses: {
       /** @description Borrado */
       204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Es el comprobante de una cuota de seguro: no se da de baja por acá */
+      400: {
         headers: {
           [name: string]: unknown;
         };
@@ -24250,7 +24842,8 @@ export interface operations {
           | 'driver_liquidation'
           | 'box_transfer'
           | 'reversal'
-          | 'order_payment';
+          | 'order_payment'
+          | 'insurance_installment';
         from?: string | null;
         to?: string | null;
       };
@@ -33454,6 +34047,850 @@ export interface operations {
       };
       /** @description Vehículo no encontrado */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  InsurerController_findAll: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+        page?: number;
+        /** @description Texto a buscar */
+        term?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InsurerPageDto'];
+        };
+      };
+      /** @description Filtro inválido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  InsurerController_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateInsurerDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InsurerResponseDto'];
+        };
+      };
+      /** @description CUIT, correo, teléfono o enlaces inválidos */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya hay una aseguradora con ese nombre */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  InsurerController_findOne: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Aseguradora UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InsurerResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  InsurerController_remove: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Aseguradora UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Dada de baja */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Tiene pólizas vigentes o futuras: se cancelan antes */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  InsurerController_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Aseguradora UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateInsurerDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InsurerResponseDto'];
+        };
+      };
+      /** @description Dato inválido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya hay una aseguradora con ese nombre */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  InsurancePolicyController_ofCar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Vehículo UUID */
+        carId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CarInsuranceResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  InsurancePolicyController_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateInsurancePolicyDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CreatedInsurancePolicyDto'];
+        };
+      };
+      /** @description Fechas incoherentes, cuotas fuera de la vigencia o dato inválido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El vehículo o la aseguradora no existen o son de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El vehículo ya tiene una póliza en esas fechas, o el número de póliza ya está cargado para la aseguradora */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  InsurancePolicyController_findOne: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Póliza UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InsurancePolicyResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  InsurancePolicyController_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Póliza UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateInsurancePolicyDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InsurancePolicyResponseDto'];
+        };
+      };
+      /** @description Dato inválido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La póliza o la aseguradora no existen o son de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La póliza está cancelada o el número ya está cargado */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  InsurancePolicyController_cancel: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Póliza UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CancelInsurancePolicyDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CancelledInsurancePolicyDto'];
+        };
+      };
+      /** @description Falta el motivo */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La póliza ya está cancelada */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  InsuranceInstallmentController_findAll: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+        page?: number;
+        /** @description Texto a buscar */
+        term?: string;
+        status?: 'pending' | 'paid' | 'cancelled';
+        dueFrom?: string | null;
+        dueTo?: string | null;
+        carId?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InsuranceInstallmentPageDto'];
+        };
+      };
+      /** @description Filtro inválido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  InsuranceInstallmentController_findOne: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Cuota UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InsuranceInstallmentDetailDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  InsuranceInstallmentController_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Cuota UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateInsuranceInstallmentDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InsuranceInstallmentDetailDto'];
+        };
+      };
+      /** @description Dato inválido o gracia anterior al vencimiento */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuota ya está paga o cancelada */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  InsuranceInstallmentController_uploadReceipt: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Cuota UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'multipart/form-data': {
+          /** Format: binary */
+          file: string;
+        };
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['UploadedReceiptDto'];
+        };
+      };
+      /** @description Falta el archivo o está vacío */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuota ya está paga o cancelada */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El archivo supera el máximo permitido (10 MB) */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No es un PDF ni una imagen (JPG, PNG, WEBP), o el contenido no coincide con el tipo declarado */
+      415: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro archivo u otros datos. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  InsuranceInstallmentController_pay: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Cuota UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PayInsuranceInstallmentDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InsuranceInstallmentDetailDto'];
+        };
+      };
+      /** @description Fecha futura, importe inválido, el comprobante no es de la cuota o la caja no admite el pago */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuota o la caja no existen o son de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuota ya está paga o cancelada, la caja está desactivada, exige sesión abierta o no tiene saldo */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
         headers: {
           [name: string]: unknown;
         };

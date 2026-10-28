@@ -6,6 +6,8 @@ import {
   MessageSquareWarning,
   Receipt,
   ShieldAlert,
+  ShieldCheck,
+  ShieldX,
   TriangleAlert,
   Undo2,
   UserRoundSearch,
@@ -24,6 +26,9 @@ const KIND_VISUALS: Record<string, { icon: LucideIcon; tone: Tone }> = {
   fleet_document_due: { icon: CalendarClock, tone: 'warn' },
   fleet_document_expired: { icon: CalendarX2, tone: 'danger' },
   employee_document_missing: { icon: FileWarning, tone: 'warn' },
+  insurance_installment_due: { icon: CalendarClock, tone: 'warn' },
+  insurance_installment_overdue: { icon: ShieldX, tone: 'danger' },
+  insurance_policy_expiring: { icon: ShieldCheck, tone: 'warn' },
 };
 
 /** Ícono y tono de un aviso guardado según su `kind`; un tipo que el panel no conoce se muestra con uno genérico. */
@@ -45,6 +50,8 @@ export const notificationTarget = (link: AdminNotification['link'] | undefined):
       return `/fleet/tasks/${id}`;
     case 'employee':
       return `/employees/details/${id}?tab=documents`;
+    case 'car-insurance':
+      return `/cars/details/${id}?tab=insurance`;
     default:
       return null;
   }

@@ -101,7 +101,7 @@ const FINANCE_KEYS = [
   queryKeys.finance.all,
 ];
 
-const refreshFinance = (queryClient: QueryClient) =>
+export const refreshFinance = (queryClient: QueryClient) =>
   Promise.all(FINANCE_KEYS.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
 
 /**
@@ -111,7 +111,7 @@ const refreshFinance = (queryClient: QueryClient) =>
  *   conserva para que el reintento no duplique;
  * - 422 (la clave ya se usó con otros datos): se descarta la intención y se muestra el mensaje del back.
  */
-const runMoney = async <T>(
+export const runMoney = async <T>(
   queryClient: QueryClient,
   scope: string,
   body: unknown,

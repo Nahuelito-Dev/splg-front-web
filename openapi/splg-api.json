@@ -5170,7 +5170,7 @@
         },
         "/api/v1/attachments/{ownerType}/{ownerId}": {
             "post": {
-                "description": "Admin y super admin: PDF, JPG, PNG, WEBP, Word (.docx), Excel (.xlsx) y CSV (UTF-8 o Windows-1252; también se acepta `application/vnd.ms-excel` si el archivo se llama `.csv`), hasta 10 MB. Se valida el contenido por su estructura, no sólo el tipo declarado: un docx/xlsx con macros, ejecutables u objetos incrustados se rechaza. Chofer: sólo PDF y imágenes. Word, Excel y CSV se entregan siempre como descarga. Dueños (`ownerType`): employee, fuel_load, traffic_fine, vehicle_accident, purchase_receipt, stock_adjustment, driver_settlement, cash_movement, customer_account_entry y order.",
+                "description": "Admin y super admin: PDF, JPG, PNG, WEBP, Word (.docx), Excel (.xlsx) y CSV (UTF-8 o Windows-1252; también se acepta `application/vnd.ms-excel` si el archivo se llama `.csv`), hasta 10 MB. Se valida el contenido por su estructura, no sólo el tipo declarado: un docx/xlsx con macros, ejecutables u objetos incrustados se rechaza. Chofer: sólo PDF y imágenes. Word, Excel y CSV se entregan siempre como descarga. Dueños (`ownerType`): employee, fuel_load, traffic_fine, vehicle_accident, purchase_receipt, stock_adjustment, driver_settlement, cash_movement, customer_account_entry, order, insurance_policy e insurance_installment. Los de `insurance_installment` (comprobante de una cuota de seguro) no se suben ni se dan de baja por acá: entran sólo por `POST /api/v2/insurance-installments/:id/receipt`.",
                 "operationId": "AttachmentController_upload",
                 "parameters": [
                     {
@@ -5401,6 +5401,9 @@
                 "responses": {
                     "204": {
                         "description": "Borrado"
+                    },
+                    "400": {
+                        "description": "Es el comprobante de una cuota de seguro: no se da de baja por acá"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -12410,7 +12413,8 @@
                                 "driver_liquidation",
                                 "box_transfer",
                                 "reversal",
-                                "order_payment"
+                                "order_payment",
+                                "insurance_installment"
                             ]
                         }
                     },
@@ -23386,6 +23390,928 @@
                 ]
             }
         },
+        "/api/v2/insurers": {
+            "get": {
+                "description": "Con `term` filtra por nombre. Orden alfabético.",
+                "operationId": "InsurerController_findAll",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "maximum": 100,
+                            "default": 10,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 0,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 1,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "term",
+                        "required": false,
+                        "in": "query",
+                        "description": "Texto a buscar",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InsurerPageDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Filtro inválido"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Listar las aseguradoras",
+                "tags": [
+                    "Seguros · Aseguradoras"
+                ]
+            },
+            "post": {
+                "description": "`paymentUrl` es la página de pago (https) que el aviso de cada cuota le muestra al admin. El nombre es único entre las aseguradoras vigentes de la distribuidora.",
+                "operationId": "InsurerController_create",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateInsurerDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InsurerResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "CUIT, correo, teléfono o enlaces inválidos"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "409": {
+                        "description": "Ya hay una aseguradora con ese nombre"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Dar de alta una aseguradora",
+                "tags": [
+                    "Seguros · Aseguradoras"
+                ]
+            }
+        },
+        "/api/v2/insurers/{id}": {
+            "get": {
+                "operationId": "InsurerController_findOne",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Aseguradora UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InsurerResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ver una aseguradora",
+                "tags": [
+                    "Seguros · Aseguradoras"
+                ]
+            },
+            "patch": {
+                "operationId": "InsurerController_update",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Aseguradora UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateInsurerDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InsurerResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Dato inválido"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "Ya hay una aseguradora con ese nombre"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Modificar una aseguradora",
+                "tags": [
+                    "Seguros · Aseguradoras"
+                ]
+            },
+            "delete": {
+                "description": "Baja lógica: la aseguradora y sus pólizas vencidas o canceladas se conservan en el historial.",
+                "operationId": "InsurerController_remove",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Aseguradora UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Dada de baja"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "Tiene pólizas vigentes o futuras: se cancelan antes"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Dar de baja una aseguradora",
+                "tags": [
+                    "Seguros · Aseguradoras"
+                ]
+            }
+        },
+        "/api/v2/cars/{carId}/insurance": {
+            "get": {
+                "description": "La póliza que cubre hoy (o, si no hay, la próxima) con su aseguradora, el enlace de pago, el código de pago y sus cuotas (estado, vencimiento, gracia, comprobante y movimiento de caja), más el historial de las demás pólizas.",
+                "operationId": "InsurancePolicyController_ofCar",
+                "parameters": [
+                    {
+                        "name": "carId",
+                        "required": true,
+                        "in": "path",
+                        "description": "Vehículo UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CarInsuranceResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "El seguro de un vehículo",
+                "tags": [
+                    "Seguros · Pólizas"
+                ]
+            }
+        },
+        "/api/v2/insurance-policies": {
+            "post": {
+                "description": "Genera `installments.count` cuotas mensuales el mismo día de cada mes (si el mes no lo tiene, el último), cada una con su gracia. Deja la tarea de seguro del vehículo en la flota con el vencimiento de la póliza y cierra la anterior; `fleet` dice si se sincronizó o por qué no (por ejemplo, si la distribuidora no tiene plan de seguro). Renovar es dar de alta la póliza nueva: un vehículo no tiene dos pólizas no canceladas con vigencias solapadas.",
+                "operationId": "InsurancePolicyController_create",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateInsurancePolicyDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CreatedInsurancePolicyDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Fechas incoherentes, cuotas fuera de la vigencia o dato inválido"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "El vehículo o la aseguradora no existen o son de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "El vehículo ya tiene una póliza en esas fechas, o el número de póliza ya está cargado para la aseguradora"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Dar de alta una póliza con su plan de cuotas",
+                "tags": [
+                    "Seguros · Pólizas"
+                ]
+            }
+        },
+        "/api/v2/insurance-policies/{id}": {
+            "get": {
+                "operationId": "InsurancePolicyController_findOne",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Póliza UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InsurancePolicyResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ver una póliza con sus cuotas",
+                "tags": [
+                    "Seguros · Pólizas"
+                ]
+            },
+            "patch": {
+                "description": "Aseguradora, número, cobertura y código de pago. La vigencia y las cuotas no se editan: se cancela la póliza y se da de alta otra.",
+                "operationId": "InsurancePolicyController_update",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Póliza UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateInsurancePolicyDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InsurancePolicyResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Dato inválido"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "La póliza o la aseguradora no existen o son de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "La póliza está cancelada o el número ya está cargado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Modificar una póliza",
+                "tags": [
+                    "Seguros · Pólizas"
+                ]
+            }
+        },
+        "/api/v2/insurance-policies/{id}/cancel": {
+            "post": {
+                "description": "Baja lógica con motivo. Las cuotas pendientes pasan a canceladas; las pagas se conservan con su comprobante y su egreso de caja. En la flota cancela la tarea de seguro que creó la póliza y reabre las que dio por hechas; una tarea que alguien cambió mientras tanto no se toca y `fleetRevert.notes` lo informa.",
+                "operationId": "InsurancePolicyController_cancel",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Póliza UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CancelInsurancePolicyDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CancelledInsurancePolicyDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta el motivo"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "La póliza ya está cancelada"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Cancelar una póliza",
+                "tags": [
+                    "Seguros · Pólizas"
+                ]
+            }
+        },
+        "/api/v2/insurance-installments": {
+            "get": {
+                "description": "Con la póliza, la aseguradora (y su enlace de pago) y el vehículo. Filtra por `status`, vencimiento (`dueFrom`/`dueTo`) y `carId`. Orden por vencimiento.",
+                "operationId": "InsuranceInstallmentController_findAll",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "maximum": 100,
+                            "default": 10,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 0,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 1,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "term",
+                        "required": false,
+                        "in": "query",
+                        "description": "Texto a buscar",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "pending",
+                                "paid",
+                                "cancelled"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "dueFrom",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "date",
+                            "nullable": true,
+                            "example": "2026-11-01",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "dueTo",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "date",
+                            "nullable": true,
+                            "example": "2026-11-30",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "carId",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InsuranceInstallmentPageDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Filtro inválido"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Listar las cuotas de seguro",
+                "tags": [
+                    "Seguros · Cuotas"
+                ]
+            }
+        },
+        "/api/v2/insurance-installments/{id}": {
+            "get": {
+                "operationId": "InsuranceInstallmentController_findOne",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Cuota UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InsuranceInstallmentDetailDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ver una cuota",
+                "tags": [
+                    "Seguros · Cuotas"
+                ]
+            },
+            "patch": {
+                "description": "Sólo mientras la cuota está pendiente.",
+                "operationId": "InsuranceInstallmentController_update",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Cuota UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateInsuranceInstallmentDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InsuranceInstallmentDetailDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Dato inválido o gracia anterior al vencimiento"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "La cuota ya está paga o cancelada"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Corregir el vencimiento, la gracia o el importe de una cuota",
+                "tags": [
+                    "Seguros · Cuotas"
+                ]
+            }
+        },
+        "/api/v2/insurance-installments/{id}/receipt": {
+            "post": {
+                "description": "Multipart con el campo `file` (PDF, JPG, PNG o WEBP, hasta 10 MB). Guarda el comprobante como adjunto de la cuota y, en el mismo pedido, lo lee con el lector de comprobantes (pistas: el importe de la cuota y el nombre de la aseguradora). `scan.available` es `false` si no hay lector configurado, y `scan.data` es `null` si no hay lector o la lectura falló: en ambos casos la subida vale y los datos se cargan a mano. Lo leído sólo precarga el formulario: nada se guarda hasta `POST /insurance-installments/:id/pay`. Idempotente vía `Idempotency-Key`.",
+                "operationId": "InsuranceInstallmentController_uploadReceipt",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Cuota UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "required": [
+                                    "file"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UploadedReceiptDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta el archivo o está vacío"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "La cuota ya está paga o cancelada"
+                    },
+                    "413": {
+                        "description": "El archivo supera el máximo permitido (10 MB)"
+                    },
+                    "415": {
+                        "description": "No es un PDF ni una imagen (JPG, PNG, WEBP), o el contenido no coincide con el tipo declarado"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro archivo u otros datos."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Subir el comprobante de pago de la cuota (se escanea solo)",
+                "tags": [
+                    "Seguros · Cuotas"
+                ]
+            }
+        },
+        "/api/v2/insurance-installments/{id}/pay": {
+            "post": {
+                "description": "En una transacción con la cuota bloqueada: valida que esté pendiente y que el comprobante sea de ella, saca el egreso de la caja elegida (efectivo, banco o billetera; categoría «Seguros», referencia `insurance_installment`) y deja la cuota paga con el comprobante y el movimiento asociados. La descripción del egreso lleva vehículo, aseguradora y cuota: «Seguro OVQ621 — Seguros Rivadavia, cuota 5/6». Idempotente vía `Idempotency-Key`.",
+                "operationId": "InsuranceInstallmentController_pay",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Cuota UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PayInsuranceInstallmentDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InsuranceInstallmentDetailDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Fecha futura, importe inválido, el comprobante no es de la cuota o la caja no admite el pago"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "La cuota o la caja no existen o son de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "La cuota ya está paga o cancelada, la caja está desactivada, exige sesión abierta o no tiene saldo"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Pagar la cuota",
+                "tags": [
+                    "Seguros · Cuotas"
+                ]
+            }
+        },
         "/api/v1/audit": {
             "get": {
                 "description": "Quién hizo cada operación que modificó datos, sobre qué, cuándo, desde qué aplicación y con qué resultado. Un admin de empresa ve sólo lo de su distribuidora.",
@@ -28412,7 +29338,9 @@
                     "driver_settlement",
                     "cash_movement",
                     "customer_account_entry",
-                    "order"
+                    "order",
+                    "insurance_policy",
+                    "insurance_installment"
                 ]
             },
             "AttachmentResponseDto": {
@@ -33934,7 +34862,8 @@
                             "driver_liquidation",
                             "box_transfer",
                             "reversal",
-                            "order_payment"
+                            "order_payment",
+                            "insurance_installment"
                         ]
                     },
                     "referenceId": {
@@ -34246,7 +35175,8 @@
                             "purchase",
                             "fuel",
                             "traffic_fine",
-                            "order_payment"
+                            "order_payment",
+                            "insurance"
                         ],
                         "nullable": true,
                         "description": "Las de sistema no se editan ni se desactivan"
@@ -41567,6 +42497,1033 @@
                     "km",
                     "kmSource",
                     "costPerKm"
+                ]
+            },
+            "InsurerResponseDto": {
+                "type": "object",
+                "properties": {
+                    "insurerId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "taxId": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "phone": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "email": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "website": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "paymentUrl": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "notes": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "insurerId",
+                    "name",
+                    "taxId",
+                    "phone",
+                    "email",
+                    "website",
+                    "paymentUrl",
+                    "notes",
+                    "createdAt"
+                ]
+            },
+            "InsurerPageDto": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/InsurerResponseDto"
+                        }
+                    },
+                    "total": {
+                        "type": "number"
+                    }
+                },
+                "required": [
+                    "data",
+                    "total"
+                ]
+            },
+            "CreateInsurerDto": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "example": "Seguros Rivadavia",
+                        "maxLength": 120
+                    },
+                    "taxId": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "30500050207",
+                        "description": "CUIT de 11 dígitos (se aceptan guiones)"
+                    },
+                    "phone": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "0800-444-4000",
+                        "maxLength": 40
+                    },
+                    "email": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "siniestros@aseguradora.com",
+                        "maxLength": 120
+                    },
+                    "website": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "https://www.aseguradora.com",
+                        "maxLength": 255
+                    },
+                    "paymentUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "https://pagos.aseguradora.com/cuotas",
+                        "maxLength": 500,
+                        "description": "Página de pago de la aseguradora (https). El aviso de la cuota se la muestra al admin"
+                    },
+                    "notes": {
+                        "type": "string",
+                        "nullable": true,
+                        "maxLength": 2000
+                    }
+                },
+                "required": [
+                    "name"
+                ]
+            },
+            "UpdateInsurerDto": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "example": "Seguros Rivadavia",
+                        "maxLength": 120
+                    },
+                    "taxId": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "30500050207",
+                        "description": "CUIT de 11 dígitos (se aceptan guiones)"
+                    },
+                    "phone": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "0800-444-4000",
+                        "maxLength": 40
+                    },
+                    "email": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "siniestros@aseguradora.com",
+                        "maxLength": 120
+                    },
+                    "website": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "https://www.aseguradora.com",
+                        "maxLength": 255
+                    },
+                    "paymentUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "https://pagos.aseguradora.com/cuotas",
+                        "maxLength": 500,
+                        "description": "Página de pago de la aseguradora (https). El aviso de la cuota se la muestra al admin"
+                    },
+                    "notes": {
+                        "type": "string",
+                        "nullable": true,
+                        "maxLength": 2000
+                    }
+                }
+            },
+            "InsuranceInstallmentResponseDto": {
+                "type": "object",
+                "properties": {
+                    "installmentId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "policyId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "number": {
+                        "type": "number",
+                        "example": 5
+                    },
+                    "total": {
+                        "type": "number",
+                        "example": 6
+                    },
+                    "label": {
+                        "type": "string",
+                        "example": "5/6"
+                    },
+                    "dueDate": {
+                        "type": "string",
+                        "example": "2026-11-22"
+                    },
+                    "graceUntil": {
+                        "type": "string",
+                        "example": "2026-11-27"
+                    },
+                    "amount": {
+                        "type": "number",
+                        "example": 29958
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "pending",
+                            "paid",
+                            "cancelled"
+                        ]
+                    },
+                    "paidAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "paidAmount": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "operationNumber": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "paidByUserId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "cashMovementId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true,
+                        "description": "Egreso de la caja con que se pagó"
+                    },
+                    "receiptAttachmentId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "installmentId",
+                    "policyId",
+                    "number",
+                    "total",
+                    "label",
+                    "dueDate",
+                    "graceUntil",
+                    "amount",
+                    "status",
+                    "paidAt",
+                    "paidAmount",
+                    "operationNumber",
+                    "paidByUserId",
+                    "cashMovementId",
+                    "receiptAttachmentId",
+                    "createdAt"
+                ]
+            },
+            "InsurancePolicyResponseDto": {
+                "type": "object",
+                "properties": {
+                    "policyId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "carId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "carPatent": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "OVQ621"
+                    },
+                    "insurer": {
+                        "$ref": "#/components/schemas/InsurerResponseDto"
+                    },
+                    "policyNumber": {
+                        "type": "string",
+                        "example": "67/02/192143"
+                    },
+                    "coverage": {
+                        "type": "string"
+                    },
+                    "validFrom": {
+                        "type": "string",
+                        "example": "2026-06-22"
+                    },
+                    "validTo": {
+                        "type": "string",
+                        "example": "2026-12-22"
+                    },
+                    "paymentCode": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "active",
+                            "upcoming",
+                            "expired",
+                            "cancelled"
+                        ]
+                    },
+                    "cancelledAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "cancelReason": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "installments": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/InsuranceInstallmentResponseDto"
+                        }
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "policyId",
+                    "carId",
+                    "carPatent",
+                    "insurer",
+                    "policyNumber",
+                    "coverage",
+                    "validFrom",
+                    "validTo",
+                    "paymentCode",
+                    "status",
+                    "cancelledAt",
+                    "cancelReason",
+                    "installments",
+                    "createdAt"
+                ]
+            },
+            "CarInsuranceResponseDto": {
+                "type": "object",
+                "properties": {
+                    "carId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "current": {
+                        "nullable": true,
+                        "description": "La póliza que cubre hoy; si no hay, la próxima que empieza; si tampoco, `null`",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/InsurancePolicyResponseDto"
+                            }
+                        ]
+                    },
+                    "history": {
+                        "description": "Las demás pólizas (vencidas, canceladas o futuras), la más nueva primero",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/InsurancePolicyResponseDto"
+                        }
+                    }
+                },
+                "required": [
+                    "carId",
+                    "current",
+                    "history"
+                ]
+            },
+            "InstallmentPlanDto": {
+                "type": "object",
+                "properties": {
+                    "count": {
+                        "type": "number",
+                        "example": 6,
+                        "minimum": 1,
+                        "maximum": 60
+                    },
+                    "amount": {
+                        "type": "number",
+                        "example": 29958,
+                        "description": "Importe de cada cuota"
+                    },
+                    "firstDueDate": {
+                        "type": "string",
+                        "example": "2026-06-22",
+                        "format": "date"
+                    },
+                    "graceDays": {
+                        "type": "number",
+                        "default": 5,
+                        "minimum": 0,
+                        "maximum": 31,
+                        "description": "Días después del vencimiento en que el pago todavía se juzga en término"
+                    }
+                },
+                "required": [
+                    "count",
+                    "amount",
+                    "firstDueDate"
+                ]
+            },
+            "CreateInsurancePolicyDto": {
+                "type": "object",
+                "properties": {
+                    "carId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "insurerId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "policyNumber": {
+                        "type": "string",
+                        "example": "67/02/192143",
+                        "maxLength": 40
+                    },
+                    "coverage": {
+                        "type": "string",
+                        "example": "Todo riesgo con franquicia"
+                    },
+                    "validFrom": {
+                        "type": "string",
+                        "example": "2026-06-22",
+                        "format": "date"
+                    },
+                    "validTo": {
+                        "type": "string",
+                        "example": "2026-12-22",
+                        "format": "date"
+                    },
+                    "paymentCode": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "0001234567890123",
+                        "maxLength": 60,
+                        "description": "Código de pago electrónico (Pago Fácil, Rapipago)"
+                    },
+                    "installments": {
+                        "description": "Plan de cuotas: se generan `count` cuotas mensuales el mismo día de cada mes (si el mes no lo tiene, el último)",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/InstallmentPlanDto"
+                            }
+                        ]
+                    }
+                },
+                "required": [
+                    "carId",
+                    "insurerId",
+                    "policyNumber",
+                    "coverage",
+                    "validFrom",
+                    "validTo",
+                    "installments"
+                ]
+            },
+            "FleetSyncDto": {
+                "type": "object",
+                "properties": {
+                    "synced": {
+                        "type": "boolean",
+                        "description": "`true` si la tarea de seguro del vehículo quedó con el vencimiento de la póliza"
+                    },
+                    "pending": {
+                        "type": "boolean",
+                        "description": "`true` si la póliza empieza después de que vence el seguro actual de la flota: la tarea se actualiza cuando la póliza empiece (la actualiza el cron diario)"
+                    },
+                    "taskId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "reason": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Por qué no se sincronizó, si `synced` es `false`"
+                    }
+                },
+                "required": [
+                    "synced",
+                    "pending",
+                    "taskId",
+                    "reason"
+                ]
+            },
+            "CreatedInsurancePolicyDto": {
+                "type": "object",
+                "properties": {
+                    "policyId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "carId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "carPatent": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "OVQ621"
+                    },
+                    "insurer": {
+                        "$ref": "#/components/schemas/InsurerResponseDto"
+                    },
+                    "policyNumber": {
+                        "type": "string",
+                        "example": "67/02/192143"
+                    },
+                    "coverage": {
+                        "type": "string"
+                    },
+                    "validFrom": {
+                        "type": "string",
+                        "example": "2026-06-22"
+                    },
+                    "validTo": {
+                        "type": "string",
+                        "example": "2026-12-22"
+                    },
+                    "paymentCode": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "active",
+                            "upcoming",
+                            "expired",
+                            "cancelled"
+                        ]
+                    },
+                    "cancelledAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "cancelReason": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "installments": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/InsuranceInstallmentResponseDto"
+                        }
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "fleet": {
+                        "$ref": "#/components/schemas/FleetSyncDto"
+                    }
+                },
+                "required": [
+                    "policyId",
+                    "carId",
+                    "carPatent",
+                    "insurer",
+                    "policyNumber",
+                    "coverage",
+                    "validFrom",
+                    "validTo",
+                    "paymentCode",
+                    "status",
+                    "cancelledAt",
+                    "cancelReason",
+                    "installments",
+                    "createdAt",
+                    "fleet"
+                ]
+            },
+            "UpdateInsurancePolicyDto": {
+                "type": "object",
+                "properties": {
+                    "insurerId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "policyNumber": {
+                        "type": "string",
+                        "example": "67/02/192143",
+                        "maxLength": 40
+                    },
+                    "coverage": {
+                        "type": "string",
+                        "example": "Todo riesgo con franquicia"
+                    },
+                    "paymentCode": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "0001234567890123",
+                        "maxLength": 60,
+                        "description": "Código de pago electrónico (Pago Fácil, Rapipago)"
+                    }
+                }
+            },
+            "CancelInsurancePolicyDto": {
+                "type": "object",
+                "properties": {
+                    "reason": {
+                        "type": "string",
+                        "example": "Se vendió el vehículo"
+                    }
+                },
+                "required": [
+                    "reason"
+                ]
+            },
+            "FleetRevertDto": {
+                "type": "object",
+                "properties": {
+                    "reverted": {
+                        "type": "boolean",
+                        "description": "`true` si se deshizo lo que la póliza había hecho en la flota (tarea creada cancelada y anteriores reabiertas)"
+                    },
+                    "notes": {
+                        "description": "Lo que no se tocó porque alguien lo cambió mientras tanto, o por qué no se revirtió",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": [
+                    "reverted",
+                    "notes"
+                ]
+            },
+            "CancelledInsurancePolicyDto": {
+                "type": "object",
+                "properties": {
+                    "policyId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "carId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "carPatent": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "OVQ621"
+                    },
+                    "insurer": {
+                        "$ref": "#/components/schemas/InsurerResponseDto"
+                    },
+                    "policyNumber": {
+                        "type": "string",
+                        "example": "67/02/192143"
+                    },
+                    "coverage": {
+                        "type": "string"
+                    },
+                    "validFrom": {
+                        "type": "string",
+                        "example": "2026-06-22"
+                    },
+                    "validTo": {
+                        "type": "string",
+                        "example": "2026-12-22"
+                    },
+                    "paymentCode": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "active",
+                            "upcoming",
+                            "expired",
+                            "cancelled"
+                        ]
+                    },
+                    "cancelledAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "cancelReason": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "installments": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/InsuranceInstallmentResponseDto"
+                        }
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "fleetRevert": {
+                        "$ref": "#/components/schemas/FleetRevertDto"
+                    }
+                },
+                "required": [
+                    "policyId",
+                    "carId",
+                    "carPatent",
+                    "insurer",
+                    "policyNumber",
+                    "coverage",
+                    "validFrom",
+                    "validTo",
+                    "paymentCode",
+                    "status",
+                    "cancelledAt",
+                    "cancelReason",
+                    "installments",
+                    "createdAt",
+                    "fleetRevert"
+                ]
+            },
+            "InsuranceInstallmentDetailDto": {
+                "type": "object",
+                "properties": {
+                    "installmentId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "policyId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "number": {
+                        "type": "number",
+                        "example": 5
+                    },
+                    "total": {
+                        "type": "number",
+                        "example": 6
+                    },
+                    "label": {
+                        "type": "string",
+                        "example": "5/6"
+                    },
+                    "dueDate": {
+                        "type": "string",
+                        "example": "2026-11-22"
+                    },
+                    "graceUntil": {
+                        "type": "string",
+                        "example": "2026-11-27"
+                    },
+                    "amount": {
+                        "type": "number",
+                        "example": 29958
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "pending",
+                            "paid",
+                            "cancelled"
+                        ]
+                    },
+                    "paidAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "paidAmount": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "operationNumber": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "paidByUserId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "cashMovementId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true,
+                        "description": "Egreso de la caja con que se pagó"
+                    },
+                    "receiptAttachmentId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "carId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "carPatent": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "OVQ621"
+                    },
+                    "policyNumber": {
+                        "type": "string",
+                        "example": "67/02/192143"
+                    },
+                    "insurerId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "insurerName": {
+                        "type": "string",
+                        "example": "Seguros Rivadavia"
+                    },
+                    "paymentUrl": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "installmentId",
+                    "policyId",
+                    "number",
+                    "total",
+                    "label",
+                    "dueDate",
+                    "graceUntil",
+                    "amount",
+                    "status",
+                    "paidAt",
+                    "paidAmount",
+                    "operationNumber",
+                    "paidByUserId",
+                    "cashMovementId",
+                    "receiptAttachmentId",
+                    "createdAt",
+                    "carId",
+                    "carPatent",
+                    "policyNumber",
+                    "insurerId",
+                    "insurerName",
+                    "paymentUrl"
+                ]
+            },
+            "InsuranceInstallmentPageDto": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/InsuranceInstallmentDetailDto"
+                        }
+                    },
+                    "total": {
+                        "type": "number"
+                    }
+                },
+                "required": [
+                    "data",
+                    "total"
+                ]
+            },
+            "UpdateInsuranceInstallmentDto": {
+                "type": "object",
+                "properties": {
+                    "dueDate": {
+                        "type": "string",
+                        "example": "2026-11-22",
+                        "format": "date",
+                        "nullable": true
+                    },
+                    "graceUntil": {
+                        "type": "string",
+                        "example": "2026-11-27",
+                        "format": "date",
+                        "nullable": true
+                    },
+                    "amount": {
+                        "type": "number",
+                        "example": 31200
+                    }
+                }
+            },
+            "ReceiptScanDataDto": {
+                "type": "object",
+                "properties": {
+                    "amount": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "29958.00"
+                    },
+                    "paidAt": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "2026-11-20T14:30:00-03:00"
+                    },
+                    "operationNumber": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "payee": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "payeeTaxId": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "period": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "2026-11"
+                    },
+                    "confidence": {
+                        "type": "string",
+                        "enum": [
+                            "high",
+                            "medium",
+                            "low"
+                        ]
+                    },
+                    "warnings": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": [
+                    "amount",
+                    "paidAt",
+                    "operationNumber",
+                    "payee",
+                    "payeeTaxId",
+                    "period",
+                    "confidence",
+                    "warnings"
+                ]
+            },
+            "ReceiptScanDto": {
+                "type": "object",
+                "properties": {
+                    "available": {
+                        "type": "boolean",
+                        "description": "`false` si no hay lector de comprobantes configurado: los datos se cargan a mano"
+                    },
+                    "data": {
+                        "nullable": true,
+                        "description": "Lo que se leyó, para precargar el formulario; `null` si no hay lector o no se pudo leer",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ReceiptScanDataDto"
+                            }
+                        ]
+                    },
+                    "warning": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Aviso cuando el lector estaba disponible pero falló o tardó más de 30 s: el comprobante quedó guardado y los datos se cargan a mano"
+                    }
+                },
+                "required": [
+                    "available",
+                    "data"
+                ]
+            },
+            "UploadedReceiptDto": {
+                "type": "object",
+                "properties": {
+                    "attachmentId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "scan": {
+                        "$ref": "#/components/schemas/ReceiptScanDto"
+                    }
+                },
+                "required": [
+                    "attachmentId",
+                    "scan"
+                ]
+            },
+            "PayInsuranceInstallmentDto": {
+                "type": "object",
+                "properties": {
+                    "attachmentId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Comprobante subido con `POST /insurance-installments/:id/receipt`"
+                    },
+                    "paidAt": {
+                        "type": "string",
+                        "example": "2026-11-20T14:30:00-03:00",
+                        "description": "Cuándo se pagó (fecha o fecha y hora ISO 8601); no puede ser futura"
+                    },
+                    "amount": {
+                        "type": "number",
+                        "example": 29958,
+                        "description": "Lo efectivamente pagado (puede diferir del importe de la cuota)"
+                    },
+                    "operationNumber": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "88123456",
+                        "maxLength": 60
+                    },
+                    "cashBoxId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Caja de la que sale el pago: efectivo, banco o billetera de la distribuidora"
+                    }
+                },
+                "required": [
+                    "attachmentId",
+                    "paidAt",
+                    "amount",
+                    "cashBoxId"
                 ]
             },
             "AsientoDeAuditoriaDto": {

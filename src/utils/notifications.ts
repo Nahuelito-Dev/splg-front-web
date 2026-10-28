@@ -6,6 +6,7 @@ export const notify = {
   success: (message: string) => enqueueSnackbar(message, { variant: 'success' }),
   error: (error: unknown) => enqueueSnackbar(errorMessage(error), { variant: 'error' }),
   info: (message: string) => enqueueSnackbar(message, { variant: 'info' }),
+  warn: (message: string) => enqueueSnackbar(message, { variant: 'warning' }),
 };
 
 export interface ConfirmOptions {
