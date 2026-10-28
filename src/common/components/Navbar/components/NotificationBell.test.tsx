@@ -252,3 +252,104 @@ describe('NotificationBell: order:refund-failed', () => {
     expect(screen.queryByRole('button', { name: /sin leer/ })).not.toBeInTheDocument();
   });
 });
+
+describe('NotificationBell: order:updated', () => {
+  const payload = {
+    orderId: 'dddddddd-4444',
+    distributorId: 'd1',
+    totalAmount: 2500,
+    status: 'pending',
+  };
+
+  it('avisa con un toast, deja la notificación con el pedido y refresca listados y detalle', () => {
+    const spy = setup();
+    act(() => {
+      handlers.get('order:updated')?.(payload);
+    });
+    expect(notifyInfo).toHaveBeenCalledWith(expect.stringContaining('El cliente modificó el pedido'));
+    const keys = spy.mock.calls.map(([filters]) => filters?.queryKey as string[]);
+    expect(keys.map((k) => k[0])).toContain('orders');
+    expect(keys).toContainEqual(['orders', 'detail', 'dddddddd-4444']);
+    fireEvent.click(screen.getByRole('button', { name: /1 sin leer/ }));
+    expect(screen.getByText('El cliente modificó el pedido')).toBeInTheDocument();
+  });
+
+  it('ignora el de otra distribuidora', () => {
+    scope.viewing = 'd-elegida';
+    setup();
+    act(() => {
+      handlers.get('order:updated')?.({ ...payload, distributorId: 'otra' });
+    });
+    expect(notifyInfo).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: /sin leer/ })).not.toBeInTheDocument();
+  });
+});
+
+describe('NotificationBell: order:payment-refunded', () => {
+  const payload = {
+    orderId: 'eeeeeeee-5555',
+    refundId: 'r-2',
+    kind: 'full',
+    amount: 1500,
+    at: '2026-10-27T12:00:00.000Z',
+    distributorId: 'd1',
+  };
+
+  it('avisa con un toast, deja la notificación con el pedido y refresca Reintegros y el pedido', () => {
+    const spy = setup();
+    act(() => {
+      handlers.get('order:payment-refunded')?.(payload);
+    });
+    expect(notifyInfo).toHaveBeenCalledWith(expect.stringContaining('Se reintegró el pago'));
+    const keys = spy.mock.calls.map(([filters]) => filters?.queryKey as string[]);
+    expect(keys.map((k) => k[0])).toContain('refunds');
+    expect(keys).toContainEqual(['orders', 'detail', 'eeeeeeee-5555']);
+    fireEvent.click(screen.getByRole('button', { name: /1 sin leer/ }));
+    expect(screen.getByText('Se reintegró el pago del pedido')).toBeInTheDocument();
+  });
+
+  it('ignora el de otra distribuidora', () => {
+    scope.viewing = 'd-elegida';
+    setup();
+    act(() => {
+      handlers.get('order:payment-refunded')?.({ ...payload, distributorId: 'otra' });
+    });
+    expect(notifyInfo).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: /sin leer/ })).not.toBeInTheDocument();
+  });
+});
+
+describe('NotificationBell: order:express-degraded', () => {
+  const payload = {
+    orderId: 'ffffffff-6666',
+    surchargeRemoved: 500,
+    total: 2000,
+    refundRequested: true,
+    refundFailed: false,
+    message: 'No hay motos disponibles: tu pedido sale por el reparto común, sin el recargo express.',
+    distributorId: 'd1',
+  };
+
+  it('avisa con un toast, deja la notificación con el pedido y refresca listados y detalle', () => {
+    const spy = setup();
+    act(() => {
+      handlers.get('order:express-degraded')?.(payload);
+    });
+    expect(notifyInfo).toHaveBeenCalledWith(expect.stringContaining('pasó al reparto común'));
+    const keys = spy.mock.calls.map(([filters]) => filters?.queryKey as string[]);
+    expect(keys.map((k) => k[0])).toContain('orders');
+    expect(keys).toContainEqual(['orders', 'detail', 'ffffffff-6666']);
+    fireEvent.click(screen.getByRole('button', { name: /1 sin leer/ }));
+    expect(screen.getByText('El pedido express pasó al reparto común')).toBeInTheDocument();
+  });
+
+  it('ignora el de otra distribuidora', () => {
+    scope.viewing = 'd-elegida';
+    setup();
+    act(() => {
+      handlers.get('order:express-degraded')?.({ ...payload, distributorId: 'otra' });
+    });
+    expect(notifyInfo).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: /sin leer/ })).not.toBeInTheDocument();
+  });
+});

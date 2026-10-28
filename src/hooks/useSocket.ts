@@ -104,6 +104,50 @@ export interface RefundFailedPayload {
 }
 
 /**
+ * Evento que emite el back a los admins de la distribuidora cuando el cliente modifica un pedido.
+ */
+export const ORDER_UPDATED_EVENT = 'order:updated';
+
+/** Payload de ORDER_UPDATED_EVENT. */
+export interface OrderUpdatedPayload {
+  orderId: string;
+  distributorId?: string | null;
+  totalAmount: number;
+  status?: string;
+}
+
+/**
+ * Evento que emite el back a los admins de la distribuidora cuando se reintegra un pago.
+ */
+export const PAYMENT_REFUNDED_EVENT = 'order:payment-refunded';
+
+/** Payload de PAYMENT_REFUNDED_EVENT. */
+export interface PaymentRefundedPayload {
+  orderId: string;
+  refundId: string;
+  kind?: string;
+  amount: number;
+  at: string;
+  distributorId?: string | null;
+}
+
+/**
+ * Evento que emite el back a los admins de la distribuidora cuando un pedido express pasa al reparto común.
+ */
+export const EXPRESS_DEGRADED_EVENT = 'order:express-degraded';
+
+/** Payload de EXPRESS_DEGRADED_EVENT. */
+export interface ExpressDegradedPayload {
+  orderId: string;
+  surchargeRemoved: number;
+  total: number;
+  refundRequested: boolean;
+  refundFailed: boolean;
+  message: string;
+  distributorId?: string | null;
+}
+
+/**
  * Evento que emite el AdminGateway por cada pedido en curso cuyo chofer manda
  * su GPS. Se centraliza acá junto a ORDER_SOCKET_EVENTS (Tracking es hoy su
  * único consumidor).

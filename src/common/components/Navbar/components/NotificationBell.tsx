@@ -16,6 +16,7 @@ import {
   Truck,
   UserRoundX,
   UserRoundSearch,
+  ArrowDownToLine,
   type LucideIcon,
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -24,18 +25,24 @@ import { useDistributorEventFilter } from '../../../../hooks/useDistributorEvent
 import { useSocketContext } from '../../../../context/useSocketContext';
 import {
   CYLINDER_BLOCKED_EVENT,
+  EXPRESS_DEGRADED_EVENT,
   INCIDENT_CREATED_EVENT,
   NO_ACTIVE_ZONES_EVENT,
   NO_DRIVERS_EVENT,
-  REFUND_FAILED_EVENT,
-  type NoActiveZonesPayload,
-  type RefundFailedPayload,
   ORDER_SOCKET_EVENTS,
+  ORDER_UPDATED_EVENT,
+  PAYMENT_REFUNDED_EVENT,
+  REFUND_FAILED_EVENT,
   type CylinderBlockedPayload,
+  type ExpressDegradedPayload,
   type IncidentCreatedPayload,
+  type NoActiveZonesPayload,
   type NoDriversPayload,
   type NoDriversReason,
   type OrderSocketEventName,
+  type OrderUpdatedPayload,
+  type PaymentRefundedPayload,
+  type RefundFailedPayload,
 } from '../../../../hooks/useSocket';
 import { queryKeys } from '../../../../services/queries/queryKeys';
 import { notify } from '../../../../utils/notifications';
@@ -70,7 +77,10 @@ type NotificationEvent =
   | typeof NO_DRIVERS_EVENT
   | typeof CYLINDER_BLOCKED_EVENT
   | typeof NO_ACTIVE_ZONES_EVENT
-  | typeof REFUND_FAILED_EVENT;
+  | typeof REFUND_FAILED_EVENT
+  | typeof ORDER_UPDATED_EVENT
+  | typeof PAYMENT_REFUNDED_EVENT
+  | typeof EXPRESS_DEGRADED_EVENT;
 
 export interface OrderNotification {
   id: string;
@@ -89,6 +99,9 @@ const EVENT_LABELS: Record<NotificationEvent, string> = {
   [CYLINDER_BLOCKED_EVENT]: 'Despacho bloqueado: envase con la revisión vencida',
   [REFUND_FAILED_EVENT]: 'No se pudo devolver el pago: resolvelo a mano',
   [NO_ACTIVE_ZONES_EVENT]: 'Sin zonas de cobertura activas: no se aceptan pedidos nuevos',
+  [ORDER_UPDATED_EVENT]: 'El cliente modificó el pedido',
+  [PAYMENT_REFUNDED_EVENT]: 'Se reintegró el pago del pedido',
+  [EXPRESS_DEGRADED_EVENT]: 'El pedido express pasó al reparto común',
   [ORDER_SOCKET_EVENTS.CREATED]: 'Nuevo pedido',
   [ORDER_SOCKET_EVENTS.ACCEPTED]: 'Pedido aceptado',
   [ORDER_SOCKET_EVENTS.ON_THE_WAY]: 'Pedido en camino',
@@ -105,6 +118,9 @@ const EVENT_VISUALS: Record<NotificationEvent, { icon: LucideIcon; tone: Tone }>
   [CYLINDER_BLOCKED_EVENT]: { icon: ShieldAlert, tone: 'danger' },
   [NO_ACTIVE_ZONES_EVENT]: { icon: MapPinOff, tone: 'danger' },
   [REFUND_FAILED_EVENT]: { icon: Undo2, tone: 'danger' },
+  [ORDER_UPDATED_EVENT]: { icon: RotateCcw, tone: 'info' },
+  [PAYMENT_REFUNDED_EVENT]: { icon: ArrowDownToLine, tone: 'success' },
+  [EXPRESS_DEGRADED_EVENT]: { icon: Truck, tone: 'warn' },
   [ORDER_SOCKET_EVENTS.CREATED]: { icon: PackagePlus, tone: 'primary' },
   [ORDER_SOCKET_EVENTS.ACCEPTED]: { icon: ThumbsUp, tone: 'info' },
   [ORDER_SOCKET_EVENTS.ON_THE_WAY]: { icon: Truck, tone: 'info' },
@@ -134,9 +150,15 @@ const buildDetail = (event: NotificationEvent, payload: OrderSocketPayload) => {
           ? payload.reason
           : event === ORDER_SOCKET_EVENTS.ASSIGNMENT_DECLINED && payload.driverName
             ? payload.driverName
-            : typeof payload.totalAmount === 'number'
+            : event === ORDER_UPDATED_EVENT && typeof payload.totalAmount === 'number'
               ? formatCurrency(payload.totalAmount)
-              : '';
+              : event === PAYMENT_REFUNDED_EVENT && typeof payload.totalAmount === 'number'
+                ? formatCurrency(payload.totalAmount)
+                : event === EXPRESS_DEGRADED_EVENT && typeof payload.totalAmount === 'number'
+                  ? formatCurrency(payload.totalAmount)
+                  : typeof payload.totalAmount === 'number'
+                    ? formatCurrency(payload.totalAmount)
+                    : '';
   return [orderRef, extra].filter(Boolean).join(' · ') || undefined;
 };
 
@@ -217,6 +239,52 @@ export const NotificationBell = () => {
           ),
         );
         void queryClient.invalidateQueries({ queryKey: queryKeys.refunds.all });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.orders.detail(payload.orderId) });
+      }),
+    );
+
+    // El cliente modificó el pedido: se avisa con un toast, queda en la campana y se refrescan listados y detalle.
+    unsubscribers.push(
+      subscribe<OrderUpdatedPayload>(ORDER_UPDATED_EVENT, (payload) => {
+        if (!belongsToView(payload)) return;
+        pushNotification(ORDER_UPDATED_EVENT, {
+          orderId: payload.orderId,
+          totalAmount: payload.totalAmount,
+        });
+        notify.info(
+          `El cliente modificó el pedido ${formatShortId(payload.orderId)}: total ${formatCurrency(payload.totalAmount)}`,
+        );
+        void queryClient.invalidateQueries({ queryKey: queryKeys.orders.lists() });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.orders.detail(payload.orderId) });
+      }),
+    );
+
+    // Se reintegró un pago: se avisa con un toast, queda en la campana y se refrescan Reintegros y el pedido.
+    unsubscribers.push(
+      subscribe<PaymentRefundedPayload>(PAYMENT_REFUNDED_EVENT, (payload) => {
+        if (!belongsToView(payload)) return;
+        pushNotification(PAYMENT_REFUNDED_EVENT, {
+          orderId: payload.orderId,
+          totalAmount: payload.amount,
+          at: payload.at,
+        });
+        notify.info(`Se reintegró el pago del pedido ${formatShortId(payload.orderId)}`);
+        void queryClient.invalidateQueries({ queryKey: queryKeys.refunds.all });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.orders.detail(payload.orderId) });
+      }),
+    );
+
+    // Un pedido express pasó al reparto común: se avisa con un toast, queda en la campana y se refrescan listados y detalle.
+    unsubscribers.push(
+      subscribe<ExpressDegradedPayload>(EXPRESS_DEGRADED_EVENT, (payload) => {
+        if (!belongsToView(payload)) return;
+        pushNotification(EXPRESS_DEGRADED_EVENT, {
+          orderId: payload.orderId,
+          totalAmount: payload.total,
+          at: new Date().toISOString(),
+        });
+        notify.info(`El pedido express ${formatShortId(payload.orderId)} pasó al reparto común`);
+        void queryClient.invalidateQueries({ queryKey: queryKeys.orders.lists() });
         void queryClient.invalidateQueries({ queryKey: queryKeys.orders.detail(payload.orderId) });
       }),
     );

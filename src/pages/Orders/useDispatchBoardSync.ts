@@ -2,7 +2,13 @@ import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSocketContext } from '../../context/useSocketContext';
 import { useDistributorEventFilter } from '../../hooks/useDistributorEventFilter';
-import { ORDER_SOCKET_EVENTS, type OrderSocketEventName } from '../../hooks/useSocket';
+import {
+  EXPRESS_DEGRADED_EVENT,
+  ORDER_SOCKET_EVENTS,
+  ORDER_UPDATED_EVENT,
+  PAYMENT_REFUNDED_EVENT,
+  type OrderSocketEventName,
+} from '../../hooks/useSocket';
 import { queryKeys } from '../../services/queries/queryKeys';
 
 /** Cuánto se junta una ráfaga de eventos (un pedido que cambia de estado emite varios) antes de volver a pedir. */
@@ -46,6 +52,16 @@ export const useDispatchBoardSync = () => {
     const unsubscribers = (Object.values(ORDER_SOCKET_EVENTS) as OrderSocketEventName[]).map((event) =>
       subscribe<{ orderId?: string; distributorId?: string | null }>(event, refresh),
     );
+
+    // El cliente modificó el pedido: refresca listados y detalle.
+    unsubscribers.push(subscribe<{ orderId?: string; distributorId?: string | null }>(ORDER_UPDATED_EVENT, refresh));
+
+    // Se reintegró un pago: refresca listados y detalle del pedido.
+    unsubscribers.push(subscribe<{ orderId?: string; distributorId?: string | null }>(PAYMENT_REFUNDED_EVENT, refresh));
+
+    // Un pedido express pasó al reparto común: refresca listados y detalle.
+    unsubscribers.push(subscribe<{ orderId?: string; distributorId?: string | null }>(EXPRESS_DEGRADED_EVENT, refresh));
+
     return () => {
       clearTimeout(timer);
       unsubscribers.forEach((unsubscribe) => unsubscribe());
