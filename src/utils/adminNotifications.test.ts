@@ -33,3 +33,15 @@ describe('notificationVisuals', () => {
     expect(notificationVisuals('algo_nuevo')).toMatchObject({ tone: 'info' });
   });
 });
+
+describe('F14: avisos del seguro', () => {
+  it('cada tipo tiene su tono: por vencer avisa, vencido es peligro', () => {
+    expect(notificationVisuals('insurance_installment_due').tone).toBe('warn');
+    expect(notificationVisuals('insurance_installment_overdue').tone).toBe('danger');
+    expect(notificationVisuals('insurance_policy_expiring').tone).toBe('warn');
+  });
+
+  it('el seguro del vehículo abre la pestaña Seguro de su ficha', () => {
+    expect(notificationTarget({ entity: 'car-insurance', id: 'car-1' })).toBe('/cars/details/car-1?tab=insurance');
+  });
+});

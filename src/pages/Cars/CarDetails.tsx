@@ -32,6 +32,7 @@ import { CarCostsTab } from '../FleetExpense/components/CarCostsTab';
 import { CarFinesTab } from '../FleetExpense/components/CarFinesTab';
 import { CarFuelTab } from '../FleetExpense/components/CarFuelTab';
 import { CarTiresTab } from '../FleetExpense/components/CarTiresTab';
+import { CarInsuranceTab } from '../Insurance/components/CarInsuranceTab';
 import { VehicleAssignmentHistoryTable } from '../Fleet/components/VehicleAssignmentHistoryTable';
 import { CarFormModal } from './components/CarFormModal';
 import { CarSummary } from './components/CarSummary';
@@ -44,6 +45,7 @@ const TABS: ProfileTabItem[] = [
   { key: 'history', label: 'Historial de choferes' },
   { key: 'fuel', label: 'Combustible' },
   { key: 'fines', label: 'Multas' },
+  { key: 'insurance', label: 'Seguro' },
   { key: 'accidents', label: 'Siniestros' },
   { key: 'costs', label: 'Costos' },
   { key: 'tires', label: 'Neumáticos' },
@@ -234,6 +236,10 @@ export const CarDetails = () => {
           {[
             ['fuel', <CarFuelTab key="fuel" car={car} canWrite={canWrite} writeHint={writeHint} />],
             ['fines', <CarFinesTab key="fines" carId={car.car_id} canWrite={canWrite} writeHint={writeHint} />],
+            [
+              'insurance',
+              <CarInsuranceTab key="insurance" carId={car.car_id} canWrite={canWrite} writeHint={writeHint} />,
+            ],
             [
               'accidents',
               <CarAccidentsTab key="accidents" carId={car.car_id} canWrite={canWrite} writeHint={writeHint} />,

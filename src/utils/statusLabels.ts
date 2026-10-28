@@ -24,6 +24,8 @@ import type {
   FleetTask,
   FuelLoad,
   Incident,
+  InsuranceInstallment,
+  InsurancePolicy,
   Leave,
   Order,
   OrderRecord,
@@ -382,6 +384,21 @@ export const TRAFFIC_FINE_STATUS: LabelMap<TrafficFine['status']> = {
   voided: { text: 'Anulada', tone: 'neutral' },
 };
 
+/** Estado de la póliza según su vigencia; cancelada no vuelve atrás. */
+export const INSURANCE_POLICY_STATUS: LabelMap<InsurancePolicy['status']> = {
+  active: { text: 'Vigente', tone: 'success' },
+  upcoming: { text: 'Futura', tone: 'info' },
+  expired: { text: 'Vencida', tone: 'neutral' },
+  cancelled: { text: 'Cancelada', tone: 'neutral' },
+};
+
+/** Ciclo de una cuota del seguro. El tono de la pendiente según su plazo lo da `installmentLabel`. */
+export const INSURANCE_INSTALLMENT_STATUS: LabelMap<InsuranceInstallment['status']> = {
+  pending: { text: 'Pendiente', tone: 'warn' },
+  paid: { text: 'Paga', tone: 'success' },
+  cancelled: { text: 'Cancelada', tone: 'neutral' },
+};
+
 /** Ciclo del siniestro: denunciado, en revisión, en reparación y cerrado. */
 export const ACCIDENT_STATUS: LabelMap<VehicleAccident['status']> = {
   reported: { text: 'Denunciado', tone: 'warn' },
@@ -494,6 +511,7 @@ export const CASH_REFERENCE: LabelMap<CashMovement['referenceType']> = {
   purchase_receipt: { text: 'Compra', tone: 'neutral' },
   fuel_load: { text: 'Combustible', tone: 'neutral' },
   traffic_fine: { text: 'Multa', tone: 'neutral' },
+  insurance_installment: { text: 'Cuota de seguro', tone: 'neutral' },
   driver_liquidation: { text: 'Liquidación', tone: 'primary' },
   box_transfer: { text: 'Transferencia entre cajas', tone: 'accent' },
   reversal: { text: 'Anulación', tone: 'warn' },

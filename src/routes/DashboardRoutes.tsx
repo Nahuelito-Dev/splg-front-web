@@ -44,6 +44,7 @@ const FleetTaskDetail = lazyPage(() => import('../pages/Fleet/FleetTaskDetail'),
 const FuelLoads = lazyPage(() => import('../pages/FleetExpense/FuelLoads'), 'FuelLoads');
 const FuelLoadForm = lazyPage(() => import('../pages/FleetExpense/FuelLoadForm'), 'FuelLoadForm');
 const TrafficFines = lazyPage(() => import('../pages/FleetExpense/TrafficFines'), 'TrafficFines');
+const Insurers = lazyPage(() => import('../pages/Insurance/Insurers'), 'Insurers');
 const VehicleAccidents = lazyPage(() => import('../pages/FleetExpense/VehicleAccidents'), 'VehicleAccidents');
 const VehicleAccidentForm = lazyPage(() => import('../pages/FleetExpense/VehicleAccidentForm'), 'VehicleAccidentForm');
 const FleetCosts = lazyPage(() => import('../pages/FleetExpense/FleetCosts'), 'FleetCosts');
@@ -234,6 +235,7 @@ export const DashboardRoutes = () => {
             <Route path="fleet/fuel-loads/new" element={<FuelLoadForm />} />
             <Route path="fleet/fuel-loads/:id/edit" element={<FuelLoadForm />} />
             <Route path="fleet/fines" element={<TrafficFines />} />
+            <Route path="fleet/insurers" element={<Insurers />} />
             <Route path="fleet/accidents" element={<VehicleAccidents />} />
             <Route path="fleet/accidents/new" element={<VehicleAccidentForm />} />
             <Route path="fleet/accidents/:id/edit" element={<VehicleAccidentForm />} />

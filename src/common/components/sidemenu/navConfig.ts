@@ -115,6 +115,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { title: 'Vencimientos', path: '/fleet/expirations', icon: CalendarClock },
       { title: 'Combustible', path: '/fleet/fuel-loads', icon: Fuel },
       { title: 'Multas', path: '/fleet/fines', icon: Gavel },
+      { title: 'Aseguradoras', path: '/fleet/insurers', icon: ShieldCheck },
       { title: 'Siniestros', path: '/fleet/accidents', icon: TriangleAlert },
       { title: 'Neumáticos', path: '/fleet/tires', icon: Circle },
       { title: 'Costos', path: '/fleet/costs', icon: Gauge },
