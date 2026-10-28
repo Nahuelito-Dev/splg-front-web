@@ -3,7 +3,7 @@ import { buildBreadcrumbs } from './breadcrumbs';
 
 describe('buildBreadcrumbs', () => {
   it('una pantalla del menú: sección › pantalla', () => {
-    expect(buildBreadcrumbs('/customers')).toEqual([{ label: 'Clientes y flota' }, { label: 'Clientes' }]);
+    expect(buildBreadcrumbs('/customers')).toEqual([{ label: 'Clientes' }, { label: 'Clientes' }]);
   });
 
   it('las pantallas de parámetros de M1 cuelgan del menú de Configuración', () => {
@@ -15,7 +15,7 @@ describe('buildBreadcrumbs', () => {
 
   it('el detalle lleva a la lista y termina en «Detalle»', () => {
     expect(buildBreadcrumbs('/customers/details/abc')).toEqual([
-      { label: 'Clientes y flota' },
+      { label: 'Clientes' },
       { label: 'Clientes', to: '/customers' },
       { label: 'Detalle' },
     ]);
@@ -31,8 +31,8 @@ describe('buildBreadcrumbs', () => {
 
   it('elige la pantalla más específica (fleet/plans y no otra)', () => {
     expect(buildBreadcrumbs('/fleet/plans/7')).toEqual([
-      { label: 'Clientes y flota' },
-      { label: 'Planes de flota', to: '/fleet/plans' },
+      { label: 'Flota' },
+      { label: 'Planes', to: '/fleet/plans' },
       { label: 'Detalle' },
     ]);
   });
