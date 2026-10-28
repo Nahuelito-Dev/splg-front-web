@@ -45,12 +45,11 @@ describe('ClaimPhoto', () => {
   it('sin permiso para operar la foto se ve pero no hay acciones', () => {
     render(<ClaimPhoto claim={claim('pending')} canOperate={false} operateHint="Elegí una distribuidora" />);
     expect(screen.getByAltText('Foto del reclamo')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Subir foto|Reemplazar|Quitar/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Reemplazar|Quitar|Arrastrá una imagen/ })).not.toBeInTheDocument();
   });
 
   it('sin foto ofrece subir', () => {
     render(<ClaimPhoto claim={claim('pending', null)} canOperate />);
-    expect(screen.getByText('Sin foto')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Subir foto' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Arrastrá una imagen o hacé clic para elegirla/ })).toBeInTheDocument();
   });
 });

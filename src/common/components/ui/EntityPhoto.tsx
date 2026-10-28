@@ -1,12 +1,10 @@
-import { useRef, useState, type ChangeEvent } from 'react';
-import { ImagePlus, Maximize2, Trash2 } from 'lucide-react';
-import { PHOTO_ALLOWED_TYPES, photoRemovable, type PhotoKind } from '../../../services/api/photos';
+import { useState } from 'react';
+import { photoRemovable, type PhotoKind } from '../../../services/api/photos';
 import { toApiError } from '../../../services/api/errors';
 import { isSignedPhotoUrl, useRemovePhoto, useRenewablePhoto, useUploadPhoto } from '../../../services/queries/photos';
 import { confirm, notify } from '../../../utils/notifications';
-import { photoErrorMessage, photoFileError } from '../../../utils/photos';
-import { Button } from './Button';
-import { cx } from './cx';
+import { photoErrorMessage, photoFileError, photoLimitsText } from '../../../utils/photos';
+import { ImageInput } from './ImageInput';
 import { Modal } from './Modal';
 
 interface Props {
@@ -42,7 +40,11 @@ export const EntityPhoto = ({
   fit = 'cover',
   className,
 }: Props) => {
-  const fileInput = useRef<HTMLInputElement>(null);
+  // El error pertenece a la foto (id + url) en la que ocurrió: al cambiar una u otra deja de mostrarse.
+  const errorKey = `${kind}:${id}:${url ?? ''}`;
+  const [inlineError, setInlineError] = useState<{ key: string; message: string } | null>(null);
+  const error = inlineError?.key === errorKey ? inlineError.message : null;
+  const setError = (message: string | null) => setInlineError(message ? { key: errorKey, message } : null);
   const [zoomed, setZoomed] = useState(false);
   const photo = useRenewablePhoto(kind, id, url);
   const upload = useUploadPhoto(kind);
@@ -54,18 +56,28 @@ export const EntityPhoto = ({
 
   const fail = (error: unknown) => {
     const apiError = toApiError(error);
-    notify.error(new Error(photoErrorMessage(kind, apiError.status, apiError.message)));
+    const message = photoErrorMessage(kind, apiError.status, apiError.message);
+    setError(message);
+    notify.error(new Error(message));
   };
 
-  const handleFile = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = '';
-    if (!file) return;
-    const invalid = photoFileError(kind, file);
-    if (invalid) {
-      notify.error(new Error(invalid));
+  const reject = (message: string) => {
+    setError(message);
+    notify.error(new Error(message));
+  };
+
+  const handleFile = (file: File) => {
+    if (!canEdit || blockedReason) return;
+    if (busy) {
+      reject('Esperá a que termine la operación en curso.');
       return;
     }
+    const invalid = photoFileError(kind, file);
+    if (invalid) {
+      reject(invalid);
+      return;
+    }
+    setError(null);
     upload.mutate(
       { id, file },
       { onSuccess: () => notify.success(hasPhoto ? 'Foto reemplazada' : 'Foto subida'), onError: fail },
@@ -80,6 +92,7 @@ export const EntityPhoto = ({
       danger: true,
     });
     if (!confirmed) return;
+    setError(null);
     remove.mutate(id, { onSuccess: () => notify.success('Foto quitada'), onError: fail });
   };
 
@@ -88,77 +101,32 @@ export const EntityPhoto = ({
     setZoomed(true);
   };
 
-  const fitClass = fit === 'contain' ? 'object-contain p-3' : 'object-cover';
-
   return (
     <div className={className}>
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">{label}</h3>
-        {canEdit && (
-          <div className="flex items-center gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={<ImagePlus />}
-              loading={upload.isPending}
-              disabled={busy}
-              blockedReason={blockedReason}
-              onClick={() => fileInput.current?.click()}
-            >
-              {hasPhoto ? 'Reemplazar' : 'Subir foto'}
-            </Button>
-            {hasPhoto && photoRemovable(kind) && (
-              <Button
-                variant="ghost"
-                size="sm"
-                icon={<Trash2 />}
-                loading={remove.isPending}
-                disabled={busy}
-                blockedReason={blockedReason}
-                onClick={() => void handleRemove()}
-              >
-                Quitar
-              </Button>
-            )}
-          </div>
-        )}
-        <input
-          ref={fileInput}
-          type="file"
-          accept={PHOTO_ALLOWED_TYPES.join(',')}
-          className="hidden"
-          aria-label={`Elegir la foto ${subject}`}
-          onChange={handleFile}
-        />
-      </div>
-      {photo.failed ? (
-        <div className="rounded-xl border border-dashed border-outline p-4 text-center" role="alert">
-          <p className="text-sm text-danger">No se pudo cargar la foto.</p>
-          <Button variant="secondary" size="sm" className="mt-2" loading={photo.renewing} onClick={photo.retry}>
-            Reintentar
-          </Button>
-        </div>
-      ) : photo.src ? (
-        <button
-          type="button"
-          onClick={openZoom}
-          className="group relative block w-full overflow-hidden rounded-xl border border-outline bg-bg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-          aria-label={`Ampliar la foto ${subject}`}
-        >
-          <img
-            src={photo.src}
-            alt={`Foto ${subject}`}
-            className={cx('h-40 w-full', fitClass)}
-            onError={photo.handleError}
-          />
-          <span className="absolute bottom-2 right-2 rounded-lg bg-surface/90 p-1.5 text-ink shadow">
-            <Maximize2 className="h-4 w-4" aria-hidden="true" />
-          </span>
-        </button>
-      ) : (
-        <p className="rounded-xl border border-dashed border-outline p-4 text-center text-sm text-muted">Sin foto</p>
-      )}
-      {canEdit && blockedReason && <p className="mt-1 text-xs text-muted">{blockedReason}</p>}
+      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">{label}</h3>
+      <ImageInput
+        inputLabel={`Elegir la foto ${subject}`}
+        subject={subject}
+        src={photo.src}
+        broken={photo.failed}
+        retrying={photo.renewing}
+        onRetry={() => {
+          setError(null);
+          photo.retry();
+        }}
+        hint={photoLimitsText(kind)}
+        fit={fit}
+        canEdit={canEdit}
+        blockedReason={blockedReason}
+        busy={busy}
+        busyLabel={remove.isPending ? 'Quitando…' : 'Subiendo…'}
+        error={error}
+        onFile={handleFile}
+        onReject={reject}
+        onRemove={hasPhoto && photoRemovable(kind) ? () => void handleRemove() : undefined}
+        onZoom={openZoom}
+        onImageError={photo.handleError}
+      />
       <Modal open={zoomed && Boolean(photo.src)} onClose={() => setZoomed(false)} title={`Foto ${subject}`} size="lg">
         {photo.src && (
           <img

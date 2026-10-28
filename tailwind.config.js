@@ -20,7 +20,13 @@ const { llama, gas, tinta, canvas, sidebar, status, statusSoft, primaryGradient,
 /** '#RRGGBB' → '12 15 22' (canal R G B), para rgb(var(--x) / <alpha-value>). */
 const channels = (hex) => {
   const n = hex.replace('#', '');
-  const full = n.length === 3 ? n.split('').map((c) => c + c).join('') : n;
+  const full =
+    n.length === 3
+      ? n
+          .split('')
+          .map((c) => c + c)
+          .join('')
+      : n;
   const int = parseInt(full, 16);
   return `${(int >> 16) & 255} ${(int >> 8) & 255} ${int & 255}`;
 };
@@ -80,14 +86,18 @@ const DARK_VARS = {
   'info-soft': dark.statusSoft.info,
 };
 
-const asCssVars = (vars) =>
-  Object.fromEntries(Object.entries(vars).map(([key, hex]) => [`--c-${key}`, channels(hex)]));
+const asCssVars = (vars) => Object.fromEntries(Object.entries(vars).map(([key, hex]) => [`--c-${key}`, channels(hex)]));
 
 const brandVariables = plugin(({ addBase }) => {
   addBase({
     ':root': asCssVars(LIGHT_VARS),
     '.dark': asCssVars(DARK_VARS),
   });
+});
+
+/** Variante para dispositivos con puntero fino y hover real (no táctiles): `pointer-hover:`. */
+const pointerHover = plugin(({ addVariant }) => {
+  addVariant('pointer-hover', '@media (hover: hover) and (pointer: fine)');
 });
 
 /** @type {import('tailwindcss').Config} */
@@ -146,5 +156,5 @@ export default {
       },
     },
   },
-  plugins: [brandVariables],
+  plugins: [brandVariables, pointerHover],
 };

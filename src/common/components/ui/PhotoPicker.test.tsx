@@ -25,6 +25,7 @@ describe('PhotoPicker', () => {
       target: { files: [new File([new Uint8Array(5 * 1024 * 1024 + 1)], 'a.png', { type: 'image/png' })] },
     });
     expect(notify.error.mock.calls.at(-1)?.[0].message).toMatch(/5 MB/);
+    expect(screen.getByRole('alert')).toHaveTextContent('5 MB');
     expect(onChange).not.toHaveBeenCalled();
   });
 
@@ -42,15 +43,16 @@ describe('PhotoPicker: zona de subida', () => {
     const onChange = vi.fn();
     render(<PhotoPicker kind="claim" file={null} onChange={onChange} />);
     expect(screen.getByText(/JPG, PNG o WEBP, hasta \d+ MB/)).toBeInTheDocument();
-    const zone = screen.getByRole('button', { name: /Soltá la foto acá/ });
+    const zone = screen.getByRole('button', { name: /Arrastrá una imagen o hacé clic para elegirla/ });
     const click = vi.spyOn(screen.getByLabelText('Elegir la foto'), 'click');
-    fireEvent.keyDown(zone, { key: 'Enter' });
+    fireEvent.click(zone);
     expect(click).toHaveBeenCalledTimes(1);
-    fireEvent.dragOver(zone);
-    expect(zone).toHaveAttribute('data-dragging');
+    const area = zone.parentElement as HTMLElement;
+    fireEvent.dragOver(area);
+    expect(area).toHaveAttribute('data-dragging');
     const png = new File(['x'], 'a.png', { type: 'image/png' });
-    fireEvent.drop(zone, { dataTransfer: { files: [png] } });
-    expect(zone).not.toHaveAttribute('data-dragging');
+    fireEvent.drop(area, { dataTransfer: { files: [png] } });
+    expect(area).not.toHaveAttribute('data-dragging');
     expect(onChange).toHaveBeenCalledWith(png);
   });
 });

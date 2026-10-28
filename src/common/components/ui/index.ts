@@ -33,6 +33,7 @@ export * from './PageContainer';
 export * from './PageCover';
 export * from './PageHeader';
 export * from './DropZone';
+export * from './ImageInput';
 export * from './PhotoPicker';
 export * from './PhotoThumb';
 export * from './ProfileTabs';

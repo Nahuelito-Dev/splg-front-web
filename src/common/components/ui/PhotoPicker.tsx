@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react';
-import { X } from 'lucide-react';
-import { PHOTO_ALLOWED_TYPES, type PhotoKind } from '../../../services/api/photos';
+import type { PhotoKind } from '../../../services/api/photos';
 import { notify } from '../../../utils/notifications';
 import { photoFileError, photoLimitsText } from '../../../utils/photos';
-import { Button } from './Button';
-import { DropZone } from './DropZone';
+import { ImageInput } from './ImageInput';
 
 interface Props {
   kind: PhotoKind;
@@ -19,6 +17,7 @@ interface Props {
  */
 export const PhotoPicker = ({ kind, file, onChange, label = 'Foto (opcional)' }: Props) => {
   const [preview, setPreview] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     if (!file) return undefined;
     const url = URL.createObjectURL(file);
@@ -29,36 +28,38 @@ export const PhotoPicker = ({ kind, file, onChange, label = 'Foto (opcional)' }:
     };
   }, [file]);
 
+  const reject = (message: string) => {
+    setError(message);
+    notify.error(new Error(message));
+  };
+
   const handleFile = (picked: File) => {
     const invalid = photoFileError(kind, picked);
     if (invalid) {
-      notify.error(new Error(invalid));
+      reject(invalid);
       return;
     }
+    setError(null);
     onChange(picked);
   };
 
   return (
     <div className="flex flex-col gap-1.5">
       <span className="text-sm font-medium text-ink">{label}</span>
-      {file && preview ? (
-        <div className="flex items-center gap-3 rounded-xl border border-outline p-2">
-          <img src={preview} alt="Vista previa de la foto elegida" className="h-16 w-16 rounded-lg object-cover" />
-          <span className="min-w-0 flex-1 truncate text-sm text-ink">{file.name}</span>
-          <Button variant="ghost" size="sm" icon={<X />} onClick={() => onChange(null)}>
-            Quitar
-          </Button>
-        </div>
-      ) : (
-        <DropZone
-          inputLabel="Elegir la foto"
-          accept={PHOTO_ALLOWED_TYPES}
-          onFile={handleFile}
-          onReject={(message) => notify.error(new Error(message))}
-          title="Soltá la foto acá o elegila"
-          hint={photoLimitsText(kind)}
-        />
-      )}
+      <ImageInput
+        inputLabel="Elegir la foto"
+        subject="elegida"
+        src={file ? preview : null}
+        hint={photoLimitsText(kind)}
+        caption={file?.name}
+        error={error}
+        onFile={handleFile}
+        onReject={reject}
+        onRemove={() => {
+          setError(null);
+          onChange(null);
+        }}
+      />
     </div>
   );
 };

@@ -65,11 +65,17 @@ describe('EntityPhoto', () => {
     expect(screen.getByRole('button', { name: 'Reintentar' })).toBeEnabled();
   });
 
-  it('sin foto dice "Sin foto" y ofrece subir', () => {
+  it('sin foto invita a arrastrar o elegir, con formatos y tamaño máximo', () => {
     renderPhoto({ url: null });
-    expect(screen.getByText('Sin foto')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Subir foto' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /Arrastrá una imagen o hacé clic para elegirla/ })).toBeEnabled();
+    expect(screen.getByText('JPG, PNG o WEBP, hasta 5 MB')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Quitar' })).not.toBeInTheDocument();
+  });
+
+  it('sin foto y sin permiso dice "Sin foto" y no ofrece nada', () => {
+    renderPhoto({ url: null, canEdit: false });
+    expect(screen.getByText('Sin foto')).toBeInTheDocument();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 
   it('sin permiso la foto se ve pero no se ofrece ninguna acción', () => {
@@ -104,13 +110,36 @@ describe('EntityPhoto', () => {
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['cars'] });
   });
 
-  it('valida tipo y tamaño antes de subir', () => {
+  it('valida tipo y tamaño antes de subir y deja el error visible junto a la foto', () => {
     renderPhoto();
     pick(image('application/pdf'));
     expect(lastError()).toBe('La foto tiene que ser JPG, PNG o WEBP.');
+    expect(screen.getByRole('alert')).toHaveTextContent('La foto tiene que ser JPG, PNG o WEBP.');
     pick(image('image/png', 6 * 1024 * 1024));
     expect(lastError()).toBe('La foto no puede superar los 5 MB.');
+    expect(screen.getByRole('alert')).toHaveTextContent('La foto no puede superar los 5 MB.');
     expect(api.uploadPhoto).not.toHaveBeenCalled();
+  });
+
+  it('una imagen soltada sobre la foto la reemplaza; varias juntas se rechazan', async () => {
+    api.uploadPhoto.mockResolvedValue(undefined);
+    renderPhoto();
+    const target = screen.getByAltText('Foto del vehículo').closest('[data-dragging], .group') as HTMLElement;
+    fireEvent.dragOver(target);
+    expect(target).toHaveAttribute('data-dragging');
+    fireEvent.drop(target, { dataTransfer: { files: [image(), image()] } });
+    expect(screen.getByRole('alert')).toHaveTextContent('Soltá un solo archivo por vez.');
+    expect(api.uploadPhoto).not.toHaveBeenCalled();
+    const file = image();
+    fireEvent.drop(target, { dataTransfer: { files: [file] } });
+    await waitFor(() => expect(api.uploadPhoto).toHaveBeenCalledWith('car', 'c-1', file));
+  });
+
+  it('un error del back queda visible junto a la foto', async () => {
+    api.uploadPhoto.mockImplementation(() => Promise.reject(new ApiError(413, ['Archivo demasiado grande'])));
+    renderPhoto();
+    pick(image());
+    expect(await screen.findByRole('alert')).toHaveTextContent('Archivo demasiado grande');
   });
 
   it.each([
@@ -143,11 +172,10 @@ describe('EntityPhoto', () => {
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['cars'] });
   });
 
-  it('con una URL externa vieja la muestra pero sólo ofrece subir (el back no borra la externa)', () => {
+  it('con una URL externa vieja la muestra pero sólo ofrece reemplazar (el back no borra la externa)', () => {
     renderPhoto({ url: 'https://cdn.example/logo.png' });
     expect(screen.getByAltText('Foto del vehículo')).toHaveAttribute('src', 'https://cdn.example/logo.png');
-    expect(screen.getByRole('button', { name: 'Subir foto' })).toBeEnabled();
-    expect(screen.queryByRole('button', { name: 'Reemplazar' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reemplazar' })).toBeEnabled();
     expect(screen.queryByRole('button', { name: 'Quitar' })).not.toBeInTheDocument();
   });
 
@@ -155,11 +183,10 @@ describe('EntityPhoto', () => {
     api.getPhotoLink.mockResolvedValue({ url: null, expiresAt: null, requiresAuth: false });
     renderPhoto();
     fireEvent.error(screen.getByAltText('Foto del vehículo'));
-    expect(await screen.findByText('Sin foto')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /Arrastrá una imagen/ })).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Reemplazar' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Quitar' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Subir foto' })).toBeInTheDocument();
   });
 
   it('si la renovación devuelve la misma URL (externa muerta) marca error en vez de dejar la imagen rota', async () => {
@@ -177,6 +204,7 @@ describe('EntityPhoto', () => {
     pick(image());
     await waitFor(() => expect(screen.getByRole('button', { name: 'Quitar' })).toBeDisabled());
     expect(screen.getByRole('button', { name: 'Reemplazar' })).toBeDisabled();
+    expect(screen.getByRole('status')).toHaveTextContent('Subiendo…');
   });
 
   it('mientras quita se deshabilitan subir y quitar', async () => {
