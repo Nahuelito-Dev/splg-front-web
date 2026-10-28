@@ -11,6 +11,7 @@ const resource = <R extends string>(name: R) => ({
 
 export const queryKeys = {
   admins: resource('admins'),
+  bankDetails: resource('bankDetails'),
   attendance: resource('attendance'),
   audit: resource('audit'),
   cars: resource('cars'),

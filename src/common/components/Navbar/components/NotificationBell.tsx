@@ -17,6 +17,7 @@ import {
   UserRoundX,
   UserRoundSearch,
   ArrowDownToLine,
+  Receipt,
   type LucideIcon,
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -32,6 +33,8 @@ import {
   ORDER_SOCKET_EVENTS,
   ORDER_UPDATED_EVENT,
   PAYMENT_REFUNDED_EVENT,
+  TRANSFER_RECEIPT_UPLOADED_EVENT,
+  type TransferReceiptUploadedPayload,
   REFUND_FAILED_EVENT,
   type CylinderBlockedPayload,
   type ExpressDegradedPayload,
@@ -80,7 +83,8 @@ type NotificationEvent =
   | typeof REFUND_FAILED_EVENT
   | typeof ORDER_UPDATED_EVENT
   | typeof PAYMENT_REFUNDED_EVENT
-  | typeof EXPRESS_DEGRADED_EVENT;
+  | typeof EXPRESS_DEGRADED_EVENT
+  | typeof TRANSFER_RECEIPT_UPLOADED_EVENT;
 
 export interface OrderNotification {
   id: string;
@@ -102,6 +106,7 @@ const EVENT_LABELS: Record<NotificationEvent, string> = {
   [ORDER_UPDATED_EVENT]: 'El cliente modificó el pedido',
   [PAYMENT_REFUNDED_EVENT]: 'Se reintegró el pago del pedido',
   [EXPRESS_DEGRADED_EVENT]: 'El pedido express pasó al reparto común',
+  [TRANSFER_RECEIPT_UPLOADED_EVENT]: 'El cliente subió el comprobante de transferencia',
   [ORDER_SOCKET_EVENTS.CREATED]: 'Nuevo pedido',
   [ORDER_SOCKET_EVENTS.ACCEPTED]: 'Pedido aceptado',
   [ORDER_SOCKET_EVENTS.ON_THE_WAY]: 'Pedido en camino',
@@ -121,6 +126,7 @@ const EVENT_VISUALS: Record<NotificationEvent, { icon: LucideIcon; tone: Tone }>
   [ORDER_UPDATED_EVENT]: { icon: RotateCcw, tone: 'info' },
   [PAYMENT_REFUNDED_EVENT]: { icon: ArrowDownToLine, tone: 'success' },
   [EXPRESS_DEGRADED_EVENT]: { icon: Truck, tone: 'warn' },
+  [TRANSFER_RECEIPT_UPLOADED_EVENT]: { icon: Receipt, tone: 'success' },
   [ORDER_SOCKET_EVENTS.CREATED]: { icon: PackagePlus, tone: 'primary' },
   [ORDER_SOCKET_EVENTS.ACCEPTED]: { icon: ThumbsUp, tone: 'info' },
   [ORDER_SOCKET_EVENTS.ON_THE_WAY]: { icon: Truck, tone: 'info' },
@@ -270,6 +276,17 @@ export const NotificationBell = () => {
         });
         notify.info(`Se reintegró el pago del pedido ${formatShortId(payload.orderId)}`);
         void queryClient.invalidateQueries({ queryKey: queryKeys.refunds.all });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.orders.detail(payload.orderId) });
+      }),
+    );
+
+    // El cliente subió el comprobante de su transferencia: se avisa, queda en la campana y se refrescan el pedido y
+    // sus comprobantes (el admin lo ve al lado de confirmar el pago).
+    unsubscribers.push(
+      subscribe<TransferReceiptUploadedPayload>(TRANSFER_RECEIPT_UPLOADED_EVENT, (payload) => {
+        if (!belongsToView(payload)) return;
+        pushNotification(TRANSFER_RECEIPT_UPLOADED_EVENT, { orderId: payload.orderId, at: payload.uploadedAt });
+        notify.info(`El cliente subió el comprobante del pedido ${formatShortId(payload.orderId)}`);
         void queryClient.invalidateQueries({ queryKey: queryKeys.orders.detail(payload.orderId) });
       }),
     );

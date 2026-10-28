@@ -26559,19 +26559,19 @@
                 "type": "object",
                 "properties": {
                     "cbu": {
-                        "type": "object",
+                        "type": "string",
                         "description": "CBU: 22 dígitos con los dígitos verificadores válidos",
                         "example": "0170099220000067797370",
                         "nullable": true
                     },
                     "alias": {
-                        "type": "object",
+                        "type": "string",
                         "description": "Alias: 6 a 20 caracteres entre letras, números, punto y guion",
                         "example": "garrafas.splg",
                         "nullable": true
                     },
                     "holder": {
-                        "type": "object",
+                        "type": "string",
                         "description": "Titular de la cuenta",
                         "example": "Distribuidora Demo S.A.",
                         "nullable": true,

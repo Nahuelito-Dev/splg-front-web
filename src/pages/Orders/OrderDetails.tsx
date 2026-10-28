@@ -16,6 +16,7 @@ import { OrderHistoryCard } from './components/details/OrderHistoryCard';
 import { OrderIncidents } from './components/details/OrderIncidents';
 import { OrderItemsSummary } from './components/details/OrderItemsSummary';
 import { OrderSideCards } from './components/details/OrderSideCards';
+import { OrderTransferReceipts } from './components/details/OrderTransferReceipts';
 
 /** Payload mínimo que manda `AdminGateway.notifyAdmins` con cada evento del ciclo de vida de un pedido. */
 interface OrderSocketPayload {
@@ -81,6 +82,8 @@ export const OrderDetails = () => {
             <div className="min-w-0 space-y-5 lg:col-span-2">
               {order.status === 'reserved' && <OrderDepositCard order={order} />}
               <OrderItemsSummary order={order} />
+              {/* Lo que subió el cliente, para confirmar la transferencia sin hacerlo a ciegas. */}
+              {order.paymentMethodDetail === 'transfer' && <OrderTransferReceipts orderId={order.order_id} />}
               <OrderHistoryCard orderId={order.order_id} />
               <CylinderLinksCard
                 title="Envases"
