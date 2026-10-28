@@ -15,15 +15,25 @@ import {
   type FilterChip,
   type TabItem,
   PageContainer,
+  EmptyState,
 } from '../../common/components/ui';
 import { useDebounce, usePermissions, useUrlParams } from '../../hooks';
 import { customerQuery } from '../../services/api/customers';
 import type { Customer } from '../../services/api/types';
-import { useCustomerStatusCounts, useCustomers, useDeleteCustomer } from '../../services/queries/customers';
+import {
+  useCustomerStatusCounts,
+  useCustomers,
+  useRemoveCustomer,
+  useRemovedCustomerCount,
+  useRemovedCustomers,
+  useRestoreCustomer,
+} from '../../services/queries/customers';
 import { confirm, notify } from '../../utils/notifications';
 import { CustomerFormModal } from './components/CustomerFormModal';
 import { CustomersTable } from './components/CustomersTable';
 import { FindCustomerByUserModal } from './components/FindCustomerByUserModal';
+import { RemovedCustomersTable } from './components/RemovedCustomersTable';
+import { removalConfirmation, restoreConfirmation, removalError } from './customerRemoval';
 import { CUSTOMER_SEGMENTS, CUSTOMER_SEGMENT_LABELS, type CustomerSegment } from './customerSegments';
 import { asText, csvDateTime } from '../../utils/csv';
 
@@ -34,7 +44,7 @@ const PAGE_SIZE = 10;
 const CSV_HEADERS = ['Cliente', 'Email', 'Teléfono', 'Alta'];
 
 export const Customers = () => {
-  const { canManageCustomerAccounts } = usePermissions();
+  const { canManageCustomerAccounts, needsDistributor, operateHint } = usePermissions();
   // La búsqueda, el segmento y la página viven en la URL: al volver de una ficha se conservan.
   const [{ q: search, status: statusParam, page: pageParam }, setFilters] = useUrlParams({
     q: '',
@@ -49,8 +59,16 @@ export const Customers = () => {
 
   // El estado de la cuenta y la búsqueda los resuelve la API (`?status=`, `?term=`); los conteos son sus totales reales.
   const segment: CustomerSegment = CUSTOMER_SEGMENTS.find((s) => s === statusParam) ?? 'all';
-  const server = useCustomers(pagination, debouncedSearch, segment === 'all' ? undefined : segment);
-  const counts = useCustomerStatusCounts(debouncedSearch);
+  const removedView = segment === 'removed';
+  const statusFilter = segment === 'all' || removedView ? undefined : segment;
+  const active = useCustomers(pagination, debouncedSearch, statusFilter, !removedView);
+  // La lista de dados de baja es por distribuidora: sin «Ver como» el back responde 400, así que ni se pide.
+  const removed = useRemovedCustomers(pagination, debouncedSearch, removedView && !needsDistributor);
+  const server = removedView ? removed : active;
+  const counts = {
+    ...useCustomerStatusCounts(debouncedSearch),
+    removed: useRemovedCustomerCount(debouncedSearch, !needsDistributor),
+  };
   const rows = server.data?.rows ?? [];
   const total = server.data?.total ?? 0;
   const loading = server.isFetching;
@@ -59,7 +77,8 @@ export const Customers = () => {
     if (!loading && total > 0 && rows.length === 0 && pagination.page > 0) setFilters({ page: '1' });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, total, rows.length, pagination.page]);
-  const deleteCustomer = useDeleteCustomer();
+  const removeCustomer = useRemoveCustomer();
+  const restoreCustomer = useRestoreCustomer();
 
   // La selección es sólo de lo que se ve: cambiar de segmento, búsqueda o página la suelta.
   const [selected, setSelected] = useState<Record<string, Customer>>({});
@@ -102,16 +121,20 @@ export const Customers = () => {
     changeFilters(key === 'status' ? { status: 'all', page: '1' } : { q: '', page: '1' });
 
   const handleDelete = async (customer: Customer) => {
-    const confirmed = await confirm({
-      title: '¿Dar de baja al cliente?',
-      text: `${customer.user?.full_name ?? 'El cliente'} no va a poder volver a entrar. Su historial de pedidos se conserva.`,
-      confirmText: 'Dar de baja',
-      danger: true,
-    });
+    const confirmed = await confirm(removalConfirmation(customer.user?.full_name));
     if (!confirmed) return;
-    deleteCustomer.mutate(customer.customer_id, {
+    removeCustomer.mutate(customer.customer_id, {
       onSuccess: () => notify.success('Cliente dado de baja'),
-      onError: notify.error,
+      onError: (error) => notify.error(removalError(error)),
+    });
+  };
+
+  const handleRestore = async (customer: Customer) => {
+    const confirmed = await confirm(restoreConfirmation(customer.user?.full_name));
+    if (!confirmed) return;
+    restoreCustomer.mutate(customer.customer_id, {
+      onSuccess: () => notify.success('Cliente reactivado'),
+      onError: (error) => notify.error(removalError(error)),
     });
   };
 
@@ -151,14 +174,14 @@ export const Customers = () => {
           <TableToolbar
             search={{
               label: 'Buscar clientes',
-              placeholder: 'Nombre, email o teléfono',
+              // Los dados de baja se buscan por nombre o teléfono (el back no busca por correo ahí).
+              placeholder: removedView ? 'Nombre o teléfono' : 'Nombre, email o teléfono',
               value: search,
               onChange: (value) => changeFilters({ q: value, page: '1' }),
             }}
-            serverExport={{
-              resource: 'clientes',
-              params: customerQuery(debouncedSearch, segment === 'all' ? undefined : segment),
-            }}
+            serverExport={
+              removedView ? undefined : { resource: 'clientes', params: customerQuery(debouncedSearch, statusFilter) }
+            }
             csv={
               selectedCustomers.length > 0
                 ? {
@@ -175,21 +198,39 @@ export const Customers = () => {
             resultCount={server.data ? total : undefined}
             noun={['cliente', 'clientes']}
           />
-          <SelectionBar count={selectedCustomers.length} noun={['cliente', 'clientes']} onClear={clearSelection}>
-            <span className="text-sm text-primary-strong">Se exporta sólo la selección.</span>
-          </SelectionBar>
-          <CustomersTable
-            rows={rows}
-            total={total}
-            loading={loading}
-            filtered={chips.length > 0}
-            pagination={pagination}
-            onPaginationChange={setPagination}
-            onEdit={canManageCustomerAccounts ? (customer) => setForm({ open: true, customer }) : undefined}
-            selection={{ ids: Object.keys(selected), onChange: handleSelection }}
-            onPageChange={clearSelection}
-            onDelete={canManageCustomerAccounts ? (customer) => void handleDelete(customer) : undefined}
-          />
+          {removedView && needsDistributor ? (
+            <EmptyState title="Elegí una distribuidora" description={operateHint} />
+          ) : removedView ? (
+            <RemovedCustomersTable
+              rows={rows}
+              total={total}
+              loading={loading}
+              filtered={Boolean(search.trim())}
+              pagination={pagination}
+              onPaginationChange={setPagination}
+              onRestore={(customer) => void handleRestore(customer)}
+              restoreBlockedReason={operateHint}
+            />
+          ) : (
+            <>
+              <SelectionBar count={selectedCustomers.length} noun={['cliente', 'clientes']} onClear={clearSelection}>
+                <span className="text-sm text-primary-strong">Se exporta sólo la selección.</span>
+              </SelectionBar>
+              <CustomersTable
+                rows={rows}
+                total={total}
+                loading={loading}
+                filtered={chips.length > 0}
+                pagination={pagination}
+                onPaginationChange={setPagination}
+                onEdit={canManageCustomerAccounts ? (customer) => setForm({ open: true, customer }) : undefined}
+                selection={{ ids: Object.keys(selected), onChange: handleSelection }}
+                onPageChange={clearSelection}
+                onDelete={(customer) => void handleDelete(customer)}
+                deleteBlockedReason={operateHint}
+              />
+            </>
+          )}
         </div>
       </Card>
 

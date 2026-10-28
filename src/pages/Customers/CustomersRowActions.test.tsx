@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({ confirm: vi.fn(), mutate: vi.fn() }));
 
 vi.mock('../../hooks', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
-  usePermissions: () => ({ canManageCustomerAccounts: true }),
+  usePermissions: () => ({ canManageCustomerAccounts: true, operateHint: undefined }),
 }));
 vi.mock('../../utils/notifications', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
@@ -17,7 +17,10 @@ vi.mock('../../utils/notifications', async (importOriginal) => ({
 vi.mock('../../services/queries/customers', () => ({
   useCustomers: () => ({ data: { rows: [CUSTOMER], total: 1 }, isFetching: false }),
   useCustomerStatusCounts: () => ({ all: 1, active: 1, blocked: 0 }),
-  useDeleteCustomer: () => ({ mutate: mocks.mutate }),
+  useRemoveCustomer: () => ({ mutate: mocks.mutate }),
+  useRestoreCustomer: () => ({ mutate: vi.fn() }),
+  useRemovedCustomers: () => ({ data: undefined, isFetching: false }),
+  useRemovedCustomerCount: () => null,
 }));
 // El DataGrid de MUI no maqueta columnas en jsdom: se renderiza cada celda tal cual.
 vi.mock('../../common/components/ui', async (importOriginal) => ({
@@ -72,7 +75,13 @@ describe('Clientes: fila de acciones', () => {
     renderPage();
 
     fireEvent.click(screen.getByRole('button', { name: 'Dar de baja Ana Pérez' }));
-    expect(mocks.confirm).toHaveBeenCalledWith(expect.objectContaining({ confirmText: 'Dar de baja', danger: true }));
+    expect(mocks.confirm).toHaveBeenCalledWith(
+      expect.objectContaining({
+        confirmText: 'Dar de baja',
+        danger: true,
+        text: expect.stringContaining('de esta distribuidora') as string,
+      }),
+    );
     expect(mocks.mutate).not.toHaveBeenCalled();
     await act(() => Promise.resolve(answer.resolve(false)));
     expect(mocks.mutate).not.toHaveBeenCalled();

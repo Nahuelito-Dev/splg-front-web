@@ -1,3 +1,4 @@
+import { env } from '../../config/env';
 import { http, toPage, toQuery, type Page, type PageParams } from './httpClient';
 import { registerUser, type AccountFields } from './registration';
 import type { Customer, Message, User } from './types';
@@ -48,9 +49,27 @@ export const updateCustomerLocation = async (id: string, latLng: string): Promis
   return data;
 };
 
-/** Baja lógica de un cliente. Sólo el administrador general. */
-export const deleteCustomer = async (id: string): Promise<Message> => {
-  const { data } = await http.delete<Message>(`/customers/${id}`);
+/**
+ * DELETE /v2/customers/:id/distributor: baja del cliente en esta distribuidora. No toca su cuenta ni sus pedidos; el
+ * back responde 409 si tiene pedidos en curso.
+ */
+export const removeCustomerFromDistributor = async (id: string): Promise<Message> => {
+  const { data } = await http.delete<Message>(`/customers/${id}/distributor`, { baseURL: env.apiUrlV2 });
+  return data;
+};
+
+/** GET /v2/customers/removed: los clientes que la distribuidora dio de baja, paginados y con búsqueda. */
+export const listRemovedCustomers = async (params: PageParams, search?: string): Promise<Page<Customer>> =>
+  toPage(
+    await http.get<Customer[]>('/customers/removed', {
+      baseURL: env.apiUrlV2,
+      params: { ...toQuery(params), term: search || undefined },
+    }),
+  );
+
+/** POST /v2/customers/:id/distributor: vuelve a dar de alta en la distribuidora a un cliente dado de baja. */
+export const restoreCustomerInDistributor = async (id: string): Promise<Message> => {
+  const { data } = await http.post<Message>(`/customers/${id}/distributor`, undefined, { baseURL: env.apiUrlV2 });
   return data;
 };
 
