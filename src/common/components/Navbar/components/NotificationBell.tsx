@@ -18,6 +18,8 @@ import {
   UserRoundSearch,
   ArrowDownToLine,
   Receipt,
+  MessageSquareWarning,
+  TriangleAlert,
   type LucideIcon,
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -25,6 +27,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDistributorEventFilter } from '../../../../hooks/useDistributorEventFilter';
 import { useSocketContext } from '../../../../context/useSocketContext';
 import {
+  CLAIM_CREATED_EVENT,
   CYLINDER_BLOCKED_EVENT,
   EXPRESS_DEGRADED_EVENT,
   INCIDENT_CREATED_EVENT,
@@ -36,6 +39,7 @@ import {
   TRANSFER_RECEIPT_UPLOADED_EVENT,
   type TransferReceiptUploadedPayload,
   REFUND_FAILED_EVENT,
+  type ClaimCreatedPayload,
   type CylinderBlockedPayload,
   type ExpressDegradedPayload,
   type IncidentCreatedPayload,
@@ -50,7 +54,7 @@ import {
 import { queryKeys } from '../../../../services/queries/queryKeys';
 import { notify } from '../../../../utils/notifications';
 import { formatCurrency, formatShortId } from '../../../../utils/format';
-import type { Tone } from '../../../../utils/statusLabels';
+import { INCIDENT_TYPE, type Tone } from '../../../../utils/statusLabels';
 import { NotificationsDrawer, type NotificationsDrawerItem } from '../../ui/NotificationsDrawer';
 
 /**
@@ -73,10 +77,15 @@ interface OrderSocketPayload {
   [key: string]: unknown;
 }
 
-/** Los eventos que la campana muestra: los del ciclo de vida del pedido y el aviso de un cobro impago. */
+/** El cobro impago tiene su propio aviso; el resto de las incidencias comparte uno. */
+const UNPAID_INCIDENT = 'incident:unpaid';
+
+/** Los eventos que la campana muestra: los del ciclo de vida del pedido, las incidencias y los reclamos. */
 type NotificationEvent =
   | OrderSocketEventName
   | typeof INCIDENT_CREATED_EVENT
+  | typeof UNPAID_INCIDENT
+  | typeof CLAIM_CREATED_EVENT
   | typeof NO_DRIVERS_EVENT
   | typeof CYLINDER_BLOCKED_EVENT
   | typeof NO_ACTIVE_ZONES_EVENT
@@ -98,7 +107,9 @@ export interface OrderNotification {
 }
 
 const EVENT_LABELS: Record<NotificationEvent, string> = {
-  [INCIDENT_CREATED_EVENT]: 'Cobro impago: el chofer no pudo cobrar',
+  [UNPAID_INCIDENT]: 'Cobro impago: el chofer no pudo cobrar',
+  [INCIDENT_CREATED_EVENT]: 'Nueva incidencia de reparto',
+  [CLAIM_CREATED_EVENT]: 'Nuevo reclamo de un cliente',
   [NO_DRIVERS_EVENT]: 'Pedido sin chofer disponible',
   [CYLINDER_BLOCKED_EVENT]: 'Despacho bloqueado: envase con la revisión vencida',
   [REFUND_FAILED_EVENT]: 'No se pudo devolver el pago: resolvelo a mano',
@@ -118,7 +129,9 @@ const EVENT_LABELS: Record<NotificationEvent, string> = {
 };
 
 const EVENT_VISUALS: Record<NotificationEvent, { icon: LucideIcon; tone: Tone }> = {
-  [INCIDENT_CREATED_EVENT]: { icon: HandCoins, tone: 'danger' },
+  [UNPAID_INCIDENT]: { icon: HandCoins, tone: 'danger' },
+  [INCIDENT_CREATED_EVENT]: { icon: TriangleAlert, tone: 'warn' },
+  [CLAIM_CREATED_EVENT]: { icon: MessageSquareWarning, tone: 'warn' },
   [NO_DRIVERS_EVENT]: { icon: UserRoundSearch, tone: 'warn' },
   [CYLINDER_BLOCKED_EVENT]: { icon: ShieldAlert, tone: 'danger' },
   [NO_ACTIVE_ZONES_EVENT]: { icon: MapPinOff, tone: 'danger' },
@@ -152,7 +165,11 @@ const buildDetail = (event: NotificationEvent, payload: OrderSocketPayload) => {
       ? (payload.serials ?? []).join(', ')
       : event === NO_DRIVERS_EVENT
         ? (NO_DRIVERS_REASONS[payload.reason as NoDriversReason] ?? payload.reason ?? '')
-        : (event === ORDER_SOCKET_EVENTS.CANCELLED || event === REFUND_FAILED_EVENT) && payload.reason
+        : (event === ORDER_SOCKET_EVENTS.CANCELLED ||
+              event === REFUND_FAILED_EVENT ||
+              event === INCIDENT_CREATED_EVENT ||
+              event === CLAIM_CREATED_EVENT) &&
+            payload.reason
           ? payload.reason
           : event === ORDER_SOCKET_EVENTS.ASSIGNMENT_DECLINED && payload.driverName
             ? payload.driverName
@@ -306,15 +323,31 @@ export const NotificationBell = () => {
       }),
     );
 
-    // Un cobro impago cambia el pedido, la lista de incidencias y los reportes: se refrescan y se avisa con un toast.
+    // Una incidencia nueva refresca su lista. El cobro impago además cambia el pedido y los reportes.
     unsubscribers.push(
       subscribe<IncidentCreatedPayload>(INCIDENT_CREATED_EVENT, (payload) => {
-        if (payload.type !== 'unpaid_collection' || !belongsToView(payload)) return;
-        pushNotification(INCIDENT_CREATED_EVENT, { orderId: payload.orderId });
-        notify.info(`Cobro impago en el pedido ${formatShortId(payload.orderId)}: el chofer no pudo cobrar`);
+        if (!belongsToView(payload)) return;
         void queryClient.invalidateQueries({ queryKey: queryKeys.incidents.all });
-        void queryClient.invalidateQueries({ queryKey: queryKeys.orders.all });
-        void queryClient.invalidateQueries({ queryKey: queryKeys.reports.all });
+        if (payload.type === 'unpaid_collection') {
+          pushNotification(UNPAID_INCIDENT, { orderId: payload.orderId });
+          notify.info(`Cobro impago en el pedido ${formatShortId(payload.orderId)}: el chofer no pudo cobrar`);
+          void queryClient.invalidateQueries({ queryKey: queryKeys.orders.all });
+          void queryClient.invalidateQueries({ queryKey: queryKeys.reports.all });
+          return;
+        }
+        const type = INCIDENT_TYPE[payload.type as keyof typeof INCIDENT_TYPE]?.text ?? payload.type;
+        pushNotification(INCIDENT_CREATED_EVENT, { orderId: payload.orderId, reason: type });
+        notify.info(`Nueva incidencia en el pedido ${formatShortId(payload.orderId)}: ${type}`);
+      }),
+    );
+
+    // Un reclamo nuevo refresca la lista de reclamos; el aviso lleva al pedido reclamado.
+    unsubscribers.push(
+      subscribe<ClaimCreatedPayload>(CLAIM_CREATED_EVENT, (payload) => {
+        if (!belongsToView(payload)) return;
+        pushNotification(CLAIM_CREATED_EVENT, { orderId: payload.orderId, reason: payload.reason });
+        notify.info(`Nuevo reclamo en el pedido ${formatShortId(payload.orderId)}: ${payload.reason}`);
+        void queryClient.invalidateQueries({ queryKey: queryKeys.claims.all });
       }),
     );
 
