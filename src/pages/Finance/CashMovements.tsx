@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { GridColDef } from '@mui/x-data-grid';
-import { ArrowLeftRight, BookOpen, Plus, Undo2 } from 'lucide-react';
+import { ArrowLeftRight, BookOpen, Paperclip, Plus, Undo2 } from 'lucide-react';
 import {
   Badge,
   Button,
@@ -18,6 +18,7 @@ import {
   TableToolbar,
   type FilterChip,
 } from '../../common/components/ui';
+import { AttachmentsDrawer } from '../../common/components/AttachmentsDrawer';
 import { useClampPage, usePermissions, useUrlPagedParams } from '../../hooks';
 import { toApiError } from '../../services/api/errors';
 import { cashMovementQuery } from '../../services/api/finance';
@@ -66,6 +67,7 @@ export const CashMovements = () => {
   const [creating, setCreating] = useState(false);
   const [transferring, setTransferring] = useState(false);
   const [reversing, setReversing] = useState<CashMovement | null>(null);
+  const [attaching, setAttaching] = useState<CashMovement | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
 
   const boxName = (id: string) => boxes.data?.data.find((b) => b.cashBoxId === id)?.name;
@@ -154,11 +156,12 @@ export const CashMovements = () => {
       renderCell: ({ row }) => (
         <RowActions
           rowLabel={`movimiento ${row.description}`}
-          actions={
-            canReverse(row)
-              ? [{ label: reverseLabel(row), icon: Undo2, tone: 'danger', onClick: () => setReversing(row) }]
-              : []
-          }
+          actions={[
+            { label: 'Comprobantes', icon: Paperclip, onClick: () => setAttaching(row) },
+            ...(canReverse(row)
+              ? [{ label: reverseLabel(row), icon: Undo2, tone: 'danger' as const, onClick: () => setReversing(row) }]
+              : []),
+          ]}
         />
       ),
     },
@@ -270,13 +273,16 @@ export const CashMovements = () => {
                   {state(row)}
                   <span className="text-xs text-muted">{formatDateTime(row.occurredAt)}</span>
                 </div>
-                {canReverse(row) && (
-                  <div>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" variant="secondary" icon={<Paperclip />} onClick={() => setAttaching(row)}>
+                    Comprobantes
+                  </Button>
+                  {canReverse(row) && (
                     <Button size="sm" variant="secondary" onClick={() => setReversing(row)}>
                       {reverseLabel(row)}
                     </Button>
-                  </div>
-                )}
+                  )}
+                </div>
               </>
             )}
           />
@@ -286,6 +292,21 @@ export const CashMovements = () => {
         open={creating}
         onClose={() => setCreating(false)}
         defaultCashBoxId={filters.cashBoxId || undefined}
+      />
+      <AttachmentsDrawer
+        owner={
+          attaching
+            ? {
+                ownerType: 'cash_movement',
+                ownerId: attaching.movementId,
+                description: `${attaching.description} · ${formatCurrency(attaching.amount)}`,
+              }
+            : null
+        }
+        onClose={() => setAttaching(null)}
+        canWrite={canWrite}
+        blockedReason={writeHint}
+        hint="El ticket o la factura del gasto, el recibo del ingreso…"
       />
       <TransferModal open={transferring} onClose={() => setTransferring(false)} />
       <ReasonModal

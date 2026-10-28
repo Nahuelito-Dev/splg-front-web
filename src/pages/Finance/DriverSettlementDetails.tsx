@@ -3,6 +3,7 @@ import type { GridColDef } from '@mui/x-data-grid';
 import { Check, ClipboardCheck, Undo2 } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { PdfButton, useCrumbLeaf } from '../../common/components';
+import { AttachmentsPanel } from '../../common/components/AttachmentsPanel';
 import {
   Badge,
   Button,
@@ -289,6 +290,16 @@ export const DriverSettlementDetails = () => {
                   <span className="font-mono">{formatCurrency(row.amount)}</span>
                 </div>
               )}
+            />
+          </Card>
+          <Card className="p-5">
+            <AttachmentsPanel
+              ownerType="driver_settlement"
+              ownerId={settlement.settlementId}
+              canWrite={canWrite}
+              blockedReason={writeHint}
+              title="Comprobantes"
+              hint="Tickets de los gastos, comprobante del depósito…"
             />
           </Card>
           <SubmitSettlementModal open={submitting} onClose={() => setSubmitting(false)} settlement={settlement} />

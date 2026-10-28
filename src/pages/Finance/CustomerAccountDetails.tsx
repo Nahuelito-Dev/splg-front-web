@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import type { GridColDef } from '@mui/x-data-grid';
-import { Banknote, Hourglass, Landmark, Pencil, Scale, ScrollText } from 'lucide-react';
+import { Banknote, Hourglass, Landmark, Paperclip, Pencil, Scale, ScrollText } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { useCrumbLeaf } from '../../common/components';
+import { AttachmentsDrawer } from '../../common/components/AttachmentsDrawer';
 import {
   Badge,
   Button,
@@ -15,6 +16,7 @@ import {
   KpiCard,
   PageHeader,
   ResponsiveTable,
+  RowActions,
   PageContainer,
   DateRangeFilter,
 } from '../../common/components/ui';
@@ -43,6 +45,7 @@ export const CustomerAccountDetails = () => {
   const [editing, setEditing] = useState(false);
   const [paying, setPaying] = useState(false);
   const [adjusting, setAdjusting] = useState(false);
+  const [attaching, setAttaching] = useState<CustomerEntry | null>(null);
 
   const columns: GridColDef<CustomerEntry>[] = [
     {
@@ -104,6 +107,19 @@ export const CustomerAccountDetails = () => {
       align: 'right',
       headerAlign: 'right',
       valueGetter: ({ row }) => (row.balanceAfter === null ? '—' : formatCurrency(row.balanceAfter)),
+    },
+    {
+      field: 'actions',
+      headerName: '',
+      width: 70,
+      sortable: false,
+      align: 'right',
+      renderCell: ({ row }) => (
+        <RowActions
+          rowLabel={`asiento ${labelOf(CUSTOMER_ENTRY_TYPE, row.type).text} del ${formatDateTime(row.occurredAt)}`}
+          actions={[{ label: 'Comprobantes', icon: Paperclip, onClick: () => setAttaching(row) }]}
+        />
+      ),
     },
   ];
 
@@ -249,6 +265,11 @@ export const CustomerAccountDetails = () => {
                       {formatDateTime(row.occurredAt)} · saldo{' '}
                       {row.balanceAfter === null ? '—' : formatCurrency(row.balanceAfter)}
                     </div>
+                    <div>
+                      <Button size="sm" variant="secondary" icon={<Paperclip />} onClick={() => setAttaching(row)}>
+                        Comprobantes
+                      </Button>
+                    </div>
                   </>
                 )}
               />
@@ -256,6 +277,21 @@ export const CustomerAccountDetails = () => {
           </Card>
           <CustomerAccountFormModal open={editing} onClose={() => setEditing(false)} account={account} />
           <CustomerPaymentModal open={paying} onClose={() => setPaying(false)} account={account} />
+          <AttachmentsDrawer
+            owner={
+              attaching
+                ? {
+                    ownerType: 'customer_account_entry',
+                    ownerId: attaching.entryId,
+                    description: `${labelOf(CUSTOMER_ENTRY_TYPE, attaching.type).text} · ${formatDateTime(attaching.occurredAt)}`,
+                  }
+                : null
+            }
+            onClose={() => setAttaching(null)}
+            canWrite={canWrite}
+            blockedReason={writeHint}
+            hint="El recibo del pago, el comprobante de la transferencia…"
+          />
           <CustomerAdjustmentModal open={adjusting} onClose={() => setAdjusting(false)} account={account} />
         </div>
       )}

@@ -1,3 +1,4 @@
+import { withAttachmentType } from '../../utils/attachments';
 import { resolveFileSource, type FileSource } from './fileSource';
 import { http } from './httpClient';
 import type { Attachment, AttachmentOwnerType, DownloadLink } from './types';
@@ -19,7 +20,7 @@ export const uploadAttachment = async (
   label?: string,
 ): Promise<Attachment> => {
   const form = new FormData();
-  form.append('file', file);
+  form.append('file', withAttachmentType(file));
   if (label?.trim()) form.append('label', label.trim());
   const { data } = await http.post<Attachment>(`/attachments/${ownerType}/${ownerId}`, form, {
     headers: { 'Content-Type': 'multipart/form-data' },
