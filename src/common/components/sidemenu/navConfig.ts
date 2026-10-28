@@ -88,26 +88,36 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    title: 'Clientes y flota',
+    title: 'Clientes',
     items: [
       { title: 'Clientes', path: '/customers', icon: Users },
+      { title: 'Direcciones', path: '/addresses', icon: MapPinHouse, superAdminOnly: true },
+    ],
+  },
+  {
+    title: 'Personal',
+    items: [
       { title: 'Choferes', path: '/deliveries', icon: HardHat },
+      { title: 'Calificaciones', path: '/ratings', icon: Star },
       { title: 'Legajos', path: '/employees', icon: IdCard },
       { title: 'Puestos', path: '/employees/positions', icon: Briefcase },
       { title: 'Asistencia', path: '/attendance', icon: CalendarCheck },
       { title: 'Licencias', path: '/leaves', icon: CalendarOff },
+    ],
+  },
+  {
+    title: 'Flota',
+    items: [
       { title: 'Vehículos', path: '/cars', icon: Truck },
+      { title: 'Planes', path: '/fleet/plans', icon: ClipboardList },
+      { title: 'Tareas', path: '/fleet/tasks', icon: ListChecks },
       { title: 'Vencimientos', path: '/fleet/expirations', icon: CalendarClock },
-      { title: 'Archivos de flota', path: '/fleet/files', icon: FolderOpen },
-      { title: 'Planes de flota', path: '/fleet/plans', icon: ClipboardList },
-      { title: 'Tareas de flota', path: '/fleet/tasks', icon: ListChecks },
       { title: 'Combustible', path: '/fleet/fuel-loads', icon: Fuel },
       { title: 'Multas', path: '/fleet/fines', icon: Gavel },
       { title: 'Siniestros', path: '/fleet/accidents', icon: TriangleAlert },
       { title: 'Neumáticos', path: '/fleet/tires', icon: Circle },
-      { title: 'Costos de flota', path: '/fleet/costs', icon: Gauge },
-      { title: 'Calificaciones', path: '/ratings', icon: Star },
-      { title: 'Direcciones', path: '/addresses', icon: MapPinHouse, superAdminOnly: true },
+      { title: 'Costos', path: '/fleet/costs', icon: Gauge },
+      { title: 'Archivos', path: '/fleet/files', icon: FolderOpen },
     ],
   },
   {
