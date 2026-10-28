@@ -105,9 +105,14 @@ export interface MovementFilters {
   referenceId?: string;
 }
 
+/** Los parámetros de GET /stock/movements sin paginar: los mismos que usa el exporte completo. */
+export const stockMovementQuery = (filters: MovementFilters) => ({ ...filters });
+
 /** GET /stock/movements: el libro, del más nuevo al más viejo. */
 export const listStockMovements = async (params: ListParams, filters: MovementFilters): Promise<StockMovementPage> => {
-  const { data } = await http.get<StockMovementPage>('/stock/movements', { params: { ...paging(params), ...filters } });
+  const { data } = await http.get<StockMovementPage>('/stock/movements', {
+    params: { ...paging(params), ...stockMovementQuery(filters) },
+  });
   return data;
 };
 

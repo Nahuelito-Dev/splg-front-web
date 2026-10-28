@@ -22,6 +22,7 @@ import {
   PageContainer,
 } from '../../common/components/ui';
 import { useDebounce, usePermissions, useUrlParams } from '../../hooks';
+import { cylinderQuery } from '../../services/api/physicalCylinders';
 import type { Cylinder } from '../../services/api/types';
 import { useUserNames } from '../../services/queries/userNames';
 import {
@@ -82,11 +83,8 @@ export const PhysicalCylinders = () => {
   const orderId = uuidOrUndefined(orderParam) ?? '';
   const customerUserId = uuidOrUndefined(customerParam) ?? '';
   const scope = { orderId: orderId || undefined, customerUserId: customerUserId || undefined };
-  const { data, isPending, isFetching, error, refetch } = useCylinders(
-    { ...scope, state: state === 'all' ? undefined : state, vigencia },
-    pagination,
-    debouncedTerm,
-  );
+  const listFilters = { ...scope, state: state === 'all' ? undefined : state, vigencia };
+  const { data, isPending, isFetching, error, refetch } = useCylinders(listFilters, pagination, debouncedTerm);
   const counts = useCylinderStateCounts({ ...scope, vigencia });
   const customerNames = useUserNames([customerUserId]);
   const bulkTransition = useBulkTransitionCylinders();
@@ -244,12 +242,24 @@ export const PhysicalCylinders = () => {
                     setFilters({ q: value, page: '1' });
                   },
                 }}
-                csv={{
-                  filename: 'envases',
-                  label: selected.length > 0 ? 'Exportar selección' : 'Exportar CSV',
-                  headers: CSV_HEADERS,
-                  rows: toCsvRows(selected.length > 0 ? selected : rows),
+                serverExport={{
+                  resource: 'envases',
+                  params: cylinderQuery(listFilters),
+                  // La búsqueda por texto se resuelve en el panel: la API no la conoce y el exporte la ignoraría.
+                  blockedReason: debouncedTerm.trim()
+                    ? 'El exporte no admite la búsqueda por texto: quitala'
+                    : undefined,
                 }}
+                csv={
+                  selected.length > 0
+                    ? {
+                        filename: 'envases',
+                        label: 'Exportar selección',
+                        headers: CSV_HEADERS,
+                        rows: toCsvRows(selected),
+                      }
+                    : undefined
+                }
                 chips={chips}
                 onRemoveChip={(key) => {
                   clearSelection();

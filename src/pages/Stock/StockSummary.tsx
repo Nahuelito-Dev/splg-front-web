@@ -10,6 +10,7 @@ import {
   IdentityCell,
   KpiCard,
   PageHeader,
+  TableToolbar,
   ResponsiveTable,
   Skeleton,
   PageContainer,
@@ -148,6 +149,7 @@ export const StockSummary = () => {
           <CardHeader title="Por tipo de garrafa" className="" />
           <p className="text-xs text-muted">En galpones y camiones: llenas · vacías · defectuosas.</p>
         </div>
+        <TableToolbar serverExport={{ resource: 'stock-resumen' }} noun={['garrafa', 'garrafas']} />
         {summary.isError ? (
           <ErrorState error={summary.error} resource="El resumen" onRetry={() => void summary.refetch()} />
         ) : (

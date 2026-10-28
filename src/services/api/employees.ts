@@ -43,10 +43,13 @@ type OptionalText =
   | 'birthDate';
 export type EmployeeBody = Omit<UpdateEmployeeBody, OptionalText> & Partial<Record<OptionalText, string | null>>;
 
+/** Los parámetros de GET /employees sin paginar: los mismos que usa el exporte completo. */
+export const employeeQuery = (filters: EmployeeFilters) => ({ ...filters });
+
 /** GET /employees: legajos de la distribuidora, paginados (`page` desde 1). */
 export const listEmployees = async (params: PageParams, filters: EmployeeFilters): Promise<Page<EmployeeListItem>> => {
   const { data } = await http.get<EmployeePage>('/employees', {
-    params: { page: params.page + 1, limit: params.pageSize, ...filters },
+    params: { page: params.page + 1, limit: params.pageSize, ...employeeQuery(filters) },
   });
   return { rows: data.data, total: data.total };
 };

@@ -17,6 +17,7 @@ import {
   TableToolbar,
 } from '../../common/components/ui';
 import { useClampPage, usePermissions, useUrlPagedParams } from '../../hooks';
+import { tireQuery } from '../../services/api/fleetExpense';
 import type { Tire } from '../../services/api/types';
 import { useTires, useTireStatusCounts } from '../../services/queries/fleetExpense';
 import { formatCurrency, formatNumber } from '../../utils/format';
@@ -26,7 +27,6 @@ import { TireEventModal } from './components/TireEventModal';
 import { TireFormModal } from './components/TireFormModal';
 import { useCarOptions } from './components/useCarOptions';
 import { tireEventsFor } from './fleetExpenseSchemas';
-import { asText } from '../../utils/csv';
 
 /** Los neumáticos de la flota (CU-205, CU-206): alta, movimientos e historial. Opcional dentro de la flota ampliada. */
 export const Tires = () => {
@@ -38,10 +38,11 @@ export const Tires = () => {
   const [creating, setCreating] = useState(false);
   const [moving, setMoving] = useState<Tire | null>(null);
   const [viewing, setViewing] = useState<string | null>(null);
-  const { data, isFetching, error, refetch } = useTires(pagination, {
+  const listFilters = {
     carId: filters.car || undefined,
     status: status || undefined,
-  });
+  };
+  const { data, isFetching, error, refetch } = useTires(pagination, listFilters);
   const filtered = Boolean(filters.car || status);
   useClampPage(pagination, data?.total, setPagination);
   const canMove = (row: Tire) => canWrite && tireEventsFor(row.status).length > 0;
@@ -136,19 +137,9 @@ export const Tires = () => {
                 />
               </>
             }
-            csv={{
-              filename: 'neumaticos',
-              headers: ['Serie', 'Marca', 'Medida', 'Estado', 'Vehículo', 'Posición', 'Km recorridos', 'Costo'],
-              rows: (data?.data ?? []).map((row) => [
-                asText(row.serialNumber),
-                row.brand,
-                row.size,
-                labelOf(TIRE_STATUS, row.status).text,
-                row.carPatent ?? '',
-                row.position ?? '',
-                row.kmTraveled ?? '',
-                row.cost,
-              ]),
+            serverExport={{
+              resource: 'neumaticos',
+              params: tireQuery(listFilters),
             }}
             noun={['neumático', 'neumáticos']}
           />

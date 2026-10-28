@@ -15,6 +15,7 @@ import {
 } from '../../common/components/ui';
 import { useDebounce, usePermissions, useUrlPagedParams } from '../../hooks';
 import type { Order } from '../../services/api/types';
+import { orderQuery } from '../../services/api/orders';
 import {
   useAssignOrderDelivery,
   useBulkAssignOrders,
@@ -186,8 +187,7 @@ export const Orders = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, isFetching, pagination.page]);
 
-  const exported = selectedOrders.length > 0 ? selectedOrders : (data?.orders ?? []);
-  const exportRows = exported.map((order) => [
+  const exportRows = selectedOrders.map((order) => [
     formatShortId(order.order_id),
     csvDateTime(order.created_at),
     order.customer?.full_name ?? '',
@@ -263,12 +263,17 @@ export const Orders = () => {
               value: toolbar.search,
               onChange: (value) => handleToolbar({ ...toolbar, search: value }),
             }}
-            csv={{
-              filename: 'pedidos',
-              label: selectedOrders.length > 0 ? 'Exportar selección' : 'Exportar CSV',
-              headers: ['Pedido', 'Fecha', 'Cliente', 'Entrega', 'Chofer', 'Estado', 'Cobro', 'Total'],
-              rows: exportRows,
-            }}
+            serverExport={{ resource: 'pedidos', params: orderQuery({ ...listFilters, status: status || undefined }) }}
+            csv={
+              selectedOrders.length > 0
+                ? {
+                    filename: 'pedidos',
+                    label: 'Exportar selección',
+                    headers: ['Pedido', 'Fecha', 'Cliente', 'Entrega', 'Chofer', 'Estado', 'Cobro', 'Total'],
+                    rows: exportRows,
+                  }
+                : undefined
+            }
             chips={chips}
             onRemoveChip={removeChip}
             onClearChips={() => {

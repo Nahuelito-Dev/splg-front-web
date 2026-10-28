@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom/vitest';
+import { vi } from 'vitest';
 
 /**
  * El router de datos arma `new Request(url, { signal })` con el `AbortSignal` de jsdom, que el `Request` de Node
@@ -13,3 +14,20 @@ globalThis.Request = class PatchedRequest extends NodeRequest {
     if (signal) Object.defineProperty(this, 'signal', { value: signal });
   }
 };
+
+/**
+ * Las pantallas que exportan desde el back montan `useServerExport` (React Query y sesión); sus tests no arman esos
+ * proveedores. Se reemplaza por las dos acciones del menú: el propio hook se prueba con `vi.unmock`.
+ */
+vi.mock('../hooks/useServerExport', () => ({
+  // Registra lo que recibe (los tests de pantalla verifican recurso, filtros y bloqueos) y apaga las acciones
+  // bloqueadas como lo hace el menú real.
+  useServerExport: vi.fn((config?: { blockedReason?: string }) =>
+    config
+      ? [
+          { label: 'Exportar CSV', onClick: () => undefined, blockedReason: config.blockedReason },
+          { label: 'Exportar Excel', onClick: () => undefined, blockedReason: config.blockedReason },
+        ]
+      : [],
+  ),
+}));

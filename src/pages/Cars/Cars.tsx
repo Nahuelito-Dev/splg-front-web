@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import { Button, Card, PageHeader, SearchInput, PageContainer } from '../../common/components/ui';
+import { Button, Card, PageHeader, TableToolbar, PageContainer } from '../../common/components/ui';
 import { useDebounce, usePermissions } from '../../hooks';
 import type { Car } from '../../services/api/types';
 import { useDeliveryOptions } from '../../services/queries/deliveries';
@@ -84,13 +84,20 @@ export const Cars = () => {
       />
 
       <Card>
-        <div className="flex flex-col gap-3 border-b border-outline p-4 sm:flex-row sm:items-center sm:justify-between">
-          <SearchInput
-            label="Buscar por patente"
-            placeholder="Patente (ej. AB104EJ)"
-            value={patentSearch}
-            onChange={(e) => setPatentSearch(e.target.value)}
-          />
+        <TableToolbar
+          search={{
+            label: 'Buscar por patente',
+            placeholder: 'Patente (ej. AB104EJ)',
+            value: patentSearch,
+            onChange: (value) => setPatentSearch(value),
+          }}
+          serverExport={{
+            resource: 'vehiculos',
+            // El exporte trae toda la flota: no conoce la búsqueda por patente.
+            blockedReason: searchingPatent ? 'El exporte trae toda la flota: quitá la búsqueda por patente' : undefined,
+          }}
+          noun={['vehículo', 'vehículos']}
+        >
           {searchingPatent && (
             <p
               className={patentMatch.isError && !patentSettling ? 'text-sm text-danger' : 'text-sm text-muted'}
@@ -109,7 +116,7 @@ export const Cars = () => {
               )}
             </p>
           )}
-        </div>
+        </TableToolbar>
         <CarsTable
           onView={(car) => navigate(`/cars/details/${car.car_id}`)}
           rows={rows}

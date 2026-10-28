@@ -18,6 +18,7 @@ import {
   TableToolbar,
 } from '../../common/components/ui';
 import { useClampPage, usePermissions, useUrlPagedParams } from '../../hooks';
+import { cashBoxQuery } from '../../services/api/finance';
 import type { CashBox } from '../../services/api/types';
 import { useCashBoxes } from '../../services/queries/finance';
 import { formatCurrency } from '../../utils/format';
@@ -39,10 +40,11 @@ export const CashBoxes = () => {
   const navigate = useNavigate();
   const { canWrite, writeHint } = usePermissions();
   const [filters, setFilters, pagination, setPagination] = useUrlPagedParams({ kind: '', inactive: '' }, 10);
-  const { data, isFetching, error, refetch } = useCashBoxes(pagination, {
+  const listFilters = {
     kind: (filters.kind || undefined) as CashBox['kind'] | undefined,
     includeInactive: filters.inactive === '1',
-  });
+  };
+  const { data, isFetching, error, refetch } = useCashBoxes(pagination, listFilters);
   const [editing, setEditing] = useState<CashBox | null>(null);
   const [creating, setCreating] = useState(false);
   const [opening, setOpening] = useState<CashBox | null>(null);
@@ -141,21 +143,9 @@ export const CashBoxes = () => {
               />
             </>
           }
-          csv={{
-            filename: 'cajas',
-            headers: ['Caja', 'Tipo', 'Saldo', 'Estado'],
-            rows: (data?.data ?? []).map((row) => [
-              row.name,
-              labelOf(CASH_BOX_KIND, row.kind).text,
-              row.balance,
-              !row.isActive
-                ? 'Desactivada'
-                : row.requiresSession
-                  ? row.openSessionId
-                    ? 'Abierta'
-                    : 'Cerrada'
-                  : 'Sin sesión',
-            ]),
+          serverExport={{
+            resource: 'cajas',
+            params: cashBoxQuery(listFilters),
           }}
           noun={['caja', 'cajas']}
         />

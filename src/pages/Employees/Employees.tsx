@@ -17,12 +17,12 @@ import {
   TableToolbar,
 } from '../../common/components/ui';
 import { useDebounce, usePermissions, useUrlParams } from '../../hooks';
+import { employeeQuery } from '../../services/api/employees';
 import type { Employee, JobPosition } from '../../services/api/types';
 import { useEmployees, useEmployeeStatusCounts, useJobPositions } from '../../services/queries/employees';
 
 import { EmployeesTable } from './components/EmployeesTable';
-import { EMPLOYEE_STATUS_LABELS, POSITION_CATEGORY_LABELS, employeeFullName } from './employeeLabels';
-import { csvDay } from '../../utils/csv';
+import { EMPLOYEE_STATUS_LABELS, POSITION_CATEGORY_LABELS } from './employeeLabels';
 
 const TABS_ID = 'employees';
 const PAGE_SIZE = 10;
@@ -50,16 +50,13 @@ export const Employees = () => {
   );
   // Un `?position=` que no es un puesto de la distribuidora se ignora; hasta que carguen los puestos no se consulta.
   const positionFilter = positions.data?.find((p) => p.positionId === position);
-  const server = useEmployees(
-    pagination,
-    {
-      q: debouncedSearch || undefined,
-      status: segment === 'all' ? undefined : (segment satisfies Employee['status']),
-      category: categoryFilter,
-      positionId: positionFilter?.positionId,
-    },
-    !needsDistributor && (!position || !positions.isPending),
-  );
+  const listFilters = {
+    q: debouncedSearch || undefined,
+    status: segment === 'all' ? undefined : (segment satisfies Employee['status']),
+    category: categoryFilter,
+    positionId: positionFilter?.positionId,
+  };
+  const server = useEmployees(pagination, listFilters, !needsDistributor && (!position || !positions.isPending));
   const counts = useEmployeeStatusCounts(
     { q: debouncedSearch || undefined, category: categoryFilter, positionId: positionFilter?.positionId },
     !needsDistributor && (!position || !positions.isPending),
@@ -147,15 +144,10 @@ export const Employees = () => {
                 value: search,
                 onChange: (value) => setFilters({ q: value, page: '1' }),
               }}
-              csv={{
-                filename: 'legajos',
-                headers: ['Empleado', 'Puesto', 'Estado', 'Ingreso'],
-                rows: rows.map((employee) => [
-                  employeeFullName(employee),
-                  employee.position.name,
-                  EMPLOYEE_STATUS_LABELS[employee.status],
-                  csvDay(employee.hireDate),
-                ]),
+              serverExport={{
+                resource: 'legajos',
+                params: employeeQuery(listFilters),
+                blockedReason: position && positions.isPending ? 'Esperá a que carguen los puestos' : undefined,
               }}
               chips={chips}
               onRemoveChip={removeChip}

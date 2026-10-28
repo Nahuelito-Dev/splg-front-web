@@ -60,9 +60,14 @@ export interface CashBoxFilters {
   term?: string;
 }
 
+/** Los parámetros de GET /cash-boxes sin paginar: los mismos que usa el exporte completo. */
+export const cashBoxQuery = (filters: CashBoxFilters) => ({ ...filters });
+
 /** GET /cash-boxes */
 export const listCashBoxes = async (params: ListParams, filters: CashBoxFilters = {}): Promise<CashBoxPage> => {
-  const { data } = await http.get<CashBoxPage>('/cash-boxes', { params: { ...paging(params), ...filters } });
+  const { data } = await http.get<CashBoxPage>('/cash-boxes', {
+    params: { ...paging(params), ...cashBoxQuery(filters) },
+  });
   return data;
 };
 
@@ -119,12 +124,17 @@ export interface CashMovementFilters {
   to?: string;
 }
 
+/** Los parámetros de GET /cash-movements sin paginar: los mismos que usa el exporte completo. */
+export const cashMovementQuery = (filters: CashMovementFilters) => ({ ...filters });
+
 /** GET /cash-movements */
 export const listCashMovements = async (
   params: ListParams,
   filters: CashMovementFilters = {},
 ): Promise<CashMovementPage> => {
-  const { data } = await http.get<CashMovementPage>('/cash-movements', { params: { ...paging(params), ...filters } });
+  const { data } = await http.get<CashMovementPage>('/cash-movements', {
+    params: { ...paging(params), ...cashMovementQuery(filters) },
+  });
   return data;
 };
 
@@ -200,13 +210,16 @@ export interface SettlementFilters {
   deliveryId?: string;
 }
 
+/** Los parámetros de GET /driver-settlements sin paginar: los mismos que usa el exporte completo. */
+export const settlementQuery = (filters: SettlementFilters) => ({ ...filters });
+
 /** GET /driver-settlements */
 export const listDriverSettlements = async (
   params: ListParams,
   filters: SettlementFilters = {},
 ): Promise<DriverSettlementPage> => {
   const { data } = await http.get<DriverSettlementPage>('/driver-settlements', {
-    params: { ...paging(params), ...filters },
+    params: { ...paging(params), ...settlementQuery(filters) },
   });
   return data;
 };
@@ -260,13 +273,16 @@ export interface CustomerAccountFilters {
   q?: string;
 }
 
+/** Los parámetros de GET /customer-accounts sin paginar: los mismos que usa el exporte completo. */
+export const customerAccountQuery = (filters: CustomerAccountFilters) => ({ ...filters });
+
 /** GET /customer-accounts */
 export const listCustomerAccounts = async (
   params: ListParams,
   filters: CustomerAccountFilters = {},
 ): Promise<CustomerAccountPage> => {
   const { data } = await http.get<CustomerAccountPage>('/customer-accounts', {
-    params: { ...paging(params), ...filters },
+    params: { ...paging(params), ...customerAccountQuery(filters) },
   });
   return data;
 };
@@ -390,13 +406,16 @@ export interface LiquidationFilters {
   status?: DriverLiquidation['status'];
 }
 
+/** Los parámetros de GET /driver-liquidations sin paginar: los mismos que usa el exporte completo. */
+export const liquidationQuery = (filters: LiquidationFilters) => ({ ...filters });
+
 /** GET /driver-liquidations */
 export const listDriverLiquidations = async (
   params: ListParams,
   filters: LiquidationFilters = {},
 ): Promise<DriverLiquidationPage> => {
   const { data } = await http.get<DriverLiquidationPage>('/driver-liquidations', {
-    params: { ...paging(params), ...filters },
+    params: { ...paging(params), ...liquidationQuery(filters) },
   });
   return data;
 };

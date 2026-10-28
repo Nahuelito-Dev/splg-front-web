@@ -20,6 +20,7 @@ import {
 } from '../../common/components/ui';
 import { useClampPage, usePermissions, useUrlPagedParams } from '../../hooks';
 import { toApiError } from '../../services/api/errors';
+import { cashMovementQuery } from '../../services/api/finance';
 import type { CashMovement } from '../../services/api/types';
 import {
   useCashBoxOptions,
@@ -35,7 +36,6 @@ import { FinanceSummary } from './components/FinanceSummary';
 import { CashMovementFormModal } from './components/CashMovementFormModal';
 import { TransferModal } from './components/TransferModal';
 import { reverseKindOf } from './movementActions';
-import { csvDateTime } from '../../utils/csv';
 
 const DIRECTIONS = [
   { value: '', label: 'Entradas y salidas' },
@@ -53,17 +53,14 @@ export const CashMovements = () => {
   const boxes = useCashBoxOptions();
   const categories = useCashCategories({ page: 0, pageSize: 100 }, { includeInactive: true });
   const rangeInvalid = Boolean(filters.from && filters.to && filters.from > filters.to);
-  const { data, isFetching, error, refetch } = useCashMovements(
-    pagination,
-    {
-      cashBoxId: filters.cashBoxId || undefined,
-      direction: (filters.direction || undefined) as CashMovement['direction'] | undefined,
-      categoryId: filters.categoryId || undefined,
-      from: filters.from || undefined,
-      to: filters.to || undefined,
-    },
-    { enabled: !rangeInvalid },
-  );
+  const listFilters = {
+    cashBoxId: filters.cashBoxId || undefined,
+    direction: (filters.direction || undefined) as CashMovement['direction'] | undefined,
+    categoryId: filters.categoryId || undefined,
+    from: filters.from || undefined,
+    to: filters.to || undefined,
+  };
+  const { data, isFetching, error, refetch } = useCashMovements(pagination, listFilters, { enabled: !rangeInvalid });
   const reverseMovement = useReverseCashMovement();
   const reverseTransfer = useReverseCashTransfer();
   const [creating, setCreating] = useState(false);
@@ -223,22 +220,10 @@ export const CashMovements = () => {
               <DateRangeFilter from={filters.from} to={filters.to} onChange={(range) => setFilters(range)} />
             </>
           }
-          csv={{
-            filename: 'movimientos-de-caja',
-            headers: ['Fecha', 'Caja', 'Categoría', 'Descripción', 'Sentido', 'Importe', 'Origen'],
-            rows: (data?.data ?? []).map((row) => [
-              csvDateTime(row.occurredAt),
-              row.cashBoxName,
-              row.categoryName,
-              row.description,
-              row.direction === 'in' ? 'Entrada' : 'Salida',
-              row.amount,
-              row.reversed
-                ? 'Anulado'
-                : row.reversesMovementId
-                  ? 'Anulación'
-                  : labelOf(CASH_REFERENCE, row.referenceType).text,
-            ]),
+          serverExport={{
+            resource: 'movimientos-caja',
+            params: cashMovementQuery(listFilters),
+            blockedReason: rangeInvalid ? 'El rango de fechas es inválido' : undefined,
           }}
           chips={chips}
           onRemoveChip={(key) => setFilters({ [key]: '' })}

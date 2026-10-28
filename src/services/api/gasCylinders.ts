@@ -16,13 +16,16 @@ import type {
  * con `/cylinders` (el envase físico serializado, en `physicalCylinders.ts`).
  */
 
+/** Los parámetros de GET /gascylinder sin paginar: los mismos que usa el exporte completo. */
+export const gasCylinderQuery = (search?: string) => ({ term: search || undefined });
+
 /**
  * GET /gascylinder: el total viaja en el cuerpo (`CatalogoDto`), no en
  * `X-Total-Count`. `term` busca por tipo o descripción.
  */
 export const listGasCylinders = async (params: PageParams, search?: string): Promise<Page<GasCylinder>> => {
   const { data } = await http.get<Catalogo>('/gascylinder', {
-    params: { ...toQuery(params), term: search || undefined },
+    params: { ...toQuery(params), ...gasCylinderQuery(search) },
   });
   return { rows: data.gasCylinders, total: data.total };
 };

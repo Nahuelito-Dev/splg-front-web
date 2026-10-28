@@ -19,6 +19,7 @@ import {
   DateRangeFilter,
 } from '../../common/components/ui';
 import { useClampPage, usePermissions, useUrlPagedParams } from '../../hooks';
+import { trafficFineQuery } from '../../services/api/fleetExpense';
 import type { TrafficFine } from '../../services/api/types';
 import {
   useTrafficFines,
@@ -34,7 +35,6 @@ import { PayFineModal } from './components/PayFineModal';
 import { TrafficFineDrawer } from './components/TrafficFineDrawer';
 import { TrafficFineFormModal } from './components/TrafficFineFormModal';
 import { useCarOptions } from './components/useCarOptions';
-import { asText, csvDateTime, csvDay } from '../../utils/csv';
 
 const isOpen = (fine: TrafficFine) => fine.status === 'pending' || fine.status === 'appealed';
 
@@ -57,16 +57,13 @@ export const TrafficFines = () => {
   const update = useUpdateTrafficFine();
   const voidFine = useVoidTrafficFine();
   const rangeInvalid = Boolean(filters.from && filters.to && filters.from > filters.to);
-  const { data, isFetching, error, refetch } = useTrafficFines(
-    pagination,
-    {
-      carId: filters.car || undefined,
-      status: status || undefined,
-      from: filters.from || undefined,
-      to: filters.to || undefined,
-    },
-    { enabled: !rangeInvalid },
-  );
+  const listFilters = {
+    carId: filters.car || undefined,
+    status: status || undefined,
+    from: filters.from || undefined,
+    to: filters.to || undefined,
+  };
+  const { data, isFetching, error, refetch } = useTrafficFines(pagination, listFilters, { enabled: !rangeInvalid });
   const filtered = Boolean(filters.car || status || filters.from || filters.to);
   useClampPage(pagination, data?.total, setPagination);
 
@@ -189,19 +186,10 @@ export const TrafficFines = () => {
                 <DateRangeFilter from={filters.from} to={filters.to} onChange={(range) => setFilters({ ...range })} />
               </>
             }
-            csv={{
-              filename: 'multas',
-              headers: ['Acta', 'Vehículo', 'Chofer', 'Fecha', 'Infracción', 'Importe', 'Vencimiento', 'Estado'],
-              rows: (data?.data ?? []).map((row) => [
-                asText(row.actNumber),
-                row.carPatent ?? '',
-                row.employeeName ?? '',
-                csvDateTime(row.occurredAt),
-                row.infraction,
-                row.amount,
-                row.dueDate ? csvDay(row.dueDate) : '',
-                labelOf(TRAFFIC_FINE_STATUS, row.status).text,
-              ]),
+            serverExport={{
+              resource: 'multas',
+              params: trafficFineQuery(listFilters),
+              blockedReason: rangeInvalid ? 'El rango de fechas es inválido' : undefined,
             }}
             noun={['multa', 'multas']}
           >

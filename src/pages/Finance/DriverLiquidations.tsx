@@ -17,12 +17,12 @@ import {
   TableToolbar,
 } from '../../common/components/ui';
 import { FROM_LIST_STATE, useClampPage, usePermissions, useUrlPagedParams } from '../../hooks';
+import { liquidationQuery } from '../../services/api/finance';
 import type { DriverLiquidation } from '../../services/api/types';
 import { useDriverLiquidations, useLiquidationStatusCounts } from '../../services/queries/finance';
 import { formatCurrency, formatDay } from '../../utils/format';
 import { LIQUIDATION_STATUS, labelOf, statusOptions, statusParam } from '../../utils/statusLabels';
 import { LiquidationFormModal } from './components/LiquidationFormModal';
-import { csvDay } from '../../utils/csv';
 
 /** Liquidaciones de comisiones de los choferes (CU-242, 243, 334, 335). */
 export const DriverLiquidations = () => {
@@ -31,9 +31,10 @@ export const DriverLiquidations = () => {
   const [filters, setFilters, pagination, setPagination] = useUrlPagedParams({ status: '' }, 10);
   // Un estado inválido en la URL (enlace viejo o escrito a mano) se trata como «todos», en la consulta y en las pestañas.
   const status = statusParam(LIQUIDATION_STATUS, filters.status);
-  const { data, isFetching, error, refetch } = useDriverLiquidations(pagination, {
+  const listFilters = {
     status: status || undefined,
-  });
+  };
+  const { data, isFetching, error, refetch } = useDriverLiquidations(pagination, listFilters);
   const [creating, setCreating] = useState(false);
 
   const goTo = (row: DriverLiquidation) =>
@@ -120,19 +121,9 @@ export const DriverLiquidations = () => {
           idPrefix="driver-liquidations"
         >
           <TableToolbar
-            csv={{
-              filename: 'liquidaciones',
-              headers: ['Liquidación', 'Chofer', 'Desde', 'Hasta', 'Bruto', 'Deducciones', 'Neto', 'Estado'],
-              rows: (data?.data ?? []).map((row) => [
-                row.number,
-                row.employeeName,
-                csvDay(row.periodFrom),
-                csvDay(row.periodTo),
-                row.gross,
-                row.deductions,
-                row.net,
-                labelOf(LIQUIDATION_STATUS, row.status).text,
-              ]),
+            serverExport={{
+              resource: 'liquidaciones',
+              params: liquidationQuery(listFilters),
             }}
             noun={['liquidación', 'liquidaciones']}
           />

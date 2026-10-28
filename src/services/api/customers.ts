@@ -5,6 +5,9 @@ import type { Customer, Message, User } from './types';
 /** Estado de la cuenta que acepta `?status=` de GET /customers. */
 export type CustomerStatus = 'active' | 'blocked';
 
+/** Los parámetros de GET /customers sin paginar: los mismos que usa el exporte completo. */
+export const customerQuery = (search?: string, status?: CustomerStatus) => ({ term: search || undefined, status });
+
 /** GET /customers: los clientes de la distribuidora, paginados, con búsqueda y filtro por estado de la cuenta. */
 export const listCustomers = async (
   params: PageParams,
@@ -12,7 +15,7 @@ export const listCustomers = async (
   status?: CustomerStatus,
 ): Promise<Page<Customer>> =>
   toPage(
-    await http.get<Customer[]>('/customers', { params: { ...toQuery(params), term: search || undefined, status } }),
+    await http.get<Customer[]>('/customers', { params: { ...toQuery(params), ...customerQuery(search, status) } }),
   );
 
 /** GET /customers/:id, con el usuario y sus direcciones. */

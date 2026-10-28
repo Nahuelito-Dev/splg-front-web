@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Download } from 'lucide-react';
 import { downloadCsv, rowsToCsv } from '../../../utils/csv';
 import { toIsoDay } from '../../../utils/dates';
+import { useServerExport, type ServerExport } from '../../../hooks/useServerExport';
 import { FilterChips, type FilterChip } from './FilterChips';
 import { MoreActionsMenu, type MenuAction } from './MoreActionsMenu';
 import { SearchInput } from './SearchInput';
@@ -18,7 +19,9 @@ interface Props {
   };
   /** Selects y `DateRangePicker`: van antes de la búsqueda, que ocupa el resto de la fila. */
   filters?: ReactNode;
-  /** Se exporta desde el menú «Más»: lo que la tabla muestra en ese momento. */
+  /** Exporte completo desde el back (CSV y Excel con todas las filas que cumplen los filtros). */
+  serverExport?: ServerExport;
+  /** Se exporta desde el menú «Más»: lo que la tabla muestra en ese momento (p. ej. la selección). */
   csv?: { filename: string; headers: string[]; rows: unknown[][]; label?: string };
   /** Otras acciones del menú «Más». */
   actions?: MenuAction[];
@@ -33,13 +36,16 @@ interface Props {
   children?: ReactNode;
 }
 
+type ToolbarProps = Props & { exportItems?: MenuAction[] };
+
 /**
  * Barra de herramientas de un listado: filtros, búsqueda que ocupa el resto y un menú «Más» (⋮) con la exportación;
  * debajo, los filtros activos o el conteo. En pantallas chicas se apila.
  */
-export const TableToolbar = ({
+const Toolbar = ({
   search,
   filters,
+  exportItems = [],
   csv,
   actions = [],
   chips = [],
@@ -48,8 +54,9 @@ export const TableToolbar = ({
   resultCount,
   noun = ['resultado', 'resultados'],
   children,
-}: Props) => {
+}: ToolbarProps) => {
   const items: MenuAction[] = [
+    ...exportItems,
     ...(csv
       ? [
           {
@@ -99,3 +106,11 @@ export const TableToolbar = ({
     </div>
   );
 };
+
+/** Con exporte del back: los hooks de la descarga (React Query, sesión) sólo corren en las pantallas que lo piden. */
+const WithServerExport = ({ serverExport, ...props }: Props & { serverExport: ServerExport }) => (
+  <Toolbar {...props} exportItems={useServerExport(serverExport)} />
+);
+
+export const TableToolbar = (props: Props) =>
+  props.serverExport ? <WithServerExport {...props} serverExport={props.serverExport} /> : <Toolbar {...props} />;

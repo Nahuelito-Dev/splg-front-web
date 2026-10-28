@@ -16,6 +16,7 @@ import {
   TableToolbar,
 } from '../../common/components/ui';
 import { useDebounce, usePermissions, useUrlParams } from '../../hooks';
+import { deliveryQuery } from '../../services/api/deliveries';
 import type { Delivery } from '../../services/api/types';
 import {
   useBulkValidateDeliveries,
@@ -115,7 +116,7 @@ export const Deliveries = () => {
     count: counts[tab],
     tone: tab === 'enabled' ? 'success' : tab === 'disabled' ? 'danger' : 'warn',
   }));
-  const exportRows = (selectedDeliveries.length > 0 ? selectedDeliveries : visible).map((delivery) => [
+  const exportRows = selectedDeliveries.map((delivery) => [
     delivery.user?.full_name ?? '',
     delivery.user?.email ?? '',
     asText(delivery.user?.phone_number),
@@ -194,12 +195,24 @@ export const Deliveries = () => {
               value: search,
               onChange: (value) => handleSearch(value),
             }}
-            csv={{
-              filename: 'choferes',
-              label: selectedDeliveries.length > 0 ? 'Exportar selección' : 'Exportar CSV',
-              headers: ['Chofer', 'Email', 'Teléfono', 'Calificación', 'Estado'],
-              rows: exportRows,
+            serverExport={{
+              resource: 'choferes',
+              params: deliveryQuery(debouncedSearch, statusTab === 'all' ? undefined : statusTab),
+              // «En línea» lista los habilitados, validados y disponibles (`/delivery/active`); el exporte sólo filtra
+              // por disponibles y traería choferes que la pestaña no muestra.
+              blockedReason:
+                statusTab === 'online' ? 'Para exportar los choferes en línea, exportá desde «Todos»' : undefined,
             }}
+            csv={
+              selectedDeliveries.length > 0
+                ? {
+                    filename: 'choferes',
+                    label: 'Exportar selección',
+                    headers: ['Chofer', 'Email', 'Teléfono', 'Calificación', 'Estado'],
+                    rows: exportRows,
+                  }
+                : undefined
+            }
             chips={chips}
             onRemoveChip={removeChip}
             onClearChips={() => {

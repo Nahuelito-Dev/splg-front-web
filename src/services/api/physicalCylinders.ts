@@ -37,12 +37,19 @@ export interface CylinderFilters {
   gasCylinderId?: string;
 }
 
+/** Los parámetros de GET /cylinders sin paginar: los mismos que usa el exporte completo. */
+export const cylinderQuery = (filters: CylinderFilters = {}) => ({ ...filters });
+
 /**
  * GET /cylinders: los envases de la distribuidora con filtros (estado, pedido, cliente, vigencia, producto). Con `params` pagina en el
  * servidor (limit/offset, total en X-Total-Count); sin `params` trae todos los que cumplen el filtro.
  */
 export const listCylinders = async (filters: CylinderFilters = {}, params?: PageParams): Promise<Page<Cylinder>> =>
-  toPage(await http.get<Cylinder[]>('/cylinders', { params: { ...filters, ...(params ? toQuery(params) : {}) } }));
+  toPage(
+    await http.get<Cylinder[]>('/cylinders', {
+      params: { ...cylinderQuery(filters), ...(params ? toQuery(params) : {}) },
+    }),
+  );
 
 /** GET /cylinders/:id: un envase puntual (404 si no existe o es de otra distribuidora). */
 export const getCylinder = async (id: string): Promise<Cylinder> => {

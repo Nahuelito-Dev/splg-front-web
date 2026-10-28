@@ -27,6 +27,7 @@ vi.mock('./components/DeliveriesTable', () => ({
 }));
 vi.mock('./components/FindDeliveryByUserModal', () => ({ FindDeliveryByUserModal: () => null }));
 
+import { useServerExport } from '../../hooks/useServerExport';
 import { Deliveries } from './Deliveries';
 
 afterEach(() => {
@@ -89,7 +90,9 @@ describe('Deliveries: resumen, selección y exportación', () => {
     renderIt();
     expect(tableProps.current.selection).toBeDefined();
     fireEvent.click(screen.getByRole('button', { name: 'Más' }));
-    expect(screen.getByRole('menuitem', { name: 'Exportar CSV' })).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByRole('menuitem', { name: 'Exportar CSV' })).not.toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByRole('menuitem', { name: 'Exportar Excel' })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: 'Exportar selección' })).not.toBeInTheDocument();
     cleanup();
     permissions.canOperate = false;
     renderIt();
@@ -120,5 +123,17 @@ describe('Deliveries: administrador general sin distribuidora elegida', () => {
     expect(tableProps.current.onEdit).toBeTypeOf('function');
     expect(tableProps.current.onDelete).toBeTypeOf('function');
     expect(tableProps.current.onToggleValidated).toBeTypeOf('function');
+  });
+
+  it('en la pestaña «En línea» el exporte queda bloqueado (no filtra igual que el listado)', () => {
+    deliveriesQuery.mockReturnValue({ data: { rows: [] as Delivery[], total: 0 }, isFetching: false });
+    render(
+      <MemoryRouter initialEntries={['/deliveries?status=online']}>
+        <Deliveries />
+      </MemoryRouter>,
+    );
+    const exporte = vi.mocked(useServerExport).mock.lastCall?.[0];
+    expect(exporte?.resource).toBe('choferes');
+    expect(exporte?.blockedReason).toBeTruthy();
   });
 });

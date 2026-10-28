@@ -14,6 +14,7 @@ import {
   DateRangeFilter,
 } from '../../common/components/ui';
 import { useClampPage, useUrlPagedParams } from '../../hooks';
+import { stockMovementQuery } from '../../services/api/stock';
 import type { StockMovement } from '../../services/api/types';
 import { useStockLocations, useStockMovements } from '../../services/queries/stock';
 import { formatDateTime } from '../../utils/format';
@@ -38,12 +39,13 @@ export const Movements = () => {
     25,
   );
   const locations = useStockLocations();
-  const { data, isFetching, error, refetch } = useStockMovements(pagination, {
+  const listFilters = {
     from: filters.from || undefined,
     to: filters.to || undefined,
     reason: (filters.reason || undefined) as StockMovement['reason'] | undefined,
     locationId: filters.location || undefined,
-  });
+  };
+  const { data, isFetching, error, refetch } = useStockMovements(pagination, listFilters);
   const change = (patch: Partial<typeof filters>) => {
     setFilters(patch);
   };
@@ -127,6 +129,7 @@ export const Movements = () => {
               />
             </>
           }
+          serverExport={{ resource: 'stock-movimientos', params: stockMovementQuery(listFilters) }}
           chips={chips}
           onRemoveChip={(key) => change({ [key]: '' })}
           onClearChips={() => change({ from: '', to: '', reason: '', location: '' })}

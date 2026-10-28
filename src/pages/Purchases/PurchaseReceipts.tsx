@@ -19,6 +19,7 @@ import {
   DateRangeFilter,
 } from '../../common/components/ui';
 import { FROM_LIST_STATE, usePermissions, useClampPage, useUrlPagedParams } from '../../hooks';
+import { purchaseReceiptQuery } from '../../services/api/purchases';
 import type { PurchaseReceiptSummary } from '../../services/api/types';
 import {
   usePurchaseReceipts,
@@ -35,7 +36,6 @@ import {
   statusParam,
 } from '../../utils/statusLabels';
 import { PurchaseReceiptFormModal } from './components/PurchaseReceiptFormModal';
-import { csvDateTime } from '../../utils/csv';
 
 const PAYMENT_OPTIONS = [
   { value: '', label: 'Pagadas o no' },
@@ -57,17 +57,14 @@ export const PurchaseReceipts = () => {
   const suppliers = useSupplierOptions();
   // Un rango invertido (desde > hasta) no se consulta: ni el listado ni los contadores.
   const rangeInvalid = Boolean(filters.from && filters.to && filters.from > filters.to);
-  const { data, isFetching, error, refetch } = usePurchaseReceipts(
-    pagination,
-    {
-      status: status || undefined,
-      paymentStatus: (filters.payment || undefined) as PurchaseReceiptSummary['paymentStatus'] | undefined,
-      supplierId: filters.supplier || undefined,
-      from: filters.from || undefined,
-      to: filters.to || undefined,
-    },
-    { enabled: !rangeInvalid },
-  );
+  const listFilters = {
+    status: status || undefined,
+    paymentStatus: (filters.payment || undefined) as PurchaseReceiptSummary['paymentStatus'] | undefined,
+    supplierId: filters.supplier || undefined,
+    from: filters.from || undefined,
+    to: filters.to || undefined,
+  };
+  const { data, isFetching, error, refetch } = usePurchaseReceipts(pagination, listFilters, { enabled: !rangeInvalid });
   const goTo = (row: PurchaseReceiptSummary) =>
     navigate(`/purchases/receipts/${row.receiptId}`, { state: FROM_LIST_STATE });
   const change = (patch: Partial<typeof filters>) => {
@@ -188,19 +185,10 @@ export const PurchaseReceipts = () => {
                 <DateRangeFilter from={filters.from} to={filters.to} onChange={(range) => change({ ...range })} />
               </>
             }
-            csv={{
-              filename: 'recepciones',
-              headers: ['Recepción', 'Proveedor', 'Fecha', 'Depósito', 'Documento', 'Estado', 'Pago', 'Importe'],
-              rows: (data?.data ?? []).map((row) => [
-                row.number,
-                row.supplierName,
-                csvDateTime(row.receivedAt),
-                row.warehouseName,
-                doc(row),
-                labelOf(RECEIPT_STATUS, row.status).text,
-                labelOf(RECEIPT_PAYMENT, row.paymentStatus).text,
-                row.totalAmount,
-              ]),
+            serverExport={{
+              resource: 'recepciones',
+              params: purchaseReceiptQuery(listFilters),
+              blockedReason: rangeInvalid ? 'El rango de fechas es inválido' : undefined,
             }}
             chips={chips}
             onRemoveChip={(key) => change({ [key]: '' })}
