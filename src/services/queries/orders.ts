@@ -1,6 +1,6 @@
 import { keepPreviousData, skipToken, useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { listActiveDeliveries } from '../api/deliveries';
+import { listActiveDeliveries, listDeliveries } from '../api/deliveries';
 import type { PageParams } from '../api/httpClient';
 import {
   assignOrderDelivery,
@@ -194,6 +194,15 @@ export const useActiveDeliveries = (search = '', { distributorId, enabled = true
   useQuery({
     queryKey: queryKeys.deliveries.list({ active: true, search, distributorId: distributorId ?? null }),
     queryFn: () => listActiveDeliveries({ page: 0, pageSize: 100 }, search, distributorId),
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+
+/** Los choferes habilitados (estén o no en línea): de ahí salen los que se pueden asignar a mano. */
+export const useEnabledDeliveries = (search = '', { distributorId, enabled = true }: ActiveDeliveriesScope = {}) =>
+  useQuery({
+    queryKey: queryKeys.deliveries.list({ enabled: true, search, distributorId: distributorId ?? null }),
+    queryFn: () => listDeliveries({ page: 0, pageSize: 100 }, search, 'enabled', distributorId),
     placeholderData: keepPreviousData,
     enabled,
   });

@@ -20,9 +20,14 @@ export const listDeliveries = async (
   params: PageParams,
   search?: string,
   status?: DeliveryStatusFilter,
+  distributorId?: string,
 ): Promise<Page<Delivery>> =>
   toPage(
-    await http.get<Delivery[]>('/delivery', { params: { ...toQuery(params), term: search || undefined, status } }),
+    await http.get<Delivery[]>('/delivery', {
+      params: { ...toQuery(params), term: search || undefined, status },
+      // El administrador general lista los choferes de una empresa puntual sin pasar por «Ver como».
+      headers: distributorId ? { 'X-Distributor': distributorId } : undefined,
+    }),
   );
 
 /** GET /delivery/active: los choferes en línea y listos (habilitados, validados y conectados en su app). */

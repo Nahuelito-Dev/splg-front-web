@@ -160,6 +160,7 @@ export const OrderDetailsToolbar = ({ order }: { order: Order }) => {
         onClose={actions.close}
         onConfirm={actions.assign}
         assigning={actions.pending.assign}
+        error={actions.assignError}
         distributorId={order.distributor_id}
       />
       <CancelOrderModal
