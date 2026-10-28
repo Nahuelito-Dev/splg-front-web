@@ -1,5 +1,8 @@
 import {
   Bell,
+  CalendarClock,
+  CalendarX2,
+  FileWarning,
   MessageSquareWarning,
   Receipt,
   ShieldAlert,
@@ -18,6 +21,9 @@ const KIND_VISUALS: Record<string, { icon: LucideIcon; tone: Tone }> = {
   refund_failed: { icon: Undo2, tone: 'danger' },
   transfer_receipt_uploaded: { icon: Receipt, tone: 'success' },
   cylinder_dispatch_blocked: { icon: ShieldAlert, tone: 'danger' },
+  fleet_document_due: { icon: CalendarClock, tone: 'warn' },
+  fleet_document_expired: { icon: CalendarX2, tone: 'danger' },
+  employee_document_missing: { icon: FileWarning, tone: 'warn' },
 };
 
 /** Ícono y tono de un aviso guardado según su `kind`; un tipo que el panel no conoce se muestra con uno genérico. */
@@ -35,6 +41,10 @@ export const notificationTarget = (link: AdminNotification['link'] | undefined):
       return `/claims?claim=${id}`;
     case 'incident':
       return `/incidents?incident=${id}`;
+    case 'fleet-task':
+      return `/fleet/tasks/${id}`;
+    case 'employee':
+      return `/employees/details/${id}?tab=documents`;
     default:
       return null;
   }
