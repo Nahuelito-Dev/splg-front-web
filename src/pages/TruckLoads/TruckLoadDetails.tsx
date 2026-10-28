@@ -17,6 +17,7 @@ import {
   PageContainer,
   CardHeader,
   type MenuAction,
+  LinkedEntityPhoto,
 } from '../../common/components/ui';
 import { useBackToList, usePermissions } from '../../hooks';
 import type { StockMovement, TruckLoadItem, TruckLoadOrder } from '../../services/api/types';
@@ -282,6 +283,13 @@ export const TruckLoadDetails = () => {
                     ? [{ label: 'Motivo de la cancelación', value: load.cancelReason, wide: true }]
                     : []),
                 ]}
+              />
+              <LinkedEntityPhoto
+                kind="truckLoad"
+                id={load.loadId}
+                subject="de la carga"
+                canEdit={canWrite}
+                className="mt-5 border-t border-outline pt-5"
               />
             </Card>
             <div className="min-w-0 space-y-6 lg:col-span-2">

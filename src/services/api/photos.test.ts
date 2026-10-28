@@ -13,6 +13,7 @@ const http = vi.hoisted(() => ({
 }));
 vi.mock('./httpClient', () => ({ http }));
 
+import { env } from '../../config/env';
 import { getPhotoLink, photoMaxBytes, photoRemovable, removePhoto, uploadPhoto, type PhotoKind } from './photos';
 
 beforeEach(() => {
@@ -34,7 +35,25 @@ describe('rutas de las fotos', () => {
     await getPhotoLink(kind, 'x1');
     expect(http.get).toHaveBeenCalledWith(path, { params: { modo: 'url' } });
     await removePhoto(kind, 'x1');
-    expect(http.delete).toHaveBeenCalledWith(path);
+    expect(http.delete).toHaveBeenCalledWith(path, { baseURL: undefined });
+  });
+
+  const V2: [PhotoKind, string][] = [
+    ['supplier', '/suppliers/x1/photo'],
+    ['cylinder', '/cylinders/x1/photo'],
+    ['truckLoad', '/truck-loads/x1/photo'],
+  ];
+
+  it.each(V2)('%s (foto nueva de la v2) va a /api/v2%s', async (kind, path) => {
+    http.get.mockResolvedValue({ data: { url: null, expiresAt: null, requiresAuth: false } });
+    http.request.mockResolvedValue({ data: {} });
+    await getPhotoLink(kind, 'x1');
+    expect(http.get).toHaveBeenCalledWith(path, { params: { modo: 'url' }, baseURL: env.apiUrlV2 });
+    await uploadPhoto(kind, 'x1', new File(['x'], 'f.jpg', { type: 'image/jpeg' }));
+    expect(http.request.mock.calls[0][0]).toMatchObject({ url: path, method: 'put', baseURL: env.apiUrlV2 });
+    await removePhoto(kind, 'x1');
+    expect(http.delete).toHaveBeenCalledWith(path, { baseURL: env.apiUrlV2 });
+    expect(photoRemovable(kind)).toBe(true);
   });
 
   it('la foto propia se pide con el id «me»', async () => {

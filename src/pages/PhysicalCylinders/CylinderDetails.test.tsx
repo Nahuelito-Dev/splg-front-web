@@ -7,6 +7,12 @@ import type { Cylinder, CylinderMovement } from '../../services/api/types';
 const cylinderQuery = vi.fn();
 const historyQuery = vi.fn();
 const vigenciaQuery = vi.fn();
+// La foto se pide aparte (v2) y tiene sus propios tests: acá no hace falta.
+vi.mock('../../common/components/ui/EntityPhoto', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  LinkedEntityPhoto: () => null,
+}));
+
 vi.mock('../../services/queries/physicalCylinders', () => ({
   useCylinder: () => cylinderQuery() as unknown,
   useCylinderHistory: () => historyQuery() as unknown,

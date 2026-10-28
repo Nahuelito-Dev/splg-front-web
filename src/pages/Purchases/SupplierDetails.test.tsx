@@ -6,6 +6,12 @@ import { failed, loading, ok, renderPage } from '../../test/pageTest';
 
 const state = vi.hoisted(() => ({ supplier: vi.fn(), history: vi.fn(), canWrite: true }));
 
+// La foto se pide aparte (v2) y tiene sus propios tests: acá no hace falta.
+vi.mock('../../common/components/ui/EntityPhoto', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  LinkedEntityPhoto: () => null,
+}));
+
 vi.mock('../../common/components/ui/ResponsiveTable', () => import('../../test/responsiveTableStub'));
 vi.mock('../../common/components', () => ({ useCrumbLeaf: () => undefined }));
 vi.mock('../../hooks', async (importOriginal) => ({

@@ -1,7 +1,23 @@
 import { useCallback, useRef, useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getPhotoLink, removePhoto, uploadPhoto, type PhotoKind } from '../api/photos';
 import { queryKeys } from './queryKeys';
+
+/** Clave del enlace a la foto de los recursos cuya respuesta no trae `photoUrl`. */
+function photoLinkKey(kind: PhotoKind, id?: string): readonly string[] {
+  return id ? ['photoLink', kind, id] : ['photoLink', kind];
+}
+
+/**
+ * El enlace firmado a la foto de un recurso cuya respuesta no trae `photoUrl` (proveedor, envase, carga: la foto es
+ * de la v2 y su ficha, de la v1). Dura menos que la URL firmada; si igual vence, `useRenewablePhoto` la renueva.
+ */
+export const usePhotoLink = (kind: PhotoKind, id: string) =>
+  useQuery({
+    queryKey: photoLinkKey(kind, id),
+    queryFn: () => getPhotoLink(kind, id),
+    staleTime: 4 * 60_000,
+  });
 
 /** Qué listas y fichas muestran la foto de cada recurso: todas se refrescan al subirla, cambiarla o quitarla. */
 const AFFECTED: Record<PhotoKind, readonly (readonly string[])[]> = {
@@ -19,6 +35,10 @@ const AFFECTED: Record<PhotoKind, readonly (readonly string[])[]> = {
   incident: [queryKeys.incidents.all],
   claim: [queryKeys.claims.all],
   employee: [queryKeys.employees.all],
+  // Sin `photoUrl` en su respuesta: la foto se pide aparte (`usePhotoLink`).
+  supplier: [photoLinkKey('supplier')],
+  cylinder: [photoLinkKey('cylinder')],
+  truckLoad: [photoLinkKey('truckLoad')],
 };
 
 const useInvalidatePhoto = (kind: PhotoKind) => {
