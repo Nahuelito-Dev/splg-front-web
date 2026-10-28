@@ -8,6 +8,11 @@ describe('notificationTarget', () => {
     expect(notificationTarget({ entity: 'incident', id: 'i-1' })).toBe('/incidents?incident=i-1');
   });
 
+  it('F11: los vencimientos llevan a la tarea y los documentos faltantes al legajo', () => {
+    expect(notificationTarget({ entity: 'fleet-task', id: 't1' })).toBe('/fleet/tasks/t1');
+    expect(notificationTarget({ entity: 'employee', id: 'e1' })).toBe('/employees/details/e1?tab=documents');
+  });
+
   it('sin enlace o con una entidad desconocida no navega', () => {
     expect(notificationTarget(null)).toBeNull();
     expect(notificationTarget(undefined)).toBeNull();
@@ -16,6 +21,12 @@ describe('notificationTarget', () => {
 });
 
 describe('notificationVisuals', () => {
+  it('F11: por vencer avisa, vencido es peligro', () => {
+    expect(notificationVisuals('fleet_document_due').tone).toBe('warn');
+    expect(notificationVisuals('fleet_document_expired').tone).toBe('danger');
+    expect(notificationVisuals('employee_document_missing').tone).toBe('warn');
+  });
+
   it('usa el tono de cada tipo conocido y uno genérico para el resto', () => {
     expect(notificationVisuals('refund_failed').tone).toBe('danger');
     expect(notificationVisuals('claim_created').tone).toBe('warn');
