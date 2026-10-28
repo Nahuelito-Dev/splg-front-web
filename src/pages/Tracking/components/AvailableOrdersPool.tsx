@@ -1,3 +1,4 @@
+import { assignPaymentBlock } from '../../Orders/components/orderStatus';
 import { CircleX, UserRoundCog } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -111,13 +112,17 @@ export const AvailableOrdersPool = ({ pool }: { pool: AvailablePool }) => {
                 </button>
                 <IconButton
                   label={
-                    canOperate
+                    canOperate && !assignPaymentBlock(order)
                       ? `Asignar chofer al pedido ${formatShortId(order.order_id)}`
-                      : `Asignar chofer al pedido ${formatShortId(order.order_id)} (no disponible: ${operateHint})`
+                      : `Asignar chofer al pedido ${formatShortId(order.order_id)} (no disponible: ${assignPaymentBlock(order) ?? operateHint})`
                   }
                   icon={<UserRoundCog />}
-                  {...(canOperate ? {} : { 'aria-disabled': true, className: 'cursor-not-allowed opacity-50' })}
-                  onClick={canOperate ? () => setModal({ kind: 'assign', order }) : undefined}
+                  {...(canOperate && !assignPaymentBlock(order)
+                    ? {}
+                    : { 'aria-disabled': true, className: 'cursor-not-allowed opacity-50' })}
+                  onClick={
+                    canOperate && !assignPaymentBlock(order) ? () => setModal({ kind: 'assign', order }) : undefined
+                  }
                 />
                 <IconButton
                   label={

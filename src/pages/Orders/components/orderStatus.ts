@@ -21,6 +21,23 @@ export const canCancel = (status: OrderStatus): boolean => !isClosed(status);
  */
 export const canAssignDriver = (status: OrderStatus): boolean => status === 'pending' || status === 'accepted';
 
+export const ASSIGN_UNPAID_MP_HINT =
+  'Se paga con Mercado Pago y todavía no está pago: el chofer se asigna cuando se apruebe el pago';
+
+/**
+ * Un pedido de Mercado Pago no sale hasta que el pago esté aprobado (`esperaPagoOnline` del back: no se ofrece, no
+ * figura entre los disponibles y asignarlo da 409). La reserva con la seña paga sí sale: el saldo se cobra al entregar.
+ * Devuelve el motivo para mostrarlo, o nada si se puede asignar.
+ */
+export const assignPaymentBlock = (order: {
+  paymentMethodDetail?: string | null;
+  paymentStatus?: string | null;
+  depositPaid?: boolean | null;
+}): string | undefined =>
+  order.paymentMethodDetail === 'mercadopago' && order.paymentStatus !== 'paid' && !order.depositPaid
+    ? ASSIGN_UNPAID_MP_HINT
+    : undefined;
+
 /**
  * Transiciones manuales que ofrece la ficha para `PATCH /orders/:id/status`,
  * en el vocabulario de la RESPUESTA de la API (`out_for_delivery`). Salen de

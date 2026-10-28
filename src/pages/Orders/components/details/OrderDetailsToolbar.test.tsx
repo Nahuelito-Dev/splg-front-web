@@ -123,6 +123,33 @@ describe('OrderDetailsToolbar: permisos', () => {
   });
 });
 
+describe('OrderDetailsToolbar: Mercado Pago sin pagar (F9)', () => {
+  const renderMp = (paymentStatus: Order['paymentStatus']) =>
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter>
+          <OrderDetailsToolbar
+            order={{ ...order('pending', paymentStatus), paymentMethodDetail: 'mercadopago' } as unknown as Order}
+          />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+  it('impago: asignar chofer queda bloqueado con el motivo y no abre el modal', () => {
+    renderMp('pending');
+    const assign = screen.getByRole('button', { name: /Asignar chofer/ });
+    expect(assign).toHaveAttribute('aria-disabled', 'true');
+    expect(assign).toHaveAttribute('title', expect.stringContaining('Mercado Pago') as string);
+    fireEvent.click(assign);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('pagado: se asigna como cualquier pedido', () => {
+    renderMp('paid');
+    expect(screen.getByRole('button', { name: /Asignar chofer/ })).not.toHaveAttribute('aria-disabled');
+  });
+});
+
 describe('OrderDetailsToolbar: PDF', () => {
   it('el remito se pide al back y el recibo no se ofrece sin cobro', () => {
     renderToolbar('delivered', 'unpaid');

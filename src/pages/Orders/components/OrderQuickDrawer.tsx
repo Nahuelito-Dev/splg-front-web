@@ -5,7 +5,7 @@ import type { Order } from '../../../services/api/types';
 import { useOrder } from '../../../services/queries/orders';
 import { formatCurrency, formatDateTime, formatShortId } from '../../../utils/format';
 import { labelOf, ORDER_STATUS, paymentStatusLabel, type Label } from '../../../utils/statusLabels';
-import { canAssignDriver } from './orderStatus';
+import { assignPaymentBlock, canAssignDriver } from './orderStatus';
 
 /** «Cobro pendiente», «Cobro cobrado»…: sin el prefijo, «Pendiente» se confunde con el estado del pedido. */
 const paymentBadge = (status: NonNullable<Order['paymentStatus']>, method: Order['paymentMethodDetail']): Label => {
@@ -56,6 +56,7 @@ export const OrderQuickDrawer = ({ open, onClose, order: listed, onAssign }: Pro
             variant="secondary"
             icon={<UserRoundCog />}
             title={operateHint}
+            blockedReason={assignPaymentBlock(order)}
             onClick={() => onAssign(order)}
           >
             {order.delivery_id ? 'Reasignar chofer' : 'Asignar chofer'}

@@ -29,6 +29,7 @@ import { orderEditBlockedReason } from '../orderEdit';
 import { ConfirmDeliveryModal } from '../ConfirmDeliveryModal';
 import { deliveryReasonCounter, deliveryReasonError } from '../deliveryReason';
 import {
+  assignPaymentBlock,
   canAssignDriver,
   canCancel,
   canConfirmDelivery,
@@ -59,6 +60,7 @@ export const OrderDetailsToolbar = ({ order }: { order: Order }) => {
 
   // La primaria es la que avanza el pedido según su estado: confirmar la entrega o, antes, asignar el chofer.
   const assignLabel = order.delivery_id ? 'Reasignar chofer' : 'Asignar chofer';
+  const assignBlockedReason = blockedReason ?? assignPaymentBlock(order);
   const confirmIsPrimary = canConfirmDelivery(order.status);
   const assignIsPrimary = !confirmIsPrimary && canAssignDriver(order.status);
   const primary = confirmIsPrimary ? (
@@ -66,7 +68,12 @@ export const OrderDetailsToolbar = ({ order }: { order: Order }) => {
       Confirmar entrega
     </Button>
   ) : assignIsPrimary ? (
-    <Button size="sm" icon={<UserRoundCog />} blockedReason={blockedReason} onClick={() => actions.open('assign')}>
+    <Button
+      size="sm"
+      icon={<UserRoundCog />}
+      blockedReason={assignBlockedReason}
+      onClick={() => actions.open('assign')}
+    >
       {assignLabel}
     </Button>
   ) : null;
@@ -84,7 +91,7 @@ export const OrderDetailsToolbar = ({ order }: { order: Order }) => {
           {
             label: assignLabel,
             icon: <UserRoundCog />,
-            blockedReason,
+            blockedReason: assignBlockedReason,
             onClick: () => actions.open('assign'),
           },
         ]

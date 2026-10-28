@@ -8,6 +8,8 @@ interface RowAction {
   icon: LucideIcon;
   onClick: () => void;
   tone?: 'neutral' | 'danger';
+  /** Si existe pero en esta fila no se puede, el porqué: se ve apagada, con el motivo en su nombre accesible. */
+  blockedReason?: string;
 }
 
 interface Props {
@@ -90,14 +92,21 @@ export const RowActions = ({
             anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
             transformOrigin={{ vertical: 'top', horizontal: 'right' }}
           >
-            {actions.map(({ label, icon: Icon, onClick, tone = 'neutral' }) => (
+            {actions.map(({ label, icon: Icon, onClick, tone = 'neutral', blockedReason }) => (
               <MenuItem
                 key={label}
+                aria-disabled={blockedReason ? true : undefined}
+                aria-label={blockedReason ? `${label} (no disponible: ${blockedReason})` : undefined}
+                title={blockedReason}
                 onClick={() => {
+                  if (blockedReason) return;
                   setAnchor(null);
                   onClick();
                 }}
-                sx={tone === 'danger' ? { color: 'error.main' } : undefined}
+                sx={{
+                  ...(tone === 'danger' ? { color: 'error.main' } : {}),
+                  ...(blockedReason ? { opacity: 0.5, cursor: 'not-allowed' } : {}),
+                }}
               >
                 <Icon aria-hidden="true" className="h-4 w-4" strokeWidth={1.8} />
                 {label}
