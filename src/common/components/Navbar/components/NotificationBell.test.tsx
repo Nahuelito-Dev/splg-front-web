@@ -353,3 +353,33 @@ describe('NotificationBell: order:express-degraded', () => {
     expect(screen.queryByRole('button', { name: /sin leer/ })).not.toBeInTheDocument();
   });
 });
+
+describe('NotificationBell: order:transfer-receipt-uploaded', () => {
+  const payload = {
+    orderId: 'dddddddd-4444',
+    customerId: 'c1',
+    attachmentId: 'a1',
+    uploadedAt: '2026-10-28T17:00:00.000Z',
+    distributorId: 'd1',
+  };
+
+  it('avisa que el cliente subió el comprobante y refresca el pedido', () => {
+    const spy = setup();
+    act(() => {
+      handlers.get('order:transfer-receipt-uploaded')?.(payload);
+    });
+    const keys = spy.mock.calls.map(([filters]) => filters?.queryKey as string[]);
+    expect(keys).toContainEqual(['orders', 'detail', 'dddddddd-4444']);
+    fireEvent.click(screen.getByRole('button', { name: /1 sin leer/ }));
+    expect(screen.getByText('El cliente subió el comprobante de transferencia')).toBeInTheDocument();
+  });
+
+  it('ignora el de otra distribuidora', () => {
+    scope.viewing = 'd-elegida';
+    setup();
+    act(() => {
+      handlers.get('order:transfer-receipt-uploaded')?.({ ...payload, distributorId: 'otra' });
+    });
+    expect(screen.queryByRole('button', { name: /sin leer/ })).not.toBeInTheDocument();
+  });
+});

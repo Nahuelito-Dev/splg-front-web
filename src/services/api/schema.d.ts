@@ -6614,17 +6614,17 @@ export interface components {
        * @description CBU: 22 dígitos con los dígitos verificadores válidos
        * @example 0170099220000067797370
        */
-      cbu?: Record<string, never> | null;
+      cbu?: string | null;
       /**
        * @description Alias: 6 a 20 caracteres entre letras, números, punto y guion
        * @example garrafas.splg
        */
-      alias?: Record<string, never> | null;
+      alias?: string | null;
       /**
        * @description Titular de la cuenta
        * @example Distribuidora Demo S.A.
        */
-      holder?: Record<string, never> | null;
+      holder?: string | null;
     };
     ExpressConfigResponseDto: {
       /** @example false */

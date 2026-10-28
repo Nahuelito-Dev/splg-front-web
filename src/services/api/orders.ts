@@ -1,3 +1,4 @@
+import { env } from '../../config/env';
 import { http, toQuery, type PageParams } from './httpClient';
 import { idempotencyHeaders } from './idempotency';
 import type {
@@ -11,6 +12,7 @@ import type {
   Message,
   MotivoDeCobroBody,
   Order,
+  OrderReceiptFile,
   OrderStatusHistoryEntry,
   PaginatedOrders,
   Quote,
@@ -272,5 +274,13 @@ export const confirmTransfer = async (
  */
 export const getDeliveryOptions = async (addressId: string, customerId: string): Promise<DeliveryOptions> => {
   const { data } = await http.get<DeliveryOptions>('/orders/delivery-options', { params: { addressId, customerId } });
+  return data;
+};
+
+/** GET /v2/orders/:id/transfer-receipt: los comprobantes del pedido, del más nuevo al más viejo, con su URL firmada (vence en `expiresAt`). */
+export const listOrderTransferReceipts = async (orderId: string): Promise<OrderReceiptFile[]> => {
+  const { data } = await http.get<OrderReceiptFile[]>(`/orders/${orderId}/transfer-receipt`, {
+    baseURL: env.apiUrlV2,
+  });
   return data;
 };

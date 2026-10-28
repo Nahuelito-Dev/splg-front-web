@@ -14,6 +14,7 @@ import {
   getOrderStatusHistory,
   listAvailableOrders,
   listOrderIncidents,
+  listOrderTransferReceipts,
   listOrders,
   notifyOrderArrival,
   quoteOrder,
@@ -176,6 +177,24 @@ export const useOrderIncidents = (orderId: string | undefined) =>
     queryKey: [...queryKeys.incidents.lists(), { order: orderId }],
     queryFn: () => listOrderIncidents(orderId ?? ''),
     enabled: Boolean(orderId),
+  });
+
+/** Margen antes del vencimiento de las URL firmadas para pedirlas de nuevo, y piso para no consultar en ráfaga. */
+const RECEIPT_REFRESH_MARGIN_MS = 30_000;
+const RECEIPT_REFRESH_MIN_MS = 10_000;
+
+/** Comprobantes de transferencia del pedido; las URL vencen, así que se piden de nuevo antes de que caduquen. */
+export const useOrderTransferReceipts = (orderId: string | undefined, enabled = true) =>
+  useQuery({
+    queryKey: [...queryKeys.orders.detail(orderId ?? ''), 'transfer-receipts'],
+    queryFn: () => listOrderTransferReceipts(orderId ?? ''),
+    enabled: enabled && Boolean(orderId),
+    staleTime: 0,
+    refetchInterval: (query) => {
+      const expiries = (query.state.data ?? []).map((file) => Date.parse(file.expiresAt)).filter(Number.isFinite);
+      if (expiries.length === 0) return false;
+      return Math.max(Math.min(...expiries) - Date.now() - RECEIPT_REFRESH_MARGIN_MS, RECEIPT_REFRESH_MIN_MS);
+    },
   });
 
 /**
