@@ -74,13 +74,45 @@ describe('NotificationBell: incident:created', () => {
     expect(screen.getByText('Cobro impago: el chofer no pudo cobrar')).toBeInTheDocument();
   });
 
-  it('una incidencia de otro tipo no genera aviso', () => {
-    setup();
+  it('una incidencia de otro tipo avisa con su tipo y refresca sólo las incidencias', () => {
+    const spy = setup();
     act(() => {
       handlers.get('incident:created')?.({ incidentId: 'inc-2', orderId: 'bbbbbbbb-2', type: 'damaged' });
     });
+    expect(notifyInfo).toHaveBeenCalledWith(expect.stringContaining('Envase dañado'));
+    const keys = spy.mock.calls.map(([filters]) => (filters?.queryKey as string[])[0]);
+    expect(keys).toEqual(['incidents']);
+    fireEvent.click(screen.getByRole('button', { name: /1 sin leer/ }));
+    expect(screen.getByText('Nueva incidencia de reparto')).toBeInTheDocument();
+    expect(screen.getByText(/Envase dañado/)).toBeInTheDocument();
+  });
+});
+
+describe('NotificationBell: claim:created', () => {
+  it('avisa del reclamo con su motivo y refresca los reclamos', () => {
+    const spy = setup();
+    act(() => {
+      handlers.get('claim:created')?.({
+        claimId: 'c-1',
+        orderId: 'cccccccc-3',
+        distributorId: 'dist-A',
+        reason: 'Fuga de gas',
+      });
+    });
+    expect(notifyInfo).toHaveBeenCalledWith(expect.stringContaining('Fuga de gas'));
+    const keys = spy.mock.calls.map(([filters]) => (filters?.queryKey as string[])[0]);
+    expect(keys).toEqual(['claims']);
+    fireEvent.click(screen.getByRole('button', { name: /1 sin leer/ }));
+    expect(screen.getByText('Nuevo reclamo de un cliente')).toBeInTheDocument();
+  });
+
+  it('ignora el reclamo de otra distribuidora al «ver como»', () => {
+    scope.viewing = 'dist-A';
+    setup();
+    act(() => {
+      handlers.get('claim:created')?.({ claimId: 'c-2', orderId: 'dddddddd-4', distributorId: 'dist-B', reason: 'x' });
+    });
     expect(notifyInfo).not.toHaveBeenCalled();
-    expect(screen.queryByRole('button', { name: /sin leer/ })).toBeNull();
   });
 });
 

@@ -10,9 +10,8 @@ export type SocketAuthPayload = Record<string, unknown>;
 export type SocketAuthProvider = () => Promise<SocketAuthPayload>;
 
 // Los eventos del ciclo de vida de un pedido que el AdminGateway emite a la
-// sala de la distribuidora. "En camino" se escucha con su nombre canónico: el
-// back sigue emitiendo también `order:on_the_way` por compatibilidad, y escuchar
-// los dos duplicaría cada aviso.
+// sala de la distribuidora. "En camino" es `order:on-the-way`, el mismo nombre
+// que recibe la app del cliente.
 export const ORDER_SOCKET_EVENTS = {
   CREATED: 'order:created',
   ACCEPTED: 'order:accepted',
@@ -70,10 +69,7 @@ export interface CylinderBlockedPayload {
   serials: string[];
 }
 
-/**
- * Evento que emite el AdminGateway cuando se abre una incidencia de reparto. El panel sólo avisa las de tipo
- * `unpaid_collection` (el chofer informó que no pudo cobrar en efectivo).
- */
+/** Evento que emite el AdminGateway con cada incidencia de reparto nueva (también los cobros impagos). */
 export const INCIDENT_CREATED_EVENT = 'incident:created';
 
 /** Payload de INCIDENT_CREATED_EVENT. */
@@ -85,6 +81,25 @@ export interface IncidentCreatedPayload {
   description?: string;
   createdAt?: string;
 }
+
+/** Evento que emite el AdminGateway cuando un cliente abre un reclamo. */
+export const CLAIM_CREATED_EVENT = 'claim:created';
+
+/** Payload de CLAIM_CREATED_EVENT. */
+export interface ClaimCreatedPayload {
+  claimId: string;
+  orderId: string;
+  distributorId?: string;
+  reason: string;
+  createdAt?: string;
+}
+
+/**
+ * El back corta la conexión porque venció el token del handshake: hay que volver a conectar (con uno nuevo).
+ * Con `SESSION_ACCESS_REVOKED_EVENT` (bloqueo o baja de la cuenta) no se reconecta.
+ */
+export const SESSION_EXPIRED_EVENT = 'server:session-expired';
+export const SESSION_ACCESS_REVOKED_EVENT = 'server:access-revoked';
 
 /**
  * Evento que emite el back a los admins de la distribuidora cuando un reintegro automático falla (la devolución del
@@ -199,8 +214,23 @@ export const useSocket = (namespace = '/') => {
       reconnectionDelayMax: 10000,
     });
 
-    socketRef.current.on('connect', () => setIsOnline(true));
-    socketRef.current.on('disconnect', () => setIsOnline(false));
+    const socket = socketRef.current;
+    // Si el back corta, socket.io no reconecta solo: sólo se vuelve cuando el corte fue por el token vencido.
+    let reconnectOnServerCut = false;
+    socket.on(SESSION_EXPIRED_EVENT, () => {
+      reconnectOnServerCut = true;
+    });
+    socket.on(SESSION_ACCESS_REVOKED_EVENT, () => {
+      reconnectOnServerCut = false;
+    });
+    socket.on('connect', () => setIsOnline(true));
+    socket.on('disconnect', (reason) => {
+      setIsOnline(false);
+      if (reason === 'io server disconnect' && reconnectOnServerCut) {
+        reconnectOnServerCut = false;
+        socket.connect();
+      }
+    });
     socketRef.current.on('connect_error', (error) => {
       console.error('[useSocket] Error de conexión:', error.message);
       setIsOnline(false);
