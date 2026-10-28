@@ -40,7 +40,7 @@ import { CancelOrderModal } from './components/CancelOrderModal';
 import { EditOrderModal } from './components/EditOrderModal';
 import { isInvertedRange, type OrdersToolbarFilters } from './components/ordersFilterValues';
 import { ORDER_TABS_ID, OrderStatusTabs } from './components/OrderStatusTabs';
-import { canAssignDriver } from './components/orderStatus';
+import { assignPaymentBlock, canAssignDriver } from './components/orderStatus';
 import { OrdersFilters } from './components/OrdersFilters';
 import { OrderQuickDrawer } from './components/OrderQuickDrawer';
 import { OrdersTable } from './components/OrdersTable';
@@ -96,7 +96,8 @@ export const Orders = () => {
   const clearSelection = () => setSelected({});
   const visibleIds = new Set((data?.orders ?? []).map((order) => order.order_id));
   const selectedOrders = Object.values(selected).filter((order) => visibleIds.has(order.order_id));
-  const assignable = selectedOrders.filter((order) => canAssignDriver(order.status));
+  const assignable = selectedOrders.filter((order) => canAssignDriver(order.status) && !assignPaymentBlock(order));
+  const unpaidMp = selectedOrders.filter((order) => canAssignDriver(order.status) && assignPaymentBlock(order));
   const label = (order: Order) => `${formatShortId(order.order_id)} · ${order.customer?.full_name ?? 'Sin nombre'}`;
   const bulkBusy = bulkAssign.isPending || bulkCancel.isPending;
 
@@ -122,12 +123,27 @@ export const Orders = () => {
   const startBulkAssign = () => {
     const distributors = new Set(assignable.map((order) => order.distributor_id));
     if (assignable.length === 0) {
-      notify.error(new Error('Ninguno de los pedidos marcados admite asignar chofer'));
+      notify.error(
+        new Error(
+          unpaidMp.length > 0
+            ? 'Los pedidos marcados se pagan con Mercado Pago y todavía no están pagos: el chofer se asigna cuando se apruebe el pago'
+            : 'Ninguno de los pedidos marcados admite asignar chofer',
+        ),
+      );
     } else if (distributors.size > 1) {
       notify.error(
         new Error('Los pedidos asignables son de más de una distribuidora: marcá los de una sola para asignar chofer'),
       );
-    } else setModal({ kind: 'bulk-assign' });
+    } else {
+      if (unpaidMp.length > 0) {
+        notify.info(
+          unpaidMp.length === 1
+            ? 'Un pedido marcado queda afuera: se paga con Mercado Pago y todavía no está pago'
+            : `${unpaidMp.length} pedidos marcados quedan afuera: se pagan con Mercado Pago y todavía no están pagos`,
+        );
+      }
+      setModal({ kind: 'bulk-assign' });
+    }
   };
 
   const handleBulkAssign = (deliveryId: string) => {

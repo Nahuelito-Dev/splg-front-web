@@ -4,7 +4,7 @@ import type { Order } from '../../../services/api/types';
 import { formatCurrency, formatElapsed, formatShortId, formatTime } from '../../../utils/format';
 import { paymentStatusLabel, type Label } from '../../../utils/statusLabels';
 import { stageStartedAt } from '../boardRules';
-import { canAssignDriver } from './orderStatus';
+import { assignPaymentBlock, canAssignDriver } from './orderStatus';
 
 /** «Cobro pendiente», «Cobro cobrado»…: sin el prefijo, «Pendiente» se confunde con la etapa del pedido. */
 const paymentBadge = (status: NonNullable<Order['paymentStatus']>, method: Order['paymentMethodDetail']): Label => {
@@ -72,7 +72,13 @@ export const DispatchCard = ({ order, now, onAssign, onPreview, onOpen }: Props)
 
       <div className="mt-2.5 flex flex-wrap gap-1.5 border-t border-outline-soft pt-2.5">
         {canAssign && (
-          <Button size="sm" variant="secondary" icon={<UserRoundCog />} onClick={() => onAssign(order)}>
+          <Button
+            size="sm"
+            variant="secondary"
+            icon={<UserRoundCog />}
+            blockedReason={assignPaymentBlock(order)}
+            onClick={() => onAssign(order)}
+          >
             {order.delivery_id ? 'Reasignar' : 'Asignar'}
           </Button>
         )}

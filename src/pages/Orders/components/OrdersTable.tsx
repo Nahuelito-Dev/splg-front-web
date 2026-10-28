@@ -6,7 +6,7 @@ import type { Order } from '../../../services/api/types';
 import { formatCurrency, formatDateTime, formatNumber, formatShortId } from '../../../utils/format';
 import { labelOf, ORDER_STATUS, paymentStatusLabel } from '../../../utils/statusLabels';
 import { orderEditBlockedReason } from './orderEdit';
-import { isClosed } from './orderStatus';
+import { isClosed, assignPaymentBlock } from './orderStatus';
 
 /** "Villa Lanús +10 %" o "Garupá +$ 1.500": la zona que se cobró en ese pedido. */
 const zoneText = (order: Order): string | null => {
@@ -133,7 +133,14 @@ export const OrdersTable = ({
             deleteLabel="Cancelar"
             actions={
               onAssign && !isClosed(row.status)
-                ? [{ label: 'Asignar chofer', icon: UserRoundCog, onClick: () => onAssign(row) }]
+                ? [
+                    {
+                      label: 'Asignar chofer',
+                      icon: UserRoundCog,
+                      blockedReason: assignPaymentBlock(row),
+                      onClick: () => onAssign(row),
+                    },
+                  ]
                 : []
             }
           />

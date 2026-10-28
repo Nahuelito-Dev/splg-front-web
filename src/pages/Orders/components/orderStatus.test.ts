@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Order } from '../../../services/api/types';
 import {
+  assignPaymentBlock,
   canAssignDriver,
   canCancel,
   canConfirmDelivery,
@@ -121,5 +122,21 @@ describe('soporte de entrega', () => {
     expect(canConfirmDelivery('accepted')).toBe(false);
     expect(canNotifyArrival('out_for_delivery')).toBe(true);
     expect(canNotifyArrival('delivered')).toBe(false);
+  });
+});
+
+describe('assignPaymentBlock', () => {
+  it('sólo bloquea Mercado Pago sin pagar, con el motivo', () => {
+    expect(assignPaymentBlock({ paymentMethodDetail: 'mercadopago', paymentStatus: 'pending' })).toMatch(
+      /Mercado Pago/,
+    );
+    expect(assignPaymentBlock({ paymentMethodDetail: 'mercadopago', paymentStatus: 'failed' })).toMatch(/Mercado Pago/);
+    expect(assignPaymentBlock({ paymentMethodDetail: 'mercadopago', paymentStatus: 'paid' })).toBeUndefined();
+    expect(assignPaymentBlock({ paymentMethodDetail: 'cash', paymentStatus: 'pending' })).toBeUndefined();
+    // Reserva con la seña paga: el saldo se cobra al entregar, sale como cualquiera.
+    expect(
+      assignPaymentBlock({ paymentMethodDetail: 'mercadopago', paymentStatus: 'pending', depositPaid: true }),
+    ).toBeUndefined();
+    expect(assignPaymentBlock({ paymentMethodDetail: 'transfer', paymentStatus: 'pending' })).toBeUndefined();
   });
 });

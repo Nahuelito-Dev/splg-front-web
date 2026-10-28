@@ -61,4 +61,19 @@ describe('RowActions', () => {
     expect([onView, onEdit, onDelete].map((fn) => fn.mock.calls.length)).toEqual([1, 1, 1]);
     expect(onRow).not.toHaveBeenCalled();
   });
+
+  it('una acción del menú bloqueada se ve apagada con el motivo y no hace nada', () => {
+    const onClick = vi.fn();
+    render(
+      <RowActions
+        rowLabel="pedido #1"
+        actions={[{ label: 'Asignar chofer', icon: Lock, onClick, blockedReason: 'Falta el pago' }]}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Más acciones de pedido #1' }));
+    const item = screen.getByRole('menuitem', { name: 'Asignar chofer (no disponible: Falta el pago)' });
+    expect(item).toHaveAttribute('aria-disabled', 'true');
+    fireEvent.click(item);
+    expect(onClick).not.toHaveBeenCalled();
+  });
 });
