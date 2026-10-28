@@ -10,6 +10,7 @@ const resource = <R extends string>(name: R) => ({
 });
 
 export const queryKeys = {
+  adminNotifications: resource('adminNotifications'),
   admins: resource('admins'),
   bankDetails: resource('bankDetails'),
   attendance: resource('attendance'),

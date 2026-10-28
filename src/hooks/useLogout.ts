@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { queryClient } from '../services/queries/queryClient';
 import { startLogOut } from '../store/auth/thunks';
 import { THEME_MODE_KEY } from '../theme/themeMode';
 import { confirmDiscardChanges } from '../utils/unsavedChanges';
@@ -23,6 +24,8 @@ export const useLogout = () => {
     kept.forEach(([key, value]) => {
       if (value !== null) localStorage.setItem(key, value);
     });
+    // Sin la caché de la cuenta que sale: el que entre después en la misma pestaña no ve sus datos (su bandeja, por ejemplo).
+    queryClient.clear();
     void dispatch(startLogOut());
   }, [dispatch]);
 };

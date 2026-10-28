@@ -7,6 +7,7 @@ vi.mock('../utils/notifications', () => ({ confirm: confirmMock }));
 vi.mock('./reduxHooks', () => ({ useAppDispatch: () => dispatch }));
 vi.mock('../store/auth/thunks', () => ({ startLogOut: () => ({ type: 'logout' }) }));
 
+import { queryClient } from '../services/queries/queryClient';
 import { setFormDirty } from '../utils/unsavedChanges';
 import { useLogout } from './useLogout';
 
@@ -23,6 +24,12 @@ describe('useLogout', () => {
     await renderHook(() => useLogout()).result.current();
     expect(dispatch).toHaveBeenCalled();
     expect(localStorage.getItem('token')).toBeNull();
+  });
+
+  it('vacía la caché de datos: el que entre después no ve los de esta cuenta', async () => {
+    queryClient.setQueryData(['adminNotifications', 'list', {}], { items: [{ id: 'x' }], total: 1 });
+    await renderHook(() => useLogout()).result.current();
+    expect(queryClient.getQueryData(['adminNotifications', 'list', {}])).toBeUndefined();
   });
 
   it('con cambios y sin confirmar no limpia la sesión ni cierra', async () => {

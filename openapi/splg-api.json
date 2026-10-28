@@ -7397,6 +7397,9 @@
                     "404": {
                         "description": "Order not found"
                     },
+                    "409": {
+                        "description": "Aceptar (`accepted`) un pedido de Mercado Pago cuyo pago todavía no está aprobado (salvo una reserva con la seña paga)"
+                    },
                     "422": {
                         "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
                     }
@@ -7892,6 +7895,9 @@
                     "404": {
                         "description": "Order or delivery not found"
                     },
+                    "409": {
+                        "description": "El pedido se paga con Mercado Pago y el pago todavía no está aprobado"
+                    },
                     "422": {
                         "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
                     }
@@ -8356,7 +8362,7 @@
         },
         "/api/v2/orders/{id}/transfer-receipt": {
             "post": {
-                "description": "Multipart con el campo `file` (imagen JPG, PNG, WEBP o PDF, hasta 10 MB). Sólo en un pedido propio que se paga por transferencia, no cancelado y con el pago `pending` o `failed` (marcado como no recibido: el comprobante sirve para corregirlo). Deja una nota en el historial del pedido y avisa al panel por socket (`order:transfer-receipt-uploaded` con `{ orderId, customerId, attachmentId, uploadedAt }`). Hasta 5 comprobantes por pedido. Idempotente vía `Idempotency-Key`.",
+                "description": "Multipart con el campo `file` (imagen JPG, PNG, WEBP o PDF, hasta 10 MB). Sólo en un pedido propio que se paga por transferencia, no cancelado y con el pago `pending` o `failed` (marcado como no recibido: el comprobante sirve para corregirlo). Deja una nota en el historial del pedido y avisa al panel por socket (`order:transfer-receipt-uploaded` con `{ orderId, distributorId, customerId, attachmentId, uploadedAt }`). Hasta 5 comprobantes por pedido. Idempotente vía `Idempotency-Key`.",
                 "operationId": "OrderTransferReceiptController_subir",
                 "parameters": [
                     {
@@ -10501,6 +10507,183 @@
                     }
                 ],
                 "summary": "Transicionar el estado del envase (admin llena/deposita, chofer despacha/entrega/recibe vacío)",
+                "tags": [
+                    "Cylinders"
+                ]
+            }
+        },
+        "/api/v2/cylinders/{id}/photo": {
+            "put": {
+                "description": "Multipart, campo `file`: JPG, PNG o WEBP de hasta 5 MB (el tipo se valida por el contenido, no por el header). Si ya tenía foto, la anterior se borra del bucket. Devuelve el enlace vigente `{ url, expiresAt }`.",
+                "operationId": "CylinderPhotoController_subir",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Cylinder UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "required": [
+                                    "file"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PhotoCurrentResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta la foto o está vacía"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    },
+                    "413": {
+                        "description": "La foto supera los 5 MB"
+                    },
+                    "415": {
+                        "description": "No es JPG, PNG ni WEBP (o el contenido no coincide)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Subir o reemplazar la foto principal del envase",
+                "tags": [
+                    "Cylinders"
+                ]
+            },
+            "delete": {
+                "description": "Quita la referencia (el objeto se borra del bucket en segundo plano); no retira el envase. Devuelve `{ url: null, expiresAt: null }`.",
+                "operationId": "CylinderPhotoController_quitar",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Cylinder UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PhotoCurrentResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Sacar la foto del envase",
+                "tags": [
+                    "Cylinders"
+                ]
+            },
+            "get": {
+                "description": "Por defecto redirige (302) a la URL firmada de S3. Con `?modo=url` devuelve `{ url, expiresAt, requiresAuth }` en JSON, sin redirect; si no tiene foto, `url: null`.",
+                "operationId": "CylinderPhotoController_ver",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Cylinder UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "modo",
+                        "required": false,
+                        "in": "query",
+                        "description": "`url` devuelve `{ url, expiresAt, requiresAuth }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada de S3).",
+                        "schema": {
+                            "$ref": "#/components/schemas/DownloadMode"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PhotoLinkResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin, delivery"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora; sin `modo`, también si no tiene foto"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ver la foto del envase",
                 "tags": [
                     "Cylinders"
                 ]
@@ -18286,6 +18469,183 @@
                 ]
             }
         },
+        "/api/v2/truck-loads/{id}/photo": {
+            "put": {
+                "description": "Multipart, campo `file`: JPG, PNG o WEBP de hasta 5 MB (el tipo se valida por el contenido, no por el header). Si ya tenía foto, la anterior se borra del bucket. Devuelve el enlace vigente `{ url, expiresAt }`.",
+                "operationId": "TruckLoadPhotoController_subir",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Carga UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "required": [
+                                    "file"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PhotoCurrentResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta la foto o está vacía"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    },
+                    "413": {
+                        "description": "La foto supera los 5 MB"
+                    },
+                    "415": {
+                        "description": "No es JPG, PNG ni WEBP (o el contenido no coincide)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Subir o reemplazar la foto principal de la carga",
+                "tags": [
+                    "Cargas de camión"
+                ]
+            },
+            "delete": {
+                "description": "Quita la referencia (el objeto se borra del bucket en segundo plano); no da de baja la carga. Devuelve `{ url: null, expiresAt: null }`.",
+                "operationId": "TruckLoadPhotoController_quitar",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Carga UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PhotoCurrentResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Sacar la foto de la carga",
+                "tags": [
+                    "Cargas de camión"
+                ]
+            },
+            "get": {
+                "description": "Por defecto redirige (302) a la URL firmada de S3. Con `?modo=url` devuelve `{ url, expiresAt, requiresAuth }` en JSON, sin redirect; si no tiene foto, `url: null`.",
+                "operationId": "TruckLoadPhotoController_ver",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Carga UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "modo",
+                        "required": false,
+                        "in": "query",
+                        "description": "`url` devuelve `{ url, expiresAt, requiresAuth }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada de S3).",
+                        "schema": {
+                            "$ref": "#/components/schemas/DownloadMode"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PhotoLinkResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin, delivery"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora; sin `modo`, también si no tiene foto"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ver la foto de la carga",
+                "tags": [
+                    "Cargas de camión"
+                ]
+            }
+        },
         "/api/v1/claims": {
             "post": {
                 "operationId": "ClaimsController_create",
@@ -18932,6 +19292,190 @@
                 "summary": "Ver la foto de un reclamo (CU-175)",
                 "tags": [
                     "Claims"
+                ]
+            }
+        },
+        "/api/v2/admin-notifications": {
+            "get": {
+                "description": "Los más nuevos primero. `readAt` es la lectura de quien consulta. Con `unread=true` sólo los que no leyó; con `unread=false`, sólo los leídos.",
+                "operationId": "AdminNotificationsController_listar",
+                "parameters": [
+                    {
+                        "name": "unread",
+                        "required": false,
+                        "in": "query",
+                        "description": "`true` sólo los no leídos por mí; `false` sólo los leídos",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "minimum": 1,
+                            "maximum": 100,
+                            "default": 20,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "minimum": 0,
+                            "default": 0,
+                            "type": "number"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AdminNotificationListResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Filtro o paginación inválidos"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Bandeja de avisos",
+                "tags": [
+                    "Admin notifications"
+                ]
+            }
+        },
+        "/api/v2/admin-notifications/unread-count": {
+            "get": {
+                "operationId": "AdminNotificationsController_contarSinLeer",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UnreadCountResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Cuántos avisos no leí",
+                "tags": [
+                    "Admin notifications"
+                ]
+            }
+        },
+        "/api/v2/admin-notifications/read-all": {
+            "patch": {
+                "description": "Sólo los avisos de la distribuidora en contexto y sólo para quien pide.",
+                "operationId": "AdminNotificationsController_marcarTodosLeidos",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReadAllResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Marcar todos como leídos",
+                "tags": [
+                    "Admin notifications"
+                ]
+            }
+        },
+        "/api/v2/admin-notifications/{id}/read": {
+            "patch": {
+                "description": "Idempotente: si ya estaba leído devuelve la lectura original.",
+                "operationId": "AdminNotificationsController_marcarLeido",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AdminNotificationResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "El id no es un UUID"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe, o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Marcar un aviso como leído",
+                "tags": [
+                    "Admin notifications"
                 ]
             }
         },
@@ -23925,6 +24469,180 @@
                     }
                 ],
                 "summary": "Historial de compras de un proveedor",
+                "tags": [
+                    "Compras · Proveedores"
+                ]
+            }
+        },
+        "/api/v2/suppliers/{id}/photo": {
+            "put": {
+                "description": "Multipart, campo `file`: JPG, PNG o WEBP de hasta 5 MB (el tipo se valida por el contenido, no por el header). Si ya tenía foto, la anterior se borra del bucket. Devuelve el enlace vigente `{ url, expiresAt }`.",
+                "operationId": "SupplierPhotoController_subir",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Proveedor UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "required": [
+                                    "file"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PhotoCurrentResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta la foto o está vacía"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    },
+                    "413": {
+                        "description": "La foto supera los 5 MB"
+                    },
+                    "415": {
+                        "description": "No es JPG, PNG ni WEBP (o el contenido no coincide)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Subir o reemplazar la foto principal del proveedor",
+                "tags": [
+                    "Compras · Proveedores"
+                ]
+            },
+            "delete": {
+                "description": "Quita la referencia (el objeto se borra del bucket en segundo plano); no da de baja al proveedor. Devuelve `{ url: null, expiresAt: null }`.",
+                "operationId": "SupplierPhotoController_quitar",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Proveedor UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PhotoCurrentResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Sacar la foto del proveedor",
+                "tags": [
+                    "Compras · Proveedores"
+                ]
+            },
+            "get": {
+                "description": "Por defecto redirige (302) a la URL firmada de S3. Con `?modo=url` devuelve `{ url, expiresAt, requiresAuth }` en JSON, sin redirect; si no tiene foto, `url: null`.",
+                "operationId": "SupplierPhotoController_ver",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Proveedor UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "modo",
+                        "required": false,
+                        "in": "query",
+                        "description": "`url` devuelve `{ url, expiresAt, requiresAuth }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada de S3).",
+                        "schema": {
+                            "$ref": "#/components/schemas/DownloadMode"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PhotoLinkResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora; sin `modo`, también si no tiene foto"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ver la foto del proveedor",
                 "tags": [
                     "Compras · Proveedores"
                 ]
@@ -31792,6 +32510,26 @@
                     "toState"
                 ]
             },
+            "PhotoCurrentResponseDto": {
+                "type": "object",
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "URL firmada de S3 de la foto vigente (se abre sin token); `null` si no tiene foto."
+                    },
+                    "expiresAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "Cuándo vence la URL; `null` si no tiene foto."
+                    }
+                },
+                "required": [
+                    "url",
+                    "expiresAt"
+                ]
+            },
             "CreateCoverageZoneDto": {
                 "type": "object",
                 "properties": {
@@ -38389,6 +39127,119 @@
                     "url",
                     "expiresAt",
                     "requiresAuth"
+                ]
+            },
+            "AdminNotificationLinkDto": {
+                "type": "object",
+                "properties": {
+                    "entity": {
+                        "type": "string",
+                        "example": "order",
+                        "description": "Tipo de entidad a la que lleva el aviso (`order`, `claim`...)"
+                    },
+                    "id": {
+                        "type": "string",
+                        "example": "3f1c5a52-6a3e-4d6c-9a0e-2f7b6a1d9c11"
+                    }
+                },
+                "required": [
+                    "entity",
+                    "id"
+                ]
+            },
+            "AdminNotificationResponseDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "example": "9d8e7f60-1b2c-4d3e-8f4a-5b6c7d8e9f01"
+                    },
+                    "kind": {
+                        "type": "string",
+                        "example": "claim_created",
+                        "description": "Tipo de aviso"
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "Nuevo reclamo"
+                    },
+                    "body": {
+                        "type": "string",
+                        "example": "Pedido #ABC123: Garrafa con pérdida de gas"
+                    },
+                    "link": {
+                        "nullable": true,
+                        "description": "A dónde lleva el aviso; `null` si no apunta a nada",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/AdminNotificationLinkDto"
+                            }
+                        ]
+                    },
+                    "createdAt": {
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "readAt": {
+                        "format": "date-time",
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Cuándo lo leyó quien consulta; `null` si todavía no"
+                    }
+                },
+                "required": [
+                    "id",
+                    "kind",
+                    "title",
+                    "body",
+                    "link",
+                    "createdAt",
+                    "readAt"
+                ]
+            },
+            "AdminNotificationListResponseDto": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/AdminNotificationResponseDto"
+                        }
+                    },
+                    "total": {
+                        "type": "number",
+                        "example": 42,
+                        "description": "Total con el filtro aplicado"
+                    }
+                },
+                "required": [
+                    "items",
+                    "total"
+                ]
+            },
+            "UnreadCountResponseDto": {
+                "type": "object",
+                "properties": {
+                    "count": {
+                        "type": "number",
+                        "example": 3
+                    }
+                },
+                "required": [
+                    "count"
+                ]
+            },
+            "ReadAllResponseDto": {
+                "type": "object",
+                "properties": {
+                    "updated": {
+                        "type": "number",
+                        "example": 3,
+                        "description": "Cuántos avisos se marcaron como leídos"
+                    }
+                },
+                "required": [
+                    "updated"
                 ]
             },
             "VentasPorChoferDto": {

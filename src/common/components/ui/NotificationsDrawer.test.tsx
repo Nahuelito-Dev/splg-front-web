@@ -65,4 +65,42 @@ describe('NotificationsDrawer', () => {
     fireEvent.click(screen.getByRole('tab', { name: /Sin leer/ }));
     expect(screen.getByText('Estás al día')).toBeInTheDocument();
   });
+
+  it('con sin leer más viejos que la lista no dice «Estás al día»: avisa cuántos y lleva a la página', () => {
+    const onViewAll = vi.fn();
+    render(
+      <NotificationsDrawer
+        open
+        onClose={vi.fn()}
+        notifications={[item('a', true)]}
+        onNotificationClick={vi.fn()}
+        unreadCount={5}
+        onViewAll={onViewAll}
+      />,
+    );
+    expect(screen.getByRole('tab', { name: /Sin leer/ })).toHaveTextContent('5');
+    expect(screen.getByText(/Hay 5 sin leer más viejos/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: /Sin leer/ }));
+    expect(screen.queryByText('Estás al día')).not.toBeInTheDocument();
+    expect(screen.getByText('Los más nuevos ya están leídos')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'verlos en Notificaciones' }));
+    expect(onViewAll).toHaveBeenCalled();
+  });
+
+  it('si no se pudo leer la bandeja lo dice y deja reintentar', () => {
+    const onRetry = vi.fn();
+    render(
+      <NotificationsDrawer
+        open
+        onClose={vi.fn()}
+        notifications={[]}
+        onNotificationClick={vi.fn()}
+        loadError
+        onRetry={onRetry}
+      />,
+    );
+    expect(screen.getByRole('alert')).toHaveTextContent('No se pudieron cargar los avisos guardados');
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
+    expect(onRetry).toHaveBeenCalled();
+  });
 });

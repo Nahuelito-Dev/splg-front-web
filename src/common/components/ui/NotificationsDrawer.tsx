@@ -29,6 +29,13 @@ interface Props {
   onNotificationClick: (notification: NotificationsDrawerItem) => void;
   /** Sin leídas pendientes, no se muestra la acción. */
   onMarkAllAsRead?: () => void;
+  /** Total sin leer cuando la lista es sólo la primera página de una bandeja más larga; por defecto, las de la lista. */
+  unreadCount?: number;
+  /** Con esto el pie ofrece «Ver todas», que lleva a la página completa de la bandeja. */
+  onViewAll?: () => void;
+  /** No se pudo leer la bandeja guardada: se dice, en vez de mostrarla vacía. */
+  loadError?: boolean;
+  onRetry?: () => void;
 }
 
 type TabId = 'all' | 'unread';
@@ -38,9 +45,22 @@ type TabId = 'all' | 'unread';
  * reescrito con el kit): pestañas Todas / Sin leer con contador, ícono por
  * tipo, hora relativa y marcar todas como leídas, en un panel que no tapa el resto de la pantalla.
  */
-export const NotificationsDrawer = ({ open, onClose, notifications, onNotificationClick, onMarkAllAsRead }: Props) => {
+export const NotificationsDrawer = ({
+  open,
+  onClose,
+  notifications,
+  onNotificationClick,
+  onMarkAllAsRead,
+  unreadCount: totalUnread,
+  onViewAll,
+  loadError = false,
+  onRetry,
+}: Props) => {
   const [tab, setTab] = useState<TabId>('all');
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const listedUnread = notifications.filter((n) => !n.read).length;
+  const unreadCount = totalUnread ?? listedUnread;
+  // Sin leer que no entran en la lista (más viejos que la primera página): se avisa y se lleva a «Ver todas».
+  const hiddenUnread = Math.max(0, unreadCount - listedUnread);
   const visible = tab === 'unread' ? notifications.filter((n) => !n.read) : notifications;
   const now = Date.now();
 
@@ -75,14 +95,48 @@ export const NotificationsDrawer = ({ open, onClose, notifications, onNotificati
         />
 
         <div {...tabPanelProps('notifications', tab)} className="flex-1 overflow-y-auto">
+          {loadError && (
+            <div
+              role="alert"
+              className="flex items-center justify-between gap-3 bg-danger-soft px-5 py-3 text-sm text-ink"
+            >
+              <span>No se pudieron cargar los avisos guardados.</span>
+              {onRetry && (
+                <Button variant="secondary" size="sm" onClick={onRetry}>
+                  Reintentar
+                </Button>
+              )}
+            </div>
+          )}
+          {hiddenUnread > 0 && (
+            <p className="border-b border-outline-soft px-5 py-2.5 text-[13px] text-muted">
+              {hiddenUnread === 1 ? 'Hay 1 sin leer más viejo' : `Hay ${hiddenUnread} sin leer más viejos`}
+              {onViewAll && (
+                <>
+                  {': '}
+                  <button type="button" onClick={onViewAll} className="font-medium text-primary-strong underline">
+                    verlos en Notificaciones
+                  </button>
+                </>
+              )}
+            </p>
+          )}
           {visible.length === 0 ? (
             <EmptyState
               icon={BellRing}
-              title={tab === 'unread' ? 'Estás al día' : 'Todavía no llegaron pedidos por acá'}
+              title={
+                tab === 'unread'
+                  ? hiddenUnread > 0
+                    ? 'Los más nuevos ya están leídos'
+                    : 'Estás al día'
+                  : 'Todavía no hay notificaciones'
+              }
               description={
                 tab === 'unread'
-                  ? 'No tenés notificaciones sin leer.'
-                  : 'Las novedades de pedidos en tiempo real van a aparecer en esta lista.'
+                  ? hiddenUnread > 0
+                    ? 'Los que faltan leer están en la página de Notificaciones.'
+                    : 'No tenés notificaciones sin leer.'
+                  : 'Los avisos y las novedades en tiempo real van a aparecer en esta lista.'
               }
             />
           ) : (
@@ -133,11 +187,18 @@ export const NotificationsDrawer = ({ open, onClose, notifications, onNotificati
           )}
         </div>
 
-        {onMarkAllAsRead && (
-          <div className="border-t border-outline px-5 py-3">
-            <Button variant="secondary" size="sm" icon={<CheckCheck />} onClick={onMarkAllAsRead} className="w-full">
-              Marcar todas como leídas
-            </Button>
+        {(onMarkAllAsRead || onViewAll) && (
+          <div className="flex flex-col gap-2 border-t border-outline px-5 py-3">
+            {onMarkAllAsRead && (
+              <Button variant="secondary" size="sm" icon={<CheckCheck />} onClick={onMarkAllAsRead} className="w-full">
+                Marcar todas como leídas
+              </Button>
+            )}
+            {onViewAll && (
+              <Button variant="ghost" size="sm" onClick={onViewAll} className="w-full">
+                Ver todas
+              </Button>
+            )}
           </div>
         )}
       </div>
