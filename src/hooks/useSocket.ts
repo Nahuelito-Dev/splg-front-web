@@ -69,6 +69,18 @@ export interface CylinderBlockedPayload {
   serials: string[];
 }
 
+/** Evento que emite el AdminGateway cuando el back guarda un aviso nuevo en la bandeja del admin. */
+export const ADMIN_NOTIFICATION_EVENT = 'admin:notification';
+
+/** Payload de ADMIN_NOTIFICATION_EVENT: el aviso guardado más la distribuidora a la que pertenece. */
+export interface AdminNotificationPayload {
+  id: string;
+  kind: string;
+  title: string;
+  body: string;
+  distributorId?: string | null;
+}
+
 /** Evento que emite el AdminGateway con cada incidencia de reparto nueva (también los cobros impagos). */
 export const INCIDENT_CREATED_EVENT = 'incident:created';
 

@@ -2027,7 +2027,7 @@ export interface paths {
     put?: never;
     /**
      * El cliente sube el comprobante de su transferencia
-     * @description Multipart con el campo `file` (imagen JPG, PNG, WEBP o PDF, hasta 10 MB). Sólo en un pedido propio que se paga por transferencia, no cancelado y con el pago `pending` o `failed` (marcado como no recibido: el comprobante sirve para corregirlo). Deja una nota en el historial del pedido y avisa al panel por socket (`order:transfer-receipt-uploaded` con `{ orderId, customerId, attachmentId, uploadedAt }`). Hasta 5 comprobantes por pedido. Idempotente vía `Idempotency-Key`.
+     * @description Multipart con el campo `file` (imagen JPG, PNG, WEBP o PDF, hasta 10 MB). Sólo en un pedido propio que se paga por transferencia, no cancelado y con el pago `pending` o `failed` (marcado como no recibido: el comprobante sirve para corregirlo). Deja una nota en el historial del pedido y avisa al panel por socket (`order:transfer-receipt-uploaded` con `{ orderId, distributorId, customerId, attachmentId, uploadedAt }`). Hasta 5 comprobantes por pedido. Idempotente vía `Idempotency-Key`.
      */
     post: operations['OrderTransferReceiptController_subir'];
     delete?: never;
@@ -2525,6 +2525,34 @@ export interface paths {
     head?: never;
     /** Transicionar el estado del envase (admin llena/deposita, chofer despacha/entrega/recibe vacío) */
     patch: operations['CylinderController_transition'];
+    trace?: never;
+  };
+  '/api/v2/cylinders/{id}/photo': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Ver la foto del envase
+     * @description Por defecto redirige (302) a la URL firmada de S3. Con `?modo=url` devuelve `{ url, expiresAt, requiresAuth }` en JSON, sin redirect; si no tiene foto, `url: null`.
+     */
+    get: operations['CylinderPhotoController_ver'];
+    /**
+     * Subir o reemplazar la foto principal del envase
+     * @description Multipart, campo `file`: JPG, PNG o WEBP de hasta 5 MB (el tipo se valida por el contenido, no por el header). Si ya tenía foto, la anterior se borra del bucket. Devuelve el enlace vigente `{ url, expiresAt }`.
+     */
+    put: operations['CylinderPhotoController_subir'];
+    post?: never;
+    /**
+     * Sacar la foto del envase
+     * @description Quita la referencia (el objeto se borra del bucket en segundo plano); no retira el envase. Devuelve `{ url: null, expiresAt: null }`.
+     */
+    delete: operations['CylinderPhotoController_quitar'];
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
   '/api/v1/coverage-zones': {
@@ -4370,6 +4398,34 @@ export interface paths {
     patch: operations['TruckLoadController_cancelAction'];
     trace?: never;
   };
+  '/api/v2/truck-loads/{id}/photo': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Ver la foto de la carga
+     * @description Por defecto redirige (302) a la URL firmada de S3. Con `?modo=url` devuelve `{ url, expiresAt, requiresAuth }` en JSON, sin redirect; si no tiene foto, `url: null`.
+     */
+    get: operations['TruckLoadPhotoController_ver'];
+    /**
+     * Subir o reemplazar la foto principal de la carga
+     * @description Multipart, campo `file`: JPG, PNG o WEBP de hasta 5 MB (el tipo se valida por el contenido, no por el header). Si ya tenía foto, la anterior se borra del bucket. Devuelve el enlace vigente `{ url, expiresAt }`.
+     */
+    put: operations['TruckLoadPhotoController_subir'];
+    post?: never;
+    /**
+     * Sacar la foto de la carga
+     * @description Quita la referencia (el objeto se borra del bucket en segundo plano); no da de baja la carga. Devuelve `{ url: null, expiresAt: null }`.
+     */
+    delete: operations['TruckLoadPhotoController_quitar'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/claims': {
     parameters: {
       query?: never;
@@ -4515,6 +4571,83 @@ export interface paths {
     options?: never;
     head?: never;
     patch?: never;
+    trace?: never;
+  };
+  '/api/v2/admin-notifications': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Bandeja de avisos
+     * @description Los más nuevos primero. `readAt` es la lectura de quien consulta. Con `unread=true` sólo los que no leyó; con `unread=false`, sólo los leídos.
+     */
+    get: operations['AdminNotificationsController_listar'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/admin-notifications/unread-count': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Cuántos avisos no leí */
+    get: operations['AdminNotificationsController_contarSinLeer'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/admin-notifications/read-all': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Marcar todos como leídos
+     * @description Sólo los avisos de la distribuidora en contexto y sólo para quien pide.
+     */
+    patch: operations['AdminNotificationsController_marcarTodosLeidos'];
+    trace?: never;
+  };
+  '/api/v2/admin-notifications/{id}/read': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Marcar un aviso como leído
+     * @description Idempotente: si ya estaba leído devuelve la lectura original.
+     */
+    patch: operations['AdminNotificationsController_marcarLeido'];
     trace?: never;
   };
   '/api/v1/reports/sales-by-driver': {
@@ -5737,6 +5870,34 @@ export interface paths {
     put?: never;
     post?: never;
     delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/suppliers/{id}/photo': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Ver la foto del proveedor
+     * @description Por defecto redirige (302) a la URL firmada de S3. Con `?modo=url` devuelve `{ url, expiresAt, requiresAuth }` en JSON, sin redirect; si no tiene foto, `url: null`.
+     */
+    get: operations['SupplierPhotoController_ver'];
+    /**
+     * Subir o reemplazar la foto principal del proveedor
+     * @description Multipart, campo `file`: JPG, PNG o WEBP de hasta 5 MB (el tipo se valida por el contenido, no por el header). Si ya tenía foto, la anterior se borra del bucket. Devuelve el enlace vigente `{ url, expiresAt }`.
+     */
+    put: operations['SupplierPhotoController_subir'];
+    post?: never;
+    /**
+     * Sacar la foto del proveedor
+     * @description Quita la referencia (el objeto se borra del bucket en segundo plano); no da de baja al proveedor. Devuelve `{ url: null, expiresAt: null }`.
+     */
+    delete: operations['SupplierPhotoController_quitar'];
     options?: never;
     head?: never;
     patch?: never;
@@ -8918,6 +9079,15 @@ export interface components {
       orderId?: string;
       note?: string;
     };
+    PhotoCurrentResponseDto: {
+      /** @description URL firmada de S3 de la foto vigente (se abre sin token); `null` si no tiene foto. */
+      url: string | null;
+      /**
+       * Format: date-time
+       * @description Cuándo vence la URL; `null` si no tiene foto.
+       */
+      expiresAt: string | null;
+    };
     CreateCoverageZoneDto: {
       /** @example Villa Lanús */
       name: string;
@@ -11611,6 +11781,56 @@ export interface components {
       expiresAt: string | null;
       /** @description Siempre `false`: la URL firmada se abre sin token. */
       requiresAuth: boolean;
+    };
+    AdminNotificationLinkDto: {
+      /**
+       * @description Tipo de entidad a la que lleva el aviso (`order`, `claim`...)
+       * @example order
+       */
+      entity: string;
+      /** @example 3f1c5a52-6a3e-4d6c-9a0e-2f7b6a1d9c11 */
+      id: string;
+    };
+    AdminNotificationResponseDto: {
+      /** @example 9d8e7f60-1b2c-4d3e-8f4a-5b6c7d8e9f01 */
+      id: string;
+      /**
+       * @description Tipo de aviso
+       * @example claim_created
+       */
+      kind: string;
+      /** @example Nuevo reclamo */
+      title: string;
+      /** @example Pedido #ABC123: Garrafa con pérdida de gas */
+      body: string;
+      /** @description A dónde lleva el aviso; `null` si no apunta a nada */
+      link: components['schemas']['AdminNotificationLinkDto'] | null;
+      /** Format: date-time */
+      createdAt: string;
+      /**
+       * Format: date-time
+       * @description Cuándo lo leyó quien consulta; `null` si todavía no
+       */
+      readAt: string | null;
+    };
+    AdminNotificationListResponseDto: {
+      items: components['schemas']['AdminNotificationResponseDto'][];
+      /**
+       * @description Total con el filtro aplicado
+       * @example 42
+       */
+      total: number;
+    };
+    UnreadCountResponseDto: {
+      /** @example 3 */
+      count: number;
+    };
+    ReadAllResponseDto: {
+      /**
+       * @description Cuántos avisos se marcaron como leídos
+       * @example 3
+       */
+      updated: number;
     };
     VentasPorChoferDto: {
       /**
@@ -19763,6 +19983,13 @@ export interface operations {
         };
         content?: never;
       };
+      /** @description Aceptar (`accepted`) un pedido de Mercado Pago cuyo pago todavía no está aprobado (salvo una reserva con la seña paga) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
       422: {
         headers: {
@@ -20233,6 +20460,13 @@ export interface operations {
       };
       /** @description Order or delivery not found */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El pedido se paga con Mercado Pago y el pago todavía no está aprobado */
+      409: {
         headers: {
           [name: string]: unknown;
         };
@@ -22476,6 +22710,166 @@ export interface operations {
             | components['schemas']['CylinderExpiredResponseDto']
             | components['schemas']['PedidoNoDespachableResponseDto'];
         };
+      };
+    };
+  };
+  CylinderPhotoController_ver: {
+    parameters: {
+      query?: {
+        /** @description `url` devuelve `{ url, expiresAt, requiresAuth }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada de S3). */
+        modo?: components['schemas']['DownloadMode'];
+      };
+      header?: never;
+      path: {
+        /** @description Cylinder UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PhotoLinkResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin, delivery */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora; sin `modo`, también si no tiene foto */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CylinderPhotoController_subir: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Cylinder UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'multipart/form-data': {
+          /** Format: binary */
+          file: string;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PhotoCurrentResponseDto'];
+        };
+      };
+      /** @description Falta la foto o está vacía */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La foto supera los 5 MB */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No es JPG, PNG ni WEBP (o el contenido no coincide) */
+      415: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CylinderPhotoController_quitar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Cylinder UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PhotoCurrentResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
     };
   };
@@ -28883,6 +29277,166 @@ export interface operations {
       };
     };
   };
+  TruckLoadPhotoController_ver: {
+    parameters: {
+      query?: {
+        /** @description `url` devuelve `{ url, expiresAt, requiresAuth }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada de S3). */
+        modo?: components['schemas']['DownloadMode'];
+      };
+      header?: never;
+      path: {
+        /** @description Carga UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PhotoLinkResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin, delivery */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora; sin `modo`, también si no tiene foto */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TruckLoadPhotoController_subir: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Carga UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'multipart/form-data': {
+          /** Format: binary */
+          file: string;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PhotoCurrentResponseDto'];
+        };
+      };
+      /** @description Falta la foto o está vacía */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La foto supera los 5 MB */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No es JPG, PNG ni WEBP (o el contenido no coincide) */
+      415: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TruckLoadPhotoController_quitar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Carga UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PhotoCurrentResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   ClaimsController_findAll: {
     parameters: {
       query?: never;
@@ -29456,6 +30010,166 @@ export interface operations {
       };
       /** @description El reclamo está resuelto o rechazado: se reabre antes */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AdminNotificationsController_listar: {
+    parameters: {
+      query?: {
+        /** @description `true` sólo los no leídos por mí; `false` sólo los leídos */
+        unread?: boolean;
+        limit?: number;
+        offset?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AdminNotificationListResponseDto'];
+        };
+      };
+      /** @description Filtro o paginación inválidos */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AdminNotificationsController_contarSinLeer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['UnreadCountResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AdminNotificationsController_marcarTodosLeidos: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ReadAllResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AdminNotificationsController_marcarLeido: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AdminNotificationResponseDto'];
+        };
+      };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe, o es de otra distribuidora */
+      404: {
         headers: {
           [name: string]: unknown;
         };
@@ -33533,6 +34247,166 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['SupplierHistoryDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SupplierPhotoController_ver: {
+    parameters: {
+      query?: {
+        /** @description `url` devuelve `{ url, expiresAt, requiresAuth }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada de S3). */
+        modo?: components['schemas']['DownloadMode'];
+      };
+      header?: never;
+      path: {
+        /** @description Proveedor UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PhotoLinkResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora; sin `modo`, también si no tiene foto */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SupplierPhotoController_subir: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Proveedor UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'multipart/form-data': {
+          /** Format: binary */
+          file: string;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PhotoCurrentResponseDto'];
+        };
+      };
+      /** @description Falta la foto o está vacía */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La foto supera los 5 MB */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No es JPG, PNG ni WEBP (o el contenido no coincide) */
+      415: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SupplierPhotoController_quitar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Proveedor UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PhotoCurrentResponseDto'];
         };
       };
       /** @description Sin token o token inválido */

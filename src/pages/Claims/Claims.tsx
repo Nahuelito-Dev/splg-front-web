@@ -30,11 +30,13 @@ const TABS_ID = 'claims';
 export const Claims = () => {
   const { data: claims, isLoading, isFetching, error, refetch } = useClaims();
   // El estado y la búsqueda viven en la URL: al volver o recargar la lista queda como estaba.
-  const [{ status: statusParam, q: term }, setFilters] = useUrlParams({ status: 'all', q: '' });
+  // El reclamo abierto también (`?claim=<id>`): el aviso de la bandeja lleva directo a él.
+  const [{ status: statusParam, q: term, claim }, setFilters] = useUrlParams({ status: 'all', q: '', claim: '' });
   const status: ClaimStatusFilter = CLAIM_STATUS_ORDER.find((s) => s === statusParam) ?? 'all';
   const setStatus = (value: string) => setFilters({ status: value });
   const setTerm = (value: string) => setFilters({ q: value });
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selectedId = claim || null;
+  const setSelectedId = (id: string | null) => setFilters({ claim: id ?? '' });
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<Claim | null>(null);
   const [startAction, setStartAction] = useState<PendingAction>(null);

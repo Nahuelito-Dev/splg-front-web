@@ -1,25 +1,18 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Tooltip } from '@mui/material';
 import {
+  ArrowDownToLine,
   Bell,
   BellOff,
   CircleCheck,
   CircleX,
-  ShieldAlert,
-  HandCoins,
   MapPinned,
   MapPinOff,
   PackagePlus,
   RotateCcw,
-  Undo2,
   ThumbsUp,
   Truck,
   UserRoundX,
-  UserRoundSearch,
-  ArrowDownToLine,
-  Receipt,
-  MessageSquareWarning,
-  TriangleAlert,
   type LucideIcon,
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -27,31 +20,37 @@ import { useNavigate } from 'react-router-dom';
 import { useDistributorEventFilter } from '../../../../hooks/useDistributorEventFilter';
 import { useSocketContext } from '../../../../context/useSocketContext';
 import {
+  ADMIN_NOTIFICATION_EVENT,
   CLAIM_CREATED_EVENT,
   CYLINDER_BLOCKED_EVENT,
   EXPRESS_DEGRADED_EVENT,
   INCIDENT_CREATED_EVENT,
   NO_ACTIVE_ZONES_EVENT,
-  NO_DRIVERS_EVENT,
   ORDER_SOCKET_EVENTS,
   ORDER_UPDATED_EVENT,
   PAYMENT_REFUNDED_EVENT,
   TRANSFER_RECEIPT_UPLOADED_EVENT,
   type TransferReceiptUploadedPayload,
   REFUND_FAILED_EVENT,
+  type AdminNotificationPayload,
   type ClaimCreatedPayload,
   type CylinderBlockedPayload,
   type ExpressDegradedPayload,
   type IncidentCreatedPayload,
   type NoActiveZonesPayload,
-  type NoDriversPayload,
-  type NoDriversReason,
   type OrderSocketEventName,
   type OrderUpdatedPayload,
   type PaymentRefundedPayload,
   type RefundFailedPayload,
 } from '../../../../hooks/useSocket';
+import {
+  useAdminNotifications,
+  useAdminUnreadCount,
+  useMarkAdminNotificationRead,
+  useMarkAllAdminNotificationsRead,
+} from '../../../../services/queries/adminNotifications';
 import { queryKeys } from '../../../../services/queries/queryKeys';
+import { notificationTarget, notificationVisuals } from '../../../../utils/adminNotifications';
 import { notify } from '../../../../utils/notifications';
 import { formatCurrency, formatShortId } from '../../../../utils/format';
 import { INCIDENT_TYPE, type Tone } from '../../../../utils/statusLabels';
@@ -72,30 +71,22 @@ interface OrderSocketPayload {
   at?: string;
   /** Sólo en `order:assignment-declined`: el chofer que no confirmó. */
   driverName?: string;
-  /** Sólo en `cylinder:dispatch-blocked`: los seriales vencidos. */
-  serials?: string[];
   [key: string]: unknown;
 }
 
-/** El cobro impago tiene su propio aviso; el resto de las incidencias comparte uno. */
-const UNPAID_INCIDENT = 'incident:unpaid';
-
-/** Los eventos que la campana muestra: los del ciclo de vida del pedido, las incidencias y los reclamos. */
+/**
+ * Los avisos en vivo de la sesión, que el back no guarda: el ciclo de vida del pedido y unos pocos eventos sueltos.
+ * Los que sí se guardan (reclamos, incidencias, sin choferes, reintegro fallido, comprobante, despacho bloqueado)
+ * llegan por la bandeja de la API y no se repiten acá.
+ */
 type NotificationEvent =
   | OrderSocketEventName
-  | typeof INCIDENT_CREATED_EVENT
-  | typeof UNPAID_INCIDENT
-  | typeof CLAIM_CREATED_EVENT
-  | typeof NO_DRIVERS_EVENT
-  | typeof CYLINDER_BLOCKED_EVENT
   | typeof NO_ACTIVE_ZONES_EVENT
-  | typeof REFUND_FAILED_EVENT
   | typeof ORDER_UPDATED_EVENT
   | typeof PAYMENT_REFUNDED_EVENT
-  | typeof EXPRESS_DEGRADED_EVENT
-  | typeof TRANSFER_RECEIPT_UPLOADED_EVENT;
+  | typeof EXPRESS_DEGRADED_EVENT;
 
-export interface OrderNotification {
+interface SessionNotification {
   id: string;
   event: NotificationEvent;
   /** Lo que el evento dice del pedido: su id corto y, según el caso, el monto, el motivo o el chofer. */
@@ -107,17 +98,10 @@ export interface OrderNotification {
 }
 
 const EVENT_LABELS: Record<NotificationEvent, string> = {
-  [UNPAID_INCIDENT]: 'Cobro impago: el chofer no pudo cobrar',
-  [INCIDENT_CREATED_EVENT]: 'Nueva incidencia de reparto',
-  [CLAIM_CREATED_EVENT]: 'Nuevo reclamo de un cliente',
-  [NO_DRIVERS_EVENT]: 'Pedido sin chofer disponible',
-  [CYLINDER_BLOCKED_EVENT]: 'Despacho bloqueado: envase con la revisión vencida',
-  [REFUND_FAILED_EVENT]: 'No se pudo devolver el pago: resolvelo a mano',
   [NO_ACTIVE_ZONES_EVENT]: 'Sin zonas de cobertura activas: no se aceptan pedidos nuevos',
   [ORDER_UPDATED_EVENT]: 'El cliente modificó el pedido',
   [PAYMENT_REFUNDED_EVENT]: 'Se reintegró el pago del pedido',
   [EXPRESS_DEGRADED_EVENT]: 'El pedido express pasó al reparto común',
-  [TRANSFER_RECEIPT_UPLOADED_EVENT]: 'El cliente subió el comprobante de transferencia',
   [ORDER_SOCKET_EVENTS.CREATED]: 'Nuevo pedido',
   [ORDER_SOCKET_EVENTS.ACCEPTED]: 'Pedido aceptado',
   [ORDER_SOCKET_EVENTS.ON_THE_WAY]: 'Pedido en camino',
@@ -129,17 +113,10 @@ const EVENT_LABELS: Record<NotificationEvent, string> = {
 };
 
 const EVENT_VISUALS: Record<NotificationEvent, { icon: LucideIcon; tone: Tone }> = {
-  [UNPAID_INCIDENT]: { icon: HandCoins, tone: 'danger' },
-  [INCIDENT_CREATED_EVENT]: { icon: TriangleAlert, tone: 'warn' },
-  [CLAIM_CREATED_EVENT]: { icon: MessageSquareWarning, tone: 'warn' },
-  [NO_DRIVERS_EVENT]: { icon: UserRoundSearch, tone: 'warn' },
-  [CYLINDER_BLOCKED_EVENT]: { icon: ShieldAlert, tone: 'danger' },
   [NO_ACTIVE_ZONES_EVENT]: { icon: MapPinOff, tone: 'danger' },
-  [REFUND_FAILED_EVENT]: { icon: Undo2, tone: 'danger' },
   [ORDER_UPDATED_EVENT]: { icon: RotateCcw, tone: 'info' },
   [PAYMENT_REFUNDED_EVENT]: { icon: ArrowDownToLine, tone: 'success' },
   [EXPRESS_DEGRADED_EVENT]: { icon: Truck, tone: 'warn' },
-  [TRANSFER_RECEIPT_UPLOADED_EVENT]: { icon: Receipt, tone: 'success' },
   [ORDER_SOCKET_EVENTS.CREATED]: { icon: PackagePlus, tone: 'primary' },
   [ORDER_SOCKET_EVENTS.ACCEPTED]: { icon: ThumbsUp, tone: 'info' },
   [ORDER_SOCKET_EVENTS.ON_THE_WAY]: { icon: Truck, tone: 'info' },
@@ -150,42 +127,25 @@ const EVENT_VISUALS: Record<NotificationEvent, { icon: LucideIcon; tone: Tone }>
   [ORDER_SOCKET_EVENTS.ADDRESS_CHANGED]: { icon: MapPinned, tone: 'info' },
 };
 
-const NO_DRIVERS_REASONS: Record<NoDriversReason, string> = {
-  no_drivers_in_range: 'no hay choferes dentro del radio máximo',
-  all_drivers_exhausted: 'ya se ofreció a todos los choferes disponibles',
-  no_delivery_point: 'el pedido no tiene punto de entrega',
-};
-
 const MAX_NOTIFICATIONS = 50;
+/** Cuántos avisos guardados trae la campana: la primera página; el resto está en /notifications. */
+const SAVED_PAGE = { limit: 20, offset: 0 };
+const SAVED_PREFIX = 'saved:';
 
 const buildDetail = (event: NotificationEvent, payload: OrderSocketPayload) => {
   const orderRef = payload.orderId ? formatShortId(payload.orderId) : '';
   const extra =
-    event === CYLINDER_BLOCKED_EVENT
-      ? (payload.serials ?? []).join(', ')
-      : event === NO_DRIVERS_EVENT
-        ? (NO_DRIVERS_REASONS[payload.reason as NoDriversReason] ?? payload.reason ?? '')
-        : (event === ORDER_SOCKET_EVENTS.CANCELLED ||
-              event === REFUND_FAILED_EVENT ||
-              event === INCIDENT_CREATED_EVENT ||
-              event === CLAIM_CREATED_EVENT) &&
-            payload.reason
-          ? payload.reason
-          : event === ORDER_SOCKET_EVENTS.ASSIGNMENT_DECLINED && payload.driverName
-            ? payload.driverName
-            : event === ORDER_UPDATED_EVENT && typeof payload.totalAmount === 'number'
-              ? formatCurrency(payload.totalAmount)
-              : event === PAYMENT_REFUNDED_EVENT && typeof payload.totalAmount === 'number'
-                ? formatCurrency(payload.totalAmount)
-                : event === EXPRESS_DEGRADED_EVENT && typeof payload.totalAmount === 'number'
-                  ? formatCurrency(payload.totalAmount)
-                  : typeof payload.totalAmount === 'number'
-                    ? formatCurrency(payload.totalAmount)
-                    : '';
+    event === ORDER_SOCKET_EVENTS.CANCELLED && payload.reason
+      ? payload.reason
+      : event === ORDER_SOCKET_EVENTS.ASSIGNMENT_DECLINED && payload.driverName
+        ? payload.driverName
+        : typeof payload.totalAmount === 'number'
+          ? formatCurrency(payload.totalAmount)
+          : '';
   return [orderRef, extra].filter(Boolean).join(' · ') || undefined;
 };
 
-const toDrawerItem = (notification: OrderNotification): NotificationsDrawerItem => ({
+const toDrawerItem = (notification: SessionNotification): NotificationsDrawerItem => ({
   id: notification.id,
   title: EVENT_LABELS[notification.event],
   detail: notification.detail,
@@ -200,10 +160,14 @@ export const NotificationBell = () => {
   const queryClient = useQueryClient();
   const belongsToView = useDistributorEventFilter();
   const [open, setOpen] = useState(false);
-  const [notifications, setNotifications] = useState<OrderNotification[]>([]);
+  const [notifications, setNotifications] = useState<SessionNotification[]>([]);
+  const { data: saved, isError: savedError, refetch: refetchSaved } = useAdminNotifications(SAVED_PAGE);
+  const { data: unreadSaved, refetch: refetchUnread } = useAdminUnreadCount();
+  const markRead = useMarkAdminNotificationRead();
+  const markAllRead = useMarkAllAdminNotificationsRead();
 
   const pushNotification = useCallback((event: NotificationEvent, payload: OrderSocketPayload = {}) => {
-    const notification: OrderNotification = {
+    const notification: SessionNotification = {
       id: `${event}-${payload.orderId ?? Date.now()}-${Math.random()}`,
       event,
       detail: buildDetail(event, payload),
@@ -222,21 +186,26 @@ export const NotificationBell = () => {
       }),
     );
 
-    // Sin choferes: el despacho agotó los candidatos y el pedido espera una asignación manual.
+    // Al volver la conexión (corte de red, back reiniciado, sesión renovada) puede haber avisos que llegaron mientras
+    // tanto: se vuelve a leer la bandeja.
     unsubscribers.push(
-      subscribe<NoDriversPayload>(NO_DRIVERS_EVENT, (payload) => {
-        if (belongsToView(payload)) pushNotification(NO_DRIVERS_EVENT, { ...payload });
+      subscribe('connect', () => {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.adminNotifications.all });
       }),
     );
 
-    // Un despacho rechazado por vencimiento: el aviso lleva los seriales; sin pedido, no hay a dónde navegar.
+    // Un aviso nuevo en la bandeja guardada: se refrescan la lista y el contador.
+    unsubscribers.push(
+      subscribe<AdminNotificationPayload>(ADMIN_NOTIFICATION_EVENT, (payload) => {
+        if (!belongsToView(payload)) return;
+        void queryClient.invalidateQueries({ queryKey: queryKeys.adminNotifications.all });
+      }),
+    );
+
+    // Un despacho rechazado por vencimiento: el aviso queda guardado en la bandeja; acá sólo el toast.
     unsubscribers.push(
       subscribe<CylinderBlockedPayload>(CYLINDER_BLOCKED_EVENT, (payload) => {
         if (!belongsToView(payload)) return;
-        pushNotification(CYLINDER_BLOCKED_EVENT, {
-          orderId: payload.orderId ?? undefined,
-          serials: payload.serials,
-        });
         notify.info(`Despacho bloqueado: revisión vencida (${payload.serials.join(', ')})`);
       }),
     );
@@ -250,12 +219,10 @@ export const NotificationBell = () => {
       }),
     );
 
-    // El reintegro automático falló: se avisa con un toast, queda en la campana (con enlace al pedido) y se refrescan
-    // Reintegros y el pedido.
+    // El reintegro automático falló: toast y se refrescan Reintegros y el pedido (el aviso queda en la bandeja).
     unsubscribers.push(
       subscribe<RefundFailedPayload>(REFUND_FAILED_EVENT, (payload) => {
         if (!belongsToView(payload)) return;
-        pushNotification(REFUND_FAILED_EVENT, { orderId: payload.orderId, at: payload.at, reason: payload.reason });
         notify.error(
           new Error(
             `No se pudo devolver el pago del pedido ${formatShortId(payload.orderId)}: resolvelo desde Reintegros`,
@@ -297,12 +264,10 @@ export const NotificationBell = () => {
       }),
     );
 
-    // El cliente subió el comprobante de su transferencia: se avisa, queda en la campana y se refrescan el pedido y
-    // sus comprobantes (el admin lo ve al lado de confirmar el pago).
+    // El cliente subió el comprobante de su transferencia: toast y se refresca el pedido (el aviso queda en la bandeja).
     unsubscribers.push(
       subscribe<TransferReceiptUploadedPayload>(TRANSFER_RECEIPT_UPLOADED_EVENT, (payload) => {
         if (!belongsToView(payload)) return;
-        pushNotification(TRANSFER_RECEIPT_UPLOADED_EVENT, { orderId: payload.orderId, at: payload.uploadedAt });
         notify.info(`El cliente subió el comprobante del pedido ${formatShortId(payload.orderId)}`);
         void queryClient.invalidateQueries({ queryKey: queryKeys.orders.detail(payload.orderId) });
       }),
@@ -329,23 +294,20 @@ export const NotificationBell = () => {
         if (!belongsToView(payload)) return;
         void queryClient.invalidateQueries({ queryKey: queryKeys.incidents.all });
         if (payload.type === 'unpaid_collection') {
-          pushNotification(UNPAID_INCIDENT, { orderId: payload.orderId });
           notify.info(`Cobro impago en el pedido ${formatShortId(payload.orderId)}: el chofer no pudo cobrar`);
           void queryClient.invalidateQueries({ queryKey: queryKeys.orders.all });
           void queryClient.invalidateQueries({ queryKey: queryKeys.reports.all });
           return;
         }
         const type = INCIDENT_TYPE[payload.type as keyof typeof INCIDENT_TYPE]?.text ?? payload.type;
-        pushNotification(INCIDENT_CREATED_EVENT, { orderId: payload.orderId, reason: type });
         notify.info(`Nueva incidencia en el pedido ${formatShortId(payload.orderId)}: ${type}`);
       }),
     );
 
-    // Un reclamo nuevo refresca la lista de reclamos; el aviso lleva al pedido reclamado.
+    // Un reclamo nuevo refresca la lista de reclamos (el aviso queda en la bandeja).
     unsubscribers.push(
       subscribe<ClaimCreatedPayload>(CLAIM_CREATED_EVENT, (payload) => {
         if (!belongsToView(payload)) return;
-        pushNotification(CLAIM_CREATED_EVENT, { orderId: payload.orderId, reason: payload.reason });
         notify.info(`Nuevo reclamo en el pedido ${formatShortId(payload.orderId)}: ${payload.reason}`);
         void queryClient.invalidateQueries({ queryKey: queryKeys.claims.all });
       }),
@@ -354,19 +316,43 @@ export const NotificationBell = () => {
     return () => unsubscribers.forEach((unsubscribe) => unsubscribe());
   }, [subscribe, pushNotification, queryClient, belongsToView]);
 
-  const handleMarkAsRead = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((notification) => (notification.id === id ? { ...notification, read: true } : notification)),
+  // Los guardados (primera página) y los de la sesión, mezclados por fecha: lo más nuevo arriba.
+  const items = useMemo(() => {
+    const savedItems = (saved?.items ?? []).map((n): NotificationsDrawerItem => ({
+      id: `${SAVED_PREFIX}${n.id}`,
+      title: n.title,
+      detail: n.body || undefined,
+      createdAt: n.createdAt,
+      read: n.readAt !== null,
+      ...notificationVisuals(n.kind),
+    }));
+    return [...savedItems, ...notifications.map(toDrawerItem)].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
-  };
+  }, [saved, notifications]);
+
+  const sessionUnread = notifications.filter((n) => !n.read).length;
+  const unreadCount = (unreadSaved?.count ?? 0) + sessionUnread;
 
   const handleMarkAllAsRead = () => {
+    markAllRead.mutate();
     setNotifications((prev) => prev.map((notification) => ({ ...notification, read: true })));
   };
 
-  /** Marca la notificación como leída y, si trajo `orderId`, abre la ficha de ese pedido. */
+  /** Marca el aviso como leído y lo abre: los guardados según su `link`, los de sesión según su pedido. */
   const handleNotificationClick = ({ id }: NotificationsDrawerItem) => {
-    handleMarkAsRead(id);
+    if (id.startsWith(SAVED_PREFIX)) {
+      const savedId = id.slice(SAVED_PREFIX.length);
+      const clicked = saved?.items.find((n) => n.id === savedId);
+      if (clicked && clicked.readAt === null) markRead.mutate(savedId);
+      const target = notificationTarget(clicked?.link);
+      if (target) {
+        setOpen(false);
+        navigate(target);
+      }
+      return;
+    }
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
     const clicked = notifications.find((notification) => notification.id === id);
     if (clicked?.event === NO_ACTIVE_ZONES_EVENT) {
       setOpen(false);
@@ -380,7 +366,10 @@ export const NotificationBell = () => {
     }
   };
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const handleViewAll = () => {
+    setOpen(false);
+    navigate('/notifications');
+  };
 
   return (
     <>
@@ -408,7 +397,14 @@ export const NotificationBell = () => {
       <NotificationsDrawer
         open={open}
         onClose={() => setOpen(false)}
-        notifications={notifications.map(toDrawerItem)}
+        notifications={items}
+        unreadCount={unreadCount}
+        onViewAll={handleViewAll}
+        loadError={savedError}
+        onRetry={() => {
+          void refetchSaved();
+          void refetchUnread();
+        }}
         onNotificationClick={handleNotificationClick}
         onMarkAllAsRead={unreadCount > 0 ? handleMarkAllAsRead : undefined}
       />

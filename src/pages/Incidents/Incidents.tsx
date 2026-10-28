@@ -49,17 +49,20 @@ const TYPE_OPTIONS = [
 
 export const Incidents = () => {
   const { data: incidents, isLoading, isFetching, error, refetch } = useIncidents();
-  const [{ status: statusParam, type: typeParam, q: term }, setFilters] = useUrlParams({
+  const [{ status: statusParam, type: typeParam, q: term, incident }, setFilters] = useUrlParams({
     status: 'all',
     type: 'all',
     q: '',
+    incident: '',
   });
   const setStatus = (value: string) => setFilters({ status: value });
   const setType = (value: string) => setFilters({ type: value });
   const setTerm = (value: string) => setFilters({ q: value });
   const status: IncidentStatusFilter = INCIDENT_STATUS_ORDER.find((s) => s === statusParam) ?? 'all';
   const type: IncidentTypeFilter = INCIDENT_TYPE_ORDER.find((t) => t === typeParam) ?? 'all';
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // La incidencia abierta vive en la URL (`?incident=<id>`): el aviso de la bandeja lleva directo a ella.
+  const selectedId = incident || null;
+  const setSelectedId = (id: string | null) => setFilters({ incident: id ?? '' });
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<Incident | null>(null);
   const [discarding, setDiscarding] = useState<Incident | null>(null);

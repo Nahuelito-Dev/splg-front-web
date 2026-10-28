@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { cleanup, render, screen, act, fireEvent } from '@testing-library/react';
+import { cleanup, render, screen, act, fireEvent, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -29,7 +29,36 @@ vi.mock('../../../../utils/notifications', async (importOriginal) => ({
   notify: { info: notifyInfo, success: vi.fn(), error: notifyError },
 }));
 
+const bandeja = vi.hoisted(() => ({
+  items: [] as unknown[],
+  count: 0,
+  markRead: vi.fn(),
+  markAll: vi.fn(),
+  navigate: vi.fn(),
+}));
+vi.mock('../../../../services/queries/adminNotifications', () => ({
+  useAdminNotifications: () => ({ data: { items: bandeja.items, total: bandeja.items.length } }),
+  useAdminUnreadCount: () => ({ data: { count: bandeja.count } }),
+  useMarkAdminNotificationRead: () => ({ mutate: bandeja.markRead }),
+  useMarkAllAdminNotificationsRead: () => ({ mutate: bandeja.markAll }),
+}));
+vi.mock('react-router-dom', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  useNavigate: () => bandeja.navigate,
+}));
+
 import { NotificationBell } from './NotificationBell';
+
+const saved = (id: string, over: Record<string, unknown> = {}) => ({
+  id,
+  kind: 'claim_created',
+  title: `Aviso ${id}`,
+  body: 'Detalle guardado',
+  link: { entity: 'claim', id: `claim-${id}` },
+  createdAt: '2026-10-28T10:00:00.000Z',
+  readAt: null,
+  ...over,
+});
 
 const unsubscribed = vi.hoisted(() => vi.fn());
 
@@ -52,11 +81,16 @@ beforeEach(() => {
   notifyError.mockReset();
   scope.viewing = null;
   unsubscribed.mockReset();
+  bandeja.items = [];
+  bandeja.count = 0;
+  bandeja.markRead.mockReset();
+  bandeja.markAll.mockReset();
+  bandeja.navigate.mockReset();
 });
 afterEach(cleanup);
 
 describe('NotificationBell: incident:created', () => {
-  it('un cobro impago avisa con un toast, suma una notificación sin leer y refresca incidencias, pedidos y reportes', () => {
+  it('un cobro impago avisa con un toast, no agrega ítem local y refresca incidencias, pedidos y reportes', () => {
     const spy = setup();
     act(() => {
       handlers.get('incident:created')?.({
@@ -67,11 +101,9 @@ describe('NotificationBell: incident:created', () => {
       });
     });
     expect(notifyInfo).toHaveBeenCalledWith(expect.stringContaining('Cobro impago en el pedido'));
-    expect(screen.getByRole('button', { name: /1 sin leer/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /sin leer/ })).toBeNull();
     const keys = spy.mock.calls.map(([filters]) => (filters?.queryKey as string[])[0]);
     expect(keys).toEqual(expect.arrayContaining(['incidents', 'orders', 'reports']));
-    fireEvent.click(screen.getByRole('button', { name: /1 sin leer/ }));
-    expect(screen.getByText('Cobro impago: el chofer no pudo cobrar')).toBeInTheDocument();
   });
 
   it('una incidencia de otro tipo avisa con su tipo y refresca sólo las incidencias', () => {
@@ -82,14 +114,12 @@ describe('NotificationBell: incident:created', () => {
     expect(notifyInfo).toHaveBeenCalledWith(expect.stringContaining('Envase dañado'));
     const keys = spy.mock.calls.map(([filters]) => (filters?.queryKey as string[])[0]);
     expect(keys).toEqual(['incidents']);
-    fireEvent.click(screen.getByRole('button', { name: /1 sin leer/ }));
-    expect(screen.getByText('Nueva incidencia de reparto')).toBeInTheDocument();
-    expect(screen.getByText(/Envase dañado/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /sin leer/ })).toBeNull();
   });
 });
 
 describe('NotificationBell: claim:created', () => {
-  it('avisa del reclamo con su motivo y refresca los reclamos', () => {
+  it('avisa del reclamo con su motivo y refresca los reclamos, sin duplicarlo como ítem local', () => {
     const spy = setup();
     act(() => {
       handlers.get('claim:created')?.({
@@ -102,8 +132,7 @@ describe('NotificationBell: claim:created', () => {
     expect(notifyInfo).toHaveBeenCalledWith(expect.stringContaining('Fuga de gas'));
     const keys = spy.mock.calls.map(([filters]) => (filters?.queryKey as string[])[0]);
     expect(keys).toEqual(['claims']);
-    fireEvent.click(screen.getByRole('button', { name: /1 sin leer/ }));
-    expect(screen.getByText('Nuevo reclamo de un cliente')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /sin leer/ })).toBeNull();
   });
 
   it('ignora el reclamo de otra distribuidora al «ver como»', () => {
@@ -117,7 +146,7 @@ describe('NotificationBell: claim:created', () => {
 });
 
 describe('NotificationBell: order:no-drivers', () => {
-  it('suma una notificación con el motivo en lenguaje simple', () => {
+  it('ya no agrega un ítem local: el aviso llega guardado por la bandeja', () => {
     setup();
     act(() => {
       handlers.get('order:no-drivers')?.({
@@ -125,37 +154,6 @@ describe('NotificationBell: order:no-drivers', () => {
         distributorId: 'dist-A',
         reason: 'no_drivers_in_range',
         at: '2026-10-15T12:00:00.000Z',
-      });
-    });
-    fireEvent.click(screen.getByRole('button', { name: /1 sin leer/ }));
-    expect(screen.getByText('Pedido sin chofer disponible')).toBeInTheDocument();
-    expect(screen.getByText(/no hay choferes dentro del radio máximo/)).toBeInTheDocument();
-  });
-
-  it('usa el `at` del payload como hora del aviso', () => {
-    vi.useFakeTimers({ toFake: ['Date'] });
-    vi.setSystemTime(new Date('2026-10-15T15:00:00.000Z'));
-    setup();
-    act(() => {
-      handlers.get('order:no-drivers')?.({
-        orderId: 'aaaaaaaa-1111',
-        reason: 'no_drivers_in_range',
-        at: '2026-10-15T12:00:00.000Z',
-      });
-    });
-    fireEvent.click(screen.getByRole('button', { name: /1 sin leer/ }));
-    expect(screen.getByText(/hace 3h/)).toBeInTheDocument();
-    vi.useRealTimers();
-  });
-
-  it('ignora el de otra distribuidora', () => {
-    scope.viewing = 'dist-A';
-    setup();
-    act(() => {
-      handlers.get('order:no-drivers')?.({
-        orderId: 'bbbbbbbb-2',
-        distributorId: 'dist-B',
-        reason: 'all_drivers_exhausted',
       });
     });
     expect(screen.queryByRole('button', { name: /sin leer/ })).toBeNull();
@@ -197,12 +195,12 @@ describe('NotificationBell: «Ver como» otra distribuidora', () => {
       handlers.get('order:created')?.({ orderId: 'dddddddd-4', distributorId: 'dist-A', totalAmount: 100 });
     });
     expect(notifyInfo).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole('button', { name: /2 sin leer/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /1 sin leer/ })).toBeInTheDocument();
   });
 });
 
 describe('NotificationBell: cylinder:dispatch-blocked', () => {
-  it('suma una notificación con los seriales vencidos', () => {
+  it('avisa con un toast con los seriales y no agrega ítem local', () => {
     setup();
     act(() => {
       handlers.get('cylinder:dispatch-blocked')?.({
@@ -211,20 +209,17 @@ describe('NotificationBell: cylinder:dispatch-blocked', () => {
         serials: ['SN-1', 'SN-2'],
       });
     });
-    fireEvent.click(screen.getByRole('button', { name: /1 sin leer/ }));
-    expect(screen.getByText('Despacho bloqueado: envase con la revisión vencida')).toBeInTheDocument();
-    expect(screen.getByText(/SN-1, SN-2/)).toBeInTheDocument();
     expect(notifyInfo).toHaveBeenCalledWith(expect.stringContaining('SN-1, SN-2'));
+    expect(screen.queryByRole('button', { name: /sin leer/ })).toBeNull();
   });
 
-  it('sin pedido (transición suelta) también avisa; ignora el de otra distribuidora', () => {
+  it('ignora el de otra distribuidora', () => {
     scope.viewing = 'dist-A';
     setup();
     act(() => {
-      handlers.get('cylinder:dispatch-blocked')?.({ orderId: null, distributorId: 'dist-A', serials: ['SN-9'] });
       handlers.get('cylinder:dispatch-blocked')?.({ orderId: null, distributorId: 'dist-B', serials: ['SN-8'] });
     });
-    expect(screen.getByRole('button', { name: /1 sin leer/ })).toBeInTheDocument();
+    expect(notifyInfo).not.toHaveBeenCalled();
   });
 });
 
@@ -260,7 +255,7 @@ describe('NotificationBell: order:refund-failed', () => {
     distributorId: 'd1',
   };
 
-  it('avisa con un toast, deja la notificación con el pedido y refresca Reintegros y el pedido', () => {
+  it('avisa con un toast, no agrega ítem local y refresca Reintegros y el pedido', () => {
     const spy = setup();
     act(() => {
       handlers.get('order:refund-failed')?.(payload);
@@ -269,9 +264,7 @@ describe('NotificationBell: order:refund-failed', () => {
     const keys = spy.mock.calls.map(([filters]) => filters?.queryKey as string[]);
     expect(keys.map((k) => k[0])).toContain('refunds');
     expect(keys).toContainEqual(['orders', 'detail', 'cccccccc-3333']);
-    fireEvent.click(screen.getByRole('button', { name: /1 sin leer/ }));
-    expect(screen.getByText('No se pudo devolver el pago: resolvelo a mano')).toBeInTheDocument();
-    expect(screen.getByText(/MercadoPago rechazó la devolución/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /sin leer/ })).toBeNull();
   });
 
   it('ignora el de otra distribuidora', () => {
@@ -395,15 +388,14 @@ describe('NotificationBell: order:transfer-receipt-uploaded', () => {
     distributorId: 'd1',
   };
 
-  it('avisa que el cliente subió el comprobante y refresca el pedido', () => {
+  it('refresca el pedido y no agrega ítem local', () => {
     const spy = setup();
     act(() => {
       handlers.get('order:transfer-receipt-uploaded')?.(payload);
     });
     const keys = spy.mock.calls.map(([filters]) => filters?.queryKey as string[]);
     expect(keys).toContainEqual(['orders', 'detail', 'dddddddd-4444']);
-    fireEvent.click(screen.getByRole('button', { name: /1 sin leer/ }));
-    expect(screen.getByText('El cliente subió el comprobante de transferencia')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /sin leer/ })).toBeNull();
   });
 
   it('ignora el de otra distribuidora', () => {
@@ -413,5 +405,95 @@ describe('NotificationBell: order:transfer-receipt-uploaded', () => {
       handlers.get('order:transfer-receipt-uploaded')?.({ ...payload, distributorId: 'otra' });
     });
     expect(screen.queryByRole('button', { name: /sin leer/ })).not.toBeInTheDocument();
+  });
+});
+
+describe('NotificationBell: bandeja guardada', () => {
+  it('mezcla guardados y de sesión ordenados por fecha, sin duplicar', () => {
+    bandeja.items = [saved('a', { createdAt: '2026-10-28T10:00:00.000Z' })];
+    bandeja.count = 1;
+    setup();
+    act(() => {
+      handlers.get('order:created')?.({ orderId: 'bbbbbbbb-2', totalAmount: 100 });
+      handlers.get('claim:created')?.({ claimId: 'c-9', orderId: 'cccccccc-3', reason: 'x' });
+    });
+    fireEvent.click(screen.getByRole('button', { name: /2 sin leer/ }));
+    const titles = within(screen.getByRole('tabpanel'))
+      .getAllByRole('button')
+      .map((b) => b.textContent ?? '');
+    expect(titles).toHaveLength(2);
+    expect(titles[0]).toContain('Nuevo pedido');
+    expect(titles[1]).toContain('Aviso a');
+    expect(screen.getByText('Detalle guardado')).toBeInTheDocument();
+  });
+
+  it('el contador suma los sin leer de la API y los de la sesión', () => {
+    bandeja.items = [saved('a')];
+    bandeja.count = 3;
+    setup();
+    act(() => {
+      handlers.get('order:created')?.({ orderId: 'bbbbbbbb-2', totalAmount: 100 });
+    });
+    expect(screen.getByRole('button', { name: /4 sin leer/ })).toBeInTheDocument();
+  });
+
+  it('el click en un guardado lo marca leído y navega según su enlace', () => {
+    bandeja.items = [saved('a')];
+    bandeja.count = 1;
+    setup();
+    fireEvent.click(screen.getByRole('button', { name: /1 sin leer/ }));
+    fireEvent.click(screen.getByText('Aviso a'));
+    expect(bandeja.markRead).toHaveBeenCalledWith('a');
+    expect(bandeja.navigate).toHaveBeenCalledWith('/claims?claim=claim-a');
+  });
+
+  it('un guardado sin enlace se marca leído pero no navega', () => {
+    bandeja.items = [saved('b', { link: null, kind: 'algo_nuevo' })];
+    bandeja.count = 1;
+    setup();
+    fireEvent.click(screen.getByRole('button', { name: /1 sin leer/ }));
+    fireEvent.click(screen.getByText('Aviso b'));
+    expect(bandeja.markRead).toHaveBeenCalledWith('b');
+    expect(bandeja.navigate).not.toHaveBeenCalled();
+  });
+
+  it('«Marcar todas como leídas» llama a read-all y deja en cero los de la sesión', () => {
+    bandeja.count = 0;
+    setup();
+    act(() => {
+      handlers.get('order:created')?.({ orderId: 'bbbbbbbb-2', totalAmount: 100 });
+    });
+    fireEvent.click(screen.getByRole('button', { name: /1 sin leer/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Marcar todas como leídas/ }));
+    expect(bandeja.markAll).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('button', { name: /1 sin leer/ })).toBeNull();
+  });
+
+  it('«Ver todas» lleva a /notifications', () => {
+    setup();
+    fireEvent.click(screen.getByRole('button', { name: /Notificaciones/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ver todas' }));
+    expect(bandeja.navigate).toHaveBeenCalledWith('/notifications');
+  });
+
+  it('admin:notification invalida la bandeja; el de otra distribuidora se ignora', () => {
+    scope.viewing = 'dist-A';
+    const spy = setup();
+    act(() => {
+      handlers.get('admin:notification')?.({ id: 'n1', kind: 'claim_created', distributorId: 'dist-B' });
+    });
+    expect(spy).not.toHaveBeenCalled();
+    act(() => {
+      handlers.get('admin:notification')?.({ id: 'n2', kind: 'claim_created', distributorId: 'dist-A' });
+    });
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['adminNotifications'] });
+  });
+
+  it('al reconectar el socket vuelve a leer la bandeja (pudo llegar algo mientras estaba caído)', () => {
+    const spy = setup();
+    act(() => {
+      handlers.get('connect')?.(undefined);
+    });
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['adminNotifications'] });
   });
 });

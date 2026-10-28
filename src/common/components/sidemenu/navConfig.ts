@@ -1,5 +1,6 @@
 import {
   ArrowLeftRight,
+  Bell,
   Bot,
   BookOpen,
   Boxes,
@@ -177,6 +178,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { title: 'Usuarios', path: '/users', icon: UserRound },
       { title: 'Administradores', path: '/admins', icon: ShieldCheck },
       { title: 'Distribuidoras', path: '/distributors', icon: Building2, superAdminOnly: true },
+      { title: 'Notificaciones', path: '/notifications', icon: Bell },
       { title: 'Auditoría', path: '/audit', icon: FileClock },
       { title: 'Reportes', path: '/reports', icon: ChartLine },
       { title: 'Sistema', path: '/system', icon: ServerCog, superAdminOnly: true },
