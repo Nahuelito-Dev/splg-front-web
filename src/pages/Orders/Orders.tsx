@@ -332,6 +332,7 @@ export const Orders = () => {
         onClose={closeModal}
         onConfirm={modal.kind === 'bulk-assign' ? handleBulkAssign : handleAssign}
         assigning={assignDelivery.isPending}
+        error={assignDelivery.error}
         distributorId={
           modal.kind === 'assign'
             ? modal.order.distributor_id

@@ -174,6 +174,7 @@ export const useOrderActions = (order: Order) => {
     confirmDeliveryError,
     clearManualDeliveryError: () => setManualDeliveryError(null),
     clearConfirmDeliveryError: () => setConfirmDeliveryError(null),
+    assignError: assignDelivery.error,
     assign,
     cancel,
     changeStatus,

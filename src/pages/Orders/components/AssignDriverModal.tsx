@@ -1,8 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import TwoWheelerIcon from '@mui/icons-material/TwoWheeler';
-import { AffectedList, Button, cx, EmptyState, LoadingState, Modal, SearchInput } from '../../../common/components/ui';
+import {
+  AffectedList,
+  Badge,
+  Button,
+  cx,
+  EmptyState,
+  LoadingState,
+  Modal,
+  SearchInput,
+} from '../../../common/components/ui';
 import { useDebounce, usePermissions } from '../../../hooks';
-import { useActiveDeliveries } from '../../../services/queries/orders';
+import { errorMessage } from '../../../services/api/errors';
+import { useEnabledDeliveries } from '../../../services/queries/orders';
+import { driverStatus } from '../../../utils/statusLabels';
 
 interface Props {
   open: boolean;
@@ -15,6 +26,8 @@ interface Props {
   count?: number;
   /** Qué pedidos se van a afectar (lote): se listan antes de confirmar. */
   affected?: string[];
+  /** El rechazo del back a la última asignación (documentación vencida, moto requerida en express…). */
+  error?: unknown;
 }
 
 /** Sobreescribe a mano la asignación automática de un pedido. */
@@ -26,29 +39,48 @@ export const AssignDriverModal = ({
   distributorId,
   count = 1,
   affected,
+  error,
 }: Props) => {
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search.trim());
   const { needsDistributor } = usePermissions();
   // Sin empresa conocida, el administrador general vería choferes de todas y la API rechaza los de otra (404).
   const unscoped = needsDistributor && !distributorId;
-  const { data: drivers, isPending } = useActiveDeliveries(debouncedSearch, {
+  const { data, isPending } = useEnabledDeliveries(debouncedSearch, {
     distributorId: needsDistributor ? distributorId : undefined,
-    enabled: !unscoped,
+    enabled: open && !unscoped,
   });
   const [selected, setSelected] = useState('');
+  // Un rechazo anterior (de otro pedido, de otra apertura o de otra elección) no se vuelve a mostrar.
+  const [dismissedError, setDismissedError] = useState<unknown>(null);
+  const shownError = error != null && error !== dismissedError ? errorMessage(error) : null;
 
   useEffect(() => {
     if (open) {
       setSelected('');
       setSearch('');
+      setDismissedError(error ?? null);
     }
+    // Sólo al abrir: el error que ya estaba entonces es de un intento anterior.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  // Asignables = habilitados y validados, en línea o no; los en línea primero.
+  const drivers = useMemo(() => {
+    if (!data) return undefined;
+    const rows = data.rows
+      .filter((driver) => driver.isEnabled && driver.validated)
+      .sort((a, b) => Number(b.isAvailable) - Number(a.isAvailable));
+    // El aviso de «Mostrando X de Y» es sólo para cuando la página del back no trajo a todos.
+    return { rows, truncated: data.total > data.rows.length };
+  }, [data]);
 
   return (
     <Modal
       open={open}
       onClose={onClose}
+      // Mientras se asigna no se cierra: el resultado tiene que verse en este pedido, no en el próximo que se abra.
+      closeBlocked={assigning}
       title="Asignación manual"
       description={
         count > 1
@@ -57,7 +89,7 @@ export const AssignDriverModal = ({
       }
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>
+          <Button variant="secondary" onClick={onClose} disabled={assigning}>
             Cancelar
           </Button>
           <Button onClick={() => onConfirm(selected)} loading={assigning} disabled={!selected}>
@@ -84,22 +116,22 @@ export const AssignDriverModal = ({
           description="Para asignar un chofer, elegí la distribuidora del pedido con «Ver como» en la barra superior."
         />
       ) : isPending ? (
-        <LoadingState label="Buscando choferes disponibles…" />
+        <LoadingState label="Buscando choferes…" />
       ) : !drivers || drivers.rows.length === 0 ? (
         <EmptyState
-          title="No hay choferes activos"
+          title="No hay choferes habilitados y validados"
           description={
             debouncedSearch
-              ? 'Ningún chofer activo coincide con la búsqueda.'
-              : 'Activá algún chofer para poder asignarlo a mano.'
+              ? 'Ningún chofer habilitado y validado coincide con la búsqueda.'
+              : 'Habilitá y validá a un chofer para poder asignarlo a mano.'
           }
         />
       ) : (
         <div className="space-y-2">
-          {drivers.total > drivers.rows.length && (
+          {drivers.truncated && (
             <p className="text-xs text-muted">
-              Mostrando {drivers.rows.length} de {drivers.total} choferes activos. Buscá por nombre, teléfono o patente
-              para encontrar al resto.
+              Se muestran los primeros {drivers.rows.length} choferes. Buscá por nombre, teléfono o patente para
+              encontrar al resto.
             </p>
           )}
           {drivers.rows.map((driver) => (
@@ -112,13 +144,14 @@ export const AssignDriverModal = ({
                   : 'border-outline hover:border-primary/50',
               )}
             >
-              <span className="flex items-center gap-3">
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-surface text-primary-strong shadow-sm">
+              <span className="flex min-w-0 items-center gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface text-primary-strong shadow-sm">
                   <TwoWheelerIcon fontSize="small" />
                 </span>
-                <span>
+                <span className="min-w-0">
                   <span className="block text-sm font-semibold text-ink">{driver.user?.full_name ?? 'Sin nombre'}</span>
                   <span className="block text-xs text-muted">{driver.user?.phone_number ?? '—'}</span>
+                  <Badge label={driverStatus(driver)} className="mt-1" />
                 </span>
               </span>
               <input
@@ -126,12 +159,20 @@ export const AssignDriverModal = ({
                 name="delivery"
                 value={driver.delivery_id}
                 checked={selected === driver.delivery_id}
-                onChange={() => setSelected(driver.delivery_id)}
-                className="h-4 w-4 accent-[theme(colors.primary.DEFAULT)]"
+                onChange={() => {
+                  setSelected(driver.delivery_id);
+                  setDismissedError(error ?? null);
+                }}
+                className="h-4 w-4 shrink-0 accent-[theme(colors.primary.DEFAULT)]"
               />
             </label>
           ))}
         </div>
+      )}
+      {shownError && (
+        <p role="alert" className="mt-3 rounded-xl border border-danger/30 bg-danger-soft p-3 text-sm text-danger">
+          {shownError}
+        </p>
       )}
     </Modal>
   );

@@ -154,6 +154,7 @@ export const DispatchBoard = () => {
         onClose={() => setAssigning(null)}
         onConfirm={handleAssign}
         assigning={assignDelivery.isPending}
+        error={assignDelivery.error}
         distributorId={assigning?.distributor_id}
       />
     </PageContainer>

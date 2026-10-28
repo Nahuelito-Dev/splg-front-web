@@ -69,9 +69,17 @@ vi.mock('../../services/queries/orders', () => {
     useCancelOrder: () => idle,
     useBulkCancelOrders: () => ({ mutate: bulkCancel, isPending: busy.cancel, stop }),
     useBulkAssignOrders: () => ({ mutate: bulkAssign, isPending: false, stop }),
-    useActiveDeliveries: () => ({
+    useEnabledDeliveries: () => ({
       data: {
-        rows: [{ delivery_id: 'd-1', user: { full_name: 'Chofer Uno', phone_number: '111' } }],
+        rows: [
+          {
+            delivery_id: 'd-1',
+            isEnabled: true,
+            validated: true,
+            isAvailable: true,
+            user: { full_name: 'Chofer Uno', phone_number: '111' },
+          },
+        ],
         total: 1,
       },
       isPending: false,

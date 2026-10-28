@@ -156,6 +156,7 @@ export const AvailableOrdersPool = ({ pool }: { pool: AvailablePool }) => {
         onClose={closeModal}
         onConfirm={handleAssign}
         assigning={assignDelivery.isPending}
+        error={assignDelivery.error}
         distributorId={modal.kind === 'assign' ? modal.order.distributor_id : undefined}
       />
       <CancelOrderModal
