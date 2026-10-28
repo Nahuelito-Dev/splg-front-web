@@ -1,12 +1,23 @@
 import type { GridColDef } from '@mui/x-data-grid';
-import { History } from 'lucide-react';
-import { Badge, Card, EmptyState, ErrorState, ResponsiveTable, CardHeader } from '../../../common/components/ui';
+import { FileText, History } from 'lucide-react';
+import { PdfButton } from '../../../common/components';
+import {
+  Badge,
+  Card,
+  EmptyState,
+  ErrorState,
+  ResponsiveTable,
+  CardHeader,
+  RowActions,
+} from '../../../common/components/ui';
+import { usePdfDownload } from '../../../hooks';
 import { useClampPage, useUrlPagedParams } from '../../../hooks';
 import type { CashSession } from '../../../services/api/types';
 import { useCashSessions } from '../../../services/queries/finance';
 import { useUserNames } from '../../../services/queries/userNames';
 import { formatCurrencyExact, formatDateTime, formatShortId } from '../../../utils/format';
 import { CASH_SESSION_STATUS, labelOf } from '../../../utils/statusLabels';
+import { canDownloadCashSessionPdf } from '../cashSessionPdf';
 import { sessionDifference } from '../cashSessionDifference';
 
 interface Props {
@@ -24,6 +35,7 @@ export const CashSessionsCard = ({ cashBoxId }: Props) => {
   const rows = data?.data ?? [];
   const names = useUserNames(rows.flatMap((row) => [row.openedByUserId, row.closedByUserId]));
   useClampPage(pagination, data?.total, setPagination);
+  const pdf = usePdfDownload();
 
   const columns: GridColDef<CashSession>[] = [
     {
@@ -100,6 +112,26 @@ export const CashSessionsCard = ({ cashBoxId }: Props) => {
         );
       },
     },
+    {
+      field: 'actions',
+      headerName: '',
+      width: 72,
+      sortable: false,
+      align: 'right',
+      renderCell: ({ row }) =>
+        canDownloadCashSessionPdf(row) ? (
+          <RowActions
+            rowLabel={`la sesión del ${formatDateTime(row.openedAt)}`}
+            actions={[
+              {
+                label: 'Cierre (PDF)',
+                icon: FileText,
+                onClick: () => pdf.download({ kind: 'cash-session', sessionId: row.sessionId }),
+              },
+            ]}
+          />
+        ) : null,
+    },
   ];
 
   return (
@@ -152,6 +184,15 @@ export const CashSessionsCard = ({ cashBoxId }: Props) => {
                       <Badge label={verdict} />
                     </p>
                   </>
+                )}
+                {canDownloadCashSessionPdf(row) && (
+                  <div>
+                    <PdfButton
+                      request={{ kind: 'cash-session', sessionId: row.sessionId }}
+                      label="Cierre (PDF)"
+                      size="sm"
+                    />
+                  </div>
                 )}
               </>
             );
