@@ -88,6 +88,35 @@ describe('AttachmentsPanel', () => {
     await waitFor(() => expect(api.uploadAttachment).toHaveBeenCalledWith('employee', 'e-1', pdf, 'Licencia'));
   });
 
+  it('Word, Excel y CSV se ofrecen sólo para descargar, nunca para ver', async () => {
+    api.listAttachments.mockResolvedValue([
+      {
+        ...item,
+        attachmentId: 'a-2',
+        label: 'Planilla',
+        originalName: 'p.xlsx',
+        mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      },
+      { ...item, attachmentId: 'a-3', label: 'Cobros', originalName: 'c.csv', mimeType: 'text/csv' },
+    ]);
+    renderPanel();
+    await screen.findByText('Planilla');
+    expect(screen.getByRole('button', { name: 'Descargar Planilla' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Descargar Cobros' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ver Planilla' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ver Cobros' })).not.toBeInTheDocument();
+  });
+
+  it('sube un Word aunque el navegador no informe el tipo', async () => {
+    api.listAttachments.mockResolvedValue([]);
+    api.uploadAttachment.mockResolvedValue(item);
+    renderPanel();
+    await screen.findByText(/Sin adjuntos/);
+    const doc = new File(['x'], 'acta.docx', { type: '' });
+    fireEvent.change(screen.getByLabelText('Elegir el archivo a adjuntar'), { target: { files: [doc] } });
+    await waitFor(() => expect(api.uploadAttachment).toHaveBeenCalledWith('employee', 'e-1', doc, ''));
+  });
+
   it('borra sólo si se confirma', async () => {
     api.listAttachments.mockResolvedValue([item]);
     api.deleteAttachment.mockResolvedValue(undefined);

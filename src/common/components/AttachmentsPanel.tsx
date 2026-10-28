@@ -9,7 +9,12 @@ import {
   useDeleteAttachment,
   useUploadAttachment,
 } from '../../services/queries/attachments';
-import { ATTACHMENT_ALLOWED_TYPES, ATTACHMENT_LIMITS_TEXT, attachmentFileError } from '../../utils/attachments';
+import {
+  ATTACHMENT_ALLOWED_TYPES,
+  ATTACHMENT_LIMITS_TEXT,
+  attachmentFileError,
+  attachmentIsViewable,
+} from '../../utils/attachments';
 import { openFileSource, saveFileSource } from '../../utils/fileSource';
 import { formatDateTime } from '../../utils/format';
 import { confirm, notify } from '../../utils/notifications';
@@ -132,7 +137,7 @@ export const AttachmentsPanel = ({
         />
       ) : attachments.length === 0 ? (
         <p className="rounded-xl border border-dashed border-outline p-4 text-center text-sm text-muted">
-          Sin adjuntos. {hint} (PDF, JPG, PNG o WEBP, hasta 10 MB).
+          Sin adjuntos. {hint} ({ATTACHMENT_LIMITS_TEXT}).
         </p>
       ) : (
         <ul className="space-y-2">
@@ -161,18 +166,20 @@ export const AttachmentsPanel = ({
                   </div>
                 </div>
                 <div className="flex shrink-0 gap-1">
-                  <IconButton
-                    label={`Ver ${name}`}
-                    icon={<Eye />}
-                    disabled={busy}
-                    onClick={() =>
-                      withFile(attachment.attachmentId, 'inline', (source) => {
-                        if (!openFileSource(source)) {
-                          notify.error(new Error('El navegador bloqueó la ventana: habilitá los popups para verlo.'));
-                        }
-                      })
-                    }
-                  />
+                  {attachmentIsViewable(attachment.mimeType) && (
+                    <IconButton
+                      label={`Ver ${name}`}
+                      icon={<Eye />}
+                      disabled={busy}
+                      onClick={() =>
+                        withFile(attachment.attachmentId, 'inline', (source) => {
+                          if (!openFileSource(source)) {
+                            notify.error(new Error('El navegador bloqueó la ventana: habilitá los popups para verlo.'));
+                          }
+                        })
+                      }
+                    />
+                  )}
                   <IconButton
                     label={`Descargar ${name}`}
                     icon={<Download />}

@@ -1,9 +1,11 @@
-import { File, FileImage, FileText, type LucideIcon } from 'lucide-react';
+import { File, FileImage, FileSpreadsheet, FileText, type LucideIcon } from 'lucide-react';
 
-/** El ícono según el `mimeType` del adjunto (PDF, imagen o genérico). */
+/** El ícono según el `mimeType` del adjunto (PDF, imagen, planilla, documento o genérico). */
 export const fleetAttachmentIcon = (mimeType: string): LucideIcon => {
   if (mimeType === 'application/pdf') return FileText;
   if (mimeType.startsWith('image/')) return FileImage;
+  if (mimeType.includes('spreadsheetml') || mimeType === 'text/csv') return FileSpreadsheet;
+  if (mimeType.includes('wordprocessingml')) return FileText;
   return File;
 };
 
