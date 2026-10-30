@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button, Modal, FormInput, FormSelect, Form } from '../../../common/components/ui';
-import type { TrafficFine } from '../../../services/api/types';
+import type { TrafficFineV2 } from '../../../services/api/types';
 import { useCreateTrafficFine, useUpdateTrafficFine } from '../../../services/queries/fleetExpense';
 import { notify } from '../../../utils/notifications';
 import { fromLocalInput, toLocalInput } from '../fleetExpenseDates';
@@ -13,7 +13,7 @@ interface Props {
   open: boolean;
   onClose: () => void;
   /** Con multa es edición (CU-323); sin ella, alta (CU-198). */
-  fine: TrafficFine | null;
+  fine: TrafficFineV2 | null;
   fixedCarId?: string;
 }
 
@@ -27,6 +27,8 @@ const EMPTY: TrafficFineFormValues = {
   voluntaryPaymentAmount: undefined,
   dueDate: '',
   employeeId: '',
+  paymentUrl: '',
+  paymentCode: '',
 };
 
 /** Alta o edición de una multa. El responsable lo deduce el sistema del chofer que tenía el vehículo. */
@@ -52,6 +54,8 @@ export const TrafficFineFormModal = ({ open, onClose, fine, fixedCarId }: Props)
             voluntaryPaymentAmount: fine.voluntaryPaymentAmount ?? undefined,
             dueDate: fine.dueDate ?? '',
             employeeId: '',
+            paymentUrl: fine.paymentUrl ?? '',
+            paymentCode: fine.paymentCode ?? '',
           }
         : { ...EMPTY, carId: fixedCarId ?? '', occurredAt: toLocalInput(new Date()) },
     );
@@ -69,6 +73,8 @@ export const TrafficFineFormModal = ({ open, onClose, fine, fixedCarId }: Props)
       amount: values.amount,
       voluntaryPaymentAmount: values.voluntaryPaymentAmount ?? null,
       dueDate: values.dueDate || null,
+      paymentUrl: values.paymentUrl || null,
+      paymentCode: values.paymentCode || null,
     };
     const options = {
       onSuccess: () => {
@@ -135,6 +141,16 @@ export const TrafficFineFormModal = ({ open, onClose, fine, fixedCarId }: Props)
           step="0.01"
           min={0}
         />
+        <div className="sm:col-span-2">
+          <FormInput
+            name="paymentUrl"
+            label="Enlace de pago"
+            maxLength={500}
+            placeholder="https://"
+            hint="Portal del municipio o Mercado Pago: «Pagar» lo abre en otra pestaña."
+          />
+        </div>
+        <FormInput name="paymentCode" label="Código de pago" maxLength={80} hint="El que pide el portal, si lo hay." />
       </Form>
     </Modal>
   );

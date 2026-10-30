@@ -1,3 +1,5 @@
+import { env } from '../../config/env';
+import { idempotencyHeaders } from './idempotency';
 import { http, toQuery, type PageParams } from './httpClient';
 import type {
   Car,
@@ -7,7 +9,7 @@ import type {
   CreateFuelLoadBody,
   CreateTireBody,
   CreateTireEventBody,
-  CreateTrafficFineBody,
+  CreateTrafficFineV2Body,
   CreateVehicleAccidentBody,
   FleetCostSummary,
   FuelEfficiency,
@@ -15,15 +17,17 @@ import type {
   FuelLoadPage,
   Message,
   PayFuelLoadFromCashBoxBody,
-  PayTrafficFineBody,
+  PayTrafficFineV2Body,
   Tire,
   TireMovement,
   TirePage,
   TrafficFine,
-  TrafficFinePage,
+  TrafficFineV2,
+  TrafficFineV2Page,
   UpdateFuelLoadBody,
-  UpdateTrafficFineBody,
+  UpdateTrafficFineV2Body,
   UpdateVehicleAccidentBody,
+  UploadedReceipt,
   VehicleAccident,
   VehicleAccidentPage,
   VoidTrafficFineBody,
@@ -93,7 +97,7 @@ export const getFuelEfficiency = async (carId: string, range: DayRangeParams): P
 export interface TrafficFineFilters {
   carId?: string;
   employeeId?: string;
-  status?: TrafficFine['status'];
+  status?: TrafficFineV2['status'];
   from?: string;
   to?: string;
 }
@@ -101,38 +105,58 @@ export interface TrafficFineFilters {
 /** Los parámetros de GET /fleet/fines sin paginar: los mismos que usa el exporte completo. */
 export const trafficFineQuery = (filters: TrafficFineFilters) => ({ ...filters });
 
-/** GET /fleet/fines (CU-325) */
+const v2 = { baseURL: env.apiUrlV2 };
+
+/** GET /v2/traffic-fines (CU-325) */
 export const listTrafficFines = async (
   params: PageParams,
   filters: TrafficFineFilters = {},
-): Promise<TrafficFinePage> => {
-  const { data } = await http.get<TrafficFinePage>('/fleet/fines', {
+): Promise<TrafficFineV2Page> => {
+  const { data } = await http.get<TrafficFineV2Page>('/traffic-fines', {
+    ...v2,
     params: { ...trafficFineQuery(filters), ...toQuery(params) },
   });
   return data;
 };
 
-/** GET /fleet/fines/:id */
-export const getTrafficFine = async (id: string): Promise<TrafficFine> => {
-  const { data } = await http.get<TrafficFine>(`/fleet/fines/${id}`);
+/** GET /v2/traffic-fines/:id */
+export const getTrafficFine = async (id: string): Promise<TrafficFineV2> => {
+  const { data } = await http.get<TrafficFineV2>(`/traffic-fines/${id}`, v2);
   return data;
 };
 
-/** POST /fleet/fines (CU-198) */
-export const createTrafficFine = async (body: CreateTrafficFineBody): Promise<TrafficFine> => {
-  const { data } = await http.post<TrafficFine>('/fleet/fines', body);
+/** POST /v2/traffic-fines (CU-198), con el enlace y el código de pago. */
+export const createTrafficFine = async (body: CreateTrafficFineV2Body): Promise<TrafficFineV2> => {
+  const { data } = await http.post<TrafficFineV2>('/traffic-fines', body, v2);
   return data;
 };
 
-/** PATCH /fleet/fines/:id (CU-323): corregir los datos o apelar (`appeal: true`). */
-export const updateTrafficFine = async (id: string, body: UpdateTrafficFineBody): Promise<TrafficFine> => {
-  const { data } = await http.patch<TrafficFine>(`/fleet/fines/${id}`, body);
+/** PATCH /v2/traffic-fines/:id (CU-323): corregir los datos, el enlace de pago o apelar (`appeal: true`). */
+export const updateTrafficFine = async (id: string, body: UpdateTrafficFineV2Body): Promise<TrafficFineV2> => {
+  const { data } = await http.patch<TrafficFineV2>(`/traffic-fines/${id}`, body, v2);
   return data;
 };
 
-/** PATCH /fleet/fines/:id/pay (CU-199) */
-export const payTrafficFine = async (id: string, body: PayTrafficFineBody): Promise<TrafficFine> => {
-  const { data } = await http.patch<TrafficFine>(`/fleet/fines/${id}/pay`, body);
+/**
+ * POST /v2/traffic-fines/:id/receipt (multipart `file`): sube el comprobante y lo lee en el mismo pedido.
+ * `scan.available` es `false` sin lector y `scan.data` es `null` si no pudo leerlo: la subida vale igual.
+ */
+export const uploadFineReceipt = async (id: string, file: File, key: string): Promise<UploadedReceipt> => {
+  const form = new FormData();
+  form.append('file', file);
+  const { data } = await http.post<UploadedReceipt>(`/traffic-fines/${id}/receipt`, form, {
+    ...v2,
+    headers: { 'Content-Type': 'multipart/form-data', ...idempotencyHeaders(key) },
+  });
+  return data;
+};
+
+/** POST /v2/traffic-fines/:id/pay (CU-199): deja la multa paga con su comprobante y el egreso de la caja. */
+export const payTrafficFine = async (id: string, body: PayTrafficFineV2Body, key: string): Promise<TrafficFineV2> => {
+  const { data } = await http.post<TrafficFineV2>(`/traffic-fines/${id}/pay`, body, {
+    ...v2,
+    headers: idempotencyHeaders(key),
+  });
   return data;
 };
 

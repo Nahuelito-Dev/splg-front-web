@@ -20,6 +20,7 @@ import {
   listVehicleAccidents,
   payFuelLoadFromCashBox,
   payTrafficFine,
+  uploadFineReceipt,
   reactivateCar,
   registerTireEvent,
   updateFuelLoad,
@@ -40,16 +41,18 @@ import type {
   CreateFuelLoadBody,
   CreateTireBody,
   CreateTireEventBody,
-  CreateTrafficFineBody,
+  CreateTrafficFineV2Body,
   CreateVehicleAccidentBody,
   PayFuelLoadFromCashBoxBody,
-  PayTrafficFineBody,
+  PayTrafficFineV2Body,
   UpdateFuelLoadBody,
-  UpdateTrafficFineBody,
+  UpdateTrafficFineV2Body,
   UpdateVehicleAccidentBody,
   VoidTrafficFineBody,
 } from '../api/types';
 import { ACCIDENT_STATUS, TIRE_STATUS, TRAFFIC_FINE_STATUS, statusKeys } from '../../utils/statusLabels';
+import { newIdempotencyKey } from '../api/idempotency';
+import { refreshFinance, runMoney } from './finance';
 import { useStatusCounts } from './statusCounts';
 import { queryKeys } from './queryKeys';
 
@@ -180,13 +183,34 @@ const useFineMutation = <V>(fn: (variables: V) => Promise<unknown>) => {
   });
 };
 
-export const useCreateTrafficFine = () => useFineMutation((body: CreateTrafficFineBody) => createTrafficFine(body));
+export const useCreateTrafficFine = () => useFineMutation((body: CreateTrafficFineV2Body) => createTrafficFine(body));
 
 export const useUpdateTrafficFine = () =>
-  useFineMutation(({ id, body }: { id: string; body: UpdateTrafficFineBody }) => updateTrafficFine(id, body));
+  useFineMutation(({ id, body }: { id: string; body: UpdateTrafficFineV2Body }) => updateTrafficFine(id, body));
 
-export const usePayTrafficFine = () =>
-  useFineMutation(({ id, body }: { id: string; body: PayTrafficFineBody }) => payTrafficFine(id, body));
+/**
+ * Sube el comprobante de una multa y devuelve lo que leyó el escaneo. No toca la multa (queda pendiente hasta
+ * «Guardar»), por eso no invalida nada.
+ */
+export const useUploadFineReceipt = () =>
+  useMutation({
+    mutationFn: ({ id, file }: { id: string; file: File }) => uploadFineReceipt(id, file, newIdempotencyKey()),
+  });
+
+/** Registrar el pago: la multa queda paga y la caja se mueve, así que se refresca lo de multas, el costo y finanzas. */
+export const usePayTrafficFine = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: PayTrafficFineV2Body }) =>
+      runMoney(queryClient, `fine-pay:${id}`, body, (key) => payTrafficFine(id, body, key)),
+    onSettled: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.trafficFines.all }),
+        refreshCar(queryClient),
+        refreshFinance(queryClient),
+      ]),
+  });
+};
 
 export const useChargeTrafficFine = () =>
   useFineMutation(({ id, body }: { id: string; body: ChargeTrafficFineBody }) => chargeTrafficFine(id, body));

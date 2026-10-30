@@ -45,3 +45,15 @@ describe('F14: avisos del seguro', () => {
     expect(notificationTarget({ entity: 'car-insurance', id: 'car-1' })).toBe('/cars/details/car-1?tab=insurance');
   });
 });
+
+describe('F15: avisos de las multas', () => {
+  it('por vencer avisa y vencida sin pagar es peligro', () => {
+    expect(notificationVisuals('traffic_fine_due').tone).toBe('warn');
+    expect(notificationVisuals('traffic_fine_overdue').tone).toBe('danger');
+    expect(notificationVisuals('traffic_fine_due').icon).toBe(notificationVisuals('traffic_fine_overdue').icon);
+  });
+
+  it('la multa abre el drawer de esa multa en la lista', () => {
+    expect(notificationTarget({ entity: 'traffic-fine', id: 'm 1' })).toBe('/fleet/fines?fine=m%201');
+  });
+});
