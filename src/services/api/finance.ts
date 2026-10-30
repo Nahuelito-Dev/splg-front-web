@@ -1,3 +1,4 @@
+import { env } from '../../config/env';
 import { http } from './httpClient';
 import { idempotencyHeaders } from './idempotency';
 import type {
@@ -8,7 +9,7 @@ import type {
   CashCategory,
   CashCategoryPage,
   CashMovement,
-  CashMovementPage,
+  CashMovementV2Page,
   CashSession,
   CashSessionDetail,
   CashSessionPage,
@@ -127,12 +128,13 @@ export interface CashMovementFilters {
 /** Los parámetros de GET /cash-movements sin paginar: los mismos que usa el exporte completo. */
 export const cashMovementQuery = (filters: CashMovementFilters) => ({ ...filters });
 
-/** GET /cash-movements */
+/** GET /v2/cash-movements: lo mismo que la v1, y cada cobro de venta trae su `orderId` para llegar al pedido. */
 export const listCashMovements = async (
   params: ListParams,
   filters: CashMovementFilters = {},
-): Promise<CashMovementPage> => {
-  const { data } = await http.get<CashMovementPage>('/cash-movements', {
+): Promise<CashMovementV2Page> => {
+  const { data } = await http.get<CashMovementV2Page>('/cash-movements', {
+    baseURL: env.apiUrlV2,
     params: { ...paging(params), ...cashMovementQuery(filters) },
   });
   return data;

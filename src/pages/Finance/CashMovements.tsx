@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { GridColDef } from '@mui/x-data-grid';
-import { ArrowLeftRight, BookOpen, Paperclip, Plus, Undo2 } from 'lucide-react';
+import { ArrowLeftRight, BookOpen, Paperclip, Plus, ShoppingBag, Undo2 } from 'lucide-react';
 import {
   Badge,
   Button,
@@ -22,7 +23,7 @@ import { AttachmentsDrawer } from '../../common/components/AttachmentsDrawer';
 import { useClampPage, usePermissions, useUrlPagedParams } from '../../hooks';
 import { toApiError } from '../../services/api/errors';
 import { cashMovementQuery } from '../../services/api/finance';
-import type { CashMovement } from '../../services/api/types';
+import type { CashMovementV2 as CashMovement } from '../../services/api/types';
 import {
   useCashBoxOptions,
   useCashCategories,
@@ -47,6 +48,7 @@ const DIRECTIONS = [
 /** El libro de movimientos de caja: consulta, registro, transferencia y anulación (CU-228, 229, 309, 310, 340). */
 export const CashMovements = () => {
   const { canWrite, writeHint } = usePermissions();
+  const navigate = useNavigate();
   const [filters, setFilters, pagination, setPagination] = useUrlPagedParams(
     { cashBoxId: '', direction: '', categoryId: '', from: '', to: '' },
     25,
@@ -134,7 +136,11 @@ export const CashMovements = () => {
       minWidth: 260,
       sortable: false,
       renderCell: ({ row }) => (
-        <IdentityCell title={row.description} subtitle={`${row.cashBoxName} · ${row.categoryName}`} icon={BookOpen} />
+        <IdentityCell
+          title={row.description}
+          subtitle={`${row.cashBoxName} · ${row.categoryName}${row.createdByUserId === null ? ' · Sistema' : ''}`}
+          icon={BookOpen}
+        />
       ),
     },
     { field: 'origin', headerName: 'Origen', width: 190, sortable: false, renderCell: ({ row }) => state(row) },
@@ -158,6 +164,9 @@ export const CashMovements = () => {
           rowLabel={`movimiento ${row.description}`}
           actions={[
             { label: 'Comprobantes', icon: Paperclip, onClick: () => setAttaching(row) },
+            ...(row.orderId
+              ? [{ label: 'Ver pedido', icon: ShoppingBag, onClick: () => navigate(`/orders/${row.orderId}`) }]
+              : []),
             ...(canReverse(row)
               ? [{ label: reverseLabel(row), icon: Undo2, tone: 'danger' as const, onClick: () => setReversing(row) }]
               : []),
@@ -265,7 +274,7 @@ export const CashMovements = () => {
               <>
                 <IdentityCell
                   title={row.description}
-                  subtitle={`${row.cashBoxName} · ${row.categoryName}`}
+                  subtitle={`${row.cashBoxName} · ${row.categoryName}${row.createdByUserId === null ? ' · Sistema' : ''}`}
                   icon={BookOpen}
                 />
                 <div className="flex flex-wrap items-center gap-2">
@@ -277,6 +286,16 @@ export const CashMovements = () => {
                   <Button size="sm" variant="secondary" icon={<Paperclip />} onClick={() => setAttaching(row)}>
                     Comprobantes
                   </Button>
+                  {row.orderId && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      icon={<ShoppingBag />}
+                      onClick={() => navigate(`/orders/${row.orderId}`)}
+                    >
+                      Ver pedido
+                    </Button>
+                  )}
                   {canReverse(row) && (
                     <Button size="sm" variant="secondary" onClick={() => setReversing(row)}>
                       {reverseLabel(row)}

@@ -6897,6 +6897,130 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/orders/{id}/confirm-deposit': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Confirmar la seña de una reserva y asentarla en una caja
+     * @description Como `PATCH /orders/:id/confirm-deposit` (v1), y la seña entra a una caja en la misma transacción: por transferencia, a la caja de transferencias de `/v2/cash-settings` (sin caja configurada la confirmación sigue y queda «sin asentar», con aviso a la bandeja); en efectivo, a la caja de efectivo `cashBoxId`, obligatoria si hay alguna caja de efectivo activa. Repetirlo no asienta otra vez. La seña por Mercado Pago la confirma la pasarela.
+     */
+    patch: operations['ReservationV2Controller_confirmDeposit'];
+    trace?: never;
+  };
+  '/api/v2/cash-movements': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Consultar los movimientos de caja, con su pedido
+     * @description Igual que la v1 (mismos filtros, del más nuevo al más viejo) y cada movimiento suma `orderId`: el pedido del que nace un cobro de venta. `createdByUserId` es null en los movimientos que se asientan solos.
+     */
+    get: operations['CashMovementV2Controller_findAll'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/cash-settings': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Ver las cajas de cobro
+     * @description La caja (billetera) de Mercado Pago y la caja (banco) de las transferencias. Sin caja configurada el cobro se confirma igual y queda sin asentar.
+     */
+    get: operations['CashCollectionSettingsController_ver'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Elegir las cajas de cobro
+     * @description `mercadoPagoCashBoxId` tiene que ser una caja de clase billetera y `transferCashBoxId` una de clase banco, ambas de la distribuidora y activas. `null` quita la caja; omitir el campo lo deja como está. Elegir una caja NO asienta cobros anteriores: eso lo pide `POST /cash-settings/settle-pending`.
+     */
+    patch: operations['CashCollectionSettingsController_actualizar'];
+    trace?: never;
+  };
+  '/api/v2/cash-settings/pending': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Cobros de ventas sin asentar
+     * @description Pagos aprobados de Mercado Pago y transferencias confirmadas desde `from` (por omisión, los últimos 30 días) que no tienen movimiento de caja.
+     */
+    get: operations['CashCollectionSettingsController_pendientes'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/cash-settings/settle-pending': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Asentar los cobros pendientes
+     * @description Asienta en las cajas configuradas los cobros de Mercado Pago (con su comisión y devoluciones) y las transferencias confirmadas desde `from` que no tienen movimiento. Idempotente: lo que ya está asentado no se repite. Nada anterior a `from` se toca.
+     */
+    post: operations['CashCollectionSettingsController_asentarPendientes'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/orders/{orderId}/cash-settlement': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * A qué caja entró lo cobrado de un pedido
+     * @description Los cobros del pedido por Mercado Pago o transferencia, cada uno con su movimiento de caja o `settled: false` si quedó sin asentar.
+     */
+    get: operations['CashCollectionSettingsController_delPedido'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -10574,13 +10698,20 @@ export interface components {
         | 'maintenance_task'
         | 'tire'
         | 'vehicle_accident'
-        | 'insurance_reimbursement';
+        | 'insurance_reimbursement'
+        | 'payment'
+        | 'payment_fee'
+        | 'payment_refund'
+        | 'order_transfer'
+        | 'payment_external_refund'
+        | 'order_deposit';
       referenceId: string | null;
       /** @description Si es una anulación, el movimiento que anula */
       reversesMovementId: string | null;
       /** @description true si otro movimiento ya lo anuló */
       reversed: boolean;
-      createdByUserId: string;
+      /** @description Quién lo registró; null en los movimientos que se asientan solos (webhook, devolución de Mercado Pago) */
+      createdByUserId: string | null;
       /** Format: date-time */
       createdAt: string;
     };
@@ -10697,6 +10828,8 @@ export interface components {
         | 'tires'
         | 'vehicle_accident'
         | 'insurance_reimbursement'
+        | 'mercadopago_fee'
+        | 'customer_refund'
         | null;
       isActive: boolean;
       /** Format: date-time */
@@ -15341,6 +15474,195 @@ export interface components {
       confirmadaEn: string;
       /** @description true si esta importación ya estaba confirmada: no se aplicó de nuevo */
       yaConfirmada: boolean;
+    };
+    ConfirmDepositV2Dto: {
+      /**
+       * Format: uuid
+       * @description Caja de EFECTIVO donde entra la seña recibida en efectivo. Obligatoria si la distribuidora tiene alguna caja de efectivo activa (400 si falta o no es de efectivo); la de otra distribuidora es 404 y una que exige sesión sin sesión abierta, 409. En una seña por transferencia no se manda: entra a la caja de transferencias configurada en `/v2/cash-settings`.
+       */
+      cashBoxId?: string;
+    };
+    CashMovementV2ResponseDto: {
+      movementId: string;
+      cashBoxId: string;
+      /** @example Caja central */
+      cashBoxName: string;
+      sessionId: string | null;
+      /** @enum {string} */
+      direction: 'in' | 'out';
+      /** @example 2500.5 */
+      amount: number;
+      categoryId: string;
+      /** @example Rendición de chofer */
+      categoryName: string;
+      /** @enum {string} */
+      method: 'cash' | 'transfer' | 'card' | 'mercadopago' | 'check';
+      /** Format: date-time */
+      occurredAt: string;
+      description: string;
+      /** @enum {string} */
+      referenceType:
+        | 'manual'
+        | 'session_opening'
+        | 'session_closing'
+        | 'driver_settlement'
+        | 'customer_payment'
+        | 'purchase_receipt'
+        | 'fuel_load'
+        | 'traffic_fine'
+        | 'driver_liquidation'
+        | 'box_transfer'
+        | 'reversal'
+        | 'order_payment'
+        | 'insurance_installment'
+        | 'maintenance_task'
+        | 'tire'
+        | 'vehicle_accident'
+        | 'insurance_reimbursement'
+        | 'payment'
+        | 'payment_fee'
+        | 'payment_refund'
+        | 'order_transfer'
+        | 'payment_external_refund'
+        | 'order_deposit';
+      referenceId: string | null;
+      /** @description Si es una anulación, el movimiento que anula */
+      reversesMovementId: string | null;
+      /** @description true si otro movimiento ya lo anuló */
+      reversed: boolean;
+      /** @description Quién lo registró; null en los movimientos que se asientan solos (webhook, devolución de Mercado Pago) */
+      createdByUserId: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      /** @description El pedido al que pertenece el movimiento cuando nace de un cobro de venta (efectivo, Mercado Pago, comisión, devolución, transferencia o seña); null en los demás */
+      orderId: string | null;
+    };
+    CashMovementV2PageDto: {
+      data: components['schemas']['CashMovementV2ResponseDto'][];
+      /** @example 40 */
+      total: number;
+    };
+    CashCollectionSettingsResponseDto: {
+      /**
+       * Format: uuid
+       * @description Billetera a la que entran los pagos aprobados de Mercado Pago
+       */
+      mercadoPagoCashBoxId: string | null;
+      /** @example Mercado Pago */
+      mercadoPagoCashBoxName: string | null;
+      /**
+       * Format: uuid
+       * @description Banco al que entran las transferencias confirmadas
+       */
+      transferCashBoxId: string | null;
+      /** @example Banco Nación */
+      transferCashBoxName: string | null;
+      /**
+       * Format: date-time
+       * @description Null mientras nunca se configuró
+       */
+      updatedAt: string | null;
+    };
+    UpdateCashCollectionSettingsDto: {
+      /**
+       * Format: uuid
+       * @description Caja de clase billetera (`wallet`) de la distribuidora. `null` la quita: los cobros de Mercado Pago quedan sin asentar. Omitirla la deja como está.
+       */
+      mercadoPagoCashBoxId?: string | null;
+      /**
+       * Format: uuid
+       * @description Caja de clase banco (`bank`) de la distribuidora. `null` la quita: las transferencias confirmadas quedan sin asentar. Omitirla la deja como está.
+       */
+      transferCashBoxId?: string | null;
+    };
+    PendingCollectionsDetailDto: {
+      /** @example 3 */
+      count: number;
+      /** @example 45200.5 */
+      amount: number;
+    };
+    PendingCollectionsResponseDto: {
+      /** Format: date-time */
+      from: string;
+      /** @example 5 */
+      count: number;
+      /** @example 78300 */
+      amount: number;
+      mercadoPago: components['schemas']['PendingCollectionsDetailDto'];
+      transfer: components['schemas']['PendingCollectionsDetailDto'];
+      /** @description Señas de reservas confirmadas por transferencia sin asentar */
+      deposits: components['schemas']['PendingCollectionsDetailDto'];
+      /** @description Devoluciones de Mercado Pago ya hechas cuyo egreso de caja falta (el cobro sí entró) */
+      refunds: components['schemas']['PendingCollectionsDetailDto'];
+      /**
+       * Format: date-time
+       * @description El cobro sin asentar más viejo del período
+       */
+      oldestAt: string | null;
+    };
+    SettlePendingDto: {
+      /**
+       * @description Se asientan los cobros confirmados desde esta fecha (YYYY-MM-DD, hora argentina, inclusive; hasta un año atrás). Nada anterior se toca. Si esos cobros ya se cargaron a mano en una caja, asentarlos los duplica.
+       * @example 2026-10-01
+       */
+      from: string;
+    };
+    SettlePendingResponseDto: {
+      /**
+       * @description Cobros que entraron a una caja ahora
+       * @example 4
+       */
+      settled: number;
+      /**
+       * @description Cobros que ya tenían su movimiento
+       * @example 0
+       */
+      alreadySettled: number;
+      /**
+       * @description Cobros de un medio cuya caja no está configurada
+       * @example 0
+       */
+      withoutCashBox: number;
+      /**
+       * @description Cobros que la caja rechazó (desactivada, sin sesión abierta…)
+       * @example 0
+       */
+      failed: number;
+      /**
+       * @description Devoluciones (propias o hechas por Mercado Pago) cuyo egreso se asentó ahora
+       * @example 0
+       */
+      refundsSettled: number;
+      /**
+       * @description Comisiones de Mercado Pago que se asentaron después de su ingreso
+       * @example 0
+       */
+      feesSettled: number;
+    };
+    OrderCollectionEntryDto: {
+      /**
+       * @description `deposit` es la seña de una reserva recibida a mano
+       * @enum {string}
+       */
+      kind: 'mercadopago' | 'transfer' | 'deposit';
+      /** @example 12000 */
+      amount: number;
+      /** Format: date-time */
+      collectedAt: string | null;
+      /** @description true si el cobro ya tiene su movimiento de caja */
+      settled: boolean;
+      /** Format: uuid */
+      movementId: string | null;
+      /** Format: uuid */
+      cashBoxId: string | null;
+      /** @example Mercado Pago */
+      cashBoxName: string | null;
+    };
+    OrderCashSettlementResponseDto: {
+      /** Format: uuid */
+      orderId: string;
+      /** @description Los cobros del pedido por Mercado Pago o transferencia; vacío si no tiene (efectivo, cuenta corriente o todavía sin cobrar) */
+      entries: components['schemas']['OrderCollectionEntryDto'][];
     };
   };
   responses: never;
@@ -26276,7 +26598,13 @@ export interface operations {
           | 'maintenance_task'
           | 'tire'
           | 'vehicle_accident'
-          | 'insurance_reimbursement';
+          | 'insurance_reimbursement'
+          | 'payment'
+          | 'payment_fee'
+          | 'payment_refund'
+          | 'order_transfer'
+          | 'payment_external_refund'
+          | 'order_deposit';
         from?: string | null;
         to?: string | null;
       };
@@ -39444,6 +39772,379 @@ export interface operations {
       };
       /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
       422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ReservationV2Controller_confirmDeposit: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Order UUID (reserva) */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ConfirmDepositV2Dto'];
+      };
+    };
+    responses: {
+      /** @description Seña confirmada */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['OrderResponseDto'];
+        };
+      };
+      /** @description No es una reserva pendiente, la seña es de Mercado Pago, o falta la caja de efectivo */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Reserva o caja no encontrada */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La caja rechazó el ingreso (sin sesión abierta, desactivada) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CashMovementV2Controller_findAll: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+        page?: number;
+        /** @description Texto a buscar */
+        term?: string;
+        /** @description Sólo los de esta caja */
+        cashBoxId?: string;
+        categoryId?: string;
+        direction?: 'in' | 'out';
+        referenceType?:
+          | 'manual'
+          | 'session_opening'
+          | 'session_closing'
+          | 'driver_settlement'
+          | 'customer_payment'
+          | 'purchase_receipt'
+          | 'fuel_load'
+          | 'traffic_fine'
+          | 'driver_liquidation'
+          | 'box_transfer'
+          | 'reversal'
+          | 'order_payment'
+          | 'insurance_installment'
+          | 'maintenance_task'
+          | 'tire'
+          | 'vehicle_accident'
+          | 'insurance_reimbursement'
+          | 'payment'
+          | 'payment_fee'
+          | 'payment_refund'
+          | 'order_transfer'
+          | 'payment_external_refund'
+          | 'order_deposit';
+        from?: string | null;
+        to?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CashMovementV2PageDto'];
+        };
+      };
+      /** @description Período o filtro inválido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La caja no existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CashCollectionSettingsController_ver: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CashCollectionSettingsResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CashCollectionSettingsController_actualizar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateCashCollectionSettingsDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CashCollectionSettingsResponseDto'];
+        };
+      };
+      /** @description La caja no es de la clase que corresponde o está desactivada */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La caja no existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CashCollectionSettingsController_pendientes: {
+    parameters: {
+      query?: {
+        /** @description Fecha (YYYY-MM-DD, hora argentina) desde la que se cuentan los cobros. Por omisión, los últimos 30 días. */
+        from?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PendingCollectionsResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CashCollectionSettingsController_asentarPendientes: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SettlePendingDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SettlePendingResponseDto'];
+        };
+      };
+      /** @description Fecha inválida */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CashCollectionSettingsController_delPedido: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Pedido UUID */
+        orderId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['OrderCashSettlementResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
         headers: {
           [name: string]: unknown;
         };

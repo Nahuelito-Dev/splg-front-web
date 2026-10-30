@@ -57,3 +57,10 @@ describe('F15: avisos de las multas', () => {
     expect(notificationTarget({ entity: 'traffic-fine', id: 'm 1' })).toBe('/fleet/fines?fine=m%201');
   });
 });
+
+describe('Etapa 3: cobros de ventas sin asentar', () => {
+  it('el aviso es una advertencia y lleva a la configuración de las cajas de cobro', () => {
+    expect(notificationVisuals('sales_cash_unsettled').tone).toBe('warn');
+    expect(notificationTarget({ entity: 'cash-settings', id: 'd-1' })).toBe('/finance/collection-settings');
+  });
+});

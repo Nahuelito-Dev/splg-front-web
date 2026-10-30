@@ -21,6 +21,9 @@ vi.mock('./components/details/OrderHistoryCard', () => ({ OrderHistoryCard: () =
 vi.mock('./components/details/OrderSideCards', () => ({ OrderSideCards: () => <div>Laterales</div> }));
 vi.mock('./components/details/OrderIncidents', () => ({ OrderIncidents: () => <div>Incidencias</div> }));
 vi.mock('../PhysicalCylinders/components/CylinderLinksCard', () => ({ CylinderLinksCard: () => <div>Envases</div> }));
+vi.mock('./components/details/OrderCashSettlementCard', () => ({
+  OrderCashSettlementCard: ({ orderId }: { orderId: string }) => <div>Cobro en caja de {orderId}</div>,
+}));
 vi.mock('./components/details/OrderTransferReceipts', () => ({
   OrderTransferReceipts: ({ orderId }: { orderId: string }) => <div>Comprobantes de {orderId}</div>,
 }));
@@ -65,5 +68,22 @@ describe('OrderDetails', () => {
     });
     renderPage();
     expect(screen.queryByText('Comprobantes de o-1') !== null).toBe(visibles);
+  });
+
+  it.each([
+    ['mercadopago', true],
+    ['transfer', true],
+    ['cash', false],
+    ['account', false],
+  ])('con pago %s, la tarjeta del cobro en caja se muestra: %s', (metodo, visible) => {
+    permissions.mockReturnValue({ needsDistributor: false, canWrite: true, canOperate: true });
+    useOrder.mockReturnValue({
+      data: { order_id: 'o-1', status: 'pending', paymentMethodDetail: metodo },
+      isPending: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+    renderPage();
+    expect(screen.queryByText('Cobro en caja de o-1') !== null).toBe(visible);
   });
 });

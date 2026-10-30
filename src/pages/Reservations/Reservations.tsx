@@ -47,14 +47,17 @@ export const Reservations = () => {
   const rows = useMemo(() => filterReservations(reservations ?? [], { deposit, term }), [reservations, deposit, term]);
   const pendingCount = countPendingManualDeposits(reservations ?? []);
 
-  const handleConfirmDeposit = (orderId: string) => {
-    confirmDeposit.mutate(orderId, {
-      onSuccess: () => {
-        notify.success('Seña confirmada: la reserva se activa sola el día agendado');
-        setSelected(null);
+  const handleConfirmDeposit = (orderId: string, cashBoxId?: string) => {
+    confirmDeposit.mutate(
+      { orderId, cashBoxId },
+      {
+        onSuccess: () => {
+          notify.success('Seña confirmada: la reserva se activa sola el día agendado');
+          setSelected(null);
+        },
+        onError: notify.error,
       },
-      onError: notify.error,
-    });
+    );
   };
 
   return (
