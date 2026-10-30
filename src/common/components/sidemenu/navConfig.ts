@@ -55,6 +55,7 @@ import {
   Tags,
   Wallet,
   type LucideIcon,
+  Wrench,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -115,6 +116,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { title: 'Planes', path: '/fleet/plans', icon: ClipboardList },
       { title: 'Tareas', path: '/fleet/tasks', icon: ListChecks },
       { title: 'Vencimientos', path: '/fleet/expirations', icon: CalendarClock },
+      { title: 'Planificador de taller', path: '/fleet/planner', icon: Wrench },
       { title: 'Combustible', path: '/fleet/fuel-loads', icon: Fuel },
       { title: 'Multas', path: '/fleet/fines', icon: Gavel },
       { title: 'Aseguradoras', path: '/fleet/insurers', icon: ShieldCheck },

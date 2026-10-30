@@ -25,6 +25,7 @@ export const queryKeys = {
   employees: resource('employees'),
   fleet: resource('fleet'),
   fleetCosts: resource('fleetCosts'),
+  fleetPlanner: resource('fleetPlanner'),
   fuelLoads: resource('fuelLoads'),
   gasCylinders: resource('gasCylinders'),
   health: resource('health'),

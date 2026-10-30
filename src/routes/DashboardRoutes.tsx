@@ -36,6 +36,7 @@ const DeliveryDetails = lazyPage(() => import('../pages/Deliveries/DeliveryDetai
 const Cars = lazyPage(() => import('../pages/Cars/Cars'), 'Cars');
 const CarDetails = lazyPage(() => import('../pages/Cars/CarDetails'), 'CarDetails');
 const FleetExpirations = lazyPage(() => import('../pages/Fleet/FleetExpirations'), 'FleetExpirations');
+const FleetPlanner = lazyPage(() => import('../pages/Fleet/Planner/FleetPlanner'), 'FleetPlanner');
 const FleetFiles = lazyPage(() => import('../pages/Fleet/FleetFiles'), 'FleetFiles');
 const FleetPlans = lazyPage(() => import('../pages/Fleet/FleetPlans'), 'FleetPlans');
 const FleetPlanDetails = lazyPage(() => import('../pages/Fleet/FleetPlanDetails'), 'FleetPlanDetails');
@@ -211,6 +212,7 @@ export const DashboardRoutes = () => {
 
           {/* Documentación de la flota: vencimientos (CU-139), planes (CU-105/140) y tareas */}
           <Route path="fleet/expirations" element={<FleetExpirations />} />
+          <Route path="fleet/planner" element={<FleetPlanner />} />
           <Route path="fleet/files" element={<FleetFiles />} />
           <Route path="fleet/plans" element={<FleetPlans />} />
           <Route path="fleet/plans/:id" element={<FleetPlanDetails />} />

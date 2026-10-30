@@ -13,6 +13,12 @@ describe('notificationTarget', () => {
     expect(notificationTarget({ entity: 'employee', id: 'e1' })).toBe('/employees/details/e1?tab=documents');
   });
 
+  it('F16: el planificador de taller lleva al caso, y un vehículo a su ficha', () => {
+    expect(notificationTarget({ entity: 'maintenance-planner', id: 'c1' })).toBe('/fleet/planner?case=c1');
+    expect(notificationTarget({ entity: 'car', id: 'v1' })).toBe('/cars/details/v1');
+    expect(notificationVisuals('maintenance_escalated').tone).toBe('danger');
+  });
+
   it('sin enlace o con una entidad desconocida no navega', () => {
     expect(notificationTarget(null)).toBeNull();
     expect(notificationTarget(undefined)).toBeNull();
