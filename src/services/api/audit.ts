@@ -1,5 +1,12 @@
+import { env } from '../../config/env';
 import { http, type Page } from './httpClient';
-import type { AsientoDeAuditoria, AuditActionType, AuditEntriesPage, AuditEntry, RegistroDeAuditoria } from './types';
+import type {
+  AsientoDeAuditoria,
+  AuditActionType,
+  AuditEntriesPageV2,
+  AuditEntryV2,
+  RegistroDeAuditoria,
+} from './types';
 
 export interface AuditFilters {
   actorUserId?: string;
@@ -34,11 +41,15 @@ export const listAudit = async (params: AuditParams): Promise<Page<AsientoDeAudi
   return { rows: data.items, total: data.total };
 };
 
+export type AuditOrigin = AuditEntryV2['origin'];
+
 export interface AuditEntriesParams {
   entity?: string;
   recordId?: string;
   userId?: string;
   actionType?: number;
+  /** Quién originó el cambio: una persona, el sistema (cron, seed) o SQL directo. */
+  origin?: AuditOrigin;
   /** ISO 8601 */
   from?: string;
   /** ISO 8601 */
@@ -64,20 +75,23 @@ export const buildAuditEntriesQuery = (params: AuditEntriesParams): Record<strin
   limit: params.limit,
 });
 
-/** GET /audit/entries: cada alta, cambio, baja o reactivación de un registro, con sus campos. */
-export const listAuditEntries = async (params: AuditEntriesParams): Promise<Page<AuditEntry>> => {
-  const { data } = await http.get<AuditEntriesPage>('/audit/entries', { params: buildAuditEntriesQuery(params) });
+/** GET /v2/audit/entries: cada alta, cambio, baja, ingreso o salida de un registro, con sus campos y su origen. */
+export const listAuditEntries = async (params: AuditEntriesParams): Promise<Page<AuditEntryV2>> => {
+  const { data } = await http.get<AuditEntriesPageV2>('/audit/entries', {
+    baseURL: env.apiUrlV2,
+    params: buildAuditEntriesQuery(params),
+  });
   return { rows: data.data, total: data.total };
 };
 
-/** GET /audit/entries/:id */
-export const getAuditEntry = async (id: string): Promise<AuditEntry> => {
-  const { data } = await http.get<AuditEntry>(`/audit/entries/${id}`);
+/** GET /v2/audit/entries/:id */
+export const getAuditEntry = async (id: string): Promise<AuditEntryV2> => {
+  const { data } = await http.get<AuditEntryV2>(`/audit/entries/${id}`, { baseURL: env.apiUrlV2 });
   return data;
 };
 
-/** GET /audit/action-types: el catálogo de acciones (alta, modificación, baja lógica…). */
+/** GET /v2/audit/action-types: el catálogo de acciones (alta, modificación, baja, ingreso, salida…). */
 export const listAuditActionTypes = async (): Promise<AuditActionType[]> => {
-  const { data } = await http.get<AuditActionType[]>('/audit/action-types');
+  const { data } = await http.get<AuditActionType[]>('/audit/action-types', { baseURL: env.apiUrlV2 });
   return data;
 };

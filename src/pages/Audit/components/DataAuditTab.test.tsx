@@ -1,6 +1,7 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { useServerExport } from '../../../hooks/useServerExport';
 import { ApiError } from '../../../services/api/errors';
 
 const entries = vi.hoisted(() => vi.fn());
@@ -62,5 +63,19 @@ describe('DataAuditTab', () => {
     renderTab();
     expect(screen.getByText('Falló el servidor')).toBeInTheDocument();
     expect(screen.queryByText('tabla')).toBeNull();
+  });
+
+  it('el filtro «Origen» llega a la API, deja su chip y viaja al exporte', () => {
+    renderTab();
+    fireEvent.change(screen.getByLabelText('Origen'), { target: { value: 'system' } });
+    act(() => void vi.advanceTimersByTime(600));
+    expect(entries).toHaveBeenLastCalledWith(expect.objectContaining({ origin: 'system' }));
+    expect(screen.getByText('Origen: Sistema (automático)')).toBeInTheDocument();
+    expect(useServerExport).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        resource: 'auditoria-datos',
+        params: expect.objectContaining({ origin: 'system' }) as unknown,
+      }),
+    );
   });
 });

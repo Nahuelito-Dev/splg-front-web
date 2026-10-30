@@ -1,6 +1,6 @@
 import { DateRangeFilter, Input, Select, type SelectOption } from '../../../common/components/ui';
 import { AUDIT_ENTITY_OPTIONS } from '../../../utils/auditLabels';
-import { dataAuditErrors, RECORD_ID_MAX, type DataAuditFilters } from './dataAuditFilters';
+import { AUDIT_ORIGIN_OPTIONS, dataAuditErrors, RECORD_ID_MAX, type DataAuditFilters } from './dataAuditFilters';
 
 interface Props {
   value: DataAuditFilters;
@@ -38,6 +38,12 @@ export const DataAuditFiltersBar = ({ value, onChange, actionOptions }: Props) =
         value={value.actionType}
         options={[{ value: '', label: 'Todas' }, ...actionOptions]}
         onChange={(e) => onChange({ actionType: e.target.value })}
+      />
+      <Select
+        label="Origen"
+        value={value.origin}
+        options={[{ value: '', label: 'Todos' }, ...AUDIT_ORIGIN_OPTIONS]}
+        onChange={(e) => onChange({ origin: e.target.value })}
       />
       <Input
         label="Autor (user_id)"

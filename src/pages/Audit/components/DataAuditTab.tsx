@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { Card, ErrorState, TableToolbar, type SelectOption } from '../../../common/components/ui';
 import { useDebounce, useUrlParams } from '../../../hooks';
 import { auditEntriesQuery } from '../../../services/api/audit';
-import type { AuditEntry } from '../../../services/api/types';
+import type { AuditEntryV2 } from '../../../services/api/types';
 import { useAuditActionTypes, useAuditEntries } from '../../../services/queries/audit';
 import { DataAuditDrawer } from './DataAuditDrawer';
 import { DataAuditFiltersBar } from './DataAuditFiltersBar';
@@ -27,7 +27,7 @@ export const DataAuditTab = () => {
     setPageSize(model.pageSize);
     setFilters({ page: String(model.page + 1) });
   };
-  const [detail, setDetail] = useState<AuditEntry | null>(null);
+  const [detail, setDetail] = useState<AuditEntryV2 | null>(null);
 
   const { data: actionTypes } = useAuditActionTypes();
   // Un pedido por tecla no: se espera a que deje de escribir (los filtros se comparan por su contenido).
