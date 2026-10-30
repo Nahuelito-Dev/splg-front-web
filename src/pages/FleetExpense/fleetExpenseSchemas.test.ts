@@ -103,6 +103,8 @@ describe('multa', () => {
     voluntaryPaymentAmount: '',
     dueDate: '',
     employeeId: '',
+    paymentUrl: '',
+    paymentCode: '',
   };
 
   it('acepta los datos mínimos y deja vacío el pago voluntario', () => {
@@ -122,13 +124,14 @@ describe('multa', () => {
     }
   });
 
-  it('el pago no puede ser de una fecha futura ni de importe cero', () => {
-    const schema = payFineSchema('2026-10-17');
-    const paid = { paidInCash: false };
-    expect(schema.safeParse({ paidAt: '2026-10-17', paidAmount: '59500', ...paid }).success).toBe(true);
-    expect(schema.safeParse({ paidAt: '2026-10-18', paidAmount: '59500', ...paid }).success).toBe(false);
-    expect(schema.safeParse({ paidAt: '2026-10-17', paidAmount: '0', ...paid }).success).toBe(false);
-    expect(schema.safeParse({ paidAt: '', paidAmount: '10', ...paid }).success).toBe(false);
+  it('el enlace de pago tiene que ser https y el código tiene tope', () => {
+    expect(trafficFineSchema.safeParse({ ...fine, paymentUrl: 'https://pagos.posadas.gob.ar/m1' }).success).toBe(true);
+    for (const paymentUrl of ['http://pagos.test', 'pagos.test', 'javascript:alert(1)']) {
+      expect(trafficFineSchema.safeParse({ ...fine, paymentUrl }).error?.issues[0]).toMatchObject({
+        path: ['paymentUrl'],
+      });
+    }
+    expect(trafficFineSchema.safeParse({ ...fine, paymentCode: 'x'.repeat(81) }).success).toBe(false);
   });
 });
 
@@ -226,6 +229,8 @@ describe('fechas que no pueden ser futuras', () => {
       amount: '100000',
       dueDate: '',
       employeeId: '',
+      paymentUrl: '',
+      paymentCode: '',
     };
     expect(trafficFineSchema.safeParse(base).success).toBe(true);
     expect(trafficFineSchema.safeParse({ ...base, occurredAt: '2099-01-01T10:00' }).success).toBe(false);
@@ -261,10 +266,33 @@ describe('misma tolerancia que el back (5 minutos)', () => {
     expect(fuelLoadSchema.safeParse({ ...fuel, loadedAt: inMinutes(30) }).success).toBe(false);
   });
 
-  it('el pago de la multa no puede ser anterior a la infracción', () => {
-    const schema = payFineSchema('2026-10-17', '2026-10-10T12:00:00.000Z');
-    const paid = { paidAmount: '100', paidInCash: false };
-    expect(schema.safeParse({ ...paid, paidAt: '2026-10-09' }).success).toBe(false);
-    expect(schema.safeParse({ ...paid, paidAt: '2026-10-10' }).success).toBe(true);
+  describe('pago de la multa', () => {
+    const paid = { paidAt: '2026-10-21T10:00', amount: '59500', operationNumber: '', cashBoxId: 'caja-1' };
+
+    it('acepta fecha y hora, importe, n.º de operación opcional y la caja', () => {
+      expect(payFineSchema(85000).safeParse(paid).success).toBe(true);
+    });
+
+    it('exige caja, importe positivo y una fecha que no sea futura', () => {
+      const schema = payFineSchema(85000);
+      expect(schema.safeParse({ ...paid, cashBoxId: '' }).success).toBe(false);
+      expect(schema.safeParse({ ...paid, amount: '0' }).success).toBe(false);
+      expect(schema.safeParse({ ...paid, paidAt: '2026-10-22T10:00' }).success).toBe(false);
+      expect(schema.safeParse({ ...paid, paidAt: '' }).success).toBe(false);
+    });
+
+    it('no se paga más que el importe de la multa', () => {
+      const schema = payFineSchema(85000);
+      expect(schema.safeParse({ ...paid, amount: '85000' }).success).toBe(true);
+      expect(schema.safeParse({ ...paid, amount: '85000.01' }).error?.issues[0]).toMatchObject({ path: ['amount'] });
+    });
+
+    it('no puede ser anterior al día de la infracción', () => {
+      const schema = payFineSchema(85000, '2026-10-10T12:00:00.000Z');
+      expect(schema.safeParse({ ...paid, paidAt: '2026-10-09T10:00' }).error?.issues[0]).toMatchObject({
+        path: ['paidAt'],
+      });
+      expect(schema.safeParse({ ...paid, paidAt: '2026-10-10T10:00' }).success).toBe(true);
+    });
   });
 });

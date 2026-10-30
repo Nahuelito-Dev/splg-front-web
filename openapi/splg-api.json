@@ -23039,6 +23039,424 @@
                 ]
             }
         },
+        "/api/v2/traffic-fines": {
+            "post": {
+                "description": "Nace pendiente. Acepta el enlace (`paymentUrl`, https) y el código (`paymentCode`) de pago. Si no se indica el responsable, se deduce del chofer que tenía el vehículo en uso en el instante de la infracción.",
+                "operationId": "TrafficFineV2Controller_create",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateTrafficFineV2Dto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TrafficFineV2ResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Dato inválido, infracción futura, vencimiento anterior a la infracción, pago voluntario mayor al importe o enlace que no es https"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Vehículo o empleado no encontrado"
+                    },
+                    "409": {
+                        "description": "La multa ya está registrada (misma jurisdicción y acta)"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Registrar una multa de tránsito",
+                "tags": [
+                    "Fleet · Multas (v2)"
+                ]
+            },
+            "get": {
+                "operationId": "TrafficFineV2Controller_findAll",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "maximum": 100,
+                            "default": 10,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 0,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "carId",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "employeeId",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "pending",
+                                "appealed",
+                                "paid",
+                                "voided"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "date",
+                            "nullable": true,
+                            "example": "2026-10-01",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "date",
+                            "nullable": true,
+                            "example": "2026-10-31",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TrafficFineV2PageDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Filtro inválido"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Consultar las multas de tránsito",
+                "tags": [
+                    "Fleet · Multas (v2)"
+                ]
+            }
+        },
+        "/api/v2/traffic-fines/{id}": {
+            "get": {
+                "operationId": "TrafficFineV2Controller_findOne",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Multa UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TrafficFineV2ResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ver una multa",
+                "tags": [
+                    "Fleet · Multas (v2)"
+                ]
+            },
+            "patch": {
+                "description": "Además de los datos de la multa, `paymentUrl` y `paymentCode` (con `null` se borran). Con `appeal: true` pasa de pendiente a apelada. Una multa pagada o anulada no se modifica.",
+                "operationId": "TrafficFineV2Controller_update",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Multa UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateTrafficFineV2Dto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TrafficFineV2ResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Dato inválido, infracción futura, vencimiento anterior a la infracción o enlace que no es https"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "Pagada, anulada, ya apelada, o el acta pertenece a otra multa"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Modificar una multa o pasarla a apelada",
+                "tags": [
+                    "Fleet · Multas (v2)"
+                ]
+            }
+        },
+        "/api/v2/traffic-fines/{id}/receipt": {
+            "post": {
+                "description": "Multipart con el campo `file` (PDF, JPG, PNG o WEBP, hasta 10 MB). Guarda el comprobante como adjunto de la multa y, en el mismo pedido, lo lee con el lector de comprobantes (pistas: el importe voluntario si todavía vale, si no el de la multa, y la jurisdicción). `scan.available` es `false` si no hay lector configurado, y `scan.data` es `null` si no hay lector o la lectura falló: en ambos casos la subida vale y los datos se cargan a mano. Lo leído sólo precarga el formulario: nada se guarda hasta `POST /traffic-fines/:id/pay`. Idempotente vía `Idempotency-Key`.",
+                "operationId": "TrafficFineV2Controller_uploadReceipt",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Multa UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "required": [
+                                    "file"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UploadedReceiptDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta el archivo o está vacío"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "La multa ya está paga o anulada"
+                    },
+                    "413": {
+                        "description": "El archivo supera el máximo permitido (10 MB)"
+                    },
+                    "415": {
+                        "description": "No es un PDF ni una imagen (JPG, PNG, WEBP), o el contenido no coincide con el tipo declarado"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro archivo u otros datos."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Subir el comprobante de pago de la multa (se escanea solo)",
+                "tags": [
+                    "Fleet · Multas (v2)"
+                ]
+            }
+        },
+        "/api/v2/traffic-fines/{id}/pay": {
+            "post": {
+                "description": "En una transacción con la multa bloqueada: valida que esté pendiente o apelada y que el comprobante sea de ella, saca el egreso de la caja elegida (efectivo, banco o billetera; categoría «Multas», referencia `traffic_fine`) y deja la multa paga con el comprobante y el movimiento asociados. La descripción del egreso lleva acta, jurisdicción y patente: «Multa A-0012345 — Municipalidad de Posadas (AB123CD)». Idempotente vía `Idempotency-Key`.",
+                "operationId": "TrafficFineV2Controller_pay",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Multa UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PayTrafficFineV2Dto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TrafficFineV2ResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Fecha futura o anterior a la infracción, importe inválido o mayor al de la multa, el comprobante no es de la multa o la caja no admite el pago"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "La multa o la caja no existen o son de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "La multa ya está paga o anulada, la caja está desactivada, exige sesión abierta o no tiene saldo"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Pagar la multa",
+                "tags": [
+                    "Fleet · Multas (v2)"
+                ]
+            }
+        },
         "/api/v1/fleet/accidents": {
             "post": {
                 "description": "Nace denunciado y se registra siempre. Con `vehicleUnusable` el vehículo pasa a fuera de servicio y se libera a su chofer; si el chofer tiene un pedido en curso o una carga de camión abierta la asignación se mantiene (`assignmentKept: true` y el motivo) y se avisa a los administradores. Con `hazmatRelease` se avisa de inmediato a los administradores.",
@@ -29607,7 +30025,8 @@
                     "customer_account_entry",
                     "order",
                     "insurance_policy",
-                    "insurance_installment"
+                    "insurance_installment",
+                    "traffic_fine_payment"
                 ]
             },
             "AttachmentResponseDto": {
@@ -42134,6 +42553,433 @@
                     "reason"
                 ]
             },
+            "CreateTrafficFineV2Dto": {
+                "type": "object",
+                "properties": {
+                    "carId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "occurredAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Cuándo ocurrió la infracción"
+                    },
+                    "jurisdiction": {
+                        "type": "string",
+                        "example": "Municipalidad de Posadas",
+                        "maxLength": 80
+                    },
+                    "actNumber": {
+                        "type": "string",
+                        "example": "A-0012345",
+                        "maxLength": 40,
+                        "description": "Único por distribuidora y jurisdicción"
+                    },
+                    "infraction": {
+                        "type": "string",
+                        "example": "Exceso de velocidad"
+                    },
+                    "amount": {
+                        "type": "number",
+                        "example": 85000
+                    },
+                    "voluntaryPaymentAmount": {
+                        "type": "number",
+                        "example": 59500,
+                        "nullable": true,
+                        "description": "Importe con pago voluntario; no puede superar `amount`"
+                    },
+                    "dueDate": {
+                        "type": "string",
+                        "example": "2026-11-15",
+                        "format": "date",
+                        "nullable": true
+                    },
+                    "employeeId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Legajo responsable. Si falta, se deduce del chofer que tenía el vehículo en uso en el instante de la infracción"
+                    },
+                    "paymentUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "https://pagos.posadas.gob.ar/multas/A-0012345",
+                        "maxLength": 500,
+                        "description": "Enlace de pago (https): portal del municipio o Mercado Pago. El panel lo abre en otra pestaña"
+                    },
+                    "paymentCode": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "0123456789012345",
+                        "maxLength": 80,
+                        "description": "Código de pago que pide el portal"
+                    }
+                },
+                "required": [
+                    "carId",
+                    "occurredAt",
+                    "jurisdiction",
+                    "actNumber",
+                    "infraction",
+                    "amount"
+                ]
+            },
+            "TrafficFineV2ResponseDto": {
+                "type": "object",
+                "properties": {
+                    "fineId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "distributorId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "carId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "carPatent": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "employeeId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "employeeName": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "occurredAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "jurisdiction": {
+                        "type": "string"
+                    },
+                    "actNumber": {
+                        "type": "string"
+                    },
+                    "infraction": {
+                        "type": "string"
+                    },
+                    "amount": {
+                        "type": "number"
+                    },
+                    "voluntaryPaymentAmount": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "dueDate": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "2026-11-15"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "pending",
+                            "appealed",
+                            "paid",
+                            "voided"
+                        ]
+                    },
+                    "paidAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "paidAmount": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "cashMovementId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true,
+                        "description": "Salida de caja del pago en efectivo"
+                    },
+                    "chargedToEmployee": {
+                        "type": "boolean",
+                        "description": "La asume el chofer: no cuenta como costo del vehículo"
+                    },
+                    "voidReason": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "voidedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "paymentUrl": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "paymentCode": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "operationNumber": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "receiptAttachmentId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true,
+                        "description": "Comprobante del pago; `null` en las multas pagadas por la v1 (sin comprobante)"
+                    }
+                },
+                "required": [
+                    "fineId",
+                    "distributorId",
+                    "carId",
+                    "carPatent",
+                    "employeeId",
+                    "employeeName",
+                    "occurredAt",
+                    "jurisdiction",
+                    "actNumber",
+                    "infraction",
+                    "amount",
+                    "voluntaryPaymentAmount",
+                    "dueDate",
+                    "status",
+                    "paidAt",
+                    "paidAmount",
+                    "cashMovementId",
+                    "chargedToEmployee",
+                    "voidReason",
+                    "voidedAt",
+                    "createdAt",
+                    "paymentUrl",
+                    "paymentCode",
+                    "operationNumber",
+                    "receiptAttachmentId"
+                ]
+            },
+            "TrafficFineV2PageDto": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TrafficFineV2ResponseDto"
+                        }
+                    },
+                    "total": {
+                        "type": "number",
+                        "example": 4
+                    }
+                },
+                "required": [
+                    "data",
+                    "total"
+                ]
+            },
+            "UpdateTrafficFineV2Dto": {
+                "type": "object",
+                "properties": {
+                    "occurredAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Cuándo ocurrió la infracción"
+                    },
+                    "jurisdiction": {
+                        "type": "string",
+                        "example": "Municipalidad de Posadas",
+                        "maxLength": 80
+                    },
+                    "actNumber": {
+                        "type": "string",
+                        "example": "A-0012345",
+                        "maxLength": 40,
+                        "description": "Único por distribuidora y jurisdicción"
+                    },
+                    "infraction": {
+                        "type": "string",
+                        "example": "Exceso de velocidad"
+                    },
+                    "amount": {
+                        "type": "number",
+                        "example": 85000
+                    },
+                    "voluntaryPaymentAmount": {
+                        "type": "number",
+                        "example": 59500,
+                        "nullable": true,
+                        "description": "Importe con pago voluntario; no puede superar `amount`"
+                    },
+                    "dueDate": {
+                        "type": "string",
+                        "example": "2026-11-15",
+                        "format": "date",
+                        "nullable": true
+                    },
+                    "appeal": {
+                        "type": "boolean",
+                        "description": "Pasa la multa de pendiente a apelada"
+                    },
+                    "paymentUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "https://pagos.posadas.gob.ar/multas/A-0012345",
+                        "maxLength": 500,
+                        "description": "Enlace de pago (https): portal del municipio o Mercado Pago. El panel lo abre en otra pestaña"
+                    },
+                    "paymentCode": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "0123456789012345",
+                        "maxLength": 80,
+                        "description": "Código de pago que pide el portal"
+                    }
+                }
+            },
+            "ReceiptScanDataDto": {
+                "type": "object",
+                "properties": {
+                    "amount": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "29958.00"
+                    },
+                    "paidAt": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "2026-11-20T14:30:00-03:00"
+                    },
+                    "operationNumber": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "payee": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "payeeTaxId": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "period": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "2026-11"
+                    },
+                    "confidence": {
+                        "type": "string",
+                        "enum": [
+                            "high",
+                            "medium",
+                            "low"
+                        ]
+                    },
+                    "warnings": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": [
+                    "amount",
+                    "paidAt",
+                    "operationNumber",
+                    "payee",
+                    "payeeTaxId",
+                    "period",
+                    "confidence",
+                    "warnings"
+                ]
+            },
+            "ReceiptScanDto": {
+                "type": "object",
+                "properties": {
+                    "available": {
+                        "type": "boolean",
+                        "description": "`false` si no hay lector de comprobantes configurado: los datos se cargan a mano"
+                    },
+                    "data": {
+                        "nullable": true,
+                        "description": "Lo que se leyó, para precargar el formulario; `null` si no hay lector o no se pudo leer",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ReceiptScanDataDto"
+                            }
+                        ]
+                    },
+                    "warning": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Aviso cuando el lector estaba disponible pero falló o tardó más de 30 s: el comprobante quedó guardado y los datos se cargan a mano"
+                    }
+                },
+                "required": [
+                    "available",
+                    "data"
+                ]
+            },
+            "UploadedReceiptDto": {
+                "type": "object",
+                "properties": {
+                    "attachmentId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "scan": {
+                        "$ref": "#/components/schemas/ReceiptScanDto"
+                    }
+                },
+                "required": [
+                    "attachmentId",
+                    "scan"
+                ]
+            },
+            "PayTrafficFineV2Dto": {
+                "type": "object",
+                "properties": {
+                    "attachmentId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Comprobante subido con `POST /traffic-fines/:id/receipt` (adjunto de esa multa)"
+                    },
+                    "paidAt": {
+                        "type": "string",
+                        "example": "2026-10-28T14:30:00-03:00",
+                        "description": "Cuándo se pagó (fecha o fecha y hora ISO 8601); no puede ser futura ni anterior a la infracción"
+                    },
+                    "amount": {
+                        "type": "number",
+                        "example": 59500,
+                        "description": "Lo efectivamente pagado (suele ser el del pago voluntario); no puede superar el importe de la multa"
+                    },
+                    "operationNumber": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "88123456",
+                        "maxLength": 60
+                    },
+                    "cashBoxId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Caja de la que sale el pago: efectivo, banco o billetera de la distribuidora"
+                    }
+                },
+                "required": [
+                    "attachmentId",
+                    "paidAt",
+                    "amount",
+                    "cashBoxId"
+                ]
+            },
             "CreateVehicleAccidentDto": {
                 "type": "object",
                 "properties": {
@@ -44065,105 +44911,6 @@
                         "example": 31200
                     }
                 }
-            },
-            "ReceiptScanDataDto": {
-                "type": "object",
-                "properties": {
-                    "amount": {
-                        "type": "string",
-                        "nullable": true,
-                        "example": "29958.00"
-                    },
-                    "paidAt": {
-                        "type": "string",
-                        "nullable": true,
-                        "example": "2026-11-20T14:30:00-03:00"
-                    },
-                    "operationNumber": {
-                        "type": "string",
-                        "nullable": true
-                    },
-                    "payee": {
-                        "type": "string",
-                        "nullable": true
-                    },
-                    "payeeTaxId": {
-                        "type": "string",
-                        "nullable": true
-                    },
-                    "period": {
-                        "type": "string",
-                        "nullable": true,
-                        "example": "2026-11"
-                    },
-                    "confidence": {
-                        "type": "string",
-                        "enum": [
-                            "high",
-                            "medium",
-                            "low"
-                        ]
-                    },
-                    "warnings": {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        }
-                    }
-                },
-                "required": [
-                    "amount",
-                    "paidAt",
-                    "operationNumber",
-                    "payee",
-                    "payeeTaxId",
-                    "period",
-                    "confidence",
-                    "warnings"
-                ]
-            },
-            "ReceiptScanDto": {
-                "type": "object",
-                "properties": {
-                    "available": {
-                        "type": "boolean",
-                        "description": "`false` si no hay lector de comprobantes configurado: los datos se cargan a mano"
-                    },
-                    "data": {
-                        "nullable": true,
-                        "description": "Lo que se leyó, para precargar el formulario; `null` si no hay lector o no se pudo leer",
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/ReceiptScanDataDto"
-                            }
-                        ]
-                    },
-                    "warning": {
-                        "type": "string",
-                        "nullable": true,
-                        "description": "Aviso cuando el lector estaba disponible pero falló o tardó más de 30 s: el comprobante quedó guardado y los datos se cargan a mano"
-                    }
-                },
-                "required": [
-                    "available",
-                    "data"
-                ]
-            },
-            "UploadedReceiptDto": {
-                "type": "object",
-                "properties": {
-                    "attachmentId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "scan": {
-                        "$ref": "#/components/schemas/ReceiptScanDto"
-                    }
-                },
-                "required": [
-                    "attachmentId",
-                    "scan"
-                ]
             },
             "PayInsuranceInstallmentDto": {
                 "type": "object",

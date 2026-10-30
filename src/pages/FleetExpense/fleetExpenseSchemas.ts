@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { isFutureMoment } from '../../utils/dates';
 import { argentinaDay } from '../../utils/format';
+import { paymentSchema } from '../Insurance/insuranceSchemas';
 
 /** Un número opcional: en el formulario el campo puede quedar vacío. */
 const optionalNumber = (schema: z.ZodNumber) =>
@@ -42,14 +43,6 @@ const kilometers = () =>
       .nonnegative('No puede ser negativo')
       .max(MAX_ODOMETER_KM, `No puede pasar de ${MAX_ODOMETER_KM.toLocaleString('es-AR')} km`),
   );
-
-/** Una fecha de calendario `YYYY-MM-DD` (lo que manda un `<input type="date">`). */
-const day = (message: string) =>
-  z
-    .string()
-    .trim()
-    .min(1, message)
-    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha inválida');
 
 export const FUEL_TYPE_OPTIONS = [
   { value: 'diesel', label: 'Gasoil' },
@@ -139,6 +132,11 @@ export const trafficFineSchema = z
     ),
     dueDate: z.string().trim(),
     employeeId: z.string().trim(),
+    paymentUrl: optionalText(500).refine(
+      (value) => value === '' || /^https:\/\/\S+$/i.test(value),
+      'Tiene que ser un enlace que empiece con https://',
+    ),
+    paymentCode: optionalText(80),
   })
   .superRefine((values, ctx) => {
     if (values.voluntaryPaymentAmount !== undefined && values.voluntaryPaymentAmount > values.amount) {
@@ -164,22 +162,30 @@ export const trafficFineSchema = z
 export type TrafficFineFormValues = z.infer<typeof trafficFineSchema>;
 
 /**
- * `PayTrafficFineDto`: la fecha de pago no puede ser posterior a hoy ni anterior a la infracción (días argentinos,
- * como `TrafficFineService.pagar`).
+ * `PayTrafficFineV2Dto`: lo del pago de una cuota más las reglas de la multa: no puede pagarse más que el importe
+ * ni antes del día de la infracción (días argentinos, como `TrafficFinePaymentService.pagar`).
  */
-export const payFineSchema = (today: string, occurredAt?: string | null) =>
-  z.object({
-    paidAt: day('Ingresá la fecha de pago')
-      .refine((value) => value <= today, 'El pago no puede ser posterior a hoy')
-      .refine(
-        (value) => !occurredAt || value >= argentinaDay(occurredAt),
-        'El pago no puede ser anterior a la fecha de la infracción',
-      ),
-    paidAmount: money('lo pagado').pipe(z.number().positive('Tiene que ser mayor a cero')),
-    paidInCash: z.boolean(),
+export const payFineSchema = (maxAmount: number, occurredAt?: string | null) =>
+  paymentSchema.superRefine((values, ctx) => {
+    const amount = Number(values.amount);
+    if (Number.isFinite(amount) && amount > maxAmount) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['amount'],
+        message: 'No puede superar el importe de la multa',
+      });
+    }
+    const paidAt = new Date(String(values.paidAt));
+    if (occurredAt && !Number.isNaN(paidAt.getTime()) && argentinaDay(paidAt) < argentinaDay(occurredAt)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['paidAt'],
+        message: 'El pago no puede ser anterior a la fecha de la infracción',
+      });
+    }
   });
 
-export type PayFineFormValues = z.infer<ReturnType<typeof payFineSchema>>;
+export type PayFineFormValues = z.input<ReturnType<typeof payFineSchema>>;
 
 /** `CreateVehicleAccidentDto`/`UpdateVehicleAccidentDto`. El punto es «latitud,longitud». */
 export const parseLatLng = (text: string): { lat: number; lng: number } | null => {

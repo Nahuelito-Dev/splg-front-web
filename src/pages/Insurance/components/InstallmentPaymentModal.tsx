@@ -10,6 +10,7 @@ import { formatCurrency } from '../../../utils/format';
 import { notify } from '../../../utils/notifications';
 import { fromLocalInput, toLocalInput } from '../../FleetExpense/fleetExpenseDates';
 import { paymentSchema, type PaymentFormValues } from '../insuranceSchemas';
+import { fileError, RECEIPT_TYPES, SCAN_TEXT, type ScanState } from '../receiptUpload';
 import { prefillFromScan } from '../scanPrefill';
 
 interface Props {
@@ -18,24 +19,6 @@ interface Props {
   context?: string;
   onClose: () => void;
 }
-
-type ScanState = 'idle' | 'scanning' | 'done' | 'unavailable';
-
-const RECEIPT_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
-const MAX_BYTES = 10 * 1024 * 1024;
-
-const SCAN_TEXT: Record<ScanState, string> = {
-  idle: '',
-  scanning: 'Escaneando…',
-  done: 'Escaneo listo: revisá los datos',
-  unavailable: 'Escaneo no disponible: cargá los datos',
-};
-
-const fileError = (file: File): string | null => {
-  if (!RECEIPT_TYPES.includes(file.type)) return 'Sólo se aceptan comprobantes PDF, JPG, PNG o WEBP.';
-  if (file.size > MAX_BYTES) return 'El archivo no puede superar los 10 MB.';
-  return null;
-};
 
 const defaults = (installment: InsuranceInstallment | null): PaymentFormValues => ({
   paidAt: toLocalInput(new Date()),

@@ -2,9 +2,12 @@ import { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Badge, Button, Card, EmptyState, ErrorState, LoadingState } from '../../../common/components/ui';
+import type { TrafficFineV2 } from '../../../services/api/types';
 import { useTrafficFines } from '../../../services/queries/fleetExpense';
 import { formatCurrency, formatDay } from '../../../utils/format';
 import { TRAFFIC_FINE_STATUS, labelOf } from '../../../utils/statusLabels';
+import { FinePayLink } from './FinePayLink';
+import { PayFineModal } from './PayFineModal';
 import { TrafficFineFormModal } from './TrafficFineFormModal';
 
 interface Props {
@@ -13,9 +16,10 @@ interface Props {
   writeHint?: string;
 }
 
-/** Pestaña «Multas» de la ficha: las últimas; pagar, imputar y anular se hace desde la lista de multas. */
+/** Pestaña «Multas» de la ficha: las últimas, con «Pagar» y «Registrar pago»; imputar y anular se hace desde la lista de multas. */
 export const CarFinesTab = ({ carId, canWrite, writeHint }: Props) => {
   const [creating, setCreating] = useState(false);
+  const [paying, setPaying] = useState<TrafficFineV2 | null>(null);
   const { data, isPending, error, refetch } = useTrafficFines({ page: 0, pageSize: 10 }, { carId });
   return (
     <Card className="space-y-4 p-6">
@@ -44,10 +48,25 @@ export const CarFinesTab = ({ carId, canWrite, writeHint }: Props) => {
                 {formatCurrency(fine.amount)} · vence {formatDay(fine.dueDate)}
               </span>
               <Badge label={labelOf(TRAFFIC_FINE_STATUS, fine.status)} />
+              {(fine.status === 'pending' || fine.status === 'appealed') && (
+                <div className="flex basis-full flex-wrap gap-2">
+                  <FinePayLink fine={fine} />
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    disabled={!canWrite}
+                    title={writeHint}
+                    onClick={() => setPaying(fine)}
+                  >
+                    Registrar pago
+                  </Button>
+                </div>
+              )}
             </li>
           ))}
         </ul>
       )}
+      <PayFineModal fine={paying} onClose={() => setPaying(null)} />
       <TrafficFineFormModal open={creating} onClose={() => setCreating(false)} fine={null} fixedCarId={carId} />
     </Card>
   );

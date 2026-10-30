@@ -18,9 +18,9 @@ import {
   TableToolbar,
   DateRangeFilter,
 } from '../../common/components/ui';
-import { useClampPage, usePermissions, useUrlPagedParams } from '../../hooks';
+import { useClampPage, usePermissions, useUrlPagedParams, useUrlParam } from '../../hooks';
 import { trafficFineQuery } from '../../services/api/fleetExpense';
-import type { TrafficFine } from '../../services/api/types';
+import type { TrafficFineV2 } from '../../services/api/types';
 import {
   useTrafficFines,
   useUpdateTrafficFine,
@@ -36,7 +36,7 @@ import { TrafficFineDrawer } from './components/TrafficFineDrawer';
 import { TrafficFineFormModal } from './components/TrafficFineFormModal';
 import { useCarOptions } from './components/useCarOptions';
 
-const isOpen = (fine: TrafficFine) => fine.status === 'pending' || fine.status === 'appealed';
+const isOpen = (fine: TrafficFineV2) => fine.status === 'pending' || fine.status === 'appealed';
 
 /** Las multas de tránsito de la flota (CU-198 a CU-200, CU-323 a CU-325): registrar, apelar, pagar, imputar y anular. */
 export const TrafficFines = () => {
@@ -49,11 +49,14 @@ export const TrafficFines = () => {
   const status = statusParam(TRAFFIC_FINE_STATUS, filters.status);
   const { options: carOptions } = useCarOptions('Todos los vehículos');
   const [creating, setCreating] = useState(false);
-  const [editing, setEditing] = useState<TrafficFine | null>(null);
-  const [paying, setPaying] = useState<TrafficFine | null>(null);
-  const [charging, setCharging] = useState<TrafficFine | null>(null);
-  const [voiding, setVoiding] = useState<TrafficFine | null>(null);
-  const [viewing, setViewing] = useState<string | null>(null);
+  const [editing, setEditing] = useState<TrafficFineV2 | null>(null);
+  const [paying, setPaying] = useState<TrafficFineV2 | null>(null);
+  const [charging, setCharging] = useState<TrafficFineV2 | null>(null);
+  const [voiding, setVoiding] = useState<TrafficFineV2 | null>(null);
+  // La multa abierta también vive en la URL (`?fine=<id>`): el aviso de la bandeja lleva directo a ella.
+  const [fineParam, setFineParam] = useUrlParam('fine', '');
+  const viewing = fineParam || null;
+  const setViewing = (id: string | null) => setFineParam(id ?? '');
   const update = useUpdateTrafficFine();
   const voidFine = useVoidTrafficFine();
   const rangeInvalid = Boolean(filters.from && filters.to && filters.from > filters.to);
@@ -67,13 +70,13 @@ export const TrafficFines = () => {
   const filtered = Boolean(filters.car || status || filters.from || filters.to);
   useClampPage(pagination, data?.total, setPagination);
 
-  const appeal = (fine: TrafficFine) =>
+  const appeal = (fine: TrafficFineV2) =>
     update.mutate(
       { id: fine.fineId, body: { appeal: true } },
       { onSuccess: () => notify.success('Multa apelada'), onError: notify.error },
     );
 
-  const actionsOf = (row: TrafficFine) =>
+  const actionsOf = (row: TrafficFineV2) =>
     !canWrite
       ? []
       : [
@@ -87,7 +90,7 @@ export const TrafficFines = () => {
             : []),
         ];
 
-  const state = (row: TrafficFine) => (
+  const state = (row: TrafficFineV2) => (
     <div className="flex flex-wrap gap-1.5">
       <Badge label={labelOf(TRAFFIC_FINE_STATUS, row.status)} />
       {row.chargedToEmployee && <Badge label={{ text: 'Imputada', tone: 'accent' }} />}
@@ -103,7 +106,7 @@ export const TrafficFines = () => {
     !rangeInvalid,
   );
 
-  const columns: GridColDef<TrafficFine>[] = [
+  const columns: GridColDef<TrafficFineV2>[] = [
     {
       field: 'fine',
       headerName: 'Multa',

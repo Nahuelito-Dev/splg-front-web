@@ -5524,6 +5524,88 @@ export interface paths {
     patch: operations['TrafficFineController_void'];
     trace?: never;
   };
+  '/api/v2/traffic-fines': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Consultar las multas de tránsito */
+    get: operations['TrafficFineV2Controller_findAll'];
+    put?: never;
+    /**
+     * Registrar una multa de tránsito
+     * @description Nace pendiente. Acepta el enlace (`paymentUrl`, https) y el código (`paymentCode`) de pago. Si no se indica el responsable, se deduce del chofer que tenía el vehículo en uso en el instante de la infracción.
+     */
+    post: operations['TrafficFineV2Controller_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/traffic-fines/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Ver una multa */
+    get: operations['TrafficFineV2Controller_findOne'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Modificar una multa o pasarla a apelada
+     * @description Además de los datos de la multa, `paymentUrl` y `paymentCode` (con `null` se borran). Con `appeal: true` pasa de pendiente a apelada. Una multa pagada o anulada no se modifica.
+     */
+    patch: operations['TrafficFineV2Controller_update'];
+    trace?: never;
+  };
+  '/api/v2/traffic-fines/{id}/receipt': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Subir el comprobante de pago de la multa (se escanea solo)
+     * @description Multipart con el campo `file` (PDF, JPG, PNG o WEBP, hasta 10 MB). Guarda el comprobante como adjunto de la multa y, en el mismo pedido, lo lee con el lector de comprobantes (pistas: el importe voluntario si todavía vale, si no el de la multa, y la jurisdicción). `scan.available` es `false` si no hay lector configurado, y `scan.data` es `null` si no hay lector o la lectura falló: en ambos casos la subida vale y los datos se cargan a mano. Lo leído sólo precarga el formulario: nada se guarda hasta `POST /traffic-fines/:id/pay`. Idempotente vía `Idempotency-Key`.
+     */
+    post: operations['TrafficFineV2Controller_uploadReceipt'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/traffic-fines/{id}/pay': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Pagar la multa
+     * @description En una transacción con la multa bloqueada: valida que esté pendiente o apelada y que el comprobante sea de ella, saca el egreso de la caja elegida (efectivo, banco o billetera; categoría «Multas», referencia `traffic_fine`) y deja la multa paga con el comprobante y el movimiento asociados. La descripción del egreso lleva acta, jurisdicción y patente: «Multa A-0012345 — Municipalidad de Posadas (AB123CD)». Idempotente vía `Idempotency-Key`.
+     */
+    post: operations['TrafficFineV2Controller_pay'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/fleet/accidents': {
     parameters: {
       query?: never;
@@ -7625,7 +7707,8 @@ export interface components {
       | 'customer_account_entry'
       | 'order'
       | 'insurance_policy'
-      | 'insurance_installment';
+      | 'insurance_installment'
+      | 'traffic_fine_payment';
     AttachmentResponseDto: {
       /** Format: uuid */
       attachmentId: string;
@@ -12840,6 +12923,193 @@ export interface components {
       /** @example Acta labrada a otro vehículo */
       reason: string;
     };
+    CreateTrafficFineV2Dto: {
+      /** Format: uuid */
+      carId: string;
+      /**
+       * Format: date-time
+       * @description Cuándo ocurrió la infracción
+       */
+      occurredAt: string;
+      /** @example Municipalidad de Posadas */
+      jurisdiction: string;
+      /**
+       * @description Único por distribuidora y jurisdicción
+       * @example A-0012345
+       */
+      actNumber: string;
+      /** @example Exceso de velocidad */
+      infraction: string;
+      /** @example 85000 */
+      amount: number;
+      /**
+       * @description Importe con pago voluntario; no puede superar `amount`
+       * @example 59500
+       */
+      voluntaryPaymentAmount?: number | null;
+      /**
+       * Format: date
+       * @example 2026-11-15
+       */
+      dueDate?: string | null;
+      /**
+       * Format: uuid
+       * @description Legajo responsable. Si falta, se deduce del chofer que tenía el vehículo en uso en el instante de la infracción
+       */
+      employeeId?: string;
+      /**
+       * @description Enlace de pago (https): portal del municipio o Mercado Pago. El panel lo abre en otra pestaña
+       * @example https://pagos.posadas.gob.ar/multas/A-0012345
+       */
+      paymentUrl?: string | null;
+      /**
+       * @description Código de pago que pide el portal
+       * @example 0123456789012345
+       */
+      paymentCode?: string | null;
+    };
+    TrafficFineV2ResponseDto: {
+      /** Format: uuid */
+      fineId: string;
+      /** Format: uuid */
+      distributorId: string;
+      /** Format: uuid */
+      carId: string;
+      carPatent: string | null;
+      /** Format: uuid */
+      employeeId: string | null;
+      employeeName: string | null;
+      /** Format: date-time */
+      occurredAt: string;
+      jurisdiction: string;
+      actNumber: string;
+      infraction: string;
+      amount: number;
+      voluntaryPaymentAmount: number | null;
+      /** @example 2026-11-15 */
+      dueDate: string | null;
+      /** @enum {string} */
+      status: 'pending' | 'appealed' | 'paid' | 'voided';
+      /** Format: date-time */
+      paidAt: string | null;
+      paidAmount: number | null;
+      /**
+       * Format: uuid
+       * @description Salida de caja del pago en efectivo
+       */
+      cashMovementId: string | null;
+      /** @description La asume el chofer: no cuenta como costo del vehículo */
+      chargedToEmployee: boolean;
+      voidReason: string | null;
+      /** Format: date-time */
+      voidedAt: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      paymentUrl: string | null;
+      paymentCode: string | null;
+      operationNumber: string | null;
+      /**
+       * Format: uuid
+       * @description Comprobante del pago; `null` en las multas pagadas por la v1 (sin comprobante)
+       */
+      receiptAttachmentId: string | null;
+    };
+    TrafficFineV2PageDto: {
+      data: components['schemas']['TrafficFineV2ResponseDto'][];
+      /** @example 4 */
+      total: number;
+    };
+    UpdateTrafficFineV2Dto: {
+      /**
+       * Format: date-time
+       * @description Cuándo ocurrió la infracción
+       */
+      occurredAt?: string;
+      /** @example Municipalidad de Posadas */
+      jurisdiction?: string;
+      /**
+       * @description Único por distribuidora y jurisdicción
+       * @example A-0012345
+       */
+      actNumber?: string;
+      /** @example Exceso de velocidad */
+      infraction?: string;
+      /** @example 85000 */
+      amount?: number;
+      /**
+       * @description Importe con pago voluntario; no puede superar `amount`
+       * @example 59500
+       */
+      voluntaryPaymentAmount?: number | null;
+      /**
+       * Format: date
+       * @example 2026-11-15
+       */
+      dueDate?: string | null;
+      /** @description Pasa la multa de pendiente a apelada */
+      appeal?: boolean;
+      /**
+       * @description Enlace de pago (https): portal del municipio o Mercado Pago. El panel lo abre en otra pestaña
+       * @example https://pagos.posadas.gob.ar/multas/A-0012345
+       */
+      paymentUrl?: string | null;
+      /**
+       * @description Código de pago que pide el portal
+       * @example 0123456789012345
+       */
+      paymentCode?: string | null;
+    };
+    ReceiptScanDataDto: {
+      /** @example 29958.00 */
+      amount: string | null;
+      /** @example 2026-11-20T14:30:00-03:00 */
+      paidAt: string | null;
+      operationNumber: string | null;
+      payee: string | null;
+      payeeTaxId: string | null;
+      /** @example 2026-11 */
+      period: string | null;
+      /** @enum {string} */
+      confidence: 'high' | 'medium' | 'low';
+      warnings: string[];
+    };
+    ReceiptScanDto: {
+      /** @description `false` si no hay lector de comprobantes configurado: los datos se cargan a mano */
+      available: boolean;
+      /** @description Lo que se leyó, para precargar el formulario; `null` si no hay lector o no se pudo leer */
+      data: components['schemas']['ReceiptScanDataDto'] | null;
+      /** @description Aviso cuando el lector estaba disponible pero falló o tardó más de 30 s: el comprobante quedó guardado y los datos se cargan a mano */
+      warning?: string | null;
+    };
+    UploadedReceiptDto: {
+      /** Format: uuid */
+      attachmentId: string;
+      scan: components['schemas']['ReceiptScanDto'];
+    };
+    PayTrafficFineV2Dto: {
+      /**
+       * Format: uuid
+       * @description Comprobante subido con `POST /traffic-fines/:id/receipt` (adjunto de esa multa)
+       */
+      attachmentId: string;
+      /**
+       * @description Cuándo se pagó (fecha o fecha y hora ISO 8601); no puede ser futura ni anterior a la infracción
+       * @example 2026-10-28T14:30:00-03:00
+       */
+      paidAt: string;
+      /**
+       * @description Lo efectivamente pagado (suele ser el del pago voluntario); no puede superar el importe de la multa
+       * @example 59500
+       */
+      amount: number;
+      /** @example 88123456 */
+      operationNumber?: string | null;
+      /**
+       * Format: uuid
+       * @description Caja de la que sale el pago: efectivo, banco o billetera de la distribuidora
+       */
+      cashBoxId: string;
+    };
     CreateVehicleAccidentDto: {
       /** Format: uuid */
       carId: string;
@@ -13529,33 +13799,6 @@ export interface components {
       graceUntil?: string | null;
       /** @example 31200 */
       amount?: number;
-    };
-    ReceiptScanDataDto: {
-      /** @example 29958.00 */
-      amount: string | null;
-      /** @example 2026-11-20T14:30:00-03:00 */
-      paidAt: string | null;
-      operationNumber: string | null;
-      payee: string | null;
-      payeeTaxId: string | null;
-      /** @example 2026-11 */
-      period: string | null;
-      /** @enum {string} */
-      confidence: 'high' | 'medium' | 'low';
-      warnings: string[];
-    };
-    ReceiptScanDto: {
-      /** @description `false` si no hay lector de comprobantes configurado: los datos se cargan a mano */
-      available: boolean;
-      /** @description Lo que se leyó, para precargar el formulario; `null` si no hay lector o no se pudo leer */
-      data: components['schemas']['ReceiptScanDataDto'] | null;
-      /** @description Aviso cuando el lector estaba disponible pero falló o tardó más de 30 s: el comprobante quedó guardado y los datos se cargan a mano */
-      warning?: string | null;
-    };
-    UploadedReceiptDto: {
-      /** Format: uuid */
-      attachmentId: string;
-      scan: components['schemas']['ReceiptScanDto'];
     };
     PayInsuranceInstallmentDto: {
       /**
@@ -33775,6 +34018,376 @@ export interface operations {
       };
       /** @description La multa ya está pagada o anulada */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TrafficFineV2Controller_findAll: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+        carId?: string;
+        employeeId?: string;
+        status?: 'pending' | 'appealed' | 'paid' | 'voided';
+        from?: string | null;
+        to?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TrafficFineV2PageDto'];
+        };
+      };
+      /** @description Filtro inválido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TrafficFineV2Controller_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateTrafficFineV2Dto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TrafficFineV2ResponseDto'];
+        };
+      };
+      /** @description Dato inválido, infracción futura, vencimiento anterior a la infracción, pago voluntario mayor al importe o enlace que no es https */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Vehículo o empleado no encontrado */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La multa ya está registrada (misma jurisdicción y acta) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TrafficFineV2Controller_findOne: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Multa UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TrafficFineV2ResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TrafficFineV2Controller_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Multa UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateTrafficFineV2Dto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TrafficFineV2ResponseDto'];
+        };
+      };
+      /** @description Dato inválido, infracción futura, vencimiento anterior a la infracción o enlace que no es https */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Pagada, anulada, ya apelada, o el acta pertenece a otra multa */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TrafficFineV2Controller_uploadReceipt: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Multa UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'multipart/form-data': {
+          /** Format: binary */
+          file: string;
+        };
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['UploadedReceiptDto'];
+        };
+      };
+      /** @description Falta el archivo o está vacío */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La multa ya está paga o anulada */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El archivo supera el máximo permitido (10 MB) */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No es un PDF ni una imagen (JPG, PNG, WEBP), o el contenido no coincide con el tipo declarado */
+      415: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro archivo u otros datos. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TrafficFineV2Controller_pay: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Multa UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PayTrafficFineV2Dto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TrafficFineV2ResponseDto'];
+        };
+      };
+      /** @description Fecha futura o anterior a la infracción, importe inválido o mayor al de la multa, el comprobante no es de la multa o la caja no admite el pago */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La multa o la caja no existen o son de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La multa ya está paga o anulada, la caja está desactivada, exige sesión abierta o no tiene saldo */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
         headers: {
           [name: string]: unknown;
         };
