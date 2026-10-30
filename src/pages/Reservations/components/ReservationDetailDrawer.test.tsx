@@ -4,7 +4,15 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Reserva } from '../../../services/api/types';
 import { ReservationDetailDrawer } from './ReservationDetailDrawer';
 
-afterEach(cleanup);
+const boxes = vi.hoisted(() => ({
+  state: { boxes: [] as { cashBoxId: string; name: string }[], loading: false, failed: false, required: false },
+}));
+vi.mock('../../Orders/components/useOrderCashBoxes', () => ({ useOrderCashBoxes: () => boxes.state }));
+
+afterEach(() => {
+  cleanup();
+  boxes.state = { boxes: [], loading: false, failed: false, required: false };
+});
 
 const reservation = (overrides: Partial<Reserva> = {}) =>
   ({
@@ -35,7 +43,18 @@ describe('ReservationDetailDrawer', () => {
     renderDrawer(reservation(), onConfirm);
     expect(screen.getByRole('dialog', { name: /Reserva/ })).toHaveAttribute('aria-modal', 'true');
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar seña cobrada' }));
-    expect(onConfirm).toHaveBeenCalledWith('abcdef123456');
+    expect(onConfirm).toHaveBeenCalledWith('abcdef123456', undefined);
+  });
+
+  it('en efectivo con cajas de efectivo hay que elegir la caja y se manda al confirmar', () => {
+    boxes.state = { boxes: [{ cashBoxId: 'c-1', name: 'Mostrador' }], loading: false, failed: false, required: true };
+    const onConfirm = vi.fn();
+    renderDrawer(reservation(), onConfirm);
+    const confirmar = screen.getByRole('button', { name: 'Confirmar seña cobrada' });
+    expect(confirmar).toBeDisabled();
+    fireEvent.change(screen.getByLabelText(/Caja/), { target: { value: 'c-1' } });
+    fireEvent.click(confirmar);
+    expect(onConfirm).toHaveBeenCalledWith('abcdef123456', 'c-1');
   });
 
   it('con la seña paga no ofrece confirmarla y lo dice', () => {
@@ -75,7 +94,8 @@ describe('ReservationDetailDrawer', () => {
     const onConfirm = vi.fn();
     renderDrawer(reservation({ paymentMethod: 'transfer' }), onConfirm);
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar transferencia recibida' }));
-    expect(onConfirm).toHaveBeenCalledWith('abcdef123456');
+    expect(onConfirm).toHaveBeenCalledWith('abcdef123456', undefined);
+    expect(screen.getByText(/caja de transferencias que elegiste/)).toBeInTheDocument();
   });
 
   it('una seña por MercadoPago no se confirma a mano y muestra el enlace de pago', () => {

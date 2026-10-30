@@ -38,7 +38,7 @@ describe('useResolveUnpaid', () => {
     expect(resolveUnpaidOrder).toHaveBeenCalledTimes(1);
     expect(resolveUnpaidOrder).toHaveBeenCalledWith('o-1', VARS.body, VARS.idempotencyKey);
     const keys = spy.mock.calls.map(([filters]) => (filters?.queryKey as string[])[0]);
-    expect(keys).toEqual(expect.arrayContaining(['orders', 'incidents', 'reports', 'stats']));
+    expect(keys).toEqual(expect.arrayContaining(['orders', 'incidents', 'reports', 'stats', 'cashSettings']));
   });
 
   it('devuelve alreadyResolved tal como lo manda el back', async () => {

@@ -37,6 +37,7 @@ export const queryKeys = {
   attachments: resource('attachments'),
   cashBoxes: resource('cashBoxes'),
   cashCategories: resource('cashCategories'),
+  cashSettings: resource('cashSettings'),
   cashMovements: resource('cashMovements'),
   cashSessions: resource('cashSessions'),
   commissionEntries: resource('commissionEntries'),

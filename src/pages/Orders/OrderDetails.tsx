@@ -10,6 +10,7 @@ import { ORDER_SOCKET_EVENTS, type OrderSocketEventName } from '../../hooks/useS
 import { useOrder } from '../../services/queries/orders';
 import { queryKeys } from '../../services/queries/queryKeys';
 import { CylinderLinksCard } from '../PhysicalCylinders/components/CylinderLinksCard';
+import { OrderCashSettlementCard } from './components/details/OrderCashSettlementCard';
 import { OrderDepositCard } from './components/details/OrderDepositCard';
 import { OrderDetailsToolbar } from './components/details/OrderDetailsToolbar';
 import { OrderHistoryCard } from './components/details/OrderHistoryCard';
@@ -50,7 +51,10 @@ export const OrderDetails = () => {
     if (!id) return;
     const unsubscribers = (Object.values(ORDER_SOCKET_EVENTS) as OrderSocketEventName[]).map((event) =>
       subscribe<OrderSocketPayload>(event, (payload) => {
-        if (payload.orderId === id) void queryClient.invalidateQueries({ queryKey: queryKeys.orders.detail(id) });
+        if (payload.orderId !== id) return;
+        void queryClient.invalidateQueries({ queryKey: queryKeys.orders.detail(id) });
+        // Un pago o una confirmación pudo asentarse en una caja: la tarjeta «Cobro en caja» se vuelve a leer.
+        void queryClient.invalidateQueries({ queryKey: queryKeys.cashSettings.detail(id) });
       }),
     );
     return () => unsubscribers.forEach((unsubscribe) => unsubscribe());
@@ -82,6 +86,10 @@ export const OrderDetails = () => {
             <div className="min-w-0 space-y-5 lg:col-span-2">
               {order.status === 'reserved' && <OrderDepositCard order={order} />}
               <OrderItemsSummary order={order} />
+              {/* A qué caja entró lo cobrado por Mercado Pago o transferencia (o que quedó sin asentar). */}
+              {(order.paymentMethodDetail === 'mercadopago' || order.paymentMethodDetail === 'transfer') && (
+                <OrderCashSettlementCard orderId={order.order_id} />
+              )}
               {/* Lo que subió el cliente, para confirmar la transferencia sin hacerlo a ciegas. */}
               {order.paymentMethodDetail === 'transfer' && <OrderTransferReceipts orderId={order.order_id} />}
               <OrderHistoryCard orderId={order.order_id} />

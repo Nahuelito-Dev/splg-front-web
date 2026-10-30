@@ -93,6 +93,7 @@ const FINANCE_KEYS = [
   queryKeys.cashSessions.all,
   queryKeys.cashMovements.all,
   queryKeys.cashCategories.all,
+  queryKeys.cashSettings.all,
   queryKeys.driverSettlements.all,
   queryKeys.customerAccounts.all,
   queryKeys.commissionEntries.all,
@@ -136,7 +137,7 @@ export const runMoney = async <T>(
 };
 
 /** Una mutación de plata: su intención, y al terminar se refresca todo lo de finanzas. */
-const useMoneyMutation = <V, R>(
+export const useMoneyMutation = <V, R>(
   scopeOf: (variables: V) => string,
   bodyOf: (variables: V) => unknown,
   call: (variables: V, key: string) => Promise<R>,

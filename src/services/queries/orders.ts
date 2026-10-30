@@ -362,6 +362,7 @@ export const useResolveUnpaid = () => {
         queryClient.invalidateQueries({ queryKey: queryKeys.stats.all }),
         queryClient.invalidateQueries({ queryKey: queryKeys.cashBoxes.all }),
         queryClient.invalidateQueries({ queryKey: queryKeys.cashMovements.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.cashSettings.all }),
         queryClient.invalidateQueries({ queryKey: queryKeys.finance.all }),
       ]),
   });
@@ -376,6 +377,7 @@ const invalidateAfterPayment = (queryClient: ReturnType<typeof useQueryClient>) 
     queryClient.invalidateQueries({ queryKey: queryKeys.stats.all }),
     queryClient.invalidateQueries({ queryKey: queryKeys.cashBoxes.all }),
     queryClient.invalidateQueries({ queryKey: queryKeys.cashMovements.all }),
+    queryClient.invalidateQueries({ queryKey: queryKeys.cashSettings.all }),
     queryClient.invalidateQueries({ queryKey: queryKeys.finance.all }),
   ]);
 

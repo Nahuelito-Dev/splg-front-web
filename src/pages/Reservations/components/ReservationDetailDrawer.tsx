@@ -1,24 +1,31 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge, Button, DetailList, Drawer } from '../../../common/components/ui';
 import type { Reserva } from '../../../services/api/types';
 import { formatCurrency, formatDateTime, formatDay, formatShortId } from '../../../utils/format';
 import { labelOf, PAYMENT_METHOD } from '../../../utils/statusLabels';
 import { isKnownPaymentMethod } from './paymentMethod';
+import { CashBoxField } from '../../Orders/components/CashBoxField';
+import { useOrderCashBoxes } from '../../Orders/components/useOrderCashBoxes';
 import { PaymentLink } from '../../Orders/components/PaymentLink';
 import { canConfirmDeposit, confirmDepositLabel, reservationBalance, slotLabel } from './reservationBalance';
 
 interface Props {
   reservation: Reserva | null;
   onClose: () => void;
-  onConfirmDeposit: (orderId: string) => void;
+  onConfirmDeposit: (orderId: string, cashBoxId?: string) => void;
   confirming: boolean;
 }
 
 /** Todo lo que la API devuelve de una reserva, y la confirmación de la seña recibida en efectivo o por transferencia. */
 export const ReservationDetailDrawer = ({ reservation, onClose, onConfirmDeposit, confirming }: Props) => {
   const navigate = useNavigate();
+  const [cashBoxId, setCashBoxId] = useState('');
+  const canConfirm = reservation ? canConfirmDeposit(reservation) : false;
+  const inCash = canConfirm && reservation?.paymentMethod === 'cash';
+  const cashBoxes = useOrderCashBoxes(inCash);
   if (!reservation) return null;
-  const canConfirm = canConfirmDeposit(reservation);
+  const missingBox = inCash && cashBoxes.required && !cashBoxId;
 
   return (
     <Drawer
@@ -42,7 +49,11 @@ export const ReservationDetailDrawer = ({ reservation, onClose, onConfirmDeposit
             Ver pedido
           </Button>
           {canConfirm && (
-            <Button onClick={() => onConfirmDeposit(reservation.id)} loading={confirming}>
+            <Button
+              onClick={() => onConfirmDeposit(reservation.id, inCash && cashBoxId ? cashBoxId : undefined)}
+              loading={confirming}
+              disabled={missingBox || cashBoxes.loading}
+            >
               {confirmDepositLabel(reservation)}
             </Button>
           )}
@@ -64,6 +75,20 @@ export const ReservationDetailDrawer = ({ reservation, onClose, onConfirmDeposit
             },
           ]}
         />
+        {inCash && (
+          <CashBoxField
+            boxes={cashBoxes.boxes}
+            value={cashBoxId}
+            onChange={setCashBoxId}
+            hint="La seña recibida en efectivo entra a esta caja. Si exige sesión, tiene que estar abierta."
+          />
+        )}
+        {canConfirm && reservation.paymentMethod === 'transfer' && (
+          <p className="rounded-lg border border-outline bg-surface-hover p-3 text-xs text-muted">
+            La seña entra a la caja de transferencias que elegiste en «Cajas de cobro». Sin caja elegida, queda sin
+            asentar.
+          </p>
+        )}
         {!reservation.depositPaid && reservation.paymentMethod === 'mercadopago' && (
           <div>
             {reservation.paymentUrl ? (

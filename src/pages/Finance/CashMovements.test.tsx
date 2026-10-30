@@ -2,7 +2,7 @@ import { cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { mutation, ok, pageOf, renderPage } from '../../test/pageTest';
 
-const state = vi.hoisted(() => ({ canWrite: true }));
+const state = vi.hoisted(() => ({ canWrite: true, orderId: null as string | null, systemAuthor: false }));
 
 vi.mock('../../common/components/ui/ResponsiveTable', () => import('../../test/responsiveTableStub'));
 vi.mock('../../common/components/AttachmentsPanel', () => ({
@@ -19,7 +19,8 @@ vi.mock('../../hooks', async (importOriginal) => ({
 vi.mock('../../services/queries/finance', () => ({
   useCashBoxOptions: () => ok(pageOf([])),
   useCashCategories: () => ok(pageOf([])),
-  useCashMovements: () => ok(pageOf([MOVIMIENTO])),
+  useCashMovements: () =>
+    ok(pageOf([{ ...MOVIMIENTO, orderId: state.orderId, createdByUserId: state.systemAuthor ? null : 'u-1' }])),
   useReverseCashMovement: () => mutation(),
   useReverseCashTransfer: () => mutation(),
 }));
@@ -43,6 +44,7 @@ const MOVIMIENTO = {
   description: 'Compra de lavandina',
   referenceType: 'manual',
   referenceId: null,
+  orderId: null,
   reversesMovementId: null,
   reversed: false,
   createdByUserId: 'u-1',
@@ -52,9 +54,34 @@ const MOVIMIENTO = {
 afterEach(() => {
   cleanup();
   state.canWrite = true;
+  state.orderId = null;
+  state.systemAuthor = false;
 });
 
 describe('CashMovements', () => {
+  it('un movimiento que nace de un cobro de venta lleva a su pedido', () => {
+    state.orderId = 'ord-9';
+    renderPage(<CashMovements />, { url: '/finance/movements' });
+    fireEvent.click(screen.getByRole('button', { name: 'Ver pedido' }));
+    expect(screen.getByText('otra ruta')).toBeInTheDocument();
+  });
+
+  it('un movimiento que se asentó solo (sin autor) lo dice: «Sistema»', () => {
+    state.systemAuthor = true;
+    renderPage(<CashMovements />, { url: '/finance/movements' });
+    expect(screen.getAllByText(/· Sistema/).length).toBeGreaterThan(0);
+  });
+
+  it('un movimiento de una persona no dice «Sistema»', () => {
+    renderPage(<CashMovements />, { url: '/finance/movements' });
+    expect(screen.queryByText(/Sistema/)).not.toBeInTheDocument();
+  });
+
+  it('un movimiento sin pedido no ofrece «Ver pedido»', () => {
+    renderPage(<CashMovements />, { url: '/finance/movements' });
+    expect(screen.queryByText('Ver pedido')).not.toBeInTheDocument();
+  });
+
   it('abre los comprobantes de un movimiento con su dueño y su id', () => {
     renderPage(<CashMovements />, { url: '/finance/movements' });
     expect(screen.queryByText(/Adjuntos de/)).not.toBeInTheDocument();

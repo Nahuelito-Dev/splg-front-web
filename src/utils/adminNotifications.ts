@@ -3,6 +3,7 @@ import {
   CalendarClock,
   CalendarX2,
   Gavel,
+  Landmark,
   FileWarning,
   MessageSquareWarning,
   Receipt,
@@ -32,6 +33,7 @@ const KIND_VISUALS: Record<string, { icon: LucideIcon; tone: Tone }> = {
   insurance_policy_expiring: { icon: ShieldCheck, tone: 'warn' },
   traffic_fine_due: { icon: Gavel, tone: 'warn' },
   traffic_fine_overdue: { icon: Gavel, tone: 'danger' },
+  sales_cash_unsettled: { icon: Landmark, tone: 'warn' },
 };
 
 /** Ícono y tono de un aviso guardado según su `kind`; un tipo que el panel no conoce se muestra con uno genérico. */
@@ -55,6 +57,8 @@ export const notificationTarget = (link: AdminNotification['link'] | undefined):
       return `/employees/details/${id}?tab=documents`;
     case 'car-insurance':
       return `/cars/details/${id}?tab=insurance`;
+    case 'cash-settings':
+      return '/finance/collection-settings';
     case 'traffic-fine':
       return `/fleet/fines?fine=${id}`;
     default:
