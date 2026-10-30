@@ -15,6 +15,7 @@ import {
   listPurchaseOrders,
   listPurchaseReceipts,
   listSuppliers,
+  payPurchaseReceipt,
   sendPurchaseOrder,
   updatePurchaseOrder,
   updateReceiptPaymentStatus,
@@ -33,9 +34,11 @@ import type { ListParams } from '../api/stock';
 import type {
   CancelPurchaseOrderBody,
   CloseShortPurchaseOrderBody,
+  PayFromCashBoxBody,
   UpdatePaymentStatusBody,
   VoidPurchaseReceiptBody,
 } from '../api/types';
+import { refreshFinance, runMoney } from './finance';
 import { runIntent } from './intent';
 import { PURCHASE_ORDER_STATUS, RECEIPT_STATUS, statusKeys } from '../../utils/statusLabels';
 import { useStatusCounts } from './statusCounts';
@@ -246,5 +249,20 @@ export const useUpdateReceiptPaymentStatus = () => {
           (resource) => queryClient.invalidateQueries({ queryKey: resource.all }),
         ),
       ),
+  });
+};
+
+/** Pagar la recepción desde una caja: el total sale de la caja elegida y la recepción queda paga. */
+export const usePayPurchaseReceipt = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: PayFromCashBoxBody }) =>
+      runMoney(queryClient, `receipt-pay:${id}`, body, (key) => payPurchaseReceipt(id, body, key)),
+    onSettled: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.purchaseReceipts.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.suppliers.all }),
+        refreshFinance(queryClient),
+      ]),
   });
 };

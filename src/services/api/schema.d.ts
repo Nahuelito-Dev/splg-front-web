@@ -3715,6 +3715,80 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/fleet/tasks': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Listar tareas, con su estado de pago */
+    get: operations['FleetTaskV2Controller_findAll'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/fleet/tasks/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Ver una tarea, con su estado de pago */
+    get: operations['FleetTaskV2Controller_findOne'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/fleet/tasks/{id}/close': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Registrar que el mantenimiento se hizo, y pagarlo en el acto
+     * @description Igual que el cierre v1 (`PATCH /fleet/tasks/:id/close`) y, con `payment`, el costo sale de la caja elegida en la misma transacción.
+     */
+    post: operations['FleetTaskV2Controller_close'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/fleet/tasks/{id}/pay': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Registrar el pago de una tarea hecha
+     * @description Egreso de la caja elegida (efectivo, banco o billetera), categoría «Mantenimiento de flota». Una sola vez por tarea; `amount` por omisión es el costo.
+     */
+    post: operations['FleetTaskV2Controller_pay'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/fleet/expirations': {
     parameters: {
       query?: never;
@@ -5823,6 +5897,188 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/fleet/fuel-loads': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Consultar las cargas vigentes, con su estado de pago */
+    get: operations['FuelLoadV2Controller_findAll'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/fleet/fuel-loads/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Ver una carga (también la anulada), con su pago */
+    get: operations['FuelLoadV2Controller_findOne'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/fleet/fuel-loads/{id}/pay': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Pagar una carga de combustible desde una caja
+     * @description Egreso del importe de la carga de la caja elegida (efectivo, banco o billetera), categoría «Combustible». Sirve para la carga de tarjeta o cuenta de combustible y para la de la caja que no se asentó. La que pagó el chofer con su efectivo (`driver_cash`) se salda en su rendición: responde 409.
+     */
+    post: operations['FuelLoadV2Controller_pay'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/fleet/tires': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Listar los neumáticos, con su estado de pago */
+    get: operations['TireV2Controller_findAll'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/fleet/tires/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Ver un neumático con su historial y su pago */
+    get: operations['TireV2Controller_findOne'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/fleet/tires/{id}/pay': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Pagar la compra de un neumático desde una caja
+     * @description Egreso del costo del neumático de la caja elegida (efectivo, banco o billetera), categoría «Neumáticos». Una sola vez por neumático.
+     */
+    post: operations['TireV2Controller_pay'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/fleet/accidents': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Consultar los siniestros, con su pago y reintegro */
+    get: operations['VehicleAccidentV2Controller_findAll'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/fleet/accidents/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Ver un siniestro, con su pago y reintegro */
+    get: operations['VehicleAccidentV2Controller_findOne'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/fleet/accidents/{id}/pay': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Registrar lo que pagó la empresa por el siniestro
+     * @description Egreso de la caja elegida (efectivo, banco o billetera), categoría «Siniestros»: la reparación o la franquicia. Uno por siniestro, abierto o cerrado; con el siniestro cerrado, `amount` no puede superar el costo de la reparación (o la franquicia, si es mayor).
+     */
+    post: operations['VehicleAccidentV2Controller_pay'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/fleet/accidents/{id}/reimbursement': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Registrar el reintegro que pagó el seguro
+     * @description Ingreso a la caja elegida (efectivo, banco o billetera), categoría «Reintegros de seguros». Uno por siniestro; con el siniestro cerrado, `amount` no puede superar el reintegro cargado al cerrar.
+     */
+    post: operations['VehicleAccidentV2Controller_reimbursement'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v2/insurers': {
     parameters: {
       query?: never;
@@ -6465,6 +6721,60 @@ export interface paths {
      * @description Marca el pago. Con `paid` + `paidInCash` el total sale de la caja de efectivo `cashBoxId` en la misma transacción (`cashMovementId` guarda la salida; con cajas de efectivo activas `cashBoxId` es obligatorio). Marcarla `unpaid` asienta el contraasiento. Repetir el estado actual no asienta otra vez.
      */
     patch: operations['PurchaseReceiptController_paymentStatus'];
+    trace?: never;
+  };
+  '/api/v2/purchase-receipts': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Listar las recepciones, con su estado de pago */
+    get: operations['PurchaseReceiptV2Controller_recepciones'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/purchase-receipts/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Ver una recepción, con su estado de pago */
+    get: operations['PurchaseReceiptV2Controller_recepcion'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/purchase-receipts/{id}/pay': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Pagar una recepción desde una caja
+     * @description Egreso del total de la recepción de la caja elegida (efectivo, banco o billetera), categoría «Compra de mercadería», en la misma transacción. Sólo una recepción impaga: para corregir un pago se la marca impaga (`PATCH /purchase-receipts/:id/payment-status`), que asienta el contraasiento. **Exige** `Idempotency-Key`.
+     */
+    post: operations['PurchaseReceiptV2Controller_pay'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
   '/api/v1/finance/dashboard': {
@@ -10260,7 +10570,11 @@ export interface components {
         | 'box_transfer'
         | 'reversal'
         | 'order_payment'
-        | 'insurance_installment';
+        | 'insurance_installment'
+        | 'maintenance_task'
+        | 'tire'
+        | 'vehicle_accident'
+        | 'insurance_reimbursement';
       referenceId: string | null;
       /** @description Si es una anulación, el movimiento que anula */
       reversesMovementId: string | null;
@@ -10379,6 +10693,10 @@ export interface components {
         | 'traffic_fine'
         | 'order_payment'
         | 'insurance'
+        | 'fleet_maintenance'
+        | 'tires'
+        | 'vehicle_accident'
+        | 'insurance_reimbursement'
         | null;
       isActive: boolean;
       /** Format: date-time */
@@ -11161,6 +11479,113 @@ export interface components {
     CancelFleetTaskDto: {
       /** @description Por qué se cancela */
       notes?: string;
+    };
+    FleetTaskV2ResponseDto: {
+      /** Format: uuid */
+      taskId: string;
+      /** Format: uuid */
+      planId: string;
+      plan?: components['schemas']['FleetPlanResponseDto'];
+      /** Format: uuid */
+      distributorId: string;
+      /** Format: uuid */
+      carId: string | null;
+      /** Format: uuid */
+      deliveryId: string | null;
+      /** Format: uuid */
+      employeeId: string | null;
+      /** @enum {string} */
+      status: 'forecast' | 'scheduled' | 'in_progress' | 'done' | 'overdue' | 'cancelled';
+      /** Format: date-time */
+      validFrom: string | null;
+      /** Format: date-time */
+      dueAt: string | null;
+      dueKm: number | null;
+      /** Format: date-time */
+      scheduledAt: string | null;
+      /** Format: date-time */
+      performedAt: string | null;
+      odometerKm: number | null;
+      cost: number | null;
+      provider: string | null;
+      referenceNumber: string | null;
+      category: string | null;
+      notes: string | null;
+      /** @description Datos propios del tipo de documento (según `plan.documentKind`) */
+      details: {
+        [key: string]: string;
+      } | null;
+      /**
+       * @description null si no tiene fecha límite (p. ej. un service todavía sin fecha estimada) o si ya está cerrada/cancelada
+       * @enum {string|null}
+       */
+      expirationStatus: 'current' | 'due_soon' | 'expired' | null;
+      /** @description Días hasta el vencimiento (negativo si ya venció) */
+      daysUntilDue: number | null;
+      /** @description Si esta tarea, vencida, inhabilita al vehículo/chofer */
+      blocks: boolean;
+      attachments?: components['schemas']['FleetTaskAttachmentResponseDto'][];
+      /** @description Si la tarea ya salió de una caja */
+      isPaid: boolean;
+      /** Format: uuid */
+      cashMovementId: string | null;
+      /** Format: date-time */
+      paidAt: string | null;
+      paidAmount: number | null;
+      /** @description Si se puede pagar desde una caja con `POST /fleet/tasks/:id/pay`: hecha, con costo, sin pagar y que no sea de seguro */
+      payable: boolean;
+      /** @description Por qué no se paga por acá, cuando es por la naturaleza de la tarea (el seguro se paga por sus cuotas) */
+      notPayableReason: string | null;
+    };
+    FleetTaskV2PageDto: {
+      data: components['schemas']['FleetTaskV2ResponseDto'][];
+      total: number;
+    };
+    PagoAlCerrar: {
+      /**
+       * Format: uuid
+       * @description Caja de la que sale el pago: efectivo, banco o billetera de la distribuidora
+       */
+      cashBoxId: string;
+      /**
+       * @description Cuándo se pagó; por omisión, ahora. No puede ser futura
+       * @example 2026-10-28T14:30:00-03:00
+       */
+      paidAt?: string;
+    };
+    CloseFleetTaskV2Dto: {
+      /**
+       * Format: date-time
+       * @description Cuándo se hizo (o se renovó)
+       * @example 2026-09-26T13:00:00.000Z
+       */
+      performedAt: string;
+      /** @description Kilometraje del vehículo al hacerlo */
+      odometerKm?: number;
+      /** @example 45000.5 */
+      cost?: number;
+      /** @description Si cambió respecto al de la tarea */
+      provider?: string;
+      notes?: string;
+      /** @description Paga la tarea en el mismo acto del cierre (necesita un costo mayor que cero) */
+      payment?: components['schemas']['PagoAlCerrar'];
+    };
+    PayFleetTaskDto: {
+      /**
+       * Format: uuid
+       * @description Caja de la que sale el pago: efectivo, banco o billetera de la distribuidora
+       */
+      cashBoxId: string;
+      /**
+       * @description Cuándo se pagó (fecha o fecha y hora ISO 8601); no puede ser futura
+       * @example 2026-10-28T14:30:00-03:00
+       */
+      paidAt: string;
+      /**
+       * @description Lo pagado; por omisión el costo de la tarea, y no puede superarlo
+       * @example 45000.5
+       */
+      amount?: number;
     };
     FleetExpirationEntryDto: {
       /** Format: uuid */
@@ -13478,6 +13903,200 @@ export interface components {
       /** @description `null` si no hubo km */
       costPerKm: number | null;
     };
+    FuelLoadV2ResponseDto: {
+      /** Format: uuid */
+      fuelLoadId: string;
+      /** Format: uuid */
+      distributorId: string;
+      /** Format: uuid */
+      carId: string;
+      /** @example AB123CD */
+      carPatent: string | null;
+      /** Format: uuid */
+      employeeId: string | null;
+      employeeName: string | null;
+      /** Format: date-time */
+      loadedAt: string;
+      /** @enum {string} */
+      fuelType: 'diesel' | 'gasoline' | 'cng' | 'lpg';
+      liters: number;
+      unitPrice: number;
+      totalAmount: number;
+      odometerKm: number;
+      isFullTank: boolean;
+      station: string | null;
+      /** @enum {string} */
+      paymentMethod: 'cash_box' | 'driver_cash' | 'card' | 'fuel_account';
+      receiptNumber: string | null;
+      /**
+       * Format: uuid
+       * @description Salida de caja del pago (`cash_box`); `null` mientras está pendiente de asentar o si pagó el chofer
+       */
+      cashMovementId: string | null;
+      /** @description La registró el chofer desde su app */
+      registeredByDriver: boolean;
+      /** @description Carga `cash_box` anterior al asiento de caja: no se puede asentar */
+      cashPaymentLegacy: boolean;
+      /** @description El consumo del tramo se apartó más de un 25 % del habitual */
+      anomaly: boolean;
+      notes: string | null;
+      odometerCorrectionNote: string | null;
+      /** Format: date-time */
+      voidedAt: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      /** @description Si la carga ya salió de una caja */
+      isPaid: boolean;
+      /** Format: date-time */
+      paidAt: string | null;
+      /** @description Si se puede pagar desde una caja con `POST /fleet/fuel-loads/:id/pay` (no está paga ni anulada, no la pagó el chofer con su efectivo ni es anterior al asiento de caja) */
+      isPayable: boolean;
+    };
+    FuelLoadV2PageDto: {
+      data: components['schemas']['FuelLoadV2ResponseDto'][];
+      /** @example 12 */
+      total: number;
+      /** @example 530.25 */
+      totalLiters: number;
+      /** @example 556762.5 */
+      totalAmount: number;
+    };
+    PayFromCashBoxDto: {
+      /**
+       * Format: uuid
+       * @description Caja de la que sale el pago: efectivo, banco o billetera de la distribuidora
+       */
+      cashBoxId: string;
+      /**
+       * @description Cuándo se pagó (fecha o fecha y hora ISO 8601); no puede ser futura
+       * @example 2026-10-28T14:30:00-03:00
+       */
+      paidAt: string;
+    };
+    TireV2ResponseDto: {
+      /** Format: uuid */
+      tireId: string;
+      /** Format: uuid */
+      distributorId: string;
+      serialNumber: string;
+      brand: string;
+      size: string;
+      cost: number;
+      /** @enum {string} */
+      status: 'in_stock' | 'mounted' | 'retired';
+      /** Format: uuid */
+      carId: string | null;
+      carPatent: string | null;
+      /** @example DI */
+      position: string | null;
+      mountedOdometerKm: number | null;
+      /** @description Km de los montajes ya cerrados */
+      kmTraveled: number;
+      retreadCount: number;
+      /** Format: date-time */
+      createdAt: string;
+      /** @description Su historial, del más reciente al más antiguo (sólo al abrir un neumático) */
+      events?: components['schemas']['TireEventResponseDto'][];
+      /** @description Si la compra ya salió de una caja */
+      isPaid: boolean;
+      /** Format: uuid */
+      cashMovementId: string | null;
+      /** Format: date-time */
+      paidAt: string | null;
+    };
+    TireV2PageDto: {
+      data: components['schemas']['TireV2ResponseDto'][];
+      /** @example 8 */
+      total: number;
+    };
+    VehicleAccidentV2ResponseDto: {
+      /** Format: uuid */
+      accidentId: string;
+      /** Format: uuid */
+      distributorId: string;
+      /** Format: uuid */
+      carId: string;
+      carPatent: string | null;
+      /** Format: uuid */
+      employeeId: string | null;
+      employeeName: string | null;
+      /** Format: date-time */
+      occurredAt: string;
+      /** @example -27.3671,-55.8961 */
+      location: string | null;
+      address: string | null;
+      description: string;
+      injuries: boolean;
+      thirdPartiesInvolved: boolean;
+      hazmatRelease: boolean;
+      policeReportNumber: string | null;
+      insurerClaimNumber: string | null;
+      /** @enum {string} */
+      status: 'reported' | 'under_review' | 'repairing' | 'closed';
+      vehicleUnusable: boolean;
+      repairCost: number | null;
+      insurerReimbursement: number | null;
+      deductibleAmount: number | null;
+      /** @description Costo de reparación menos reintegro del seguro; sólo cerrado */
+      netCost: number | null;
+      /** Format: date-time */
+      closedAt: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      /** @description Si ya se registró lo que pagó la empresa */
+      isPaid: boolean;
+      /** Format: uuid */
+      paymentCashMovementId: string | null;
+      /** Format: date-time */
+      paymentPaidAt: string | null;
+      paymentAmount: number | null;
+      /** @description Si ya se registró el reintegro del seguro */
+      isReimbursed: boolean;
+      /** Format: uuid */
+      reimbursementCashMovementId: string | null;
+      /** Format: date-time */
+      reimbursementReceivedAt: string | null;
+      reimbursementAmount: number | null;
+    };
+    VehicleAccidentV2PageDto: {
+      data: components['schemas']['VehicleAccidentV2ResponseDto'][];
+      /** @example 3 */
+      total: number;
+    };
+    PayAccidentDto: {
+      /**
+       * Format: uuid
+       * @description Caja de la que sale el pago: efectivo, banco o billetera de la distribuidora
+       */
+      cashBoxId: string;
+      /**
+       * @description Cuándo se pagó (fecha o fecha y hora ISO 8601); no puede ser futura
+       * @example 2026-10-28T14:30:00-03:00
+       */
+      paidAt: string;
+      /**
+       * @description Importe pagado. Con el siniestro cerrado no puede superar el costo de la reparación (o la franquicia, si es mayor)
+       * @example 85000
+       */
+      amount: number;
+    };
+    ReceiveReimbursementDto: {
+      /**
+       * Format: uuid
+       * @description Caja en la que entra el dinero: efectivo, banco o billetera de la distribuidora
+       */
+      cashBoxId: string;
+      /**
+       * @description Cuándo se recibió (fecha o fecha y hora ISO 8601); no puede ser futura ni anterior al siniestro
+       * @example 2026-10-28T14:30:00-03:00
+       */
+      receivedAt: string;
+      /**
+       * @description Importe recibido. Con el siniestro cerrado no puede superar el reintegro cargado al cerrar
+       * @example 60000
+       */
+      amount: number;
+    };
     InsurerResponseDto: {
       /** Format: uuid */
       insurerId: string;
@@ -14428,6 +15047,114 @@ export interface components {
        * @description Caja de efectivo de la que sale el pago; sólo con `paidInCash`
        */
       cashBoxId?: string;
+    };
+    PurchaseReceiptV2SummaryDto: {
+      /** Format: uuid */
+      receiptId: string;
+      /**
+       * @description Número interno correlativo
+       * @example 3
+       */
+      number: number;
+      /** Format: uuid */
+      supplierId: string;
+      /** @example Gas del Litoral S.A. */
+      supplierName: string;
+      /** Format: uuid */
+      purchaseOrderId: string | null;
+      /** @example 7 */
+      purchaseOrderNumber: number | null;
+      /** Format: uuid */
+      warehouseId: string;
+      /** @example Depósito central */
+      warehouseName: string;
+      /** @enum {string} */
+      supplierDocumentType: 'delivery_note' | 'invoice';
+      /** @example 0001-00004567 */
+      supplierDocumentNumber: string;
+      /** Format: date-time */
+      receivedAt: string;
+      /** @example 130012.5 */
+      totalAmount: number;
+      /** @enum {string} */
+      paymentStatus: 'unpaid' | 'paid';
+      /** @enum {string} */
+      status: 'confirmed' | 'voided';
+      /** @description Si la recepción figura como pagada */
+      isPaid: boolean;
+      /**
+       * Format: uuid
+       * @description Salida de caja del pago; `null` si no salió de una caja
+       */
+      cashMovementId: string | null;
+      /**
+       * Format: date-time
+       * @description Cuándo se pagó; `null` si está impaga o figura pagada desde antes de registrar la fecha
+       */
+      paidAt: string | null;
+    };
+    PurchaseReceiptV2PageDto: {
+      data: components['schemas']['PurchaseReceiptV2SummaryDto'][];
+      /** @example 12 */
+      total: number;
+    };
+    PurchaseReceiptV2ResponseDto: {
+      /** Format: uuid */
+      receiptId: string;
+      /**
+       * @description Número interno correlativo
+       * @example 3
+       */
+      number: number;
+      /** Format: uuid */
+      supplierId: string;
+      /** @example Gas del Litoral S.A. */
+      supplierName: string;
+      /** Format: uuid */
+      purchaseOrderId: string | null;
+      /** @example 7 */
+      purchaseOrderNumber: number | null;
+      /** Format: uuid */
+      warehouseId: string;
+      /** @example Depósito central */
+      warehouseName: string;
+      /** @enum {string} */
+      supplierDocumentType: 'delivery_note' | 'invoice';
+      /** @example 0001-00004567 */
+      supplierDocumentNumber: string;
+      /** Format: date-time */
+      receivedAt: string;
+      /** @example 130012.5 */
+      totalAmount: number;
+      /** @enum {string} */
+      paymentStatus: 'unpaid' | 'paid';
+      /** @enum {string} */
+      status: 'confirmed' | 'voided';
+      items: components['schemas']['PurchaseReceiptItemResponseDto'][];
+      notes: string | null;
+      voidReason: string | null;
+      /** Format: date-time */
+      voidedAt: string | null;
+      /** Format: uuid */
+      receivedByUserId: string;
+      /**
+       * Format: uuid
+       * @description Lote del libro de movimientos (GET /stock/movements?batchId=)
+       */
+      batchId: string;
+      /** Format: uuid */
+      voidBatchId: string | null;
+      /**
+       * Format: uuid
+       * @description Salida de caja del pago en efectivo; `null` si no se pagó en efectivo. Al marcar la recepción como impaga se asienta el contraasiento y vuelve a `null`
+       */
+      cashMovementId: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      /** @description Si la recepción figura como pagada */
+      isPaid: boolean;
+      /** Format: date-time */
+      paidAt: string | null;
     };
     DashboardCashBoxDto: {
       cashBoxId: string;
@@ -25545,7 +26272,11 @@ export interface operations {
           | 'box_transfer'
           | 'reversal'
           | 'order_payment'
-          | 'insurance_installment';
+          | 'insurance_installment'
+          | 'maintenance_task'
+          | 'tire'
+          | 'vehicle_accident'
+          | 'insurance_reimbursement';
         from?: string | null;
         to?: string | null;
       };
@@ -27934,6 +28665,230 @@ export interface operations {
       };
       /** @description Tarea o adjunto no encontrado */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FleetTaskV2Controller_findAll: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+        page?: number;
+        /** @description Texto a buscar */
+        term?: string;
+        carId?: string;
+        deliveryId?: string;
+        employeeId?: string;
+        /** @description Sólo las tareas de este plan */
+        planId?: string;
+        status?: 'forecast' | 'scheduled' | 'in_progress' | 'done' | 'overdue' | 'cancelled';
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FleetTaskV2PageDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FleetTaskV2Controller_findOne: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Task UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FleetTaskV2ResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FleetTaskV2Controller_close: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Task UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CloseFleetTaskV2Dto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FleetTaskV2ResponseDto'];
+        };
+      };
+      /** @description Fecha futura, `payment` sin costo, caja que no admite el pago o `paidAt` futuro */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Tarea o caja no encontrada */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La tarea ya está hecha o cancelada, o la caja no tiene sesión abierta o saldo */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FleetTaskV2Controller_pay: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Task UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PayFleetTaskDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FleetTaskV2ResponseDto'];
+        };
+      };
+      /** @description Importe mayor que el costo, `paidAt` futuro o caja que no admite el pago */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Tarea o caja no encontrada */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La tarea no está hecha, no tiene costo, ya está paga, o la caja no tiene sesión abierta o saldo */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
         headers: {
           [name: string]: unknown;
         };
@@ -35126,6 +36081,542 @@ export interface operations {
       };
     };
   };
+  FuelLoadV2Controller_findAll: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+        carId?: string;
+        /** @description Legajo de quien cargó */
+        employeeId?: string;
+        from?: string | null;
+        to?: string | null;
+        /** @description Sólo las marcadas como anómalas (o sólo las que no) */
+        anomaly?: boolean;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FuelLoadV2PageDto'];
+        };
+      };
+      /** @description Filtro inválido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FuelLoadV2Controller_findOne: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Carga UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FuelLoadV2ResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FuelLoadV2Controller_pay: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Carga UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PayFromCashBoxDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FuelLoadV2ResponseDto'];
+        };
+      };
+      /** @description `paidAt` futuro o anterior a la carga, o caja que no admite el pago */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora (también la caja) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya salió de una caja, está anulada, la pagó el chofer con su efectivo, es anterior al asiento de caja, o la caja no tiene una sesión abierta o no alcanza el saldo */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TireV2Controller_findAll: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+        status?: 'in_stock' | 'mounted' | 'retired';
+        carId?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TireV2PageDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TireV2Controller_findOne: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Neumático UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TireV2ResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TireV2Controller_pay: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Neumático UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PayFromCashBoxDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TireV2ResponseDto'];
+        };
+      };
+      /** @description `paidAt` futuro o caja que no admite el pago */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora (también la caja) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya está pago, no tiene costo, o la caja no tiene una sesión abierta o no alcanza el saldo */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  VehicleAccidentV2Controller_findAll: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+        carId?: string;
+        status?: 'reported' | 'under_review' | 'repairing' | 'closed';
+        from?: string | null;
+        to?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['VehicleAccidentV2PageDto'];
+        };
+      };
+      /** @description Filtro inválido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  VehicleAccidentV2Controller_findOne: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Siniestro UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['VehicleAccidentV2ResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  VehicleAccidentV2Controller_pay: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Siniestro UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PayAccidentDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['VehicleAccidentV2ResponseDto'];
+        };
+      };
+      /** @description Importe mayor que lo cargado al cerrar, `paidAt` futuro o anterior al siniestro, o caja que no admite el pago */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora (también la caja) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya tiene su pago registrado, o la caja no tiene una sesión abierta o no alcanza el saldo */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  VehicleAccidentV2Controller_reimbursement: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Siniestro UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ReceiveReimbursementDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['VehicleAccidentV2ResponseDto'];
+        };
+      };
+      /** @description Importe mayor que el reintegro cargado al cerrar, `receivedAt` futuro o anterior al siniestro, o caja que no admite el cobro */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora (también la caja) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya tiene su reintegro registrado, se cerró sin reintegro, o la caja exige una sesión abierta */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   InsurerController_findAll: {
     parameters: {
       query?: {
@@ -37487,6 +38978,163 @@ export interface operations {
       };
       /** @description La caja no tiene una sesión abierta o no alcanza el saldo */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PurchaseReceiptV2Controller_recepciones: {
+    parameters: {
+      query?: {
+        limit?: number;
+        page?: number;
+        supplierId?: string;
+        purchaseOrderId?: string;
+        paymentStatus?: 'unpaid' | 'paid';
+        status?: 'confirmed' | 'voided';
+        from?: string | null;
+        to?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PurchaseReceiptV2PageDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PurchaseReceiptV2Controller_recepcion: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Recepción UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PurchaseReceiptV2ResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PurchaseReceiptV2Controller_pay: {
+    parameters: {
+      query?: never;
+      header: {
+        'idempotency-key': string;
+        /** @description UUID v4 de la operación. Obligatoria: sin ella responde 400 (un reintento duplicaría el movimiento). */
+        'Idempotency-Key': string;
+      };
+      path: {
+        /** @description Recepción UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PayFromCashBoxDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PurchaseReceiptV2ResponseDto'];
+        };
+      };
+      /** @description Sin `Idempotency-Key`, recepción anulada, `paidAt` futuro o caja que no admite el pago */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora (también la caja) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya está pagada, o la caja no tiene una sesión abierta o no alcanza el saldo */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
         headers: {
           [name: string]: unknown;
         };

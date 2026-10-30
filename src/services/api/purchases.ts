@@ -1,3 +1,4 @@
+import { env } from '../../config/env';
 import { idempotencyHeaders } from './idempotency';
 import { http } from './httpClient';
 import type { ListParams } from './stock';
@@ -9,11 +10,13 @@ import type {
   CreatePurchaseReceiptBody,
   CreateSupplierBody,
   Message,
+  PayFromCashBoxBody,
   PurchaseOrder,
   PurchaseOrderPage,
   PurchaseOrderPending,
   PurchaseReceipt,
   PurchaseReceiptPage,
+  PurchaseReceiptV2,
   Supplier,
   SupplierHistory,
   SupplierPage,
@@ -182,8 +185,21 @@ export const listPurchaseReceipts = async (
 };
 
 /** GET /purchase-receipts/:id */
-export const getPurchaseReceipt = async (id: string): Promise<PurchaseReceipt> => {
-  const { data } = await http.get<PurchaseReceipt>(`/purchase-receipts/${id}`);
+export const getPurchaseReceipt = async (id: string): Promise<PurchaseReceiptV2> => {
+  const { data } = await http.get<PurchaseReceiptV2>(`/purchase-receipts/${id}`, { baseURL: env.apiUrlV2 });
+  return data;
+};
+
+/** POST /v2/purchase-receipts/:id/pay: el total sale de una caja de efectivo, banco o billetera. */
+export const payPurchaseReceipt = async (
+  id: string,
+  body: PayFromCashBoxBody,
+  key: string,
+): Promise<PurchaseReceiptV2> => {
+  const { data } = await http.post<PurchaseReceiptV2>(`/purchase-receipts/${id}/pay`, body, {
+    baseURL: env.apiUrlV2,
+    headers: idempotencyHeaders(key),
+  });
   return data;
 };
 

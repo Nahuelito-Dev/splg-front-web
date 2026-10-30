@@ -1,10 +1,13 @@
+import { env } from '../../config/env';
 import { toApiErrorFromBlob } from './errors';
+import { idempotencyHeaders } from './idempotency';
 import { resolveFileSource, type FileSource } from './fileSource';
 import { http, toPage, toQuery, type Page, type PageParams } from './httpClient';
 import type {
   AssignVehicleBody,
   CancelFleetTaskBody,
   CloseFleetTaskBody,
+  CloseFleetTaskV2Body,
   CreateFleetPlanBody,
   CreateFleetTaskBody,
   DownloadLink,
@@ -13,9 +16,11 @@ import type {
   FleetExpirations,
   FleetPlan,
   FleetTask,
+  FleetTaskV2,
   FleetTaskAttachment,
   FleetVehicleDocuments,
   Message,
+  PayFleetTaskBody,
   UpdateFleetPlanBody,
   UpdateFleetTaskBody,
   VehicleAssignmentHistory,
@@ -84,8 +89,30 @@ export const listFleetTasks = async (params: PageParams, filters: FleetTaskFilte
   toPage(await http.get<FleetTask[]>('/fleet/tasks', { params: { ...filters, ...toQuery(params) } }));
 
 /** GET /fleet/tasks/:id: la ficha de una tarea puntual, con sus adjuntos. */
-export const getFleetTask = async (id: string): Promise<FleetTask> => {
-  const { data } = await http.get<FleetTask>(`/fleet/tasks/${id}`);
+export const getFleetTask = async (id: string): Promise<FleetTaskV2> => {
+  const { data } = await http.get<FleetTaskV2>(`/fleet/tasks/${id}`, { baseURL: env.apiUrlV2 });
+  return data;
+};
+
+/** POST /v2/fleet/tasks/:id/pay: el costo de la tarea hecha sale de una caja de efectivo, banco o billetera. */
+export const payFleetTask = async (id: string, body: PayFleetTaskBody, key: string): Promise<FleetTaskV2> => {
+  const { data } = await http.post<FleetTaskV2>(`/fleet/tasks/${id}/pay`, body, {
+    baseURL: env.apiUrlV2,
+    headers: idempotencyHeaders(key),
+  });
+  return data;
+};
+
+/** POST /v2/fleet/tasks/:id/close: cierra la tarea y, con `payment`, la paga en el mismo acto. */
+export const closeFleetTaskAndPay = async (
+  id: string,
+  body: CloseFleetTaskV2Body,
+  key: string,
+): Promise<FleetTaskV2> => {
+  const { data } = await http.post<FleetTaskV2>(`/fleet/tasks/${id}/close`, body, {
+    baseURL: env.apiUrlV2,
+    headers: idempotencyHeaders(key),
+  });
   return data;
 };
 

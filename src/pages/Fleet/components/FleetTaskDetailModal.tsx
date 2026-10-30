@@ -5,6 +5,7 @@ import { formatDay, formatNumber } from '../../../utils/format';
 import { confirm, notify } from '../../../utils/notifications';
 import { FLEET_EXPIRATION_STATUS, FLEET_TASK_STATUS, labelOf } from '../../../utils/statusLabels';
 import { FleetTaskAttachments } from './FleetTaskAttachments';
+import { FleetTaskPayment } from './FleetTaskPayment';
 
 interface Props {
   task: FleetTask | null;
@@ -79,6 +80,8 @@ export const FleetTaskDetailModal = ({ task, onClose, canWrite, onEdit, onReques
               { label: 'Notas', value: task.notes || '—', wide: true },
             ]}
           />
+
+          {task.status === 'done' && <FleetTaskPayment taskId={task.taskId} />}
 
           <FleetTaskAttachments taskId={task.taskId} canWrite={canWrite} />
 

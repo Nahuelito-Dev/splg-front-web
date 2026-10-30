@@ -37,8 +37,10 @@ vi.mock('../../utils/notifications', () => ({
   confirm: state.confirm,
   notify: { success: vi.fn(), error: vi.fn() },
 }));
-vi.mock('./components/PayReceiptModal', () => ({
-  PayReceiptModal: ({ receipt }: { receipt: unknown }) => (receipt ? <p>Marcar como pagada</p> : null),
+vi.mock('./components/ReceiptPayment', () => ({
+  ReceiptPayment: ({ receipt }: { receipt: { isPaid?: boolean } }) => (
+    <button type="button">{receipt.isPaid ? 'Pago' : 'Registrar pago'}</button>
+  ),
 }));
 vi.mock('./components/VoidReceiptModal', () => ({
   VoidReceiptModal: ({ receipt }: { receipt: unknown }) => (receipt ? <p>Anular recepción</p> : null),
@@ -99,15 +101,13 @@ describe('PurchaseReceiptDetails', () => {
     expect(screen.getByText(/10 llenas · 8 vacías a la planta/)).toBeInTheDocument();
   });
 
-  it('marcar pagada abre el pago (con la caja si fue en efectivo) y no manda nada todavía', () => {
-    const payment = mutation();
-    state.receipt.mockReturnValue(ok(RECEIPT()));
-    state.payment.mockReturnValue(payment);
+  it('una recepción sin pagar ofrece registrar el pago desde una caja y ya no «Marcar pagada»', () => {
+    state.receipt.mockReturnValue(ok(RECEIPT({ isPaid: false })));
+    state.payment.mockReturnValue(mutation());
     draw();
-    fireEvent.click(screen.getByRole('button', { name: 'Marcar pagada' }));
-    expect(screen.getByText('Marcar como pagada')).toBeInTheDocument();
-    expect(payment.mutate).not.toHaveBeenCalled();
-    expect(state.confirm).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Registrar pago' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Marcar pagada' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Marcar sin pagar' })).not.toBeInTheDocument();
   });
 
   it('marcar sin pagar confirma, avisa que el efectivo vuelve a la caja y manda el estado', async () => {

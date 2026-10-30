@@ -62,3 +62,19 @@ export const fleetTaskCloseSchema = z.object({
 });
 
 export type FleetTaskCloseValues = z.infer<typeof fleetTaskCloseSchema>;
+
+/**
+ * «Lo pagué ahora» al cerrar: necesita un costo mayor a cero y la caja de la que sale el pago.
+ * Devuelve el error por campo, o `null` si está bien.
+ */
+export const closePaymentErrors = (
+  payNow: boolean,
+  cost: number | undefined,
+  cashBoxId: string,
+): { cost?: string; cashBoxId?: string } | null => {
+  if (!payNow) return null;
+  const errors: { cost?: string; cashBoxId?: string } = {};
+  if (cost === undefined || cost <= 0) errors.cost = 'Para pagarla ahora ingresá el costo';
+  if (!cashBoxId) errors.cashBoxId = 'Elegí la caja de la que sale el pago';
+  return Object.keys(errors).length > 0 ? errors : null;
+};

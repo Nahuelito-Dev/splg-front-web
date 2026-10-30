@@ -22,7 +22,7 @@ import { usePurchaseReceipt, useUpdateReceiptPaymentStatus } from '../../service
 import { formatCurrency, formatDateTime } from '../../utils/format';
 import { confirm, notify } from '../../utils/notifications';
 import { RECEIPT_PAYMENT, RECEIPT_STATUS, SUPPLIER_DOCUMENT_TYPE, labelOf } from '../../utils/statusLabels';
-import { PayReceiptModal } from './components/PayReceiptModal';
+import { ReceiptPayment } from './components/ReceiptPayment';
 import { VoidReceiptModal } from './components/VoidReceiptModal';
 
 const COLUMNS: GridColDef<PurchaseReceiptItem>[] = [
@@ -54,14 +54,10 @@ export const PurchaseReceiptDetails = () => {
   useCrumbLeaf(receipt ? `Recepción N° ${receipt.number}` : null, goBack);
   const setPayment = useUpdateReceiptPaymentStatus();
   const [voiding, setVoiding] = useState(false);
-  const [paying, setPaying] = useState(false);
 
   const togglePayment = async () => {
     if (!receipt) return;
-    if (receipt.paymentStatus !== 'paid') {
-      setPaying(true);
-      return;
-    }
+    if (receipt.paymentStatus !== 'paid') return;
     const ok = await confirm({
       title: '¿Marcar como sin pagar?',
       text: receipt.cashMovementId
@@ -94,15 +90,17 @@ export const PurchaseReceiptDetails = () => {
           confirmed &&
           canWrite && (
             <>
-              <Button
-                size="sm"
-                variant="secondary"
-                icon={<Banknote />}
-                loading={setPayment.isPending}
-                onClick={() => void togglePayment()}
-              >
-                {receipt.paymentStatus === 'paid' ? 'Marcar sin pagar' : 'Marcar pagada'}
-              </Button>
+              {receipt.paymentStatus === 'paid' && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  icon={<Banknote />}
+                  loading={setPayment.isPending}
+                  onClick={() => void togglePayment()}
+                >
+                  Marcar sin pagar
+                </Button>
+              )}
               <Button
                 size="sm"
                 variant="danger"
@@ -189,6 +187,9 @@ export const PurchaseReceiptDetails = () => {
               />
             </Card>
             <Card className="p-6">
+              <ReceiptPayment receipt={receipt} />
+            </Card>
+            <Card className="p-6">
               <AttachmentsPanel
                 ownerType="purchase_receipt"
                 ownerId={receipt.receiptId}
@@ -201,7 +202,6 @@ export const PurchaseReceiptDetails = () => {
           </div>
         </div>
       )}
-      <PayReceiptModal receipt={paying ? (receipt ?? null) : null} onClose={() => setPaying(false)} />
       <VoidReceiptModal receipt={voiding ? (receipt ?? null) : null} onClose={() => setVoiding(false)} />
     </PageContainer>
   );
