@@ -148,6 +148,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { title: 'Movimientos', path: '/finance/movements', icon: BookOpen },
       { title: 'Categorías', path: '/finance/categories', icon: Tags },
       { title: 'Cajas de cobro', path: '/finance/collection-settings', icon: CreditCard },
+      { title: 'Conciliación MP', path: '/finance/mp-reconciliation', icon: ArrowLeftRight },
       { title: 'Rendiciones', path: '/finance/settlements', icon: HandCoins },
       { title: 'Cuentas corrientes', path: '/finance/accounts', icon: Landmark },
       { title: 'Comisiones', path: '/finance/commissions', icon: Percent },

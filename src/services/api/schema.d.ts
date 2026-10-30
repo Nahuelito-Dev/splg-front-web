@@ -7021,6 +7021,87 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/mercadopago/reconciliations': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Corridas de conciliación de la distribuidora */
+    get: operations['MpReconciliationController_listar'];
+    put?: never;
+    /**
+     * Pedir una conciliación con Mercado Pago
+     * @description Crea la corrida y le pide a Mercado Pago el reporte de liberaciones del rango (`from`..`to`, días argentinos inclusive, hasta 31 días, sin fechas futuras). El reporte es asíncrono: la corrida queda `requested` hasta que Mercado Pago lo genera (un proceso la revisa cada dos minutos y `GET /:id` también) y pasa a `ready` con las diferencias. Nada se asienta solo.
+     */
+    post: operations['MpReconciliationController_crear'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/mercadopago/reconciliations/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Una corrida con sus diferencias
+     * @description Si la corrida sigue esperando el reporte, antes de responder le pregunta a Mercado Pago. Las diferencias de la cuenta que no son de ninguna distribuidora (`accountLevel`) sólo las ve el super admin.
+     */
+    get: operations['MpReconciliationController_detalle'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/mercadopago/reconciliations/{id}/apply': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Asentar las diferencias elegidas
+     * @description Asienta en la caja de Mercado Pago los ajustes elegidos (`items`), cada uno una sola vez: una fila del reporte ya asentada, aunque sea desde otra corrida, no se repite. Cobros sin ingreso y comisiones pendientes usan las mismas referencias que `settle-pending`; impuestos, reintegros y devoluciones quedan como movimientos «Conciliación MP <fecha> — <descripción> (<id>)». Los retiros piden `cashBoxId` (la caja que recibió el dinero). Las diferencias de la cuenta (retiros, impuestos sueltos) sólo las asienta el super admin, indicando `distributorId` (la de la corrida), y se asientan una sola vez en todo el sistema. Cada ajuste va en su transacción: uno rechazado por la caja no frena a los demás y aparece en `results`.
+     */
+    post: operations['MpReconciliationController_aplicar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/mercadopago/reconciliations/{id}/report': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Bajar el reporte de liberaciones
+     * @description Enlace firmado `{ url, expiresAt, requiresAuth }` al CSV de Mercado Pago, que es el comprobante de los movimientos. La distribuidora baja el archivo filtrado a sus cobros; el super admin que pidió la corrida baja el completo de la cuenta.
+     */
+    get: operations['MpReconciliationController_reporte'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -8142,7 +8223,8 @@ export interface components {
       | 'order'
       | 'insurance_policy'
       | 'insurance_installment'
-      | 'traffic_fine_payment';
+      | 'traffic_fine_payment'
+      | 'mp_reconciliation';
     AttachmentResponseDto: {
       /** Format: uuid */
       attachmentId: string;
@@ -10704,7 +10786,8 @@ export interface components {
         | 'payment_refund'
         | 'order_transfer'
         | 'payment_external_refund'
-        | 'order_deposit';
+        | 'order_deposit'
+        | 'mp_reconciliation';
       referenceId: string | null;
       /** @description Si es una anulación, el movimiento que anula */
       reversesMovementId: string | null;
@@ -10830,6 +10913,8 @@ export interface components {
         | 'insurance_reimbursement'
         | 'mercadopago_fee'
         | 'customer_refund'
+        | 'taxes_withholdings'
+        | 'mercadopago_fee_refund'
         | null;
       isActive: boolean;
       /** Format: date-time */
@@ -15524,7 +15609,8 @@ export interface components {
         | 'payment_refund'
         | 'order_transfer'
         | 'payment_external_refund'
-        | 'order_deposit';
+        | 'order_deposit'
+        | 'mp_reconciliation';
       referenceId: string | null;
       /** @description Si es una anulación, el movimiento que anula */
       reversesMovementId: string | null;
@@ -15663,6 +15749,250 @@ export interface components {
       orderId: string;
       /** @description Los cobros del pedido por Mercado Pago o transferencia; vacío si no tiene (efectivo, cuenta corriente o todavía sin cobrar) */
       entries: components['schemas']['OrderCollectionEntryDto'][];
+    };
+    CreateMpReconciliationDto: {
+      /**
+       * Format: date
+       * @example 2026-10-01
+       */
+      from: string;
+      /**
+       * Format: date
+       * @example 2026-10-31
+       */
+      to: string;
+    };
+    /** @enum {string} */
+    MpReconciliationStatus: 'requested' | 'ready' | 'failed';
+    MpSummaryMpDto: {
+      /** @example 120000 */
+      gross: number;
+      /** @example 4800 */
+      fees: number;
+      /** @example 1200 */
+      taxes: number;
+      /**
+       * @description Créditos menos débitos de los cobros de la distribuidora
+       * @example 114000
+       */
+      net: number;
+    };
+    MpSummaryCashDto: {
+      /** @example 120000 */
+      income: number;
+      /** @example 6000 */
+      expense: number;
+      /** @example 114000 */
+      net: number;
+    };
+    MpSummaryAccountDto: {
+      /** @example 12 */
+      rows: number;
+      /** @example 50000 */
+      credit: number;
+      /** @example 50000 */
+      debit: number;
+    };
+    MpSummaryDto: {
+      /**
+       * @description Filas de movimiento que ve la distribuidora
+       * @example 40
+       */
+      rows: number;
+      /** @description Lo que informa Mercado Pago */
+      mp: components['schemas']['MpSummaryMpDto'];
+      /** @description Lo que tiene la caja de Mercado Pago en el rango */
+      cash: components['schemas']['MpSummaryCashDto'];
+      /** @description Cantidad de diferencias pendientes o aplicadas, por tipo */
+      differences: {
+        [key: string]: number;
+      };
+      /**
+       * @description Filas que ya se habían asentado en otra corrida
+       * @example 2
+       */
+      alreadyApplied: number;
+      /**
+       * @description Filas del archivo que no se pudieron leer
+       * @example 0
+       */
+      unreadableRows: number;
+      /** @description Sólo para el super admin: movimientos de la cuenta que no son de ninguna distribuidora */
+      account?: components['schemas']['MpSummaryAccountDto'];
+    };
+    MpReconciliationResponseDto: {
+      /** Format: uuid */
+      reconciliationId: string;
+      /**
+       * Format: uuid
+       * @description Distribuidora de la conciliación (la que se manda como `distributorId` al asentar diferencias de la cuenta)
+       */
+      distributorId: string;
+      /**
+       * Format: date
+       * @example 2026-10-01
+       */
+      from: string;
+      /**
+       * Format: date
+       * @example 2026-10-31
+       */
+      to: string;
+      status: components['schemas']['MpReconciliationStatus'];
+      /** @description Por qué falló, si falló */
+      failureReason: string | null;
+      /** @description Mientras espera el reporte: qué pasa (todavía no se consultó, Mercado Pago aún no lo generó, el último error del intento). Null en las demás. */
+      statusNote: string | null;
+      /** @description Null hasta que el reporte está listo */
+      summary: components['schemas']['MpSummaryDto'] | null;
+      /** @description El archivo del reporte está guardado y se puede bajar */
+      hasReport: boolean;
+      /** Format: date-time */
+      readyAt: string | null;
+      /** Format: date-time */
+      lastCheckedAt: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      /** @description La corrida incluye los movimientos de la cuenta que no son de ninguna distribuidora (la pidió un super admin) */
+      includesAccountLevel: boolean;
+    };
+    MpReconciliationPageDto: {
+      data: components['schemas']['MpReconciliationResponseDto'][];
+      /** @example 3 */
+      total: number;
+    };
+    /** @enum {string} */
+    MpDifferenceKind:
+      | 'payment_not_in_cash'
+      | 'ledger_without_mp'
+      | 'amount_mismatch'
+      | 'fee_pending'
+      | 'fee_mismatch'
+      | 'tax_withholding'
+      | 'tax_row'
+      | 'refund_missing'
+      | 'fee_reimbursement'
+      | 'payout'
+      | 'unknown_payment'
+      | 'other_movement'
+      | 'tax_refund';
+    /** @enum {string} */
+    CashDirection: 'in' | 'out';
+    /** @enum {string} */
+    MpItemStatus: 'pending' | 'applied';
+    MpReconciliationItemResponseDto: {
+      /** Format: uuid */
+      itemId: string;
+      kind: components['schemas']['MpDifferenceKind'];
+      /** @description Id del movimiento en Mercado Pago */
+      sourceId: string | null;
+      /** Format: uuid */
+      paymentId: string | null;
+      /** Format: uuid */
+      orderId: string | null;
+      /** Format: date-time */
+      occurredAt: string | null;
+      /**
+       * @description Tipo de movimiento según Mercado Pago
+       * @example payment
+       */
+      mpDescription: string;
+      /** @description Importe según Mercado Pago */
+      mpAmount: number | null;
+      /** @description Importe según la caja */
+      ledgerAmount: number | null;
+      difference: number | null;
+      /** @description Comisión que acompaña al cobro o al retiro */
+      extraAmount: number | null;
+      direction: components['schemas']['CashDirection'] | null;
+      /** @description Se puede asentar desde acá */
+      appliable: boolean;
+      /** @description Pide la caja de destino al aplicarse (retiros) */
+      needsCashBox: boolean;
+      /** @description Sólo la ve el super admin */
+      accountLevel: boolean;
+      note: string;
+      status: components['schemas']['MpItemStatus'];
+      /** Format: date-time */
+      appliedAt: string | null;
+      /** Format: uuid */
+      appliedMovementId: string | null;
+    };
+    MpReconciliationDetailResponseDto: {
+      /** Format: uuid */
+      reconciliationId: string;
+      /**
+       * Format: uuid
+       * @description Distribuidora de la conciliación (la que se manda como `distributorId` al asentar diferencias de la cuenta)
+       */
+      distributorId: string;
+      /**
+       * Format: date
+       * @example 2026-10-01
+       */
+      from: string;
+      /**
+       * Format: date
+       * @example 2026-10-31
+       */
+      to: string;
+      status: components['schemas']['MpReconciliationStatus'];
+      /** @description Por qué falló, si falló */
+      failureReason: string | null;
+      /** @description Mientras espera el reporte: qué pasa (todavía no se consultó, Mercado Pago aún no lo generó, el último error del intento). Null en las demás. */
+      statusNote: string | null;
+      /** @description Null hasta que el reporte está listo */
+      summary: components['schemas']['MpSummaryDto'] | null;
+      /** @description El archivo del reporte está guardado y se puede bajar */
+      hasReport: boolean;
+      /** Format: date-time */
+      readyAt: string | null;
+      /** Format: date-time */
+      lastCheckedAt: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      /** @description La corrida incluye los movimientos de la cuenta que no son de ninguna distribuidora (la pidió un super admin) */
+      includesAccountLevel: boolean;
+      items: components['schemas']['MpReconciliationItemResponseDto'][];
+    };
+    ApplyMpItemDto: {
+      /**
+       * Format: uuid
+       * @description Diferencia a asentar
+       */
+      itemId: string;
+      /**
+       * Format: uuid
+       * @description Caja de destino. Sólo los retiros (`payout`) la piden: la caja a la que llegó el dinero que salió de la billetera.
+       */
+      cashBoxId?: string;
+    };
+    ApplyMpReconciliationDto: {
+      items: components['schemas']['ApplyMpItemDto'][];
+      /**
+       * Format: uuid
+       * @description Distribuidora a la que se asientan las diferencias de la cuenta (retiros, impuestos sueltos): obligatoria si alguna lo es, y tiene que ser la de la corrida. Esas filas se asientan una sola vez en todo el sistema.
+       */
+      distributorId?: string;
+    };
+    MpApplyItemResultDto: {
+      /** Format: uuid */
+      itemId: string;
+      /** @enum {string} */
+      outcome: 'applied' | 'already_applied' | 'failed';
+      /** @description Por qué no se asentó */
+      message: string | null;
+      /** Format: uuid */
+      movementId: string | null;
+    };
+    MpApplyResponseDto: {
+      /** @example 3 */
+      applied: number;
+      /** @example 0 */
+      alreadyApplied: number;
+      /** @example 1 */
+      failed: number;
+      results: components['schemas']['MpApplyItemResultDto'][];
     };
   };
   responses: never;
@@ -26604,7 +26934,8 @@ export interface operations {
           | 'payment_refund'
           | 'order_transfer'
           | 'payment_external_refund'
-          | 'order_deposit';
+          | 'order_deposit'
+          | 'mp_reconciliation';
         from?: string | null;
         to?: string | null;
       };
@@ -39883,7 +40214,8 @@ export interface operations {
           | 'payment_refund'
           | 'order_transfer'
           | 'payment_external_refund'
-          | 'order_deposit';
+          | 'order_deposit'
+          | 'mp_reconciliation';
         from?: string | null;
         to?: string | null;
       };
@@ -40144,6 +40476,265 @@ export interface operations {
         content?: never;
       };
       /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MpReconciliationController_listar: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+        page?: number;
+        /** @description Texto a buscar */
+        term?: string;
+        status?: 'requested' | 'ready' | 'failed';
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MpReconciliationPageDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MpReconciliationController_crear: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateMpReconciliationDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MpReconciliationResponseDto'];
+        };
+      };
+      /** @description Rango inválido o rechazado por Mercado Pago */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya hay una corrida pedida para ese rango */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Mercado Pago no respondió o rechazó la credencial */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MpReconciliationController_detalle: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Conciliación UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MpReconciliationDetailResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MpReconciliationController_aplicar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Conciliación UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ApplyMpReconciliationDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MpApplyResponseDto'];
+        };
+      };
+      /** @description Una diferencia no se puede asentar desde acá o falta la caja de destino */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La corrida o alguna diferencia no existe */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La corrida no está lista o falta configurar la caja de Mercado Pago */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MpReconciliationController_reporte: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Conciliación UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DownloadLinkResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o todavía no tiene el reporte guardado */
       404: {
         headers: {
           [name: string]: unknown;
