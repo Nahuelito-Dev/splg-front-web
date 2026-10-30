@@ -2,6 +2,7 @@ import { AttachmentsPanel } from '../../../common/components/AttachmentsPanel';
 import { Badge, DetailList, Drawer, ErrorState, LoadingState } from '../../../common/components/ui';
 import { usePermissions } from '../../../hooks';
 import { useVehicleAccident } from '../../../services/queries/fleetExpense';
+import { AccidentPayment } from './AccidentPayment';
 import { formatCurrency, formatDateTime } from '../../../utils/format';
 import { ACCIDENT_STATUS, labelOf } from '../../../utils/statusLabels';
 
@@ -56,6 +57,7 @@ export const VehicleAccidentDrawer = ({ accidentId, onClose }: Props) => {
                 : []),
             ]}
           />
+          <AccidentPayment accident={accident} />
           <AttachmentsPanel
             ownerType="vehicle_accident"
             ownerId={accident.accidentId}

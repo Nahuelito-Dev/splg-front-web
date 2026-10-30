@@ -15,12 +15,16 @@ import type {
   FuelEfficiency,
   FuelLoad,
   FuelLoadPage,
+  FuelLoadV2,
   Message,
-  PayFuelLoadFromCashBoxBody,
+  PayAccidentBody,
+  PayFromCashBoxBody,
   PayTrafficFineV2Body,
+  ReceiveReimbursementBody,
   Tire,
   TireMovement,
   TirePage,
+  TireV2,
   TrafficFine,
   TrafficFineV2,
   TrafficFineV2Page,
@@ -30,6 +34,7 @@ import type {
   UploadedReceipt,
   VehicleAccident,
   VehicleAccidentPage,
+  VehicleAccidentV2,
   VoidTrafficFineBody,
 } from './types';
 
@@ -59,8 +64,17 @@ export const listFuelLoads = async (params: PageParams, filters: FuelLoadFilters
 };
 
 /** GET /fleet/fuel-loads/:id: también la anulada (`voidedAt`). */
-export const getFuelLoad = async (id: string): Promise<FuelLoad> => {
-  const { data } = await http.get<FuelLoad>(`/fleet/fuel-loads/${id}`);
+export const getFuelLoad = async (id: string): Promise<FuelLoadV2> => {
+  const { data } = await http.get<FuelLoadV2>(`/fleet/fuel-loads/${id}`, { baseURL: env.apiUrlV2 });
+  return data;
+};
+
+/** POST /v2/fleet/fuel-loads/:id/pay: la carga sale de una caja de efectivo, banco o billetera. */
+export const payFuelLoad = async (id: string, body: PayFromCashBoxBody, key: string): Promise<FuelLoadV2> => {
+  const { data } = await http.post<FuelLoadV2>(`/fleet/fuel-loads/${id}/pay`, body, {
+    baseURL: env.apiUrlV2,
+    headers: idempotencyHeaders(key),
+  });
   return data;
 };
 
@@ -83,12 +97,6 @@ export const voidFuelLoad = async (id: string): Promise<Message> => {
 };
 
 /** GET /cars/:carId/fuel-efficiency (CU-196) */
-/** PATCH /fleet/fuel-loads/:id/cash-payment: la carga del chofer pagada de la caja sale de la caja indicada. */
-export const payFuelLoadFromCashBox = async (id: string, body: PayFuelLoadFromCashBoxBody): Promise<FuelLoad> => {
-  const { data } = await http.patch<FuelLoad>(`/fleet/fuel-loads/${id}/cash-payment`, body);
-  return data;
-};
-
 export const getFuelEfficiency = async (carId: string, range: DayRangeParams): Promise<FuelEfficiency> => {
   const { data } = await http.get<FuelEfficiency>(`/cars/${carId}/fuel-efficiency`, { params: range });
   return data;
@@ -194,8 +202,34 @@ export const listVehicleAccidents = async (
 };
 
 /** GET /fleet/accidents/:id */
-export const getVehicleAccident = async (id: string): Promise<VehicleAccident> => {
-  const { data } = await http.get<VehicleAccident>(`/fleet/accidents/${id}`);
+export const getVehicleAccident = async (id: string): Promise<VehicleAccidentV2> => {
+  const { data } = await http.get<VehicleAccidentV2>(`/fleet/accidents/${id}`, { baseURL: env.apiUrlV2 });
+  return data;
+};
+
+/** POST /v2/fleet/accidents/:id/pay: lo que pagó la empresa (reparación o franquicia) sale de una caja. */
+export const payVehicleAccident = async (
+  id: string,
+  body: PayAccidentBody,
+  key: string,
+): Promise<VehicleAccidentV2> => {
+  const { data } = await http.post<VehicleAccidentV2>(`/fleet/accidents/${id}/pay`, body, {
+    baseURL: env.apiUrlV2,
+    headers: idempotencyHeaders(key),
+  });
+  return data;
+};
+
+/** POST /v2/fleet/accidents/:id/reimbursement: el reintegro del seguro entra a una caja. */
+export const receiveAccidentReimbursement = async (
+  id: string,
+  body: ReceiveReimbursementBody,
+  key: string,
+): Promise<VehicleAccidentV2> => {
+  const { data } = await http.post<VehicleAccidentV2>(`/fleet/accidents/${id}/reimbursement`, body, {
+    baseURL: env.apiUrlV2,
+    headers: idempotencyHeaders(key),
+  });
   return data;
 };
 
@@ -261,8 +295,17 @@ export const listCarTires = async (carId: string, params: PageParams): Promise<T
 };
 
 /** GET /fleet/tires/:id: con su historial de movimientos (`events`). */
-export const getTire = async (id: string): Promise<Tire> => {
-  const { data } = await http.get<Tire>(`/fleet/tires/${id}`);
+export const getTire = async (id: string): Promise<TireV2> => {
+  const { data } = await http.get<TireV2>(`/fleet/tires/${id}`, { baseURL: env.apiUrlV2 });
+  return data;
+};
+
+/** POST /v2/fleet/tires/:id/pay: la compra del neumático sale de una caja de efectivo, banco o billetera. */
+export const payTire = async (id: string, body: PayFromCashBoxBody, key: string): Promise<TireV2> => {
+  const { data } = await http.post<TireV2>(`/fleet/tires/${id}/pay`, body, {
+    baseURL: env.apiUrlV2,
+    headers: idempotencyHeaders(key),
+  });
   return data;
 };
 

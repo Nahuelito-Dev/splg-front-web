@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { fleetTaskCloseSchema, fleetTaskCreateSchema, fleetTaskDetailsSchema } from './fleetTaskSchema';
+import {
+  closePaymentErrors,
+  fleetTaskCloseSchema,
+  fleetTaskCreateSchema,
+  fleetTaskDetailsSchema,
+} from './fleetTaskSchema';
 
 /** Reloj fijo: las reglas de «no futuro» y «no pasado» dependen de la hora de ejecución. */
 const NOW = new Date('2026-10-21T15:00:00.000Z');
@@ -118,5 +123,20 @@ describe('fleetTaskCloseSchema: tolerancia', () => {
     expect(fleetTaskCloseSchema.safeParse({ performedAt: '2026-10-22' }).success).toBe(true);
     vi.setSystemTime(new Date('2026-10-21T23:54:00.000Z'));
     expect(fleetTaskCloseSchema.safeParse({ performedAt: '2026-10-22' }).success).toBe(false);
+  });
+});
+
+describe('closePaymentErrors («Lo pagué ahora»)', () => {
+  it('sin pagar ahora no pide nada', () => {
+    expect(closePaymentErrors(false, undefined, '')).toBeNull();
+  });
+
+  it('pagar ahora necesita costo mayor a cero y caja', () => {
+    expect(closePaymentErrors(true, undefined, '')).toEqual({
+      cost: 'Para pagarla ahora ingresá el costo',
+      cashBoxId: 'Elegí la caja de la que sale el pago',
+    });
+    expect(closePaymentErrors(true, 0, 'caja-1')).toEqual({ cost: 'Para pagarla ahora ingresá el costo' });
+    expect(closePaymentErrors(true, 1500, 'caja-1')).toBeNull();
   });
 });

@@ -1,5 +1,6 @@
 import { Badge, DetailList, Drawer, ErrorState, LoadingState, CardHeader } from '../../../common/components/ui';
 import { useTire } from '../../../services/queries/fleetExpense';
+import { TirePayment } from './TirePayment';
 import { formatCurrency, formatDateTime, formatNumber } from '../../../utils/format';
 import { TIRE_EVENT_TYPE, TIRE_STATUS, labelOf } from '../../../utils/statusLabels';
 
@@ -32,6 +33,7 @@ export const TireDrawer = ({ tireId, onClose }: Props) => {
               { label: 'Km al montar', value: formatNumber(tire.mountedOdometerKm), mono: true },
             ]}
           />
+          <TirePayment tire={tire} />
           <section aria-label="Historial de movimientos">
             <CardHeader title="Historial" as="h3" className="mb-2" />
             {(tire.events ?? []).length === 0 ? (

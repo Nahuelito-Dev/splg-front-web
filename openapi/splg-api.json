@@ -12958,7 +12958,11 @@
                                 "box_transfer",
                                 "reversal",
                                 "order_payment",
-                                "insurance_installment"
+                                "insurance_installment",
+                                "maintenance_task",
+                                "tire",
+                                "vehicle_accident",
+                                "insurance_reimbursement"
                             ]
                         }
                     },
@@ -15829,6 +15833,308 @@
                 "summary": "Borrar un adjunto",
                 "tags": [
                     "Fleet · Tasks"
+                ]
+            }
+        },
+        "/api/v2/fleet/tasks": {
+            "get": {
+                "operationId": "FleetTaskV2Controller_findAll",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "maximum": 100,
+                            "default": 10,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 0,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 1,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "term",
+                        "required": false,
+                        "in": "query",
+                        "description": "Texto a buscar",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "carId",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "deliveryId",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "employeeId",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "planId",
+                        "required": false,
+                        "in": "query",
+                        "description": "Sólo las tareas de este plan",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "forecast",
+                                "scheduled",
+                                "in_progress",
+                                "done",
+                                "overdue",
+                                "cancelled"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FleetTaskV2PageDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Listar tareas, con su estado de pago",
+                "tags": [
+                    "Fleet · Tasks (v2)"
+                ]
+            }
+        },
+        "/api/v2/fleet/tasks/{id}": {
+            "get": {
+                "operationId": "FleetTaskV2Controller_findOne",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Task UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FleetTaskV2ResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ver una tarea, con su estado de pago",
+                "tags": [
+                    "Fleet · Tasks (v2)"
+                ]
+            }
+        },
+        "/api/v2/fleet/tasks/{id}/close": {
+            "post": {
+                "description": "Igual que el cierre v1 (`PATCH /fleet/tasks/:id/close`) y, con `payment`, el costo sale de la caja elegida en la misma transacción.",
+                "operationId": "FleetTaskV2Controller_close",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Task UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CloseFleetTaskV2Dto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FleetTaskV2ResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Fecha futura, `payment` sin costo, caja que no admite el pago o `paidAt` futuro"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Tarea o caja no encontrada"
+                    },
+                    "409": {
+                        "description": "La tarea ya está hecha o cancelada, o la caja no tiene sesión abierta o saldo"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Registrar que el mantenimiento se hizo, y pagarlo en el acto",
+                "tags": [
+                    "Fleet · Tasks (v2)"
+                ]
+            }
+        },
+        "/api/v2/fleet/tasks/{id}/pay": {
+            "post": {
+                "description": "Egreso de la caja elegida (efectivo, banco o billetera), categoría «Mantenimiento de flota». Una sola vez por tarea; `amount` por omisión es el costo.",
+                "operationId": "FleetTaskV2Controller_pay",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Task UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PayFleetTaskDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FleetTaskV2ResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Importe mayor que el costo, `paidAt` futuro o caja que no admite el pago"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Tarea o caja no encontrada"
+                    },
+                    "409": {
+                        "description": "La tarea no está hecha, no tiene costo, ya está paga, o la caja no tiene sesión abierta o saldo"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Registrar el pago de una tarea hecha",
+                "tags": [
+                    "Fleet · Tasks (v2)"
                 ]
             }
         },
@@ -24352,6 +24658,690 @@
                 ]
             }
         },
+        "/api/v2/fleet/fuel-loads": {
+            "get": {
+                "operationId": "FuelLoadV2Controller_findAll",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "maximum": 100,
+                            "default": 10,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 0,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "carId",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "employeeId",
+                        "required": false,
+                        "in": "query",
+                        "description": "Legajo de quien cargó",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "date",
+                            "nullable": true,
+                            "example": "2026-10-01",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "date",
+                            "nullable": true,
+                            "example": "2026-10-31",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "anomaly",
+                        "required": false,
+                        "in": "query",
+                        "description": "Sólo las marcadas como anómalas (o sólo las que no)",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FuelLoadV2PageDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Filtro inválido"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Consultar las cargas vigentes, con su estado de pago",
+                "tags": [
+                    "Fleet · Combustible (v2)"
+                ]
+            }
+        },
+        "/api/v2/fleet/fuel-loads/{id}": {
+            "get": {
+                "operationId": "FuelLoadV2Controller_findOne",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Carga UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FuelLoadV2ResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ver una carga (también la anulada), con su pago",
+                "tags": [
+                    "Fleet · Combustible (v2)"
+                ]
+            }
+        },
+        "/api/v2/fleet/fuel-loads/{id}/pay": {
+            "post": {
+                "description": "Egreso del importe de la carga de la caja elegida (efectivo, banco o billetera), categoría «Combustible». Sirve para la carga de tarjeta o cuenta de combustible y para la de la caja que no se asentó. La que pagó el chofer con su efectivo (`driver_cash`) se salda en su rendición: responde 409.",
+                "operationId": "FuelLoadV2Controller_pay",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Carga UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PayFromCashBoxDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FuelLoadV2ResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "`paidAt` futuro o anterior a la carga, o caja que no admite el pago"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora (también la caja)"
+                    },
+                    "409": {
+                        "description": "Ya salió de una caja, está anulada, la pagó el chofer con su efectivo, es anterior al asiento de caja, o la caja no tiene una sesión abierta o no alcanza el saldo"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Pagar una carga de combustible desde una caja",
+                "tags": [
+                    "Fleet · Combustible (v2)"
+                ]
+            }
+        },
+        "/api/v2/fleet/tires": {
+            "get": {
+                "operationId": "TireV2Controller_findAll",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "maximum": 100,
+                            "default": 10,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 0,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "in_stock",
+                                "mounted",
+                                "retired"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "carId",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TireV2PageDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Listar los neumáticos, con su estado de pago",
+                "tags": [
+                    "Fleet · Neumáticos (v2)"
+                ]
+            }
+        },
+        "/api/v2/fleet/tires/{id}": {
+            "get": {
+                "operationId": "TireV2Controller_findOne",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Neumático UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TireV2ResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ver un neumático con su historial y su pago",
+                "tags": [
+                    "Fleet · Neumáticos (v2)"
+                ]
+            }
+        },
+        "/api/v2/fleet/tires/{id}/pay": {
+            "post": {
+                "description": "Egreso del costo del neumático de la caja elegida (efectivo, banco o billetera), categoría «Neumáticos». Una sola vez por neumático.",
+                "operationId": "TireV2Controller_pay",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Neumático UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PayFromCashBoxDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TireV2ResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "`paidAt` futuro o caja que no admite el pago"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora (también la caja)"
+                    },
+                    "409": {
+                        "description": "Ya está pago, no tiene costo, o la caja no tiene una sesión abierta o no alcanza el saldo"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Pagar la compra de un neumático desde una caja",
+                "tags": [
+                    "Fleet · Neumáticos (v2)"
+                ]
+            }
+        },
+        "/api/v2/fleet/accidents": {
+            "get": {
+                "operationId": "VehicleAccidentV2Controller_findAll",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "maximum": 100,
+                            "default": 10,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 0,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "carId",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "reported",
+                                "under_review",
+                                "repairing",
+                                "closed"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "date",
+                            "nullable": true,
+                            "example": "2026-10-01",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "date",
+                            "nullable": true,
+                            "example": "2026-10-31",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VehicleAccidentV2PageDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Filtro inválido"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Consultar los siniestros, con su pago y reintegro",
+                "tags": [
+                    "Fleet · Siniestros (v2)"
+                ]
+            }
+        },
+        "/api/v2/fleet/accidents/{id}": {
+            "get": {
+                "operationId": "VehicleAccidentV2Controller_findOne",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Siniestro UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VehicleAccidentV2ResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ver un siniestro, con su pago y reintegro",
+                "tags": [
+                    "Fleet · Siniestros (v2)"
+                ]
+            }
+        },
+        "/api/v2/fleet/accidents/{id}/pay": {
+            "post": {
+                "description": "Egreso de la caja elegida (efectivo, banco o billetera), categoría «Siniestros»: la reparación o la franquicia. Uno por siniestro, abierto o cerrado; con el siniestro cerrado, `amount` no puede superar el costo de la reparación (o la franquicia, si es mayor).",
+                "operationId": "VehicleAccidentV2Controller_pay",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Siniestro UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PayAccidentDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VehicleAccidentV2ResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Importe mayor que lo cargado al cerrar, `paidAt` futuro o anterior al siniestro, o caja que no admite el pago"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora (también la caja)"
+                    },
+                    "409": {
+                        "description": "Ya tiene su pago registrado, o la caja no tiene una sesión abierta o no alcanza el saldo"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Registrar lo que pagó la empresa por el siniestro",
+                "tags": [
+                    "Fleet · Siniestros (v2)"
+                ]
+            }
+        },
+        "/api/v2/fleet/accidents/{id}/reimbursement": {
+            "post": {
+                "description": "Ingreso a la caja elegida (efectivo, banco o billetera), categoría «Reintegros de seguros». Uno por siniestro; con el siniestro cerrado, `amount` no puede superar el reintegro cargado al cerrar.",
+                "operationId": "VehicleAccidentV2Controller_reimbursement",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Siniestro UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ReceiveReimbursementDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VehicleAccidentV2ResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Importe mayor que el reintegro cargado al cerrar, `receivedAt` futuro o anterior al siniestro, o caja que no admite el cobro"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora (también la caja)"
+                    },
+                    "409": {
+                        "description": "Ya tiene su reintegro registrado, se cerró sin reintegro, o la caja exige una sesión abierta"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Registrar el reintegro que pagó el seguro",
+                "tags": [
+                    "Fleet · Siniestros (v2)"
+                ]
+            }
+        },
         "/api/v2/insurers": {
             "get": {
                 "description": "Con `term` filtra por nombre. Orden alfabético.",
@@ -27103,6 +28093,253 @@
                 "summary": "Marcar la recepción como pagada o impaga",
                 "tags": [
                     "Compras · Recepciones"
+                ]
+            }
+        },
+        "/api/v2/purchase-receipts": {
+            "get": {
+                "operationId": "PurchaseReceiptV2Controller_recepciones",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "maximum": 100,
+                            "default": 10,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 1,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "supplierId",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "purchaseOrderId",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "paymentStatus",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "unpaid",
+                                "paid"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "confirmed",
+                                "voided"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "date",
+                            "nullable": true,
+                            "example": "2026-10-01",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "date",
+                            "nullable": true,
+                            "example": "2026-10-31",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PurchaseReceiptV2PageDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Listar las recepciones, con su estado de pago",
+                "tags": [
+                    "Compras · Recepciones (v2)"
+                ]
+            }
+        },
+        "/api/v2/purchase-receipts/{id}": {
+            "get": {
+                "operationId": "PurchaseReceiptV2Controller_recepcion",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Recepción UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PurchaseReceiptV2ResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ver una recepción, con su estado de pago",
+                "tags": [
+                    "Compras · Recepciones (v2)"
+                ]
+            }
+        },
+        "/api/v2/purchase-receipts/{id}/pay": {
+            "post": {
+                "description": "Egreso del total de la recepción de la caja elegida (efectivo, banco o billetera), categoría «Compra de mercadería», en la misma transacción. Sólo una recepción impaga: para corregir un pago se la marca impaga (`PATCH /purchase-receipts/:id/payment-status`), que asienta el contraasiento. **Exige** `Idempotency-Key`.",
+                "operationId": "PurchaseReceiptV2Controller_pay",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Recepción UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "idempotency-key",
+                        "required": true,
+                        "in": "header",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "Idempotency-Key",
+                        "in": "header",
+                        "description": "UUID v4 de la operación. Obligatoria: sin ella responde 400 (un reintento duplicaría el movimiento).",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PayFromCashBoxDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PurchaseReceiptV2ResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Sin `Idempotency-Key`, recepción anulada, `paidAt` futuro o caja que no admite el pago"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora (también la caja)"
+                    },
+                    "409": {
+                        "description": "Ya está pagada, o la caja no tiene una sesión abierta o no alcanza el saldo"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Pagar una recepción desde una caja",
+                "tags": [
+                    "Compras · Recepciones (v2)"
                 ]
             }
         },
@@ -35958,7 +37195,11 @@
                             "box_transfer",
                             "reversal",
                             "order_payment",
-                            "insurance_installment"
+                            "insurance_installment",
+                            "maintenance_task",
+                            "tire",
+                            "vehicle_accident",
+                            "insurance_reimbursement"
                         ]
                     },
                     "referenceId": {
@@ -36271,7 +37512,11 @@
                             "fuel",
                             "traffic_fine",
                             "order_payment",
-                            "insurance"
+                            "insurance",
+                            "fleet_maintenance",
+                            "tires",
+                            "vehicle_accident",
+                            "insurance_reimbursement"
                         ],
                         "nullable": true,
                         "description": "Las de sistema no se editan ni se desactivan"
@@ -38142,6 +39387,287 @@
                         "description": "Por qué se cancela"
                     }
                 }
+            },
+            "FleetTaskV2ResponseDto": {
+                "type": "object",
+                "properties": {
+                    "taskId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "planId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "plan": {
+                        "$ref": "#/components/schemas/FleetPlanResponseDto"
+                    },
+                    "distributorId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "carId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "deliveryId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "employeeId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "forecast",
+                            "scheduled",
+                            "in_progress",
+                            "done",
+                            "overdue",
+                            "cancelled"
+                        ]
+                    },
+                    "validFrom": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "dueAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "dueKm": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "scheduledAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "performedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "odometerKm": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "cost": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "provider": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "referenceNumber": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "category": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "notes": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "details": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "nullable": true,
+                        "description": "Datos propios del tipo de documento (según `plan.documentKind`)"
+                    },
+                    "expirationStatus": {
+                        "type": "string",
+                        "enum": [
+                            "current",
+                            "due_soon",
+                            "expired"
+                        ],
+                        "nullable": true,
+                        "description": "null si no tiene fecha límite (p. ej. un service todavía sin fecha estimada) o si ya está cerrada/cancelada"
+                    },
+                    "daysUntilDue": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Días hasta el vencimiento (negativo si ya venció)"
+                    },
+                    "blocks": {
+                        "type": "boolean",
+                        "description": "Si esta tarea, vencida, inhabilita al vehículo/chofer"
+                    },
+                    "attachments": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/FleetTaskAttachmentResponseDto"
+                        }
+                    },
+                    "isPaid": {
+                        "type": "boolean",
+                        "description": "Si la tarea ya salió de una caja"
+                    },
+                    "cashMovementId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "paidAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "paidAmount": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "payable": {
+                        "type": "boolean",
+                        "description": "Si se puede pagar desde una caja con `POST /fleet/tasks/:id/pay`: hecha, con costo, sin pagar y que no sea de seguro"
+                    },
+                    "notPayableReason": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Por qué no se paga por acá, cuando es por la naturaleza de la tarea (el seguro se paga por sus cuotas)"
+                    }
+                },
+                "required": [
+                    "taskId",
+                    "planId",
+                    "distributorId",
+                    "carId",
+                    "deliveryId",
+                    "employeeId",
+                    "status",
+                    "validFrom",
+                    "dueAt",
+                    "dueKm",
+                    "scheduledAt",
+                    "performedAt",
+                    "odometerKm",
+                    "cost",
+                    "provider",
+                    "referenceNumber",
+                    "category",
+                    "notes",
+                    "details",
+                    "expirationStatus",
+                    "daysUntilDue",
+                    "blocks",
+                    "isPaid",
+                    "cashMovementId",
+                    "paidAt",
+                    "paidAmount",
+                    "payable",
+                    "notPayableReason"
+                ]
+            },
+            "FleetTaskV2PageDto": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/FleetTaskV2ResponseDto"
+                        }
+                    },
+                    "total": {
+                        "type": "number"
+                    }
+                },
+                "required": [
+                    "data",
+                    "total"
+                ]
+            },
+            "PagoAlCerrar": {
+                "type": "object",
+                "properties": {
+                    "cashBoxId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Caja de la que sale el pago: efectivo, banco o billetera de la distribuidora"
+                    },
+                    "paidAt": {
+                        "type": "string",
+                        "example": "2026-10-28T14:30:00-03:00",
+                        "description": "Cuándo se pagó; por omisión, ahora. No puede ser futura"
+                    }
+                },
+                "required": [
+                    "cashBoxId"
+                ]
+            },
+            "CloseFleetTaskV2Dto": {
+                "type": "object",
+                "properties": {
+                    "performedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2026-09-26T13:00:00.000Z",
+                        "description": "Cuándo se hizo (o se renovó)"
+                    },
+                    "odometerKm": {
+                        "type": "number",
+                        "description": "Kilometraje del vehículo al hacerlo"
+                    },
+                    "cost": {
+                        "type": "number",
+                        "example": 45000.5
+                    },
+                    "provider": {
+                        "type": "string",
+                        "description": "Si cambió respecto al de la tarea"
+                    },
+                    "notes": {
+                        "type": "string"
+                    },
+                    "payment": {
+                        "description": "Paga la tarea en el mismo acto del cierre (necesita un costo mayor que cero)",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/PagoAlCerrar"
+                            }
+                        ]
+                    }
+                },
+                "required": [
+                    "performedAt"
+                ]
+            },
+            "PayFleetTaskDto": {
+                "type": "object",
+                "properties": {
+                    "cashBoxId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Caja de la que sale el pago: efectivo, banco o billetera de la distribuidora"
+                    },
+                    "paidAt": {
+                        "type": "string",
+                        "example": "2026-10-28T14:30:00-03:00",
+                        "description": "Cuándo se pagó (fecha o fecha y hora ISO 8601); no puede ser futura"
+                    },
+                    "amount": {
+                        "type": "number",
+                        "example": 45000.5,
+                        "description": "Lo pagado; por omisión el costo de la tarea, y no puede superarlo"
+                    }
+                },
+                "required": [
+                    "cashBoxId",
+                    "paidAt"
+                ]
             },
             "FleetExpirationEntryDto": {
                 "type": "object",
@@ -44021,6 +45547,567 @@
                     "costPerKm"
                 ]
             },
+            "FuelLoadV2ResponseDto": {
+                "type": "object",
+                "properties": {
+                    "fuelLoadId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "distributorId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "carId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "carPatent": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "AB123CD"
+                    },
+                    "employeeId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "employeeName": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "loadedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "fuelType": {
+                        "type": "string",
+                        "enum": [
+                            "diesel",
+                            "gasoline",
+                            "cng",
+                            "lpg"
+                        ]
+                    },
+                    "liters": {
+                        "type": "number"
+                    },
+                    "unitPrice": {
+                        "type": "number"
+                    },
+                    "totalAmount": {
+                        "type": "number"
+                    },
+                    "odometerKm": {
+                        "type": "number"
+                    },
+                    "isFullTank": {
+                        "type": "boolean"
+                    },
+                    "station": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "paymentMethod": {
+                        "type": "string",
+                        "enum": [
+                            "cash_box",
+                            "driver_cash",
+                            "card",
+                            "fuel_account"
+                        ]
+                    },
+                    "receiptNumber": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "cashMovementId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true,
+                        "description": "Salida de caja del pago (`cash_box`); `null` mientras está pendiente de asentar o si pagó el chofer"
+                    },
+                    "registeredByDriver": {
+                        "type": "boolean",
+                        "description": "La registró el chofer desde su app"
+                    },
+                    "cashPaymentLegacy": {
+                        "type": "boolean",
+                        "description": "Carga `cash_box` anterior al asiento de caja: no se puede asentar"
+                    },
+                    "anomaly": {
+                        "type": "boolean",
+                        "description": "El consumo del tramo se apartó más de un 25 % del habitual"
+                    },
+                    "notes": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "odometerCorrectionNote": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "voidedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "isPaid": {
+                        "type": "boolean",
+                        "description": "Si la carga ya salió de una caja"
+                    },
+                    "paidAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "isPayable": {
+                        "type": "boolean",
+                        "description": "Si se puede pagar desde una caja con `POST /fleet/fuel-loads/:id/pay` (no está paga ni anulada, no la pagó el chofer con su efectivo ni es anterior al asiento de caja)"
+                    }
+                },
+                "required": [
+                    "fuelLoadId",
+                    "distributorId",
+                    "carId",
+                    "carPatent",
+                    "employeeId",
+                    "employeeName",
+                    "loadedAt",
+                    "fuelType",
+                    "liters",
+                    "unitPrice",
+                    "totalAmount",
+                    "odometerKm",
+                    "isFullTank",
+                    "station",
+                    "paymentMethod",
+                    "receiptNumber",
+                    "cashMovementId",
+                    "registeredByDriver",
+                    "cashPaymentLegacy",
+                    "anomaly",
+                    "notes",
+                    "odometerCorrectionNote",
+                    "voidedAt",
+                    "createdAt",
+                    "isPaid",
+                    "paidAt",
+                    "isPayable"
+                ]
+            },
+            "FuelLoadV2PageDto": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/FuelLoadV2ResponseDto"
+                        }
+                    },
+                    "total": {
+                        "type": "number",
+                        "example": 12
+                    },
+                    "totalLiters": {
+                        "type": "number",
+                        "example": 530.25
+                    },
+                    "totalAmount": {
+                        "type": "number",
+                        "example": 556762.5
+                    }
+                },
+                "required": [
+                    "data",
+                    "total",
+                    "totalLiters",
+                    "totalAmount"
+                ]
+            },
+            "PayFromCashBoxDto": {
+                "type": "object",
+                "properties": {
+                    "cashBoxId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Caja de la que sale el pago: efectivo, banco o billetera de la distribuidora"
+                    },
+                    "paidAt": {
+                        "type": "string",
+                        "example": "2026-10-28T14:30:00-03:00",
+                        "description": "Cuándo se pagó (fecha o fecha y hora ISO 8601); no puede ser futura"
+                    }
+                },
+                "required": [
+                    "cashBoxId",
+                    "paidAt"
+                ]
+            },
+            "TireV2ResponseDto": {
+                "type": "object",
+                "properties": {
+                    "tireId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "distributorId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "serialNumber": {
+                        "type": "string"
+                    },
+                    "brand": {
+                        "type": "string"
+                    },
+                    "size": {
+                        "type": "string"
+                    },
+                    "cost": {
+                        "type": "number"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "in_stock",
+                            "mounted",
+                            "retired"
+                        ]
+                    },
+                    "carId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "carPatent": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "position": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "DI"
+                    },
+                    "mountedOdometerKm": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "kmTraveled": {
+                        "type": "number",
+                        "description": "Km de los montajes ya cerrados"
+                    },
+                    "retreadCount": {
+                        "type": "number"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "events": {
+                        "description": "Su historial, del más reciente al más antiguo (sólo al abrir un neumático)",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TireEventResponseDto"
+                        }
+                    },
+                    "isPaid": {
+                        "type": "boolean",
+                        "description": "Si la compra ya salió de una caja"
+                    },
+                    "cashMovementId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "paidAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "tireId",
+                    "distributorId",
+                    "serialNumber",
+                    "brand",
+                    "size",
+                    "cost",
+                    "status",
+                    "carId",
+                    "carPatent",
+                    "position",
+                    "mountedOdometerKm",
+                    "kmTraveled",
+                    "retreadCount",
+                    "createdAt",
+                    "isPaid",
+                    "cashMovementId",
+                    "paidAt"
+                ]
+            },
+            "TireV2PageDto": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TireV2ResponseDto"
+                        }
+                    },
+                    "total": {
+                        "type": "number",
+                        "example": 8
+                    }
+                },
+                "required": [
+                    "data",
+                    "total"
+                ]
+            },
+            "VehicleAccidentV2ResponseDto": {
+                "type": "object",
+                "properties": {
+                    "accidentId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "distributorId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "carId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "carPatent": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "employeeId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "employeeName": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "occurredAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "location": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "-27.3671,-55.8961"
+                    },
+                    "address": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "injuries": {
+                        "type": "boolean"
+                    },
+                    "thirdPartiesInvolved": {
+                        "type": "boolean"
+                    },
+                    "hazmatRelease": {
+                        "type": "boolean"
+                    },
+                    "policeReportNumber": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "insurerClaimNumber": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "reported",
+                            "under_review",
+                            "repairing",
+                            "closed"
+                        ]
+                    },
+                    "vehicleUnusable": {
+                        "type": "boolean"
+                    },
+                    "repairCost": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "insurerReimbursement": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "deductibleAmount": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "netCost": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Costo de reparación menos reintegro del seguro; sólo cerrado"
+                    },
+                    "closedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "isPaid": {
+                        "type": "boolean",
+                        "description": "Si ya se registró lo que pagó la empresa"
+                    },
+                    "paymentCashMovementId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "paymentPaidAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "paymentAmount": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "isReimbursed": {
+                        "type": "boolean",
+                        "description": "Si ya se registró el reintegro del seguro"
+                    },
+                    "reimbursementCashMovementId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "reimbursementReceivedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "reimbursementAmount": {
+                        "type": "number",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "accidentId",
+                    "distributorId",
+                    "carId",
+                    "carPatent",
+                    "employeeId",
+                    "employeeName",
+                    "occurredAt",
+                    "location",
+                    "address",
+                    "description",
+                    "injuries",
+                    "thirdPartiesInvolved",
+                    "hazmatRelease",
+                    "policeReportNumber",
+                    "insurerClaimNumber",
+                    "status",
+                    "vehicleUnusable",
+                    "repairCost",
+                    "insurerReimbursement",
+                    "deductibleAmount",
+                    "netCost",
+                    "closedAt",
+                    "createdAt",
+                    "isPaid",
+                    "paymentCashMovementId",
+                    "paymentPaidAt",
+                    "paymentAmount",
+                    "isReimbursed",
+                    "reimbursementCashMovementId",
+                    "reimbursementReceivedAt",
+                    "reimbursementAmount"
+                ]
+            },
+            "VehicleAccidentV2PageDto": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/VehicleAccidentV2ResponseDto"
+                        }
+                    },
+                    "total": {
+                        "type": "number",
+                        "example": 3
+                    }
+                },
+                "required": [
+                    "data",
+                    "total"
+                ]
+            },
+            "PayAccidentDto": {
+                "type": "object",
+                "properties": {
+                    "cashBoxId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Caja de la que sale el pago: efectivo, banco o billetera de la distribuidora"
+                    },
+                    "paidAt": {
+                        "type": "string",
+                        "example": "2026-10-28T14:30:00-03:00",
+                        "description": "Cuándo se pagó (fecha o fecha y hora ISO 8601); no puede ser futura"
+                    },
+                    "amount": {
+                        "type": "number",
+                        "example": 85000,
+                        "description": "Importe pagado. Con el siniestro cerrado no puede superar el costo de la reparación (o la franquicia, si es mayor)"
+                    }
+                },
+                "required": [
+                    "cashBoxId",
+                    "paidAt",
+                    "amount"
+                ]
+            },
+            "ReceiveReimbursementDto": {
+                "type": "object",
+                "properties": {
+                    "cashBoxId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Caja en la que entra el dinero: efectivo, banco o billetera de la distribuidora"
+                    },
+                    "receivedAt": {
+                        "type": "string",
+                        "example": "2026-10-28T14:30:00-03:00",
+                        "description": "Cuándo se recibió (fecha o fecha y hora ISO 8601); no puede ser futura ni anterior al siniestro"
+                    },
+                    "amount": {
+                        "type": "number",
+                        "example": 60000,
+                        "description": "Importe recibido. Con el siniestro cerrado no puede superar el reintegro cargado al cerrar"
+                    }
+                },
+                "required": [
+                    "cashBoxId",
+                    "receivedAt",
+                    "amount"
+                ]
+            },
             "InsurerResponseDto": {
                 "type": "object",
                 "properties": {
@@ -46405,6 +48492,285 @@
                 },
                 "required": [
                     "paymentStatus"
+                ]
+            },
+            "PurchaseReceiptV2SummaryDto": {
+                "type": "object",
+                "properties": {
+                    "receiptId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "number": {
+                        "type": "number",
+                        "example": 3,
+                        "description": "Número interno correlativo"
+                    },
+                    "supplierId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "supplierName": {
+                        "type": "string",
+                        "example": "Gas del Litoral S.A."
+                    },
+                    "purchaseOrderId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "purchaseOrderNumber": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": 7
+                    },
+                    "warehouseId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "warehouseName": {
+                        "type": "string",
+                        "example": "Depósito central"
+                    },
+                    "supplierDocumentType": {
+                        "type": "string",
+                        "enum": [
+                            "delivery_note",
+                            "invoice"
+                        ]
+                    },
+                    "supplierDocumentNumber": {
+                        "type": "string",
+                        "example": "0001-00004567"
+                    },
+                    "receivedAt": {
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "totalAmount": {
+                        "type": "number",
+                        "example": 130012.5
+                    },
+                    "paymentStatus": {
+                        "type": "string",
+                        "enum": [
+                            "unpaid",
+                            "paid"
+                        ]
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "confirmed",
+                            "voided"
+                        ]
+                    },
+                    "isPaid": {
+                        "type": "boolean",
+                        "description": "Si la recepción figura como pagada"
+                    },
+                    "cashMovementId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true,
+                        "description": "Salida de caja del pago; `null` si no salió de una caja"
+                    },
+                    "paidAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "Cuándo se pagó; `null` si está impaga o figura pagada desde antes de registrar la fecha"
+                    }
+                },
+                "required": [
+                    "receiptId",
+                    "number",
+                    "supplierId",
+                    "supplierName",
+                    "purchaseOrderId",
+                    "purchaseOrderNumber",
+                    "warehouseId",
+                    "warehouseName",
+                    "supplierDocumentType",
+                    "supplierDocumentNumber",
+                    "receivedAt",
+                    "totalAmount",
+                    "paymentStatus",
+                    "status",
+                    "isPaid",
+                    "cashMovementId",
+                    "paidAt"
+                ]
+            },
+            "PurchaseReceiptV2PageDto": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PurchaseReceiptV2SummaryDto"
+                        }
+                    },
+                    "total": {
+                        "type": "number",
+                        "example": 12
+                    }
+                },
+                "required": [
+                    "data",
+                    "total"
+                ]
+            },
+            "PurchaseReceiptV2ResponseDto": {
+                "type": "object",
+                "properties": {
+                    "receiptId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "number": {
+                        "type": "number",
+                        "example": 3,
+                        "description": "Número interno correlativo"
+                    },
+                    "supplierId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "supplierName": {
+                        "type": "string",
+                        "example": "Gas del Litoral S.A."
+                    },
+                    "purchaseOrderId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "purchaseOrderNumber": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": 7
+                    },
+                    "warehouseId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "warehouseName": {
+                        "type": "string",
+                        "example": "Depósito central"
+                    },
+                    "supplierDocumentType": {
+                        "type": "string",
+                        "enum": [
+                            "delivery_note",
+                            "invoice"
+                        ]
+                    },
+                    "supplierDocumentNumber": {
+                        "type": "string",
+                        "example": "0001-00004567"
+                    },
+                    "receivedAt": {
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "totalAmount": {
+                        "type": "number",
+                        "example": 130012.5
+                    },
+                    "paymentStatus": {
+                        "type": "string",
+                        "enum": [
+                            "unpaid",
+                            "paid"
+                        ]
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "confirmed",
+                            "voided"
+                        ]
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PurchaseReceiptItemResponseDto"
+                        }
+                    },
+                    "notes": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "voidReason": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "voidedAt": {
+                        "format": "date-time",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "receivedByUserId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "batchId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Lote del libro de movimientos (GET /stock/movements?batchId=)"
+                    },
+                    "voidBatchId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "cashMovementId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true,
+                        "description": "Salida de caja del pago en efectivo; `null` si no se pagó en efectivo. Al marcar la recepción como impaga se asienta el contraasiento y vuelve a `null`"
+                    },
+                    "createdAt": {
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "isPaid": {
+                        "type": "boolean",
+                        "description": "Si la recepción figura como pagada"
+                    },
+                    "paidAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "receiptId",
+                    "number",
+                    "supplierId",
+                    "supplierName",
+                    "purchaseOrderId",
+                    "purchaseOrderNumber",
+                    "warehouseId",
+                    "warehouseName",
+                    "supplierDocumentType",
+                    "supplierDocumentNumber",
+                    "receivedAt",
+                    "totalAmount",
+                    "paymentStatus",
+                    "status",
+                    "items",
+                    "notes",
+                    "voidReason",
+                    "voidedAt",
+                    "receivedByUserId",
+                    "batchId",
+                    "voidBatchId",
+                    "cashMovementId",
+                    "createdAt",
+                    "isPaid",
+                    "paidAt"
                 ]
             },
             "DashboardCashBoxDto": {

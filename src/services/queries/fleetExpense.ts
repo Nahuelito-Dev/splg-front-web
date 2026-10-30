@@ -18,7 +18,10 @@ import {
   listTires,
   listTrafficFines,
   listVehicleAccidents,
-  payFuelLoadFromCashBox,
+  payFuelLoad,
+  payTire,
+  payVehicleAccident,
+  receiveAccidentReimbursement,
   payTrafficFine,
   uploadFineReceipt,
   reactivateCar,
@@ -43,7 +46,9 @@ import type {
   CreateTireEventBody,
   CreateTrafficFineV2Body,
   CreateVehicleAccidentBody,
-  PayFuelLoadFromCashBoxBody,
+  PayAccidentBody,
+  PayFromCashBoxBody,
+  ReceiveReimbursementBody,
   PayTrafficFineV2Body,
   UpdateFuelLoadBody,
   UpdateTrafficFineV2Body,
@@ -109,15 +114,6 @@ export const useUpdateFuelLoad = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, body }: { id: string; body: UpdateFuelLoadBody }) => updateFuelLoad(id, body),
-    onSuccess: () =>
-      Promise.all([queryClient.invalidateQueries({ queryKey: queryKeys.fuelLoads.all }), refreshCar(queryClient)]),
-  });
-};
-
-export const usePayFuelLoadFromCashBox = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: PayFuelLoadFromCashBoxBody }) => payFuelLoadFromCashBox(id, body),
     onSuccess: () =>
       Promise.all([queryClient.invalidateQueries({ queryKey: queryKeys.fuelLoads.all }), refreshCar(queryClient)]),
   });
@@ -323,5 +319,55 @@ export const useRegisterTireEvent = () => {
   return useMutation({
     mutationFn: ({ id, body }: { id: string; body: CreateTireEventBody }) => registerTireEvent(id, body),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.tires.all }),
+  });
+};
+
+/** El pago de un gasto de la flota mueve una caja: se refrescan los gastos, el costo del vehículo y finanzas. */
+const refreshAfterExpensePayment = (queryClient: QueryClient) =>
+  Promise.all([
+    queryClient.invalidateQueries({ queryKey: queryKeys.tires.all }),
+    queryClient.invalidateQueries({ queryKey: queryKeys.fuelLoads.all }),
+    queryClient.invalidateQueries({ queryKey: queryKeys.vehicleAccidents.all }),
+    refreshCar(queryClient),
+    refreshFinance(queryClient),
+  ]);
+
+/** Pagar la compra de un neumático desde una caja. */
+export const usePayTire = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: PayFromCashBoxBody }) =>
+      runMoney(queryClient, `tire-pay:${id}`, body, (key) => payTire(id, body, key)),
+    onSettled: () => refreshAfterExpensePayment(queryClient),
+  });
+};
+
+/** Pagar una carga de combustible (tarjeta, cuenta o caja sin asentar) desde una caja. */
+export const usePayFuelLoad = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: PayFromCashBoxBody }) =>
+      runMoney(queryClient, `fuel-pay:${id}`, body, (key) => payFuelLoad(id, body, key)),
+    onSettled: () => refreshAfterExpensePayment(queryClient),
+  });
+};
+
+/** Registrar lo que pagó la empresa por un siniestro. */
+export const usePayVehicleAccident = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: PayAccidentBody }) =>
+      runMoney(queryClient, `accident-pay:${id}`, body, (key) => payVehicleAccident(id, body, key)),
+    onSettled: () => refreshAfterExpensePayment(queryClient),
+  });
+};
+
+/** Registrar el reintegro del seguro: entra a la caja elegida. */
+export const useReceiveAccidentReimbursement = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: ReceiveReimbursementBody }) =>
+      runMoney(queryClient, `accident-reimbursement:${id}`, body, (key) => receiveAccidentReimbursement(id, body, key)),
+    onSettled: () => refreshAfterExpensePayment(queryClient),
   });
 };

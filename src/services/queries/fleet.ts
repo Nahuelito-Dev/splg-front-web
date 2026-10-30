@@ -3,6 +3,7 @@ import {
   assignVehicle,
   cancelFleetTask,
   closeFleetTask,
+  closeFleetTaskAndPay,
   createFleetPlan,
   createFleetTask,
   deleteFleetTaskAttachment,
@@ -18,6 +19,7 @@ import {
   listFleetTaskAttachments,
   listFleetTasks,
   listVehicleAssignmentHistory,
+  payFleetTask,
   releaseVehicle,
   updateFleetPlan,
   updateFleetTask,
@@ -28,12 +30,15 @@ import {
   type FleetTaskUpdateBody,
 } from '../api/fleet';
 import type { PageParams } from '../api/httpClient';
+import { refreshFinance, runMoney } from './finance';
 import type {
   AssignVehicleBody,
   CancelFleetTaskBody,
   CloseFleetTaskBody,
+  CloseFleetTaskV2Body,
   CreateFleetPlanBody,
   CreateFleetTaskBody,
+  PayFleetTaskBody,
   UpdateFleetPlanBody,
 } from '../api/types';
 import { queryKeys } from './queryKeys';
@@ -120,6 +125,26 @@ export const useCloseFleetTask = () => {
   return useMutation({
     mutationFn: ({ id, body }: { id: string; body: CloseFleetTaskBody }) => closeFleetTask(id, body),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
+  });
+};
+
+/** Cerrar la tarea y pagarla en el mismo acto («Lo pagué ahora»): mueve una caja. */
+export const useCloseFleetTaskAndPay = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: CloseFleetTaskV2Body }) =>
+      runMoney(queryClient, `task-close-pay:${id}`, body, (key) => closeFleetTaskAndPay(id, body, key)),
+    onSettled: () => Promise.all([queryClient.invalidateQueries({ queryKey: keys.all }), refreshFinance(queryClient)]),
+  });
+};
+
+/** Registrar el pago de una tarea hecha: el costo sale de la caja elegida. */
+export const usePayFleetTask = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: PayFleetTaskBody }) =>
+      runMoney(queryClient, `task-pay:${id}`, body, (key) => payFleetTask(id, body, key)),
+    onSettled: () => Promise.all([queryClient.invalidateQueries({ queryKey: keys.all }), refreshFinance(queryClient)]),
   });
 };
 

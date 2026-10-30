@@ -1,9 +1,8 @@
 import { AttachmentsPanel } from '../../../common/components/AttachmentsPanel';
-import { useState } from 'react';
-import { Badge, Button, Drawer, DetailList, ErrorState, LoadingState } from '../../../common/components/ui';
+import { Badge, Drawer, DetailList, ErrorState, LoadingState } from '../../../common/components/ui';
 import { usePermissions } from '../../../hooks';
 import { useFuelLoad } from '../../../services/queries/fleetExpense';
-import { FuelLoadCashPaymentModal } from './FuelLoadCashPaymentModal';
+import { FuelLoadPayment } from './FuelLoadPayment';
 import { formatCurrency, formatDateTime, formatNumber } from '../../../utils/format';
 import { FUEL_PAYMENT_METHOD, FUEL_TYPE, labelOf } from '../../../utils/statusLabels';
 
@@ -16,7 +15,6 @@ interface Props {
 export const FuelLoadDrawer = ({ loadId, onClose }: Props) => {
   const { canWrite, writeHint } = usePermissions();
   const { data: load, isPending, error, refetch } = useFuelLoad(loadId ?? undefined);
-  const [settling, setSettling] = useState(false);
   // La del chofer pagada de la caja no eligió caja: queda pendiente hasta que un administrador la asienta.
   const pendingCash =
     load?.paymentMethod === 'cash_box' && !load.cashMovementId && !load.cashPaymentLegacy && !load.voidedAt;
@@ -66,19 +64,7 @@ export const FuelLoadDrawer = ({ loadId, onClose }: Props) => {
               ...(load.notes ? [{ label: 'Notas', value: load.notes, wide: true }] : []),
             ]}
           />
-          {pendingCash && canWrite && (
-            <div className="flex items-center justify-between gap-3 rounded-lg border border-outline p-3">
-              <p className="text-sm text-muted">
-                {load.registeredByDriver
-                  ? 'El chofer la registró pagada de la caja: indicá de cuál sale el efectivo. No la rindas además como gasto del chofer.'
-                  : 'Se registró pagada de la caja pero sin salida de caja: indicá de cuál sale el efectivo.'}
-              </p>
-              <Button size="sm" onClick={() => setSettling(true)}>
-                Asentar en caja
-              </Button>
-            </div>
-          )}
-          <FuelLoadCashPaymentModal load={settling ? load : null} onClose={() => setSettling(false)} />
+          <FuelLoadPayment load={load} />
           <AttachmentsPanel
             ownerType="fuel_load"
             ownerId={load.fuelLoadId}
