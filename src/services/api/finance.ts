@@ -34,6 +34,7 @@ import type {
   DriverSettlementDetail,
   DriverSettlementPage,
   FinanceDashboard,
+  IncomeStatement,
   OpenCashSessionBody,
   OpenDriverSettlementBody,
   PayDriverLiquidationBody,
@@ -123,6 +124,8 @@ export interface CashMovementFilters {
   referenceType?: CashMovement['referenceType'];
   from?: string;
   to?: string;
+  /** Sólo los que cuentan como ingreso o egreso en el estado de resultados (sin transferencias ni carga inicial). */
+  countsForResult?: boolean;
 }
 
 /** Los parámetros de GET /cash-movements sin paginar: los mismos que usa el exporte completo. */
@@ -474,5 +477,21 @@ export const voidDriverLiquidation = async (id: string, key: string): Promise<Dr
 /** GET /finance/dashboard */
 export const getFinanceDashboard = async (date?: string): Promise<FinanceDashboard> => {
   const { data } = await http.get<FinanceDashboard>('/finance/dashboard', { params: { date } });
+  return data;
+};
+
+export interface IncomeStatementFilters {
+  from: string;
+  to: string;
+  groupBy?: IncomeStatement['groupBy'];
+  cashBoxId?: string;
+}
+
+/** GET /v2/finance/income-statement: ingresos y egresos de un período, por categoría, período y caja. */
+export const getIncomeStatement = async (filters: IncomeStatementFilters): Promise<IncomeStatement> => {
+  const { data } = await http.get<IncomeStatement>('/finance/income-statement', {
+    baseURL: env.apiUrlV2,
+    params: filters,
+  });
   return data;
 };

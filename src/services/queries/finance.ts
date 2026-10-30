@@ -18,6 +18,7 @@ import {
   getDriverLiquidation,
   getDriverSettlement,
   getFinanceDashboard,
+  getIncomeStatement,
   listCashBoxes,
   listCashCategories,
   listCashMovements,
@@ -48,6 +49,7 @@ import {
   type CashMovementFilters,
   type CommissionEntryFilters,
   type CommissionRuleFilters,
+  type IncomeStatementFilters,
   type CustomerAccountFilters,
   type LiquidationFilters,
   type SettlementFilters,
@@ -157,6 +159,14 @@ export const useFinanceDashboard = (date?: string, enabled = true) =>
   useQuery({
     queryKey: queryKeys.finance.list({ date: date ?? '' }),
     queryFn: () => getFinanceDashboard(date),
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+
+export const useIncomeStatement = (filters: IncomeStatementFilters, enabled = true) =>
+  useQuery({
+    queryKey: queryKeys.finance.list({ incomeStatement: true, ...filters }),
+    queryFn: () => getIncomeStatement(filters),
     placeholderData: keepPreviousData,
     enabled,
   });

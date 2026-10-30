@@ -50,7 +50,7 @@ export const CashMovements = () => {
   const { canWrite, writeHint } = usePermissions();
   const navigate = useNavigate();
   const [filters, setFilters, pagination, setPagination] = useUrlPagedParams(
-    { cashBoxId: '', direction: '', categoryId: '', from: '', to: '' },
+    { cashBoxId: '', direction: '', categoryId: '', from: '', to: '', countsForResult: '' },
     25,
   );
   const boxes = useCashBoxOptions();
@@ -62,6 +62,7 @@ export const CashMovements = () => {
     categoryId: filters.categoryId || undefined,
     from: filters.from || undefined,
     to: filters.to || undefined,
+    countsForResult: filters.countsForResult === 'true' ? true : undefined,
   };
   const { data, isFetching, error, refetch } = useCashMovements(pagination, listFilters, { enabled: !rangeInvalid });
   const reverseMovement = useReverseCashMovement();
@@ -84,6 +85,11 @@ export const CashMovements = () => {
     filters.categoryId && { key: 'categoryId', label: `Categoría: ${categoryName(filters.categoryId) ?? '…'}` },
     filters.from && { key: 'from', label: `Desde ${formatDay(filters.from)}` },
     filters.to && { key: 'to', label: `Hasta ${formatDay(filters.to)}` },
+    filters.countsForResult === 'true' && {
+      key: 'countsForResult',
+      name: 'Alcance',
+      label: 'Sólo los que cuentan en ingresos y egresos',
+    },
   ].filter((c): c is FilterChip => Boolean(c));
 
   const reversingKind = reversing ? reverseKindOf(reversing) : null;
