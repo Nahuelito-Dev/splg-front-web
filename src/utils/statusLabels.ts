@@ -27,6 +27,8 @@ import type {
   InsuranceInstallment,
   InsurancePolicy,
   Leave,
+  MpItemStatus,
+  MpReconciliationStatus,
   Order,
   OrderRecord,
   PurchaseOrder,
@@ -107,6 +109,19 @@ export const PAYMENT_STATUS_ORDER: NonNullable<Order['paymentStatus']>[] = [
 export const DELIVERY_MODE: LabelMap<Order['deliveryMode']> = {
   standard: { text: 'Programada', tone: 'neutral' },
   express: { text: 'Express', tone: 'accent' },
+};
+
+/** Una conciliación con Mercado Pago: espera el reporte, ya se comparó con la caja o falló. */
+export const MP_RECONCILIATION_STATUS: LabelMap<MpReconciliationStatus> = {
+  requested: { text: 'Esperando a Mercado Pago', tone: 'warn' },
+  ready: { text: 'Lista', tone: 'success' },
+  failed: { text: 'Fallida', tone: 'danger' },
+};
+
+/** Una diferencia de la conciliación: falta asentarla o ya se asentó. */
+export const MP_ITEM_STATUS: LabelMap<MpItemStatus> = {
+  pending: { text: 'Sin asentar', tone: 'warn' },
+  applied: { text: 'Asentada', tone: 'success' },
 };
 
 /** Estado de una devolución a la pasarela (CU-168). */
@@ -514,6 +529,7 @@ export const CASH_REFERENCE: LabelMap<CashMovement['referenceType']> = {
   payment_refund: { text: 'Devolución a cliente', tone: 'warn' },
   payment_external_refund: { text: 'Devolución de Mercado Pago', tone: 'warn' },
   order_deposit: { text: 'Seña de reserva', tone: 'primary' },
+  mp_reconciliation: { text: 'Conciliación con Mercado Pago', tone: 'accent' },
   purchase_receipt: { text: 'Compra', tone: 'neutral' },
   fuel_load: { text: 'Combustible', tone: 'neutral' },
   traffic_fine: { text: 'Multa', tone: 'neutral' },

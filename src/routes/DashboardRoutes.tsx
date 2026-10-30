@@ -93,6 +93,11 @@ const CashCollectionSettings = lazyPage(
   () => import('../pages/Finance/CashCollectionSettings'),
   'CashCollectionSettings',
 );
+const MpReconciliations = lazyPage(() => import('../pages/Finance/MpReconciliations'), 'MpReconciliations');
+const MpReconciliationDetails = lazyPage(
+  () => import('../pages/Finance/MpReconciliationDetails'),
+  'MpReconciliationDetails',
+);
 const CashBoxDetails = lazyPage(() => import('../pages/Finance/CashBoxDetails'), 'CashBoxDetails');
 const CashMovements = lazyPage(() => import('../pages/Finance/CashMovements'), 'CashMovements');
 const CashCategories = lazyPage(() => import('../pages/Finance/CashCategories'), 'CashCategories');
@@ -251,6 +256,8 @@ export const DashboardRoutes = () => {
             <Route path="finance/movements" element={<CashMovements />} />
             <Route path="finance/categories" element={<CashCategories />} />
             <Route path="finance/collection-settings" element={<CashCollectionSettings />} />
+            <Route path="finance/mp-reconciliation" element={<MpReconciliations />} />
+            <Route path="finance/mp-reconciliation/:id" element={<MpReconciliationDetails />} />
             <Route path="finance/settlements" element={<DriverSettlements />} />
             <Route path="finance/settlements/:id" element={<DriverSettlementDetails />} />
             <Route path="finance/accounts" element={<CustomerAccounts />} />

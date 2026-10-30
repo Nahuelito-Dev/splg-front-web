@@ -12968,7 +12968,8 @@
                                 "payment_refund",
                                 "order_transfer",
                                 "payment_external_refund",
-                                "order_deposit"
+                                "order_deposit",
+                                "mp_reconciliation"
                             ]
                         }
                     },
@@ -28867,7 +28868,8 @@
                                 "payment_refund",
                                 "order_transfer",
                                 "payment_external_refund",
-                                "order_deposit"
+                                "order_deposit",
+                                "mp_reconciliation"
                             ]
                         }
                     },
@@ -29153,6 +29155,304 @@
                 "summary": "A qué caja entró lo cobrado de un pedido",
                 "tags": [
                     "Finanzas · Cajas de cobro (v2)"
+                ]
+            }
+        },
+        "/api/v2/mercadopago/reconciliations": {
+            "post": {
+                "description": "Crea la corrida y le pide a Mercado Pago el reporte de liberaciones del rango (`from`..`to`, días argentinos inclusive, hasta 31 días, sin fechas futuras). El reporte es asíncrono: la corrida queda `requested` hasta que Mercado Pago lo genera (un proceso la revisa cada dos minutos y `GET /:id` también) y pasa a `ready` con las diferencias. Nada se asienta solo.",
+                "operationId": "MpReconciliationController_crear",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateMpReconciliationDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MpReconciliationResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Rango inválido o rechazado por Mercado Pago"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "409": {
+                        "description": "Ya hay una corrida pedida para ese rango"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    },
+                    "502": {
+                        "description": "Mercado Pago no respondió o rechazó la credencial"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Pedir una conciliación con Mercado Pago",
+                "tags": [
+                    "Finanzas · Conciliación con Mercado Pago (v2)"
+                ]
+            },
+            "get": {
+                "operationId": "MpReconciliationController_listar",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "maximum": 100,
+                            "default": 10,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 0,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 1,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "term",
+                        "required": false,
+                        "in": "query",
+                        "description": "Texto a buscar",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "requested",
+                                "ready",
+                                "failed"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MpReconciliationPageDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Corridas de conciliación de la distribuidora",
+                "tags": [
+                    "Finanzas · Conciliación con Mercado Pago (v2)"
+                ]
+            }
+        },
+        "/api/v2/mercadopago/reconciliations/{id}": {
+            "get": {
+                "description": "Si la corrida sigue esperando el reporte, antes de responder le pregunta a Mercado Pago. Las diferencias de la cuenta que no son de ninguna distribuidora (`accountLevel`) sólo las ve el super admin.",
+                "operationId": "MpReconciliationController_detalle",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Conciliación UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MpReconciliationDetailResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Una corrida con sus diferencias",
+                "tags": [
+                    "Finanzas · Conciliación con Mercado Pago (v2)"
+                ]
+            }
+        },
+        "/api/v2/mercadopago/reconciliations/{id}/apply": {
+            "post": {
+                "description": "Asienta en la caja de Mercado Pago los ajustes elegidos (`items`), cada uno una sola vez: una fila del reporte ya asentada, aunque sea desde otra corrida, no se repite. Cobros sin ingreso y comisiones pendientes usan las mismas referencias que `settle-pending`; impuestos, reintegros y devoluciones quedan como movimientos «Conciliación MP <fecha> — <descripción> (<id>)». Los retiros piden `cashBoxId` (la caja que recibió el dinero). Las diferencias de la cuenta (retiros, impuestos sueltos) sólo las asienta el super admin, indicando `distributorId` (la de la corrida), y se asientan una sola vez en todo el sistema. Cada ajuste va en su transacción: uno rechazado por la caja no frena a los demás y aparece en `results`.",
+                "operationId": "MpReconciliationController_aplicar",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Conciliación UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ApplyMpReconciliationDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MpApplyResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Una diferencia no se puede asentar desde acá o falta la caja de destino"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "La corrida o alguna diferencia no existe"
+                    },
+                    "409": {
+                        "description": "La corrida no está lista o falta configurar la caja de Mercado Pago"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Asentar las diferencias elegidas",
+                "tags": [
+                    "Finanzas · Conciliación con Mercado Pago (v2)"
+                ]
+            }
+        },
+        "/api/v2/mercadopago/reconciliations/{id}/report": {
+            "get": {
+                "description": "Enlace firmado `{ url, expiresAt, requiresAuth }` al CSV de Mercado Pago, que es el comprobante de los movimientos. La distribuidora baja el archivo filtrado a sus cobros; el super admin que pidió la corrida baja el completo de la cuenta.",
+                "operationId": "MpReconciliationController_reporte",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Conciliación UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DownloadLinkResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o todavía no tiene el reporte guardado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Bajar el reporte de liberaciones",
+                "tags": [
+                    "Finanzas · Conciliación con Mercado Pago (v2)"
                 ]
             }
         }
@@ -31724,7 +32024,8 @@
                     "order",
                     "insurance_policy",
                     "insurance_installment",
-                    "traffic_fine_payment"
+                    "traffic_fine_payment",
+                    "mp_reconciliation"
                 ]
             },
             "AttachmentResponseDto": {
@@ -37666,7 +37967,8 @@
                             "payment_refund",
                             "order_transfer",
                             "payment_external_refund",
-                            "order_deposit"
+                            "order_deposit",
+                            "mp_reconciliation"
                         ]
                     },
                     "referenceId": {
@@ -37987,7 +38289,9 @@
                             "vehicle_accident",
                             "insurance_reimbursement",
                             "mercadopago_fee",
-                            "customer_refund"
+                            "customer_refund",
+                            "taxes_withholdings",
+                            "mercadopago_fee_refund"
                         ],
                         "nullable": true,
                         "description": "Las de sistema no se editan ni se desactivan"
@@ -49773,7 +50077,8 @@
                             "payment_refund",
                             "order_transfer",
                             "payment_external_refund",
-                            "order_deposit"
+                            "order_deposit",
+                            "mp_reconciliation"
                         ]
                     },
                     "referenceId": {
@@ -50098,6 +50403,618 @@
                 "required": [
                     "orderId",
                     "entries"
+                ]
+            },
+            "CreateMpReconciliationDto": {
+                "type": "object",
+                "properties": {
+                    "from": {
+                        "type": "string",
+                        "example": "2026-10-01",
+                        "format": "date"
+                    },
+                    "to": {
+                        "type": "string",
+                        "example": "2026-10-31",
+                        "format": "date"
+                    }
+                },
+                "required": [
+                    "from",
+                    "to"
+                ]
+            },
+            "MpReconciliationStatus": {
+                "type": "string",
+                "enum": [
+                    "requested",
+                    "ready",
+                    "failed"
+                ]
+            },
+            "MpSummaryMpDto": {
+                "type": "object",
+                "properties": {
+                    "gross": {
+                        "type": "number",
+                        "example": 120000
+                    },
+                    "fees": {
+                        "type": "number",
+                        "example": 4800
+                    },
+                    "taxes": {
+                        "type": "number",
+                        "example": 1200
+                    },
+                    "net": {
+                        "type": "number",
+                        "example": 114000,
+                        "description": "Créditos menos débitos de los cobros de la distribuidora"
+                    }
+                },
+                "required": [
+                    "gross",
+                    "fees",
+                    "taxes",
+                    "net"
+                ]
+            },
+            "MpSummaryCashDto": {
+                "type": "object",
+                "properties": {
+                    "income": {
+                        "type": "number",
+                        "example": 120000
+                    },
+                    "expense": {
+                        "type": "number",
+                        "example": 6000
+                    },
+                    "net": {
+                        "type": "number",
+                        "example": 114000
+                    }
+                },
+                "required": [
+                    "income",
+                    "expense",
+                    "net"
+                ]
+            },
+            "MpSummaryAccountDto": {
+                "type": "object",
+                "properties": {
+                    "rows": {
+                        "type": "number",
+                        "example": 12
+                    },
+                    "credit": {
+                        "type": "number",
+                        "example": 50000
+                    },
+                    "debit": {
+                        "type": "number",
+                        "example": 50000
+                    }
+                },
+                "required": [
+                    "rows",
+                    "credit",
+                    "debit"
+                ]
+            },
+            "MpSummaryDto": {
+                "type": "object",
+                "properties": {
+                    "rows": {
+                        "type": "number",
+                        "example": 40,
+                        "description": "Filas de movimiento que ve la distribuidora"
+                    },
+                    "mp": {
+                        "description": "Lo que informa Mercado Pago",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/MpSummaryMpDto"
+                            }
+                        ]
+                    },
+                    "cash": {
+                        "description": "Lo que tiene la caja de Mercado Pago en el rango",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/MpSummaryCashDto"
+                            }
+                        ]
+                    },
+                    "differences": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "number"
+                        },
+                        "description": "Cantidad de diferencias pendientes o aplicadas, por tipo"
+                    },
+                    "alreadyApplied": {
+                        "type": "number",
+                        "example": 2,
+                        "description": "Filas que ya se habían asentado en otra corrida"
+                    },
+                    "unreadableRows": {
+                        "type": "number",
+                        "example": 0,
+                        "description": "Filas del archivo que no se pudieron leer"
+                    },
+                    "account": {
+                        "description": "Sólo para el super admin: movimientos de la cuenta que no son de ninguna distribuidora",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/MpSummaryAccountDto"
+                            }
+                        ]
+                    }
+                },
+                "required": [
+                    "rows",
+                    "mp",
+                    "cash",
+                    "differences",
+                    "alreadyApplied",
+                    "unreadableRows"
+                ]
+            },
+            "MpReconciliationResponseDto": {
+                "type": "object",
+                "properties": {
+                    "reconciliationId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "distributorId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Distribuidora de la conciliación (la que se manda como `distributorId` al asentar diferencias de la cuenta)"
+                    },
+                    "from": {
+                        "type": "string",
+                        "example": "2026-10-01",
+                        "format": "date"
+                    },
+                    "to": {
+                        "type": "string",
+                        "example": "2026-10-31",
+                        "format": "date"
+                    },
+                    "status": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/MpReconciliationStatus"
+                            }
+                        ]
+                    },
+                    "failureReason": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Por qué falló, si falló"
+                    },
+                    "statusNote": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Mientras espera el reporte: qué pasa (todavía no se consultó, Mercado Pago aún no lo generó, el último error del intento). Null en las demás."
+                    },
+                    "summary": {
+                        "nullable": true,
+                        "description": "Null hasta que el reporte está listo",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/MpSummaryDto"
+                            }
+                        ]
+                    },
+                    "hasReport": {
+                        "type": "boolean",
+                        "description": "El archivo del reporte está guardado y se puede bajar"
+                    },
+                    "readyAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "lastCheckedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "createdAt": {
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "includesAccountLevel": {
+                        "type": "boolean",
+                        "description": "La corrida incluye los movimientos de la cuenta que no son de ninguna distribuidora (la pidió un super admin)"
+                    }
+                },
+                "required": [
+                    "reconciliationId",
+                    "distributorId",
+                    "from",
+                    "to",
+                    "status",
+                    "failureReason",
+                    "statusNote",
+                    "summary",
+                    "hasReport",
+                    "readyAt",
+                    "lastCheckedAt",
+                    "createdAt",
+                    "includesAccountLevel"
+                ]
+            },
+            "MpReconciliationPageDto": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/MpReconciliationResponseDto"
+                        }
+                    },
+                    "total": {
+                        "type": "number",
+                        "example": 3
+                    }
+                },
+                "required": [
+                    "data",
+                    "total"
+                ]
+            },
+            "MpDifferenceKind": {
+                "type": "string",
+                "enum": [
+                    "payment_not_in_cash",
+                    "ledger_without_mp",
+                    "amount_mismatch",
+                    "fee_pending",
+                    "fee_mismatch",
+                    "tax_withholding",
+                    "tax_row",
+                    "refund_missing",
+                    "fee_reimbursement",
+                    "payout",
+                    "unknown_payment",
+                    "other_movement",
+                    "tax_refund"
+                ]
+            },
+            "CashDirection": {
+                "type": "string",
+                "enum": [
+                    "in",
+                    "out"
+                ]
+            },
+            "MpItemStatus": {
+                "type": "string",
+                "enum": [
+                    "pending",
+                    "applied"
+                ]
+            },
+            "MpReconciliationItemResponseDto": {
+                "type": "object",
+                "properties": {
+                    "itemId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "kind": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/MpDifferenceKind"
+                            }
+                        ]
+                    },
+                    "sourceId": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Id del movimiento en Mercado Pago"
+                    },
+                    "paymentId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "orderId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "occurredAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "mpDescription": {
+                        "type": "string",
+                        "example": "payment",
+                        "description": "Tipo de movimiento según Mercado Pago"
+                    },
+                    "mpAmount": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Importe según Mercado Pago"
+                    },
+                    "ledgerAmount": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Importe según la caja"
+                    },
+                    "difference": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "extraAmount": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Comisión que acompaña al cobro o al retiro"
+                    },
+                    "direction": {
+                        "nullable": true,
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/CashDirection"
+                            }
+                        ]
+                    },
+                    "appliable": {
+                        "type": "boolean",
+                        "description": "Se puede asentar desde acá"
+                    },
+                    "needsCashBox": {
+                        "type": "boolean",
+                        "description": "Pide la caja de destino al aplicarse (retiros)"
+                    },
+                    "accountLevel": {
+                        "type": "boolean",
+                        "description": "Sólo la ve el super admin"
+                    },
+                    "note": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/MpItemStatus"
+                            }
+                        ]
+                    },
+                    "appliedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "appliedMovementId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "itemId",
+                    "kind",
+                    "sourceId",
+                    "paymentId",
+                    "orderId",
+                    "occurredAt",
+                    "mpDescription",
+                    "mpAmount",
+                    "ledgerAmount",
+                    "difference",
+                    "extraAmount",
+                    "direction",
+                    "appliable",
+                    "needsCashBox",
+                    "accountLevel",
+                    "note",
+                    "status",
+                    "appliedAt",
+                    "appliedMovementId"
+                ]
+            },
+            "MpReconciliationDetailResponseDto": {
+                "type": "object",
+                "properties": {
+                    "reconciliationId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "distributorId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Distribuidora de la conciliación (la que se manda como `distributorId` al asentar diferencias de la cuenta)"
+                    },
+                    "from": {
+                        "type": "string",
+                        "example": "2026-10-01",
+                        "format": "date"
+                    },
+                    "to": {
+                        "type": "string",
+                        "example": "2026-10-31",
+                        "format": "date"
+                    },
+                    "status": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/MpReconciliationStatus"
+                            }
+                        ]
+                    },
+                    "failureReason": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Por qué falló, si falló"
+                    },
+                    "statusNote": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Mientras espera el reporte: qué pasa (todavía no se consultó, Mercado Pago aún no lo generó, el último error del intento). Null en las demás."
+                    },
+                    "summary": {
+                        "nullable": true,
+                        "description": "Null hasta que el reporte está listo",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/MpSummaryDto"
+                            }
+                        ]
+                    },
+                    "hasReport": {
+                        "type": "boolean",
+                        "description": "El archivo del reporte está guardado y se puede bajar"
+                    },
+                    "readyAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "lastCheckedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "createdAt": {
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "includesAccountLevel": {
+                        "type": "boolean",
+                        "description": "La corrida incluye los movimientos de la cuenta que no son de ninguna distribuidora (la pidió un super admin)"
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/MpReconciliationItemResponseDto"
+                        }
+                    }
+                },
+                "required": [
+                    "reconciliationId",
+                    "distributorId",
+                    "from",
+                    "to",
+                    "status",
+                    "failureReason",
+                    "statusNote",
+                    "summary",
+                    "hasReport",
+                    "readyAt",
+                    "lastCheckedAt",
+                    "createdAt",
+                    "includesAccountLevel",
+                    "items"
+                ]
+            },
+            "ApplyMpItemDto": {
+                "type": "object",
+                "properties": {
+                    "itemId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Diferencia a asentar"
+                    },
+                    "cashBoxId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Caja de destino. Sólo los retiros (`payout`) la piden: la caja a la que llegó el dinero que salió de la billetera."
+                    }
+                },
+                "required": [
+                    "itemId"
+                ]
+            },
+            "ApplyMpReconciliationDto": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "minItems": 1,
+                        "maxItems": 200,
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ApplyMpItemDto"
+                        }
+                    },
+                    "distributorId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Distribuidora a la que se asientan las diferencias de la cuenta (retiros, impuestos sueltos): obligatoria si alguna lo es, y tiene que ser la de la corrida. Esas filas se asientan una sola vez en todo el sistema."
+                    }
+                },
+                "required": [
+                    "items"
+                ]
+            },
+            "MpApplyItemResultDto": {
+                "type": "object",
+                "properties": {
+                    "itemId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "outcome": {
+                        "type": "string",
+                        "enum": [
+                            "applied",
+                            "already_applied",
+                            "failed"
+                        ]
+                    },
+                    "message": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Por qué no se asentó"
+                    },
+                    "movementId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "itemId",
+                    "outcome",
+                    "message",
+                    "movementId"
+                ]
+            },
+            "MpApplyResponseDto": {
+                "type": "object",
+                "properties": {
+                    "applied": {
+                        "type": "number",
+                        "example": 3
+                    },
+                    "alreadyApplied": {
+                        "type": "number",
+                        "example": 0
+                    },
+                    "failed": {
+                        "type": "number",
+                        "example": 1
+                    },
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/MpApplyItemResultDto"
+                        }
+                    }
+                },
+                "required": [
+                    "applied",
+                    "alreadyApplied",
+                    "failed",
+                    "results"
                 ]
             }
         }

@@ -94,6 +94,7 @@ const FINANCE_KEYS = [
   queryKeys.cashMovements.all,
   queryKeys.cashCategories.all,
   queryKeys.cashSettings.all,
+  queryKeys.mpReconciliations.all,
   queryKeys.driverSettlements.all,
   queryKeys.customerAccounts.all,
   queryKeys.commissionEntries.all,
