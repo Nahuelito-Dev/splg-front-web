@@ -1,5 +1,5 @@
 import { auditEntityLabel } from '../../../utils/auditLabels';
-import type { AuditEntriesParams } from '../../../services/api/audit';
+import type { AuditEntriesParams, AuditOrigin } from '../../../services/api/audit';
 
 /** Filtros de la auditoría de datos tal como viven en la URL (todo texto). */
 export interface DataAuditFilters {
@@ -7,6 +7,8 @@ export interface DataAuditFilters {
   recordId: string;
   userId: string;
   actionType: string;
+  /** `user`, `system`, `direct` o vacío (todos). */
+  origin: string;
   /** YYYY-MM-DD */
   from: string;
   /** YYYY-MM-DD */
@@ -18,9 +20,18 @@ export const EMPTY_DATA_AUDIT_FILTERS: DataAuditFilters = {
   recordId: '',
   userId: '',
   actionType: '',
+  origin: '',
   from: '',
   to: '',
 };
+
+export const AUDIT_ORIGIN_OPTIONS: { value: AuditOrigin; label: string }[] = [
+  { value: 'user', label: 'Usuario' },
+  { value: 'system', label: 'Sistema (automático)' },
+  { value: 'direct', label: 'Directo en la base' },
+];
+
+const validOrigin = (value: string): value is AuditOrigin => AUDIT_ORIGIN_OPTIONS.some((o) => o.value === value);
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** El back valida el `recordId` con MaxLength(64). */
@@ -43,6 +54,7 @@ export const toAuditEntriesParams = (filters: DataAuditFilters, page: number, li
   recordId: filters.recordId.trim().slice(0, RECORD_ID_MAX) || undefined,
   userId: isUuid(filters.userId) ? filters.userId.trim() : undefined,
   actionType: validAction(filters.actionType) ? Number(filters.actionType) : undefined,
+  origin: validOrigin(filters.origin) ? filters.origin : undefined,
   from: isDay(filters.from) ? startOfDay(filters.from) : undefined,
   to: isDay(filters.to) ? endOfDay(filters.to) : undefined,
   page,
@@ -63,6 +75,10 @@ export const dataAuditChips = (
       key: 'actionType',
       label: `Acción: ${actionName(Number(filters.actionType)) ?? filters.actionType}`,
     });
+  }
+  if (validOrigin(filters.origin)) {
+    const label = AUDIT_ORIGIN_OPTIONS.find((o) => o.value === filters.origin)?.label;
+    chips.push({ key: 'origin', label: `Origen: ${label}` });
   }
   if (isDay(filters.from)) chips.push({ key: 'from', label: `Desde ${filters.from}` });
   if (isDay(filters.to)) chips.push({ key: 'to', label: `Hasta ${filters.to}` });

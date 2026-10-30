@@ -6276,6 +6276,550 @@
                 ]
             }
         },
+        "/api/v1/audit": {
+            "get": {
+                "description": "Quién hizo cada operación que modificó datos, sobre qué, cuándo, desde qué aplicación y con qué resultado. Un admin de empresa ve sólo lo de su distribuidora.",
+                "operationId": "AuditController_consultar",
+                "parameters": [
+                    {
+                        "name": "actorUserId",
+                        "required": false,
+                        "in": "query",
+                        "description": "Quién hizo la operación",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "resource",
+                        "required": false,
+                        "in": "query",
+                        "description": "Tipo de recurso",
+                        "schema": {
+                            "example": "orders",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "resourceId",
+                        "required": false,
+                        "in": "query",
+                        "description": "Un recurso puntual",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "result",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "success",
+                                "failure"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "desde",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "date-time",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "hasta",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "date-time",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "maximum": 200,
+                            "default": 50,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 0,
+                            "type": "number"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RegistroDeAuditoriaDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Consultar el registro de auditoría",
+                "tags": [
+                    "Audit"
+                ]
+            }
+        },
+        "/api/v1/audit/entries": {
+            "get": {
+                "description": "Una Auditoria por registro afectado (tipo de acción, usuario, entidadAfectada, idRegistro, ipUsuario, fechaHora) con sus DetalleAuditoria (campo, valorAnterior, valorNuevo). Un admin de empresa ve sólo lo de su distribuidora; el super admin ve todo o la que elige con X-Distributor.",
+                "operationId": "DataAuditController_findAll",
+                "parameters": [
+                    {
+                        "name": "entity",
+                        "required": false,
+                        "in": "query",
+                        "description": "entidadAfectada: nombre de la entidad de dominio",
+                        "schema": {
+                            "example": "Order",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "recordId",
+                        "required": false,
+                        "in": "query",
+                        "description": "idRegistro: id del registro afectado",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "orderId",
+                        "required": false,
+                        "in": "query",
+                        "description": "Historial de un pedido: los asientos del Order, de sus renglones (OrderItem) y de sus pagos (Payment). Se combina con el resto de los filtros.",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "userId",
+                        "required": false,
+                        "in": "query",
+                        "description": "idUsuario: quién hizo el cambio",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "actionType",
+                        "required": false,
+                        "in": "query",
+                        "description": "idTipoAuditoria: 1 Alta, 2 Modificación, 3 Baja lógica, 4 Reactivación, 5 Baja física, 6 Ingreso, 7 Ingreso fallido, 8 Salida",
+                        "schema": {
+                            "example": 2,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "required": false,
+                        "in": "query",
+                        "description": "fechaHora desde (inclusive)",
+                        "schema": {
+                            "format": "date-time",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "required": false,
+                        "in": "query",
+                        "description": "fechaHora hasta (inclusive)",
+                        "schema": {
+                            "format": "date-time",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "minimum": 1,
+                            "default": 1,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "maximum": 200,
+                            "default": 50,
+                            "type": "number"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AuditEntriesPageDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Consultar la auditoría de datos",
+                "tags": [
+                    "Audit"
+                ]
+            }
+        },
+        "/api/v1/audit/entries/{id}": {
+            "get": {
+                "description": "Una Auditoria con todos sus DetalleAuditoria.",
+                "operationId": "DataAuditController_findOne",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AuditEntryDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe, o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Una auditoría de datos con sus detalles",
+                "tags": [
+                    "Audit"
+                ]
+            }
+        },
+        "/api/v1/audit/action-types": {
+            "get": {
+                "description": "TipoAccionAuditoria: Alta, Modificación, Baja lógica y Reactivación.",
+                "operationId": "DataAuditController_findActionTypes",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/AuditActionTypeDto"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Catálogo de acciones auditadas",
+                "tags": [
+                    "Audit"
+                ]
+            }
+        },
+        "/api/v2/audit/entries": {
+            "get": {
+                "description": "Como la v1, con `origin` (`user`, `system`, `direct`) para distinguir lo hecho por un usuario, por la propia API sin usuario (crons, procesos) y lo escrito directo en la base (SQL a mano, scripts), y en cada asiento `source`, `tableName`, `dbUser` y `appName`. Un admin de empresa ve sólo lo de su distribuidora; el super admin ve todo o la que elige con X-Distributor.",
+                "operationId": "DataAuditV2Controller_findAll",
+                "parameters": [
+                    {
+                        "name": "entity",
+                        "required": false,
+                        "in": "query",
+                        "description": "entidadAfectada: nombre de la entidad de dominio",
+                        "schema": {
+                            "example": "Order",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "recordId",
+                        "required": false,
+                        "in": "query",
+                        "description": "idRegistro: id del registro afectado",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "orderId",
+                        "required": false,
+                        "in": "query",
+                        "description": "Historial de un pedido: los asientos del Order, de sus renglones (OrderItem) y de sus pagos (Payment). Se combina con el resto de los filtros.",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "userId",
+                        "required": false,
+                        "in": "query",
+                        "description": "idUsuario: quién hizo el cambio",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "actionType",
+                        "required": false,
+                        "in": "query",
+                        "description": "idTipoAuditoria: 1 Alta, 2 Modificación, 3 Baja lógica, 4 Reactivación, 5 Baja física, 6 Ingreso, 7 Ingreso fallido, 8 Salida",
+                        "schema": {
+                            "example": 2,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "required": false,
+                        "in": "query",
+                        "description": "fechaHora desde (inclusive)",
+                        "schema": {
+                            "format": "date-time",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "required": false,
+                        "in": "query",
+                        "description": "fechaHora hasta (inclusive)",
+                        "schema": {
+                            "format": "date-time",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "minimum": 1,
+                            "default": 1,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "maximum": 200,
+                            "default": 50,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "origin",
+                        "required": false,
+                        "in": "query",
+                        "description": "`user`: lo hizo un usuario. `system`: sin usuario, hecho por la propia API (crons, procesos, ingresos fallidos). `direct`: sin usuario y escrito en la base por otra aplicación (SQL a mano, scripts de mantenimiento).",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "user",
+                                "system",
+                                "direct"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AuditEntriesPageV2Dto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Consultar la auditoría de datos (con origen del asiento)",
+                "tags": [
+                    "Audit"
+                ]
+            }
+        },
+        "/api/v2/audit/entries/{id}": {
+            "get": {
+                "operationId": "DataAuditV2Controller_findOne",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AuditEntryV2Dto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe, o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Una auditoría de datos con sus detalles (con origen del asiento)",
+                "tags": [
+                    "Audit"
+                ]
+            }
+        },
+        "/api/v2/audit/action-types": {
+            "get": {
+                "description": "TipoAccionAuditoria: Alta, Modificación, Baja lógica, Reactivación, Baja física, Ingreso, Ingreso fallido y Salida.",
+                "operationId": "DataAuditV2Controller_findActionTypes",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/AuditActionTypeDto"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Catálogo de acciones auditadas",
+                "tags": [
+                    "Audit"
+                ]
+            }
+        },
         "/api/v1/orders/delivery-options": {
             "get": {
                 "description": "La programada (`standard`) siempre figura; la `express` sólo está disponible con la dirección dentro de la cobertura, en horario de servicio y con un chofer en moto habilitado dentro del radio express. Cada una trae su recargo y su tiempo estimado. No escribe nada: `POST /orders` con `deliveryMode` vuelve a evaluar. Cliente sin `X-Distributor`: distribuidora por defecto; el admin manda `customerId`.",
@@ -24312,330 +24856,6 @@
                 ]
             }
         },
-        "/api/v1/audit": {
-            "get": {
-                "description": "Quién hizo cada operación que modificó datos, sobre qué, cuándo, desde qué aplicación y con qué resultado. Un admin de empresa ve sólo lo de su distribuidora.",
-                "operationId": "AuditController_consultar",
-                "parameters": [
-                    {
-                        "name": "actorUserId",
-                        "required": false,
-                        "in": "query",
-                        "description": "Quién hizo la operación",
-                        "schema": {
-                            "format": "uuid",
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "resource",
-                        "required": false,
-                        "in": "query",
-                        "description": "Tipo de recurso",
-                        "schema": {
-                            "example": "orders",
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "resourceId",
-                        "required": false,
-                        "in": "query",
-                        "description": "Un recurso puntual",
-                        "schema": {
-                            "format": "uuid",
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "result",
-                        "required": false,
-                        "in": "query",
-                        "schema": {
-                            "type": "string",
-                            "enum": [
-                                "success",
-                                "failure"
-                            ]
-                        }
-                    },
-                    {
-                        "name": "desde",
-                        "required": false,
-                        "in": "query",
-                        "schema": {
-                            "format": "date-time",
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "hasta",
-                        "required": false,
-                        "in": "query",
-                        "schema": {
-                            "format": "date-time",
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "limit",
-                        "required": false,
-                        "in": "query",
-                        "schema": {
-                            "maximum": 200,
-                            "default": 50,
-                            "type": "number"
-                        }
-                    },
-                    {
-                        "name": "offset",
-                        "required": false,
-                        "in": "query",
-                        "schema": {
-                            "default": 0,
-                            "type": "number"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/RegistroDeAuditoriaDto"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: admin, super_admin"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    },
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Consultar el registro de auditoría",
-                "tags": [
-                    "Audit"
-                ]
-            }
-        },
-        "/api/v1/audit/entries": {
-            "get": {
-                "description": "Una Auditoria por registro afectado (tipo de acción, usuario, entidadAfectada, idRegistro, ipUsuario, fechaHora) con sus DetalleAuditoria (campo, valorAnterior, valorNuevo). Un admin de empresa ve sólo lo de su distribuidora; el super admin ve todo o la que elige con X-Distributor.",
-                "operationId": "DataAuditController_findAll",
-                "parameters": [
-                    {
-                        "name": "entity",
-                        "required": false,
-                        "in": "query",
-                        "description": "entidadAfectada: nombre de la entidad de dominio",
-                        "schema": {
-                            "example": "Order",
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "recordId",
-                        "required": false,
-                        "in": "query",
-                        "description": "idRegistro: id del registro afectado",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "orderId",
-                        "required": false,
-                        "in": "query",
-                        "description": "Historial de un pedido: los asientos del Order, de sus renglones (OrderItem) y de sus pagos (Payment). Se combina con el resto de los filtros.",
-                        "schema": {
-                            "format": "uuid",
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "userId",
-                        "required": false,
-                        "in": "query",
-                        "description": "idUsuario: quién hizo el cambio",
-                        "schema": {
-                            "format": "uuid",
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "actionType",
-                        "required": false,
-                        "in": "query",
-                        "description": "idTipoAuditoria: 1 Alta, 2 Modificación, 3 Baja lógica, 4 Reactivación, 5 Baja física",
-                        "schema": {
-                            "example": 2,
-                            "type": "number"
-                        }
-                    },
-                    {
-                        "name": "from",
-                        "required": false,
-                        "in": "query",
-                        "description": "fechaHora desde (inclusive)",
-                        "schema": {
-                            "format": "date-time",
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "to",
-                        "required": false,
-                        "in": "query",
-                        "description": "fechaHora hasta (inclusive)",
-                        "schema": {
-                            "format": "date-time",
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "page",
-                        "required": false,
-                        "in": "query",
-                        "schema": {
-                            "minimum": 1,
-                            "default": 1,
-                            "type": "number"
-                        }
-                    },
-                    {
-                        "name": "limit",
-                        "required": false,
-                        "in": "query",
-                        "schema": {
-                            "maximum": 200,
-                            "default": 50,
-                            "type": "number"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/AuditEntriesPageDto"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: admin, super_admin"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Consultar la auditoría de datos",
-                "tags": [
-                    "Audit"
-                ]
-            }
-        },
-        "/api/v1/audit/entries/{id}": {
-            "get": {
-                "description": "Una Auditoria con todos sus DetalleAuditoria.",
-                "operationId": "DataAuditController_findOne",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "required": true,
-                        "in": "path",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/AuditEntryDto"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: admin, super_admin"
-                    },
-                    "404": {
-                        "description": "No existe, o es de otra distribuidora"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Una auditoría de datos con sus detalles",
-                "tags": [
-                    "Audit"
-                ]
-            }
-        },
-        "/api/v1/audit/action-types": {
-            "get": {
-                "description": "TipoAccionAuditoria: Alta, Modificación, Baja lógica y Reactivación.",
-                "operationId": "DataAuditController_findActionTypes",
-                "parameters": [],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/AuditActionTypeDto"
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: admin, super_admin"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Catálogo de acciones auditadas",
-                "tags": [
-                    "Audit"
-                ]
-            }
-        },
         "/api/v1/employees/{id}/attendance": {
             "post": {
                 "operationId": "AttendanceController_register",
@@ -29827,6 +30047,415 @@
                     "accessToken",
                     "expiresIn",
                     "user"
+                ]
+            },
+            "AsientoDeAuditoriaDto": {
+                "type": "object",
+                "properties": {
+                    "auditId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "distributorId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "actorUserId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "actorRole": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "admin"
+                    },
+                    "httpMethod": {
+                        "type": "string",
+                        "example": "PATCH"
+                    },
+                    "resource": {
+                        "type": "string",
+                        "example": "orders"
+                    },
+                    "resourceId": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "path": {
+                        "type": "string",
+                        "example": "/api/orders/:id/status"
+                    },
+                    "clientSource": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "panel-app"
+                    },
+                    "ip": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "result": {
+                        "type": "string",
+                        "enum": [
+                            "success",
+                            "failure"
+                        ]
+                    },
+                    "statusCode": {
+                        "type": "number",
+                        "example": 200
+                    },
+                    "changes": {
+                        "type": "object",
+                        "additionalProperties": true,
+                        "nullable": true,
+                        "description": "El cuerpo de la operación, sin credenciales"
+                    },
+                    "errorMessage": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "auditId",
+                    "distributorId",
+                    "actorUserId",
+                    "actorRole",
+                    "httpMethod",
+                    "resource",
+                    "resourceId",
+                    "path",
+                    "clientSource",
+                    "ip",
+                    "result",
+                    "statusCode",
+                    "changes",
+                    "errorMessage",
+                    "createdAt"
+                ]
+            },
+            "RegistroDeAuditoriaDto": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/AsientoDeAuditoriaDto"
+                        }
+                    },
+                    "total": {
+                        "type": "number"
+                    }
+                },
+                "required": [
+                    "items",
+                    "total"
+                ]
+            },
+            "AuditActionTypeDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "number",
+                        "example": 2,
+                        "description": "idTipoAuditoria"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Modificación",
+                        "description": "nombre"
+                    }
+                },
+                "required": [
+                    "id",
+                    "name"
+                ]
+            },
+            "AuditUserDto": {
+                "type": "object",
+                "properties": {
+                    "userId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "fullName": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "email": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "deleted": {
+                        "type": "boolean",
+                        "description": "El usuario fue dado de baja después"
+                    }
+                },
+                "required": [
+                    "userId",
+                    "fullName",
+                    "email",
+                    "deleted"
+                ]
+            },
+            "AuditDetailDto": {
+                "type": "object",
+                "properties": {
+                    "auditDetailId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "idDetalleAuditoria"
+                    },
+                    "field": {
+                        "type": "string",
+                        "example": "status",
+                        "description": "campo"
+                    },
+                    "oldValue": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "valorAnterior (null en una alta). Secretos: [oculto]"
+                    },
+                    "newValue": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "valorNuevo. Secretos: [oculto]"
+                    }
+                },
+                "required": [
+                    "auditDetailId",
+                    "field",
+                    "oldValue",
+                    "newValue"
+                ]
+            },
+            "AuditEntryDto": {
+                "type": "object",
+                "properties": {
+                    "auditId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "idAuditoria"
+                    },
+                    "actionType": {
+                        "description": "idTipoAuditoria con su nombre",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/AuditActionTypeDto"
+                            }
+                        ]
+                    },
+                    "userId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true,
+                        "description": "idUsuario; null si lo hizo el sistema (cron, seed)"
+                    },
+                    "user": {
+                        "nullable": true,
+                        "description": "Datos del usuario (aunque esté dado de baja, con `deleted`); null si lo hizo el sistema",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/AuditUserDto"
+                            }
+                        ]
+                    },
+                    "distributorId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "entity": {
+                        "type": "string",
+                        "example": "Order",
+                        "description": "entidadAfectada"
+                    },
+                    "recordId": {
+                        "type": "string",
+                        "description": "idRegistro"
+                    },
+                    "ip": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "ipUsuario"
+                    },
+                    "dateTime": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "fechaHora"
+                    },
+                    "details": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/AuditDetailDto"
+                        }
+                    }
+                },
+                "required": [
+                    "auditId",
+                    "actionType",
+                    "userId",
+                    "user",
+                    "distributorId",
+                    "entity",
+                    "recordId",
+                    "ip",
+                    "dateTime",
+                    "details"
+                ]
+            },
+            "AuditEntriesPageDto": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/AuditEntryDto"
+                        }
+                    },
+                    "total": {
+                        "type": "number",
+                        "description": "Total que cumple el filtro, sin paginar"
+                    }
+                },
+                "required": [
+                    "data",
+                    "total"
+                ]
+            },
+            "AuditEntryV2Dto": {
+                "type": "object",
+                "properties": {
+                    "auditId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "idAuditoria"
+                    },
+                    "actionType": {
+                        "description": "idTipoAuditoria con su nombre",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/AuditActionTypeDto"
+                            }
+                        ]
+                    },
+                    "userId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true,
+                        "description": "idUsuario; null si lo hizo el sistema (cron, seed)"
+                    },
+                    "user": {
+                        "nullable": true,
+                        "description": "Datos del usuario (aunque esté dado de baja, con `deleted`); null si lo hizo el sistema",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/AuditUserDto"
+                            }
+                        ]
+                    },
+                    "distributorId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "entity": {
+                        "type": "string",
+                        "example": "Order",
+                        "description": "entidadAfectada"
+                    },
+                    "recordId": {
+                        "type": "string",
+                        "description": "idRegistro"
+                    },
+                    "ip": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "ipUsuario"
+                    },
+                    "dateTime": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "fechaHora"
+                    },
+                    "details": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/AuditDetailDto"
+                        }
+                    },
+                    "origin": {
+                        "type": "string",
+                        "enum": [
+                            "user",
+                            "system",
+                            "direct"
+                        ],
+                        "description": "Ver el filtro `origin`"
+                    },
+                    "source": {
+                        "type": "string",
+                        "example": "db",
+                        "description": "`db`: lo escribió el trigger de la tabla. `app`: lo asentó la API (ingresos, motivos)"
+                    },
+                    "tableName": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Tabla que cambió (sólo asientos del trigger)"
+                    },
+                    "dbUser": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Rol de la base que ejecutó el cambio"
+                    },
+                    "appName": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "splg-api",
+                        "description": "application_name de la conexión: `splg-api`, `splg-script:<nombre>`, `psql`..."
+                    }
+                },
+                "required": [
+                    "auditId",
+                    "actionType",
+                    "userId",
+                    "user",
+                    "distributorId",
+                    "entity",
+                    "recordId",
+                    "ip",
+                    "dateTime",
+                    "details",
+                    "origin",
+                    "source",
+                    "tableName",
+                    "dbUser",
+                    "appName"
+                ]
+            },
+            "AuditEntriesPageV2Dto": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/AuditEntryV2Dto"
+                        }
+                    },
+                    "total": {
+                        "type": "number",
+                        "description": "Total que cumple el filtro, sin paginar"
+                    }
+                },
+                "required": [
+                    "data",
+                    "total"
                 ]
             },
             "DeliveryOptionDto": {
@@ -43524,286 +44153,6 @@
                     "paidAt",
                     "amount",
                     "cashBoxId"
-                ]
-            },
-            "AsientoDeAuditoriaDto": {
-                "type": "object",
-                "properties": {
-                    "auditId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "distributorId": {
-                        "type": "string",
-                        "format": "uuid",
-                        "nullable": true
-                    },
-                    "actorUserId": {
-                        "type": "string",
-                        "format": "uuid",
-                        "nullable": true
-                    },
-                    "actorRole": {
-                        "type": "string",
-                        "nullable": true,
-                        "example": "admin"
-                    },
-                    "httpMethod": {
-                        "type": "string",
-                        "example": "PATCH"
-                    },
-                    "resource": {
-                        "type": "string",
-                        "example": "orders"
-                    },
-                    "resourceId": {
-                        "type": "string",
-                        "nullable": true
-                    },
-                    "path": {
-                        "type": "string",
-                        "example": "/api/orders/:id/status"
-                    },
-                    "clientSource": {
-                        "type": "string",
-                        "nullable": true,
-                        "example": "panel-app"
-                    },
-                    "ip": {
-                        "type": "string",
-                        "nullable": true
-                    },
-                    "result": {
-                        "type": "string",
-                        "enum": [
-                            "success",
-                            "failure"
-                        ]
-                    },
-                    "statusCode": {
-                        "type": "number",
-                        "example": 200
-                    },
-                    "changes": {
-                        "type": "object",
-                        "additionalProperties": true,
-                        "nullable": true,
-                        "description": "El cuerpo de la operación, sin credenciales"
-                    },
-                    "errorMessage": {
-                        "type": "string",
-                        "nullable": true
-                    },
-                    "createdAt": {
-                        "type": "string",
-                        "format": "date-time"
-                    }
-                },
-                "required": [
-                    "auditId",
-                    "distributorId",
-                    "actorUserId",
-                    "actorRole",
-                    "httpMethod",
-                    "resource",
-                    "resourceId",
-                    "path",
-                    "clientSource",
-                    "ip",
-                    "result",
-                    "statusCode",
-                    "changes",
-                    "errorMessage",
-                    "createdAt"
-                ]
-            },
-            "RegistroDeAuditoriaDto": {
-                "type": "object",
-                "properties": {
-                    "items": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/AsientoDeAuditoriaDto"
-                        }
-                    },
-                    "total": {
-                        "type": "number"
-                    }
-                },
-                "required": [
-                    "items",
-                    "total"
-                ]
-            },
-            "AuditActionTypeDto": {
-                "type": "object",
-                "properties": {
-                    "id": {
-                        "type": "number",
-                        "example": 2,
-                        "description": "idTipoAuditoria"
-                    },
-                    "name": {
-                        "type": "string",
-                        "example": "Modificación",
-                        "description": "nombre"
-                    }
-                },
-                "required": [
-                    "id",
-                    "name"
-                ]
-            },
-            "AuditUserDto": {
-                "type": "object",
-                "properties": {
-                    "userId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "fullName": {
-                        "type": "string",
-                        "nullable": true
-                    },
-                    "email": {
-                        "type": "string",
-                        "nullable": true
-                    },
-                    "deleted": {
-                        "type": "boolean",
-                        "description": "El usuario fue dado de baja después"
-                    }
-                },
-                "required": [
-                    "userId",
-                    "fullName",
-                    "email",
-                    "deleted"
-                ]
-            },
-            "AuditDetailDto": {
-                "type": "object",
-                "properties": {
-                    "auditDetailId": {
-                        "type": "string",
-                        "format": "uuid",
-                        "description": "idDetalleAuditoria"
-                    },
-                    "field": {
-                        "type": "string",
-                        "example": "status",
-                        "description": "campo"
-                    },
-                    "oldValue": {
-                        "type": "string",
-                        "nullable": true,
-                        "description": "valorAnterior (null en una alta). Secretos: [oculto]"
-                    },
-                    "newValue": {
-                        "type": "string",
-                        "nullable": true,
-                        "description": "valorNuevo. Secretos: [oculto]"
-                    }
-                },
-                "required": [
-                    "auditDetailId",
-                    "field",
-                    "oldValue",
-                    "newValue"
-                ]
-            },
-            "AuditEntryDto": {
-                "type": "object",
-                "properties": {
-                    "auditId": {
-                        "type": "string",
-                        "format": "uuid",
-                        "description": "idAuditoria"
-                    },
-                    "actionType": {
-                        "description": "idTipoAuditoria con su nombre",
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/AuditActionTypeDto"
-                            }
-                        ]
-                    },
-                    "userId": {
-                        "type": "string",
-                        "format": "uuid",
-                        "nullable": true,
-                        "description": "idUsuario; null si lo hizo el sistema (cron, seed)"
-                    },
-                    "user": {
-                        "nullable": true,
-                        "description": "Datos del usuario (aunque esté dado de baja, con `deleted`); null si lo hizo el sistema",
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/AuditUserDto"
-                            }
-                        ]
-                    },
-                    "distributorId": {
-                        "type": "string",
-                        "format": "uuid",
-                        "nullable": true
-                    },
-                    "entity": {
-                        "type": "string",
-                        "example": "Order",
-                        "description": "entidadAfectada"
-                    },
-                    "recordId": {
-                        "type": "string",
-                        "description": "idRegistro"
-                    },
-                    "ip": {
-                        "type": "string",
-                        "nullable": true,
-                        "description": "ipUsuario"
-                    },
-                    "dateTime": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "fechaHora"
-                    },
-                    "details": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/AuditDetailDto"
-                        }
-                    }
-                },
-                "required": [
-                    "auditId",
-                    "actionType",
-                    "userId",
-                    "user",
-                    "distributorId",
-                    "entity",
-                    "recordId",
-                    "ip",
-                    "dateTime",
-                    "details"
-                ]
-            },
-            "AuditEntriesPageDto": {
-                "type": "object",
-                "properties": {
-                    "data": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/AuditEntryDto"
-                        }
-                    },
-                    "total": {
-                        "type": "number",
-                        "description": "Total que cumple el filtro, sin paginar"
-                    }
-                },
-                "required": [
-                    "data",
-                    "total"
                 ]
             },
             "RegisterAttendanceDto": {

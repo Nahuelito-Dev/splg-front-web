@@ -9,6 +9,7 @@ describe('toAuditEntriesParams', () => {
       recordId: undefined,
       userId: undefined,
       actionType: undefined,
+      origin: undefined,
       from: undefined,
       to: undefined,
       page: 1,
@@ -89,5 +90,19 @@ describe('filtros inválidos', () => {
   it('el id de registro se corta en 64 caracteres (MaxLength del back)', () => {
     const params = toAuditEntriesParams({ ...EMPTY_DATA_AUDIT_FILTERS, recordId: 'a'.repeat(100) }, 1, 25);
     expect(params.recordId).toHaveLength(64);
+  });
+});
+
+describe('filtro de origen', () => {
+  it('se manda como `origin` y tiene su chip', () => {
+    const filters = { ...EMPTY_DATA_AUDIT_FILTERS, origin: 'direct' };
+    expect(toAuditEntriesParams(filters, 1, 25).origin).toBe('direct');
+    expect(dataAuditChips(filters, () => undefined)).toEqual([{ key: 'origin', label: 'Origen: Directo en la base' }]);
+  });
+
+  it('un origen que no existe no se manda ni tiene chip', () => {
+    const filters = { ...EMPTY_DATA_AUDIT_FILTERS, origin: 'otro' };
+    expect(toAuditEntriesParams(filters, 1, 25).origin).toBeUndefined();
+    expect(dataAuditChips(filters, () => undefined)).toEqual([]);
   });
 });

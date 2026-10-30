@@ -1406,6 +1406,143 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/audit': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Consultar el registro de auditoría
+     * @description Quién hizo cada operación que modificó datos, sobre qué, cuándo, desde qué aplicación y con qué resultado. Un admin de empresa ve sólo lo de su distribuidora.
+     */
+    get: operations['AuditController_consultar'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/audit/entries': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Consultar la auditoría de datos
+     * @description Una Auditoria por registro afectado (tipo de acción, usuario, entidadAfectada, idRegistro, ipUsuario, fechaHora) con sus DetalleAuditoria (campo, valorAnterior, valorNuevo). Un admin de empresa ve sólo lo de su distribuidora; el super admin ve todo o la que elige con X-Distributor.
+     */
+    get: operations['DataAuditController_findAll'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/audit/entries/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Una auditoría de datos con sus detalles
+     * @description Una Auditoria con todos sus DetalleAuditoria.
+     */
+    get: operations['DataAuditController_findOne'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/audit/action-types': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Catálogo de acciones auditadas
+     * @description TipoAccionAuditoria: Alta, Modificación, Baja lógica y Reactivación.
+     */
+    get: operations['DataAuditController_findActionTypes'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/audit/entries': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Consultar la auditoría de datos (con origen del asiento)
+     * @description Como la v1, con `origin` (`user`, `system`, `direct`) para distinguir lo hecho por un usuario, por la propia API sin usuario (crons, procesos) y lo escrito directo en la base (SQL a mano, scripts), y en cada asiento `source`, `tableName`, `dbUser` y `appName`. Un admin de empresa ve sólo lo de su distribuidora; el super admin ve todo o la que elige con X-Distributor.
+     */
+    get: operations['DataAuditV2Controller_findAll'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/audit/entries/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Una auditoría de datos con sus detalles (con origen del asiento) */
+    get: operations['DataAuditV2Controller_findOne'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/audit/action-types': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Catálogo de acciones auditadas
+     * @description TipoAccionAuditoria: Alta, Modificación, Baja lógica, Reactivación, Baja física, Ingreso, Ingreso fallido y Salida.
+     */
+    get: operations['DataAuditV2Controller_findActionTypes'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/orders/delivery-options': {
     parameters: {
       query?: never;
@@ -5812,86 +5949,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v1/audit': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Consultar el registro de auditoría
-     * @description Quién hizo cada operación que modificó datos, sobre qué, cuándo, desde qué aplicación y con qué resultado. Un admin de empresa ve sólo lo de su distribuidora.
-     */
-    get: operations['AuditController_consultar'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/audit/entries': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Consultar la auditoría de datos
-     * @description Una Auditoria por registro afectado (tipo de acción, usuario, entidadAfectada, idRegistro, ipUsuario, fechaHora) con sus DetalleAuditoria (campo, valorAnterior, valorNuevo). Un admin de empresa ve sólo lo de su distribuidora; el super admin ve todo o la que elige con X-Distributor.
-     */
-    get: operations['DataAuditController_findAll'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/audit/entries/{id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Una auditoría de datos con sus detalles
-     * @description Una Auditoria con todos sus DetalleAuditoria.
-     */
-    get: operations['DataAuditController_findOne'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/audit/action-types': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Catálogo de acciones auditadas
-     * @description TipoAccionAuditoria: Alta, Modificación, Baja lógica y Reactivación.
-     */
-    get: operations['DataAuditController_findActionTypes'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/api/v1/employees/{id}/attendance': {
     parameters: {
       query?: never;
@@ -7739,6 +7796,172 @@ export interface components {
        */
       expiresIn: number;
       user: components['schemas']['UsuarioAutenticadoDto'];
+    };
+    AsientoDeAuditoriaDto: {
+      /** Format: uuid */
+      auditId: string;
+      /** Format: uuid */
+      distributorId: string | null;
+      /** Format: uuid */
+      actorUserId: string | null;
+      /** @example admin */
+      actorRole: string | null;
+      /** @example PATCH */
+      httpMethod: string;
+      /** @example orders */
+      resource: string;
+      resourceId: string | null;
+      /** @example /api/orders/:id/status */
+      path: string;
+      /** @example panel-app */
+      clientSource: string | null;
+      ip: string | null;
+      /** @enum {string} */
+      result: 'success' | 'failure';
+      /** @example 200 */
+      statusCode: number;
+      /** @description El cuerpo de la operación, sin credenciales */
+      changes: {
+        [key: string]: unknown;
+      } | null;
+      errorMessage: string | null;
+      /** Format: date-time */
+      createdAt: string;
+    };
+    RegistroDeAuditoriaDto: {
+      items: components['schemas']['AsientoDeAuditoriaDto'][];
+      total: number;
+    };
+    AuditActionTypeDto: {
+      /**
+       * @description idTipoAuditoria
+       * @example 2
+       */
+      id: number;
+      /**
+       * @description nombre
+       * @example Modificación
+       */
+      name: string;
+    };
+    AuditUserDto: {
+      /** Format: uuid */
+      userId: string;
+      fullName: string | null;
+      email: string | null;
+      /** @description El usuario fue dado de baja después */
+      deleted: boolean;
+    };
+    AuditDetailDto: {
+      /**
+       * Format: uuid
+       * @description idDetalleAuditoria
+       */
+      auditDetailId: string;
+      /**
+       * @description campo
+       * @example status
+       */
+      field: string;
+      /** @description valorAnterior (null en una alta). Secretos: [oculto] */
+      oldValue: string | null;
+      /** @description valorNuevo. Secretos: [oculto] */
+      newValue: string | null;
+    };
+    AuditEntryDto: {
+      /**
+       * Format: uuid
+       * @description idAuditoria
+       */
+      auditId: string;
+      /** @description idTipoAuditoria con su nombre */
+      actionType: components['schemas']['AuditActionTypeDto'];
+      /**
+       * Format: uuid
+       * @description idUsuario; null si lo hizo el sistema (cron, seed)
+       */
+      userId: string | null;
+      /** @description Datos del usuario (aunque esté dado de baja, con `deleted`); null si lo hizo el sistema */
+      user: components['schemas']['AuditUserDto'] | null;
+      /** Format: uuid */
+      distributorId: string | null;
+      /**
+       * @description entidadAfectada
+       * @example Order
+       */
+      entity: string;
+      /** @description idRegistro */
+      recordId: string;
+      /** @description ipUsuario */
+      ip: string | null;
+      /**
+       * Format: date-time
+       * @description fechaHora
+       */
+      dateTime: string;
+      details: components['schemas']['AuditDetailDto'][];
+    };
+    AuditEntriesPageDto: {
+      data: components['schemas']['AuditEntryDto'][];
+      /** @description Total que cumple el filtro, sin paginar */
+      total: number;
+    };
+    AuditEntryV2Dto: {
+      /**
+       * Format: uuid
+       * @description idAuditoria
+       */
+      auditId: string;
+      /** @description idTipoAuditoria con su nombre */
+      actionType: components['schemas']['AuditActionTypeDto'];
+      /**
+       * Format: uuid
+       * @description idUsuario; null si lo hizo el sistema (cron, seed)
+       */
+      userId: string | null;
+      /** @description Datos del usuario (aunque esté dado de baja, con `deleted`); null si lo hizo el sistema */
+      user: components['schemas']['AuditUserDto'] | null;
+      /** Format: uuid */
+      distributorId: string | null;
+      /**
+       * @description entidadAfectada
+       * @example Order
+       */
+      entity: string;
+      /** @description idRegistro */
+      recordId: string;
+      /** @description ipUsuario */
+      ip: string | null;
+      /**
+       * Format: date-time
+       * @description fechaHora
+       */
+      dateTime: string;
+      details: components['schemas']['AuditDetailDto'][];
+      /**
+       * @description Ver el filtro `origin`
+       * @enum {string}
+       */
+      origin: 'user' | 'system' | 'direct';
+      /**
+       * @description `db`: lo escribió el trigger de la tabla. `app`: lo asentó la API (ingresos, motivos)
+       * @example db
+       */
+      source: string;
+      /** @description Tabla que cambió (sólo asientos del trigger) */
+      tableName: string | null;
+      /** @description Rol de la base que ejecutó el cambio */
+      dbUser: string | null;
+      /**
+       * @description application_name de la conexión: `splg-api`, `splg-script:<nombre>`, `psql`...
+       * @example splg-api
+       */
+      appName: string | null;
+    };
+    AuditEntriesPageV2Dto: {
+      data: components['schemas']['AuditEntryV2Dto'][];
+      /** @description Total que cumple el filtro, sin paginar */
+      total: number;
     };
     DeliveryOptionDto: {
       /** @enum {string} */
@@ -13337,115 +13560,6 @@ export interface components {
        * @description Caja de la que sale el pago: efectivo, banco o billetera de la distribuidora
        */
       cashBoxId: string;
-    };
-    AsientoDeAuditoriaDto: {
-      /** Format: uuid */
-      auditId: string;
-      /** Format: uuid */
-      distributorId: string | null;
-      /** Format: uuid */
-      actorUserId: string | null;
-      /** @example admin */
-      actorRole: string | null;
-      /** @example PATCH */
-      httpMethod: string;
-      /** @example orders */
-      resource: string;
-      resourceId: string | null;
-      /** @example /api/orders/:id/status */
-      path: string;
-      /** @example panel-app */
-      clientSource: string | null;
-      ip: string | null;
-      /** @enum {string} */
-      result: 'success' | 'failure';
-      /** @example 200 */
-      statusCode: number;
-      /** @description El cuerpo de la operación, sin credenciales */
-      changes: {
-        [key: string]: unknown;
-      } | null;
-      errorMessage: string | null;
-      /** Format: date-time */
-      createdAt: string;
-    };
-    RegistroDeAuditoriaDto: {
-      items: components['schemas']['AsientoDeAuditoriaDto'][];
-      total: number;
-    };
-    AuditActionTypeDto: {
-      /**
-       * @description idTipoAuditoria
-       * @example 2
-       */
-      id: number;
-      /**
-       * @description nombre
-       * @example Modificación
-       */
-      name: string;
-    };
-    AuditUserDto: {
-      /** Format: uuid */
-      userId: string;
-      fullName: string | null;
-      email: string | null;
-      /** @description El usuario fue dado de baja después */
-      deleted: boolean;
-    };
-    AuditDetailDto: {
-      /**
-       * Format: uuid
-       * @description idDetalleAuditoria
-       */
-      auditDetailId: string;
-      /**
-       * @description campo
-       * @example status
-       */
-      field: string;
-      /** @description valorAnterior (null en una alta). Secretos: [oculto] */
-      oldValue: string | null;
-      /** @description valorNuevo. Secretos: [oculto] */
-      newValue: string | null;
-    };
-    AuditEntryDto: {
-      /**
-       * Format: uuid
-       * @description idAuditoria
-       */
-      auditId: string;
-      /** @description idTipoAuditoria con su nombre */
-      actionType: components['schemas']['AuditActionTypeDto'];
-      /**
-       * Format: uuid
-       * @description idUsuario; null si lo hizo el sistema (cron, seed)
-       */
-      userId: string | null;
-      /** @description Datos del usuario (aunque esté dado de baja, con `deleted`); null si lo hizo el sistema */
-      user: components['schemas']['AuditUserDto'] | null;
-      /** Format: uuid */
-      distributorId: string | null;
-      /**
-       * @description entidadAfectada
-       * @example Order
-       */
-      entity: string;
-      /** @description idRegistro */
-      recordId: string;
-      /** @description ipUsuario */
-      ip: string | null;
-      /**
-       * Format: date-time
-       * @description fechaHora
-       */
-      dateTime: string;
-      details: components['schemas']['AuditDetailDto'][];
-    };
-    AuditEntriesPageDto: {
-      data: components['schemas']['AuditEntryDto'][];
-      /** @description Total que cumple el filtro, sin paginar */
-      total: number;
     };
     RegisterAttendanceDto: {
       /**
@@ -19692,6 +19806,303 @@ export interface operations {
       };
       /** @description Demasiados intentos fallidos */
       429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AuditController_consultar: {
+    parameters: {
+      query?: {
+        /** @description Quién hizo la operación */
+        actorUserId?: string;
+        /** @description Tipo de recurso */
+        resource?: string;
+        /** @description Un recurso puntual */
+        resourceId?: string;
+        result?: 'success' | 'failure';
+        desde?: string;
+        hasta?: string;
+        limit?: number;
+        offset?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RegistroDeAuditoriaDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DataAuditController_findAll: {
+    parameters: {
+      query?: {
+        /** @description entidadAfectada: nombre de la entidad de dominio */
+        entity?: string;
+        /** @description idRegistro: id del registro afectado */
+        recordId?: string;
+        /** @description Historial de un pedido: los asientos del Order, de sus renglones (OrderItem) y de sus pagos (Payment). Se combina con el resto de los filtros. */
+        orderId?: string;
+        /** @description idUsuario: quién hizo el cambio */
+        userId?: string;
+        /** @description idTipoAuditoria: 1 Alta, 2 Modificación, 3 Baja lógica, 4 Reactivación, 5 Baja física, 6 Ingreso, 7 Ingreso fallido, 8 Salida */
+        actionType?: number;
+        /** @description fechaHora desde (inclusive) */
+        from?: string;
+        /** @description fechaHora hasta (inclusive) */
+        to?: string;
+        page?: number;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AuditEntriesPageDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DataAuditController_findOne: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AuditEntryDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe, o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DataAuditController_findActionTypes: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AuditActionTypeDto'][];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DataAuditV2Controller_findAll: {
+    parameters: {
+      query?: {
+        /** @description entidadAfectada: nombre de la entidad de dominio */
+        entity?: string;
+        /** @description idRegistro: id del registro afectado */
+        recordId?: string;
+        /** @description Historial de un pedido: los asientos del Order, de sus renglones (OrderItem) y de sus pagos (Payment). Se combina con el resto de los filtros. */
+        orderId?: string;
+        /** @description idUsuario: quién hizo el cambio */
+        userId?: string;
+        /** @description idTipoAuditoria: 1 Alta, 2 Modificación, 3 Baja lógica, 4 Reactivación, 5 Baja física, 6 Ingreso, 7 Ingreso fallido, 8 Salida */
+        actionType?: number;
+        /** @description fechaHora desde (inclusive) */
+        from?: string;
+        /** @description fechaHora hasta (inclusive) */
+        to?: string;
+        page?: number;
+        limit?: number;
+        /** @description `user`: lo hizo un usuario. `system`: sin usuario, hecho por la propia API (crons, procesos, ingresos fallidos). `direct`: sin usuario y escrito en la base por otra aplicación (SQL a mano, scripts de mantenimiento). */
+        origin?: 'user' | 'system' | 'direct';
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AuditEntriesPageV2Dto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DataAuditV2Controller_findOne: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AuditEntryV2Dto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe, o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DataAuditV2Controller_findActionTypes: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AuditActionTypeDto'][];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
         headers: {
           [name: string]: unknown;
         };
@@ -34891,176 +35302,6 @@ export interface operations {
       };
       /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
       422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  AuditController_consultar: {
-    parameters: {
-      query?: {
-        /** @description Quién hizo la operación */
-        actorUserId?: string;
-        /** @description Tipo de recurso */
-        resource?: string;
-        /** @description Un recurso puntual */
-        resourceId?: string;
-        result?: 'success' | 'failure';
-        desde?: string;
-        hasta?: string;
-        limit?: number;
-        offset?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['RegistroDeAuditoriaDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  DataAuditController_findAll: {
-    parameters: {
-      query?: {
-        /** @description entidadAfectada: nombre de la entidad de dominio */
-        entity?: string;
-        /** @description idRegistro: id del registro afectado */
-        recordId?: string;
-        /** @description Historial de un pedido: los asientos del Order, de sus renglones (OrderItem) y de sus pagos (Payment). Se combina con el resto de los filtros. */
-        orderId?: string;
-        /** @description idUsuario: quién hizo el cambio */
-        userId?: string;
-        /** @description idTipoAuditoria: 1 Alta, 2 Modificación, 3 Baja lógica, 4 Reactivación, 5 Baja física */
-        actionType?: number;
-        /** @description fechaHora desde (inclusive) */
-        from?: string;
-        /** @description fechaHora hasta (inclusive) */
-        to?: string;
-        page?: number;
-        limit?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['AuditEntriesPageDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  DataAuditController_findOne: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['AuditEntryDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe, o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  DataAuditController_findActionTypes: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['AuditActionTypeDto'][];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
         headers: {
           [name: string]: unknown;
         };

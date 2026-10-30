@@ -1,22 +1,26 @@
 import type { GridColDef, GridPaginationModel } from '@mui/x-data-grid';
 import { useMemo } from 'react';
 import { Badge, DataTable, EmptyState, IdentityCell, RowActions } from '../../../common/components/ui';
-import type { AuditEntry } from '../../../services/api/types';
-import { auditActionLabel, auditEntityLabel } from '../../../utils/auditLabels';
+import type { AuditEntryV2 } from '../../../services/api/types';
+import { auditActionLabel, auditAuthorName, auditEntityLabel, auditOriginLabel } from '../../../utils/auditLabels';
 import { formatDateTime, formatShortId } from '../../../utils/format';
 
+/** El id corto del registro; en una sesión el registro es el email y se muestra entero. */
+const recordLabel = (row: AuditEntryV2): string =>
+  row.entity === 'Sesion' ? row.recordId : formatShortId(row.recordId);
+
 interface Props {
-  rows: AuditEntry[];
+  rows: AuditEntryV2[];
   total: number;
   loading: boolean;
   filtered: boolean;
   pagination: GridPaginationModel;
   onPaginationChange: (model: GridPaginationModel) => void;
-  onView: (entry: AuditEntry) => void;
+  onView: (entry: AuditEntryV2) => void;
 }
 
 export const DataAuditTable = ({ rows, total, loading, filtered, pagination, onPaginationChange, onView }: Props) => {
-  const columns = useMemo<GridColDef<AuditEntry>[]>(
+  const columns = useMemo<GridColDef<AuditEntryV2>[]>(
     () => [
       {
         field: 'entity',
@@ -25,7 +29,7 @@ export const DataAuditTable = ({ rows, total, loading, filtered, pagination, onP
         minWidth: 220,
         valueGetter: ({ row }) => auditEntityLabel(row.entity),
         renderCell: ({ row }) => (
-          <IdentityCell title={auditEntityLabel(row.entity)} subtitle={formatShortId(row.recordId)} monoSubtitle />
+          <IdentityCell title={auditEntityLabel(row.entity)} subtitle={recordLabel(row)} monoSubtitle />
         ),
       },
       {
@@ -53,14 +57,17 @@ export const DataAuditTable = ({ rows, total, loading, filtered, pagination, onP
         headerName: 'Autor',
         flex: 1,
         minWidth: 180,
-        valueGetter: ({ row }) => row.user?.fullName ?? 'Sistema',
+        valueGetter: ({ row }) => auditAuthorName(row),
         renderCell: ({ row }) => (
-          <IdentityCell
-            title={row.user?.fullName ?? row.user?.email ?? 'Sistema'}
-            subtitle={
-              row.user ? (row.user.deleted ? 'Usuario dado de baja' : (row.user.email ?? undefined)) : undefined
-            }
-          />
+          <div className="flex min-w-0 flex-col items-start gap-0.5 leading-tight">
+            <IdentityCell
+              title={auditAuthorName(row)}
+              subtitle={
+                row.user ? (row.user.deleted ? 'Usuario dado de baja' : (row.user.email ?? undefined)) : undefined
+              }
+            />
+            <Badge label={auditOriginLabel(row.origin)} />
+          </div>
         ),
       },
       { field: 'dateTime', headerName: 'Fecha', width: 170, valueGetter: ({ row }) => formatDateTime(row.dateTime) },
@@ -72,7 +79,7 @@ export const DataAuditTable = ({ rows, total, loading, filtered, pagination, onP
         align: 'right',
         renderCell: ({ row }) => (
           <RowActions
-            rowLabel={`cambio de ${auditEntityLabel(row.entity)} ${formatShortId(row.recordId)}`}
+            rowLabel={`cambio de ${auditEntityLabel(row.entity)} ${recordLabel(row)}`}
             onView={() => onView(row)}
           />
         ),
@@ -87,6 +94,7 @@ export const DataAuditTable = ({ rows, total, loading, filtered, pagination, onP
       columns={columns}
       getRowId={(row) => row.auditId}
       loading={loading}
+      rowHeight={76}
       pagination={{ model: pagination, onChange: onPaginationChange, total }}
       onRowClick={onView}
       empty={
