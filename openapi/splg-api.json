@@ -26793,6 +26793,53 @@
                 ]
             }
         },
+        "/api/v2/people/photos": {
+            "post": {
+                "description": "Para dibujar avatares en listados y fichas. Devuelve, por cada id de usuario, legajo y chofer (`delivery_id`) pedido (hasta 100 de cada uno), la URL firmada y su vencimiento, o `null` si no tiene foto. Un admin de empresa sólo recibe las fotos de su gente (clientes, choferes, admins y legajos de su distribuidora): el resto, y los ids que no existen, vienen `null` sin error. Siempre recibe la suya. El super admin ve todo, o lo de la distribuidora de `X-Distributor`.",
+                "operationId": "PeoplePhotosController_firmar",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PeoplePhotosRequestDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PeoplePhotosResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Ids que no son UUID, o más de 100"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Fotos de perfil de varias personas en un solo pedido",
+                "tags": [
+                    "People"
+                ]
+            }
+        },
         "/api/v2/imports/{recurso}/template": {
             "get": {
                 "description": "Encabezados en castellano y una fila de ejemplo (borrala antes de subir el archivo: se importa como cualquier otra). Recursos: `garrafas` (catálogo), `precios` (actualización por tipo), `stock` (stock inicial o ajuste por depósito) y `proveedores`.",
@@ -45787,6 +45834,104 @@
                     "settlements",
                     "receivables",
                     "commissions"
+                ]
+            },
+            "PeoplePhotosRequestDto": {
+                "type": "object",
+                "properties": {
+                    "userIds": {
+                        "maxItems": 100,
+                        "description": "Ids de usuario (clientes, choferes, admins). Puede ir vacío.",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    "employeeIds": {
+                        "maxItems": 100,
+                        "description": "Ids de legajo (empleados), con o sin cuenta de acceso.",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    "deliveryIds": {
+                        "maxItems": 100,
+                        "description": "Ids de chofer (`delivery_id`): se resuelven a la foto de su usuario.",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                },
+                "required": [
+                    "userIds"
+                ]
+            },
+            "PersonPhotoDto": {
+                "type": "object",
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "description": "URL firmada de S3 (se abre sin token)."
+                    },
+                    "expiresAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "url",
+                    "expiresAt"
+                ]
+            },
+            "PeoplePhotosResponseDto": {
+                "type": "object",
+                "properties": {
+                    "users": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/components/schemas/PersonPhotoDto"
+                                }
+                            ],
+                            "nullable": true
+                        },
+                        "description": "Una entrada por cada id pedido. `null` si no tiene foto, no existe o no es de la distribuidora (no se distingue)."
+                    },
+                    "employees": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/components/schemas/PersonPhotoDto"
+                                }
+                            ],
+                            "nullable": true
+                        },
+                        "description": "Igual que `users`, por id de legajo. Si el legajo tiene cuenta, es la foto del usuario."
+                    },
+                    "deliveries": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/components/schemas/PersonPhotoDto"
+                                }
+                            ],
+                            "nullable": true
+                        },
+                        "description": "Igual que `users`, por id de chofer (`delivery_id`)."
+                    }
+                },
+                "required": [
+                    "users",
+                    "employees",
+                    "deliveries"
                 ]
             },
             "ImportErrorDto": {

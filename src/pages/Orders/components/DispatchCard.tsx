@@ -1,5 +1,5 @@
 import { ExternalLink, MapPin, Truck, UserRoundCog } from 'lucide-react';
-import { Badge, Button } from '../../../common/components/ui';
+import { Badge, Button, PersonAvatar } from '../../../common/components/ui';
 import type { Order } from '../../../services/api/types';
 import { formatCurrency, formatElapsed, formatShortId, formatTime } from '../../../utils/format';
 import { paymentStatusLabel, type Label } from '../../../utils/statusLabels';
@@ -38,8 +38,13 @@ export const DispatchCard = ({ order, now, onAssign, onPreview, onOpen }: Props)
           aria-label={`Ver pedido ${formatShortId(order.order_id)} de ${name}`}
           className="min-w-0 rounded text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
         >
-          <span className="block truncate text-[13px] font-semibold text-ink hover:text-primary">{name}</span>
-          <span className="block font-mono text-[11.5px] text-muted">{formatShortId(order.order_id)}</span>
+          <span className="flex items-center gap-2">
+            <PersonAvatar name={name} userId={order.customer?.user_id} size="sm" />
+            <span className="min-w-0">
+              <span className="block truncate text-[13px] font-semibold text-ink hover:text-primary">{name}</span>
+              <span className="block font-mono text-[11.5px] text-muted">{formatShortId(order.order_id)}</span>
+            </span>
+          </span>
         </button>
         <span className="shrink-0 font-mono text-[13px] font-semibold text-ink">
           {formatCurrency(order.total_amount)}
@@ -51,11 +56,21 @@ export const DispatchCard = ({ order, now, onAssign, onPreview, onOpen }: Props)
         <span className="min-w-0 [overflow-wrap:anywhere]">{address || 'Sin dirección'}</span>
       </p>
       <p className="mt-1 flex items-center gap-1.5 text-[12px]">
-        <Truck aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-muted" />
         {order.delivery_name ? (
-          <span className="min-w-0 truncate text-ink-2">{order.delivery_name}</span>
+          <>
+            <PersonAvatar
+              name={order.delivery_name}
+              deliveryId={order.delivery_id}
+              size="sm"
+              fallback={<Truck aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-muted" />}
+            />
+            <span className="min-w-0 truncate text-ink-2">{order.delivery_name}</span>
+          </>
         ) : (
-          <span className="font-medium text-warn">Sin chofer</span>
+          <>
+            <Truck aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-muted" />
+            <span className="font-medium text-warn">Sin chofer</span>
+          </>
         )}
       </p>
 

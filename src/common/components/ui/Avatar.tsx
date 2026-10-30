@@ -1,5 +1,6 @@
 import { initialsOf } from '../../../utils/format';
 import { cx } from './cx';
+import { AVATAR_SIZES, type AvatarSize } from './avatarSizes';
 
 const TONES = ['bg-llama-500', 'bg-info', 'bg-success', 'bg-gas-600', 'bg-tinta-700', 'bg-danger'] as const;
 
@@ -12,15 +13,9 @@ const toneFor = (name: string) => {
 
 interface Props {
   name: string;
-  size?: 'sm' | 'md' | 'lg';
+  size?: AvatarSize;
   className?: string;
 }
-
-const SIZES: Record<NonNullable<Props['size']>, string> = {
-  lg: 'h-14 w-14 text-xl',
-  md: 'h-[30px] w-[30px] text-[11px]',
-  sm: 'h-6 w-6 text-[10px]',
-};
 
 /** Iniciales sobre un color estable. Decorativo: el nombre siempre está escrito al lado. */
 export const Avatar = ({ name, size = 'md', className }: Props) => (
@@ -28,7 +23,7 @@ export const Avatar = ({ name, size = 'md', className }: Props) => (
     aria-hidden="true"
     className={cx(
       'grid shrink-0 place-items-center rounded-full font-semibold text-white',
-      SIZES[size],
+      AVATAR_SIZES[size],
       toneFor(name),
       className,
     )}

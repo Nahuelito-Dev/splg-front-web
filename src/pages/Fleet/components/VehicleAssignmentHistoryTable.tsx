@@ -55,6 +55,8 @@ export const VehicleAssignmentHistoryTable = ({
             <IdentityCell
               title={row.driverName ?? 'Sin nombre'}
               subtitle={row.driverName ? undefined : 'Chofer eliminado'}
+              avatarName={row.driverName ?? '?'}
+              person={{ deliveryId: row.deliveryId }}
             />
           ),
       },

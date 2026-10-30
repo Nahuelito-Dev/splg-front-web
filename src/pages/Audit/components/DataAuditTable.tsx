@@ -62,6 +62,8 @@ export const DataAuditTable = ({ rows, total, loading, filtered, pagination, onP
           <div className="flex min-w-0 flex-col items-start gap-0.5 leading-tight">
             <IdentityCell
               title={auditAuthorName(row)}
+              avatarName={row.user ? auditAuthorName(row) : undefined}
+              person={{ userId: row.user?.userId }}
               subtitle={
                 row.user ? (row.user.deleted ? 'Usuario dado de baja' : (row.user.email ?? undefined)) : undefined
               }

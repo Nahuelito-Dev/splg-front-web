@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { CircleUser, MapPin, Truck, UserCheck, Wallet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Avatar, Badge, Button, Card, CardHeader, UserRefLink } from '../../../../common/components/ui';
+import { Badge, PersonAvatar, Button, Card, CardHeader, UserRefLink } from '../../../../common/components/ui';
 import type { Order } from '../../../../services/api/types';
 import { useFindCustomerByUserId } from '../../../../services/queries/customers';
 import { useUser } from '../../../../services/queries/users';
@@ -40,7 +40,7 @@ const CustomerSection = ({ order }: { order: Order }) => {
       {customer ? (
         <>
           <div className="flex items-center gap-3">
-            <Avatar name={customer.full_name ?? 'Cliente'} size="lg" />
+            <PersonAvatar name={customer.full_name ?? 'Cliente'} userId={customer.user_id} size="lg" />
             <div className="min-w-0">
               <p className="break-words font-semibold text-ink">{customer.full_name ?? 'Sin nombre'}</p>
               {customer.email && <p className="truncate text-xs text-muted">{customer.email}</p>}
@@ -137,7 +137,7 @@ const DriverSection = ({ order }: { order: Order }) => {
       {order.delivery_name ? (
         <>
           <div className="flex items-center gap-3">
-            <Avatar name={order.delivery_name} size="lg" />
+            <PersonAvatar name={order.delivery_name} deliveryId={order.delivery_id} size="lg" />
             <div className="min-w-0">
               <p className="break-words font-semibold text-ink">{order.delivery_name}</p>
               {vehicle ? (

@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { Tooltip } from '@mui/material';
 import { ChevronDown, LogOut } from 'lucide-react';
+import { useAppSelector } from '../../../hooks';
 import { useOrders } from '../../../services/queries/orders';
+import { useMyAccount } from '../../../services/queries/users';
 import { LogoSplg } from '../LogoSplg';
 import { cx } from '../ui/cx';
+import { PersonAvatar } from '../ui/PersonAvatar';
 import { initialsOf } from '../../../utils/format';
 import { NavItemLink } from './NavItemLink';
 import { NAV_SECTIONS } from './navConfig';
@@ -43,6 +46,8 @@ export const SideMenuContent = ({ isSuperAdmin, fullName, mini = false, onNaviga
   // Pedidos esperando chofer: el mismo número que muestra Pedidos filtrado por "Pendiente".
   const { data: pending } = useOrders(PENDING, { status: 'pending' }, { refetchInterval: 30_000 });
   const pendingCount = pending?.total ?? 0;
+  const { email } = useAppSelector((state) => state.auth);
+  const { data: account } = useMyAccount(email);
   const [collapsed, setCollapsed] = useState<string[]>(readCollapsedSections);
 
   const toggleSection = (title: string) => {
@@ -115,12 +120,19 @@ export const SideMenuContent = ({ isSuperAdmin, fullName, mini = false, onNaviga
       >
         {!mini && (
           <>
-            <span
-              aria-hidden="true"
-              className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-full bg-gradient-to-br from-tinta-600 to-tinta-800 text-[11px] font-semibold text-white"
-            >
-              {initialsOf(fullName ?? 'A')}
-            </span>
+            <PersonAvatar
+              name={fullName ?? 'Administrador'}
+              userId={account?.user_id}
+              decorative
+              fallback={
+                <span
+                  aria-hidden="true"
+                  className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-full bg-gradient-to-br from-tinta-600 to-tinta-800 text-[11px] font-semibold text-white"
+                >
+                  {initialsOf(fullName ?? 'A')}
+                </span>
+              }
+            />
             <span className="min-w-0 flex-1 leading-tight">
               <span className="block truncate text-[12.5px] font-semibold text-white" title={fullName ?? undefined}>
                 {fullName ?? 'Administrador'}

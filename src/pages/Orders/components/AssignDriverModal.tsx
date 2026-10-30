@@ -8,6 +8,7 @@ import {
   EmptyState,
   LoadingState,
   Modal,
+  PersonAvatar,
   SearchInput,
 } from '../../../common/components/ui';
 import { useDebounce, usePermissions } from '../../../hooks';
@@ -145,9 +146,15 @@ export const AssignDriverModal = ({
               )}
             >
               <span className="flex min-w-0 items-center gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface text-primary-strong shadow-sm">
-                  <TwoWheelerIcon fontSize="small" />
-                </span>
+                <PersonAvatar
+                  name={driver.user?.full_name ?? 'Chofer'}
+                  userId={driver.user_id}
+                  fallback={
+                    <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full bg-surface text-primary-strong shadow-sm">
+                      <TwoWheelerIcon fontSize="small" />
+                    </span>
+                  }
+                />
                 <span className="min-w-0">
                   <span className="block text-sm font-semibold text-ink">{driver.user?.full_name ?? 'Sin nombre'}</span>
                   <span className="block text-xs text-muted">{driver.user?.phone_number ?? '—'}</span>

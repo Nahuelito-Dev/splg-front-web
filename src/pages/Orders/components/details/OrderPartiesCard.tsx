@@ -1,5 +1,5 @@
 import { CircleUser, MapPin, Truck } from 'lucide-react';
-import { Card, CardHeader } from '../../../../common/components/ui';
+import { Card, CardHeader, PersonAvatar } from '../../../../common/components/ui';
 import type { Order } from '../../../../services/api/types';
 
 /** Cliente, entrega y chofer de un pedido (el pago está en el resumen de ítems): la "tarjeta lateral" de la ficha. */
@@ -9,7 +9,15 @@ export const OrderPartiesCard = ({ order }: { order: Order }) => (
       <CardHeader title="Cliente" icon={<CircleUser strokeWidth={1.8} />} as="h3" className="mb-3" />
       {order.customer ? (
         <>
-          <p className="font-medium text-ink">{order.customer.full_name ?? 'Sin nombre'}</p>
+          <div className="flex items-center gap-2">
+            <PersonAvatar
+              name={order.customer.full_name ?? 'Cliente'}
+              userId={order.customer.user_id}
+              size="sm"
+              decorative
+            />
+            <p className="font-medium text-ink">{order.customer.full_name ?? 'Sin nombre'}</p>
+          </div>
           {order.customer.phone_number && <p className="text-sm text-muted">{order.customer.phone_number}</p>}
           {order.customer.email && <p className="truncate text-sm text-muted">{order.customer.email}</p>}
         </>
@@ -37,7 +45,10 @@ export const OrderPartiesCard = ({ order }: { order: Order }) => (
       <CardHeader title="Chofer asignado" icon={<Truck strokeWidth={1.8} />} as="h3" className="mb-3" />
       {order.delivery_name ? (
         <>
-          <p className="font-medium text-ink">{order.delivery_name}</p>
+          <div className="flex items-center gap-2">
+            <PersonAvatar name={order.delivery_name} deliveryId={order.delivery_id} size="sm" decorative />
+            <p className="font-medium text-ink">{order.delivery_name}</p>
+          </div>
           {order.vehicle ? (
             <p className="mt-1 text-sm text-muted">
               <span className="font-mono font-semibold uppercase tracking-wide">

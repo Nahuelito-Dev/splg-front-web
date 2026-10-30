@@ -6425,6 +6425,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/people/photos': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Fotos de perfil de varias personas en un solo pedido
+     * @description Para dibujar avatares en listados y fichas. Devuelve, por cada id de usuario, legajo y chofer (`delivery_id`) pedido (hasta 100 de cada uno), la URL firmada y su vencimiento, o `null` si no tiene foto. Un admin de empresa sólo recibe las fotos de su gente (clientes, choferes, admins y legajos de su distribuidora): el resto, y los ids que no existen, vienen `null` sin error. Siempre recibe la suya. El super admin ve todo, o lo de la distribuidora de `X-Distributor`.
+     */
+    post: operations['PeoplePhotosController_firmar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v2/imports/{recurso}/template': {
     parameters: {
       query?: never;
@@ -14247,6 +14267,34 @@ export interface components {
       settlements: components['schemas']['DashboardSettlementsDto'];
       receivables: components['schemas']['DashboardReceivablesDto'];
       commissions: components['schemas']['DashboardCommissionsDto'];
+    };
+    PeoplePhotosRequestDto: {
+      /** @description Ids de usuario (clientes, choferes, admins). Puede ir vacío. */
+      userIds: string[];
+      /** @description Ids de legajo (empleados), con o sin cuenta de acceso. */
+      employeeIds?: string[];
+      /** @description Ids de chofer (`delivery_id`): se resuelven a la foto de su usuario. */
+      deliveryIds?: string[];
+    };
+    PersonPhotoDto: {
+      /** @description URL firmada de S3 (se abre sin token). */
+      url: string;
+      /** Format: date-time */
+      expiresAt: string;
+    };
+    PeoplePhotosResponseDto: {
+      /** @description Una entrada por cada id pedido. `null` si no tiene foto, no existe o no es de la distribuidora (no se distingue). */
+      users: {
+        [key: string]: components['schemas']['PersonPhotoDto'] | null;
+      };
+      /** @description Igual que `users`, por id de legajo. Si el legajo tiene cuenta, es la foto del usuario. */
+      employees: {
+        [key: string]: components['schemas']['PersonPhotoDto'] | null;
+      };
+      /** @description Igual que `users`, por id de chofer (`delivery_id`). */
+      deliveries: {
+        [key: string]: components['schemas']['PersonPhotoDto'] | null;
+      };
     };
     ImportErrorDto: {
       /**
@@ -36919,6 +36967,50 @@ export interface operations {
       };
       /** @description El recurso no existe */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PeoplePhotosController_firmar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PeoplePhotosRequestDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PeoplePhotosResponseDto'];
+        };
+      };
+      /** @description Ids que no son UUID, o más de 100 */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
         headers: {
           [name: string]: unknown;
         };

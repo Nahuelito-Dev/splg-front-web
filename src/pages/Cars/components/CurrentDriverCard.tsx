@@ -38,6 +38,7 @@ export const CurrentDriverCard = ({ carId }: { carId: string }) => {
             title={current.driverName ?? 'Sin nombre'}
             subtitle={`Desde ${formatDateTime(current.assignedAt)}`}
             avatarName={current.driverName ?? '?'}
+            person={{ deliveryId: current.deliveryId }}
           />
           <Button
             variant="ghost"

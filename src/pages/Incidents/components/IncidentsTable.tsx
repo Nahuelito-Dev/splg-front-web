@@ -35,6 +35,7 @@ export const IncidentsTable = ({ rows, loading, filtered = false, onView, onEdit
             title={row.order?.customer?.full_name ?? 'Cliente sin nombre'}
             subtitle={`Pedido ${formatShortId(row.order_id)}`}
             avatarName={row.order?.customer?.full_name ?? '?'}
+            person={{ userId: row.order?.customer?.user_id }}
           />
         ),
       },

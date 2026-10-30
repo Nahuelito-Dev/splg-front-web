@@ -41,7 +41,13 @@ export const AuditTable = ({ rows, total, loading, pagination, onPaginationChang
         minWidth: 170,
         valueGetter: ({ row }) => row.actorRole ?? 'Sistema',
         renderCell: ({ row }) => (
-          <IdentityCell title={row.actorRole ?? 'Sistema'} subtitle={shortId(row.actorUserId)} monoSubtitle />
+          <IdentityCell
+            title={row.actorRole ?? 'Sistema'}
+            subtitle={shortId(row.actorUserId)}
+            monoSubtitle
+            avatarName={row.actorUserId ? (row.actorRole ?? 'Usuario') : undefined}
+            person={{ userId: row.actorUserId }}
+          />
         ),
       },
       { field: 'createdAt', headerName: 'Fecha', width: 180, valueGetter: ({ row }) => formatDateTime(row.createdAt) },

@@ -12,6 +12,7 @@ import {
   EntityPhoto,
   FormTextArea,
   Form,
+  PersonAvatar,
 } from '../../../common/components/ui';
 import type { Incident } from '../../../services/api/types';
 import { useResolveIncident } from '../../../services/queries/incidents';
@@ -120,7 +121,15 @@ export const IncidentDetailDrawer = ({ open, onClose, incident, onEdit, onDiscar
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="rounded-xl border border-outline bg-surface-hover p-3">
             <h3 className="text-xs font-semibold uppercase text-muted">Cliente</h3>
-            <p className="font-medium text-ink">{incident.order?.customer?.full_name ?? '—'}</p>
+            <div className="flex items-center gap-2">
+              <PersonAvatar
+                name={incident.order?.customer?.full_name ?? 'Cliente'}
+                userId={incident.order?.customer?.user_id}
+                size="sm"
+                decorative
+              />
+              <p className="font-medium text-ink">{incident.order?.customer?.full_name ?? '—'}</p>
+            </div>
             <p className="text-sm text-muted">{incident.order?.customer?.phone_number ?? '—'}</p>
           </div>
           <div className="rounded-xl border border-outline bg-surface-hover p-3">
@@ -132,9 +141,17 @@ export const IncidentDetailDrawer = ({ open, onClose, incident, onEdit, onDiscar
 
         <div className="rounded-xl border border-outline bg-surface-hover p-3">
           <h3 className="text-xs font-semibold uppercase text-muted">Reportada por</h3>
-          <p className="font-medium text-ink">
-            {reporter.isLoading ? 'Buscando…' : (reporter.data?.full_name ?? 'Usuario no encontrado')}
-          </p>
+          <div className="flex items-center gap-2">
+            <PersonAvatar
+              name={reporter.data?.full_name ?? 'Usuario'}
+              userId={incident.reported_by}
+              size="sm"
+              decorative
+            />
+            <p className="font-medium text-ink">
+              {reporter.isLoading ? 'Buscando…' : (reporter.data?.full_name ?? 'Usuario no encontrado')}
+            </p>
+          </div>
           <p className="font-mono text-xs text-muted">{incident.reported_by}</p>
         </div>
 

@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Order } from '../../../services/api/types';
+import { usePersonPhoto } from '../../../services/queries/peoplePhotos';
 
 // El DataGrid de MUI no maqueta columnas en jsdom: se renderiza cada celda tal cual.
 vi.mock('../../../common/components/ui', async (importOriginal) => ({
@@ -149,5 +150,21 @@ describe('OrdersTable: chofer sin asignar', () => {
     cleanup();
     renderTable([order('g2', { status: 'cancelled' }), order('g3', { status: 'delivered' })]);
     expect(screen.queryByText('Sin asignar')).toBeNull();
+  });
+});
+
+describe('OrdersTable: fotos de las personas', () => {
+  it('el cliente se pide por user_id y el chofer por delivery_id', () => {
+    vi.mocked(usePersonPhoto).mockClear();
+    renderTable([
+      order('aaaaaa', {
+        customer: { user_id: 'user-1', full_name: 'Ana Pérez' },
+        delivery_id: 'deliv-1',
+        delivery_name: 'Beto Gómez',
+      } as unknown as Partial<Order>),
+    ]);
+    expect(usePersonPhoto).toHaveBeenCalledWith({ kind: 'user', id: 'user-1' });
+    expect(usePersonPhoto).toHaveBeenCalledWith({ kind: 'delivery', id: 'deliv-1' });
+    expect(usePersonPhoto).not.toHaveBeenCalledWith({ kind: 'user', id: 'deliv-1' });
   });
 });

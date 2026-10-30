@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { formatShortId } from '../../../utils/format';
 import { cx } from './cx';
+import { PersonAvatar } from './PersonAvatar';
 
 interface Props {
   userId: string;
@@ -15,8 +16,12 @@ export const UserRefLink = ({ userId, name, loading = false, className }: Props)
   <Link
     to={`/users/details/${userId}`}
     onClick={(event) => event.stopPropagation()}
-    className={cx('font-medium text-primary-strong hover:underline', className)}
+    className={cx(
+      'inline-flex max-w-full items-center gap-1.5 align-middle font-medium text-primary-strong hover:underline',
+      className,
+    )}
   >
-    {name || (loading ? 'Cargando…' : formatShortId(userId))}
+    <PersonAvatar name={name || formatShortId(userId)} userId={userId} size="xs" decorative />
+    <span className="min-w-0 truncate">{name || (loading ? 'Cargando…' : formatShortId(userId))}</span>
   </Link>
 );

@@ -1,5 +1,5 @@
 import { Star } from 'lucide-react';
-import { Avatar, TableroWidget } from '../../../common/components/ui';
+import { PersonAvatar, TableroWidget } from '../../../common/components/ui';
 import { useRatingSummaries } from '../../../services/queries/ratings';
 import { useSalesByDriver } from '../../../services/queries/reports';
 import { formatCurrency, formatNumber } from '../../../utils/format';
@@ -35,7 +35,7 @@ export const TopDriversCard = () => {
           return (
             <li key={driver.id} className="grid grid-cols-[auto_auto_1fr_auto] items-center gap-3">
               <span className="w-4 text-center font-mono text-xs font-semibold text-muted">{index + 1}</span>
-              <Avatar name={driver.name} />
+              <PersonAvatar name={driver.name} userId={driver.id} />
               <span className="min-w-0">
                 <b className="block truncate text-[13px] font-semibold text-ink">{driver.name}</b>
                 <span className="flex items-center gap-1.5 text-[11.5px] text-muted">

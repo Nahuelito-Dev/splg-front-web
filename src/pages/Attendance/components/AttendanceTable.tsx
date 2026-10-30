@@ -42,6 +42,7 @@ export const AttendanceTable = ({
           title={row.employeeName}
           subtitle={`Legajo ${row.employeeFileNumber}`}
           avatarName={row.employeeName}
+          person={{ employeeId: row.employeeId }}
         />
       ),
     };
@@ -104,6 +105,7 @@ export const AttendanceTable = ({
               title={row.employeeName}
               subtitle={`Legajo ${row.employeeFileNumber}`}
               avatarName={row.employeeName}
+              person={{ employeeId: row.employeeId }}
             />
           )}
           <p className="text-sm text-ink">

@@ -1,5 +1,5 @@
 import { Truck } from 'lucide-react';
-import { Avatar, cx, EmptyState, ErrorState, SearchInput, Skeleton } from '../../../common/components/ui';
+import { cx, EmptyState, ErrorState, PersonAvatar, SearchInput, Skeleton } from '../../../common/components/ui';
 import type { FilesSubject } from './FleetOwnerFiles';
 
 export interface FileOwner {
@@ -80,7 +80,7 @@ export const FleetFileOwners = ({
                     <Truck className="h-4 w-4" strokeWidth={1.8} />
                   </span>
                 ) : (
-                  <Avatar name={owner.name} />
+                  <PersonAvatar name={owner.name} employeeId={owner.id} />
                 )}
                 <span className="min-w-0 leading-tight">
                   <span

@@ -2,7 +2,7 @@ import AttachFile from '@mui/icons-material/AttachFile';
 import DirectionsCar from '@mui/icons-material/DirectionsCar';
 import Person from '@mui/icons-material/Person';
 import type { DragEvent } from 'react';
-import { Button, cx } from '../../../common/components/ui';
+import { Button, cx, PersonAvatar } from '../../../common/components/ui';
 import { TONE_CLASSES } from '../../../common/components/ui/toneClasses';
 import type { FleetTask } from '../../../services/api/types';
 import { dueText, dueTone, isOpenTask } from '../fleetTaskKanban';
@@ -33,7 +33,18 @@ const ownerOf = ({ task, carMap, driverMap }: { task: FleetTask } & Owners) => {
   }
   const driver = task.deliveryId ? driverMap.get(task.deliveryId) : undefined;
   if (driver)
-    return { icon: <Person aria-hidden="true" fontSize="inherit" />, text: driver.user?.full_name ?? 'Chofer' };
+    return {
+      icon: (
+        <PersonAvatar
+          name={driver.user?.full_name ?? 'Chofer'}
+          userId={driver.user_id}
+          size="xs"
+          decorative
+          fallback={<Person aria-hidden="true" fontSize="inherit" />}
+        />
+      ),
+      text: driver.user?.full_name ?? 'Chofer',
+    };
   return null;
 };
 

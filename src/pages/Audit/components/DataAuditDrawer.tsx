@@ -1,4 +1,4 @@
-import { Badge, DetailList, Drawer } from '../../../common/components/ui';
+import { Badge, DetailList, Drawer, PersonAvatar } from '../../../common/components/ui';
 import type { AuditEntryV2 } from '../../../services/api/types';
 import {
   auditActionLabel,
@@ -36,7 +36,14 @@ export const DataAuditDrawer = ({ entry, onClose }: Props) => (
             { label: 'Id del registro', value: entry.recordId, mono: true, wide: true },
             {
               label: 'Autor',
-              value: `${auditAuthorName(entry)}${entry.user?.deleted ? ' (dado de baja)' : ''}`,
+              value: (
+                <span className="inline-flex items-center gap-2">
+                  {entry.user && (
+                    <PersonAvatar name={auditAuthorName(entry)} userId={entry.user.userId} size="xs" decorative />
+                  )}
+                  {`${auditAuthorName(entry)}${entry.user?.deleted ? ' (dado de baja)' : ''}`}
+                </span>
+              ),
             },
             { label: 'IP', value: entry.ip, mono: true },
             { label: 'Distribuidora', value: entry.distributorId, mono: true, wide: true },

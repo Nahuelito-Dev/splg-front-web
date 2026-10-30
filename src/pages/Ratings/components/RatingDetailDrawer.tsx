@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { AuditHistoryLink, Badge, DetailList, Drawer } from '../../../common/components/ui';
+import { AuditHistoryLink, Badge, DetailList, Drawer, PersonAvatar } from '../../../common/components/ui';
 import { useRating } from '../../../services/queries/ratings';
 import { formatDateTime, formatShortId } from '../../../utils/format';
 import { Stars } from './Stars';
@@ -29,7 +29,20 @@ export const RatingDetailDrawer = ({ ratingId, onClose }: Props) => {
           {rating.comment && <p className="text-sm italic text-muted">“{rating.comment}”</p>}
           <DetailList
             items={[
-              { label: 'Calificó', value: rating.fromUser?.full_name ?? '—' },
+              {
+                label: 'Calificó',
+                value: (
+                  <span className="inline-flex items-center gap-2">
+                    <PersonAvatar
+                      name={rating.fromUser?.full_name ?? 'Usuario'}
+                      userId={rating.from_user_id}
+                      size="xs"
+                      decorative
+                    />
+                    {rating.fromUser?.full_name ?? '—'}
+                  </span>
+                ),
+              },
               { label: 'Rol de quien calificó', value: rating.from_role === 'customer' ? 'Cliente' : 'Chofer' },
               { label: 'Fecha', value: formatDateTime(rating.createdAt) },
               {
