@@ -1,6 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import type { PhotoKind } from '../../../services/api/photos';
 import { Avatar } from './Avatar';
+import { PersonAvatar } from './PersonAvatar';
 import { PhotoThumb } from './PhotoThumb';
 
 interface Props {
@@ -14,13 +15,33 @@ interface Props {
   monoSubtitle?: boolean;
   /** Foto del back (`photoUrl`): reemplaza al avatar o al ícono; si no hay o no carga, queda lo de siempre. */
   photo?: { kind: PhotoKind; id: string; url: string | null | undefined };
+  /** Persona cuya foto no viene en la fila: se pide por id (usuario o legajo) y, sin foto, quedan las iniciales. */
+  person?: { userId?: string | null; employeeId?: string | null; deliveryId?: string | null };
 }
 
 /** Primera columna de una tabla: qué es la fila, con su dato de referencia abajo. */
-export const IdentityCell = ({ title, subtitle, avatarName, icon: Icon, monoSubtitle = false, photo }: Props) => {
+export const IdentityCell = ({
+  title,
+  subtitle,
+  avatarName,
+  icon: Icon,
+  monoSubtitle = false,
+  photo,
+  person,
+}: Props) => {
   const lead = (
     <>
-      {avatarName && <Avatar name={avatarName} />}
+      {avatarName &&
+        (person && (person.userId || person.employeeId || person.deliveryId) ? (
+          <PersonAvatar
+            name={avatarName}
+            userId={person.userId}
+            employeeId={person.employeeId}
+            deliveryId={person.deliveryId}
+          />
+        ) : (
+          <Avatar name={avatarName} />
+        ))}
       {Icon && (
         <span className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-lg border border-outline-soft bg-bg text-ink-2">
           <Icon aria-hidden="true" className="h-4 w-4" strokeWidth={1.8} />

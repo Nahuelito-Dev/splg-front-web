@@ -31,3 +31,13 @@ vi.mock('../hooks/useServerExport', () => ({
       : [],
   ),
 }));
+
+/**
+ * Cada avatar de persona pide su foto con `usePersonPhoto` (React Query); los tests de pantalla no arman ese
+ * proveedor ni la llamada de red. Se reemplaza por «sin foto» (quedan las iniciales): el hook y el avatar se
+ * prueban con `vi.unmock`.
+ */
+vi.mock('../services/queries/peoplePhotos', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  usePersonPhoto: vi.fn(() => ({ data: null, refetch: vi.fn() })),
+}));

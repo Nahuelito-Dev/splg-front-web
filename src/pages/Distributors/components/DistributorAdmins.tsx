@@ -39,6 +39,7 @@ export const DistributorAdmins = ({ distributorId }: { distributorId: string }) 
                   title={admin.user?.full_name ?? 'Sin nombre'}
                   subtitle={admin.user?.email ?? undefined}
                   avatarName={admin.user?.full_name ?? '?'}
+                  person={{ userId: admin.user_id }}
                 />
                 <Badge label={roleLabel(admin.user?.role?.type ?? admin.role?.type)} />
               </button>

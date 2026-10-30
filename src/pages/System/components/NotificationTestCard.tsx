@@ -38,6 +38,7 @@ const UserPicker = ({ selected, onSelect }: { selected: User | null; onSelect: (
           title={selected.full_name ?? 'Sin nombre'}
           subtitle={selected.email ?? selected.phone_number ?? selected.user_id}
           avatarName={selected.full_name ?? '?'}
+          person={{ userId: selected.user_id }}
         />
         <Button variant="secondary" size="sm" onClick={() => onSelect(null)}>
           Cambiar
@@ -67,6 +68,7 @@ const UserPicker = ({ selected, onSelect }: { selected: User | null; onSelect: (
                 title={user.full_name ?? 'Sin nombre'}
                 subtitle={user.email ?? user.phone_number ?? user.user_id}
                 avatarName={user.full_name ?? '?'}
+                person={{ userId: user.user_id }}
               />
             </button>
           ))}

@@ -12,6 +12,7 @@ import {
   PageContainer,
   TableToolbar,
   DateRangeFilter,
+  PersonAvatar,
 } from '../../common/components/ui';
 import { useClampPage, useUrlPagedParams } from '../../hooks';
 import type { CommissionEntry } from '../../services/api/types';
@@ -52,7 +53,18 @@ export const Commissions = () => {
       sortable: false,
       valueGetter: ({ row }) => formatDateTime(row.occurredAt),
     },
-    { field: 'employeeName', headerName: 'Chofer', width: 190, sortable: false },
+    {
+      field: 'employeeName',
+      headerName: 'Chofer',
+      width: 190,
+      sortable: false,
+      renderCell: ({ row }) => (
+        <span className="flex min-w-0 items-center gap-2">
+          <PersonAvatar name={row.employeeName} employeeId={row.employeeId} size="sm" decorative />
+          <span className="truncate">{row.employeeName}</span>
+        </span>
+      ),
+    },
     {
       field: 'type',
       headerName: 'Asiento',

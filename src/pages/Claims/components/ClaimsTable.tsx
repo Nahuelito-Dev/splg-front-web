@@ -31,6 +31,7 @@ export const ClaimsTable = ({ rows, loading, filtered = false, onManage, onEdit,
             title={row.customer?.full_name ?? 'Cliente sin nombre'}
             subtitle={`Pedido ${formatShortId(row.order_id)}`}
             avatarName={row.customer?.full_name ?? '?'}
+            person={{ userId: row.customer_id }}
           />
         ),
       },

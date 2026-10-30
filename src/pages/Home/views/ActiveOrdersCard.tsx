@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Avatar, Badge, Card, EmptyState } from '../../../common/components/ui';
+import { Badge, Card, EmptyState, PersonAvatar } from '../../../common/components/ui';
 import { cx } from '../../../common/components/ui/cx';
 import type { Order } from '../../../services/api/types';
 import { useOrders } from '../../../services/queries/orders';
@@ -101,7 +101,7 @@ export const ActiveOrdersCard = () => {
                   >
                     <td className="px-[18px] py-3">
                       <div className="flex items-center gap-2.5">
-                        <Avatar name={name} />
+                        <PersonAvatar name={name} userId={order.customer?.user_id} />
                         <span className="min-w-0">
                           <b className="block truncate font-semibold text-ink">{name}</b>
                           <span className="font-mono text-[11.5px] text-muted">{formatShortId(order.order_id)}</span>

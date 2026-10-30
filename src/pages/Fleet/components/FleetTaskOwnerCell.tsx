@@ -12,6 +12,8 @@ const EmployeeOwner = ({ employeeId }: { employeeId: string }) => {
     <IdentityCell
       title={employee ? `${employee.firstName} ${employee.lastName}` : 'Empleado'}
       subtitle={employee ? `Legajo ${employee.fileNumber}` : undefined}
+      avatarName={employee ? `${employee.firstName} ${employee.lastName}` : 'Empleado'}
+      person={{ employeeId }}
     />
   );
 };
@@ -29,7 +31,14 @@ export const FleetTaskOwnerCell = ({ task, carMap, driverMap }: { task: FleetTas
       />
     );
   }
-  if (driver) return <IdentityCell title={driver.user?.full_name ?? 'Chofer'} />;
+  if (driver)
+    return (
+      <IdentityCell
+        title={driver.user?.full_name ?? 'Chofer'}
+        avatarName={driver.user?.full_name ?? 'Chofer'}
+        person={{ userId: driver.user_id }}
+      />
+    );
   if (task.employeeId) return <EmployeeOwner employeeId={task.employeeId} />;
   return <span className="text-muted">—</span>;
 };

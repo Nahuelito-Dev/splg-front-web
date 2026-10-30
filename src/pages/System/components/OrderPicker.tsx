@@ -25,6 +25,7 @@ export const OrderPicker = ({ selected, onSelect }: Props) => {
           title={selected.customer?.full_name ?? 'Cliente sin nombre'}
           subtitle={`Pedido ${formatShortId(selected.order_id)} · ${formatCurrency(selected.total_amount)}`}
           avatarName={selected.customer?.full_name ?? '?'}
+          person={{ userId: selected.customer?.user_id }}
         />
         <div className="flex items-center gap-2">
           <Badge label={labelOf(ORDER_STATUS, selected.status)} />
@@ -61,6 +62,7 @@ export const OrderPicker = ({ selected, onSelect }: Props) => {
                 title={order.customer?.full_name ?? 'Cliente sin nombre'}
                 subtitle={`Pedido ${formatShortId(order.order_id)} · ${formatCurrency(order.total_amount)}`}
                 avatarName={order.customer?.full_name ?? '?'}
+                person={{ userId: order.customer?.user_id }}
               />
               <Badge label={labelOf(ORDER_STATUS, order.status)} />
             </button>

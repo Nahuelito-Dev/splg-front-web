@@ -78,6 +78,7 @@ export const PhysicalCylindersTable = ({
             <IdentityCell
               title={row.current_customer.full_name ?? 'Cliente sin nombre'}
               avatarName={row.current_customer.full_name ?? '?'}
+              person={{ userId: row.current_customer.user_id }}
             />
           ) : (
             <span className="text-muted">La distribuidora</span>

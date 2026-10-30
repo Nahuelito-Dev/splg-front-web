@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { UserRound } from 'lucide-react';
-import { Button, EmptyState, LoadingState, SearchInput } from '../../../common/components/ui';
+import { Button, EmptyState, LoadingState, PersonAvatar, SearchInput } from '../../../common/components/ui';
 import { useDebounce } from '../../../hooks';
 import { useCustomers } from '../../../services/queries/customers';
 import type { Customer } from '../../../services/api/types';
@@ -20,9 +20,15 @@ export const CustomerPicker = ({ selected, onSelect }: Props) => {
     return (
       <div className="flex items-center justify-between gap-3 rounded-xl border border-primary bg-primary-soft p-3">
         <span className="flex items-center gap-3">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-surface text-primary-strong shadow-sm">
-            <UserRound className="h-4 w-4" aria-hidden="true" strokeWidth={1.8} />
-          </span>
+          <PersonAvatar
+            name={selected.user?.full_name ?? 'Cliente'}
+            userId={selected.user_id}
+            fallback={
+              <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full bg-surface text-primary-strong shadow-sm">
+                <UserRound className="h-4 w-4" aria-hidden="true" strokeWidth={1.8} />
+              </span>
+            }
+          />
           <span>
             <span className="block text-sm font-semibold text-ink">{selected.user?.full_name ?? 'Sin nombre'}</span>
             <span className="block text-xs text-muted">
@@ -62,9 +68,15 @@ export const CustomerPicker = ({ selected, onSelect }: Props) => {
                 className="flex w-full items-center justify-between gap-3 rounded-xl border border-outline p-3 text-left transition-colors hover:border-primary/50"
               >
                 <span className="flex items-center gap-3">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-surface text-primary-strong shadow-sm">
-                    <UserRound className="h-4 w-4" aria-hidden="true" strokeWidth={1.8} />
-                  </span>
+                  <PersonAvatar
+                    name={customer.user?.full_name ?? 'Cliente'}
+                    userId={customer.user_id}
+                    fallback={
+                      <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full bg-surface text-primary-strong shadow-sm">
+                        <UserRound className="h-4 w-4" aria-hidden="true" strokeWidth={1.8} />
+                      </span>
+                    }
+                  />
                   <span>
                     <span className="block text-sm font-semibold text-ink">
                       {customer.user?.full_name ?? 'Sin nombre'}

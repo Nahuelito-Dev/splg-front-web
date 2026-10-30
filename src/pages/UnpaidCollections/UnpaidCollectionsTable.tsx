@@ -55,6 +55,7 @@ export const UnpaidCollectionsTable = ({
             title={row.customer?.full_name ?? 'Cliente sin nombre'}
             subtitle={`${formatShortId(row.order_id)} · ${formatDateTime(row.created_at)}`}
             avatarName={row.customer?.full_name ?? '?'}
+            person={{ userId: row.customer?.user_id }}
           />
         ),
       },
@@ -145,6 +146,7 @@ export const UnpaidCollectionsTable = ({
                     title={row.customer?.full_name ?? 'Cliente sin nombre'}
                     subtitle={`${formatShortId(row.order_id)} · ${formatDateTime(row.created_at)}`}
                     avatarName={row.customer?.full_name ?? '?'}
+                    person={{ userId: row.customer?.user_id }}
                   />
                   <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
                     <span className="text-muted">{row.delivery_name ?? 'Sin chofer'}</span>

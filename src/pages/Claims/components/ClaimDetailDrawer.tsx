@@ -1,6 +1,14 @@
 import { useEffect, useState } from 'react';
 import { usePermissions } from '../../../hooks';
-import { AuditHistoryLink, Badge, Button, DetailList, Drawer, TextArea } from '../../../common/components/ui';
+import {
+  AuditHistoryLink,
+  Badge,
+  Button,
+  DetailList,
+  Drawer,
+  PersonAvatar,
+  TextArea,
+} from '../../../common/components/ui';
 import type { Claim } from '../../../services/api/types';
 import { useClaim, useReopenClaim, useResolveClaim, useTakeClaim } from '../../../services/queries/claims';
 import { formatDateTime, formatShortId } from '../../../utils/format';
@@ -173,7 +181,15 @@ export const ClaimDetailDrawer = ({ open, onClose, claim: listed, startAction = 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="rounded-xl border border-outline bg-surface-hover p-3">
             <h3 className="text-xs font-semibold uppercase text-muted">Cliente</h3>
-            <p className="font-medium text-ink">{claim.customer?.full_name ?? '—'}</p>
+            <div className="flex items-center gap-2">
+              <PersonAvatar
+                name={claim.customer?.full_name ?? 'Cliente'}
+                userId={claim.customer?.user_id}
+                size="sm"
+                decorative
+              />
+              <p className="font-medium text-ink">{claim.customer?.full_name ?? '—'}</p>
+            </div>
             <p className="text-sm text-muted">{claim.customer?.phone_number ?? '—'}</p>
             <p className="text-xs text-muted">{claim.customer?.email ?? ''}</p>
           </div>

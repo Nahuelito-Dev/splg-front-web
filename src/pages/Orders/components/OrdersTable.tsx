@@ -1,7 +1,7 @@
 import type { GridColDef, GridPaginationModel } from '@mui/x-data-grid';
 import { useMemo } from 'react';
 import { UserRoundCog } from 'lucide-react';
-import { Badge, DataTable, EmptyState, IdentityCell, RowActions } from '../../../common/components/ui';
+import { Badge, DataTable, EmptyState, IdentityCell, PersonAvatar, RowActions } from '../../../common/components/ui';
 import type { Order } from '../../../services/api/types';
 import { formatCurrency, formatDateTime, formatNumber, formatShortId } from '../../../utils/format';
 import { labelOf, ORDER_STATUS, paymentStatusLabel } from '../../../utils/statusLabels';
@@ -63,6 +63,7 @@ export const OrdersTable = ({
             title={row.customer?.full_name ?? 'Cliente sin nombre'}
             subtitle={`${formatShortId(row.order_id)} · ${formatDateTime(row.created_at)}`}
             avatarName={row.customer?.full_name ?? '?'}
+            person={{ userId: row.customer?.user_id }}
           />
         ),
       },
@@ -84,8 +85,9 @@ export const OrdersTable = ({
                 </span>
               )}
               {row.delivery_name ? (
-                <span className="mt-0.5 block truncate text-[11.5px] text-muted" title={row.delivery_name}>
-                  {row.delivery_name}
+                <span className="mt-0.5 flex items-center gap-1.5 text-[11.5px] text-muted" title={row.delivery_name}>
+                  <PersonAvatar name={row.delivery_name} deliveryId={row.delivery_id} size="sm" />
+                  <span className="truncate">{row.delivery_name}</span>
                 </span>
               ) : (
                 !isClosed(row.status) && (

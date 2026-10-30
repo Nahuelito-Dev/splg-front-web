@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { FirebaseAuth } from '../firebase/config';
 import { errorMessage } from '../services/api/errors';
 import { getAdmin } from '../services/api/auth';
+import { queryClient } from '../services/queries/queryClient';
 import { login, logOut, type LoginPayload } from '../store/auth/authSlice';
 import { useAppDispatch, useAppSelector } from './reduxHooks';
 
@@ -17,6 +18,7 @@ export const useCheckAuth = () => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(FirebaseAuth, (user) => {
       if (!user) {
+        queryClient.clear();
         dispatch(logOut({}));
         return;
       }

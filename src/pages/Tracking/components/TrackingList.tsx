@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Badge, EmptyState } from '../../../common/components/ui';
+import { Badge, EmptyState, PersonAvatar } from '../../../common/components/ui';
 import { formatElapsed, formatShortId } from '../../../utils/format';
 import type { TrackedOrder } from '../types';
 
@@ -33,7 +33,15 @@ export const TrackingList = ({ trackedOrders }: Props) => {
             <p className="text-sm font-semibold text-ink">Pedido {formatShortId(order.orderId)}</p>
             <Badge label={{ text: formatElapsed(order.at, now), tone: 'success' }} />
           </div>
-          <p className="mt-0.5 text-xs text-muted">Chofer {formatShortId(order.driverId)}</p>
+          <p className="mt-1 flex items-center gap-1.5 text-xs text-muted">
+            <PersonAvatar
+              name={`Chofer ${formatShortId(order.driverId)}`}
+              userId={order.driverId}
+              size="xs"
+              decorative
+            />
+            Chofer {formatShortId(order.driverId)}
+          </p>
           <p className="text-xs tabular-nums text-muted">
             {order.lat.toFixed(5)}, {order.lng.toFixed(5)}
           </p>

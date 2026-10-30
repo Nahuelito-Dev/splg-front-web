@@ -3,7 +3,8 @@ import { Popover } from '@mui/material';
 import { LogOut, UserRound } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAppSelector, useLogout, usePermissions } from '../../../../hooks';
-import { Avatar } from '../../ui/Avatar';
+import { useMyAccount } from '../../../../services/queries/users';
+import { PersonAvatar } from '../../ui/PersonAvatar';
 
 const ITEM =
   'flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium text-ink transition-colors hover:bg-surface-hover focus-visible:bg-surface-hover focus-visible:outline-none';
@@ -14,6 +15,7 @@ export const AccountMenu = () => {
   const { isSuperAdmin } = usePermissions();
   const { fullName, email } = useAppSelector((state) => state.auth);
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+  const { data: account } = useMyAccount(email);
   const name = fullName ?? email ?? 'Administrador';
 
   const handleOpen = (event: MouseEvent<HTMLElement>) => setAnchor(event.currentTarget);
@@ -29,7 +31,7 @@ export const AccountMenu = () => {
         aria-expanded={Boolean(anchor)}
         className="grid h-9 w-9 shrink-0 place-items-center rounded-full ring-2 ring-outline transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-primary/40"
       >
-        <Avatar name={name} />
+        <PersonAvatar name={name} userId={account?.user_id} decorative />
       </button>
       <Popover
         open={Boolean(anchor)}
@@ -42,7 +44,7 @@ export const AccountMenu = () => {
         }}
       >
         <div className="flex flex-col items-center gap-1 border-b border-outline px-4 pb-3.5 pt-4 text-center">
-          <Avatar name={name} size="lg" />
+          <PersonAvatar name={name} userId={account?.user_id} size="lg" decorative />
           <p className="mt-1 max-w-full truncate text-sm font-semibold text-ink">{name}</p>
           {email && email !== name && <p className="max-w-full truncate text-xs text-muted">{email}</p>}
           <span className="mt-1 rounded-full bg-primary-soft px-2.5 py-0.5 text-[11px] font-semibold text-primary-strong">

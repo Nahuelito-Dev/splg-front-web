@@ -66,6 +66,7 @@ export const DriverSettlements = () => {
           title={row.driverName || 'Chofer'}
           subtitle={`N° ${row.number} · ${formatDay(row.businessDate)}`}
           avatarName={row.driverName || 'Chofer'}
+          person={{ deliveryId: row.deliveryId }}
         />
       ),
     },
@@ -190,6 +191,7 @@ export const DriverSettlements = () => {
                     title={row.driverName || 'Chofer'}
                     subtitle={`N° ${row.number} · ${formatDay(row.businessDate)}`}
                     avatarName={row.driverName || 'Chofer'}
+                    person={{ deliveryId: row.deliveryId }}
                   />
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge label={labelOf(SETTLEMENT_STATUS, row.status)} />

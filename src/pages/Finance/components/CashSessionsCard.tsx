@@ -9,6 +9,7 @@ import {
   ResponsiveTable,
   CardHeader,
   RowActions,
+  PersonAvatar,
 } from '../../../common/components/ui';
 import { usePdfDownload } from '../../../hooks';
 import { useClampPage, useUrlPagedParams } from '../../../hooks';
@@ -25,7 +26,10 @@ interface Props {
 }
 
 const Who = ({ name, id }: { name: string | null; id: string | null }) => (
-  <span className="truncate text-xs text-muted">{id ? `por ${name ?? formatShortId(id)}` : ''}</span>
+  <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted">
+    {id && <PersonAvatar name={name ?? formatShortId(id)} userId={id} size="xs" decorative />}
+    <span className="truncate">{id ? `por ${name ?? formatShortId(id)}` : ''}</span>
+  </span>
 );
 
 /** Historial de sesiones de una caja: apertura, cierre, arqueo y diferencia, con quién abrió y quién cerró (CU-226, 227). */

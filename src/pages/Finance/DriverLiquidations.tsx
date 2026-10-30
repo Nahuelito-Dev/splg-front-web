@@ -51,7 +51,12 @@ export const DriverLiquidations = () => {
       minWidth: 240,
       sortable: false,
       renderCell: ({ row }) => (
-        <IdentityCell title={`N° ${row.number} · ${row.employeeName}`} subtitle={period(row)} icon={ReceiptText} />
+        <IdentityCell
+          title={`N° ${row.number} · ${row.employeeName}`}
+          subtitle={period(row)}
+          avatarName={row.employeeName}
+          person={{ employeeId: row.employeeId }}
+        />
       ),
     },
     {

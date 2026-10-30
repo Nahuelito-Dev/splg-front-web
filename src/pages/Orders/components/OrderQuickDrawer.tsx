@@ -1,5 +1,5 @@
 import { UserRoundCog } from 'lucide-react';
-import { Badge, Button, CardHeader, DetailList, RecordDrawer } from '../../../common/components/ui';
+import { Badge, Button, CardHeader, DetailList, PersonAvatar, RecordDrawer } from '../../../common/components/ui';
 import { usePermissions } from '../../../hooks';
 import type { Order } from '../../../services/api/types';
 import { useOrder } from '../../../services/queries/orders';
@@ -67,14 +67,37 @@ export const OrderQuickDrawer = ({ open, onClose, order: listed, onAssign }: Pro
       <div className="space-y-5">
         <DetailList
           items={[
-            { label: 'Cliente', value: order.customer?.full_name ?? 'Sin nombre' },
+            {
+              label: 'Cliente',
+              value: (
+                <span className="inline-flex items-center gap-2">
+                  <PersonAvatar
+                    name={order.customer?.full_name ?? 'Cliente'}
+                    userId={order.customer?.user_id}
+                    size="xs"
+                    decorative
+                  />
+                  {order.customer?.full_name ?? 'Sin nombre'}
+                </span>
+              ),
+            },
             { label: 'Teléfono', value: order.customer?.phone_number ?? '—' },
             {
               label: 'Entrega',
               value: address ? [address.street, address.city].filter(Boolean).join(', ') : 'Sin dirección',
               wide: true,
             },
-            { label: 'Chofer', value: order.delivery_name ?? 'Sin asignar' },
+            {
+              label: 'Chofer',
+              value: order.delivery_name ? (
+                <span className="inline-flex items-center gap-2">
+                  <PersonAvatar name={order.delivery_name} deliveryId={order.delivery_id} size="xs" decorative />
+                  {order.delivery_name}
+                </span>
+              ) : (
+                'Sin asignar'
+              ),
+            },
             { label: 'Total', value: formatCurrency(order.total_amount), mono: true },
             ...(order.customer_notes ? [{ label: 'Nota del cliente', value: order.customer_notes, wide: true }] : []),
             ...(order.delivery_notes ? [{ label: 'Nota de entrega', value: order.delivery_notes, wide: true }] : []),
