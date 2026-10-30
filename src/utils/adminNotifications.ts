@@ -13,6 +13,7 @@ import {
   TriangleAlert,
   Undo2,
   UserRoundSearch,
+  Wrench,
   type LucideIcon,
 } from 'lucide-react';
 import type { AdminNotification } from '../services/api/types';
@@ -34,6 +35,9 @@ const KIND_VISUALS: Record<string, { icon: LucideIcon; tone: Tone }> = {
   traffic_fine_due: { icon: Gavel, tone: 'warn' },
   traffic_fine_overdue: { icon: Gavel, tone: 'danger' },
   sales_cash_unsettled: { icon: Landmark, tone: 'warn' },
+  maintenance_escalated: { icon: Wrench, tone: 'danger' },
+  maintenance_window_agreed: { icon: Wrench, tone: 'warn' },
+  vehicle_grounded_expired: { icon: ShieldX, tone: 'danger' },
 };
 
 /** Ícono y tono de un aviso guardado según su `kind`; un tipo que el panel no conoce se muestra con uno genérico. */
@@ -61,6 +65,10 @@ export const notificationTarget = (link: AdminNotification['link'] | undefined):
       return '/finance/collection-settings';
     case 'traffic-fine':
       return `/fleet/fines?fine=${id}`;
+    case 'maintenance-planner':
+      return `/fleet/planner?case=${id}`;
+    case 'car':
+      return `/cars/details/${id}`;
     default:
       return null;
   }

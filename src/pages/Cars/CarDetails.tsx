@@ -37,6 +37,7 @@ import { VehicleAssignmentHistoryTable } from '../Fleet/components/VehicleAssign
 import { CarFormModal } from './components/CarFormModal';
 import { CarSummary } from './components/CarSummary';
 import { carIcon } from './components/carIcon';
+import { CarNextWindowCard } from './components/CarNextWindowCard';
 import { CurrentDriverCard } from './components/CurrentDriverCard';
 
 const TABS: ProfileTabItem[] = [
@@ -203,6 +204,7 @@ export const CarDetails = () => {
             <div className="space-y-6">
               <CarSummary car={car} />
               <CurrentDriverCard carId={car.car_id} />
+              <CarNextWindowCard carId={car.car_id} />
             </div>
           </ProfileTabPanel>
           <ProfileTabPanel tabKey="documents" value={tab}>

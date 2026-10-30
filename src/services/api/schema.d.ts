@@ -2193,6 +2193,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/orders/{id}/confirm-deposit': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Confirmar la seña de una reserva y asentarla en una caja
+     * @description Como `PATCH /orders/:id/confirm-deposit` (v1), y la seña entra a una caja en la misma transacción: por transferencia, a la caja de transferencias de `/v2/cash-settings` (sin caja configurada la confirmación sigue y queda «sin asentar», con aviso a la bandeja); en efectivo, a la caja de efectivo `cashBoxId`, obligatoria si hay alguna caja de efectivo activa. Repetirlo no asienta otra vez. La seña por Mercado Pago la confirma la pasarela.
+     */
+    patch: operations['ReservationV2Controller_confirmDeposit'];
+    trace?: never;
+  };
   '/api/v1/cart': {
     parameters: {
       query?: never;
@@ -2832,131 +2852,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v1/customer-accounts': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Listar las cuentas corrientes
-     * @description Con saldo, crédito disponible y deuda vencida de cada cuenta. Filtra por estado, deuda vencida y texto (razón social, CUIT, nombre o correo).
-     */
-    get: operations['CustomerAccountController_findAll'];
-    put?: never;
-    /**
-     * Habilitar la cuenta corriente de un cliente
-     * @description La cuenta es de la distribuidora y no del cliente: el cliente es una persona compartida entre distribuidoras y la deuda, el límite y el plazo son de cada relación comercial.
-     */
-    post: operations['CustomerAccountController_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/customer-accounts/aging': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Antigüedad de la deuda
-     * @description Lo que se debe repartido en 0-30, 31-60, 61-90 y más de 90 días desde la fecha del comprobante, por cuenta y en total.
-     */
-    get: operations['CustomerAccountController_aging'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/customer-accounts/{id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Ver una cuenta con su crédito disponible y su antigüedad */
-    get: operations['CustomerAccountController_findOne'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /**
-     * Modificar una cuenta corriente
-     * @description Límite, plazo, datos fiscales y estado (bloquear o cerrar). La cuenta conserva su saldo y sus asientos.
-     */
-    patch: operations['CustomerAccountController_update'];
-    trace?: never;
-  };
-  '/api/v1/customer-accounts/{id}/entries': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Estado de cuenta
-     * @description Los asientos del período con el saldo corrido después de cada uno, el saldo de apertura y el de cierre.
-     */
-    get: operations['CustomerAccountController_entries'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/customer-accounts/{id}/payments': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Registrar un pago de cuenta corriente
-     * @description El administrador indica la caja y el sistema asienta la entrada. El chofer cobra en la calle: no manda caja, el pago queda atado a su rendición abierta (suma al efectivo esperado) y entra a la caja cuando se aprueba la rendición. La imputación a los cargos es automática, del más viejo al más nuevo.
-     */
-    post: operations['CustomerAccountController_registerPayment'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/customer-accounts/{id}/adjustments': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Registrar un ajuste de cuenta corriente
-     * @description Nota de crédito (baja la deuda) o de débito (la sube), con su motivo. El libro no se edita: un asiento equivocado se corrige con un ajuste.
-     */
-    post: operations['CustomerAccountController_registerAdjustment'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/api/v1/cash-boxes': {
     parameters: {
       query?: never;
@@ -3144,6 +3039,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/cash-movements': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Consultar los movimientos de caja, con su pedido
+     * @description Igual que la v1 (mismos filtros, del más nuevo al más viejo) y cada movimiento suma `orderId`: el pedido del que nace un cobro de venta. `createdByUserId` es null en los movimientos que se asientan solos.
+     */
+    get: operations['CashMovementV2Controller_findAll'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/cash-categories': {
     parameters: {
       query?: never;
@@ -3181,6 +3096,131 @@ export interface paths {
     head?: never;
     /** Renombrar o activar/desactivar una categoría */
     patch: operations['CashCategoryController_update'];
+    trace?: never;
+  };
+  '/api/v1/customer-accounts': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Listar las cuentas corrientes
+     * @description Con saldo, crédito disponible y deuda vencida de cada cuenta. Filtra por estado, deuda vencida y texto (razón social, CUIT, nombre o correo).
+     */
+    get: operations['CustomerAccountController_findAll'];
+    put?: never;
+    /**
+     * Habilitar la cuenta corriente de un cliente
+     * @description La cuenta es de la distribuidora y no del cliente: el cliente es una persona compartida entre distribuidoras y la deuda, el límite y el plazo son de cada relación comercial.
+     */
+    post: operations['CustomerAccountController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/customer-accounts/aging': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Antigüedad de la deuda
+     * @description Lo que se debe repartido en 0-30, 31-60, 61-90 y más de 90 días desde la fecha del comprobante, por cuenta y en total.
+     */
+    get: operations['CustomerAccountController_aging'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/customer-accounts/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Ver una cuenta con su crédito disponible y su antigüedad */
+    get: operations['CustomerAccountController_findOne'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Modificar una cuenta corriente
+     * @description Límite, plazo, datos fiscales y estado (bloquear o cerrar). La cuenta conserva su saldo y sus asientos.
+     */
+    patch: operations['CustomerAccountController_update'];
+    trace?: never;
+  };
+  '/api/v1/customer-accounts/{id}/entries': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Estado de cuenta
+     * @description Los asientos del período con el saldo corrido después de cada uno, el saldo de apertura y el de cierre.
+     */
+    get: operations['CustomerAccountController_entries'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/customer-accounts/{id}/payments': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Registrar un pago de cuenta corriente
+     * @description El administrador indica la caja y el sistema asienta la entrada. El chofer cobra en la calle: no manda caja, el pago queda atado a su rendición abierta (suma al efectivo esperado) y entra a la caja cuando se aprueba la rendición. La imputación a los cargos es automática, del más viejo al más nuevo.
+     */
+    post: operations['CustomerAccountController_registerPayment'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/customer-accounts/{id}/adjustments': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Registrar un ajuste de cuenta corriente
+     * @description Nota de crédito (baja la deuda) o de débito (la sube), con su motivo. El libro no se edita: un asiento equivocado se corrige con un ajuste.
+     */
+    post: operations['CustomerAccountController_registerAdjustment'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
   '/api/v1/driver-settlements': {
@@ -3950,6 +3990,284 @@ export interface paths {
      * @description Lo pasa de `grounded` a `active` si el seguro, la VTV y la habilitación de mercancías peligrosas están vigentes. No lo asigna a ningún chofer.
      */
     post: operations['CarReactivationController_reactivar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/fleet/maintenance-planner': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Casos del planificador de taller
+     * @description Los casos de planificación con su estado, la propuesta vigente, la última respuesta del chofer y el motivo si se escaló; más los totales por estado. `pending=true` deja los que esperan al administrador.
+     */
+    get: operations['MaintenancePlannerController_casos'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/fleet/maintenance-planner/forecast': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Próximos vencimientos proyectados de la flota
+     * @description Por vehículo: el consumo diario estimado y de dónde sale (su historial o el promedio de su tipo), y cada tarea abierta con su vencimiento proyectado —por fecha, por kilometraje o el primero de los dos—, si entró en su anticipación y el caso de planificación si lo hay. `nextWindow` es la próxima ventana de taller del vehículo.
+     */
+    get: operations['MaintenancePlannerController_forecast'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/fleet/maintenance-planner/settings': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Parámetros del planificador de la distribuidora
+     * @description Los valores vigentes con el rango y el valor por omisión de cada uno. Los mismos de `GET /module-config/fleet_planner`.
+     */
+    get: operations['MaintenancePlannerController_settings'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Cambiar parámetros del planificador
+     * @description Cambia sólo los que vienen; el resto conserva su valor. El horario de taller tiene que empezar antes de terminar. Rige desde la próxima corrida.
+     */
+    patch: operations['MaintenancePlannerController_settingsPatch'];
+    trace?: never;
+  };
+  '/api/v2/fleet/maintenance-planner/run': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Correr el planificador ahora
+     * @description Hace lo mismo que la corrida diaria, para esta distribuidora y sin esperar la hora. Es idempotente: una tarea con caso abierto o con taller programado no se vuelve a planificar.
+     */
+    post: operations['MaintenancePlannerController_run'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/fleet/maintenance-planner/cases/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Ver un caso con todas sus propuestas y el cuadro de ventanas */
+    get: operations['MaintenancePlannerController_caso'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/fleet/maintenance-planner/cases/{id}/confirm': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Confirmar el taller de un caso
+     * @description Sin ventana, confirma la que acordó el chofer. Con `windowStart` y `windowEnd`, elige otra: así se resuelve un caso escalado. La tarea queda programada (`scheduledAt` = inicio de la ventana), con el proveedor y el gasto previsto si se informan, y el chofer recibe el aviso. El pago del taller se registra al cerrar la tarea (`POST /fleet/tasks/:id/close` con `payment`).
+     */
+    post: operations['MaintenancePlannerController_confirmar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/fleet/maintenance-planner/cases/{id}/cancel': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Cancelar un caso abierto
+     * @description Cierra el caso sin programar nada y cancela la propuesta vigente (el chofer recibe `maintenance:proposal-closed`). El planificador puede volver a abrir uno en la corrida siguiente si la tarea sigue dentro de su anticipación.
+     */
+    post: operations['MaintenancePlannerController_cancelar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/fleet/maintenance-planner/tasks/{taskId}/force-window': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Fijar la ventana de una tarea sin esperar al planificador
+     * @description Si la tarea tiene un caso abierto lo resuelve con esta ventana (se cancela la propuesta vigente); si no, lo abre ya resuelto. Queda programada.
+     */
+    post: operations['MaintenancePlannerController_forzar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/fleet/maintenance-planner/tasks/{taskId}/replan': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Re-planificar una tarea
+     * @description Cancela el caso abierto de la tarea (y su propuesta vigente) y la planifica de nuevo con los datos de hoy: vuelve a ofrecerle la mejor ventana al chofer o la escala.
+     */
+    post: operations['MaintenancePlannerController_replanificar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/driver/maintenance-proposals/settings': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Horario y días de taller de mi distribuidora
+     * @description Lo que la app necesita para validar la ventana alternativa antes de mandarla: horario de taller, días hábiles, feriados, aviso mínimo y horizonte.
+     */
+    get: operations['DriverMaintenanceProposalsController_settings'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/driver/maintenance-proposals/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Una de mis propuestas de ventana de taller */
+    get: operations['DriverMaintenanceProposalsController_one'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/driver/maintenance-proposals': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Mis propuestas de ventana de taller
+     * @description Las del chofer: primero la que espera respuesta (`status: pending`, con su `expiresAt`) y después, de la más próxima a la más lejana.
+     */
+    get: operations['DriverMaintenanceProposalsController_list'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/driver/maintenance-proposals/{id}/accept': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Aceptar la ventana de taller
+     * @description El caso queda a la espera de que el administrador confirme el taller y el gasto; recién entonces la tarea se programa.
+     */
+    post: operations['DriverMaintenanceProposalsController_accept'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/driver/maintenance-proposals/{id}/reject': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Rechazar la ventana de taller, con motivo
+     * @description Se le ofrece la ventana siguiente; si se agotan las alternativas, el caso se escala al administrador. Con `alternative` propone otra ventana: si es viable queda acordada a la espera del administrador.
+     */
+    post: operations['DriverMaintenanceProposalsController_reject'];
     delete?: never;
     options?: never;
     head?: never;
@@ -6777,166 +7095,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v1/finance/dashboard': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Tablero financiero
-     * @description Saldo de cada caja, movimientos y rendiciones del día (hora argentina), deuda total y vencida de los clientes y comisiones por liquidar. Lee los saldos guardados, no recalcula los libros.
-     */
-    get: operations['FinanceController_dashboard'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v2/exports/{recurso}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Descargar todas las filas de un listado en CSV o Excel
-     * @description Acepta los mismos filtros que el listado de cada recurso y devuelve todas las filas que los cumplen, no sólo una página. Recursos: pedidos, clientes, choferes, vehiculos, garrafas, envases, stock-resumen, stock-movimientos, cajas, movimientos-caja, income-statement, cuentas-corrientes, rendiciones, liquidaciones, combustible, multas, siniestros, neumaticos, costos-flota, reclamos, incidencias, ordenes-compra, recepciones, proveedores, legajos, auditoria y auditoria-datos. El CSV usa `;` y coma decimal, con BOM UTF-8. Un super admin necesita `X-Distributor`. `limit`, `offset` y `page` se ignoran.
-     */
-    get: operations['ExportsController_exportar'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v2/people/photos': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Fotos de perfil de varias personas en un solo pedido
-     * @description Para dibujar avatares en listados y fichas. Devuelve, por cada id de usuario, legajo y chofer (`delivery_id`) pedido (hasta 100 de cada uno), la URL firmada y su vencimiento, o `null` si no tiene foto. Un admin de empresa sólo recibe las fotos de su gente (clientes, choferes, admins y legajos de su distribuidora): el resto, y los ids que no existen, vienen `null` sin error. Siempre recibe la suya. El super admin ve todo, o lo de la distribuidora de `X-Distributor`.
-     */
-    post: operations['PeoplePhotosController_firmar'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v2/imports/{recurso}/template': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Descargar la plantilla de un recurso
-     * @description Encabezados en castellano y una fila de ejemplo (borrala antes de subir el archivo: se importa como cualquier otra). Recursos: `garrafas` (catálogo), `precios` (actualización por tipo), `stock` (stock inicial o ajuste por depósito) y `proveedores`.
-     */
-    get: operations['ImportController_template'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v2/imports/{recurso}/preview': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Subir el archivo y ver la vista previa
-     * @description Multipart, campo `file`: .xlsx o .csv de hasta 5 MB y 5000 filas. CSV con `;` o `,`, UTF-8 con o sin BOM, coma decimal. Valida TODAS las filas con las mismas reglas que el alta unitaria y devuelve los errores por fila y columna. No escribe nada del negocio: guarda la vista previa 24 h. Si no hay errores se confirma con `POST /imports/{importId}/confirm`.
-     */
-    post: operations['ImportController_preview'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v2/imports/{importId}/confirm': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Confirmar la importación
-     * @description Aplica la vista previa en UNA transacción: si una fila falla, no se guarda nada. Idempotente: confirmar dos veces la misma importación no duplica (la segunda devuelve el mismo resumen con `yaConfirmada: true`).
-     */
-    post: operations['ImportController_confirm'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v2/orders/{id}/confirm-deposit': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /**
-     * Confirmar la seña de una reserva y asentarla en una caja
-     * @description Como `PATCH /orders/:id/confirm-deposit` (v1), y la seña entra a una caja en la misma transacción: por transferencia, a la caja de transferencias de `/v2/cash-settings` (sin caja configurada la confirmación sigue y queda «sin asentar», con aviso a la bandeja); en efectivo, a la caja de efectivo `cashBoxId`, obligatoria si hay alguna caja de efectivo activa. Repetirlo no asienta otra vez. La seña por Mercado Pago la confirma la pasarela.
-     */
-    patch: operations['ReservationV2Controller_confirmDeposit'];
-    trace?: never;
-  };
-  '/api/v2/cash-movements': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Consultar los movimientos de caja, con su pedido
-     * @description Igual que la v1 (mismos filtros, del más nuevo al más viejo) y cada movimiento suma `orderId`: el pedido del que nace un cobro de venta. `createdByUserId` es null en los movimientos que se asientan solos.
-     */
-    get: operations['CashMovementV2Controller_findAll'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/api/v2/cash-settings': {
     parameters: {
       query?: never;
@@ -7102,6 +7260,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/finance/dashboard': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Tablero financiero
+     * @description Saldo de cada caja, movimientos y rendiciones del día (hora argentina), deuda total y vencida de los clientes y comisiones por liquidar. Lee los saldos guardados, no recalcula los libros.
+     */
+    get: operations['FinanceController_dashboard'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v2/finance/income-statement': {
     parameters: {
       query?: never;
@@ -7116,6 +7294,106 @@ export interface paths {
     get: operations['FinanceController_incomeStatement'];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/exports/{recurso}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Descargar todas las filas de un listado en CSV o Excel
+     * @description Acepta los mismos filtros que el listado de cada recurso y devuelve todas las filas que los cumplen, no sólo una página. Recursos: pedidos, clientes, choferes, vehiculos, garrafas, envases, stock-resumen, stock-movimientos, cajas, movimientos-caja, income-statement, cuentas-corrientes, rendiciones, liquidaciones, combustible, multas, siniestros, neumaticos, costos-flota, reclamos, incidencias, ordenes-compra, recepciones, proveedores, legajos, auditoria y auditoria-datos. El CSV usa `;` y coma decimal, con BOM UTF-8. Un super admin necesita `X-Distributor`. `limit`, `offset` y `page` se ignoran.
+     */
+    get: operations['ExportsController_exportar'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/people/photos': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Fotos de perfil de varias personas en un solo pedido
+     * @description Para dibujar avatares en listados y fichas. Devuelve, por cada id de usuario, legajo y chofer (`delivery_id`) pedido (hasta 100 de cada uno), la URL firmada y su vencimiento, o `null` si no tiene foto. Un admin de empresa sólo recibe las fotos de su gente (clientes, choferes, admins y legajos de su distribuidora): el resto, y los ids que no existen, vienen `null` sin error. Siempre recibe la suya. El super admin ve todo, o lo de la distribuidora de `X-Distributor`.
+     */
+    post: operations['PeoplePhotosController_firmar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/imports/{recurso}/template': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Descargar la plantilla de un recurso
+     * @description Encabezados en castellano y una fila de ejemplo (borrala antes de subir el archivo: se importa como cualquier otra). Recursos: `garrafas` (catálogo), `precios` (actualización por tipo), `stock` (stock inicial o ajuste por depósito) y `proveedores`.
+     */
+    get: operations['ImportController_template'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/imports/{recurso}/preview': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Subir el archivo y ver la vista previa
+     * @description Multipart, campo `file`: .xlsx o .csv de hasta 5 MB y 5000 filas. CSV con `;` o `,`, UTF-8 con o sin BOM, coma decimal. Valida TODAS las filas con las mismas reglas que el alta unitaria y devuelve los errores por fila y columna. No escribe nada del negocio: guarda la vista previa 24 h. Si no hay errores se confirma con `POST /imports/{importId}/confirm`.
+     */
+    post: operations['ImportController_preview'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/imports/{importId}/confirm': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Confirmar la importación
+     * @description Aplica la vista previa en UNA transacción: si una fila falla, no se guarda nada. Idempotente: confirmar dos veces la misma importación no duplica (la segunda devuelve el mismo resumen con `yaConfirmada: true`).
+     */
+    post: operations['ImportController_confirm'];
     delete?: never;
     options?: never;
     head?: never;
@@ -9565,6 +9843,13 @@ export interface components {
       /** Format: date-time */
       expiresAt: string;
     };
+    ConfirmDepositV2Dto: {
+      /**
+       * Format: uuid
+       * @description Caja de EFECTIVO donde entra la seña recibida en efectivo. Obligatoria si la distribuidora tiene alguna caja de efectivo activa (400 si falta o no es de efectivo); la de otra distribuidora es 404 y una que exige sesión sin sesión abierta, 409. En una seña por transferencia no se manda: entra a la caja de transferencias configurada en `/v2/cash-settings`.
+       */
+      cashBoxId?: string;
+    };
     CartItemResponseDto: {
       /** Format: uuid */
       cartItemId: string;
@@ -10432,6 +10717,344 @@ export interface components {
        */
       completedAt: string | null;
     };
+    CashBoxResponseDto: {
+      cashBoxId: string;
+      /** @example Caja central */
+      name: string;
+      /** @enum {string} */
+      kind: 'cash' | 'bank' | 'wallet';
+      /**
+       * @description Saldo según el libro
+       * @example 15400.5
+       */
+      balance: number;
+      requiresSession: boolean;
+      isActive: boolean;
+      /** @description Sesión abierta de la caja, si tiene */
+      openSessionId: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    CashBoxPageDto: {
+      data: components['schemas']['CashBoxResponseDto'][];
+      /** @example 3 */
+      total: number;
+    };
+    CreateCashBoxDto: {
+      /** @example Caja del mostrador */
+      name: string;
+      /**
+       * @description Efectivo, banco o billetera virtual
+       * @example cash
+       * @enum {string}
+       */
+      kind: 'cash' | 'bank' | 'wallet';
+      /** @description Si exige abrir una sesión (y cerrarla con arqueo) para mover dinero. Por omisión, sí para efectivo. */
+      requiresSession?: boolean;
+    };
+    UpdateCashBoxDto: {
+      /** @example Caja del mostrador */
+      name?: string;
+      /** @description false la desactiva (409 si tiene una sesión abierta) */
+      isActive?: boolean;
+      /** @description Cambiar esto con una sesión abierta responde 409 */
+      requiresSession?: boolean;
+    };
+    OpenCashSessionDto: {
+      /**
+       * @description Efectivo con que se abre la caja. Si no coincide con el saldo del libro se asienta un ajuste de apertura.
+       * @example 5000
+       */
+      openingAmount: number;
+    };
+    CashSessionResponseDto: {
+      sessionId: string;
+      cashBoxId: string;
+      /** @example Caja central */
+      cashBoxName: string;
+      /** @enum {string} */
+      status: 'open' | 'closed';
+      /** Format: date-time */
+      openedAt: string;
+      openedByUserId: string;
+      /** @example 5000 */
+      openingAmount: number;
+      /** Format: date-time */
+      closedAt: string | null;
+      closedByUserId: string | null;
+      expectedAmount: number | null;
+      countedAmount: number | null;
+      /** @description Contado menos esperado: negativa es faltante */
+      difference: number | null;
+      notes: string | null;
+    };
+    CashSessionPageDto: {
+      data: components['schemas']['CashSessionResponseDto'][];
+      /** @example 8 */
+      total: number;
+    };
+    CashMovementResponseDto: {
+      movementId: string;
+      cashBoxId: string;
+      /** @example Caja central */
+      cashBoxName: string;
+      sessionId: string | null;
+      /** @enum {string} */
+      direction: 'in' | 'out';
+      /** @example 2500.5 */
+      amount: number;
+      categoryId: string;
+      /** @example Rendición de chofer */
+      categoryName: string;
+      /** @enum {string} */
+      method: 'cash' | 'transfer' | 'card' | 'mercadopago' | 'check';
+      /** Format: date-time */
+      occurredAt: string;
+      description: string;
+      /** @enum {string} */
+      referenceType:
+        | 'manual'
+        | 'session_opening'
+        | 'session_closing'
+        | 'driver_settlement'
+        | 'customer_payment'
+        | 'purchase_receipt'
+        | 'fuel_load'
+        | 'traffic_fine'
+        | 'driver_liquidation'
+        | 'box_transfer'
+        | 'reversal'
+        | 'order_payment'
+        | 'insurance_installment'
+        | 'maintenance_task'
+        | 'tire'
+        | 'vehicle_accident'
+        | 'insurance_reimbursement'
+        | 'payment'
+        | 'payment_fee'
+        | 'payment_refund'
+        | 'order_transfer'
+        | 'payment_external_refund'
+        | 'order_deposit'
+        | 'mp_reconciliation';
+      referenceId: string | null;
+      /** @description Si es una anulación, el movimiento que anula */
+      reversesMovementId: string | null;
+      /** @description true si otro movimiento ya lo anuló */
+      reversed: boolean;
+      /** @description Quién lo registró; null en los movimientos que se asientan solos (webhook, devolución de Mercado Pago) */
+      createdByUserId: string | null;
+      /** Format: date-time */
+      createdAt: string;
+    };
+    CashSessionDetailDto: {
+      sessionId: string;
+      cashBoxId: string;
+      /** @example Caja central */
+      cashBoxName: string;
+      /** @enum {string} */
+      status: 'open' | 'closed';
+      /** Format: date-time */
+      openedAt: string;
+      openedByUserId: string;
+      /** @example 5000 */
+      openingAmount: number;
+      /** Format: date-time */
+      closedAt: string | null;
+      closedByUserId: string | null;
+      expectedAmount: number | null;
+      countedAmount: number | null;
+      /** @description Contado menos esperado: negativa es faltante */
+      difference: number | null;
+      notes: string | null;
+      /**
+       * @description Saldo actual de la caja según el libro
+       * @example 18250
+       */
+      currentBalance: number;
+      /** @example 14000 */
+      totalIn: number;
+      /** @example 750 */
+      totalOut: number;
+      /** @description Movimientos de la sesión, del más viejo al más nuevo */
+      movements: components['schemas']['CashMovementResponseDto'][];
+    };
+    CloseCashSessionDto: {
+      /**
+       * @description Lo que se contó físicamente en la caja
+       * @example 18250
+       */
+      countedAmount: number;
+      notes?: string;
+    };
+    CashMovementPageDto: {
+      data: components['schemas']['CashMovementResponseDto'][];
+      /** @example 40 */
+      total: number;
+    };
+    CreateCashMovementDto: {
+      /** @description Caja donde entra o de donde sale el dinero */
+      cashBoxId: string;
+      /**
+       * @example out
+       * @enum {string}
+       */
+      direction: 'in' | 'out';
+      /**
+       * @description Mayor que cero, 2 decimales
+       * @example 2500.5
+       */
+      amount: number;
+      /** @description Categoría del mismo sentido que el movimiento */
+      categoryId: string;
+      /**
+       * @default cash
+       * @enum {string}
+       */
+      method: 'cash' | 'transfer' | 'card' | 'mercadopago' | 'check';
+      /** @example Compra de artículos de limpieza */
+      description: string;
+    };
+    TransferCashDto: {
+      /** @description Caja de la que sale el dinero */
+      fromCashBoxId: string;
+      /** @description Caja a la que entra el dinero */
+      toCashBoxId: string;
+      /** @example 10000 */
+      amount: number;
+      /** @example Depósito del día */
+      description?: string;
+    };
+    CashTransferResponseDto: {
+      out: components['schemas']['CashMovementResponseDto'];
+      in: components['schemas']['CashMovementResponseDto'];
+    };
+    ReverseCashMovementDto: {
+      /** @example Se cargó dos veces */
+      reason: string;
+    };
+    CashMovementV2ResponseDto: {
+      movementId: string;
+      cashBoxId: string;
+      /** @example Caja central */
+      cashBoxName: string;
+      sessionId: string | null;
+      /** @enum {string} */
+      direction: 'in' | 'out';
+      /** @example 2500.5 */
+      amount: number;
+      categoryId: string;
+      /** @example Rendición de chofer */
+      categoryName: string;
+      /** @enum {string} */
+      method: 'cash' | 'transfer' | 'card' | 'mercadopago' | 'check';
+      /** Format: date-time */
+      occurredAt: string;
+      description: string;
+      /** @enum {string} */
+      referenceType:
+        | 'manual'
+        | 'session_opening'
+        | 'session_closing'
+        | 'driver_settlement'
+        | 'customer_payment'
+        | 'purchase_receipt'
+        | 'fuel_load'
+        | 'traffic_fine'
+        | 'driver_liquidation'
+        | 'box_transfer'
+        | 'reversal'
+        | 'order_payment'
+        | 'insurance_installment'
+        | 'maintenance_task'
+        | 'tire'
+        | 'vehicle_accident'
+        | 'insurance_reimbursement'
+        | 'payment'
+        | 'payment_fee'
+        | 'payment_refund'
+        | 'order_transfer'
+        | 'payment_external_refund'
+        | 'order_deposit'
+        | 'mp_reconciliation';
+      referenceId: string | null;
+      /** @description Si es una anulación, el movimiento que anula */
+      reversesMovementId: string | null;
+      /** @description true si otro movimiento ya lo anuló */
+      reversed: boolean;
+      /** @description Quién lo registró; null en los movimientos que se asientan solos (webhook, devolución de Mercado Pago) */
+      createdByUserId: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      /** @description El pedido al que pertenece el movimiento cuando nace de un cobro de venta (efectivo, Mercado Pago, comisión, devolución, transferencia o seña); null en los demás */
+      orderId: string | null;
+    };
+    CashMovementV2PageDto: {
+      data: components['schemas']['CashMovementV2ResponseDto'][];
+      /** @example 40 */
+      total: number;
+    };
+    CashCategoryResponseDto: {
+      categoryId: string;
+      /** @example Limpieza */
+      name: string;
+      /** @enum {string} */
+      direction: 'income' | 'expense';
+      /**
+       * @description Las de sistema no se editan ni se desactivan
+       * @enum {string|null}
+       */
+      systemCode:
+        | 'driver_settlement'
+        | 'customer_payment'
+        | 'commission_payment'
+        | 'cash_surplus'
+        | 'cash_shortage'
+        | 'transfer_in'
+        | 'transfer_out'
+        | 'purchase'
+        | 'fuel'
+        | 'traffic_fine'
+        | 'order_payment'
+        | 'insurance'
+        | 'fleet_maintenance'
+        | 'tires'
+        | 'vehicle_accident'
+        | 'insurance_reimbursement'
+        | 'mercadopago_fee'
+        | 'customer_refund'
+        | 'taxes_withholdings'
+        | 'mercadopago_fee_refund'
+        | null;
+      isActive: boolean;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    CashCategoryPageDto: {
+      data: components['schemas']['CashCategoryResponseDto'][];
+      /** @example 12 */
+      total: number;
+    };
+    CreateCashCategoryDto: {
+      /** @example Limpieza */
+      name: string;
+      /**
+       * @description `income` es de ingresos y `expense` de gastos
+       * @example expense
+       * @enum {string}
+       */
+      direction: 'income' | 'expense';
+    };
+    UpdateCashCategoryDto: {
+      /** @example Limpieza y mantenimiento */
+      name?: string;
+      /** @description false la desactiva */
+      isActive?: boolean;
+    };
     CustomerAccountResponseDto: {
       accountId: string;
       customerUserId: string;
@@ -10685,283 +11308,6 @@ export interface components {
       amount: number;
       /** @example Garrafa devuelta en mal estado */
       reason: string;
-    };
-    CashBoxResponseDto: {
-      cashBoxId: string;
-      /** @example Caja central */
-      name: string;
-      /** @enum {string} */
-      kind: 'cash' | 'bank' | 'wallet';
-      /**
-       * @description Saldo según el libro
-       * @example 15400.5
-       */
-      balance: number;
-      requiresSession: boolean;
-      isActive: boolean;
-      /** @description Sesión abierta de la caja, si tiene */
-      openSessionId: string | null;
-      /** Format: date-time */
-      createdAt: string;
-      /** Format: date-time */
-      updatedAt: string;
-    };
-    CashBoxPageDto: {
-      data: components['schemas']['CashBoxResponseDto'][];
-      /** @example 3 */
-      total: number;
-    };
-    CreateCashBoxDto: {
-      /** @example Caja del mostrador */
-      name: string;
-      /**
-       * @description Efectivo, banco o billetera virtual
-       * @example cash
-       * @enum {string}
-       */
-      kind: 'cash' | 'bank' | 'wallet';
-      /** @description Si exige abrir una sesión (y cerrarla con arqueo) para mover dinero. Por omisión, sí para efectivo. */
-      requiresSession?: boolean;
-    };
-    UpdateCashBoxDto: {
-      /** @example Caja del mostrador */
-      name?: string;
-      /** @description false la desactiva (409 si tiene una sesión abierta) */
-      isActive?: boolean;
-      /** @description Cambiar esto con una sesión abierta responde 409 */
-      requiresSession?: boolean;
-    };
-    OpenCashSessionDto: {
-      /**
-       * @description Efectivo con que se abre la caja. Si no coincide con el saldo del libro se asienta un ajuste de apertura.
-       * @example 5000
-       */
-      openingAmount: number;
-    };
-    CashSessionResponseDto: {
-      sessionId: string;
-      cashBoxId: string;
-      /** @example Caja central */
-      cashBoxName: string;
-      /** @enum {string} */
-      status: 'open' | 'closed';
-      /** Format: date-time */
-      openedAt: string;
-      openedByUserId: string;
-      /** @example 5000 */
-      openingAmount: number;
-      /** Format: date-time */
-      closedAt: string | null;
-      closedByUserId: string | null;
-      expectedAmount: number | null;
-      countedAmount: number | null;
-      /** @description Contado menos esperado: negativa es faltante */
-      difference: number | null;
-      notes: string | null;
-    };
-    CashSessionPageDto: {
-      data: components['schemas']['CashSessionResponseDto'][];
-      /** @example 8 */
-      total: number;
-    };
-    CashMovementResponseDto: {
-      movementId: string;
-      cashBoxId: string;
-      /** @example Caja central */
-      cashBoxName: string;
-      sessionId: string | null;
-      /** @enum {string} */
-      direction: 'in' | 'out';
-      /** @example 2500.5 */
-      amount: number;
-      categoryId: string;
-      /** @example Rendición de chofer */
-      categoryName: string;
-      /** @enum {string} */
-      method: 'cash' | 'transfer' | 'card' | 'mercadopago' | 'check';
-      /** Format: date-time */
-      occurredAt: string;
-      description: string;
-      /** @enum {string} */
-      referenceType:
-        | 'manual'
-        | 'session_opening'
-        | 'session_closing'
-        | 'driver_settlement'
-        | 'customer_payment'
-        | 'purchase_receipt'
-        | 'fuel_load'
-        | 'traffic_fine'
-        | 'driver_liquidation'
-        | 'box_transfer'
-        | 'reversal'
-        | 'order_payment'
-        | 'insurance_installment'
-        | 'maintenance_task'
-        | 'tire'
-        | 'vehicle_accident'
-        | 'insurance_reimbursement'
-        | 'payment'
-        | 'payment_fee'
-        | 'payment_refund'
-        | 'order_transfer'
-        | 'payment_external_refund'
-        | 'order_deposit'
-        | 'mp_reconciliation';
-      referenceId: string | null;
-      /** @description Si es una anulación, el movimiento que anula */
-      reversesMovementId: string | null;
-      /** @description true si otro movimiento ya lo anuló */
-      reversed: boolean;
-      /** @description Quién lo registró; null en los movimientos que se asientan solos (webhook, devolución de Mercado Pago) */
-      createdByUserId: string | null;
-      /** Format: date-time */
-      createdAt: string;
-    };
-    CashSessionDetailDto: {
-      sessionId: string;
-      cashBoxId: string;
-      /** @example Caja central */
-      cashBoxName: string;
-      /** @enum {string} */
-      status: 'open' | 'closed';
-      /** Format: date-time */
-      openedAt: string;
-      openedByUserId: string;
-      /** @example 5000 */
-      openingAmount: number;
-      /** Format: date-time */
-      closedAt: string | null;
-      closedByUserId: string | null;
-      expectedAmount: number | null;
-      countedAmount: number | null;
-      /** @description Contado menos esperado: negativa es faltante */
-      difference: number | null;
-      notes: string | null;
-      /**
-       * @description Saldo actual de la caja según el libro
-       * @example 18250
-       */
-      currentBalance: number;
-      /** @example 14000 */
-      totalIn: number;
-      /** @example 750 */
-      totalOut: number;
-      /** @description Movimientos de la sesión, del más viejo al más nuevo */
-      movements: components['schemas']['CashMovementResponseDto'][];
-    };
-    CloseCashSessionDto: {
-      /**
-       * @description Lo que se contó físicamente en la caja
-       * @example 18250
-       */
-      countedAmount: number;
-      notes?: string;
-    };
-    CashMovementPageDto: {
-      data: components['schemas']['CashMovementResponseDto'][];
-      /** @example 40 */
-      total: number;
-    };
-    CreateCashMovementDto: {
-      /** @description Caja donde entra o de donde sale el dinero */
-      cashBoxId: string;
-      /**
-       * @example out
-       * @enum {string}
-       */
-      direction: 'in' | 'out';
-      /**
-       * @description Mayor que cero, 2 decimales
-       * @example 2500.5
-       */
-      amount: number;
-      /** @description Categoría del mismo sentido que el movimiento */
-      categoryId: string;
-      /**
-       * @default cash
-       * @enum {string}
-       */
-      method: 'cash' | 'transfer' | 'card' | 'mercadopago' | 'check';
-      /** @example Compra de artículos de limpieza */
-      description: string;
-    };
-    TransferCashDto: {
-      /** @description Caja de la que sale el dinero */
-      fromCashBoxId: string;
-      /** @description Caja a la que entra el dinero */
-      toCashBoxId: string;
-      /** @example 10000 */
-      amount: number;
-      /** @example Depósito del día */
-      description?: string;
-    };
-    CashTransferResponseDto: {
-      out: components['schemas']['CashMovementResponseDto'];
-      in: components['schemas']['CashMovementResponseDto'];
-    };
-    ReverseCashMovementDto: {
-      /** @example Se cargó dos veces */
-      reason: string;
-    };
-    CashCategoryResponseDto: {
-      categoryId: string;
-      /** @example Limpieza */
-      name: string;
-      /** @enum {string} */
-      direction: 'income' | 'expense';
-      /**
-       * @description Las de sistema no se editan ni se desactivan
-       * @enum {string|null}
-       */
-      systemCode:
-        | 'driver_settlement'
-        | 'customer_payment'
-        | 'commission_payment'
-        | 'cash_surplus'
-        | 'cash_shortage'
-        | 'transfer_in'
-        | 'transfer_out'
-        | 'purchase'
-        | 'fuel'
-        | 'traffic_fine'
-        | 'order_payment'
-        | 'insurance'
-        | 'fleet_maintenance'
-        | 'tires'
-        | 'vehicle_accident'
-        | 'insurance_reimbursement'
-        | 'mercadopago_fee'
-        | 'customer_refund'
-        | 'taxes_withholdings'
-        | 'mercadopago_fee_refund'
-        | null;
-      isActive: boolean;
-      /** Format: date-time */
-      createdAt: string;
-      /** Format: date-time */
-      updatedAt: string;
-    };
-    CashCategoryPageDto: {
-      data: components['schemas']['CashCategoryResponseDto'][];
-      /** @example 12 */
-      total: number;
-    };
-    CreateCashCategoryDto: {
-      /** @example Limpieza */
-      name: string;
-      /**
-       * @description `income` es de ingresos y `expense` de gastos
-       * @example expense
-       * @enum {string}
-       */
-      direction: 'income' | 'expense';
-    };
-    UpdateCashCategoryDto: {
-      /** @example Limpieza y mantenimiento */
-      name?: string;
-      /** @description false la desactiva */
-      isActive?: boolean;
     };
     DriverSettlementResponseDto: {
       settlementId: string;
@@ -11955,6 +12301,367 @@ export interface components {
       tasks: components['schemas']['FleetTaskResponseDto'][];
       /** @description Planes activos que le aplican por la categoría de su puesto y para los que no tiene ninguna tarea abierta */
       missingPlans: components['schemas']['FleetPlanResponseDto'][];
+    };
+    WindowProposalResponseDto: {
+      /** Format: uuid */
+      proposalId: string;
+      /** Format: uuid */
+      caseId: string;
+      /** Format: uuid */
+      taskId: string;
+      /** Format: date-time */
+      windowStart: string;
+      /** Format: date-time */
+      windowEnd: string;
+      /** @description Orden en la lista de ventanas elegidas (1 es la mejor) */
+      rank: number;
+      /** @enum {string} */
+      status: 'pending' | 'accepted' | 'rejected' | 'expired' | 'cancelled';
+      /** Format: date-time */
+      expiresAt: string;
+      /** Format: date-time */
+      respondedAt: string | null;
+      rejectionReason: string | null;
+      /** Format: date-time */
+      altWindowStart: string | null;
+      /** Format: date-time */
+      altWindowEnd: string | null;
+    };
+    PlanningCaseResponseDto: {
+      /** Format: uuid */
+      caseId: string;
+      /** @enum {string} */
+      status: 'negotiating' | 'awaiting_confirmation' | 'escalated' | 'confirmed' | 'cancelled';
+      /** Format: uuid */
+      taskId: string;
+      /** @example Revisión técnica obligatoria (VTV) */
+      taskName: string;
+      /** @enum {string} */
+      criticality: 'blocking' | 'non_blocking';
+      /** Format: uuid */
+      carId: string;
+      patent: string | null;
+      /** Format: uuid */
+      deliveryId: string | null;
+      driverName: string | null;
+      /** Format: date-time */
+      projectedDueAt: string;
+      /** Format: date-time */
+      openedAt: string;
+      /** @enum {string|null} */
+      escalationReason: 'no_driver' | 'coverage' | 'exhausted' | 'no_windows' | null;
+      /** @description El motivo del escalamiento, en castellano */
+      escalationText: string | null;
+      /** Format: date-time */
+      escalatedAt: string | null;
+      /** Format: date-time */
+      chosenStart: string | null;
+      /** Format: date-time */
+      chosenEnd: string | null;
+      /** @enum {string|null} */
+      chosenSource: 'driver_accepted' | 'driver_alternative' | 'admin' | null;
+      /** Format: date-time */
+      resolvedAt: string | null;
+      notes: string | null;
+      /** @description La que espera respuesta del chofer */
+      currentProposal: components['schemas']['WindowProposalResponseDto'] | null;
+      /** @description La última cerrada (aceptada, rechazada o vencida) */
+      lastProposal: components['schemas']['WindowProposalResponseDto'] | null;
+      /** @description Propuestas hechas al chofer hasta ahora */
+      proposalsCount: number;
+    };
+    PlanningCasePageDto: {
+      data: components['schemas']['PlanningCaseResponseDto'][];
+      total: number;
+      /** @description Cantidad de casos por estado, sin filtros */
+      counts: {
+        [key: string]: number;
+      };
+    };
+    NextWindowResponseDto: {
+      /** Format: date-time */
+      start: string;
+      /** Format: date-time */
+      end: string;
+      /**
+       * @description `confirmed` programada; `awaiting_confirmation` acordada con el chofer; `negotiating` propuesta esperando respuesta
+       * @enum {string}
+       */
+      status: 'negotiating' | 'awaiting_confirmation' | 'escalated' | 'confirmed' | 'cancelled';
+    };
+    ForecastItemResponseDto: {
+      /** Format: uuid */
+      taskId: string;
+      taskName: string;
+      /** @enum {string} */
+      criticality: 'blocking' | 'non_blocking';
+      /** @description false para trámites que no pasan por un taller (el seguro) */
+      needsWorkshop: boolean;
+      /** Format: date-time */
+      dueAt: string | null;
+      dueKm: number | null;
+      /** @description Kilómetros que faltan; negativo si ya se pasó */
+      kmRemaining: number | null;
+      /**
+       * Format: date-time
+       * @description Cuándo llega al kilometraje, con el consumo estimado
+       */
+      predictedByKmAt: string | null;
+      /**
+       * Format: date-time
+       * @description La primera de las dos fechas
+       */
+      projectedDueAt: string | null;
+      daysLeft: number | null;
+      /** @description Entró en su anticipación */
+      dueSoon: boolean;
+      /** @description Por kilometraje pero sin consumo con qué proyectarla */
+      underObservation: boolean;
+      /** Format: date-time */
+      scheduledAt: string | null;
+      /** Format: uuid */
+      caseId: string | null;
+      /** @enum {string|null} */
+      caseStatus: 'negotiating' | 'awaiting_confirmation' | 'escalated' | 'confirmed' | 'cancelled' | null;
+    };
+    ForecastVehicleResponseDto: {
+      /** Format: uuid */
+      carId: string;
+      patent: string | null;
+      typeCar: string | null;
+      odometerKm: number | null;
+      /** @description Consumo diario estimado; null si no hay con qué estimarlo */
+      kmPerDay: number | null;
+      /**
+       * @description `own`: su historial. `fleet_average`: promedio de los vehículos del mismo tipo
+       * @enum {string|null}
+       */
+      usageSource: 'own' | 'fleet_average' | null;
+      /** @description Días con registro de uso que explican la estimación propia */
+      historyDays: number;
+      /** @description Último día con registro de uso (YYYY-MM-DD) */
+      lastUsageDay: string | null;
+      /** @description El último registro es más viejo que `usageStaleDays`: no se proyecta con este consumo */
+      usageStale: boolean;
+      nextWindow?: components['schemas']['NextWindowResponseDto'] | null;
+      items: components['schemas']['ForecastItemResponseDto'][];
+    };
+    PlannerForecastResponseDto: {
+      vehicles: components['schemas']['ForecastVehicleResponseDto'][];
+    };
+    PatchPlannerSettingsDto: {
+      /** @description Hora de ejecución diaria (0 a 23, hora de Argentina) */
+      cronHour?: number;
+      /** @description Vigencia de la propuesta al chofer, en horas (1 a 168) */
+      proposalTtlHours?: number;
+      /** @description Ventanas que se ofrecen antes de escalar (1 a 10) */
+      topNWindows?: number;
+      /** @description Mínimo de vehículos por zona (0 a 100) */
+      minVehiclesPerZone?: number;
+      /** @description Días de historial para confiar en la predicción propia (1 a 365) */
+      minSampleDays?: number;
+      /** @description Peso de las semanas recientes en la media móvil (0 a 1) */
+      decay?: number;
+      /** @description Días hacia adelante en que se buscan ventanas (1 a 180) */
+      horizonDays?: number;
+      /** @description Días de aviso mínimos hasta la ventana (0 a 30) */
+      minLeadDays?: number;
+      /** @description Días hacia atrás para derivar la zona del vehículo (1 a 90) */
+      zoneLookbackDays?: number;
+      /** @description Semanas de pedidos para estimar la demanda (1 a 26) */
+      demandWeeks?: number;
+      /** @description Hora en que empieza el taller (0 a 23) */
+      workshopStartHour?: number;
+      /** @description Hora en que termina el taller (1 a 24); posterior al inicio */
+      workshopEndHour?: number;
+    };
+    PlannerRunResponseDto: {
+      vehicles: number;
+      predictionsUpdated: number;
+      proposals: number;
+      escalated: number;
+      /** @description Casos escalados que se reiteraron en la bandeja */
+      reiterated: number;
+      groundedVehicles: number;
+      /** @description Tareas por kilometraje sin consumo con qué proyectarlas */
+      underObservation: number;
+    };
+    EvaluatedWindowResponseDto: {
+      /** Format: date-time */
+      start: string;
+      /** Format: date-time */
+      end: string;
+      /** @description Pedidos esperados ese día en la zona del vehículo */
+      demand: number;
+      /** @description Vehículos que quedarían activos en la zona; null si el vehículo no tiene zona */
+      unitsLeft: number | null;
+      /** @description Cae después del vencimiento proyectado: se ofrece lo antes posible */
+      urgent: boolean;
+      /** @description Entre las que se le ofrecen al chofer */
+      offered: boolean;
+      /** @enum {string|null} */
+      discardReason: 'coverage' | 'not_selected' | null;
+    };
+    PlanningCaseDetailResponseDto: {
+      /** Format: uuid */
+      caseId: string;
+      /** @enum {string} */
+      status: 'negotiating' | 'awaiting_confirmation' | 'escalated' | 'confirmed' | 'cancelled';
+      /** Format: uuid */
+      taskId: string;
+      /** @example Revisión técnica obligatoria (VTV) */
+      taskName: string;
+      /** @enum {string} */
+      criticality: 'blocking' | 'non_blocking';
+      /** Format: uuid */
+      carId: string;
+      patent: string | null;
+      /** Format: uuid */
+      deliveryId: string | null;
+      driverName: string | null;
+      /** Format: date-time */
+      projectedDueAt: string;
+      /** Format: date-time */
+      openedAt: string;
+      /** @enum {string|null} */
+      escalationReason: 'no_driver' | 'coverage' | 'exhausted' | 'no_windows' | null;
+      /** @description El motivo del escalamiento, en castellano */
+      escalationText: string | null;
+      /** Format: date-time */
+      escalatedAt: string | null;
+      /** Format: date-time */
+      chosenStart: string | null;
+      /** Format: date-time */
+      chosenEnd: string | null;
+      /** @enum {string|null} */
+      chosenSource: 'driver_accepted' | 'driver_alternative' | 'admin' | null;
+      /** Format: date-time */
+      resolvedAt: string | null;
+      notes: string | null;
+      /** @description La que espera respuesta del chofer */
+      currentProposal: components['schemas']['WindowProposalResponseDto'] | null;
+      /** @description La última cerrada (aceptada, rechazada o vencida) */
+      lastProposal: components['schemas']['WindowProposalResponseDto'] | null;
+      /** @description Propuestas hechas al chofer hasta ahora */
+      proposalsCount: number;
+      /** @description Todas, en el orden en que se ofrecieron */
+      proposals: components['schemas']['WindowProposalResponseDto'][];
+      /** @description El cuadro completo: ventanas evaluadas y por qué se descartó cada una */
+      windows: components['schemas']['EvaluatedWindowResponseDto'][];
+    };
+    ConfirmPlanningCaseDto: {
+      /** @description Confirma aunque la ventana deje la zona de cobertura por debajo del mínimo de unidades (decide el administrador). Sin esto, esa ventana responde 409. */
+      ignoreCoverage?: boolean;
+      /** @example Taller Los Pinos */
+      provider?: string;
+      /**
+       * @description Gasto previsto del taller; queda como costo de la tarea
+       * @example 85000
+       */
+      cost?: number;
+      notes?: string;
+      /** @example 2026-11-04T08:00:00-03:00 */
+      windowStart?: string;
+      /** @example 2026-11-04T13:00:00-03:00 */
+      windowEnd?: string;
+    };
+    CancelPlanningCaseDto: {
+      /** @example El vehículo sale de la flota */
+      notes?: string;
+    };
+    ForceWindowDto: {
+      /** @description Confirma aunque la ventana deje la zona de cobertura por debajo del mínimo de unidades (decide el administrador). Sin esto, esa ventana responde 409. */
+      ignoreCoverage?: boolean;
+      /** @example Taller Los Pinos */
+      provider?: string;
+      /**
+       * @description Gasto previsto del taller; queda como costo de la tarea
+       * @example 85000
+       */
+      cost?: number;
+      notes?: string;
+      /** @example 2026-11-04T08:00:00-03:00 */
+      windowStart: string;
+      /** @example 2026-11-04T13:00:00-03:00 */
+      windowEnd: string;
+    };
+    DriverMaintenanceSettingsResponseDto: {
+      /** @example 8 */
+      workshopStartHour: number;
+      /** @example 13 */
+      workshopEndHour: number;
+      /**
+       * @description Días de la semana en que atiende el taller (0 = domingo … 6 = sábado)
+       * @example [
+       *       1,
+       *       2,
+       *       3,
+       *       4,
+       *       5,
+       *       6
+       *     ]
+       */
+      workshopDays: number[];
+      /**
+       * @description Feriados nacionales desde hoy (YYYY-MM-DD): el taller no atiende
+       * @example [
+       *       "2026-11-23"
+       *     ]
+       */
+      holidays: string[];
+      /** @description Días de aviso mínimos entre la propuesta y la ventana */
+      minLeadDays: number;
+      /** @description Hasta cuántos días hacia adelante se buscan ventanas (también para la alternativa del chofer) */
+      horizonDays: number;
+      /** @description Horas de vigencia de una propuesta */
+      proposalTtlHours: number;
+    };
+    DriverProposalResponseDto: {
+      /** Format: uuid */
+      proposalId: string;
+      /** Format: uuid */
+      caseId: string;
+      /** Format: uuid */
+      taskId: string;
+      /** Format: date-time */
+      windowStart: string;
+      /** Format: date-time */
+      windowEnd: string;
+      /** @description Orden en la lista de ventanas elegidas (1 es la mejor) */
+      rank: number;
+      /** @enum {string} */
+      status: 'pending' | 'accepted' | 'rejected' | 'expired' | 'cancelled';
+      /** Format: date-time */
+      expiresAt: string;
+      /** Format: date-time */
+      respondedAt: string | null;
+      rejectionReason: string | null;
+      /** Format: date-time */
+      altWindowStart: string | null;
+      /** Format: date-time */
+      altWindowEnd: string | null;
+      /** @example Service: aceite y filtros */
+      taskName: string;
+      /** Format: uuid */
+      carId: string;
+      /** @example AB123CD */
+      patent: string | null;
+    };
+    DriverProposalPageDto: {
+      data: components['schemas']['DriverProposalResponseDto'][];
+      total: number;
+    };
+    WindowDto: {
+      /** @example 2026-11-03T08:00:00-03:00 */
+      start: string;
+      /** @example 2026-11-03T13:00:00-03:00 */
+      end: string;
+    };
+    RejectProposalDto: {
+      /** @example Ese día tengo el turno médico */
+      reason: string;
+      /** @description Otra ventana que le sirve. Tiene que caber en un día dentro del horario de taller, respetar el aviso mínimo, caer antes del vencimiento proyectado y no dejar la zona bajo el mínimo de unidades. Si es viable, queda acordada a la espera del administrador; si no, 400. */
+      alternative?: components['schemas']['WindowDto'];
     };
     CreateLeaveDto: {
       /**
@@ -15394,260 +16101,6 @@ export interface components {
       /** Format: date-time */
       paidAt: string | null;
     };
-    DashboardCashBoxDto: {
-      cashBoxId: string;
-      /** @example Caja central */
-      name: string;
-      /** @enum {string} */
-      kind: 'cash' | 'bank' | 'wallet';
-      /** @example 152000 */
-      balance: number;
-      hasOpenSession: boolean;
-    };
-    DashboardMovementsDto: {
-      /**
-       * @description Entradas del día, sin transferencias entre cajas
-       * @example 180000
-       */
-      income: number;
-      /** @example 42000 */
-      expense: number;
-      /** @example 17 */
-      count: number;
-    };
-    DashboardSettlementsDto: {
-      /**
-       * @description Abiertas del día
-       * @example 2
-       */
-      open: number;
-      /**
-       * @description Presentadas del día, a la espera de aprobación
-       * @example 1
-       */
-      submitted: number;
-      /** @example 3 */
-      approved: number;
-      /**
-       * @description Abiertas o presentadas de días anteriores: sin cerrar
-       * @example 1
-       */
-      overdue: number;
-      /**
-       * @description Efectivo declarado en rendiciones presentadas, sin aprobar
-       * @example 38000
-       */
-      pendingCash: number;
-    };
-    DashboardReceivablesDto: {
-      /** @example 420000 */
-      totalDebt: number;
-      /**
-       * @description Con vencimiento anterior a hoy
-       * @example 90000
-       */
-      overdueDebt: number;
-      /** @example 7 */
-      accountsWithDebt: number;
-    };
-    DashboardCommissionsDto: {
-      /**
-       * @description Lo devengado y todavía no liquidado
-       * @example 63000
-       */
-      pendingToLiquidate: number;
-      /**
-       * @description Choferes con comisiones sin liquidar
-       * @example 4
-       */
-      employees: number;
-    };
-    FinanceDashboardDto: {
-      /** @example 2026-11-03 */
-      date: string;
-      cashBoxes: components['schemas']['DashboardCashBoxDto'][];
-      /**
-       * @description Suma de los saldos de todas las cajas activas
-       * @example 152000
-       */
-      totalBalance: number;
-      movements: components['schemas']['DashboardMovementsDto'];
-      settlements: components['schemas']['DashboardSettlementsDto'];
-      receivables: components['schemas']['DashboardReceivablesDto'];
-      commissions: components['schemas']['DashboardCommissionsDto'];
-    };
-    PeoplePhotosRequestDto: {
-      /** @description Ids de usuario (clientes, choferes, admins). Puede ir vacío. */
-      userIds: string[];
-      /** @description Ids de legajo (empleados), con o sin cuenta de acceso. */
-      employeeIds?: string[];
-      /** @description Ids de chofer (`delivery_id`): se resuelven a la foto de su usuario. */
-      deliveryIds?: string[];
-    };
-    PersonPhotoDto: {
-      /** @description URL firmada de S3 (se abre sin token). */
-      url: string;
-      /** Format: date-time */
-      expiresAt: string;
-    };
-    PeoplePhotosResponseDto: {
-      /** @description Una entrada por cada id pedido. `null` si no tiene foto, no existe o no es de la distribuidora (no se distingue). */
-      users: {
-        [key: string]: components['schemas']['PersonPhotoDto'] | null;
-      };
-      /** @description Igual que `users`, por id de legajo. Si el legajo tiene cuenta, es la foto del usuario. */
-      employees: {
-        [key: string]: components['schemas']['PersonPhotoDto'] | null;
-      };
-      /** @description Igual que `users`, por id de chofer (`delivery_id`). */
-      deliveries: {
-        [key: string]: components['schemas']['PersonPhotoDto'] | null;
-      };
-    };
-    ImportErrorDto: {
-      /**
-       * @description Fila del archivo (el encabezado es la 1)
-       * @example 4
-       */
-      fila: number;
-      /** @example Precio */
-      columna: string;
-      /** @example tiene que ser mayor que 0 */
-      mensaje: string;
-    };
-    ImportPreviewRowDto: {
-      /** @example 2 */
-      fila: number;
-      /**
-       * @description La fila ya normalizada, como se va a aplicar
-       * @example {
-       *       "type": "10 kg",
-       *       "weight": 10,
-       *       "price": 12500.5,
-       *       "stock": 0
-       *     }
-       */
-      datos: {
-        [key: string]: unknown;
-      };
-    };
-    ImportPreviewResponseDto: {
-      /** Format: uuid */
-      importId: string;
-      /** @enum {string} */
-      recurso: 'garrafas' | 'precios' | 'stock' | 'proveedores';
-      /**
-       * @description `pending` se puede confirmar; `with_errors` no: se corrige el archivo y se vuelve a subir
-       * @enum {string}
-       */
-      estado: 'pending' | 'with_errors' | 'confirmed';
-      /**
-       * @description Filas con datos del archivo
-       * @example 120
-       */
-      total: number;
-      /** @example 118 */
-      validas: number;
-      errores: components['schemas']['ImportErrorDto'][];
-      /** @description Las primeras 20 filas válidas, normalizadas */
-      vistaPrevia: components['schemas']['ImportPreviewRowDto'][];
-      /**
-       * Format: date-time
-       * @description Hasta cuándo se puede confirmar (24 h)
-       */
-      venceEn: string;
-    };
-    ImportConfirmResponseDto: {
-      /** Format: uuid */
-      importId: string;
-      /** @enum {string} */
-      recurso: 'garrafas' | 'precios' | 'stock' | 'proveedores';
-      /** @enum {string} */
-      estado: 'pending' | 'with_errors' | 'confirmed';
-      /** @example 120 */
-      total: number;
-      /**
-       * @description Cuánto se aplicó, por concepto (depende del recurso)
-       * @example {
-       *       "creadas": 120
-       *     }
-       */
-      resumen: {
-        [key: string]: number;
-      };
-      /** Format: date-time */
-      confirmadaEn: string;
-      /** @description true si esta importación ya estaba confirmada: no se aplicó de nuevo */
-      yaConfirmada: boolean;
-    };
-    ConfirmDepositV2Dto: {
-      /**
-       * Format: uuid
-       * @description Caja de EFECTIVO donde entra la seña recibida en efectivo. Obligatoria si la distribuidora tiene alguna caja de efectivo activa (400 si falta o no es de efectivo); la de otra distribuidora es 404 y una que exige sesión sin sesión abierta, 409. En una seña por transferencia no se manda: entra a la caja de transferencias configurada en `/v2/cash-settings`.
-       */
-      cashBoxId?: string;
-    };
-    CashMovementV2ResponseDto: {
-      movementId: string;
-      cashBoxId: string;
-      /** @example Caja central */
-      cashBoxName: string;
-      sessionId: string | null;
-      /** @enum {string} */
-      direction: 'in' | 'out';
-      /** @example 2500.5 */
-      amount: number;
-      categoryId: string;
-      /** @example Rendición de chofer */
-      categoryName: string;
-      /** @enum {string} */
-      method: 'cash' | 'transfer' | 'card' | 'mercadopago' | 'check';
-      /** Format: date-time */
-      occurredAt: string;
-      description: string;
-      /** @enum {string} */
-      referenceType:
-        | 'manual'
-        | 'session_opening'
-        | 'session_closing'
-        | 'driver_settlement'
-        | 'customer_payment'
-        | 'purchase_receipt'
-        | 'fuel_load'
-        | 'traffic_fine'
-        | 'driver_liquidation'
-        | 'box_transfer'
-        | 'reversal'
-        | 'order_payment'
-        | 'insurance_installment'
-        | 'maintenance_task'
-        | 'tire'
-        | 'vehicle_accident'
-        | 'insurance_reimbursement'
-        | 'payment'
-        | 'payment_fee'
-        | 'payment_refund'
-        | 'order_transfer'
-        | 'payment_external_refund'
-        | 'order_deposit'
-        | 'mp_reconciliation';
-      referenceId: string | null;
-      /** @description Si es una anulación, el movimiento que anula */
-      reversesMovementId: string | null;
-      /** @description true si otro movimiento ya lo anuló */
-      reversed: boolean;
-      /** @description Quién lo registró; null en los movimientos que se asientan solos (webhook, devolución de Mercado Pago) */
-      createdByUserId: string | null;
-      /** Format: date-time */
-      createdAt: string;
-      /** @description El pedido al que pertenece el movimiento cuando nace de un cobro de venta (efectivo, Mercado Pago, comisión, devolución, transferencia o seña); null en los demás */
-      orderId: string | null;
-    };
-    CashMovementV2PageDto: {
-      data: components['schemas']['CashMovementV2ResponseDto'][];
-      /** @example 40 */
-      total: number;
-    };
     CashCollectionSettingsResponseDto: {
       /**
        * Format: uuid
@@ -16014,6 +16467,88 @@ export interface components {
       failed: number;
       results: components['schemas']['MpApplyItemResultDto'][];
     };
+    DashboardCashBoxDto: {
+      cashBoxId: string;
+      /** @example Caja central */
+      name: string;
+      /** @enum {string} */
+      kind: 'cash' | 'bank' | 'wallet';
+      /** @example 152000 */
+      balance: number;
+      hasOpenSession: boolean;
+    };
+    DashboardMovementsDto: {
+      /**
+       * @description Entradas del día, sin transferencias entre cajas
+       * @example 180000
+       */
+      income: number;
+      /** @example 42000 */
+      expense: number;
+      /** @example 17 */
+      count: number;
+    };
+    DashboardSettlementsDto: {
+      /**
+       * @description Abiertas del día
+       * @example 2
+       */
+      open: number;
+      /**
+       * @description Presentadas del día, a la espera de aprobación
+       * @example 1
+       */
+      submitted: number;
+      /** @example 3 */
+      approved: number;
+      /**
+       * @description Abiertas o presentadas de días anteriores: sin cerrar
+       * @example 1
+       */
+      overdue: number;
+      /**
+       * @description Efectivo declarado en rendiciones presentadas, sin aprobar
+       * @example 38000
+       */
+      pendingCash: number;
+    };
+    DashboardReceivablesDto: {
+      /** @example 420000 */
+      totalDebt: number;
+      /**
+       * @description Con vencimiento anterior a hoy
+       * @example 90000
+       */
+      overdueDebt: number;
+      /** @example 7 */
+      accountsWithDebt: number;
+    };
+    DashboardCommissionsDto: {
+      /**
+       * @description Lo devengado y todavía no liquidado
+       * @example 63000
+       */
+      pendingToLiquidate: number;
+      /**
+       * @description Choferes con comisiones sin liquidar
+       * @example 4
+       */
+      employees: number;
+    };
+    FinanceDashboardDto: {
+      /** @example 2026-11-03 */
+      date: string;
+      cashBoxes: components['schemas']['DashboardCashBoxDto'][];
+      /**
+       * @description Suma de los saldos de todas las cajas activas
+       * @example 152000
+       */
+      totalBalance: number;
+      movements: components['schemas']['DashboardMovementsDto'];
+      settlements: components['schemas']['DashboardSettlementsDto'];
+      receivables: components['schemas']['DashboardReceivablesDto'];
+      commissions: components['schemas']['DashboardCommissionsDto'];
+    };
     IncomeStatementTotalsDto: {
       /** @example 180000 */
       income: number;
@@ -16024,6 +16559,15 @@ export interface components {
        * @example 138000
        */
       net: number;
+    };
+    IncomeStatementInitialLoadDto: {
+      /**
+       * @description Carga inicial de las cajas en el período (la apertura de su primera sesión, sin movimientos previos): no es ingreso ni egreso
+       * @example 50000
+       */
+      amount: number;
+      /** @example 1 */
+      count: number;
     };
     IncomeStatementCategoryDto: {
       categoryId: string;
@@ -16104,14 +16648,109 @@ export interface components {
       byPeriod: components['schemas']['IncomeStatementPeriodDto'][];
       byCashBox: components['schemas']['IncomeStatementCashBoxDto'][];
     };
-    IncomeStatementInitialLoadDto: {
+    PeoplePhotosRequestDto: {
+      /** @description Ids de usuario (clientes, choferes, admins). Puede ir vacío. */
+      userIds: string[];
+      /** @description Ids de legajo (empleados), con o sin cuenta de acceso. */
+      employeeIds?: string[];
+      /** @description Ids de chofer (`delivery_id`): se resuelven a la foto de su usuario. */
+      deliveryIds?: string[];
+    };
+    PersonPhotoDto: {
+      /** @description URL firmada de S3 (se abre sin token). */
+      url: string;
+      /** Format: date-time */
+      expiresAt: string;
+    };
+    PeoplePhotosResponseDto: {
+      /** @description Una entrada por cada id pedido. `null` si no tiene foto, no existe o no es de la distribuidora (no se distingue). */
+      users: {
+        [key: string]: components['schemas']['PersonPhotoDto'] | null;
+      };
+      /** @description Igual que `users`, por id de legajo. Si el legajo tiene cuenta, es la foto del usuario. */
+      employees: {
+        [key: string]: components['schemas']['PersonPhotoDto'] | null;
+      };
+      /** @description Igual que `users`, por id de chofer (`delivery_id`). */
+      deliveries: {
+        [key: string]: components['schemas']['PersonPhotoDto'] | null;
+      };
+    };
+    ImportErrorDto: {
       /**
-       * @description Carga inicial de las cajas en el período (la apertura de su primera sesión, sin movimientos previos): no es ingreso ni egreso
-       * @example 50000
+       * @description Fila del archivo (el encabezado es la 1)
+       * @example 4
        */
-      amount: number;
-      /** @example 1 */
-      count: number;
+      fila: number;
+      /** @example Precio */
+      columna: string;
+      /** @example tiene que ser mayor que 0 */
+      mensaje: string;
+    };
+    ImportPreviewRowDto: {
+      /** @example 2 */
+      fila: number;
+      /**
+       * @description La fila ya normalizada, como se va a aplicar
+       * @example {
+       *       "type": "10 kg",
+       *       "weight": 10,
+       *       "price": 12500.5,
+       *       "stock": 0
+       *     }
+       */
+      datos: {
+        [key: string]: unknown;
+      };
+    };
+    ImportPreviewResponseDto: {
+      /** Format: uuid */
+      importId: string;
+      /** @enum {string} */
+      recurso: 'garrafas' | 'precios' | 'stock' | 'proveedores';
+      /**
+       * @description `pending` se puede confirmar; `with_errors` no: se corrige el archivo y se vuelve a subir
+       * @enum {string}
+       */
+      estado: 'pending' | 'with_errors' | 'confirmed';
+      /**
+       * @description Filas con datos del archivo
+       * @example 120
+       */
+      total: number;
+      /** @example 118 */
+      validas: number;
+      errores: components['schemas']['ImportErrorDto'][];
+      /** @description Las primeras 20 filas válidas, normalizadas */
+      vistaPrevia: components['schemas']['ImportPreviewRowDto'][];
+      /**
+       * Format: date-time
+       * @description Hasta cuándo se puede confirmar (24 h)
+       */
+      venceEn: string;
+    };
+    ImportConfirmResponseDto: {
+      /** Format: uuid */
+      importId: string;
+      /** @enum {string} */
+      recurso: 'garrafas' | 'precios' | 'stock' | 'proveedores';
+      /** @enum {string} */
+      estado: 'pending' | 'with_errors' | 'confirmed';
+      /** @example 120 */
+      total: number;
+      /**
+       * @description Cuánto se aplicó, por concepto (depende del recurso)
+       * @example {
+       *       "creadas": 120
+       *     }
+       */
+      resumen: {
+        [key: string]: number;
+      };
+      /** Format: date-time */
+      confirmadaEn: string;
+      /** @description true si esta importación ya estaba confirmada: no se aplicó de nuevo */
+      yaConfirmada: boolean;
     };
   };
   responses: never;
@@ -23871,6 +24510,75 @@ export interface operations {
       };
     };
   };
+  ReservationV2Controller_confirmDeposit: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Order UUID (reserva) */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ConfirmDepositV2Dto'];
+      };
+    };
+    responses: {
+      /** @description Seña confirmada */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['OrderResponseDto'];
+        };
+      };
+      /** @description No es una reserva pendiente, la seña es de Mercado Pago, o falta la caja de efectivo */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Reserva o caja no encontrada */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La caja rechazó el ingreso (sin sesión abierta, desactivada) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   CartController_consultar: {
     parameters: {
       query?: never;
@@ -26137,453 +26845,6 @@ export interface operations {
       };
     };
   };
-  CustomerAccountController_findAll: {
-    parameters: {
-      query?: {
-        limit?: number;
-        offset?: number;
-        page?: number;
-        /** @description Texto a buscar */
-        term?: string;
-        status?: 'active' | 'blocked' | 'closed';
-        /** @description Sólo las que tienen deuda vencida */
-        overdue?: boolean;
-        /** @description Razón social, CUIT, nombre o correo del cliente */
-        q?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['CustomerAccountPageDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  CustomerAccountController_create: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CreateCustomerAccountDto'];
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['CustomerAccountDetailDto'];
-        };
-      };
-      /** @description CUIT inválido, límite negativo o plazo no positivo */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description El cliente no existe */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description El cliente ya tiene una cuenta vigente en la distribuidora */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  CustomerAccountController_aging: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['AgingReportDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  CustomerAccountController_findOne: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Cuenta UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['CustomerAccountDetailDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  CustomerAccountController_update: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Cuenta UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['UpdateCustomerAccountDto'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['CustomerAccountDetailDto'];
-        };
-      };
-      /** @description Límite negativo o plazo no positivo */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Se cierra con saldo distinto de cero o con pedidos a cuenta sin entregar, o la transición de estado no está permitida (una cuenta cerrada sólo se reabre pasándola a active) */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  CustomerAccountController_entries: {
-    parameters: {
-      query?: {
-        limit?: number;
-        offset?: number;
-        page?: number;
-        /** @description Texto a buscar */
-        term?: string;
-        from?: string | null;
-        to?: string | null;
-      };
-      header?: never;
-      path: {
-        /** @description Cuenta UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['CustomerStatementDto'];
-        };
-      };
-      /** @description Período inválido */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  CustomerAccountController_registerPayment: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Cuenta UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['RegisterPaymentDto'];
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['CustomerEntryResponseDto'];
-        };
-      };
-      /** @description Importe no positivo; el chofer manda caja o un medio que no es efectivo */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin, delivery */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Falta la caja (administrador), la caja exige sesión y no la tiene abierta, el chofer no tiene rendición abierta, o la cuenta está cerrada */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  CustomerAccountController_registerAdjustment: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Cuenta UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['RegisterAdjustmentDto'];
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['CustomerEntryResponseDto'];
-        };
-      };
-      /** @description Tipo inválido, falta el motivo o el importe no es positivo */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La cuenta está cerrada */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
   CashBoxController_findAll: {
     parameters: {
       query?: {
@@ -27368,6 +27629,92 @@ export interface operations {
       };
     };
   };
+  CashMovementV2Controller_findAll: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+        page?: number;
+        /** @description Texto a buscar */
+        term?: string;
+        /** @description Sólo los de esta caja */
+        cashBoxId?: string;
+        categoryId?: string;
+        direction?: 'in' | 'out';
+        referenceType?:
+          | 'manual'
+          | 'session_opening'
+          | 'session_closing'
+          | 'driver_settlement'
+          | 'customer_payment'
+          | 'purchase_receipt'
+          | 'fuel_load'
+          | 'traffic_fine'
+          | 'driver_liquidation'
+          | 'box_transfer'
+          | 'reversal'
+          | 'order_payment'
+          | 'insurance_installment'
+          | 'maintenance_task'
+          | 'tire'
+          | 'vehicle_accident'
+          | 'insurance_reimbursement'
+          | 'payment'
+          | 'payment_fee'
+          | 'payment_refund'
+          | 'order_transfer'
+          | 'payment_external_refund'
+          | 'order_deposit'
+          | 'mp_reconciliation';
+        from?: string | null;
+        to?: string | null;
+        /** @description Sólo los movimientos que cuentan como ingreso o egreso en `GET /v2/finance/income-statement`: sin transferencias entre cajas ni carga inicial */
+        countsForResult?: boolean;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CashMovementV2PageDto'];
+        };
+      };
+      /** @description Período o filtro inválido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La caja no existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   CashCategoryController_findAll: {
     parameters: {
       query?: {
@@ -27557,6 +27904,453 @@ export interface operations {
         content?: never;
       };
       /** @description Es una categoría de sistema, o el nombre ya está en uso */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CustomerAccountController_findAll: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+        page?: number;
+        /** @description Texto a buscar */
+        term?: string;
+        status?: 'active' | 'blocked' | 'closed';
+        /** @description Sólo las que tienen deuda vencida */
+        overdue?: boolean;
+        /** @description Razón social, CUIT, nombre o correo del cliente */
+        q?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CustomerAccountPageDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CustomerAccountController_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateCustomerAccountDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CustomerAccountDetailDto'];
+        };
+      };
+      /** @description CUIT inválido, límite negativo o plazo no positivo */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El cliente no existe */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El cliente ya tiene una cuenta vigente en la distribuidora */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CustomerAccountController_aging: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AgingReportDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CustomerAccountController_findOne: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Cuenta UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CustomerAccountDetailDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CustomerAccountController_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Cuenta UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateCustomerAccountDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CustomerAccountDetailDto'];
+        };
+      };
+      /** @description Límite negativo o plazo no positivo */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Se cierra con saldo distinto de cero o con pedidos a cuenta sin entregar, o la transición de estado no está permitida (una cuenta cerrada sólo se reabre pasándola a active) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CustomerAccountController_entries: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+        page?: number;
+        /** @description Texto a buscar */
+        term?: string;
+        from?: string | null;
+        to?: string | null;
+      };
+      header?: never;
+      path: {
+        /** @description Cuenta UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CustomerStatementDto'];
+        };
+      };
+      /** @description Período inválido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CustomerAccountController_registerPayment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Cuenta UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RegisterPaymentDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CustomerEntryResponseDto'];
+        };
+      };
+      /** @description Importe no positivo; el chofer manda caja o un medio que no es efectivo */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin, delivery */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Falta la caja (administrador), la caja exige sesión y no la tiene abierta, el chofer no tiene rendición abierta, o la cuenta está cerrada */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CustomerAccountController_registerAdjustment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Cuenta UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RegisterAdjustmentDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CustomerEntryResponseDto'];
+        };
+      };
+      /** @description Tipo inválido, falta el motivo o el importe no es positivo */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta está cerrada */
       409: {
         headers: {
           [name: string]: unknown;
@@ -30180,6 +30974,766 @@ export interface operations {
       };
       /** @description El vehículo no está fuera de servicio */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MaintenancePlannerController_casos: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+        page?: number;
+        /** @description Texto a buscar */
+        term?: string;
+        status?: 'negotiating' | 'awaiting_confirmation' | 'escalated' | 'confirmed' | 'cancelled';
+        carId?: string;
+        /** @description Sólo los casos que esperan al administrador (escalados o a confirmar) */
+        pending?: boolean;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PlanningCasePageDto'];
+        };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MaintenancePlannerController_forecast: {
+    parameters: {
+      query?: {
+        carId?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PlannerForecastResponseDto'];
+        };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MaintenancePlannerController_settings: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProcessConfigResponseDto'];
+        };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MaintenancePlannerController_settingsPatch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PatchPlannerSettingsDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProcessConfigResponseDto'];
+        };
+      };
+      /** @description Valor fuera de rango o inicio del taller posterior al fin */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MaintenancePlannerController_run: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PlannerRunResponseDto'];
+        };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MaintenancePlannerController_caso: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Case UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PlanningCaseDetailResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MaintenancePlannerController_confirmar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Case UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ConfirmPlanningCaseDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PlanningCaseDetailResponseDto'];
+        };
+      };
+      /** @description Falta la ventana (caso sin acuerdo), ventana pasada o invertida */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El caso ya está resuelto o la tarea cerrada */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MaintenancePlannerController_cancelar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Case UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CancelPlanningCaseDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PlanningCaseDetailResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El caso ya está resuelto */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MaintenancePlannerController_forzar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Task UUID */
+        taskId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ForceWindowDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PlanningCaseDetailResponseDto'];
+        };
+      };
+      /** @description Ventana pasada o invertida, o la tarea no es de un vehículo */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La tarea ya está cerrada */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MaintenancePlannerController_replanificar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Task UUID */
+        taskId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PlanningCaseDetailResponseDto'];
+        };
+      };
+      /** @description La tarea no se resuelve en un taller o no tiene vencimiento proyectable */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DriverMaintenanceProposalsController_settings: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DriverMaintenanceSettingsResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: delivery */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DriverMaintenanceProposalsController_one: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Proposal UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DriverProposalResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: delivery */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otro chofer */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DriverMaintenanceProposalsController_list: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+        page?: number;
+        /** @description Texto a buscar */
+        term?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DriverProposalPageDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: delivery */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DriverMaintenanceProposalsController_accept: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Proposal UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DriverProposalResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: delivery */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otro chofer */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya respondida, vencida o cancelada */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DriverMaintenanceProposalsController_reject: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Proposal UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RejectProposalDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DriverProposalResponseDto'];
+        };
+      };
+      /** @description Sin motivo, o la ventana alternativa no es viable */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: delivery */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otro chofer */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya respondida, vencida o cancelada */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
         headers: {
           [name: string]: unknown;
         };
@@ -39920,470 +41474,6 @@ export interface operations {
       };
     };
   };
-  FinanceController_dashboard: {
-    parameters: {
-      query?: {
-        date?: string | null;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['FinanceDashboardDto'];
-        };
-      };
-      /** @description La fecha no es válida */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  ExportsController_exportar: {
-    parameters: {
-      query?: {
-        /** @description Por defecto `csv` */
-        format?: 'csv' | 'xlsx';
-      };
-      header?: never;
-      path: {
-        recurso: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description El archivo, con `Content-Disposition: attachment; filename="<recurso>-<AAAA-MM-DD>.<ext>"`. El total de filas va en `X-Total-Count`. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Formato o filtros inválidos, falta la distribuidora, o hay más filas que el tope (`EXPORT_MAX_ROWS`) */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description El recurso no existe */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  PeoplePhotosController_firmar: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['PeoplePhotosRequestDto'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PeoplePhotosResponseDto'];
-        };
-      };
-      /** @description Ids que no son UUID, o más de 100 */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  ImportController_template: {
-    parameters: {
-      query?: {
-        /** @description Formato de la plantilla */
-        format?: 'xlsx' | 'csv';
-      };
-      header?: never;
-      path: {
-        recurso: 'garrafas' | 'precios' | 'stock' | 'proveedores';
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description El archivo de la plantilla (.xlsx por defecto, o .csv) */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': string;
-        };
-      };
-      /** @description Recurso o formato no válido */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  ImportController_preview: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        recurso: 'garrafas' | 'precios' | 'stock' | 'proveedores';
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'multipart/form-data': {
-          /** Format: binary */
-          file: string;
-        };
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ImportPreviewResponseDto'];
-        };
-      };
-      /** @description Falta el archivo, está vacío, supera las filas permitidas o el encabezado no coincide con la plantilla */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description El archivo supera los 5 MB */
-      413: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No es un .xlsx ni un .csv (o el contenido no coincide) */
-      415: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  ImportController_confirm: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        importId: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ImportConfirmResponseDto'];
-        };
-      };
-      /** @description La vista previa tiene errores, o una fila no se pudo aplicar (el mensaje dice cuál) */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La vista previa venció (24 h) */
-      410: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  ReservationV2Controller_confirmDeposit: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Order UUID (reserva) */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['ConfirmDepositV2Dto'];
-      };
-    };
-    responses: {
-      /** @description Seña confirmada */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['OrderResponseDto'];
-        };
-      };
-      /** @description No es una reserva pendiente, la seña es de Mercado Pago, o falta la caja de efectivo */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Reserva o caja no encontrada */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La caja rechazó el ingreso (sin sesión abierta, desactivada) */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  CashMovementV2Controller_findAll: {
-    parameters: {
-      query?: {
-        limit?: number;
-        offset?: number;
-        page?: number;
-        /** @description Texto a buscar */
-        term?: string;
-        /** @description Sólo los de esta caja */
-        cashBoxId?: string;
-        categoryId?: string;
-        direction?: 'in' | 'out';
-        referenceType?:
-          | 'manual'
-          | 'session_opening'
-          | 'session_closing'
-          | 'driver_settlement'
-          | 'customer_payment'
-          | 'purchase_receipt'
-          | 'fuel_load'
-          | 'traffic_fine'
-          | 'driver_liquidation'
-          | 'box_transfer'
-          | 'reversal'
-          | 'order_payment'
-          | 'insurance_installment'
-          | 'maintenance_task'
-          | 'tire'
-          | 'vehicle_accident'
-          | 'insurance_reimbursement'
-          | 'payment'
-          | 'payment_fee'
-          | 'payment_refund'
-          | 'order_transfer'
-          | 'payment_external_refund'
-          | 'order_deposit'
-          | 'mp_reconciliation';
-        from?: string | null;
-        to?: string | null;
-        /** @description Sólo los movimientos que cuentan como ingreso o egreso en `GET /v2/finance/income-statement`: sin transferencias entre cajas ni carga inicial */
-        countsForResult?: boolean;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['CashMovementV2PageDto'];
-        };
-      };
-      /** @description Período o filtro inválido */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La caja no existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
   CashCollectionSettingsController_ver: {
     parameters: {
       query?: never;
@@ -40864,6 +41954,48 @@ export interface operations {
       };
     };
   };
+  FinanceController_dashboard: {
+    parameters: {
+      query?: {
+        date?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FinanceDashboardDto'];
+        };
+      };
+      /** @description La fecha no es válida */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   FinanceController_incomeStatement: {
     parameters: {
       query: {
@@ -40911,6 +42043,273 @@ export interface operations {
       };
       /** @description La caja no existe o es de otra distribuidora */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ExportsController_exportar: {
+    parameters: {
+      query?: {
+        /** @description Por defecto `csv` */
+        format?: 'csv' | 'xlsx';
+      };
+      header?: never;
+      path: {
+        recurso: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description El archivo, con `Content-Disposition: attachment; filename="<recurso>-<AAAA-MM-DD>.<ext>"`. El total de filas va en `X-Total-Count`. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Formato o filtros inválidos, falta la distribuidora, o hay más filas que el tope (`EXPORT_MAX_ROWS`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El recurso no existe */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PeoplePhotosController_firmar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PeoplePhotosRequestDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PeoplePhotosResponseDto'];
+        };
+      };
+      /** @description Ids que no son UUID, o más de 100 */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ImportController_template: {
+    parameters: {
+      query?: {
+        /** @description Formato de la plantilla */
+        format?: 'xlsx' | 'csv';
+      };
+      header?: never;
+      path: {
+        recurso: 'garrafas' | 'precios' | 'stock' | 'proveedores';
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description El archivo de la plantilla (.xlsx por defecto, o .csv) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': string;
+        };
+      };
+      /** @description Recurso o formato no válido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ImportController_preview: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        recurso: 'garrafas' | 'precios' | 'stock' | 'proveedores';
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'multipart/form-data': {
+          /** Format: binary */
+          file: string;
+        };
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ImportPreviewResponseDto'];
+        };
+      };
+      /** @description Falta el archivo, está vacío, supera las filas permitidas o el encabezado no coincide con la plantilla */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El archivo supera los 5 MB */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No es un .xlsx ni un .csv (o el contenido no coincide) */
+      415: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ImportController_confirm: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        importId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ImportConfirmResponseDto'];
+        };
+      };
+      /** @description La vista previa tiene errores, o una fila no se pudo aplicar (el mensaje dice cuál) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La vista previa venció (24 h) */
+      410: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
         headers: {
           [name: string]: unknown;
         };
