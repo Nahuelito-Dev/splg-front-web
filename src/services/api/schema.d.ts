@@ -6806,7 +6806,7 @@ export interface paths {
     };
     /**
      * Descargar todas las filas de un listado en CSV o Excel
-     * @description Acepta los mismos filtros que el listado de cada recurso y devuelve todas las filas que los cumplen, no sólo una página. Recursos: pedidos, clientes, choferes, vehiculos, garrafas, envases, stock-resumen, stock-movimientos, cajas, movimientos-caja, cuentas-corrientes, rendiciones, liquidaciones, combustible, multas, siniestros, neumaticos, costos-flota, reclamos, incidencias, ordenes-compra, recepciones, proveedores, legajos, auditoria y auditoria-datos. El CSV usa `;` y coma decimal, con BOM UTF-8. Un super admin necesita `X-Distributor`. `limit`, `offset` y `page` se ignoran.
+     * @description Acepta los mismos filtros que el listado de cada recurso y devuelve todas las filas que los cumplen, no sólo una página. Recursos: pedidos, clientes, choferes, vehiculos, garrafas, envases, stock-resumen, stock-movimientos, cajas, movimientos-caja, income-statement, cuentas-corrientes, rendiciones, liquidaciones, combustible, multas, siniestros, neumaticos, costos-flota, reclamos, incidencias, ordenes-compra, recepciones, proveedores, legajos, auditoria y auditoria-datos. El CSV usa `;` y coma decimal, con BOM UTF-8. Un super admin necesita `X-Distributor`. `limit`, `offset` y `page` se ignoran.
      */
     get: operations['ExportsController_exportar'];
     put?: never;
@@ -7094,6 +7094,26 @@ export interface paths {
      * @description Enlace firmado `{ url, expiresAt, requiresAuth }` al CSV de Mercado Pago, que es el comprobante de los movimientos. La distribuidora baja el archivo filtrado a sus cobros; el super admin que pidió la corrida baja el completo de la cuenta.
      */
     get: operations['MpReconciliationController_reporte'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/finance/income-statement': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Ingresos y egresos de un período
+     * @description Cuánto entró y cuánto salió de la caja entre `from` y `to` (días argentinos, hasta 366), por categoría, por período (`groupBy`: día, semana o mes) y por caja. No cuentan las transferencias entre cajas, el ajuste de apertura de una sesión ni los movimientos anulados con su contraasiento (los dos se excluyen); el sobrante y el faltante de un arqueo sí. Los períodos sin movimientos vienen en cero.
+     */
+    get: operations['FinanceController_incomeStatement'];
     put?: never;
     post?: never;
     delete?: never;
@@ -15993,6 +16013,105 @@ export interface components {
       /** @example 1 */
       failed: number;
       results: components['schemas']['MpApplyItemResultDto'][];
+    };
+    IncomeStatementTotalsDto: {
+      /** @example 180000 */
+      income: number;
+      /** @example 42000 */
+      expense: number;
+      /**
+       * @description Ingresos menos egresos
+       * @example 138000
+       */
+      net: number;
+    };
+    IncomeStatementCategoryDto: {
+      categoryId: string;
+      /** @example Cobro de pedido */
+      name: string;
+      /** @enum {string|null} */
+      systemCode:
+        | 'driver_settlement'
+        | 'customer_payment'
+        | 'commission_payment'
+        | 'cash_surplus'
+        | 'cash_shortage'
+        | 'transfer_in'
+        | 'transfer_out'
+        | 'purchase'
+        | 'fuel'
+        | 'traffic_fine'
+        | 'order_payment'
+        | 'insurance'
+        | 'fleet_maintenance'
+        | 'tires'
+        | 'vehicle_accident'
+        | 'insurance_reimbursement'
+        | 'mercadopago_fee'
+        | 'customer_refund'
+        | 'taxes_withholdings'
+        | 'mercadopago_fee_refund'
+        | null;
+      /**
+       * @description `in` es un ingreso y `out` un egreso
+       * @enum {string}
+       */
+      direction: 'in' | 'out';
+      /** @example 95000 */
+      amount: number;
+      /**
+       * @description Cantidad de movimientos
+       * @example 12
+       */
+      count: number;
+    };
+    IncomeStatementPeriodDto: {
+      /**
+       * @description Primer día del período dentro del rango: el propio día, el lunes de la semana o el día 1 del mes (el primer período arranca en `from`)
+       * @example 2026-10-05
+       */
+      period: string;
+      /** @example 50000 */
+      income: number;
+      /** @example 12000 */
+      expense: number;
+      /** @example 38000 */
+      net: number;
+    };
+    IncomeStatementCashBoxDto: {
+      cashBoxId: string;
+      /** @example Caja central */
+      name: string;
+      /** @enum {string} */
+      kind: 'cash' | 'bank' | 'wallet';
+      /** @example 120000 */
+      income: number;
+      /** @example 30000 */
+      expense: number;
+    };
+    IncomeStatementDto: {
+      /** @example 2026-10-01 */
+      from: string;
+      /** @example 2026-10-31 */
+      to: string;
+      /** @enum {string} */
+      groupBy: 'day' | 'week' | 'month';
+      totals: components['schemas']['IncomeStatementTotalsDto'];
+      initialLoad: components['schemas']['IncomeStatementInitialLoadDto'];
+      /** @description Un contraasiento resta dentro de la categoría de su original, así que un importe puede ser negativo */
+      byCategory: components['schemas']['IncomeStatementCategoryDto'][];
+      /** @description Incluye los períodos sin movimientos, en cero */
+      byPeriod: components['schemas']['IncomeStatementPeriodDto'][];
+      byCashBox: components['schemas']['IncomeStatementCashBoxDto'][];
+    };
+    IncomeStatementInitialLoadDto: {
+      /**
+       * @description Carga inicial de las cajas en el período (la apertura de su primera sesión, sin movimientos previos): no es ingreso ni egreso
+       * @example 50000
+       */
+      amount: number;
+      /** @example 1 */
+      count: number;
     };
   };
   responses: never;
@@ -40218,6 +40337,8 @@ export interface operations {
           | 'mp_reconciliation';
         from?: string | null;
         to?: string | null;
+        /** @description Sólo los movimientos que cuentan como ingreso o egreso en `GET /v2/finance/income-statement`: sin transferencias entre cajas ni carga inicial */
+        countsForResult?: boolean;
       };
       header?: never;
       path?: never;
@@ -40735,6 +40856,60 @@ export interface operations {
         content?: never;
       };
       /** @description No existe o todavía no tiene el reporte guardado */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FinanceController_incomeStatement: {
+    parameters: {
+      query: {
+        from: string;
+        to: string;
+        /** @description Cómo se agrupa el resultado por período: día, semana (lunes) o mes */
+        groupBy?: 'day' | 'week' | 'month';
+        /** @description Sólo los movimientos de esta caja */
+        cashBoxId?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['IncomeStatementDto'];
+        };
+      };
+      /** @description Fechas inválidas, rango invertido o de más de 366 días */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La caja no existe o es de otra distribuidora */
       404: {
         headers: {
           [name: string]: unknown;

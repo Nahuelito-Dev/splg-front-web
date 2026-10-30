@@ -17,6 +17,7 @@ export type ExportResource =
   | 'stock-movimientos'
   | 'cajas'
   | 'movimientos-caja'
+  | 'income-statement'
   | 'cuentas-corrientes'
   | 'rendiciones'
   | 'liquidaciones'

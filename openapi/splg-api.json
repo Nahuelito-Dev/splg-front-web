@@ -28401,7 +28401,7 @@
         },
         "/api/v2/exports/{recurso}": {
             "get": {
-                "description": "Acepta los mismos filtros que el listado de cada recurso y devuelve todas las filas que los cumplen, no sólo una página. Recursos: pedidos, clientes, choferes, vehiculos, garrafas, envases, stock-resumen, stock-movimientos, cajas, movimientos-caja, cuentas-corrientes, rendiciones, liquidaciones, combustible, multas, siniestros, neumaticos, costos-flota, reclamos, incidencias, ordenes-compra, recepciones, proveedores, legajos, auditoria y auditoria-datos. El CSV usa `;` y coma decimal, con BOM UTF-8. Un super admin necesita `X-Distributor`. `limit`, `offset` y `page` se ignoran.",
+                "description": "Acepta los mismos filtros que el listado de cada recurso y devuelve todas las filas que los cumplen, no sólo una página. Recursos: pedidos, clientes, choferes, vehiculos, garrafas, envases, stock-resumen, stock-movimientos, cajas, movimientos-caja, income-statement, cuentas-corrientes, rendiciones, liquidaciones, combustible, multas, siniestros, neumaticos, costos-flota, reclamos, incidencias, ordenes-compra, recepciones, proveedores, legajos, auditoria y auditoria-datos. El CSV usa `;` y coma decimal, con BOM UTF-8. Un super admin necesita `X-Distributor`. `limit`, `offset` y `page` se ignoran.",
                 "operationId": "ExportsController_exportar",
                 "parameters": [
                     {
@@ -28893,6 +28893,15 @@
                             "nullable": true,
                             "example": "2026-10-31",
                             "type": "string"
+                        }
+                    },
+                    {
+                        "name": "countsForResult",
+                        "required": false,
+                        "in": "query",
+                        "description": "Sólo los movimientos que cuentan como ingreso o egreso en `GET /v2/finance/income-statement`: sin transferencias entre cajas ni carga inicial",
+                        "schema": {
+                            "type": "boolean"
                         }
                     }
                 ],
@@ -29453,6 +29462,91 @@
                 "summary": "Bajar el reporte de liberaciones",
                 "tags": [
                     "Finanzas · Conciliación con Mercado Pago (v2)"
+                ]
+            }
+        },
+        "/api/v2/finance/income-statement": {
+            "get": {
+                "description": "Cuánto entró y cuánto salió de la caja entre `from` y `to` (días argentinos, hasta 366), por categoría, por período (`groupBy`: día, semana o mes) y por caja. No cuentan las transferencias entre cajas, el ajuste de apertura de una sesión ni los movimientos anulados con su contraasiento (los dos se excluyen); el sobrante y el faltante de un arqueo sí. Los períodos sin movimientos vienen en cero.",
+                "operationId": "FinanceController_incomeStatement",
+                "parameters": [
+                    {
+                        "name": "from",
+                        "required": true,
+                        "in": "query",
+                        "schema": {
+                            "format": "date",
+                            "example": "2026-10-01",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "required": true,
+                        "in": "query",
+                        "schema": {
+                            "format": "date",
+                            "example": "2026-10-31",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "groupBy",
+                        "required": false,
+                        "in": "query",
+                        "description": "Cómo se agrupa el resultado por período: día, semana (lunes) o mes",
+                        "schema": {
+                            "default": "day",
+                            "type": "string",
+                            "enum": [
+                                "day",
+                                "week",
+                                "month"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "cashBoxId",
+                        "required": false,
+                        "in": "query",
+                        "description": "Sólo los movimientos de esta caja",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/IncomeStatementDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Fechas inválidas, rango invertido o de más de 366 días"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "La caja no existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ingresos y egresos de un período",
+                "tags": [
+                    "Finanzas · Tablero"
                 ]
             }
         }
@@ -51015,6 +51109,230 @@
                     "alreadyApplied",
                     "failed",
                     "results"
+                ]
+            },
+            "IncomeStatementTotalsDto": {
+                "type": "object",
+                "properties": {
+                    "income": {
+                        "type": "number",
+                        "example": 180000
+                    },
+                    "expense": {
+                        "type": "number",
+                        "example": 42000
+                    },
+                    "net": {
+                        "type": "number",
+                        "example": 138000,
+                        "description": "Ingresos menos egresos"
+                    }
+                },
+                "required": [
+                    "income",
+                    "expense",
+                    "net"
+                ]
+            },
+            "IncomeStatementCategoryDto": {
+                "type": "object",
+                "properties": {
+                    "categoryId": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Cobro de pedido"
+                    },
+                    "systemCode": {
+                        "type": "string",
+                        "enum": [
+                            "driver_settlement",
+                            "customer_payment",
+                            "commission_payment",
+                            "cash_surplus",
+                            "cash_shortage",
+                            "transfer_in",
+                            "transfer_out",
+                            "purchase",
+                            "fuel",
+                            "traffic_fine",
+                            "order_payment",
+                            "insurance",
+                            "fleet_maintenance",
+                            "tires",
+                            "vehicle_accident",
+                            "insurance_reimbursement",
+                            "mercadopago_fee",
+                            "customer_refund",
+                            "taxes_withholdings",
+                            "mercadopago_fee_refund"
+                        ],
+                        "nullable": true
+                    },
+                    "direction": {
+                        "type": "string",
+                        "enum": [
+                            "in",
+                            "out"
+                        ],
+                        "description": "`in` es un ingreso y `out` un egreso"
+                    },
+                    "amount": {
+                        "type": "number",
+                        "example": 95000
+                    },
+                    "count": {
+                        "type": "number",
+                        "example": 12,
+                        "description": "Cantidad de movimientos"
+                    }
+                },
+                "required": [
+                    "categoryId",
+                    "name",
+                    "systemCode",
+                    "direction",
+                    "amount",
+                    "count"
+                ]
+            },
+            "IncomeStatementPeriodDto": {
+                "type": "object",
+                "properties": {
+                    "period": {
+                        "type": "string",
+                        "example": "2026-10-05",
+                        "description": "Primer día del período dentro del rango: el propio día, el lunes de la semana o el día 1 del mes (el primer período arranca en `from`)"
+                    },
+                    "income": {
+                        "type": "number",
+                        "example": 50000
+                    },
+                    "expense": {
+                        "type": "number",
+                        "example": 12000
+                    },
+                    "net": {
+                        "type": "number",
+                        "example": 38000
+                    }
+                },
+                "required": [
+                    "period",
+                    "income",
+                    "expense",
+                    "net"
+                ]
+            },
+            "IncomeStatementCashBoxDto": {
+                "type": "object",
+                "properties": {
+                    "cashBoxId": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Caja central"
+                    },
+                    "kind": {
+                        "type": "string",
+                        "enum": [
+                            "cash",
+                            "bank",
+                            "wallet"
+                        ]
+                    },
+                    "income": {
+                        "type": "number",
+                        "example": 120000
+                    },
+                    "expense": {
+                        "type": "number",
+                        "example": 30000
+                    }
+                },
+                "required": [
+                    "cashBoxId",
+                    "name",
+                    "kind",
+                    "income",
+                    "expense"
+                ]
+            },
+            "IncomeStatementDto": {
+                "type": "object",
+                "properties": {
+                    "from": {
+                        "type": "string",
+                        "example": "2026-10-01"
+                    },
+                    "to": {
+                        "type": "string",
+                        "example": "2026-10-31"
+                    },
+                    "groupBy": {
+                        "type": "string",
+                        "enum": [
+                            "day",
+                            "week",
+                            "month"
+                        ]
+                    },
+                    "totals": {
+                        "$ref": "#/components/schemas/IncomeStatementTotalsDto"
+                    },
+                    "initialLoad": {
+                        "$ref": "#/components/schemas/IncomeStatementInitialLoadDto"
+                    },
+                    "byCategory": {
+                        "description": "Un contraasiento resta dentro de la categoría de su original, así que un importe puede ser negativo",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/IncomeStatementCategoryDto"
+                        }
+                    },
+                    "byPeriod": {
+                        "description": "Incluye los períodos sin movimientos, en cero",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/IncomeStatementPeriodDto"
+                        }
+                    },
+                    "byCashBox": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/IncomeStatementCashBoxDto"
+                        }
+                    }
+                },
+                "required": [
+                    "from",
+                    "to",
+                    "groupBy",
+                    "totals",
+                    "initialLoad",
+                    "byCategory",
+                    "byPeriod",
+                    "byCashBox"
+                ]
+            },
+            "IncomeStatementInitialLoadDto": {
+                "type": "object",
+                "properties": {
+                    "amount": {
+                        "type": "number",
+                        "example": 50000,
+                        "description": "Carga inicial de las cajas en el período (la apertura de su primera sesión, sin movimientos previos): no es ingreso ni egreso"
+                    },
+                    "count": {
+                        "type": "number",
+                        "example": 1
+                    }
+                },
+                "required": [
+                    "amount",
+                    "count"
                 ]
             }
         }

@@ -12,6 +12,7 @@ import {
   Fuel,
   Gavel,
   PackageCheck,
+  ArrowDownUp,
   Scale,
   Warehouse,
   Undo2,
@@ -144,6 +145,7 @@ export const NAV_SECTIONS: NavSection[] = [
     title: 'Finanzas',
     items: [
       { title: 'Tablero', path: '/finance', icon: Gauge },
+      { title: 'Ingresos y egresos', path: '/finance/income-statement', icon: ArrowDownUp },
       { title: 'Cajas', path: '/finance/boxes', icon: Wallet },
       { title: 'Movimientos', path: '/finance/movements', icon: BookOpen },
       { title: 'Categorías', path: '/finance/categories', icon: Tags },

@@ -88,6 +88,7 @@ const Movements = lazyPage(() => import('../pages/Stock/Movements'), 'Movements'
 const Thresholds = lazyPage(() => import('../pages/Stock/Thresholds'), 'Thresholds');
 const Reconciliation = lazyPage(() => import('../pages/Stock/Reconciliation'), 'Reconciliation');
 const FinanceDashboard = lazyPage(() => import('../pages/Finance/FinanceDashboard'), 'FinanceDashboard');
+const IncomeStatement = lazyPage(() => import('../pages/Finance/IncomeStatement'), 'IncomeStatement');
 const CashBoxes = lazyPage(() => import('../pages/Finance/CashBoxes'), 'CashBoxes');
 const CashCollectionSettings = lazyPage(
   () => import('../pages/Finance/CashCollectionSettings'),
@@ -251,6 +252,7 @@ export const DashboardRoutes = () => {
             <Route path="fleet/costs" element={<FleetCosts />} />
             <Route path="fleet/tires" element={<Tires />} />
             <Route path="finance" element={<FinanceDashboard />} />
+            <Route path="finance/income-statement" element={<IncomeStatement />} />
             <Route path="finance/boxes" element={<CashBoxes />} />
             <Route path="finance/boxes/:id" element={<CashBoxDetails />} />
             <Route path="finance/movements" element={<CashMovements />} />

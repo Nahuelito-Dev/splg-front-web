@@ -29,7 +29,14 @@ export const FinanceDashboard = () => {
       <PageHeader
         title="Finanzas"
         description="La plata de la distribuidora de un vistazo."
-        actions={<DayFilter value={date} onChange={(day) => setDate(day || today())} />}
+        actions={
+          <>
+            <Link className="text-sm text-primary underline" to="/finance/income-statement">
+              Ingresos y egresos
+            </Link>
+            <DayFilter value={date} onChange={(day) => setDate(day || today())} />
+          </>
+        }
       />
       {isPending ? (
         <LoadingState label="Cargando el tablero…" />
