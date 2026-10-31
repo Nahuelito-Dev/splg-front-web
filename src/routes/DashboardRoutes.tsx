@@ -38,6 +38,7 @@ const DeliveryDetails = lazyPage(() => import('../pages/Deliveries/DeliveryDetai
 const Cars = lazyPage(() => import('../pages/Cars/Cars'), 'Cars');
 const CarDetails = lazyPage(() => import('../pages/Cars/CarDetails'), 'CarDetails');
 const FleetExpirations = lazyPage(() => import('../pages/Fleet/FleetExpirations'), 'FleetExpirations');
+const RouteBatches = lazyPage(() => import('../pages/RouteBatches/RouteBatches'), 'RouteBatches');
 const FleetPlanner = lazyPage(() => import('../pages/Fleet/Planner/FleetPlanner'), 'FleetPlanner');
 const FleetFiles = lazyPage(() => import('../pages/Fleet/FleetFiles'), 'FleetFiles');
 const FleetPlans = lazyPage(() => import('../pages/Fleet/FleetPlans'), 'FleetPlans');
@@ -226,6 +227,7 @@ export const DashboardRoutes = () => {
           {/* 7. Ordenes */}
           <Route path="orders" element={<Orders />} />
           <Route path="orders/dispatch" element={<DispatchBoard />} />
+          <Route path="route-batches" element={<RouteBatches />} />
           <Route path="orders/new" element={<NewOrder />} />
           <Route path="orders/:id" element={<OrderDetails />} />
 

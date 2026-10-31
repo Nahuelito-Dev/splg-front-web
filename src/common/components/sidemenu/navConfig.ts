@@ -58,6 +58,7 @@ import {
   Wallet,
   type LucideIcon,
   Wrench,
+  Route as RouteIcon,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -87,6 +88,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { title: 'Tablero', path: '/home', icon: House },
       { title: 'Pedidos', path: '/orders', icon: ReceiptText, showPendingOrders: true },
       { title: 'Tablero de despacho', path: '/orders/dispatch', icon: Columns3 },
+      { title: 'Recorridos', path: '/route-batches', icon: RouteIcon },
       { title: 'Cobros impagos', path: '/unpaid-collections', icon: HandCoins },
       { title: 'Reintegros', path: '/refunds', icon: Undo2 },
       { title: 'Reservas', path: '/reservations', icon: CalendarDays },

@@ -60,6 +60,7 @@ export const queryKeys = {
   purchaseReceipts: resource('purchaseReceipts'),
   reservations: resource('reservations'),
   roles: resource('roles'),
+  routeBatches: resource('routeBatches'),
   search: resource('search'),
   stats: resource('stats'),
   stock: resource('stock'),
