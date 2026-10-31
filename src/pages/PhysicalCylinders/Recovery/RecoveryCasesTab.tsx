@@ -66,7 +66,7 @@ export const RecoveryCasesTab = () => {
         field: 'cylinder',
         headerName: 'Envase',
         flex: 1,
-        minWidth: 180,
+        minWidth: 150,
         renderCell: ({ row }) => (
           <IdentityCell title={row.cylinder.serial} subtitle={row.cylinder.product ?? 'Sin producto'} />
         ),
@@ -75,7 +75,7 @@ export const RecoveryCasesTab = () => {
         field: 'customer',
         headerName: 'Cliente',
         flex: 1.2,
-        minWidth: 200,
+        minWidth: 170,
         renderCell: ({ row }) => (
           <div className="leading-tight">
             <span className="block text-ink">{row.customer.fullName ?? 'Sin nombre'}</span>
@@ -86,7 +86,7 @@ export const RecoveryCasesTab = () => {
       {
         field: 'status',
         headerName: 'Estado',
-        width: 190,
+        width: 170,
         renderCell: ({ row }) => (
           <div className="leading-tight">
             <Badge label={RECOVERY_CASE_STATUS[row.status]} variant="critical" />
@@ -106,7 +106,7 @@ export const RecoveryCasesTab = () => {
         field: 'next',
         headerName: 'Qué sigue',
         flex: 1.4,
-        minWidth: 280,
+        minWidth: 200,
         sortable: false,
         renderCell: ({ row }) => <span className="text-sm text-ink-2">{nextStepText(row)}</span>,
       },
