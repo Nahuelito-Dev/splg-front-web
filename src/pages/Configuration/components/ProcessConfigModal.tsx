@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useId, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { RotateCcw } from 'lucide-react';
-import { Button, Modal, FormInput, Form } from '../../../common/components/ui';
+import { Button, Checkbox, Modal, FormInput, Form } from '../../../common/components/ui';
 import { errorMessage } from '../../../services/api/errors';
 import type { ProcessConfig } from '../../../services/api/types';
 import { useUpdateProcessConfig } from '../../../services/queries/moduleConfig';
@@ -97,21 +97,38 @@ export const ProcessConfigModal = ({ config, canWrite, writeHint, onClose }: Pro
         updatedByUserId={config.updatedByUserId}
       />
       <Form methods={methods} id={formId} onSubmit={submit} className="mt-4 grid gap-4 sm:grid-cols-2">
-        {config.fields.map((field) => (
-          <div key={field.key}>
-            <FormInput
-              name={field.key}
-              label={field.description}
-              type="number"
-              inputMode="decimal"
-              step={field.type === 'integer' ? 1 : 'any'}
-              min={field.min}
-              max={field.max}
-              hint={rangeHint(field)}
-              disabled={!canWrite}
-            />
-          </div>
-        ))}
+        {config.fields.map((field) =>
+          field.key === 'enabled' && field.min === 0 && field.max === 1 ? (
+            <div key={field.key} className="sm:col-span-2">
+              <Checkbox
+                label={`${config.title}: encendida`}
+                hint={field.description}
+                disabled={!canWrite}
+                checked={methods.watch('enabled') === '1'}
+                onChange={(e) =>
+                  methods.setValue('enabled', e.target.checked ? '1' : '0', {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }
+              />
+            </div>
+          ) : (
+            <div key={field.key}>
+              <FormInput
+                name={field.key}
+                label={field.description}
+                type="number"
+                inputMode="decimal"
+                step={field.type === 'integer' ? 1 : 'any'}
+                min={field.min}
+                max={field.max}
+                hint={rangeHint(field)}
+                disabled={!canWrite}
+              />
+            </div>
+          ),
+        )}
       </Form>
       {serverError && (
         <p role="alert" className="mt-4 text-sm text-danger">

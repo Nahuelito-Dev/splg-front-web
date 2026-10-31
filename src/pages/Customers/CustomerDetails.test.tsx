@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { ApiError } from '../../services/api/errors';
 import type { Claim, Customer, Order } from '../../services/api/types';
 
 const CUSTOMER = {
@@ -52,7 +53,11 @@ vi.mock('../../hooks', async (importOriginal) => ({
 }));
 const perms = vi.hoisted(() => ({ needsDistributor: false }));
 const removal = vi.hoisted(() => ({ confirm: vi.fn(), mutate: vi.fn() }));
-const custo = vi.hoisted(() => ({ consumption: null as number | null, orderTotal: 3 }));
+const custo = vi.hoisted(() => ({
+  consumption: null as number | null,
+  orderTotal: 3,
+  deletedAt: null as string | null,
+}));
 const accountOf = vi.hoisted(() => vi.fn<[], Record<string, unknown>>());
 vi.mock('../../services/queries/finance', () => ({
   useCustomerAccountOf: () => accountOf(),
@@ -73,6 +78,10 @@ vi.mock('../../services/queries/finance', () => ({
     error: null,
   }),
 }));
+const repurchaseOf = vi.hoisted(() => vi.fn<[], Record<string, unknown>>());
+vi.mock('../../services/queries/repurchase', () => ({
+  useCustomerRepurchase: () => repurchaseOf(),
+}));
 vi.mock('../../services/queries/photos', () => ({
   useUploadPhoto: () => ({ mutate: vi.fn(), isPending: false }),
   useRemovePhoto: () => ({ mutate: vi.fn(), isPending: false }),
@@ -89,7 +98,7 @@ vi.mock('../../services/queries/photos', () => ({
 }));
 vi.mock('../../services/queries/customers', () => ({
   useCustomer: () => ({
-    data: { ...CUSTOMER, avgMonthlyConsumptionKg: custo.consumption } as Customer,
+    data: { ...CUSTOMER, avgMonthlyConsumptionKg: custo.consumption, deletedAt: custo.deletedAt } as Customer,
     isPending: false,
     error: null,
   }),
@@ -169,8 +178,34 @@ beforeEach(() => {
   perms.needsDistributor = false;
   custo.consumption = null;
   custo.orderTotal = 3;
+  custo.deletedAt = null;
 });
 beforeEach(() => accountOf.mockReturnValue({ data: undefined, isPending: true, isError: false, error: null }));
+const FORECAST = {
+  customer: { customerId: 'c-1', userId: 'u-1', fullName: 'Ana Pérez', email: 'ana@mail.com', phoneNumber: null },
+  estimatedAt: '2026-11-02T12:00:00.000Z',
+  daysLeft: 2,
+  source: 'history',
+  ordersUsed: 4,
+  lastPurchaseAt: '2026-10-20T12:00:00.000Z',
+  lastPurchaseKg: 20,
+  declaredKgPerMonth: null,
+  estimatedKgPerMonth: 45.5,
+  usualUnits: 2,
+  usualCylinderIds: ['g-1'],
+  noticeEnabled: true,
+  noticeDays: 3,
+  openInvitation: null,
+};
+beforeEach(() =>
+  repurchaseOf.mockReturnValue({
+    data: { forecast: FORECAST, reason: null },
+    isPending: false,
+    isError: false,
+    error: null,
+    refetch: vi.fn(),
+  }),
+);
 
 const renderPage = (url = '/customers/details/c-1') =>
   render(
@@ -341,6 +376,94 @@ describe('CustomerDetails: portada con KPIs y pestañas', () => {
     expect(screen.getByText('Cuenta corriente', { selector: 'dt' }).closest('div')).toHaveTextContent(
       'Elegí distribuidora',
     );
+  });
+});
+
+describe('CustomerDetails: recompra estimada', () => {
+  it('la portada muestra cuándo se le acaba el gas y la pestaña Recompra explica de dónde sale', () => {
+    renderPage();
+    expect(screen.getByText('Próxima recompra').closest('div')).toHaveTextContent('2026');
+    expect(screen.getByText('Próxima recompra').closest('div')).toHaveTextContent('En 2 días');
+    fireEvent.click(screen.getByRole('tab', { name: 'Recompra' }));
+    expect(screen.getByRole('heading', { name: /Se le acaba el gas el/ })).toBeInTheDocument();
+    expect(screen.getByText('Sus compras')).toBeInTheDocument();
+    expect(screen.getByText('3 días antes')).toBeInTheDocument();
+  });
+
+  it('sin fecha estimada la pestaña dice por qué', () => {
+    repurchaseOf.mockReturnValue({
+      data: { forecast: null, reason: 'insufficient_history' },
+      isPending: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+    renderPage('/customers/details/c-1?tab=repurchase');
+    expect(screen.getByText('Sin fecha estimada')).toBeInTheDocument();
+    expect(screen.getByText(/pocas compras y no declaró cuánto consume/)).toBeInTheDocument();
+    expect(screen.getByText('Próxima recompra').closest('div')).toHaveTextContent('Sin estimar');
+  });
+
+  it('el administrador general sin distribuidora pide «Ver como»', () => {
+    perms.needsDistributor = true;
+    renderPage('/customers/details/c-1?tab=repurchase');
+    expect(screen.getByText('Elegí una distribuidora')).toBeInTheDocument();
+    expect(screen.getByText('Próxima recompra').closest('div')).toHaveTextContent('Elegí distribuidora');
+  });
+
+  it('una cuenta bloqueada se explica con un estado vacío y no consulta al back', () => {
+    const original = CUSTOMER.user as object;
+    (CUSTOMER as unknown as { user: object }).user = { ...original, blocked: true };
+    try {
+      renderPage('/customers/details/c-1?tab=repurchase');
+      expect(screen.getByText('Sin recompra estimada')).toBeInTheDocument();
+      expect(screen.getByText(/La cuenta está bloqueada/)).toBeInTheDocument();
+      expect(screen.getByText('Próxima recompra').closest('div')).toHaveTextContent('No aplica');
+      expect(screen.queryByRole('button', { name: /Reintentar/ })).not.toBeInTheDocument();
+    } finally {
+      (CUSTOMER as unknown as { user: object }).user = original;
+    }
+  });
+
+  it('un cliente dado de baja se explica con un estado vacío', () => {
+    custo.deletedAt = '2026-10-01T10:00:00Z';
+    renderPage('/customers/details/c-1?tab=repurchase');
+    expect(screen.getByText(/está dado de baja/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Reintentar/ })).not.toBeInTheDocument();
+  });
+
+  it('si el back no lo tiene como cliente de la distribuidora (404) lo explica en vez de mostrar un error', () => {
+    repurchaseOf.mockReturnValue({
+      data: undefined,
+      isPending: false,
+      isError: true,
+      error: new ApiError(404, ['Cliente no encontrado']),
+      refetch: vi.fn(),
+    });
+    renderPage('/customers/details/c-1?tab=repurchase');
+    expect(screen.getByText(/no figura entre los clientes activos/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Reintentar/ })).not.toBeInTheDocument();
+  });
+
+  it('si la consulta falla ofrece reintentar', () => {
+    const refetch = vi.fn();
+    repurchaseOf.mockReturnValue({
+      data: undefined,
+      isPending: false,
+      isError: true,
+      error: new Error('boom'),
+      refetch,
+    });
+    renderPage('/customers/details/c-1?tab=repurchase');
+    fireEvent.click(screen.getByRole('button', { name: /Reintentar/ }));
+    expect(refetch).toHaveBeenCalled();
+  });
+
+  it('mientras carga muestra el esqueleto', () => {
+    repurchaseOf.mockReturnValue({ data: undefined, isPending: true, isError: false, error: null, refetch: vi.fn() });
+    renderPage('/customers/details/c-1?tab=repurchase');
+    expect(screen.queryByText('Sin fecha estimada')).not.toBeInTheDocument();
+    expect(screen.getByText('Próxima recompra').closest('div')).toHaveTextContent('–');
   });
 });
 

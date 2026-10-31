@@ -26,6 +26,7 @@ import { useClaims } from '../../services/queries/claims';
 import { useCustomer, useCustomerOrderSample, useRemoveCustomer } from '../../services/queries/customers';
 import { useCustomerAccountOf } from '../../services/queries/finance';
 import { useCylinders } from '../../services/queries/physicalCylinders';
+import { useCustomerRepurchase } from '../../services/queries/repurchase';
 import { useUserAddresses } from '../../services/queries/userAddresses';
 import { formatCurrency, formatCurrencyExact, formatDate, formatNumber } from '../../utils/format';
 import { confirm, notify } from '../../utils/notifications';
@@ -41,9 +42,11 @@ import { CustomerAddresses } from './components/details/CustomerAddresses';
 import { CustomerClaims } from './components/details/CustomerClaims';
 import { CustomerLocationModal } from './components/details/CustomerLocationModal';
 import { CustomerOrders } from './components/details/CustomerOrders';
+import { CustomerRepurchase } from './components/details/CustomerRepurchase';
 import { CustomerSummary } from './components/details/CustomerSummary';
 import { removalConfirmation, removalError } from './customerRemoval';
 import { customerStats } from './customerStats';
+import { daysLeftText } from './Repurchase/repurchaseLabels';
 
 /** El texto sale del valor real en centavos: un saldo de $ 0,004 se muestra $ 0,00 y está al día. */
 const balanceHint = (balance: number): string => {
@@ -51,7 +54,7 @@ const balanceHint = (balance: number): string => {
   return cents > 0 ? 'El cliente debe' : cents < 0 ? 'Saldo a favor' : 'Al día';
 };
 
-const TAB_KEYS = ['summary', 'orders', 'addresses', 'cylinders', 'claims', 'account', 'ratings'];
+const TAB_KEYS = ['summary', 'orders', 'addresses', 'cylinders', 'claims', 'account', 'repurchase', 'ratings'];
 
 export const CustomerDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -77,6 +80,14 @@ export const CustomerDetails = () => {
     enabled: !needsDistributor,
   });
   const account = accountQuery.data;
+  // Una cuenta bloqueada o dada de baja no se proyecta: ni se pregunta al back.
+  const inactiveReason = customer?.user?.blocked
+    ? 'blocked'
+    : customer?.deletedAt || customer?.user?.deletedAt
+      ? 'removed'
+      : null;
+  const repurchaseQuery = useCustomerRepurchase(customer?.user_id, { enabled: !needsDistributor && !inactiveReason });
+  const nextRepurchase = repurchaseQuery.data?.forecast;
   const claimsQuery = useClaims();
   // `claim.customer_id` es el id de la cuenta (`user_id`) del cliente, no el de su perfil: se filtran los de esta ficha.
   const claims = useMemo(
@@ -123,6 +134,19 @@ export const CustomerDetails = () => {
       value: consumption == null ? 'Sin declarar' : `${formatNumber(consumption)} kg/mes`,
     },
     {
+      label: 'Próxima recompra',
+      value: needsDistributor
+        ? 'Elegí distribuidora'
+        : inactiveReason
+          ? 'No aplica'
+          : repurchaseQuery.isError || repurchaseQuery.data === undefined
+            ? '–'
+            : nextRepurchase
+              ? formatDate(nextRepurchase.estimatedAt)
+              : 'Sin estimar',
+      hint: nextRepurchase ? daysLeftText(nextRepurchase.daysLeft) : undefined,
+    },
+    {
       label: 'Cuenta corriente',
       value: needsDistributor
         ? 'Elegí distribuidora'
@@ -142,6 +166,7 @@ export const CustomerDetails = () => {
     { key: 'cylinders', label: 'Envases en su poder', badge: heldCylinders.data?.total },
     { key: 'claims', label: 'Reclamos', badge: claimsQuery.data ? claims.length : undefined },
     { key: 'account', label: 'Cuenta corriente' },
+    { key: 'repurchase', label: 'Recompra' },
     { key: 'ratings', label: 'Calificaciones' },
   ];
 
@@ -249,6 +274,16 @@ export const CustomerDetails = () => {
               loading={accountQuery.isPending}
               error={accountQuery.error}
               onRetry={() => void accountQuery.refetch()}
+            />
+          </ProfileTabPanel>
+          <ProfileTabPanel tabKey="repurchase" value={tab}>
+            <CustomerRepurchase
+              needsDistributor={needsDistributor}
+              inactive={inactiveReason}
+              loading={repurchaseQuery.isPending}
+              error={repurchaseQuery.error}
+              onRetry={() => void repurchaseQuery.refetch()}
+              data={repurchaseQuery.data}
             />
           </ProfileTabPanel>
           <ProfileTabPanel tabKey="ratings" value={tab}>
