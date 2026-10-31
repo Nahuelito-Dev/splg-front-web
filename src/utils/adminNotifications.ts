@@ -6,6 +6,7 @@ import {
   Landmark,
   FileWarning,
   MessageSquareWarning,
+  PackageSearch,
   Receipt,
   ShieldAlert,
   ShieldCheck,
@@ -36,6 +37,7 @@ const KIND_VISUALS: Record<string, { icon: LucideIcon; tone: Tone }> = {
   traffic_fine_overdue: { icon: Gavel, tone: 'danger' },
   sales_cash_unsettled: { icon: Landmark, tone: 'warn' },
   maintenance_escalated: { icon: Wrench, tone: 'danger' },
+  cylinder_recovery_escalated: { icon: PackageSearch, tone: 'danger' },
   maintenance_window_agreed: { icon: Wrench, tone: 'warn' },
   vehicle_grounded_expired: { icon: ShieldX, tone: 'danger' },
 };
@@ -65,6 +67,8 @@ export const notificationTarget = (link: AdminNotification['link'] | undefined):
       return '/finance/collection-settings';
     case 'traffic-fine':
       return `/fleet/fines?fine=${id}`;
+    case 'cylinder-recovery-case':
+      return `/physical-cylinders/recovery?case=${id}`;
     case 'maintenance-planner':
       return `/fleet/planner?case=${id}`;
     case 'car':

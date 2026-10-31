@@ -30,6 +30,7 @@ const CylinderExpirations = lazyPage(
   () => import('../pages/PhysicalCylinders/CylinderExpirations'),
   'CylinderExpirations',
 );
+const RecoveryCases = lazyPage(() => import('../pages/PhysicalCylinders/Recovery/RecoveryCases'), 'RecoveryCases');
 const CylinderDetails = lazyPage(() => import('../pages/PhysicalCylinders/CylinderDetails'), 'CylinderDetails');
 const DeliveryForm = lazyPage(() => import('../pages/Deliveries/DeliveryForm'), 'DeliveryForm');
 const Deliveries = lazyPage(() => import('../pages/Deliveries/Deliveries'), 'Deliveries');
@@ -185,6 +186,7 @@ export const DashboardRoutes = () => {
           {/* 4b. Envases físicos (garrafas serializadas, ciclo de canje) */}
           <Route path="physical-cylinders" element={<PhysicalCylinders />} />
           <Route path="physical-cylinders/expirations" element={<CylinderExpirations />} />
+          <Route path="physical-cylinders/recovery" element={<RecoveryCases />} />
           <Route path="physical-cylinders/:id" element={<CylinderDetails />} />
 
           {/* Legajos del personal */}

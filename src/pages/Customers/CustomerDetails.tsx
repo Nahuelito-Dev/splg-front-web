@@ -38,6 +38,7 @@ import { roleLabel } from '../Users/roleLabel';
 import { CustomerAccountAction } from '../Finance/components/CustomerAccountAction';
 import { CustomerFormModal } from './components/CustomerFormModal';
 import { CustomerAccountTab } from './components/details/CustomerAccountTab';
+import { CustomerRecoveryCard } from './components/details/CustomerRecoveryCard';
 import { CustomerAddresses } from './components/details/CustomerAddresses';
 import { CustomerClaims } from './components/details/CustomerClaims';
 import { CustomerLocationModal } from './components/details/CustomerLocationModal';
@@ -261,6 +262,11 @@ export const CustomerDetails = () => {
               emptyDescription="Este cliente no tiene envases con número de serie a su nombre."
               listSearch={`customer=${customer.user_id}`}
             />
+            {!needsDistributor && (
+              <div className="mt-6">
+                <CustomerRecoveryCard userId={customer.user_id} />
+              </div>
+            )}
           </ProfileTabPanel>
           <ProfileTabPanel tabKey="claims" value={tab}>
             <CustomerClaims claims={claims} onOpen={(claim: Claim) => setClaimId(claim.claim_id)} />

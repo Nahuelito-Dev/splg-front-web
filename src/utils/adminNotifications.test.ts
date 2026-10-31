@@ -19,6 +19,13 @@ describe('notificationTarget', () => {
     expect(notificationVisuals('maintenance_escalated').tone).toBe('danger');
   });
 
+  it('M5: el envase sin devolver que espera decisión lleva al legajo del caso', () => {
+    expect(notificationTarget({ entity: 'cylinder-recovery-case', id: 'r 1' })).toBe(
+      '/physical-cylinders/recovery?case=r%201',
+    );
+    expect(notificationVisuals('cylinder_recovery_escalated').tone).toBe('danger');
+  });
+
   it('sin enlace o con una entidad desconocida no navega', () => {
     expect(notificationTarget(null)).toBeNull();
     expect(notificationTarget(undefined)).toBeNull();
