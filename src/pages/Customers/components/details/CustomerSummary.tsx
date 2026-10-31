@@ -19,7 +19,8 @@ const yesNo = (value: boolean) => (value ? 'Sí' : 'No');
  * Pestaña "Resumen": todo lo que devuelven `CustomerResponseDto` y, anidado, `UserResponseDto`.
  * El consumo mensual y la garrafa habitual son lo que el cliente declaró (CU-143 y CU-144): el administrador los
  * consulta pero no los modifica. La garrafa habitual sólo se muestra si es del catálogo de la distribuidora; la
- * recompra estimada (`nextRepurchaseEstimateAt`) no se muestra: sale de compras en cualquier distribuidora. `notification_token` queda afuera a propósito: ni siquiera lo devuelve la API (es el token push del
+ * recompra estimada (`nextRepurchaseEstimateAt`) no se muestra acá: sale de compras en cualquier distribuidora; la de esta
+ * distribuidora, calculada sólo con sus entregas, está en la pestaña «Recompra». `notification_token` queda afuera a propósito: ni siquiera lo devuelve la API (es el token push del
  * dispositivo, de uso interno). `lat_lang` es la última posición del dispositivo, no una dirección; se edita con
  * CU-094 (`PATCH /customers/:id/location`), la única escritura con sentido desde el panel sobre
  * `PATCH /customers/:id`. A diferencia de la cuenta y las direcciones, esta escritura no está restringida al

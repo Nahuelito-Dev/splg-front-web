@@ -6649,6 +6649,227 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/repurchase/forecast': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Clientes a los que se les acaba el gas (CU-146)
+     * @description Los clientes de la distribuidora cuya fecha estimada de recompra cae dentro de `days` días (por omisión 14), del más próximo al más lejano, con su última compra, su consumo declarado y de dónde sale la estimación (`history`: sus compras; `declared`: el consumo que declaró). Los que ya se pasaron de la fecha y siguen proyectados aparecen con `daysLeft` negativo. No aparecen los que nunca le compraron a la distribuidora, los que no tienen con qué estimarlos ni los que dejaron de comprar.
+     */
+    get: operations['RepurchaseAdminController_proximas'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/repurchase/forecast/customers/{userId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * La fecha estimada de recompra de un cliente
+     * @description Para la ficha del cliente. Sin estimación (`forecast: null`) explica por qué en `reason`.
+     */
+    get: operations['RepurchaseAdminController_delCliente'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/repurchase/invitations': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Invitaciones de recompra emitidas
+     * @description Las invitaciones de la distribuidora, la más nueva primero, con el cliente y cómo terminó cada una (`pending`, `accepted`, `rejected`, `expired` o `cancelled`).
+     */
+    get: operations['RepurchaseAdminController_invitaciones'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/repurchase/stats': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Cómo le va a la recompra anticipada
+     * @description Invitaciones del período por resultado y la tasa de conversión: aceptadas sobre las que ya tuvieron resolución (aceptadas, descartadas y vencidas; las abiertas y las canceladas por compra propia no cuentan). Por omisión, los últimos 90 días.
+     */
+    get: operations['RepurchaseAdminController_stats'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/repurchase/run': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Correr la anticipación de recompra ahora
+     * @description Hace lo que el proceso diario para esta distribuidora: vence las invitaciones sin respuesta y abre una a cada cliente al que se le acaba el gas dentro de su anticipación, sin pedido vigente ni invitación reciente. Es idempotente y respeta el interruptor `enabled` del proceso (viene apagado: 409). Con `dryRun: true` sólo calcula a quién se invitaría, sin escribir ni avisar a nadie.
+     */
+    post: operations['RepurchaseAdminController_correr'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/customers/me/repurchase': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Mi fecha estimada de recompra en una distribuidora
+     * @description Cuándo se estima que se me acaba el gas con la distribuidora del header `X-Distributor` (obligatorio), con qué se estimó, mi preferencia de aviso y mi invitación abierta si tengo. Sin estimación (`estimatedAt: null`) explica por qué en `reason`.
+     */
+    get: operations['RepurchaseCustomerController_miRecompra'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/customers/me/repurchase/notice': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Mi preferencia de aviso de recompra (CU-145)
+     * @description Si el aviso está activado y con cuántos días de anticipación. Con `X-Distributor` suma el valor de esa distribuidora, que rige si no elegí.
+     */
+    get: operations['RepurchaseCustomerController_aviso'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Elegir cómo quiero el aviso de recompra (CU-145)
+     * @description `days` (1 a 30) son los días de anticipación con los que quiero que me avisen; `null` vuelve al valor de la distribuidora. `enabled: false` desactiva el aviso (no borra la estimación). Sólo cambia lo que viene; al menos un campo.
+     */
+    patch: operations['RepurchaseCustomerController_actualizarAviso'];
+    trace?: never;
+  };
+  '/api/v2/customers/me/repurchase/invitations': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Mis invitaciones de recompra
+     * @description Por omisión las abiertas y vigentes; con `all=true`, también las que ya se resolvieron (hasta 50, la más nueva primero). Con `X-Distributor`, sólo las de esa distribuidora. Cada una trae el pedido precargado a precios de hoy.
+     */
+    get: operations['RepurchaseCustomerController_invitaciones'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/customers/me/repurchase/invitations/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Una de mis invitaciones de recompra */
+    get: operations['RepurchaseCustomerController_invitacion'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/customers/me/repurchase/invitations/{id}/accept': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Aceptar una invitación: crear el pedido
+     * @description Crea el pedido precargado por el mismo camino que `POST /orders` (reserva de stock, precio y promociones de hoy, recargos, despacho): el cuerpo es opcional y sólo cambia medio de pago, franja (`timeSlotId` y `scheduledDate` van juntos) o notas. Sin franja, la entrega es inmediata. Idempotente vía `Idempotency-Key`. Con MercadoPago, `order.paymentUrl` trae el enlace de cobro.
+     */
+    post: operations['RepurchaseCustomerController_aceptar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/customers/me/repurchase/invitations/{id}/dismiss': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Descartar una invitación
+     * @description Queda registrada como descartada: el sistema no vuelve a invitarme hasta pasado el intervalo mínimo de la distribuidora.
+     */
+    post: operations['RepurchaseCustomerController_descartar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/employees/{id}/attendance': {
     parameters: {
       query?: never;
@@ -15497,6 +15718,273 @@ export interface components {
        * @description Caja de la que sale el pago: efectivo, banco o billetera de la distribuidora
        */
       cashBoxId: string;
+    };
+    RepurchaseCustomerRefDto: {
+      /**
+       * Format: uuid
+       * @description El perfil de cliente: con él se abre su ficha (`/customers/:id`)
+       */
+      customerId: string | null;
+      /**
+       * Format: uuid
+       * @description La cuenta del cliente
+       */
+      userId: string;
+      fullName: string | null;
+      email: string | null;
+      phoneNumber: string | null;
+    };
+    RepurchaseOpenInvitationRefDto: {
+      /** Format: uuid */
+      invitationId: string;
+      /** Format: date-time */
+      expiresAt: string;
+    };
+    RepurchaseForecastRowDto: {
+      customer: components['schemas']['RepurchaseCustomerRefDto'];
+      /**
+       * Format: date-time
+       * @description Cuándo se estima que se le acaba el gas
+       */
+      estimatedAt: string;
+      /** @description Días que faltan; negativo si ya se pasó de la fecha */
+      daysLeft: number;
+      /**
+       * @description `history`: sus compras; `declared`: el consumo que declaró
+       * @enum {string}
+       */
+      source: 'history' | 'declared';
+      /** @description Compras que entraron en la estimación */
+      ordersUsed: number;
+      /** Format: date-time */
+      lastPurchaseAt: string;
+      /** @description Kilos de gas de su última compra */
+      lastPurchaseKg: number;
+      /** @description Kilos por mes que declaró */
+      declaredKgPerMonth: number | null;
+      /** @description Kilos por mes que se le estiman */
+      estimatedKgPerMonth: number;
+      /** @description Garrafas que suele pedir (las de su última compra) */
+      usualUnits: number;
+      /** @description Productos de su última compra */
+      usualCylinderIds: string[];
+      noticeEnabled: boolean;
+      /** @description Días de anticipación que rigen para él */
+      noticeDays: number;
+      openInvitation: components['schemas']['RepurchaseOpenInvitationRefDto'] | null;
+    };
+    RepurchaseForecastPageDto: {
+      data: components['schemas']['RepurchaseForecastRowDto'][];
+      /** @description Clientes dentro de la ventana */
+      total: number;
+      days: number;
+      /** Format: date-time */
+      generatedAt: string;
+    };
+    RepurchaseCustomerForecastDto: {
+      forecast: components['schemas']['RepurchaseForecastRowDto'] | null;
+      /**
+       * @description Por qué no se lo puede proyectar, si `forecast` es null
+       * @enum {string|null}
+       */
+      reason: 'no_purchases' | 'insufficient_history' | 'irregular_history' | 'stale' | null;
+    };
+    AdminInvitationResponseDto: {
+      /** Format: uuid */
+      invitationId: string;
+      /** @enum {string} */
+      status: 'pending' | 'accepted' | 'rejected' | 'expired' | 'cancelled';
+      customer: components['schemas']['RepurchaseCustomerRefDto'];
+      /** Format: date-time */
+      projectedDepletionAt: string;
+      /** @enum {string} */
+      estimateSource: 'history' | 'declared';
+      /** @description Garrafas que se le ofrecieron */
+      totalUnits: number;
+      /** Format: date-time */
+      expiresAt: string;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      respondedAt: string | null;
+      /** Format: uuid */
+      orderId: string | null;
+    };
+    AdminInvitationPageDto: {
+      data: components['schemas']['AdminInvitationResponseDto'][];
+      total: number;
+    };
+    RepurchaseStatsResponseDto: {
+      /** Format: date-time */
+      from: string;
+      /** Format: date-time */
+      to: string;
+      /** @description Invitaciones emitidas en el período */
+      sent: number;
+      pending: number;
+      accepted: number;
+      rejected: number;
+      expired: number;
+      /** @description Se cerraron sin efecto: el cliente compró por su cuenta */
+      cancelled: number;
+      /** @description Aceptadas sobre las que ya tuvieron resolución (aceptadas, descartadas y vencidas), de 0 a 1. `null` si todavía no hay ninguna */
+      conversionRate: number | null;
+      /** @description Total de los pedidos que crearon las aceptadas (sin los cancelados) */
+      acceptedRevenue: number;
+    };
+    RunRepurchaseDto: {
+      /** @description Con true sólo calcula a quién se invitaría: no escribe, no vence nada y no avisa a nadie. Por omisión, false */
+      dryRun?: boolean;
+    };
+    RepurchaseRunCandidateDto: {
+      /** Format: uuid */
+      userId: string;
+      fullName: string | null;
+      /** Format: date-time */
+      projectedDepletionAt: string;
+      /** @enum {string} */
+      source: 'history' | 'declared';
+      totalUnits: number;
+    };
+    RepurchaseRunResponseDto: {
+      /** @description Clientes con una fecha estimada */
+      evaluated: number;
+      /** @description Invitaciones emitidas (o que se emitirían con `dryRun`) */
+      invited: number;
+      /** @description Invitaciones abiertas que vencieron */
+      expired: number;
+      /**
+       * @description Por qué no se invitó a los demás, con cuántos: notice_disabled, not_yet, recent_order, cooldown, no_stock, no_address
+       * @example {
+       *       "not_yet": 12,
+       *       "cooldown": 1
+       *     }
+       */
+      skipped: {
+        [key: string]: number;
+      };
+      /** @description Con `dryRun`, a quién se invitaría */
+      candidates: components['schemas']['RepurchaseRunCandidateDto'][];
+    };
+    RepurchaseNoticeResponseDto: {
+      /** @description false: no quiere recibir el aviso */
+      enabled: boolean;
+      /** @description Los días que eligió; `null`: rige el valor de la distribuidora */
+      days: number | null;
+      /** @description El valor de la distribuidora del header `X-Distributor`; `null` sin header */
+      distributorDays: number | null;
+      /** @description Los días que rigen: `days` o, sin elegir, `distributorDays` */
+      effectiveDays: number | null;
+    };
+    InvitationItemDto: {
+      /** Format: uuid */
+      gasCylinderId: string;
+      /** @example 10kg */
+      type: string;
+      quantity: number;
+      /** @description Precio de lista de hoy */
+      unitPrice: number;
+      /** @description Cantidad por precio de lista (sin promociones ni recargos) */
+      subtotal: number;
+      /** @description false: el producto se dio de baja o ya no hay stock para la cantidad */
+      available: boolean;
+    };
+    InvitationAddressDto: {
+      /** Format: uuid */
+      addressId: string;
+      /** @example Av. Corrientes 1234, Posadas */
+      label: string;
+    };
+    InvitationTimeSlotDto: {
+      /** Format: uuid */
+      timeSlotId: string;
+      /** @example Mañana */
+      name: string;
+      /** @example 09:00 */
+      startTime: string;
+      /** @example 13:00 */
+      endTime: string;
+    };
+    RepurchaseInvitationResponseDto: {
+      /** Format: uuid */
+      invitationId: string;
+      /** Format: uuid */
+      distributorId: string;
+      /** @enum {string} */
+      status: 'pending' | 'accepted' | 'rejected' | 'expired' | 'cancelled';
+      /**
+       * Format: date-time
+       * @description Cuándo se estima que se le acaba el gas
+       */
+      projectedDepletionAt: string;
+      /**
+       * @description Con qué se estimó: sus compras o el consumo que declaró
+       * @enum {string}
+       */
+      estimateSource: 'history' | 'declared';
+      items: components['schemas']['InvitationItemDto'][];
+      /** @description Suma de los subtotales; el total real se cotiza con `POST /orders/quote` */
+      estimatedTotal: number;
+      address: components['schemas']['InvitationAddressDto'] | null;
+      /** @description Su franja habitual, si todavía está activa */
+      timeSlot: components['schemas']['InvitationTimeSlotDto'] | null;
+      /** @enum {string} */
+      paymentMethod: 'cash' | 'mercadopago' | 'transfer' | 'account';
+      /**
+       * Format: date-time
+       * @description Hasta cuándo se puede aceptar
+       */
+      expiresAt: string;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      respondedAt: string | null;
+      /**
+       * Format: uuid
+       * @description El pedido que creó, si la aceptó
+       */
+      orderId: string | null;
+    };
+    MyRepurchaseResponseDto: {
+      /** Format: date-time */
+      estimatedAt: string | null;
+      daysLeft: number | null;
+      /** @enum {string|null} */
+      source: 'history' | 'declared' | null;
+      /** @description Por qué no hay estimación: `no_purchases` (nunca le compró a esta distribuidora), `insufficient_history`, `irregular_history` o `stale` */
+      reason: string | null;
+      notice: components['schemas']['RepurchaseNoticeResponseDto'];
+      /** @description Su invitación abierta, si tiene */
+      openInvitation?: components['schemas']['RepurchaseInvitationResponseDto'] | null;
+    };
+    UpdateRepurchaseNoticeDto: {
+      /** @description false desactiva el aviso; true lo reactiva */
+      enabled?: boolean;
+      /** @description Días de anticipación (1 a 30). `null` vuelve al valor de la distribuidora */
+      days?: number | null;
+    };
+    AcceptInvitationDto: {
+      /**
+       * @description Medio de pago; por omisión el de la invitación
+       * @enum {string}
+       */
+      paymentMethod?: 'cash' | 'transfer' | 'mercadopago';
+      /**
+       * Format: uuid
+       * @description Franja horaria de la entrega. Va junto con `scheduledDate`; sin ninguna de las dos, la entrega es inmediata
+       */
+      timeSlotId?: string;
+      /**
+       * @description Día de la entrega (YYYY-MM-DD). Va junto con `timeSlotId`
+       * @example 2026-11-03
+       */
+      scheduledDate?: string;
+      notes?: string;
+    };
+    AcceptInvitationResponseDto: {
+      invitation: components['schemas']['RepurchaseInvitationResponseDto'];
+      /** @description El pedido creado, con el mismo contrato de `POST /orders` (incluye `paymentUrl` si se paga con MercadoPago) */
+      order: components['schemas']['OrderResponseDto'];
     };
     RegisterAttendanceDto: {
       /**
@@ -40048,6 +40536,560 @@ export interface operations {
       };
       /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
       422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RepurchaseAdminController_proximas: {
+    parameters: {
+      query?: {
+        /** @description Ventana: clientes a los que se les acaba el gas dentro de estos días (incluye a los que ya se pasaron de la fecha y siguen proyectados) */
+        days?: number;
+        limit?: number;
+        offset?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RepurchaseForecastPageDto'];
+        };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RepurchaseAdminController_delCliente: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description User UUID del cliente */
+        userId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RepurchaseCustomerForecastDto'];
+        };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No es cliente de la distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RepurchaseAdminController_invitaciones: {
+    parameters: {
+      query?: {
+        status?: 'pending' | 'accepted' | 'rejected' | 'expired' | 'cancelled';
+        /** @description Sólo las de este cliente */
+        userId?: string;
+        /** @description Emitidas desde este día (YYYY-MM-DD, hora argentina) */
+        from?: string;
+        /** @description Emitidas hasta este día inclusive */
+        to?: string;
+        limit?: number;
+        offset?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AdminInvitationPageDto'];
+        };
+      };
+      /** @description from o to inválidos, o from posterior a to. Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RepurchaseAdminController_stats: {
+    parameters: {
+      query?: {
+        /** @description Desde este día (por omisión, 90 días atrás) */
+        from?: string;
+        /** @description Hasta este día inclusive (por omisión, hoy) */
+        to?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RepurchaseStatsResponseDto'];
+        };
+      };
+      /** @description from o to inválidos, o from posterior a to. Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RepurchaseAdminController_correr: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RunRepurchaseDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RepurchaseRunResponseDto'];
+        };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La anticipación está apagada (`enabled` en 0 de `/module-config/repurchase`); la simulación con `dryRun` funciona igual */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RepurchaseCustomerController_miRecompra: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MyRepurchaseResponseDto'];
+        };
+      };
+      /** @description Falta X-Distributor */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RepurchaseCustomerController_aviso: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RepurchaseNoticeResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RepurchaseCustomerController_actualizarAviso: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateRepurchaseNoticeDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RepurchaseNoticeResponseDto'];
+        };
+      };
+      /** @description days fuera de 1 a 30, no entero, o cuerpo vacío */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RepurchaseCustomerController_invitaciones: {
+    parameters: {
+      query?: {
+        all?: boolean;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RepurchaseInvitationResponseDto'][];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RepurchaseCustomerController_invitacion: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Invitation UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RepurchaseInvitationResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otro cliente */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RepurchaseCustomerController_aceptar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Invitation UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AcceptInvitationDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AcceptInvitationResponseDto'];
+        };
+      };
+      /** @description Sin stock para lo sugerido, franja sin fecha (o al revés), dirección fuera de cobertura u otra regla del pedido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otro cliente */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya aceptada, descartada, vencida, o cerrada porque ya hiciste un pedido */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RepurchaseCustomerController_descartar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Invitation UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RepurchaseInvitationResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otro cliente */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya no está abierta */
+      409: {
         headers: {
           [name: string]: unknown;
         };

@@ -40,6 +40,7 @@ import {
   MessageSquareWarning,
   Navigation,
   ReceiptText,
+  Repeat,
   ServerCog,
   Settings,
   SlidersHorizontal,
@@ -95,6 +96,7 @@ export const NAV_SECTIONS: NavSection[] = [
     title: 'Clientes',
     items: [
       { title: 'Clientes', path: '/customers', icon: Users },
+      { title: 'Recompra', path: '/customers/repurchase', icon: Repeat },
       { title: 'Direcciones', path: '/addresses', icon: MapPinHouse, superAdminOnly: true },
     ],
   },

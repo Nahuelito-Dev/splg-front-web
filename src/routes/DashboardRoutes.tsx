@@ -14,6 +14,7 @@ const Account = lazyPage(() => import('../pages/Account/Account'), 'Account');
 const Users = lazyPage(() => import('../pages/Users/Users'), 'Users');
 const UserDetails = lazyPage(() => import('../pages/Users/UserDetails'), 'UserDetails');
 const Customers = lazyPage(() => import('../pages/Customers/Customers'), 'Customers');
+const Repurchase = lazyPage(() => import('../pages/Customers/Repurchase/Repurchase'), 'Repurchase');
 const CustomerDetails = lazyPage(() => import('../pages/Customers/CustomerDetails'), 'CustomerDetails');
 const Employees = lazyPage(() => import('../pages/Employees/Employees'), 'Employees');
 const JobPositions = lazyPage(() => import('../pages/Employees/JobPositions'), 'JobPositions');
@@ -171,6 +172,7 @@ export const DashboardRoutes = () => {
 
           {/* 3. Clientes */}
           <Route path="customers" element={<Customers />} />
+          <Route path="customers/repurchase" element={<Repurchase />} />
           <Route path="customers/details/:id" element={<CustomerDetails />} />
 
           {/* Direcciones de entrega de todos los clientes — super_admin */}

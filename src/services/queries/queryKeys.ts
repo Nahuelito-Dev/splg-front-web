@@ -36,6 +36,7 @@ export const queryKeys = {
   jobPositions: resource('jobPositions'),
   leaves: resource('leaves'),
   moduleConfig: resource('moduleConfig'),
+  repurchase: resource('repurchase'),
   mpReconciliations: resource('mpReconciliations'),
   attachments: resource('attachments'),
   cashBoxes: resource('cashBoxes'),

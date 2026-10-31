@@ -27482,6 +27482,663 @@
                 ]
             }
         },
+        "/api/v2/repurchase/forecast": {
+            "get": {
+                "description": "Los clientes de la distribuidora cuya fecha estimada de recompra cae dentro de `days` días (por omisión 14), del más próximo al más lejano, con su última compra, su consumo declarado y de dónde sale la estimación (`history`: sus compras; `declared`: el consumo que declaró). Los que ya se pasaron de la fecha y siguen proyectados aparecen con `daysLeft` negativo. No aparecen los que nunca le compraron a la distribuidora, los que no tienen con qué estimarlos ni los que dejaron de comprar.",
+                "operationId": "RepurchaseAdminController_proximas",
+                "parameters": [
+                    {
+                        "name": "days",
+                        "required": false,
+                        "in": "query",
+                        "description": "Ventana: clientes a los que se les acaba el gas dentro de estos días (incluye a los que ya se pasaron de la fecha y siguen proyectados)",
+                        "schema": {
+                            "minimum": 1,
+                            "maximum": 90,
+                            "default": 14,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "minimum": 1,
+                            "maximum": 100,
+                            "default": 20,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "minimum": 0,
+                            "default": 0,
+                            "type": "number"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RepurchaseForecastPageDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\")"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Clientes a los que se les acaba el gas (CU-146)",
+                "tags": [
+                    "Repurchase (v2)"
+                ]
+            }
+        },
+        "/api/v2/repurchase/forecast/customers/{userId}": {
+            "get": {
+                "description": "Para la ficha del cliente. Sin estimación (`forecast: null`) explica por qué en `reason`.",
+                "operationId": "RepurchaseAdminController_delCliente",
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "required": true,
+                        "in": "path",
+                        "description": "User UUID del cliente",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RepurchaseCustomerForecastDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\")"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No es cliente de la distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "La fecha estimada de recompra de un cliente",
+                "tags": [
+                    "Repurchase (v2)"
+                ]
+            }
+        },
+        "/api/v2/repurchase/invitations": {
+            "get": {
+                "description": "Las invitaciones de la distribuidora, la más nueva primero, con el cliente y cómo terminó cada una (`pending`, `accepted`, `rejected`, `expired` o `cancelled`).",
+                "operationId": "RepurchaseAdminController_invitaciones",
+                "parameters": [
+                    {
+                        "name": "status",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "pending",
+                                "accepted",
+                                "rejected",
+                                "expired",
+                                "cancelled"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "userId",
+                        "required": false,
+                        "in": "query",
+                        "description": "Sólo las de este cliente",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "required": false,
+                        "in": "query",
+                        "description": "Emitidas desde este día (YYYY-MM-DD, hora argentina)",
+                        "schema": {
+                            "example": "2026-10-01",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "required": false,
+                        "in": "query",
+                        "description": "Emitidas hasta este día inclusive",
+                        "schema": {
+                            "example": "2026-10-31",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "minimum": 1,
+                            "maximum": 100,
+                            "default": 10,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "minimum": 0,
+                            "default": 0,
+                            "type": "number"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AdminInvitationPageDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "from o to inválidos, o from posterior a to. Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\")"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Invitaciones de recompra emitidas",
+                "tags": [
+                    "Repurchase (v2)"
+                ]
+            }
+        },
+        "/api/v2/repurchase/stats": {
+            "get": {
+                "description": "Invitaciones del período por resultado y la tasa de conversión: aceptadas sobre las que ya tuvieron resolución (aceptadas, descartadas y vencidas; las abiertas y las canceladas por compra propia no cuentan). Por omisión, los últimos 90 días.",
+                "operationId": "RepurchaseAdminController_stats",
+                "parameters": [
+                    {
+                        "name": "from",
+                        "required": false,
+                        "in": "query",
+                        "description": "Desde este día (por omisión, 90 días atrás)",
+                        "schema": {
+                            "example": "2026-10-01",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "required": false,
+                        "in": "query",
+                        "description": "Hasta este día inclusive (por omisión, hoy)",
+                        "schema": {
+                            "example": "2026-10-31",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RepurchaseStatsResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "from o to inválidos, o from posterior a to. Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\")"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Cómo le va a la recompra anticipada",
+                "tags": [
+                    "Repurchase (v2)"
+                ]
+            }
+        },
+        "/api/v2/repurchase/run": {
+            "post": {
+                "description": "Hace lo que el proceso diario para esta distribuidora: vence las invitaciones sin respuesta y abre una a cada cliente al que se le acaba el gas dentro de su anticipación, sin pedido vigente ni invitación reciente. Es idempotente y respeta el interruptor `enabled` del proceso (viene apagado: 409). Con `dryRun: true` sólo calcula a quién se invitaría, sin escribir ni avisar a nadie.",
+                "operationId": "RepurchaseAdminController_correr",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RunRepurchaseDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RepurchaseRunResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\")"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "409": {
+                        "description": "La anticipación está apagada (`enabled` en 0 de `/module-config/repurchase`); la simulación con `dryRun` funciona igual"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Correr la anticipación de recompra ahora",
+                "tags": [
+                    "Repurchase (v2)"
+                ]
+            }
+        },
+        "/api/v2/customers/me/repurchase": {
+            "get": {
+                "description": "Cuándo se estima que se me acaba el gas con la distribuidora del header `X-Distributor` (obligatorio), con qué se estimó, mi preferencia de aviso y mi invitación abierta si tengo. Sin estimación (`estimatedAt: null`) explica por qué en `reason`.",
+                "operationId": "RepurchaseCustomerController_miRecompra",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MyRepurchaseResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta X-Distributor"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: customer"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Mi fecha estimada de recompra en una distribuidora",
+                "tags": [
+                    "Customers · Repurchase (v2)"
+                ]
+            }
+        },
+        "/api/v2/customers/me/repurchase/notice": {
+            "get": {
+                "description": "Si el aviso está activado y con cuántos días de anticipación. Con `X-Distributor` suma el valor de esa distribuidora, que rige si no elegí.",
+                "operationId": "RepurchaseCustomerController_aviso",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RepurchaseNoticeResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: customer"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Mi preferencia de aviso de recompra (CU-145)",
+                "tags": [
+                    "Customers · Repurchase (v2)"
+                ]
+            },
+            "patch": {
+                "description": "`days` (1 a 30) son los días de anticipación con los que quiero que me avisen; `null` vuelve al valor de la distribuidora. `enabled: false` desactiva el aviso (no borra la estimación). Sólo cambia lo que viene; al menos un campo.",
+                "operationId": "RepurchaseCustomerController_actualizarAviso",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateRepurchaseNoticeDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RepurchaseNoticeResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "days fuera de 1 a 30, no entero, o cuerpo vacío"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: customer"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Elegir cómo quiero el aviso de recompra (CU-145)",
+                "tags": [
+                    "Customers · Repurchase (v2)"
+                ]
+            }
+        },
+        "/api/v2/customers/me/repurchase/invitations": {
+            "get": {
+                "description": "Por omisión las abiertas y vigentes; con `all=true`, también las que ya se resolvieron (hasta 50, la más nueva primero). Con `X-Distributor`, sólo las de esa distribuidora. Cada una trae el pedido precargado a precios de hoy.",
+                "operationId": "RepurchaseCustomerController_invitaciones",
+                "parameters": [
+                    {
+                        "name": "all",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/RepurchaseInvitationResponseDto"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: customer"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Mis invitaciones de recompra",
+                "tags": [
+                    "Customers · Repurchase (v2)"
+                ]
+            }
+        },
+        "/api/v2/customers/me/repurchase/invitations/{id}": {
+            "get": {
+                "operationId": "RepurchaseCustomerController_invitacion",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Invitation UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RepurchaseInvitationResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: customer"
+                    },
+                    "404": {
+                        "description": "No existe o es de otro cliente"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Una de mis invitaciones de recompra",
+                "tags": [
+                    "Customers · Repurchase (v2)"
+                ]
+            }
+        },
+        "/api/v2/customers/me/repurchase/invitations/{id}/accept": {
+            "post": {
+                "description": "Crea el pedido precargado por el mismo camino que `POST /orders` (reserva de stock, precio y promociones de hoy, recargos, despacho): el cuerpo es opcional y sólo cambia medio de pago, franja (`timeSlotId` y `scheduledDate` van juntos) o notas. Sin franja, la entrega es inmediata. Idempotente vía `Idempotency-Key`. Con MercadoPago, `order.paymentUrl` trae el enlace de cobro.",
+                "operationId": "RepurchaseCustomerController_aceptar",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Invitation UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AcceptInvitationDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AcceptInvitationResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Sin stock para lo sugerido, franja sin fecha (o al revés), dirección fuera de cobertura u otra regla del pedido"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: customer"
+                    },
+                    "404": {
+                        "description": "No existe o es de otro cliente"
+                    },
+                    "409": {
+                        "description": "Ya aceptada, descartada, vencida, o cerrada porque ya hiciste un pedido"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Aceptar una invitación: crear el pedido",
+                "tags": [
+                    "Customers · Repurchase (v2)"
+                ]
+            }
+        },
+        "/api/v2/customers/me/repurchase/invitations/{id}/dismiss": {
+            "post": {
+                "description": "Queda registrada como descartada: el sistema no vuelve a invitarme hasta pasado el intervalo mínimo de la distribuidora.",
+                "operationId": "RepurchaseCustomerController_descartar",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Invitation UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RepurchaseInvitationResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: customer"
+                    },
+                    "404": {
+                        "description": "No existe o es de otro cliente"
+                    },
+                    "409": {
+                        "description": "Ya no está abierta"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Descartar una invitación",
+                "tags": [
+                    "Customers · Repurchase (v2)"
+                ]
+            }
+        },
         "/api/v1/employees/{id}/attendance": {
             "post": {
                 "operationId": "AttendanceController_register",
@@ -50231,6 +50888,755 @@
                     "paidAt",
                     "amount",
                     "cashBoxId"
+                ]
+            },
+            "RepurchaseCustomerRefDto": {
+                "type": "object",
+                "properties": {
+                    "customerId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true,
+                        "description": "El perfil de cliente: con él se abre su ficha (`/customers/:id`)"
+                    },
+                    "userId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "La cuenta del cliente"
+                    },
+                    "fullName": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "email": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "phoneNumber": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "customerId",
+                    "userId",
+                    "fullName",
+                    "email",
+                    "phoneNumber"
+                ]
+            },
+            "RepurchaseOpenInvitationRefDto": {
+                "type": "object",
+                "properties": {
+                    "invitationId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "expiresAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "invitationId",
+                    "expiresAt"
+                ]
+            },
+            "RepurchaseForecastRowDto": {
+                "type": "object",
+                "properties": {
+                    "customer": {
+                        "$ref": "#/components/schemas/RepurchaseCustomerRefDto"
+                    },
+                    "estimatedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Cuándo se estima que se le acaba el gas"
+                    },
+                    "daysLeft": {
+                        "type": "number",
+                        "description": "Días que faltan; negativo si ya se pasó de la fecha"
+                    },
+                    "source": {
+                        "type": "string",
+                        "enum": [
+                            "history",
+                            "declared"
+                        ],
+                        "description": "`history`: sus compras; `declared`: el consumo que declaró"
+                    },
+                    "ordersUsed": {
+                        "type": "number",
+                        "description": "Compras que entraron en la estimación"
+                    },
+                    "lastPurchaseAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "lastPurchaseKg": {
+                        "type": "number",
+                        "description": "Kilos de gas de su última compra"
+                    },
+                    "declaredKgPerMonth": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Kilos por mes que declaró"
+                    },
+                    "estimatedKgPerMonth": {
+                        "type": "number",
+                        "description": "Kilos por mes que se le estiman"
+                    },
+                    "usualUnits": {
+                        "type": "number",
+                        "description": "Garrafas que suele pedir (las de su última compra)"
+                    },
+                    "usualCylinderIds": {
+                        "description": "Productos de su última compra",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    "noticeEnabled": {
+                        "type": "boolean"
+                    },
+                    "noticeDays": {
+                        "type": "number",
+                        "description": "Días de anticipación que rigen para él"
+                    },
+                    "openInvitation": {
+                        "nullable": true,
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/RepurchaseOpenInvitationRefDto"
+                            }
+                        ]
+                    }
+                },
+                "required": [
+                    "customer",
+                    "estimatedAt",
+                    "daysLeft",
+                    "source",
+                    "ordersUsed",
+                    "lastPurchaseAt",
+                    "lastPurchaseKg",
+                    "declaredKgPerMonth",
+                    "estimatedKgPerMonth",
+                    "usualUnits",
+                    "usualCylinderIds",
+                    "noticeEnabled",
+                    "noticeDays",
+                    "openInvitation"
+                ]
+            },
+            "RepurchaseForecastPageDto": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RepurchaseForecastRowDto"
+                        }
+                    },
+                    "total": {
+                        "type": "number",
+                        "description": "Clientes dentro de la ventana"
+                    },
+                    "days": {
+                        "type": "number"
+                    },
+                    "generatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "data",
+                    "total",
+                    "days",
+                    "generatedAt"
+                ]
+            },
+            "RepurchaseCustomerForecastDto": {
+                "type": "object",
+                "properties": {
+                    "forecast": {
+                        "nullable": true,
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/RepurchaseForecastRowDto"
+                            }
+                        ]
+                    },
+                    "reason": {
+                        "type": "string",
+                        "nullable": true,
+                        "enum": [
+                            "no_purchases",
+                            "insufficient_history",
+                            "irregular_history",
+                            "stale"
+                        ],
+                        "description": "Por qué no se lo puede proyectar, si `forecast` es null"
+                    }
+                },
+                "required": [
+                    "forecast",
+                    "reason"
+                ]
+            },
+            "AdminInvitationResponseDto": {
+                "type": "object",
+                "properties": {
+                    "invitationId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "pending",
+                            "accepted",
+                            "rejected",
+                            "expired",
+                            "cancelled"
+                        ]
+                    },
+                    "customer": {
+                        "$ref": "#/components/schemas/RepurchaseCustomerRefDto"
+                    },
+                    "projectedDepletionAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "estimateSource": {
+                        "type": "string",
+                        "enum": [
+                            "history",
+                            "declared"
+                        ]
+                    },
+                    "totalUnits": {
+                        "type": "number",
+                        "description": "Garrafas que se le ofrecieron"
+                    },
+                    "expiresAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "respondedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "orderId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "invitationId",
+                    "status",
+                    "customer",
+                    "projectedDepletionAt",
+                    "estimateSource",
+                    "totalUnits",
+                    "expiresAt",
+                    "createdAt",
+                    "respondedAt",
+                    "orderId"
+                ]
+            },
+            "AdminInvitationPageDto": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/AdminInvitationResponseDto"
+                        }
+                    },
+                    "total": {
+                        "type": "number"
+                    }
+                },
+                "required": [
+                    "data",
+                    "total"
+                ]
+            },
+            "RepurchaseStatsResponseDto": {
+                "type": "object",
+                "properties": {
+                    "from": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "to": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "sent": {
+                        "type": "number",
+                        "description": "Invitaciones emitidas en el período"
+                    },
+                    "pending": {
+                        "type": "number"
+                    },
+                    "accepted": {
+                        "type": "number"
+                    },
+                    "rejected": {
+                        "type": "number"
+                    },
+                    "expired": {
+                        "type": "number"
+                    },
+                    "cancelled": {
+                        "type": "number",
+                        "description": "Se cerraron sin efecto: el cliente compró por su cuenta"
+                    },
+                    "conversionRate": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Aceptadas sobre las que ya tuvieron resolución (aceptadas, descartadas y vencidas), de 0 a 1. `null` si todavía no hay ninguna"
+                    },
+                    "acceptedRevenue": {
+                        "type": "number",
+                        "description": "Total de los pedidos que crearon las aceptadas (sin los cancelados)"
+                    }
+                },
+                "required": [
+                    "from",
+                    "to",
+                    "sent",
+                    "pending",
+                    "accepted",
+                    "rejected",
+                    "expired",
+                    "cancelled",
+                    "conversionRate",
+                    "acceptedRevenue"
+                ]
+            },
+            "RunRepurchaseDto": {
+                "type": "object",
+                "properties": {
+                    "dryRun": {
+                        "type": "boolean",
+                        "description": "Con true sólo calcula a quién se invitaría: no escribe, no vence nada y no avisa a nadie. Por omisión, false"
+                    }
+                }
+            },
+            "RepurchaseRunCandidateDto": {
+                "type": "object",
+                "properties": {
+                    "userId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "fullName": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "projectedDepletionAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "source": {
+                        "type": "string",
+                        "enum": [
+                            "history",
+                            "declared"
+                        ]
+                    },
+                    "totalUnits": {
+                        "type": "number"
+                    }
+                },
+                "required": [
+                    "userId",
+                    "fullName",
+                    "projectedDepletionAt",
+                    "source",
+                    "totalUnits"
+                ]
+            },
+            "RepurchaseRunResponseDto": {
+                "type": "object",
+                "properties": {
+                    "evaluated": {
+                        "type": "number",
+                        "description": "Clientes con una fecha estimada"
+                    },
+                    "invited": {
+                        "type": "number",
+                        "description": "Invitaciones emitidas (o que se emitirían con `dryRun`)"
+                    },
+                    "expired": {
+                        "type": "number",
+                        "description": "Invitaciones abiertas que vencieron"
+                    },
+                    "skipped": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "number"
+                        },
+                        "description": "Por qué no se invitó a los demás, con cuántos: notice_disabled, not_yet, recent_order, cooldown, no_stock, no_address",
+                        "example": {
+                            "not_yet": 12,
+                            "cooldown": 1
+                        }
+                    },
+                    "candidates": {
+                        "description": "Con `dryRun`, a quién se invitaría",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RepurchaseRunCandidateDto"
+                        }
+                    }
+                },
+                "required": [
+                    "evaluated",
+                    "invited",
+                    "expired",
+                    "skipped",
+                    "candidates"
+                ]
+            },
+            "RepurchaseNoticeResponseDto": {
+                "type": "object",
+                "properties": {
+                    "enabled": {
+                        "type": "boolean",
+                        "description": "false: no quiere recibir el aviso"
+                    },
+                    "days": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Los días que eligió; `null`: rige el valor de la distribuidora"
+                    },
+                    "distributorDays": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "El valor de la distribuidora del header `X-Distributor`; `null` sin header"
+                    },
+                    "effectiveDays": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Los días que rigen: `days` o, sin elegir, `distributorDays`"
+                    }
+                },
+                "required": [
+                    "enabled",
+                    "days",
+                    "distributorDays",
+                    "effectiveDays"
+                ]
+            },
+            "InvitationItemDto": {
+                "type": "object",
+                "properties": {
+                    "gasCylinderId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "type": {
+                        "type": "string",
+                        "example": "10kg"
+                    },
+                    "quantity": {
+                        "type": "number"
+                    },
+                    "unitPrice": {
+                        "type": "number",
+                        "description": "Precio de lista de hoy"
+                    },
+                    "subtotal": {
+                        "type": "number",
+                        "description": "Cantidad por precio de lista (sin promociones ni recargos)"
+                    },
+                    "available": {
+                        "type": "boolean",
+                        "description": "false: el producto se dio de baja o ya no hay stock para la cantidad"
+                    }
+                },
+                "required": [
+                    "gasCylinderId",
+                    "type",
+                    "quantity",
+                    "unitPrice",
+                    "subtotal",
+                    "available"
+                ]
+            },
+            "InvitationAddressDto": {
+                "type": "object",
+                "properties": {
+                    "addressId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "label": {
+                        "type": "string",
+                        "example": "Av. Corrientes 1234, Posadas"
+                    }
+                },
+                "required": [
+                    "addressId",
+                    "label"
+                ]
+            },
+            "InvitationTimeSlotDto": {
+                "type": "object",
+                "properties": {
+                    "timeSlotId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Mañana"
+                    },
+                    "startTime": {
+                        "type": "string",
+                        "example": "09:00"
+                    },
+                    "endTime": {
+                        "type": "string",
+                        "example": "13:00"
+                    }
+                },
+                "required": [
+                    "timeSlotId",
+                    "name",
+                    "startTime",
+                    "endTime"
+                ]
+            },
+            "RepurchaseInvitationResponseDto": {
+                "type": "object",
+                "properties": {
+                    "invitationId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "distributorId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "pending",
+                            "accepted",
+                            "rejected",
+                            "expired",
+                            "cancelled"
+                        ]
+                    },
+                    "projectedDepletionAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Cuándo se estima que se le acaba el gas"
+                    },
+                    "estimateSource": {
+                        "type": "string",
+                        "enum": [
+                            "history",
+                            "declared"
+                        ],
+                        "description": "Con qué se estimó: sus compras o el consumo que declaró"
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/InvitationItemDto"
+                        }
+                    },
+                    "estimatedTotal": {
+                        "type": "number",
+                        "description": "Suma de los subtotales; el total real se cotiza con `POST /orders/quote`"
+                    },
+                    "address": {
+                        "nullable": true,
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/InvitationAddressDto"
+                            }
+                        ]
+                    },
+                    "timeSlot": {
+                        "nullable": true,
+                        "description": "Su franja habitual, si todavía está activa",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/InvitationTimeSlotDto"
+                            }
+                        ]
+                    },
+                    "paymentMethod": {
+                        "type": "string",
+                        "enum": [
+                            "cash",
+                            "mercadopago",
+                            "transfer",
+                            "account"
+                        ]
+                    },
+                    "expiresAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Hasta cuándo se puede aceptar"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "respondedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "orderId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true,
+                        "description": "El pedido que creó, si la aceptó"
+                    }
+                },
+                "required": [
+                    "invitationId",
+                    "distributorId",
+                    "status",
+                    "projectedDepletionAt",
+                    "estimateSource",
+                    "items",
+                    "estimatedTotal",
+                    "address",
+                    "timeSlot",
+                    "paymentMethod",
+                    "expiresAt",
+                    "createdAt",
+                    "respondedAt",
+                    "orderId"
+                ]
+            },
+            "MyRepurchaseResponseDto": {
+                "type": "object",
+                "properties": {
+                    "estimatedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "daysLeft": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "source": {
+                        "type": "string",
+                        "enum": [
+                            "history",
+                            "declared"
+                        ],
+                        "nullable": true
+                    },
+                    "reason": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Por qué no hay estimación: `no_purchases` (nunca le compró a esta distribuidora), `insufficient_history`, `irregular_history` o `stale`"
+                    },
+                    "notice": {
+                        "$ref": "#/components/schemas/RepurchaseNoticeResponseDto"
+                    },
+                    "openInvitation": {
+                        "nullable": true,
+                        "description": "Su invitación abierta, si tiene",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/RepurchaseInvitationResponseDto"
+                            }
+                        ]
+                    }
+                },
+                "required": [
+                    "estimatedAt",
+                    "daysLeft",
+                    "source",
+                    "reason",
+                    "notice"
+                ]
+            },
+            "UpdateRepurchaseNoticeDto": {
+                "type": "object",
+                "properties": {
+                    "enabled": {
+                        "type": "boolean",
+                        "description": "false desactiva el aviso; true lo reactiva"
+                    },
+                    "days": {
+                        "type": "number",
+                        "nullable": true,
+                        "minimum": 1,
+                        "maximum": 30,
+                        "description": "Días de anticipación (1 a 30). `null` vuelve al valor de la distribuidora"
+                    }
+                }
+            },
+            "AcceptInvitationDto": {
+                "type": "object",
+                "properties": {
+                    "paymentMethod": {
+                        "type": "string",
+                        "enum": [
+                            "cash",
+                            "transfer",
+                            "mercadopago"
+                        ],
+                        "description": "Medio de pago; por omisión el de la invitación"
+                    },
+                    "timeSlotId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Franja horaria de la entrega. Va junto con `scheduledDate`; sin ninguna de las dos, la entrega es inmediata"
+                    },
+                    "scheduledDate": {
+                        "type": "string",
+                        "example": "2026-11-03",
+                        "description": "Día de la entrega (YYYY-MM-DD). Va junto con `timeSlotId`"
+                    },
+                    "notes": {
+                        "type": "string",
+                        "maxLength": 500
+                    }
+                }
+            },
+            "AcceptInvitationResponseDto": {
+                "type": "object",
+                "properties": {
+                    "invitation": {
+                        "$ref": "#/components/schemas/RepurchaseInvitationResponseDto"
+                    },
+                    "order": {
+                        "description": "El pedido creado, con el mismo contrato de `POST /orders` (incluye `paymentUrl` si se paga con MercadoPago)",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/OrderResponseDto"
+                            }
+                        ]
+                    }
+                },
+                "required": [
+                    "invitation",
+                    "order"
                 ]
             },
             "RegisterAttendanceDto": {
