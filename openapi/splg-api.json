@@ -23668,6 +23668,1275 @@
                 ]
             }
         },
+        "/api/v2/cylinder-recovery/cases": {
+            "get": {
+                "description": "Los casos con su estado y escalón (1 recordatorio, 2 aviso del depósito, 3 agotado), el cliente, el envase, el último aviso y la oferta de retiro vigente; más los totales por estado. `pending=true` deja los que esperan la decisión del administrador (escalados y perdidos).",
+                "operationId": "CylinderRecoveryAdminController_casos",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "maximum": 100,
+                            "default": 10,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 0,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 1,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "term",
+                        "required": false,
+                        "in": "query",
+                        "description": "Texto a buscar",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "open",
+                                "returned",
+                                "escalated",
+                                "deposit_charged",
+                                "written_off",
+                                "closed_no_charge",
+                                "lost"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "step",
+                        "required": false,
+                        "in": "query",
+                        "description": "Escalón: 1 recordatorio, 2 aviso del depósito, 3 agotado",
+                        "schema": {
+                            "minimum": 1,
+                            "maximum": 3,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "customerId",
+                        "required": false,
+                        "in": "query",
+                        "description": "user_id del cliente",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "cylinderId",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "live",
+                        "required": false,
+                        "in": "query",
+                        "description": "Sólo los casos que siguen en pie (abiertos, escalados o perdidos)",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "pending",
+                        "required": false,
+                        "in": "query",
+                        "description": "Sólo los casos que esperan la decisión del administrador (escalados o perdidos)",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RecoveryCasePageDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\")"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Casos de recupero de envases",
+                "tags": [
+                    "Cylinders · Recovery (v2)"
+                ]
+            }
+        },
+        "/api/v2/cylinder-recovery/cases/{id}": {
+            "get": {
+                "description": "El caso con el cliente, los avisos enviados, las ofertas de retiro, el historial completo de movimientos del envase, el importe en juego y la resolución si ya se decidió.",
+                "operationId": "CylinderRecoveryAdminController_detalle",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Case UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RecoveryCaseDetailDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Caso no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Legajo de un caso de recupero",
+                "tags": [
+                    "Cylinders · Recovery (v2)"
+                ]
+            }
+        },
+        "/api/v2/cylinder-recovery/cases/{id}/resolve": {
+            "post": {
+                "description": "Paso 11 del CU-108. `charge_deposit` registra el depósito a cobrar (el sistema no cobra: se cobra aparte, en el próximo pedido o en efectivo); `write_off` da el envase por perdido y lo saca del inventario (queda en su historial); `close_no_charge` cierra sin cargo. La nota es obligatoria y queda con quién decidió.",
+                "operationId": "CylinderRecoveryAdminController_resolver",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Case UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ResolveRecoveryCaseDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RecoveryCaseDetailDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta la nota o la decisión es inválida"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Caso no encontrado"
+                    },
+                    "409": {
+                        "description": "El caso sigue en su secuencia de avisos o ya está cerrado"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Decidir un caso escalado o perdido",
+                "tags": [
+                    "Cylinders · Recovery (v2)"
+                ]
+            }
+        },
+        "/api/v2/cylinder-recovery/report": {
+            "get": {
+                "description": "Los envases perdidos (importe bajo el umbral: sólo se informan), los escalados que el administrador todavía no resolvió y los envases en poder de un cliente cuyo titular o entrega no se puede determinar (revisión manual), con los totales.",
+                "operationId": "CylinderRecoveryAdminController_reporte",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RecoveryReportDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\")"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Reporte de envases perdidos y casos sin resolver",
+                "tags": [
+                    "Cylinders · Recovery (v2)"
+                ]
+            }
+        },
+        "/api/v2/cylinder-recovery/settings": {
+            "get": {
+                "description": "Los valores vigentes con el rango y el valor por omisión de cada uno. Los mismos de `GET /module-config/cylinder_recovery`.",
+                "operationId": "CylinderRecoveryAdminController_settings",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProcessConfigResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\")"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Parámetros de la recuperación de envases",
+                "tags": [
+                    "Cylinders · Recovery (v2)"
+                ]
+            },
+            "patch": {
+                "description": "Cambia sólo los que vienen; el resto conserva su valor. Rige desde la próxima corrida.",
+                "operationId": "CylinderRecoveryAdminController_settingsPatch",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchRecoverySettingsDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProcessConfigResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Valor fuera de rango"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Cambiar parámetros de la recuperación de envases",
+                "tags": [
+                    "Cylinders · Recovery (v2)"
+                ]
+            }
+        },
+        "/api/v2/cylinder-recovery/run": {
+            "post": {
+                "description": "Hace lo mismo que la corrida diaria, para esta distribuidora y sin esperar la hora, y sólo con el recupero encendido (`enabled` = 1). Un cliente recibe a lo sumo un push por corrida. Es idempotente: un envase con caso vivo no abre otro y un escalón no repite su aviso.",
+                "operationId": "CylinderRecoveryAdminController_correr",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RecoveryRunResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\")"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "409": {
+                        "description": "El recupero está apagado para la distribuidora (parámetro `enabled` en 0, el valor por omisión): no se abre ningún caso ni se manda ningún aviso"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Correr la recuperación ahora",
+                "tags": [
+                    "Cylinders · Recovery (v2)"
+                ]
+            }
+        },
+        "/api/v2/cylinder-recovery/mine": {
+            "get": {
+                "description": "Los casos abiertos o escalados del cliente, con el depósito comprometido, el vencimiento del escalón y la oferta de retiro vigente (`pickup`: pendiente de respuesta o aceptada).",
+                "operationId": "CylinderRecoveryCustomerController_mios",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/RecoveryCaseDto"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: customer"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Mis envases pendientes de devolver",
+                "tags": [
+                    "Cylinders · Recovery (v2)"
+                ]
+            }
+        },
+        "/api/v2/cylinder-recovery/mine/{id}/pickup/accept": {
+            "post": {
+                "description": "El retiro queda asociado al pedido de la oferta: el chofer lo ve en su recorrido y el caso espera la confirmación del retorno.",
+                "operationId": "CylinderRecoveryCustomerController_aceptar",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Case UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RecoveryCaseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: customer"
+                    },
+                    "404": {
+                        "description": "Caso no encontrado o de otro cliente"
+                    },
+                    "409": {
+                        "description": "Sin oferta vigente, la oferta venció o el pedido ya no admite el retiro"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Aceptar devolver el envase en mi próxima entrega",
+                "tags": [
+                    "Cylinders · Recovery (v2)"
+                ]
+            }
+        },
+        "/api/v2/cylinder-recovery/mine/{id}/pickup/decline": {
+            "post": {
+                "description": "La oferta se descarta y el caso sigue en su escalón.",
+                "operationId": "CylinderRecoveryCustomerController_rechazar",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Case UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RecoveryCaseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: customer"
+                    },
+                    "404": {
+                        "description": "Caso no encontrado o de otro cliente"
+                    },
+                    "409": {
+                        "description": "Sin oferta vigente o la oferta venció"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Rechazar la oferta de devolver en mi próxima entrega",
+                "tags": [
+                    "Cylinders · Recovery (v2)"
+                ]
+            }
+        },
+        "/api/v2/cylinder-recovery/driver/pickups": {
+            "get": {
+                "description": "Los retiros que el cliente aceptó, en pedidos que tiene asignados el chofer: aceptados, en camino o entregados hace menos de 24 horas.",
+                "operationId": "CylinderRecoveryDriverController_mios",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/DriverPickupDto"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: delivery"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Envases a retirar en mis pedidos",
+                "tags": [
+                    "Cylinders · Recovery (v2)"
+                ]
+            }
+        },
+        "/api/v2/cylinder-recovery/driver/pickups/{noticeId}/confirm": {
+            "post": {
+                "description": "Registra el retorno del envase (`with_customer` → `empty_returned`, en su historial) y cierra el caso: el depósito queda liberado. Se puede confirmar con el pedido aceptado, en camino o ya entregado hasta 24 horas después de la entrega; pasado ese plazo (o con el pedido cancelado) el retiro se da por fallido y el caso sigue su escalón.",
+                "operationId": "CylinderRecoveryDriverController_confirmar",
+                "parameters": [
+                    {
+                        "name": "noticeId",
+                        "required": true,
+                        "in": "path",
+                        "description": "Notice UUID (`noticeId` del retiro)",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "caseId": {
+                                            "type": "string",
+                                            "format": "uuid"
+                                        },
+                                        "status": {
+                                            "type": "string",
+                                            "example": "returned"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "El pedido del retiro no está aceptado, en camino ni entregado hace menos de 24 horas"
+                    },
+                    "404": {
+                        "description": "Retiro inexistente o de un pedido ajeno"
+                    },
+                    "409": {
+                        "description": "El cliente no aceptó el retiro o el caso ya cerró"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Confirmar que retiré el envase",
+                "tags": [
+                    "Cylinders · Recovery (v2)"
+                ]
+            }
+        },
+        "/api/v2/cylinder-recovery/driver/pickups/{noticeId}/not-collected": {
+            "post": {
+                "description": "El retiro se descarta con el motivo y el caso vuelve a su escalón.",
+                "operationId": "CylinderRecoveryDriverController_noRetirado",
+                "parameters": [
+                    {
+                        "name": "noticeId",
+                        "required": true,
+                        "in": "path",
+                        "description": "Notice UUID (`noticeId` del retiro)",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PickupNotCollectedDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "caseId": {
+                                            "type": "string",
+                                            "format": "uuid"
+                                        },
+                                        "status": {
+                                            "type": "string",
+                                            "example": "open"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "El pedido del retiro no está aceptado, en camino ni entregado hace menos de 24 horas"
+                    },
+                    "404": {
+                        "description": "Retiro inexistente o de un pedido ajeno"
+                    },
+                    "409": {
+                        "description": "El cliente no aceptó el retiro o el caso ya cerró"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "No pude retirar el envase",
+                "tags": [
+                    "Cylinders · Recovery (v2)"
+                ]
+            }
+        },
+        "/api/v2/route-batches": {
+            "get": {
+                "description": "Los lotes de la distribuidora, del más reciente al más viejo, con sus paradas en orden de entrega, la oferta vigente y todos los choferes contactados. `counts` trae el total por estado: `forming`, `offered` (esperando al chofer), `assigned` (aceptado), `dissolved` (deshecho; `closeReason` dice por qué) y `completed`.",
+                "operationId": "RouteBatchController_lotes",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "maximum": 100,
+                            "default": 10,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 0,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 1,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "term",
+                        "required": false,
+                        "in": "query",
+                        "description": "Texto a buscar",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "forming",
+                                "offered",
+                                "assigned",
+                                "dissolved",
+                                "completed"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RouteBatchPageDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\")"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Lotes de recorrido",
+                "tags": [
+                    "Route batches (v2)"
+                ]
+            }
+        },
+        "/api/v2/route-batches/settings": {
+            "get": {
+                "description": "Los valores vigentes con el rango y el valor por omisión de cada uno. Los mismos de `GET /module-config/route_batching`.",
+                "operationId": "RouteBatchController_settings",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProcessConfigResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\")"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Parámetros de la agrupación de la distribuidora",
+                "tags": [
+                    "Route batches (v2)"
+                ]
+            },
+            "patch": {
+                "description": "Cambia sólo los que vienen; el resto conserva su valor. Rige desde la próxima pasada del proceso; las ofertas ya hechas conservan su vigencia.",
+                "operationId": "RouteBatchController_settingsPatch",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchRouteBatchSettingsDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProcessConfigResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Valor fuera de rango"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Cambiar parámetros de la agrupación",
+                "tags": [
+                    "Route batches (v2)"
+                ]
+            }
+        },
+        "/api/v2/route-batches/run": {
+            "post": {
+                "description": "Hace lo mismo que la pasada periódica, para esta distribuidora y sin esperar la frecuencia. Es idempotente: un pedido que ya está en un lote vivo no entra en otro. Con el módulo apagado (`enabled: 0`, el valor por omisión) responde 409.",
+                "operationId": "RouteBatchController_run",
+                "parameters": [],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RouteBatchRunResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\")"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "409": {
+                        "description": "La agrupación por recorrido está apagada para la distribuidora"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Armar lotes ahora",
+                "tags": [
+                    "Route batches (v2)"
+                ]
+            }
+        },
+        "/api/v2/route-batches/{id}": {
+            "get": {
+                "operationId": "RouteBatchController_uno",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Batch UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RouteBatchResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Un lote de recorrido con sus paradas y ofertas",
+                "tags": [
+                    "Route batches (v2)"
+                ]
+            }
+        },
+        "/api/v2/route-batches/{id}/dissolve": {
+            "post": {
+                "description": "Cierra la oferta vigente, saca las paradas y devuelve los pedidos al despacho individual. Sólo un lote que todavía no tiene chofer (`forming` u `offered`).",
+                "operationId": "RouteBatchController_deshacer",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Batch UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RouteBatchResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "El lote ya tiene chofer o está cerrado"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Deshacer un lote",
+                "tags": [
+                    "Route batches (v2)"
+                ]
+            }
+        },
+        "/api/v2/driver/route-batches": {
+            "get": {
+                "description": "Primero el que espera mi respuesta (`offer.status: pending`, con su `offer.expiresAt`) y después los que tomé o rechacé, del más reciente al más viejo. Cada lote trae las paradas en orden de entrega, con dirección, franja, llegada estimada, kilos y renglones, y el peso total.",
+                "operationId": "DriverRouteBatchesController_list",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "maximum": 100,
+                            "default": 10,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 0,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 1,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "term",
+                        "required": false,
+                        "in": "query",
+                        "description": "Texto a buscar",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DriverRouteBatchPageDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: delivery"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Mis lotes de recorrido",
+                "tags": [
+                    "Driver · Route batches (v2)"
+                ]
+            }
+        },
+        "/api/v2/driver/route-batches/{id}": {
+            "get": {
+                "operationId": "DriverRouteBatchesController_one",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Batch UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DriverRouteBatchResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: delivery"
+                    },
+                    "404": {
+                        "description": "No existe o nunca se me ofreció"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Uno de mis lotes de recorrido",
+                "tags": [
+                    "Driver · Route batches (v2)"
+                ]
+            }
+        },
+        "/api/v2/driver/route-batches/{id}/accept": {
+            "post": {
+                "description": "Asigna al chofer todos los pedidos del lote, en el orden de las paradas, por el mismo camino que una asignación individual. Un pedido que se canceló o se asignó aparte mientras tanto sale del lote y no frena a los demás. Repetir la aceptación de un lote ya aceptado devuelve el mismo resultado.",
+                "operationId": "DriverRouteBatchesController_accept",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Batch UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DriverRouteBatchDecisionDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: delivery"
+                    },
+                    "404": {
+                        "description": "El lote no existe o es de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "La oferta no está vigente (venció o la tiene otro chofer) o los pedidos ya no están disponibles"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Aceptar el recorrido",
+                "tags": [
+                    "Driver · Route batches (v2)"
+                ]
+            }
+        },
+        "/api/v2/driver/route-batches/{id}/reject": {
+            "post": {
+                "description": "Cierra mi oferta y el lote pasa de inmediato al siguiente chofer cercano que no haya sido contactado. Si no queda ninguno, el lote se deshace y los pedidos vuelven al despacho individual.",
+                "operationId": "DriverRouteBatchesController_reject",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Batch UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DriverRouteBatchDecisionDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: delivery"
+                    },
+                    "404": {
+                        "description": "El lote no existe o es de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "La oferta no está vigente"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Rechazar el recorrido",
+                "tags": [
+                    "Driver · Route batches (v2)"
+                ]
+            }
+        },
         "/api/v1/fleet/fuel-loads": {
             "post": {
                 "description": "Valida el importe contra litros × precio (±1 %), los litros contra el tanque (+5 %) y el kilometraje contra la última carga. Sube el kilometraje del vehículo y marca la carga como anómala si el consumo del tramo se aparta más de un 25 % del habitual (avisa a los administradores).",
@@ -31177,737 +32446,6 @@
                 "summary": "Confirmar la importación",
                 "tags": [
                     "Importación masiva"
-                ]
-            }
-        },
-        "/api/v2/cylinder-recovery/cases": {
-            "get": {
-                "description": "Los casos con su estado y escalón (1 recordatorio, 2 aviso del depósito, 3 agotado), el cliente, el envase, el último aviso y la oferta de retiro vigente; más los totales por estado. `pending=true` deja los que esperan la decisión del administrador (escalados y perdidos).",
-                "operationId": "CylinderRecoveryAdminController_casos",
-                "parameters": [
-                    {
-                        "name": "limit",
-                        "required": false,
-                        "in": "query",
-                        "schema": {
-                            "maximum": 100,
-                            "default": 10,
-                            "type": "number"
-                        }
-                    },
-                    {
-                        "name": "offset",
-                        "required": false,
-                        "in": "query",
-                        "schema": {
-                            "default": 0,
-                            "type": "number"
-                        }
-                    },
-                    {
-                        "name": "page",
-                        "required": false,
-                        "in": "query",
-                        "schema": {
-                            "default": 1,
-                            "type": "number"
-                        }
-                    },
-                    {
-                        "name": "term",
-                        "required": false,
-                        "in": "query",
-                        "description": "Texto a buscar",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "status",
-                        "required": false,
-                        "in": "query",
-                        "schema": {
-                            "type": "string",
-                            "enum": [
-                                "open",
-                                "returned",
-                                "escalated",
-                                "deposit_charged",
-                                "written_off",
-                                "closed_no_charge",
-                                "lost"
-                            ]
-                        }
-                    },
-                    {
-                        "name": "step",
-                        "required": false,
-                        "in": "query",
-                        "description": "Escalón: 1 recordatorio, 2 aviso del depósito, 3 agotado",
-                        "schema": {
-                            "minimum": 1,
-                            "maximum": 3,
-                            "type": "number"
-                        }
-                    },
-                    {
-                        "name": "customerId",
-                        "required": false,
-                        "in": "query",
-                        "description": "user_id del cliente",
-                        "schema": {
-                            "format": "uuid",
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "cylinderId",
-                        "required": false,
-                        "in": "query",
-                        "schema": {
-                            "format": "uuid",
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "live",
-                        "required": false,
-                        "in": "query",
-                        "description": "Sólo los casos que siguen en pie (abiertos, escalados o perdidos)",
-                        "schema": {
-                            "type": "boolean"
-                        }
-                    },
-                    {
-                        "name": "pending",
-                        "required": false,
-                        "in": "query",
-                        "description": "Sólo los casos que esperan la decisión del administrador (escalados o perdidos)",
-                        "schema": {
-                            "type": "boolean"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/RecoveryCasePageDto"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\")"
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: admin, super_admin"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Casos de recupero de envases",
-                "tags": [
-                    "Cylinders · Recovery (v2)"
-                ]
-            }
-        },
-        "/api/v2/cylinder-recovery/cases/{id}": {
-            "get": {
-                "description": "El caso con el cliente, los avisos enviados, las ofertas de retiro, el historial completo de movimientos del envase, el importe en juego y la resolución si ya se decidió.",
-                "operationId": "CylinderRecoveryAdminController_detalle",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "required": true,
-                        "in": "path",
-                        "description": "Case UUID",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/RecoveryCaseDetailDto"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: admin, super_admin"
-                    },
-                    "404": {
-                        "description": "Caso no encontrado"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Legajo de un caso de recupero",
-                "tags": [
-                    "Cylinders · Recovery (v2)"
-                ]
-            }
-        },
-        "/api/v2/cylinder-recovery/cases/{id}/resolve": {
-            "post": {
-                "description": "Paso 11 del CU-108. `charge_deposit` registra el depósito a cobrar (el sistema no cobra: se cobra aparte, en el próximo pedido o en efectivo); `write_off` da el envase por perdido y lo saca del inventario (queda en su historial); `close_no_charge` cierra sin cargo. La nota es obligatoria y queda con quién decidió.",
-                "operationId": "CylinderRecoveryAdminController_resolver",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "required": true,
-                        "in": "path",
-                        "description": "Case UUID",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/ResolveRecoveryCaseDto"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/RecoveryCaseDetailDto"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Falta la nota o la decisión es inválida"
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: admin, super_admin"
-                    },
-                    "404": {
-                        "description": "Caso no encontrado"
-                    },
-                    "409": {
-                        "description": "El caso sigue en su secuencia de avisos o ya está cerrado"
-                    },
-                    "422": {
-                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Decidir un caso escalado o perdido",
-                "tags": [
-                    "Cylinders · Recovery (v2)"
-                ]
-            }
-        },
-        "/api/v2/cylinder-recovery/report": {
-            "get": {
-                "description": "Los envases perdidos (importe bajo el umbral: sólo se informan), los escalados que el administrador todavía no resolvió y los envases en poder de un cliente cuyo titular o entrega no se puede determinar (revisión manual), con los totales.",
-                "operationId": "CylinderRecoveryAdminController_reporte",
-                "parameters": [],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/RecoveryReportDto"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\")"
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: admin, super_admin"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Reporte de envases perdidos y casos sin resolver",
-                "tags": [
-                    "Cylinders · Recovery (v2)"
-                ]
-            }
-        },
-        "/api/v2/cylinder-recovery/settings": {
-            "get": {
-                "description": "Los valores vigentes con el rango y el valor por omisión de cada uno. Los mismos de `GET /module-config/cylinder_recovery`.",
-                "operationId": "CylinderRecoveryAdminController_settings",
-                "parameters": [],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ProcessConfigResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\")"
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: admin, super_admin"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Parámetros de la recuperación de envases",
-                "tags": [
-                    "Cylinders · Recovery (v2)"
-                ]
-            },
-            "patch": {
-                "description": "Cambia sólo los que vienen; el resto conserva su valor. Rige desde la próxima corrida.",
-                "operationId": "CylinderRecoveryAdminController_settingsPatch",
-                "parameters": [],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/PatchRecoverySettingsDto"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ProcessConfigResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Valor fuera de rango"
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: admin, super_admin"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Cambiar parámetros de la recuperación de envases",
-                "tags": [
-                    "Cylinders · Recovery (v2)"
-                ]
-            }
-        },
-        "/api/v2/cylinder-recovery/run": {
-            "post": {
-                "description": "Hace lo mismo que la corrida diaria, para esta distribuidora y sin esperar la hora, y sólo con el recupero encendido (`enabled` = 1). Un cliente recibe a lo sumo un push por corrida. Es idempotente: un envase con caso vivo no abre otro y un escalón no repite su aviso.",
-                "operationId": "CylinderRecoveryAdminController_correr",
-                "parameters": [],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/RecoveryRunResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\")"
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: admin, super_admin"
-                    },
-                    "409": {
-                        "description": "El recupero está apagado para la distribuidora (parámetro `enabled` en 0, el valor por omisión): no se abre ningún caso ni se manda ningún aviso"
-                    },
-                    "422": {
-                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Correr la recuperación ahora",
-                "tags": [
-                    "Cylinders · Recovery (v2)"
-                ]
-            }
-        },
-        "/api/v2/cylinder-recovery/mine": {
-            "get": {
-                "description": "Los casos abiertos o escalados del cliente, con el depósito comprometido, el vencimiento del escalón y la oferta de retiro vigente (`pickup`: pendiente de respuesta o aceptada).",
-                "operationId": "CylinderRecoveryCustomerController_mios",
-                "parameters": [],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/RecoveryCaseDto"
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: customer"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Mis envases pendientes de devolver",
-                "tags": [
-                    "Cylinders · Recovery (v2)"
-                ]
-            }
-        },
-        "/api/v2/cylinder-recovery/mine/{id}/pickup/accept": {
-            "post": {
-                "description": "El retiro queda asociado al pedido de la oferta: el chofer lo ve en su recorrido y el caso espera la confirmación del retorno.",
-                "operationId": "CylinderRecoveryCustomerController_aceptar",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "required": true,
-                        "in": "path",
-                        "description": "Case UUID",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/RecoveryCaseDto"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: customer"
-                    },
-                    "404": {
-                        "description": "Caso no encontrado o de otro cliente"
-                    },
-                    "409": {
-                        "description": "Sin oferta vigente, la oferta venció o el pedido ya no admite el retiro"
-                    },
-                    "422": {
-                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Aceptar devolver el envase en mi próxima entrega",
-                "tags": [
-                    "Cylinders · Recovery (v2)"
-                ]
-            }
-        },
-        "/api/v2/cylinder-recovery/mine/{id}/pickup/decline": {
-            "post": {
-                "description": "La oferta se descarta y el caso sigue en su escalón.",
-                "operationId": "CylinderRecoveryCustomerController_rechazar",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "required": true,
-                        "in": "path",
-                        "description": "Case UUID",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/RecoveryCaseDto"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: customer"
-                    },
-                    "404": {
-                        "description": "Caso no encontrado o de otro cliente"
-                    },
-                    "409": {
-                        "description": "Sin oferta vigente o la oferta venció"
-                    },
-                    "422": {
-                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Rechazar la oferta de devolver en mi próxima entrega",
-                "tags": [
-                    "Cylinders · Recovery (v2)"
-                ]
-            }
-        },
-        "/api/v2/cylinder-recovery/driver/pickups": {
-            "get": {
-                "description": "Los retiros que el cliente aceptó, en pedidos que tiene asignados el chofer: aceptados, en camino o entregados hace menos de 24 horas.",
-                "operationId": "CylinderRecoveryDriverController_mios",
-                "parameters": [],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/DriverPickupDto"
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: delivery"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Envases a retirar en mis pedidos",
-                "tags": [
-                    "Cylinders · Recovery (v2)"
-                ]
-            }
-        },
-        "/api/v2/cylinder-recovery/driver/pickups/{noticeId}/confirm": {
-            "post": {
-                "description": "Registra el retorno del envase (`with_customer` → `empty_returned`, en su historial) y cierra el caso: el depósito queda liberado. Se puede confirmar con el pedido aceptado, en camino o ya entregado hasta 24 horas después de la entrega; pasado ese plazo (o con el pedido cancelado) el retiro se da por fallido y el caso sigue su escalón.",
-                "operationId": "CylinderRecoveryDriverController_confirmar",
-                "parameters": [
-                    {
-                        "name": "noticeId",
-                        "required": true,
-                        "in": "path",
-                        "description": "Notice UUID (`noticeId` del retiro)",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "caseId": {
-                                            "type": "string",
-                                            "format": "uuid"
-                                        },
-                                        "status": {
-                                            "type": "string",
-                                            "example": "returned"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: delivery"
-                    },
-                    "404": {
-                        "description": "Retiro inexistente o de un pedido ajeno"
-                    },
-                    "409": {
-                        "description": "El cliente no aceptó el retiro o el caso ya cerró"
-                    },
-                    "422": {
-                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Confirmar que retiré el envase",
-                "tags": [
-                    "Cylinders · Recovery (v2)"
-                ]
-            }
-        },
-        "/api/v2/cylinder-recovery/driver/pickups/{noticeId}/not-collected": {
-            "post": {
-                "description": "El retiro se descarta con el motivo y el caso vuelve a su escalón.",
-                "operationId": "CylinderRecoveryDriverController_noRetirado",
-                "parameters": [
-                    {
-                        "name": "noticeId",
-                        "required": true,
-                        "in": "path",
-                        "description": "Notice UUID (`noticeId` del retiro)",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/PickupNotCollectedDto"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "caseId": {
-                                            "type": "string",
-                                            "format": "uuid"
-                                        },
-                                        "status": {
-                                            "type": "string",
-                                            "example": "open"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: delivery"
-                    },
-                    "404": {
-                        "description": "Retiro inexistente o de un pedido ajeno"
-                    },
-                    "409": {
-                        "description": "El cliente no aceptó el retiro o el caso ya cerró"
-                    },
-                    "422": {
-                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "No pude retirar el envase",
-                "tags": [
-                    "Cylinders · Recovery (v2)"
                 ]
             }
         }
@@ -47949,6 +48487,1305 @@
                     "reason"
                 ]
             },
+            "RecoveryCustomerDto": {
+                "type": "object",
+                "properties": {
+                    "userId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "fullName": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "email": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "phoneNumber": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "userId",
+                    "fullName",
+                    "email",
+                    "phoneNumber"
+                ]
+            },
+            "RecoveryCylinderDto": {
+                "type": "object",
+                "properties": {
+                    "cylinderId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "serial": {
+                        "type": "string",
+                        "example": "SN-001234"
+                    },
+                    "state": {
+                        "type": "string",
+                        "enum": [
+                            "in_depot",
+                            "filled",
+                            "dispatched",
+                            "with_customer",
+                            "empty_returned",
+                            "retired"
+                        ]
+                    },
+                    "product": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "10kg"
+                    }
+                },
+                "required": [
+                    "cylinderId",
+                    "serial",
+                    "state",
+                    "product"
+                ]
+            },
+            "RecoveryNoticeDto": {
+                "type": "object",
+                "properties": {
+                    "noticeId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "step": {
+                        "type": "number",
+                        "minimum": 1,
+                        "maximum": 3
+                    },
+                    "kind": {
+                        "type": "string",
+                        "enum": [
+                            "reminder",
+                            "pickup_offer",
+                            "deposit_warning"
+                        ]
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "pending",
+                            "accepted",
+                            "rejected",
+                            "expired"
+                        ],
+                        "nullable": true,
+                        "description": "Sólo en la oferta de retiro: pending, accepted, rejected o expired"
+                    },
+                    "orderId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true,
+                        "description": "Pedido en el que se ofrece el retiro (sólo en la oferta)"
+                    },
+                    "sentAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "expiresAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "respondedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "responseNote": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "noticeId",
+                    "step",
+                    "kind",
+                    "status",
+                    "orderId",
+                    "sentAt",
+                    "expiresAt",
+                    "respondedAt",
+                    "responseNote"
+                ]
+            },
+            "RecoveryPickupDto": {
+                "type": "object",
+                "properties": {
+                    "noticeId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "pending",
+                            "accepted",
+                            "rejected",
+                            "expired"
+                        ]
+                    },
+                    "orderId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "scheduledDate": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "2026-11-04",
+                        "description": "Día agendado de la entrega"
+                    },
+                    "orderStatus": {
+                        "type": "string",
+                        "enum": [
+                            "reserved",
+                            "pending",
+                            "accepted",
+                            "on_the_way",
+                            "delivered",
+                            "cancelled"
+                        ],
+                        "nullable": true
+                    },
+                    "expiresAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "noticeId",
+                    "status",
+                    "orderId",
+                    "scheduledDate",
+                    "orderStatus",
+                    "expiresAt"
+                ]
+            },
+            "RecoveryCaseDto": {
+                "type": "object",
+                "properties": {
+                    "caseId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "open",
+                            "returned",
+                            "escalated",
+                            "deposit_charged",
+                            "written_off",
+                            "closed_no_charge",
+                            "lost"
+                        ]
+                    },
+                    "step": {
+                        "type": "number",
+                        "minimum": 1,
+                        "maximum": 3,
+                        "description": "1 recordatorio, 2 aviso del depósito, 3 secuencia agotada"
+                    },
+                    "depositAmount": {
+                        "type": "number",
+                        "example": 25000
+                    },
+                    "deliveredAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "daysOut": {
+                        "type": "number",
+                        "description": "Días que el envase lleva en poder del cliente"
+                    },
+                    "stepDueAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Cuándo vence el escalón actual"
+                    },
+                    "openedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "exhaustedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "closedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "customer": {
+                        "$ref": "#/components/schemas/RecoveryCustomerDto"
+                    },
+                    "cylinder": {
+                        "$ref": "#/components/schemas/RecoveryCylinderDto"
+                    },
+                    "lastNotice": {
+                        "nullable": true,
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/RecoveryNoticeDto"
+                            }
+                        ]
+                    },
+                    "pickup": {
+                        "nullable": true,
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/RecoveryPickupDto"
+                            }
+                        ]
+                    }
+                },
+                "required": [
+                    "caseId",
+                    "status",
+                    "step",
+                    "depositAmount",
+                    "deliveredAt",
+                    "daysOut",
+                    "stepDueAt",
+                    "openedAt",
+                    "exhaustedAt",
+                    "closedAt",
+                    "customer",
+                    "cylinder",
+                    "lastNotice",
+                    "pickup"
+                ]
+            },
+            "RecoveryCasePageDto": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RecoveryCaseDto"
+                        }
+                    },
+                    "total": {
+                        "type": "number"
+                    },
+                    "counts": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "number"
+                        },
+                        "example": {
+                            "open": 3,
+                            "escalated": 1,
+                            "lost": 2
+                        },
+                        "description": "Casos de la distribuidora por estado (sin filtros)"
+                    }
+                },
+                "required": [
+                    "data",
+                    "total",
+                    "counts"
+                ]
+            },
+            "RecoveryMovementDto": {
+                "type": "object",
+                "properties": {
+                    "movementId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "fromState": {
+                        "type": "string",
+                        "enum": [
+                            "in_depot",
+                            "filled",
+                            "dispatched",
+                            "with_customer",
+                            "empty_returned",
+                            "retired"
+                        ],
+                        "nullable": true
+                    },
+                    "toState": {
+                        "type": "string",
+                        "enum": [
+                            "in_depot",
+                            "filled",
+                            "dispatched",
+                            "with_customer",
+                            "empty_returned",
+                            "retired"
+                        ]
+                    },
+                    "orderId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "note": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "movementId",
+                    "fromState",
+                    "toState",
+                    "orderId",
+                    "note",
+                    "createdAt"
+                ]
+            },
+            "RecoveryResolutionDto": {
+                "type": "object",
+                "properties": {
+                    "resolvedByUserId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "resolvedByName": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "note": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "resolvedByUserId",
+                    "resolvedByName",
+                    "note"
+                ]
+            },
+            "RecoveryCaseDetailDto": {
+                "type": "object",
+                "properties": {
+                    "caseId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "open",
+                            "returned",
+                            "escalated",
+                            "deposit_charged",
+                            "written_off",
+                            "closed_no_charge",
+                            "lost"
+                        ]
+                    },
+                    "step": {
+                        "type": "number",
+                        "minimum": 1,
+                        "maximum": 3,
+                        "description": "1 recordatorio, 2 aviso del depósito, 3 secuencia agotada"
+                    },
+                    "depositAmount": {
+                        "type": "number",
+                        "example": 25000
+                    },
+                    "deliveredAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "daysOut": {
+                        "type": "number",
+                        "description": "Días que el envase lleva en poder del cliente"
+                    },
+                    "stepDueAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Cuándo vence el escalón actual"
+                    },
+                    "openedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "exhaustedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "closedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "customer": {
+                        "$ref": "#/components/schemas/RecoveryCustomerDto"
+                    },
+                    "cylinder": {
+                        "$ref": "#/components/schemas/RecoveryCylinderDto"
+                    },
+                    "lastNotice": {
+                        "nullable": true,
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/RecoveryNoticeDto"
+                            }
+                        ]
+                    },
+                    "pickup": {
+                        "nullable": true,
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/RecoveryPickupDto"
+                            }
+                        ]
+                    },
+                    "notices": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RecoveryNoticeDto"
+                        }
+                    },
+                    "history": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RecoveryMovementDto"
+                        }
+                    },
+                    "resolution": {
+                        "nullable": true,
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/RecoveryResolutionDto"
+                            }
+                        ]
+                    }
+                },
+                "required": [
+                    "caseId",
+                    "status",
+                    "step",
+                    "depositAmount",
+                    "deliveredAt",
+                    "daysOut",
+                    "stepDueAt",
+                    "openedAt",
+                    "exhaustedAt",
+                    "closedAt",
+                    "customer",
+                    "cylinder",
+                    "lastNotice",
+                    "pickup",
+                    "notices",
+                    "history"
+                ]
+            },
+            "ResolveRecoveryCaseDto": {
+                "type": "object",
+                "properties": {
+                    "decision": {
+                        "type": "string",
+                        "enum": [
+                            "charge_deposit",
+                            "write_off",
+                            "close_no_charge"
+                        ]
+                    },
+                    "note": {
+                        "type": "string",
+                        "maxLength": 500,
+                        "example": "El cliente reconoce que lo extravió; se cobra con el próximo pedido",
+                        "minLength": 10,
+                        "description": "Obligatoria, de 10 a 500 caracteres: queda en el caso junto con quién decidió"
+                    }
+                },
+                "required": [
+                    "decision",
+                    "note"
+                ]
+            },
+            "RecoveryManualReviewDto": {
+                "type": "object",
+                "properties": {
+                    "cylinderId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "serial": {
+                        "type": "string"
+                    },
+                    "reason": {
+                        "type": "string",
+                        "enum": [
+                            "sin_cliente",
+                            "sin_entrega_registrada"
+                        ]
+                    }
+                },
+                "required": [
+                    "cylinderId",
+                    "serial",
+                    "reason"
+                ]
+            },
+            "RecoveryReportTotalsDto": {
+                "type": "object",
+                "properties": {
+                    "lostCount": {
+                        "type": "number"
+                    },
+                    "lostAmount": {
+                        "type": "number"
+                    },
+                    "escalatedCount": {
+                        "type": "number"
+                    },
+                    "escalatedAmount": {
+                        "type": "number"
+                    },
+                    "manualReviewCount": {
+                        "type": "number"
+                    }
+                },
+                "required": [
+                    "lostCount",
+                    "lostAmount",
+                    "escalatedCount",
+                    "escalatedAmount",
+                    "manualReviewCount"
+                ]
+            },
+            "RecoveryReportDto": {
+                "type": "object",
+                "properties": {
+                    "lost": {
+                        "description": "Envases perdidos: importe bajo el umbral, sólo informados",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RecoveryCaseDto"
+                        }
+                    },
+                    "escalated": {
+                        "description": "Escalados que el administrador todavía no resolvió",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RecoveryCaseDto"
+                        }
+                    },
+                    "manualReview": {
+                        "description": "Envases con cliente cuyo titular o entrega no se puede determinar",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RecoveryManualReviewDto"
+                        }
+                    },
+                    "totals": {
+                        "$ref": "#/components/schemas/RecoveryReportTotalsDto"
+                    }
+                },
+                "required": [
+                    "lost",
+                    "escalated",
+                    "manualReview",
+                    "totals"
+                ]
+            },
+            "PatchRecoverySettingsDto": {
+                "type": "object",
+                "properties": {
+                    "toleranceDays": {
+                        "type": "number",
+                        "description": "Días desde la entrega para considerar retenido el envase (1 a 365)"
+                    },
+                    "escalationStepDays": {
+                        "type": "number",
+                        "description": "Duración de cada escalón, en días (1 a 90)"
+                    },
+                    "escalationAmountThreshold": {
+                        "type": "number",
+                        "description": "Depósito desde el cual el caso escala (0 a 100000000)"
+                    },
+                    "pickupOfferTtlHours": {
+                        "type": "number",
+                        "description": "Vigencia de la oferta de retiro, en horas (1 a 720)"
+                    },
+                    "pickupWindowDays": {
+                        "type": "number",
+                        "description": "Ventana, en días, en que una entrega programada sirve para el retiro (1 a 60)"
+                    },
+                    "runHour": {
+                        "type": "number",
+                        "description": "Hora de ejecución diaria (0 a 23, hora de Argentina)"
+                    },
+                    "enabled": {
+                        "type": "number",
+                        "description": "Encender el recupero (1) o apagarlo (0). Apagado por omisión: no abre casos ni manda avisos, y «correr ahora» responde 409"
+                    }
+                }
+            },
+            "RecoveryRunResponseDto": {
+                "type": "object",
+                "properties": {
+                    "opened": {
+                        "type": "number"
+                    },
+                    "notices": {
+                        "type": "number"
+                    },
+                    "offers": {
+                        "type": "number"
+                    },
+                    "escalated": {
+                        "type": "number"
+                    },
+                    "lost": {
+                        "type": "number"
+                    },
+                    "closedByReturn": {
+                        "type": "number"
+                    },
+                    "manualReview": {
+                        "type": "number"
+                    }
+                },
+                "required": [
+                    "opened",
+                    "notices",
+                    "offers",
+                    "escalated",
+                    "lost",
+                    "closedByReturn",
+                    "manualReview"
+                ]
+            },
+            "DriverPickupDto": {
+                "type": "object",
+                "properties": {
+                    "noticeId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "caseId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "orderId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "orderStatus": {
+                        "type": "string",
+                        "enum": [
+                            "reserved",
+                            "pending",
+                            "accepted",
+                            "on_the_way",
+                            "delivered",
+                            "cancelled"
+                        ]
+                    },
+                    "scheduledDate": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "2026-11-04"
+                    },
+                    "serial": {
+                        "type": "string"
+                    },
+                    "product": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "10kg"
+                    },
+                    "depositAmount": {
+                        "type": "number",
+                        "example": 25000
+                    },
+                    "customerName": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "customerPhone": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "noticeId",
+                    "caseId",
+                    "orderId",
+                    "orderStatus",
+                    "scheduledDate",
+                    "serial",
+                    "product",
+                    "depositAmount",
+                    "customerName",
+                    "customerPhone"
+                ]
+            },
+            "PickupNotCollectedDto": {
+                "type": "object",
+                "properties": {
+                    "reason": {
+                        "type": "string",
+                        "maxLength": 500,
+                        "example": "El cliente no estaba en casa"
+                    }
+                },
+                "required": [
+                    "reason"
+                ]
+            },
+            "RouteBatchDriverDto": {
+                "type": "object",
+                "properties": {
+                    "deliveryId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "userId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "deliveryId",
+                    "userId",
+                    "name"
+                ]
+            },
+            "RouteBatchOfferResponseDto": {
+                "type": "object",
+                "properties": {
+                    "offerId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "deliveryId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "driverName": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "pending",
+                            "accepted",
+                            "rejected",
+                            "expired"
+                        ]
+                    },
+                    "expiresAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "respondedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "offerId",
+                    "deliveryId",
+                    "driverName",
+                    "status",
+                    "expiresAt",
+                    "respondedAt"
+                ]
+            },
+            "RouteBatchSlotDto": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "example": "Mañana"
+                    },
+                    "startTime": {
+                        "type": "string",
+                        "example": "08:00:00"
+                    },
+                    "endTime": {
+                        "type": "string",
+                        "example": "12:00:00"
+                    }
+                },
+                "required": [
+                    "name",
+                    "startTime",
+                    "endTime"
+                ]
+            },
+            "RouteBatchStopAddressDto": {
+                "type": "object",
+                "properties": {
+                    "street": {
+                        "type": "string",
+                        "example": "Av. Corrientes 1234"
+                    },
+                    "city": {
+                        "type": "string",
+                        "example": "Posadas"
+                    },
+                    "floor": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "apartment": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "formattedAddress": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "latitude": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": -27.3671
+                    },
+                    "longitude": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": -55.8961
+                    }
+                },
+                "required": [
+                    "street",
+                    "city",
+                    "floor",
+                    "apartment",
+                    "formattedAddress",
+                    "latitude",
+                    "longitude"
+                ]
+            },
+            "RouteBatchStopItemDto": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "example": "Garrafa 10 kg"
+                    },
+                    "quantity": {
+                        "type": "number",
+                        "example": 2
+                    }
+                },
+                "required": [
+                    "name",
+                    "quantity"
+                ]
+            },
+            "RouteBatchStopResponseDto": {
+                "type": "object",
+                "properties": {
+                    "orderId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "sequence": {
+                        "type": "number",
+                        "example": 1,
+                        "description": "Orden de entrega (1 = primera)"
+                    },
+                    "active": {
+                        "type": "boolean",
+                        "description": "Sigue en el lote. Es `false` si el pedido salió (se canceló o se asignó aparte) o el lote ya se cerró."
+                    },
+                    "etaAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "Llegada estimada (velocidad media y tiempo de servicio fijos; si llega antes de la franja, espera a que abra)"
+                    },
+                    "legDistanceKm": {
+                        "type": "number",
+                        "description": "Km desde la parada anterior (la primera: 0)"
+                    },
+                    "weightKg": {
+                        "type": "number",
+                        "example": 25
+                    },
+                    "scheduledDate": {
+                        "type": "string",
+                        "example": "2026-11-03",
+                        "description": "Fecha agendada"
+                    },
+                    "slot": {
+                        "nullable": true,
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/RouteBatchSlotDto"
+                            }
+                        ]
+                    },
+                    "address": {
+                        "$ref": "#/components/schemas/RouteBatchStopAddressDto"
+                    },
+                    "customerName": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "paymentMethod": {
+                        "type": "string",
+                        "example": "cash"
+                    },
+                    "totalAmount": {
+                        "type": "number",
+                        "example": 12000
+                    },
+                    "orderStatus": {
+                        "type": "string",
+                        "example": "pending",
+                        "description": "Estado actual del pedido"
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RouteBatchStopItemDto"
+                        }
+                    }
+                },
+                "required": [
+                    "orderId",
+                    "sequence",
+                    "active",
+                    "etaAt",
+                    "legDistanceKm",
+                    "weightKg",
+                    "scheduledDate",
+                    "slot",
+                    "address",
+                    "customerName",
+                    "paymentMethod",
+                    "totalAmount",
+                    "orderStatus",
+                    "items"
+                ]
+            },
+            "RouteBatchResponseDto": {
+                "type": "object",
+                "properties": {
+                    "batchId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "forming",
+                            "offered",
+                            "assigned",
+                            "dissolved",
+                            "completed"
+                        ]
+                    },
+                    "totalWeightKg": {
+                        "type": "number",
+                        "example": 75.5
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "closedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "closeReason": {
+                        "type": "string",
+                        "enum": [
+                            "exhausted",
+                            "orders_unavailable",
+                            "admin"
+                        ],
+                        "nullable": true
+                    },
+                    "driver": {
+                        "nullable": true,
+                        "description": "El chofer que aceptó el lote",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/RouteBatchDriverDto"
+                            }
+                        ]
+                    },
+                    "currentOffer": {
+                        "nullable": true,
+                        "description": "La oferta vigente (pendiente), si hay",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/RouteBatchOfferResponseDto"
+                            }
+                        ]
+                    },
+                    "offers": {
+                        "description": "Todos los choferes contactados, del primero al último",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RouteBatchOfferResponseDto"
+                        }
+                    },
+                    "stops": {
+                        "description": "Paradas en orden de entrega",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RouteBatchStopResponseDto"
+                        }
+                    }
+                },
+                "required": [
+                    "batchId",
+                    "status",
+                    "totalWeightKg",
+                    "createdAt",
+                    "closedAt",
+                    "closeReason",
+                    "driver",
+                    "currentOffer",
+                    "offers",
+                    "stops"
+                ]
+            },
+            "RouteBatchPageDto": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RouteBatchResponseDto"
+                        }
+                    },
+                    "total": {
+                        "type": "number"
+                    },
+                    "counts": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "number"
+                        },
+                        "description": "Cantidad de lotes por estado (forming, offered, assigned, dissolved, completed), sin filtros",
+                        "example": {
+                            "offered": 1,
+                            "assigned": 2
+                        }
+                    }
+                },
+                "required": [
+                    "data",
+                    "total",
+                    "counts"
+                ]
+            },
+            "PatchRouteBatchSettingsDto": {
+                "type": "object",
+                "properties": {
+                    "maxBatchSize": {
+                        "type": "number",
+                        "description": "Pedidos máximos por lote (2 a 20)",
+                        "example": 4
+                    },
+                    "groupingRadiusKm": {
+                        "type": "number",
+                        "description": "Radio de agrupación en km: distancia máxima entre paradas del mismo lote (0,5 a 50)",
+                        "example": 3
+                    },
+                    "slotToleranceMinutes": {
+                        "type": "number",
+                        "description": "Tolerancia de franja en minutos: cuánto pueden diferir las franjas de un lote (0 a 480)",
+                        "example": 60
+                    },
+                    "offerTtlSeconds": {
+                        "type": "number",
+                        "description": "Vigencia de la oferta del lote, en segundos (10 a 600)",
+                        "example": 60
+                    },
+                    "evaluationFrequencyMinutes": {
+                        "type": "number",
+                        "description": "Cada cuántos minutos se arman lotes (1 a 1440)",
+                        "example": 15
+                    },
+                    "enabled": {
+                        "type": "number",
+                        "description": "Interruptor del módulo: 1 lo enciende, 0 lo apaga (viene apagado)",
+                        "example": 0
+                    },
+                    "batchingHoldMinutes": {
+                        "type": "number",
+                        "description": "Con el módulo encendido, minutos antes del inicio de la franja en que el despacho individual recién ofrece un pedido programado; hasta entonces es candidato a un lote (0 a 720; 0: no espera)",
+                        "example": 60
+                    }
+                }
+            },
+            "RouteBatchRunResponseDto": {
+                "type": "object",
+                "properties": {
+                    "candidates": {
+                        "type": "number",
+                        "description": "Pedidos programados que podían agruparse"
+                    },
+                    "batches": {
+                        "type": "number",
+                        "description": "Lotes armados y ofrecidos en esta corrida"
+                    },
+                    "orders": {
+                        "type": "number",
+                        "description": "Pedidos que quedaron en esos lotes"
+                    }
+                },
+                "required": [
+                    "candidates",
+                    "batches",
+                    "orders"
+                ]
+            },
+            "DriverRouteBatchOfferDto": {
+                "type": "object",
+                "properties": {
+                    "offerId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "pending",
+                            "accepted",
+                            "rejected",
+                            "expired"
+                        ]
+                    },
+                    "expiresAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "respondedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "offerId",
+                    "status",
+                    "expiresAt",
+                    "respondedAt"
+                ]
+            },
+            "DriverRouteBatchResponseDto": {
+                "type": "object",
+                "properties": {
+                    "batchId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "forming",
+                            "offered",
+                            "assigned",
+                            "dissolved",
+                            "completed"
+                        ]
+                    },
+                    "totalWeightKg": {
+                        "type": "number",
+                        "example": 75.5
+                    },
+                    "stopCount": {
+                        "type": "number",
+                        "example": 3
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "offer": {
+                        "nullable": true,
+                        "description": "Mi oferta de este lote (la última)",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/DriverRouteBatchOfferDto"
+                            }
+                        ]
+                    },
+                    "stops": {
+                        "description": "Paradas en orden de entrega",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RouteBatchStopResponseDto"
+                        }
+                    }
+                },
+                "required": [
+                    "batchId",
+                    "status",
+                    "totalWeightKg",
+                    "stopCount",
+                    "createdAt",
+                    "offer",
+                    "stops"
+                ]
+            },
+            "DriverRouteBatchPageDto": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DriverRouteBatchResponseDto"
+                        }
+                    },
+                    "total": {
+                        "type": "number"
+                    }
+                },
+                "required": [
+                    "data",
+                    "total"
+                ]
+            },
+            "DriverRouteBatchDecisionDto": {
+                "type": "object",
+                "properties": {
+                    "batchId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "accepted": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "assignedOrders": {
+                        "type": "number",
+                        "description": "Pedidos que quedaron asignados al chofer (al aceptar). Un pedido que se canceló o se asignó aparte mientras tanto no cuenta."
+                    }
+                },
+                "required": [
+                    "batchId",
+                    "accepted",
+                    "assignedOrders"
+                ]
+            },
             "CreateFuelLoadDto": {
                 "type": "object",
                 "properties": {
@@ -55639,764 +57476,6 @@
                     "resumen",
                     "confirmadaEn",
                     "yaConfirmada"
-                ]
-            },
-            "RecoveryCustomerDto": {
-                "type": "object",
-                "properties": {
-                    "userId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "fullName": {
-                        "type": "string",
-                        "nullable": true
-                    },
-                    "email": {
-                        "type": "string",
-                        "nullable": true
-                    },
-                    "phoneNumber": {
-                        "type": "string",
-                        "nullable": true
-                    }
-                },
-                "required": [
-                    "userId",
-                    "fullName",
-                    "email",
-                    "phoneNumber"
-                ]
-            },
-            "RecoveryCylinderDto": {
-                "type": "object",
-                "properties": {
-                    "cylinderId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "serial": {
-                        "type": "string",
-                        "example": "SN-001234"
-                    },
-                    "state": {
-                        "type": "string",
-                        "enum": [
-                            "in_depot",
-                            "filled",
-                            "dispatched",
-                            "with_customer",
-                            "empty_returned",
-                            "retired"
-                        ]
-                    },
-                    "product": {
-                        "type": "string",
-                        "nullable": true,
-                        "example": "10kg"
-                    }
-                },
-                "required": [
-                    "cylinderId",
-                    "serial",
-                    "state",
-                    "product"
-                ]
-            },
-            "RecoveryNoticeDto": {
-                "type": "object",
-                "properties": {
-                    "noticeId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "step": {
-                        "type": "number",
-                        "minimum": 1,
-                        "maximum": 3
-                    },
-                    "kind": {
-                        "type": "string",
-                        "enum": [
-                            "reminder",
-                            "pickup_offer",
-                            "deposit_warning"
-                        ]
-                    },
-                    "status": {
-                        "type": "string",
-                        "enum": [
-                            "pending",
-                            "accepted",
-                            "rejected",
-                            "expired"
-                        ],
-                        "nullable": true,
-                        "description": "Sólo en la oferta de retiro: pending, accepted, rejected o expired"
-                    },
-                    "orderId": {
-                        "type": "string",
-                        "format": "uuid",
-                        "nullable": true,
-                        "description": "Pedido en el que se ofrece el retiro (sólo en la oferta)"
-                    },
-                    "sentAt": {
-                        "type": "string",
-                        "format": "date-time"
-                    },
-                    "expiresAt": {
-                        "type": "string",
-                        "format": "date-time"
-                    },
-                    "respondedAt": {
-                        "type": "string",
-                        "format": "date-time",
-                        "nullable": true
-                    },
-                    "responseNote": {
-                        "type": "string",
-                        "nullable": true
-                    }
-                },
-                "required": [
-                    "noticeId",
-                    "step",
-                    "kind",
-                    "status",
-                    "orderId",
-                    "sentAt",
-                    "expiresAt",
-                    "respondedAt",
-                    "responseNote"
-                ]
-            },
-            "RecoveryPickupDto": {
-                "type": "object",
-                "properties": {
-                    "noticeId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "status": {
-                        "type": "string",
-                        "enum": [
-                            "pending",
-                            "accepted",
-                            "rejected",
-                            "expired"
-                        ]
-                    },
-                    "orderId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "scheduledDate": {
-                        "type": "string",
-                        "nullable": true,
-                        "example": "2026-11-04",
-                        "description": "Día agendado de la entrega"
-                    },
-                    "orderStatus": {
-                        "type": "string",
-                        "enum": [
-                            "reserved",
-                            "pending",
-                            "accepted",
-                            "on_the_way",
-                            "delivered",
-                            "cancelled"
-                        ],
-                        "nullable": true
-                    },
-                    "expiresAt": {
-                        "type": "string",
-                        "format": "date-time"
-                    }
-                },
-                "required": [
-                    "noticeId",
-                    "status",
-                    "orderId",
-                    "scheduledDate",
-                    "orderStatus",
-                    "expiresAt"
-                ]
-            },
-            "RecoveryCaseDto": {
-                "type": "object",
-                "properties": {
-                    "caseId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "status": {
-                        "type": "string",
-                        "enum": [
-                            "open",
-                            "returned",
-                            "escalated",
-                            "deposit_charged",
-                            "written_off",
-                            "closed_no_charge",
-                            "lost"
-                        ]
-                    },
-                    "step": {
-                        "type": "number",
-                        "minimum": 1,
-                        "maximum": 3,
-                        "description": "1 recordatorio, 2 aviso del depósito, 3 secuencia agotada"
-                    },
-                    "depositAmount": {
-                        "type": "number",
-                        "example": 25000
-                    },
-                    "deliveredAt": {
-                        "type": "string",
-                        "format": "date-time"
-                    },
-                    "daysOut": {
-                        "type": "number",
-                        "description": "Días que el envase lleva en poder del cliente"
-                    },
-                    "stepDueAt": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "Cuándo vence el escalón actual"
-                    },
-                    "openedAt": {
-                        "type": "string",
-                        "format": "date-time"
-                    },
-                    "exhaustedAt": {
-                        "type": "string",
-                        "format": "date-time",
-                        "nullable": true
-                    },
-                    "closedAt": {
-                        "type": "string",
-                        "format": "date-time",
-                        "nullable": true
-                    },
-                    "customer": {
-                        "$ref": "#/components/schemas/RecoveryCustomerDto"
-                    },
-                    "cylinder": {
-                        "$ref": "#/components/schemas/RecoveryCylinderDto"
-                    },
-                    "lastNotice": {
-                        "nullable": true,
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/RecoveryNoticeDto"
-                            }
-                        ]
-                    },
-                    "pickup": {
-                        "nullable": true,
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/RecoveryPickupDto"
-                            }
-                        ]
-                    }
-                },
-                "required": [
-                    "caseId",
-                    "status",
-                    "step",
-                    "depositAmount",
-                    "deliveredAt",
-                    "daysOut",
-                    "stepDueAt",
-                    "openedAt",
-                    "exhaustedAt",
-                    "closedAt",
-                    "customer",
-                    "cylinder",
-                    "lastNotice",
-                    "pickup"
-                ]
-            },
-            "RecoveryCasePageDto": {
-                "type": "object",
-                "properties": {
-                    "data": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/RecoveryCaseDto"
-                        }
-                    },
-                    "total": {
-                        "type": "number"
-                    },
-                    "counts": {
-                        "type": "object",
-                        "additionalProperties": {
-                            "type": "number"
-                        },
-                        "example": {
-                            "open": 3,
-                            "escalated": 1,
-                            "lost": 2
-                        },
-                        "description": "Casos de la distribuidora por estado (sin filtros)"
-                    }
-                },
-                "required": [
-                    "data",
-                    "total",
-                    "counts"
-                ]
-            },
-            "RecoveryMovementDto": {
-                "type": "object",
-                "properties": {
-                    "movementId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "fromState": {
-                        "type": "string",
-                        "enum": [
-                            "in_depot",
-                            "filled",
-                            "dispatched",
-                            "with_customer",
-                            "empty_returned",
-                            "retired"
-                        ],
-                        "nullable": true
-                    },
-                    "toState": {
-                        "type": "string",
-                        "enum": [
-                            "in_depot",
-                            "filled",
-                            "dispatched",
-                            "with_customer",
-                            "empty_returned",
-                            "retired"
-                        ]
-                    },
-                    "orderId": {
-                        "type": "string",
-                        "format": "uuid",
-                        "nullable": true
-                    },
-                    "note": {
-                        "type": "string",
-                        "nullable": true
-                    },
-                    "createdAt": {
-                        "type": "string",
-                        "format": "date-time"
-                    }
-                },
-                "required": [
-                    "movementId",
-                    "fromState",
-                    "toState",
-                    "orderId",
-                    "note",
-                    "createdAt"
-                ]
-            },
-            "RecoveryResolutionDto": {
-                "type": "object",
-                "properties": {
-                    "resolvedByUserId": {
-                        "type": "string",
-                        "format": "uuid",
-                        "nullable": true
-                    },
-                    "resolvedByName": {
-                        "type": "string",
-                        "nullable": true
-                    },
-                    "note": {
-                        "type": "string",
-                        "nullable": true
-                    }
-                },
-                "required": [
-                    "resolvedByUserId",
-                    "resolvedByName",
-                    "note"
-                ]
-            },
-            "RecoveryCaseDetailDto": {
-                "type": "object",
-                "properties": {
-                    "caseId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "status": {
-                        "type": "string",
-                        "enum": [
-                            "open",
-                            "returned",
-                            "escalated",
-                            "deposit_charged",
-                            "written_off",
-                            "closed_no_charge",
-                            "lost"
-                        ]
-                    },
-                    "step": {
-                        "type": "number",
-                        "minimum": 1,
-                        "maximum": 3,
-                        "description": "1 recordatorio, 2 aviso del depósito, 3 secuencia agotada"
-                    },
-                    "depositAmount": {
-                        "type": "number",
-                        "example": 25000
-                    },
-                    "deliveredAt": {
-                        "type": "string",
-                        "format": "date-time"
-                    },
-                    "daysOut": {
-                        "type": "number",
-                        "description": "Días que el envase lleva en poder del cliente"
-                    },
-                    "stepDueAt": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "Cuándo vence el escalón actual"
-                    },
-                    "openedAt": {
-                        "type": "string",
-                        "format": "date-time"
-                    },
-                    "exhaustedAt": {
-                        "type": "string",
-                        "format": "date-time",
-                        "nullable": true
-                    },
-                    "closedAt": {
-                        "type": "string",
-                        "format": "date-time",
-                        "nullable": true
-                    },
-                    "customer": {
-                        "$ref": "#/components/schemas/RecoveryCustomerDto"
-                    },
-                    "cylinder": {
-                        "$ref": "#/components/schemas/RecoveryCylinderDto"
-                    },
-                    "lastNotice": {
-                        "nullable": true,
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/RecoveryNoticeDto"
-                            }
-                        ]
-                    },
-                    "pickup": {
-                        "nullable": true,
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/RecoveryPickupDto"
-                            }
-                        ]
-                    },
-                    "notices": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/RecoveryNoticeDto"
-                        }
-                    },
-                    "history": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/RecoveryMovementDto"
-                        }
-                    },
-                    "resolution": {
-                        "nullable": true,
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/RecoveryResolutionDto"
-                            }
-                        ]
-                    }
-                },
-                "required": [
-                    "caseId",
-                    "status",
-                    "step",
-                    "depositAmount",
-                    "deliveredAt",
-                    "daysOut",
-                    "stepDueAt",
-                    "openedAt",
-                    "exhaustedAt",
-                    "closedAt",
-                    "customer",
-                    "cylinder",
-                    "lastNotice",
-                    "pickup",
-                    "notices",
-                    "history"
-                ]
-            },
-            "ResolveRecoveryCaseDto": {
-                "type": "object",
-                "properties": {
-                    "decision": {
-                        "type": "string",
-                        "enum": [
-                            "charge_deposit",
-                            "write_off",
-                            "close_no_charge"
-                        ]
-                    },
-                    "note": {
-                        "type": "string",
-                        "maxLength": 500,
-                        "example": "El cliente reconoce que lo extravió; se cobra con el próximo pedido",
-                        "minLength": 10,
-                        "description": "Obligatoria, de 10 a 500 caracteres: queda en el caso junto con quién decidió"
-                    }
-                },
-                "required": [
-                    "decision",
-                    "note"
-                ]
-            },
-            "RecoveryManualReviewDto": {
-                "type": "object",
-                "properties": {
-                    "cylinderId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "serial": {
-                        "type": "string"
-                    },
-                    "reason": {
-                        "type": "string",
-                        "enum": [
-                            "sin_cliente",
-                            "sin_entrega_registrada"
-                        ]
-                    }
-                },
-                "required": [
-                    "cylinderId",
-                    "serial",
-                    "reason"
-                ]
-            },
-            "RecoveryReportTotalsDto": {
-                "type": "object",
-                "properties": {
-                    "lostCount": {
-                        "type": "number"
-                    },
-                    "lostAmount": {
-                        "type": "number"
-                    },
-                    "escalatedCount": {
-                        "type": "number"
-                    },
-                    "escalatedAmount": {
-                        "type": "number"
-                    },
-                    "manualReviewCount": {
-                        "type": "number"
-                    }
-                },
-                "required": [
-                    "lostCount",
-                    "lostAmount",
-                    "escalatedCount",
-                    "escalatedAmount",
-                    "manualReviewCount"
-                ]
-            },
-            "RecoveryReportDto": {
-                "type": "object",
-                "properties": {
-                    "lost": {
-                        "description": "Envases perdidos: importe bajo el umbral, sólo informados",
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/RecoveryCaseDto"
-                        }
-                    },
-                    "escalated": {
-                        "description": "Escalados que el administrador todavía no resolvió",
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/RecoveryCaseDto"
-                        }
-                    },
-                    "manualReview": {
-                        "description": "Envases con cliente cuyo titular o entrega no se puede determinar",
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/RecoveryManualReviewDto"
-                        }
-                    },
-                    "totals": {
-                        "$ref": "#/components/schemas/RecoveryReportTotalsDto"
-                    }
-                },
-                "required": [
-                    "lost",
-                    "escalated",
-                    "manualReview",
-                    "totals"
-                ]
-            },
-            "PatchRecoverySettingsDto": {
-                "type": "object",
-                "properties": {
-                    "toleranceDays": {
-                        "type": "number",
-                        "description": "Días desde la entrega para considerar retenido el envase (1 a 365)"
-                    },
-                    "escalationStepDays": {
-                        "type": "number",
-                        "description": "Duración de cada escalón, en días (1 a 90)"
-                    },
-                    "escalationAmountThreshold": {
-                        "type": "number",
-                        "description": "Depósito desde el cual el caso escala (0 a 100000000)"
-                    },
-                    "pickupOfferTtlHours": {
-                        "type": "number",
-                        "description": "Vigencia de la oferta de retiro, en horas (1 a 720)"
-                    },
-                    "pickupWindowDays": {
-                        "type": "number",
-                        "description": "Ventana, en días, en que una entrega programada sirve para el retiro (1 a 60)"
-                    },
-                    "runHour": {
-                        "type": "number",
-                        "description": "Hora de ejecución diaria (0 a 23, hora de Argentina)"
-                    },
-                    "enabled": {
-                        "type": "number",
-                        "description": "Encender el recupero (1) o apagarlo (0). Apagado por omisión: no abre casos ni manda avisos, y «correr ahora» responde 409"
-                    }
-                }
-            },
-            "RecoveryRunResponseDto": {
-                "type": "object",
-                "properties": {
-                    "opened": {
-                        "type": "number"
-                    },
-                    "notices": {
-                        "type": "number"
-                    },
-                    "offers": {
-                        "type": "number"
-                    },
-                    "escalated": {
-                        "type": "number"
-                    },
-                    "lost": {
-                        "type": "number"
-                    },
-                    "closedByReturn": {
-                        "type": "number"
-                    },
-                    "manualReview": {
-                        "type": "number"
-                    }
-                },
-                "required": [
-                    "opened",
-                    "notices",
-                    "offers",
-                    "escalated",
-                    "lost",
-                    "closedByReturn",
-                    "manualReview"
-                ]
-            },
-            "DriverPickupDto": {
-                "type": "object",
-                "properties": {
-                    "noticeId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "caseId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "orderId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "orderStatus": {
-                        "type": "string",
-                        "enum": [
-                            "reserved",
-                            "pending",
-                            "accepted",
-                            "on_the_way",
-                            "delivered",
-                            "cancelled"
-                        ]
-                    },
-                    "scheduledDate": {
-                        "type": "string",
-                        "nullable": true,
-                        "example": "2026-11-04"
-                    },
-                    "serial": {
-                        "type": "string"
-                    },
-                    "product": {
-                        "type": "string",
-                        "nullable": true,
-                        "example": "10kg"
-                    },
-                    "depositAmount": {
-                        "type": "number",
-                        "example": 25000
-                    },
-                    "customerName": {
-                        "type": "string",
-                        "nullable": true
-                    },
-                    "customerPhone": {
-                        "type": "string",
-                        "nullable": true
-                    }
-                },
-                "required": [
-                    "noticeId",
-                    "caseId",
-                    "orderId",
-                    "orderStatus",
-                    "scheduledDate",
-                    "serial",
-                    "product",
-                    "depositAmount",
-                    "customerName",
-                    "customerPhone"
-                ]
-            },
-            "PickupNotCollectedDto": {
-                "type": "object",
-                "properties": {
-                    "reason": {
-                        "type": "string",
-                        "maxLength": 500,
-                        "example": "El cliente no estaba en casa"
-                    }
-                },
-                "required": [
-                    "reason"
                 ]
             }
         }
