@@ -894,6 +894,50 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/distributor/mercadopago-credentials': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Cuenta de Mercado Pago con la que cobra la distribuidora
+     * @description Dice si se cobra con una cuenta propia (`own`) o con la del sistema (`system`). Los valores se devuelven enmascarados: nunca en claro.
+     */
+    get: operations['MercadoPagoCredentialsController_status'];
+    /**
+     * Cargar o reemplazar la cuenta propia de Mercado Pago
+     * @description Verifica el access token contra Mercado Pago antes de guardar; los tres valores se guardan cifrados. Desde que queda activa, los cobros, devoluciones, notificaciones y la conciliación de la distribuidora usan esta cuenta.
+     */
+    put: operations['MercadoPagoCredentialsController_save'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/distributor/mercadopago-credentials/deactivate': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Desactivar la cuenta propia y volver a la del sistema
+     * @description Baja lógica: la fila queda y no se borra. Los cobros vuelven a la cuenta del entorno.
+     */
+    put: operations['MercadoPagoCredentialsController_deactivate'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/job-positions': {
     parameters: {
       query?: never;
@@ -8184,6 +8228,45 @@ export interface components {
        */
       updatedByUserId: string | null;
     };
+    MercadoPagoCredentialsResponseDto: {
+      /**
+       * @description `own`: se cobra con la cuenta de la distribuidora. `system`: con la del sistema.
+       * @enum {string}
+       */
+      source: 'own' | 'system';
+      /** @description Hay una cuenta propia cargada y activa. */
+      active: boolean;
+      /** @description El servidor tiene la clave de cifrado: sin ella no se pueden cargar credenciales propias. */
+      encryptionConfigured: boolean;
+      /** @example APP_USR-…1234 */
+      accessTokenMasked: string | null;
+      /** @example APP_USR-…1234 */
+      publicKeyMasked: string | null;
+      /** @example ••••1234 */
+      webhookSecretMasked: string | null;
+      /**
+       * Format: date-time
+       * @description Cuándo Mercado Pago aceptó por última vez el token.
+       */
+      verifiedAt: string | null;
+    };
+    SaveMercadoPagoCredentialsDto: {
+      /**
+       * @description Access token de la cuenta. Se verifica contra Mercado Pago antes de guardarlo.
+       * @example APP_USR-0000000000000000-000000-00000000000000000000000000000000
+       */
+      accessToken: string;
+      /**
+       * @description Clave pública de la cuenta (la que usan las apps).
+       * @example APP_USR-00000000-0000-0000-0000-000000000000
+       */
+      publicKey: string;
+      /**
+       * @description Secreto con el que Mercado Pago firma las notificaciones (webhook) de esta cuenta.
+       * @example secreto-del-webhook
+       */
+      webhookSecret: string;
+    };
     JobPositionResponseDto: {
       /** Format: uuid */
       positionId: string;
@@ -12474,6 +12557,14 @@ export interface components {
       workshopStartHour?: number;
       /** @description Hora en que termina el taller (1 a 24); posterior al inicio */
       workshopEndHour?: number;
+      /** @description Días en que atiende el taller: suma de 1 domingo, 2 lunes, 4 martes, 8 miércoles, 16 jueves, 32 viernes y 64 sábado */
+      workshopDays?: number;
+      /** @description Días sin registros de uso a partir de los cuales los datos se consideran desactualizados */
+      usageStaleDays?: number;
+      /** @description Planificar también cuando faltan estos kilómetros (0 la desactiva) */
+      anticipationKm?: number;
+      /** @description Mandar también un correo al chofer con cada propuesta (0 no, 1 sí) */
+      driverEmail?: number;
     };
     PlannerRunResponseDto: {
       vehicles: number;
@@ -12646,6 +12737,25 @@ export interface components {
       carId: string;
       /** @example AB123CD */
       patent: string | null;
+      /**
+       * @description Estado del caso: `confirmed` = el administrador confirmó la ventana; `awaiting_confirmation` = aceptada, esperando al administrador
+       * @enum {string}
+       */
+      caseStatus: 'negotiating' | 'awaiting_confirmation' | 'escalated' | 'confirmed' | 'cancelled';
+      /** @description La ventana termina después del vencimiento proyectado: es un turno urgente */
+      urgent: boolean;
+      /**
+       * Format: date-time
+       * @description Vencimiento proyectado de la tarea: la ventana alternativa tiene que terminar antes
+       */
+      projectedDueAt: string;
+      /**
+       * Format: date-time
+       * @description Inicio de la ventana que confirmó el administrador (puede no ser la que aceptó el chofer); null si el caso no está confirmado
+       */
+      confirmedStart: string | null;
+      /** Format: date-time */
+      confirmedEnd: string | null;
     };
     DriverProposalPageDto: {
       data: components['schemas']['DriverProposalResponseDto'][];
@@ -20079,6 +20189,158 @@ export interface operations {
         content?: never;
       };
       /** @description El proceso no es uno de los cinco configurables */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MercadoPagoCredentialsController_status: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MercadoPagoCredentialsResponseDto'];
+        };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MercadoPagoCredentialsController_save: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SaveMercadoPagoCredentialsDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MercadoPagoCredentialsResponseDto'];
+        };
+      };
+      /** @description Datos inválidos, o Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Mercado Pago rechazó el access token; no se guardó nada */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Mercado Pago no respondió; no se guardó nada */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El servidor no tiene CREDENTIALS_ENCRYPTION_KEY */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MercadoPagoCredentialsController_deactivate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MercadoPagoCredentialsResponseDto'];
+        };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La distribuidora no tiene una cuenta propia activa */
       404: {
         headers: {
           [name: string]: unknown;
