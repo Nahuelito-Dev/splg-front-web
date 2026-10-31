@@ -13,6 +13,7 @@ export const queryKeys = {
   adminNotifications: resource('adminNotifications'),
   admins: resource('admins'),
   bankDetails: resource('bankDetails'),
+  mercadoPagoCredentials: resource('mercadoPagoCredentials'),
   attendance: resource('attendance'),
   audit: resource('audit'),
   cars: resource('cars'),

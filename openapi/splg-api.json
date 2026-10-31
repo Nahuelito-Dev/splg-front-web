@@ -3819,6 +3819,137 @@
                 ]
             }
         },
+        "/api/v2/distributor/mercadopago-credentials": {
+            "get": {
+                "description": "Dice si se cobra con una cuenta propia (`own`) o con la del sistema (`system`). Los valores se devuelven enmascarados: nunca en claro.",
+                "operationId": "MercadoPagoCredentialsController_status",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MercadoPagoCredentialsResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\")"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Cuenta de Mercado Pago con la que cobra la distribuidora",
+                "tags": [
+                    "Distributors"
+                ]
+            },
+            "put": {
+                "description": "Verifica el access token contra Mercado Pago antes de guardar; los tres valores se guardan cifrados. Desde que queda activa, los cobros, devoluciones, notificaciones y la conciliación de la distribuidora usan esta cuenta.",
+                "operationId": "MercadoPagoCredentialsController_save",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SaveMercadoPagoCredentialsDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MercadoPagoCredentialsResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Datos inválidos, o Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\")"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "422": {
+                        "description": "Mercado Pago rechazó el access token; no se guardó nada"
+                    },
+                    "502": {
+                        "description": "Mercado Pago no respondió; no se guardó nada"
+                    },
+                    "503": {
+                        "description": "El servidor no tiene CREDENTIALS_ENCRYPTION_KEY"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Cargar o reemplazar la cuenta propia de Mercado Pago",
+                "tags": [
+                    "Distributors"
+                ]
+            }
+        },
+        "/api/v2/distributor/mercadopago-credentials/deactivate": {
+            "put": {
+                "description": "Baja lógica: la fila queda y no se borra. Los cobros vuelven a la cuenta del entorno.",
+                "operationId": "MercadoPagoCredentialsController_deactivate",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MercadoPagoCredentialsResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\")"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "La distribuidora no tiene una cuenta propia activa"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Desactivar la cuenta propia y volver a la del sistema",
+                "tags": [
+                    "Distributors"
+                ]
+            }
+        },
         "/api/v1/job-positions": {
             "get": {
                 "operationId": "JobPositionController_findAll",
@@ -32218,6 +32349,82 @@
                     "updatedByUserId"
                 ]
             },
+            "MercadoPagoCredentialsResponseDto": {
+                "type": "object",
+                "properties": {
+                    "source": {
+                        "type": "string",
+                        "enum": [
+                            "own",
+                            "system"
+                        ],
+                        "description": "`own`: se cobra con la cuenta de la distribuidora. `system`: con la del sistema."
+                    },
+                    "active": {
+                        "type": "boolean",
+                        "description": "Hay una cuenta propia cargada y activa."
+                    },
+                    "encryptionConfigured": {
+                        "type": "boolean",
+                        "description": "El servidor tiene la clave de cifrado: sin ella no se pueden cargar credenciales propias."
+                    },
+                    "accessTokenMasked": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "APP_USR-…1234"
+                    },
+                    "publicKeyMasked": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "APP_USR-…1234"
+                    },
+                    "webhookSecretMasked": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "••••1234"
+                    },
+                    "verifiedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "Cuándo Mercado Pago aceptó por última vez el token."
+                    }
+                },
+                "required": [
+                    "source",
+                    "active",
+                    "encryptionConfigured",
+                    "accessTokenMasked",
+                    "publicKeyMasked",
+                    "webhookSecretMasked",
+                    "verifiedAt"
+                ]
+            },
+            "SaveMercadoPagoCredentialsDto": {
+                "type": "object",
+                "properties": {
+                    "accessToken": {
+                        "type": "string",
+                        "description": "Access token de la cuenta. Se verifica contra Mercado Pago antes de guardarlo.",
+                        "example": "APP_USR-0000000000000000-000000-00000000000000000000000000000000"
+                    },
+                    "publicKey": {
+                        "type": "string",
+                        "description": "Clave pública de la cuenta (la que usan las apps).",
+                        "example": "APP_USR-00000000-0000-0000-0000-000000000000"
+                    },
+                    "webhookSecret": {
+                        "type": "string",
+                        "description": "Secreto con el que Mercado Pago firma las notificaciones (webhook) de esta cuenta.",
+                        "example": "secreto-del-webhook"
+                    }
+                },
+                "required": [
+                    "accessToken",
+                    "publicKey",
+                    "webhookSecret"
+                ]
+            },
             "JobPositionResponseDto": {
                 "type": "object",
                 "properties": {
@@ -42489,6 +42696,30 @@
                     "workshopEndHour": {
                         "type": "number",
                         "description": "Hora en que termina el taller (1 a 24); posterior al inicio"
+                    },
+                    "workshopDays": {
+                        "type": "number",
+                        "description": "Días en que atiende el taller: suma de 1 domingo, 2 lunes, 4 martes, 8 miércoles, 16 jueves, 32 viernes y 64 sábado",
+                        "minimum": 1,
+                        "maximum": 127
+                    },
+                    "usageStaleDays": {
+                        "type": "number",
+                        "description": "Días sin registros de uso a partir de los cuales los datos se consideran desactualizados",
+                        "minimum": 1,
+                        "maximum": 90
+                    },
+                    "anticipationKm": {
+                        "type": "number",
+                        "description": "Planificar también cuando faltan estos kilómetros (0 la desactiva)",
+                        "minimum": 0,
+                        "maximum": 1000000
+                    },
+                    "driverEmail": {
+                        "type": "number",
+                        "description": "Mandar también un correo al chofer con cada propuesta (0 no, 1 sí)",
+                        "minimum": 0,
+                        "maximum": 1
                     }
                 }
             },
@@ -42952,6 +43183,37 @@
                         "type": "string",
                         "nullable": true,
                         "example": "AB123CD"
+                    },
+                    "caseStatus": {
+                        "type": "string",
+                        "enum": [
+                            "negotiating",
+                            "awaiting_confirmation",
+                            "escalated",
+                            "confirmed",
+                            "cancelled"
+                        ],
+                        "description": "Estado del caso: `confirmed` = el administrador confirmó la ventana; `awaiting_confirmation` = aceptada, esperando al administrador"
+                    },
+                    "urgent": {
+                        "type": "boolean",
+                        "description": "La ventana termina después del vencimiento proyectado: es un turno urgente"
+                    },
+                    "projectedDueAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Vencimiento proyectado de la tarea: la ventana alternativa tiene que terminar antes"
+                    },
+                    "confirmedStart": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "Inicio de la ventana que confirmó el administrador (puede no ser la que aceptó el chofer); null si el caso no está confirmado"
+                    },
+                    "confirmedEnd": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
                     }
                 },
                 "required": [
@@ -42969,7 +43231,12 @@
                     "altWindowEnd",
                     "taskName",
                     "carId",
-                    "patent"
+                    "patent",
+                    "caseStatus",
+                    "urgent",
+                    "projectedDueAt",
+                    "confirmedStart",
+                    "confirmedEnd"
                 ]
             },
             "DriverProposalPageDto": {
