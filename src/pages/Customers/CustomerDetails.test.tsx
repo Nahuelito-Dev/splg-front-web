@@ -156,6 +156,9 @@ vi.mock('../../services/queries/physicalCylinders', () => ({
     };
   },
 }));
+vi.mock('./components/details/CustomerRecoveryCard', () => ({
+  CustomerRecoveryCard: ({ userId }: { userId: string }) => <p>recupero de {userId}</p>,
+}));
 vi.mock('../Claims/components/ClaimPhoto', () => ({ ClaimPhoto: () => null }));
 vi.mock('./components/CustomerFormModal', () => ({ CustomerFormModal: () => null }));
 vi.mock('./components/details/CustomerLocationModal', () => ({ CustomerLocationModal: () => null }));
@@ -254,6 +257,11 @@ describe('CustomerDetails: portada con KPIs y pestañas', () => {
     expect(cylinders).toHaveBeenCalledWith({ customerUserId: 'u-1' });
     expect(screen.getByRole('link', { name: 'SPLG-00001' })).toHaveAttribute('href', '/physical-cylinders/cy-1');
     expect(screen.getByText('Garrafa 10kg · 10 kg')).toBeInTheDocument();
+  });
+
+  it('la pestaña Envases en su poder suma los casos de recupero del cliente', () => {
+    renderPage('/customers/details/c-1?tab=cylinders');
+    expect(screen.getByText('recupero de u-1')).toBeInTheDocument();
   });
 
   it('la pestaña Reclamos lista sólo los de este cliente y abre el detalle en un panel lateral', () => {

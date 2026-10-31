@@ -12,6 +12,7 @@ import {
   Fuel,
   Gavel,
   PackageCheck,
+  PackageSearch,
   ArrowDownUp,
   Scale,
   Warehouse,
@@ -167,6 +168,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { title: 'Garrafas', path: '/cylinders', icon: Flame },
       { title: 'Envases', path: '/physical-cylinders', icon: Cylinder },
+      { title: 'Recupero de envases', path: '/physical-cylinders/recovery', icon: PackageSearch },
       { title: 'Zonas de cobertura', path: '/coverage-zones', icon: MapIcon },
       { title: 'Configuración', path: '/settings', icon: Settings },
       { title: 'Parámetros del despacho', path: '/settings/dispatch', icon: SlidersHorizontal },

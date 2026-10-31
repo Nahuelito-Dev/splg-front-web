@@ -7665,6 +7665,250 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/cylinder-recovery/cases': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Casos de recupero de envases
+     * @description Los casos con su estado y escalón (1 recordatorio, 2 aviso del depósito, 3 agotado), el cliente, el envase, el último aviso y la oferta de retiro vigente; más los totales por estado. `pending=true` deja los que esperan la decisión del administrador (escalados y perdidos).
+     */
+    get: operations['CylinderRecoveryAdminController_casos'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/cylinder-recovery/cases/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Legajo de un caso de recupero
+     * @description El caso con el cliente, los avisos enviados, las ofertas de retiro, el historial completo de movimientos del envase, el importe en juego y la resolución si ya se decidió.
+     */
+    get: operations['CylinderRecoveryAdminController_detalle'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/cylinder-recovery/cases/{id}/resolve': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Decidir un caso escalado o perdido
+     * @description Paso 11 del CU-108. `charge_deposit` registra el depósito a cobrar (el sistema no cobra: se cobra aparte, en el próximo pedido o en efectivo); `write_off` da el envase por perdido y lo saca del inventario (queda en su historial); `close_no_charge` cierra sin cargo. La nota es obligatoria y queda con quién decidió.
+     */
+    post: operations['CylinderRecoveryAdminController_resolver'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/cylinder-recovery/report': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Reporte de envases perdidos y casos sin resolver
+     * @description Los envases perdidos (importe bajo el umbral: sólo se informan), los escalados que el administrador todavía no resolvió y los envases en poder de un cliente cuyo titular o entrega no se puede determinar (revisión manual), con los totales.
+     */
+    get: operations['CylinderRecoveryAdminController_reporte'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/cylinder-recovery/settings': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Parámetros de la recuperación de envases
+     * @description Los valores vigentes con el rango y el valor por omisión de cada uno. Los mismos de `GET /module-config/cylinder_recovery`.
+     */
+    get: operations['CylinderRecoveryAdminController_settings'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Cambiar parámetros de la recuperación de envases
+     * @description Cambia sólo los que vienen; el resto conserva su valor. Rige desde la próxima corrida.
+     */
+    patch: operations['CylinderRecoveryAdminController_settingsPatch'];
+    trace?: never;
+  };
+  '/api/v2/cylinder-recovery/run': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Correr la recuperación ahora
+     * @description Hace lo mismo que la corrida diaria, para esta distribuidora y sin esperar la hora, y sólo con el recupero encendido (`enabled` = 1). Un cliente recibe a lo sumo un push por corrida. Es idempotente: un envase con caso vivo no abre otro y un escalón no repite su aviso.
+     */
+    post: operations['CylinderRecoveryAdminController_correr'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/cylinder-recovery/mine': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Mis envases pendientes de devolver
+     * @description Los casos abiertos o escalados del cliente, con el depósito comprometido, el vencimiento del escalón y la oferta de retiro vigente (`pickup`: pendiente de respuesta o aceptada).
+     */
+    get: operations['CylinderRecoveryCustomerController_mios'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/cylinder-recovery/mine/{id}/pickup/accept': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Aceptar devolver el envase en mi próxima entrega
+     * @description El retiro queda asociado al pedido de la oferta: el chofer lo ve en su recorrido y el caso espera la confirmación del retorno.
+     */
+    post: operations['CylinderRecoveryCustomerController_aceptar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/cylinder-recovery/mine/{id}/pickup/decline': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Rechazar la oferta de devolver en mi próxima entrega
+     * @description La oferta se descarta y el caso sigue en su escalón.
+     */
+    post: operations['CylinderRecoveryCustomerController_rechazar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/cylinder-recovery/driver/pickups': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Envases a retirar en mis pedidos
+     * @description Los retiros que el cliente aceptó, en pedidos que tiene asignados el chofer: aceptados, en camino o entregados hace menos de 24 horas.
+     */
+    get: operations['CylinderRecoveryDriverController_mios'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/cylinder-recovery/driver/pickups/{noticeId}/confirm': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Confirmar que retiré el envase
+     * @description Registra el retorno del envase (`with_customer` → `empty_returned`, en su historial) y cierra el caso: el depósito queda liberado. Se puede confirmar con el pedido aceptado, en camino o ya entregado hasta 24 horas después de la entrega; pasado ese plazo (o con el pedido cancelado) el retiro se da por fallido y el caso sigue su escalón.
+     */
+    post: operations['CylinderRecoveryDriverController_confirmar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/cylinder-recovery/driver/pickups/{noticeId}/not-collected': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * No pude retirar el envase
+     * @description El retiro se descarta con el motivo y el caso vuelve a su escalón.
+     */
+    post: operations['CylinderRecoveryDriverController_noRetirado'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -17349,6 +17593,239 @@ export interface components {
       confirmadaEn: string;
       /** @description true si esta importación ya estaba confirmada: no se aplicó de nuevo */
       yaConfirmada: boolean;
+    };
+    RecoveryCustomerDto: {
+      /** Format: uuid */
+      userId: string;
+      fullName: string | null;
+      email: string | null;
+      phoneNumber: string | null;
+    };
+    RecoveryCylinderDto: {
+      /** Format: uuid */
+      cylinderId: string;
+      /** @example SN-001234 */
+      serial: string;
+      /** @enum {string} */
+      state: 'in_depot' | 'filled' | 'dispatched' | 'with_customer' | 'empty_returned' | 'retired';
+      /** @example 10kg */
+      product: string | null;
+    };
+    RecoveryNoticeDto: {
+      /** Format: uuid */
+      noticeId: string;
+      step: number;
+      /** @enum {string} */
+      kind: 'reminder' | 'pickup_offer' | 'deposit_warning';
+      /**
+       * @description Sólo en la oferta de retiro: pending, accepted, rejected o expired
+       * @enum {string|null}
+       */
+      status: 'pending' | 'accepted' | 'rejected' | 'expired' | null;
+      /**
+       * Format: uuid
+       * @description Pedido en el que se ofrece el retiro (sólo en la oferta)
+       */
+      orderId: string | null;
+      /** Format: date-time */
+      sentAt: string;
+      /** Format: date-time */
+      expiresAt: string;
+      /** Format: date-time */
+      respondedAt: string | null;
+      responseNote: string | null;
+    };
+    RecoveryPickupDto: {
+      /** Format: uuid */
+      noticeId: string;
+      /** @enum {string} */
+      status: 'pending' | 'accepted' | 'rejected' | 'expired';
+      /** Format: uuid */
+      orderId: string;
+      /**
+       * @description Día agendado de la entrega
+       * @example 2026-11-04
+       */
+      scheduledDate: string | null;
+      /** @enum {string|null} */
+      orderStatus: 'reserved' | 'pending' | 'accepted' | 'on_the_way' | 'delivered' | 'cancelled' | null;
+      /** Format: date-time */
+      expiresAt: string;
+    };
+    RecoveryCaseDto: {
+      /** Format: uuid */
+      caseId: string;
+      /** @enum {string} */
+      status: 'open' | 'returned' | 'escalated' | 'deposit_charged' | 'written_off' | 'closed_no_charge' | 'lost';
+      /** @description 1 recordatorio, 2 aviso del depósito, 3 secuencia agotada */
+      step: number;
+      /** @example 25000 */
+      depositAmount: number;
+      /** Format: date-time */
+      deliveredAt: string;
+      /** @description Días que el envase lleva en poder del cliente */
+      daysOut: number;
+      /**
+       * Format: date-time
+       * @description Cuándo vence el escalón actual
+       */
+      stepDueAt: string;
+      /** Format: date-time */
+      openedAt: string;
+      /** Format: date-time */
+      exhaustedAt: string | null;
+      /** Format: date-time */
+      closedAt: string | null;
+      customer: components['schemas']['RecoveryCustomerDto'];
+      cylinder: components['schemas']['RecoveryCylinderDto'];
+      lastNotice: components['schemas']['RecoveryNoticeDto'] | null;
+      pickup: components['schemas']['RecoveryPickupDto'] | null;
+    };
+    RecoveryCasePageDto: {
+      data: components['schemas']['RecoveryCaseDto'][];
+      total: number;
+      /**
+       * @description Casos de la distribuidora por estado (sin filtros)
+       * @example {
+       *       "open": 3,
+       *       "escalated": 1,
+       *       "lost": 2
+       *     }
+       */
+      counts: {
+        [key: string]: number;
+      };
+    };
+    RecoveryMovementDto: {
+      /** Format: uuid */
+      movementId: string;
+      /** @enum {string|null} */
+      fromState: 'in_depot' | 'filled' | 'dispatched' | 'with_customer' | 'empty_returned' | 'retired' | null;
+      /** @enum {string} */
+      toState: 'in_depot' | 'filled' | 'dispatched' | 'with_customer' | 'empty_returned' | 'retired';
+      /** Format: uuid */
+      orderId: string | null;
+      note: string | null;
+      /** Format: date-time */
+      createdAt: string;
+    };
+    RecoveryResolutionDto: {
+      /** Format: uuid */
+      resolvedByUserId: string | null;
+      resolvedByName: string | null;
+      note: string | null;
+    };
+    RecoveryCaseDetailDto: {
+      /** Format: uuid */
+      caseId: string;
+      /** @enum {string} */
+      status: 'open' | 'returned' | 'escalated' | 'deposit_charged' | 'written_off' | 'closed_no_charge' | 'lost';
+      /** @description 1 recordatorio, 2 aviso del depósito, 3 secuencia agotada */
+      step: number;
+      /** @example 25000 */
+      depositAmount: number;
+      /** Format: date-time */
+      deliveredAt: string;
+      /** @description Días que el envase lleva en poder del cliente */
+      daysOut: number;
+      /**
+       * Format: date-time
+       * @description Cuándo vence el escalón actual
+       */
+      stepDueAt: string;
+      /** Format: date-time */
+      openedAt: string;
+      /** Format: date-time */
+      exhaustedAt: string | null;
+      /** Format: date-time */
+      closedAt: string | null;
+      customer: components['schemas']['RecoveryCustomerDto'];
+      cylinder: components['schemas']['RecoveryCylinderDto'];
+      lastNotice: components['schemas']['RecoveryNoticeDto'] | null;
+      pickup: components['schemas']['RecoveryPickupDto'] | null;
+      notices: components['schemas']['RecoveryNoticeDto'][];
+      history: components['schemas']['RecoveryMovementDto'][];
+      resolution?: components['schemas']['RecoveryResolutionDto'] | null;
+    };
+    ResolveRecoveryCaseDto: {
+      /** @enum {string} */
+      decision: 'charge_deposit' | 'write_off' | 'close_no_charge';
+      /**
+       * @description Obligatoria, de 10 a 500 caracteres: queda en el caso junto con quién decidió
+       * @example El cliente reconoce que lo extravió; se cobra con el próximo pedido
+       */
+      note: string;
+    };
+    RecoveryManualReviewDto: {
+      /** Format: uuid */
+      cylinderId: string;
+      serial: string;
+      /** @enum {string} */
+      reason: 'sin_cliente' | 'sin_entrega_registrada';
+    };
+    RecoveryReportTotalsDto: {
+      lostCount: number;
+      lostAmount: number;
+      escalatedCount: number;
+      escalatedAmount: number;
+      manualReviewCount: number;
+    };
+    RecoveryReportDto: {
+      /** @description Envases perdidos: importe bajo el umbral, sólo informados */
+      lost: components['schemas']['RecoveryCaseDto'][];
+      /** @description Escalados que el administrador todavía no resolvió */
+      escalated: components['schemas']['RecoveryCaseDto'][];
+      /** @description Envases con cliente cuyo titular o entrega no se puede determinar */
+      manualReview: components['schemas']['RecoveryManualReviewDto'][];
+      totals: components['schemas']['RecoveryReportTotalsDto'];
+    };
+    PatchRecoverySettingsDto: {
+      /** @description Días desde la entrega para considerar retenido el envase (1 a 365) */
+      toleranceDays?: number;
+      /** @description Duración de cada escalón, en días (1 a 90) */
+      escalationStepDays?: number;
+      /** @description Depósito desde el cual el caso escala (0 a 100000000) */
+      escalationAmountThreshold?: number;
+      /** @description Vigencia de la oferta de retiro, en horas (1 a 720) */
+      pickupOfferTtlHours?: number;
+      /** @description Ventana, en días, en que una entrega programada sirve para el retiro (1 a 60) */
+      pickupWindowDays?: number;
+      /** @description Hora de ejecución diaria (0 a 23, hora de Argentina) */
+      runHour?: number;
+      /** @description Encender el recupero (1) o apagarlo (0). Apagado por omisión: no abre casos ni manda avisos, y «correr ahora» responde 409 */
+      enabled?: number;
+    };
+    RecoveryRunResponseDto: {
+      opened: number;
+      notices: number;
+      offers: number;
+      escalated: number;
+      lost: number;
+      closedByReturn: number;
+      manualReview: number;
+    };
+    DriverPickupDto: {
+      /** Format: uuid */
+      noticeId: string;
+      /** Format: uuid */
+      caseId: string;
+      /** Format: uuid */
+      orderId: string;
+      /** @enum {string} */
+      orderStatus: 'reserved' | 'pending' | 'accepted' | 'on_the_way' | 'delivered' | 'cancelled';
+      /** @example 2026-11-04 */
+      scheduledDate: string | null;
+      serial: string;
+      /** @example 10kg */
+      product: string | null;
+      /** @example 25000 */
+      depositAmount: number;
+      customerName: string | null;
+      customerPhone: string | null;
+    };
+    PickupNotCollectedDto: {
+      /** @example El cliente no estaba en casa */
+      reason: string;
     };
   };
   responses: never;
@@ -43607,6 +44084,659 @@ export interface operations {
       };
       /** @description La vista previa venció (24 h) */
       410: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CylinderRecoveryAdminController_casos: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+        page?: number;
+        /** @description Texto a buscar */
+        term?: string;
+        status?: 'open' | 'returned' | 'escalated' | 'deposit_charged' | 'written_off' | 'closed_no_charge' | 'lost';
+        /** @description Escalón: 1 recordatorio, 2 aviso del depósito, 3 agotado */
+        step?: number;
+        /** @description user_id del cliente */
+        customerId?: string;
+        cylinderId?: string;
+        /** @description Sólo los casos que siguen en pie (abiertos, escalados o perdidos) */
+        live?: boolean;
+        /** @description Sólo los casos que esperan la decisión del administrador (escalados o perdidos) */
+        pending?: boolean;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RecoveryCasePageDto'];
+        };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CylinderRecoveryAdminController_detalle: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Case UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RecoveryCaseDetailDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caso no encontrado */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CylinderRecoveryAdminController_resolver: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Case UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ResolveRecoveryCaseDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RecoveryCaseDetailDto'];
+        };
+      };
+      /** @description Falta la nota o la decisión es inválida */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caso no encontrado */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El caso sigue en su secuencia de avisos o ya está cerrado */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CylinderRecoveryAdminController_reporte: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RecoveryReportDto'];
+        };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CylinderRecoveryAdminController_settings: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProcessConfigResponseDto'];
+        };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CylinderRecoveryAdminController_settingsPatch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PatchRecoverySettingsDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProcessConfigResponseDto'];
+        };
+      };
+      /** @description Valor fuera de rango */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CylinderRecoveryAdminController_correr: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RecoveryRunResponseDto'];
+        };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El recupero está apagado para la distribuidora (parámetro `enabled` en 0, el valor por omisión): no se abre ningún caso ni se manda ningún aviso */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CylinderRecoveryCustomerController_mios: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RecoveryCaseDto'][];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CylinderRecoveryCustomerController_aceptar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Case UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RecoveryCaseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caso no encontrado o de otro cliente */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin oferta vigente, la oferta venció o el pedido ya no admite el retiro */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CylinderRecoveryCustomerController_rechazar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Case UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RecoveryCaseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caso no encontrado o de otro cliente */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin oferta vigente o la oferta venció */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CylinderRecoveryDriverController_mios: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DriverPickupDto'][];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: delivery */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CylinderRecoveryDriverController_confirmar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Notice UUID (`noticeId` del retiro) */
+        noticeId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            caseId?: string;
+            /** @example returned */
+            status?: string;
+          };
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: delivery */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Retiro inexistente o de un pedido ajeno */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El cliente no aceptó el retiro o el caso ya cerró */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CylinderRecoveryDriverController_noRetirado: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Notice UUID (`noticeId` del retiro) */
+        noticeId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PickupNotCollectedDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            caseId?: string;
+            /** @example open */
+            status?: string;
+          };
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: delivery */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Retiro inexistente o de un pedido ajeno */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El cliente no aceptó el retiro o el caso ya cerró */
+      409: {
         headers: {
           [name: string]: unknown;
         };
