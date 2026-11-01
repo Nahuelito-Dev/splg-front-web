@@ -1,23 +1,37 @@
 name: Checks
 
 # Corre el mismo gate que se usa en local (npm run verify) en cada PR a develop o main
-# y en cada push a develop. Si no pasa, no se integra.
+# y en cada push a develop. Si no pasa, no se integra. No corre en cambios sólo de documentación.
 on:
   pull_request:
     branches: [develop, main]
+    paths-ignore:
+      - '**.md'
+      - '.github/workflows/deploy.yml'
+      - '.github/workflows/release.yml'
   push:
     branches: [develop]
+    paths-ignore:
+      - '**.md'
 
 concurrency:
   group: checks-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
       # El build y los tests validan que exista; en CI no se llama a ninguna API.
       VITE_APP_API_URL: http://localhost:3000/api
+      # El runner corre en UTC a propósito: `npm run test` fija America/Argentina/Buenos_Aires
+      # (como en la Mac de desarrollo) y el paso siguiente repite la suite en UTC para
+      # detectar fechas de negocio que dependan de la zona del proceso.
+      TZ: UTC
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -26,3 +40,5 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run verify
+      - name: Tests en UTC
+        run: npm run test:utc
