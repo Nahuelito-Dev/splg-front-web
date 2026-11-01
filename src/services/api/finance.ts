@@ -15,6 +15,7 @@ import type {
   CashSessionPage,
   CashTransfer,
   CloseCashSessionBody,
+  CloseCashSessionPreview,
   CommissionEntryPage,
   CommissionRule,
   CommissionRulePage,
@@ -37,6 +38,7 @@ import type {
   IncomeStatement,
   OpenCashSessionBody,
   OpenDriverSettlementBody,
+  PreviewCloseCashSessionBody,
   PreviewDriverSettlementBody,
   SettlementPreview,
   PayDriverLiquidationBody,
@@ -234,6 +236,20 @@ export const listDriverSettlements = async (
 /** GET /driver-settlements/:id */
 export const getDriverSettlement = async (id: string): Promise<DriverSettlementDetail> => {
   const { data } = await http.get<DriverSettlementDetail>(`/driver-settlements/${id}`);
+  return data;
+};
+
+/**
+ * POST /v2/cash-sessions/:id/close-preview: lo esperado y la diferencia que calcula el back para lo que se está
+ * contando. No escribe nada.
+ */
+export const previewCloseCashSession = async (
+  id: string,
+  body: PreviewCloseCashSessionBody,
+): Promise<CloseCashSessionPreview> => {
+  const { data } = await http.post<CloseCashSessionPreview>(`/cash-sessions/${id}/close-preview`, body, {
+    baseURL: env.apiUrlV2,
+  });
   return data;
 };
 

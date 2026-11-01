@@ -20,7 +20,6 @@ import type { FleetCostSummary } from '../../services/api/types';
 import { useFleetCosts } from '../../services/queries/fleetExpense';
 import { presetRange, type DayRange, type RangePresetId } from '../../utils/dateRange';
 import { formatCurrency, formatNumber } from '../../utils/format';
-import { summarizeFleetCosts } from './fleetCostSummary';
 import { COST_RUBROS, KM_SOURCE_LABEL } from './components/costLabels';
 
 /** El tablero de costos de la flota (CU-204): un renglón por vehículo, de mayor a menor costo por km. */
@@ -29,7 +28,8 @@ export const FleetCosts = () => {
   const [range, setRange] = useState<DayRange>(() => presetRange('thisMonth'));
   const [preset, setPreset] = useState<RangePresetId | null>('thisMonth');
   const { data, isFetching, error, refetch } = useFleetCosts(range);
-  const { totalCost, costPerKm, withoutKm } = summarizeFleetCosts(data ?? []);
+  const summary = data?.summary;
+  const vehicles = data?.vehicles;
   const goTo = (row: FleetCostSummary) => navigate(`/cars/details/${row.carId}?tab=costs`);
 
   const columns: GridColDef<FleetCostSummary>[] = [
@@ -107,24 +107,24 @@ export const FleetCosts = () => {
         <KpiCard
           title="Vehículos"
           icon={Gauge}
-          value={data ? formatNumber(data.length) : '—'}
+          value={summary ? formatNumber(summary.vehicles) : '—'}
           loading={!data && !error}
         />
         <KpiCard
           title="Costo total"
           icon={Gauge}
-          value={data ? formatCurrency(totalCost) : '—'}
+          value={summary ? formatCurrency(summary.total) : '—'}
           loading={!data && !error}
           hint="En el período"
         />
         <KpiCard
           title="Costo por km"
           icon={Gauge}
-          value={data && costPerKm !== null ? formatCurrency(costPerKm) : '—'}
+          value={summary && summary.costPerKm !== null ? formatCurrency(summary.costPerKm) : '—'}
           loading={!data && !error}
           hint={
-            withoutKm > 0
-              ? `${withoutKm} ${withoutKm === 1 ? 'vehículo sin km' : 'vehículos sin km'}`
+            summary && summary.withoutKm > 0
+              ? `${summary.withoutKm} ${summary.withoutKm === 1 ? 'vehículo sin km' : 'vehículos sin km'}`
               : 'Promedio de la flota'
           }
         />
@@ -139,7 +139,7 @@ export const FleetCosts = () => {
         ) : (
           <ResponsiveTable
             label="costos de la flota"
-            rows={data ?? []}
+            rows={vehicles ?? []}
             columns={columns}
             getRowId={(row) => row.carId}
             loading={isFetching}

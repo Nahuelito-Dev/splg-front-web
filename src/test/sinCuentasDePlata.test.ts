@@ -130,49 +130,17 @@ const NO_SON_PLATA: Excepcion[] = [
 ];
 
 /**
- * Cuentas de plata que existían antes de esta regla y todavía no pasaron al back. Cada una es un fragmento exacto de
- * un archivo: tocar otra parte del archivo con una cuenta nueva sí se detecta. Sólo se achica: nada se agrega acá.
+ * Validación o formato de lo que el usuario tipea o ve (redondeo del importe tipeado, tope contra el saldo, signo o
+ * valor absoluto para mostrar): no es un cálculo de montos de negocio. Se queda en el front por la regla de validar en
+ * tres capas (formulario, DTO del back y base); el back sigue decidiendo. Criterio y freno: sólo entra acá lo que
+ * valida o formatea un valor ya tipeado o ya calculado por el back; un total, saldo o diferencia que se arma para
+ * mostrar o guardar NO entra y va a `PENDIENTES_DEL_BACK`. Cada una es un fragmento exacto de un archivo.
  */
-const PENDIENTES_DEL_BACK: Excepcion[] = [
+const VALIDACION_Y_FORMATO_EN_EL_FRONT: Excepcion[] = [
   {
     ruta: 'src/common/components/expensePayment/expensePaymentSchema.ts',
     fragmento: 'Decimal(',
     motivo: 'valida un importe con Decimal en el front',
-  },
-  {
-    ruta: 'src/pages/Customers/CustomerDetails.tsx',
-    fragmento: 'balance *',
-    motivo: 'signo del saldo de cuenta corriente (¿debe, a favor, al día?)',
-  },
-  {
-    ruta: 'src/pages/Finance/MpReconciliations.tsx',
-    fragmento: 'differences).reduce(',
-    motivo: 'suma de diferencias de una conciliación',
-  },
-  {
-    ruta: 'src/pages/Finance/components/ApproveSettlementModal.tsx',
-    fragmento: '-difference',
-    motivo: 'muestra el faltante como valor positivo (-difference)',
-  },
-  {
-    ruta: 'src/pages/Finance/components/CloseSessionModal.tsx',
-    fragmento: 'expected) *',
-    motivo: 'diferencia de cierre de caja: contado − esperado',
-  },
-  {
-    ruta: 'src/pages/Finance/components/CloseSessionModal.tsx',
-    fragmento: '- expected',
-    motivo: 'diferencia de cierre de caja: contado − esperado',
-  },
-  {
-    ruta: 'src/pages/Finance/components/CloseSessionModal.tsx',
-    fragmento: '-difference',
-    motivo: 'diferencia de cierre de caja: contado − esperado',
-  },
-  {
-    ruta: 'src/pages/Finance/components/SubmitSettlementModal.tsx',
-    fragmento: '-difference',
-    motivo: 'muestra el faltante como valor positivo (-difference); la diferencia ya la manda el back',
   },
   {
     ruta: 'src/pages/Finance/financeSchemas.ts',
@@ -185,6 +153,69 @@ const PENDIENTES_DEL_BACK: Excepcion[] = [
     motivo: 'redondeo a centavos de un importe tipeado y tope contra el saldo de una caja',
   },
   {
+    ruta: 'src/pages/Customers/CustomerDetails.tsx',
+    fragmento: 'balance *',
+    motivo: 'signo del saldo de cuenta corriente (¿debe, a favor, al día?)',
+  },
+  {
+    ruta: 'src/pages/Finance/components/ApproveSettlementModal.tsx',
+    fragmento: '-difference',
+    motivo: 'muestra el faltante como valor positivo (-difference)',
+  },
+  {
+    ruta: 'src/pages/Finance/components/SubmitSettlementModal.tsx',
+    fragmento: '-difference',
+    motivo: 'muestra el faltante como valor positivo (-difference); la diferencia ya la manda el back',
+  },
+  {
+    ruta: 'src/pages/Finance/components/CloseSessionModal.tsx',
+    fragmento: '-difference',
+    motivo: 'muestra el faltante como valor positivo (-difference); la diferencia ya la manda el back',
+  },
+];
+
+/**
+ * Cuentas de plata que existían antes de esta regla y todavía no pasaron al back. Cada una es un fragmento exacto de
+ * un archivo: tocar otra parte del archivo con una cuenta nueva sí se detecta. Sólo se achica: nada se agrega acá.
+ */
+const PENDIENTES_DEL_BACK: Excepcion[] = [
+  {
+    ruta: 'src/pages/FleetExpense/fleetExpenseSchemas.ts',
+    fragmento: 'unitPrice *',
+    motivo:
+      'total de una carga de combustible (litros × precio) que se carga en totalAmount desde FuelLoadForm: lo tiene que calcular el back',
+  },
+  {
+    ruta: 'src/pages/FleetExpense/fleetExpenseSchemas.ts',
+    fragmento: 'totalAmount -',
+    motivo:
+      'total de una carga de combustible (litros × precio) que se carga en totalAmount desde FuelLoadForm: lo tiene que calcular el back',
+  },
+  {
+    ruta: 'src/pages/FleetExpense/fleetExpenseSchemas.ts',
+    fragmento: 'expected *',
+    motivo:
+      'total de una carga de combustible (litros × precio) que se carga en totalAmount desde FuelLoadForm: lo tiene que calcular el back',
+  },
+  {
+    ruta: 'src/pages/FleetExpense/fleetExpenseSchemas.ts',
+    fragmento: '* unitPrice',
+    motivo:
+      'total de una carga de combustible (litros × precio) que se carga en totalAmount desde FuelLoadForm: lo tiene que calcular el back',
+  },
+  {
+    ruta: 'src/pages/FleetExpense/fleetExpenseSchemas.ts',
+    fragmento: '* unitPrice',
+    motivo:
+      'total de una carga de combustible (litros × precio) que se carga en totalAmount desde FuelLoadForm: lo tiene que calcular el back',
+  },
+  {
+    ruta: 'src/pages/FleetExpense/fleetExpenseSchemas.ts',
+    fragmento: '- expected',
+    motivo:
+      'total de una carga de combustible (litros × precio) que se carga en totalAmount desde FuelLoadForm: lo tiene que calcular el back',
+  },
+  {
     ruta: 'src/pages/Finance/incomeStatementPeriod.ts',
     fragmento: 'total) *',
     motivo: 'porcentaje de cada rubro del estado de resultados',
@@ -193,61 +224,6 @@ const PENDIENTES_DEL_BACK: Excepcion[] = [
     ruta: 'src/pages/Finance/incomeStatementPeriod.ts',
     fragmento: '/ total',
     motivo: 'porcentaje de cada rubro del estado de resultados',
-  },
-  {
-    ruta: 'src/pages/Finance/mpReconciliationRules.ts',
-    fragmento: '- summary.cash',
-    motivo: 'brecha neta Mercado Pago − caja',
-  },
-  {
-    ruta: 'src/pages/FleetExpense/fleetCostSummary.ts',
-    fragmento: '+ row.total',
-    motivo: 'totales del resumen de costos de flota',
-  },
-  {
-    ruta: 'src/pages/FleetExpense/fleetCostSummary.ts',
-    fragmento: '+ row.total',
-    motivo: 'totales del resumen de costos de flota',
-  },
-  {
-    ruta: 'src/pages/FleetExpense/fleetCostSummary.ts',
-    fragmento: '.reduce((sum, row) => sum + row.total',
-    motivo: 'totales del resumen de costos de flota',
-  },
-  {
-    ruta: 'src/pages/FleetExpense/fleetCostSummary.ts',
-    fragmento: 'totalCost: rows.reduce(',
-    motivo: 'totales del resumen de costos de flota',
-  },
-  {
-    ruta: 'src/pages/FleetExpense/fleetExpenseSchemas.ts',
-    fragmento: 'unitPrice *',
-    motivo: 'total de una carga de combustible: litros × precio y su diferencia',
-  },
-  {
-    ruta: 'src/pages/FleetExpense/fleetExpenseSchemas.ts',
-    fragmento: 'totalAmount -',
-    motivo: 'total de una carga de combustible: litros × precio y su diferencia',
-  },
-  {
-    ruta: 'src/pages/FleetExpense/fleetExpenseSchemas.ts',
-    fragmento: 'expected *',
-    motivo: 'total de una carga de combustible: litros × precio y su diferencia',
-  },
-  {
-    ruta: 'src/pages/FleetExpense/fleetExpenseSchemas.ts',
-    fragmento: '* unitPrice',
-    motivo: 'total de una carga de combustible: litros × precio y su diferencia',
-  },
-  {
-    ruta: 'src/pages/FleetExpense/fleetExpenseSchemas.ts',
-    fragmento: '* unitPrice',
-    motivo: 'total de una carga de combustible: litros × precio y su diferencia',
-  },
-  {
-    ruta: 'src/pages/FleetExpense/fleetExpenseSchemas.ts',
-    fragmento: '- expected',
-    motivo: 'total de una carga de combustible: litros × precio y su diferencia',
   },
   {
     ruta: 'src/pages/Home/lib/ranking.ts',
@@ -328,7 +304,7 @@ interface Excepcion {
   motivo: string;
 }
 
-const EXCEPCIONES: Excepcion[] = [...NO_SON_PLATA, ...PENDIENTES_DEL_BACK];
+const EXCEPCIONES: Excepcion[] = [...NO_SON_PLATA, ...VALIDACION_Y_FORMATO_EN_EL_FRONT, ...PENDIENTES_DEL_BACK];
 
 const archivosDeCodigo = (dir: string): string[] =>
   readdirSync(dir, { withFileTypes: true }).flatMap((e) => {

@@ -35,6 +35,8 @@ const run = (over: Record<string, unknown> = {}) => ({
     mp: { gross: 43100, fees: 2500, taxes: 300, net: 40300 },
     cash: { income: 0, expense: 0, net: 0 },
     differences: { payment_not_in_cash: 3, tax_withholding: 1 },
+    differenceCount: 4,
+    netGap: 40300,
     alreadyApplied: 0,
     unreadableRows: 0,
   },
@@ -79,6 +81,8 @@ describe('MpReconciliations', () => {
             mp: { gross: 0, fees: 0, taxes: 0, net: 0 },
             cash: { income: 0, expense: 0, net: 0 },
             differences: {},
+            differenceCount: 0,
+            netGap: 0,
             alreadyApplied: 0,
             unreadableRows: 0,
           },
@@ -90,6 +94,23 @@ describe('MpReconciliations', () => {
     expect(screen.getByText('Esperando el reporte')).toBeInTheDocument();
     expect(screen.getByText('Credencial rechazada')).toBeInTheDocument();
     expect(screen.getByText('Sin diferencias')).toBeInTheDocument();
+  });
+
+  it('muestra el total de diferencias que manda el back, no una suma del panel', () => {
+    state.list = ok(
+      pageOf([
+        run({
+          summary: {
+            ...run().summary,
+            differences: { payment_not_in_cash: 1 },
+            differenceCount: 7,
+          },
+        }),
+      ]),
+    );
+    renderPage(<MpReconciliations />, { url: '/finance/mp-reconciliation' });
+
+    expect(screen.getByText('7 diferencias')).toBeInTheDocument();
   });
 
   it('«Nueva conciliación» abre el pedido del rango', () => {
