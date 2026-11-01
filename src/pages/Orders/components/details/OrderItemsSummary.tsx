@@ -3,7 +3,7 @@ import { Badge, Card, CardHeader } from '../../../../common/components/ui';
 import type { Order } from '../../../../services/api/types';
 import { formatCurrency } from '../../../../utils/format';
 import { labelOf, PAYMENT_METHOD } from '../../../../utils/statusLabels';
-import { onlinePaymentSurcharge, paymentSurchargeLabel } from './orderPricing';
+import { orderSurchargeLabel, paymentSurchargeAmount } from './orderPricing';
 
 const TotalRow = ({ label, value, strong }: { label: string; value: string; strong?: boolean }) => (
   <div className="flex items-baseline justify-between gap-4">
@@ -14,7 +14,7 @@ const TotalRow = ({ label, value, strong }: { label: string; value: string; stro
 
 /** Ítems del pedido con su garrafa, cantidades y totales, y el desglose de recargos como resumen. */
 export const OrderItemsSummary = ({ order }: { order: Order }) => {
-  const onlineSurcharge = onlinePaymentSurcharge(order);
+  const surcharge = paymentSurchargeAmount(order);
   const zone = order.zone_surcharge;
 
   return (
@@ -60,9 +60,10 @@ export const OrderItemsSummary = ({ order }: { order: Order }) => {
             value={formatCurrency(zone.amount)}
           />
         )}
-        {onlineSurcharge > 0 && (
-          <TotalRow label={paymentSurchargeLabel(order)} value={formatCurrency(onlineSurcharge)} />
+        {order.deliveryMode === 'express' && order.expressSurchargeAmount > 0 && (
+          <TotalRow label="Recargo express" value={formatCurrency(order.expressSurchargeAmount)} />
         )}
+        {surcharge > 0 && <TotalRow label={orderSurchargeLabel(order)} value={formatCurrency(surcharge)} />}
         <TotalRow label="Total" value={formatCurrency(order.total_amount)} strong />
       </dl>
     </Card>

@@ -3,6 +3,7 @@ import { usePermissions } from '../../hooks';
 import { useCurrentDistributor } from '../../services/queries/distributors';
 import { BankDetailsCard } from './components/BankDetailsCard';
 import { MercadoPagoCard } from './components/MercadoPagoCard';
+import { PaymentSurchargesCard } from './components/PaymentSurchargesCard';
 import { StockControlCard } from './components/StockControlCard';
 import { SlotAvailabilityPanel } from './components/SlotAvailabilityPanel';
 import { TimeSlotsManager } from './components/TimeSlotsManager';
@@ -30,6 +31,7 @@ export const Configuration = () => {
         )}
         <BankDetailsCard />
         <MercadoPagoCard />
+        <PaymentSurchargesCard />
         <StockControlCard />
         <TimeSlotsManager />
         <SlotAvailabilityPanel />

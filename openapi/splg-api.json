@@ -3490,6 +3490,88 @@
                 ]
             }
         },
+        "/api/v2/payment-surcharges": {
+            "get": {
+                "description": "Porcentaje que se suma al total del pedido según el medio de pago (transferencia, Mercado Pago, efectivo). Sin configuración rigen los de omisión: transferencia 10, Mercado Pago 10, efectivo 0 (`isDefault: true`).",
+                "operationId": "PaymentSurchargeConfigController_get",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaymentSurchargeConfigResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\") o porcentaje fuera de 0 a 30 / con más de 2 decimales (detalle por campo)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Recargos por medio de pago de la distribuidora",
+                "tags": [
+                    "Configuración · Recargos por medio de pago (v2)"
+                ]
+            },
+            "put": {
+                "description": "Reemplaza la configuración: los tres porcentajes (`transferPercentage`, `mercadoPagoPercentage`, `cashPercentage`) son obligatorios; omitir uno o mandar `null` es 400. Para volver a los valores por omisión del sistema mandá 10, 10 y 0. Rige para los pedidos que se cotizan o crean desde ese momento; los pedidos ya creados conservan el porcentaje con que se crearon. El cliente ve el recargo en la cotización antes de confirmar.",
+                "operationId": "PaymentSurchargeConfigController_put",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PaymentSurchargeConfigDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaymentSurchargeConfigResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\") o porcentaje fuera de 0 a 30 / con más de 2 decimales (detalle por campo)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Cambiar los recargos por medio de pago",
+                "tags": [
+                    "Configuración · Recargos por medio de pago (v2)"
+                ]
+            }
+        },
         "/api/v1/module-config/dispatch": {
             "get": {
                 "description": "Pasos de radio (km) y ventana de aceptación de la oferta (s). Si la distribuidora no configuró nada, devuelve los valores por omisión (`isDefault: true`).",
@@ -6300,6 +6382,87 @@
                 ]
             }
         },
+        "/api/v2/public/distributors/{slug}/catalog": {
+            "get": {
+                "description": "Público. Los productos activos de la distribuidora con lo que puede ver un visitante: tipo, peso, precio de lista, descripción, foto (URL firmada de lectura corta), promociones por cantidad y si hay stock (`inStock`, sin la cantidad). No expone costos, stock exacto ni datos internos.",
+                "operationId": "PublicCatalogController_catalogo",
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "example": "demo",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CatalogoPublicoDto"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "La distribuidora no existe o no está activa"
+                    },
+                    "429": {
+                        "description": "Demasiados pedidos seguidos"
+                    }
+                },
+                "summary": "Catálogo de una distribuidora, sin iniciar sesión",
+                "tags": [
+                    "Gas Cylinders"
+                ]
+            }
+        },
+        "/api/v2/public/distributors/{slug}/payment-methods": {
+            "get": {
+                "description": "Público. Efectivo, transferencia y Mercado Pago con el recargo (%) que la distribuidora cobra hoy con cada uno. Es informativo: el monto exacto de un pedido lo da `POST /orders/quote`.",
+                "operationId": "PublicCatalogController_mediosDePago",
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "example": "demo",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/MedioDePagoDto"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "La distribuidora no existe o no está activa"
+                    },
+                    "429": {
+                        "description": "Demasiados pedidos seguidos"
+                    }
+                },
+                "summary": "Medios de pago y su recargo, sin iniciar sesión",
+                "tags": [
+                    "Gas Cylinders"
+                ]
+            }
+        },
         "/api/v1/auth": {
             "post": {
                 "description": "Si la petición llega acá, el guard ya validó el token y la cuenta.",
@@ -7360,7 +7523,7 @@
         },
         "/api/v1/orders/quote": {
             "post": {
-                "description": "Mismo cuerpo que `POST /orders` (sólo `items` y `paymentMethod` son obligatorios). Devuelve el desglose que cobrará el alta: renglones con la promoción por volumen, `subtotal`, recargo de zona (con `addressId`; el admin además manda `customerId`), recargo por medio de pago (+10% sobre subtotal + zona en `mercadopago` y `transfer`), `deposit` (si `isReservation`), `total` y `balance` (`total - deposit`). El `total` es exactamente el del pedido que se crea con el mismo cuerpo. No escribe nada ni reserva stock; sí rechaza lo que el alta rechazaría (producto de otra distribuidora, sin stock, dirección fuera de cobertura). Cliente sin `X-Distributor`: distribuidora por defecto, igual que el alta. Con `orderId` cotiza la EDICIÓN de ese pedido (mismas reglas que `PATCH /orders/:id`): pedido ajeno o inexistente 404, no editable 409, stock por diferencia contra lo ya reservado, franja y fecha sólo si cambian.",
+                "description": "Mismo cuerpo que `POST /orders` (sólo `items` y `paymentMethod` son obligatorios). Devuelve el desglose que cobrará el alta: renglones con la promoción por volumen, `subtotal`, recargo de zona (con `addressId`; el admin además manda `customerId`), recargo por medio de pago (`paymentSurchargePercentage` % sobre subtotal + zona: parámetro de la distribuidora por medio de pago, por omisión 10 en `mercadopago` y `transfer` y 0 en `cash`), `deposit` (si `isReservation`), `total` y `balance` (`total - deposit`). El `total` es exactamente el del pedido que se crea con el mismo cuerpo. No escribe nada ni reserva stock; sí rechaza lo que el alta rechazaría (producto de otra distribuidora, sin stock, dirección fuera de cobertura). Cliente sin `X-Distributor`: distribuidora por defecto, igual que el alta. Con `orderId` cotiza la EDICIÓN de ese pedido (mismas reglas que `PATCH /orders/:id`): pedido ajeno o inexistente 404, no editable 409, stock por diferencia contra lo ya reservado, franja y fecha sólo si cambian.",
                 "operationId": "OrderController_quote",
                 "parameters": [],
                 "requestBody": {
@@ -34010,6 +34173,71 @@
                     }
                 }
             },
+            "PaymentSurchargeConfigResponseDto": {
+                "type": "object",
+                "properties": {
+                    "transferPercentage": {
+                        "type": "number",
+                        "example": 10
+                    },
+                    "mercadoPagoPercentage": {
+                        "type": "number",
+                        "example": 10
+                    },
+                    "cashPercentage": {
+                        "type": "number",
+                        "example": 0
+                    },
+                    "isDefault": {
+                        "type": "boolean",
+                        "description": "true si rigen los valores por omisión (no configuró nada o todo coincide con ellos)",
+                        "example": true
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "updatedByUserId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "transferPercentage",
+                    "mercadoPagoPercentage",
+                    "cashPercentage",
+                    "isDefault",
+                    "updatedAt",
+                    "updatedByUserId"
+                ]
+            },
+            "PaymentSurchargeConfigDto": {
+                "type": "object",
+                "properties": {
+                    "transferPercentage": {
+                        "type": "number",
+                        "description": "Recargo por transferencia, en % (0 a 30 %, hasta 2 decimales). Obligatorio. Valor por omisión del sistema: 10",
+                        "example": 10
+                    },
+                    "mercadoPagoPercentage": {
+                        "type": "number",
+                        "description": "Recargo por Mercado Pago, en % (0 a 30 %, hasta 2 decimales). Obligatorio. Valor por omisión del sistema: 10",
+                        "example": 10
+                    },
+                    "cashPercentage": {
+                        "type": "number",
+                        "description": "Recargo por efectivo, en % (0 a 30 %, hasta 2 decimales). Obligatorio. Valor por omisión del sistema: 0",
+                        "example": 0
+                    }
+                },
+                "required": [
+                    "transferPercentage",
+                    "mercadoPagoPercentage",
+                    "cashPercentage"
+                ]
+            },
             "DispatchConfigResponseDto": {
                 "type": "object",
                 "properties": {
@@ -35397,11 +35625,17 @@
                     },
                     "key": {
                         "type": "string",
-                        "example": "CASH"
+                        "example": "CASH",
+                        "enum": [
+                            "CASH",
+                            "TRANSFER",
+                            "MERCADOPAGO"
+                        ]
                     },
                     "surcharge": {
                         "type": "number",
-                        "example": 0
+                        "example": 0,
+                        "description": "Recargo en % que la distribuidora cobra con ese medio de pago (parámetro configurable; el monto exacto lo da `POST /orders/quote`)"
                     }
                 },
                 "required": [
@@ -35478,6 +35712,82 @@
                 "required": [
                     "message",
                     "gasCylinderId"
+                ]
+            },
+            "ProductoPublicoDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "type": {
+                        "type": "string",
+                        "example": "10kg"
+                    },
+                    "weight": {
+                        "type": "number",
+                        "example": 10,
+                        "description": "Peso en kg"
+                    },
+                    "price": {
+                        "type": "number",
+                        "description": "Precio de lista, antes de promociones"
+                    },
+                    "description": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "photoUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "URL firmada de lectura corta de la imagen; `null` si no tiene."
+                    },
+                    "promotions": {
+                        "description": "Promociones por cantidad; vacío si no hay.",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PromocionDto"
+                        }
+                    },
+                    "inStock": {
+                        "type": "boolean",
+                        "description": "Si hay unidades para vender ahora. No expone la cantidad."
+                    }
+                },
+                "required": [
+                    "id",
+                    "type",
+                    "weight",
+                    "price",
+                    "description",
+                    "photoUrl",
+                    "promotions",
+                    "inStock"
+                ]
+            },
+            "CatalogoPublicoDto": {
+                "type": "object",
+                "properties": {
+                    "slug": {
+                        "type": "string",
+                        "example": "demo"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Distribuidora Demo"
+                    },
+                    "products": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ProductoPublicoDto"
+                        }
+                    }
+                },
+                "required": [
+                    "slug",
+                    "name",
+                    "products"
                 ]
             },
             "TokenValidoResponseDto": {
@@ -36243,7 +36553,12 @@
                     "paymentSurcharge": {
                         "type": "number",
                         "example": 1995,
-                        "description": "Recargo por medio de pago: +10% sobre subtotal + recargo de zona en `mercadopago` y `transfer`; 0 en `cash`"
+                        "description": "Recargo por medio de pago en pesos: `paymentSurchargePercentage` % sobre subtotal + recargo de zona (parámetro de la distribuidora por medio de pago; por omisión 10 en `mercadopago` y `transfer`, 0 en `cash`)"
+                    },
+                    "paymentSurchargePercentage": {
+                        "type": "number",
+                        "example": 10,
+                        "description": "Porcentaje de recargo del medio de pago con que se calculó `paymentSurcharge` (0 a 30, hasta 2 decimales). Es el que queda guardado en el pedido"
                     },
                     "deliveryMode": {
                         "type": "string",
@@ -36282,6 +36597,7 @@
                     "zoneSurcharge",
                     "paymentMethod",
                     "paymentSurcharge",
+                    "paymentSurchargePercentage",
                     "deliveryMode",
                     "expressSurcharge",
                     "deposit",
@@ -36765,6 +37081,17 @@
                         "example": 0,
                         "description": "Recargo express que se cobró al pedir (0 si nunca fue express). Se conserva aunque el pedido pase al reparto común: en ese caso el `total_amount` ya no lo incluye."
                     },
+                    "paymentSurchargeAmount": {
+                        "type": "number",
+                        "example": 2000,
+                        "description": "Recargo por medio de pago en pesos (0 en efectivo sin recargo). Es parte del `total_amount`: subtotal de ítems + recargo de zona + este recargo (+ el express vigente)."
+                    },
+                    "paymentSurchargePercentage": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": 10,
+                        "description": "Porcentaje con que se calculó `paymentSurchargeAmount` (parámetro de la distribuidora al crear o recalcular el pedido; un cambio posterior no lo altera). `null` en pedidos anteriores a que el recargo fuera configurable (regía 10 % online, 0 % en efectivo)."
+                    },
                     "expressDegradedAt": {
                         "type": "string",
                         "format": "date-time",
@@ -36926,6 +37253,8 @@
                     "editable",
                     "deliveryMode",
                     "expressSurchargeAmount",
+                    "paymentSurchargeAmount",
+                    "paymentSurchargePercentage",
                     "expressDegradedAt",
                     "delivery_address",
                     "delivery_id",
@@ -37073,6 +37402,11 @@
                             "express"
                         ],
                         "example": "standard"
+                    },
+                    "expectedTotal": {
+                        "type": "number",
+                        "description": "Total que el cliente vio en la cotización (`total` de `POST /orders/quote`). Si viene y el total que calcula el alta es otro (cambió una promoción, el recargo por medio de pago, la zona…), responde 409 «Cambió el precio: revisá el total y confirmá de nuevo» y no crea nada. Omitido, el alta no compara.",
+                        "example": 55781
                     }
                 },
                 "required": [
@@ -37155,6 +37489,11 @@
                             "express"
                         ],
                         "example": "standard"
+                    },
+                    "expectedTotal": {
+                        "type": "number",
+                        "description": "Total que el cliente vio en la cotización (`total` de `POST /orders/quote`). Si viene y el total que calcula el alta es otro (cambió una promoción, el recargo por medio de pago, la zona…), responde 409 «Cambió el precio: revisá el total y confirmá de nuevo» y no crea nada. Omitido, el alta no compara.",
+                        "example": 55781
                     },
                     "orderId": {
                         "type": "string",
@@ -37683,6 +38022,17 @@
                         "example": 0,
                         "description": "Recargo express que se cobró al pedir (0 si nunca fue express). Se conserva aunque el pedido pase al reparto común: en ese caso el `total_amount` ya no lo incluye."
                     },
+                    "paymentSurchargeAmount": {
+                        "type": "number",
+                        "example": 2000,
+                        "description": "Recargo por medio de pago en pesos (0 en efectivo sin recargo). Es parte del `total_amount`: subtotal de ítems + recargo de zona + este recargo (+ el express vigente)."
+                    },
+                    "paymentSurchargePercentage": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": 10,
+                        "description": "Porcentaje con que se calculó `paymentSurchargeAmount` (parámetro de la distribuidora al crear o recalcular el pedido; un cambio posterior no lo altera). `null` en pedidos anteriores a que el recargo fuera configurable (regía 10 % online, 0 % en efectivo)."
+                    },
                     "expressDegradedAt": {
                         "type": "string",
                         "format": "date-time",
@@ -37849,6 +38199,8 @@
                     "editable",
                     "deliveryMode",
                     "expressSurchargeAmount",
+                    "paymentSurchargeAmount",
+                    "paymentSurchargePercentage",
                     "expressDegradedAt",
                     "delivery_address",
                     "delivery_id",
@@ -38280,18 +38632,33 @@
                     },
                     "currentUnitPrice": {
                         "type": "number",
+                        "example": 1050,
+                        "description": "Precio unitario vigente CON la promoción por volumen aplicada: el mismo que cotiza y cobra el pedido (igual a promoUnitPrice)"
+                    },
+                    "listUnitPrice": {
+                        "type": "number",
                         "example": 1100,
-                        "description": "Precio vigente del catálogo"
+                        "description": "Precio de lista vigente del catálogo, sin promoción"
+                    },
+                    "discountPercentage": {
+                        "type": "number",
+                        "example": 5,
+                        "description": "% de descuento por volumen que alcanza la cantidad del renglón; 0 si no hay promoción aplicable"
+                    },
+                    "promoUnitPrice": {
+                        "type": "number",
+                        "example": 1045,
+                        "description": "Precio unitario con la promoción aplicada y redondeado a 2 decimales (igual al de lista si no hay promoción)"
                     },
                     "priceDifference": {
                         "type": "number",
                         "example": 100,
-                        "description": "Vigente menos guardado: positivo si subió, negativo si bajó, 0 si no cambió"
+                        "description": "Precio de lista vigente menos el guardado: positivo si subió, negativo si bajó, 0 si no cambió (las promociones no cuentan como cambio)"
                     },
                     "subtotal": {
                         "type": "number",
                         "example": 2200,
-                        "description": "Cantidad por precio vigente. 0 si el tipo ya no está disponible"
+                        "description": "Cantidad por precio unitario con promoción. 0 si el tipo ya no está disponible"
                     },
                     "available": {
                         "type": "boolean",
@@ -38309,6 +38676,9 @@
                     "quantity",
                     "savedUnitPrice",
                     "currentUnitPrice",
+                    "listUnitPrice",
+                    "discountPercentage",
+                    "promoUnitPrice",
                     "priceDifference",
                     "subtotal",
                     "available",
@@ -38341,7 +38711,7 @@
                     "total": {
                         "type": "number",
                         "example": 2200,
-                        "description": "Suma de los subtotales sobre los precios vigentes"
+                        "description": "Suma de los subtotales con promoción. NO incluye recargo de zona, por medio de pago (porcentaje configurable por distribuidora) ni express: el total a pagar y el recargo con su porcentaje los da POST /orders/quote"
                     },
                     "hasPriceChanges": {
                         "type": "boolean",
@@ -53923,13 +54293,17 @@
                     "quantity": {
                         "type": "number"
                     },
+                    "listUnitPrice": {
+                        "type": "number",
+                        "description": "Precio de lista de hoy, sin promoción (es 0 si el producto ya no existe)"
+                    },
                     "unitPrice": {
                         "type": "number",
-                        "description": "Precio de lista de hoy"
+                        "description": "Precio unitario de hoy con la promoción por volumen que alcanza la cantidad: el mismo que cotiza el pedido"
                     },
                     "subtotal": {
                         "type": "number",
-                        "description": "Cantidad por precio de lista (sin promociones ni recargos)"
+                        "description": "Cantidad por precio unitario con promoción (sin recargos de zona ni de pago)"
                     },
                     "available": {
                         "type": "boolean",
@@ -53940,6 +54314,7 @@
                     "gasCylinderId",
                     "type",
                     "quantity",
+                    "listUnitPrice",
                     "unitPrice",
                     "subtotal",
                     "available"
@@ -54031,7 +54406,7 @@
                     },
                     "estimatedTotal": {
                         "type": "number",
-                        "description": "Suma de los subtotales; el total real se cotiza con `POST /orders/quote`"
+                        "description": "Suma de los subtotales con promoción; el total real (con zona y el recargo por medio de pago, configurable por distribuidora) se cotiza con `POST /orders/quote`"
                     },
                     "address": {
                         "nullable": true,

@@ -802,6 +802,30 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/payment-surcharges': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Recargos por medio de pago de la distribuidora
+     * @description Porcentaje que se suma al total del pedido según el medio de pago (transferencia, Mercado Pago, efectivo). Sin configuración rigen los de omisión: transferencia 10, Mercado Pago 10, efectivo 0 (`isDefault: true`).
+     */
+    get: operations['PaymentSurchargeConfigController_get'];
+    /**
+     * Cambiar los recargos por medio de pago
+     * @description Reemplaza la configuración: los tres porcentajes (`transferPercentage`, `mercadoPagoPercentage`, `cashPercentage`) son obligatorios; omitir uno o mandar `null` es 400. Para volver a los valores por omisión del sistema mandá 10, 10 y 0. Rige para los pedidos que se cotizan o crean desde ese momento; los pedidos ya creados conservan el porcentaje con que se crearon. El cliente ve el recargo en la cotización antes de confirmar.
+     */
+    put: operations['PaymentSurchargeConfigController_put'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/module-config/dispatch': {
     parameters: {
       query?: never;
@@ -1396,6 +1420,46 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/public/distributors/{slug}/catalog': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Catálogo de una distribuidora, sin iniciar sesión
+     * @description Público. Los productos activos de la distribuidora con lo que puede ver un visitante: tipo, peso, precio de lista, descripción, foto (URL firmada de lectura corta), promociones por cantidad y si hay stock (`inStock`, sin la cantidad). No expone costos, stock exacto ni datos internos.
+     */
+    get: operations['PublicCatalogController_catalogo'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/public/distributors/{slug}/payment-methods': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Medios de pago y su recargo, sin iniciar sesión
+     * @description Público. Efectivo, transferencia y Mercado Pago con el recargo (%) que la distribuidora cobra hoy con cada uno. Es informativo: el monto exacto de un pedido lo da `POST /orders/quote`.
+     */
+    get: operations['PublicCatalogController_mediosDePago'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/auth': {
     parameters: {
       query?: never;
@@ -1682,7 +1746,7 @@ export interface paths {
     put?: never;
     /**
      * Cotizar un pedido
-     * @description Mismo cuerpo que `POST /orders` (sólo `items` y `paymentMethod` son obligatorios). Devuelve el desglose que cobrará el alta: renglones con la promoción por volumen, `subtotal`, recargo de zona (con `addressId`; el admin además manda `customerId`), recargo por medio de pago (+10% sobre subtotal + zona en `mercadopago` y `transfer`), `deposit` (si `isReservation`), `total` y `balance` (`total - deposit`). El `total` es exactamente el del pedido que se crea con el mismo cuerpo. No escribe nada ni reserva stock; sí rechaza lo que el alta rechazaría (producto de otra distribuidora, sin stock, dirección fuera de cobertura). Cliente sin `X-Distributor`: distribuidora por defecto, igual que el alta. Con `orderId` cotiza la EDICIÓN de ese pedido (mismas reglas que `PATCH /orders/:id`): pedido ajeno o inexistente 404, no editable 409, stock por diferencia contra lo ya reservado, franja y fecha sólo si cambian.
+     * @description Mismo cuerpo que `POST /orders` (sólo `items` y `paymentMethod` son obligatorios). Devuelve el desglose que cobrará el alta: renglones con la promoción por volumen, `subtotal`, recargo de zona (con `addressId`; el admin además manda `customerId`), recargo por medio de pago (`paymentSurchargePercentage` % sobre subtotal + zona: parámetro de la distribuidora por medio de pago, por omisión 10 en `mercadopago` y `transfer` y 0 en `cash`), `deposit` (si `isReservation`), `total` y `balance` (`total - deposit`). El `total` es exactamente el del pedido que se crea con el mismo cuerpo. No escribe nada ni reserva stock; sí rechaza lo que el alta rechazaría (producto de otra distribuidora, sin stock, dirección fuera de cobertura). Cliente sin `X-Distributor`: distribuidora por defecto, igual que el alta. Con `orderId` cotiza la EDICIÓN de ese pedido (mismas reglas que `PATCH /orders/:id`): pedido ajeno o inexistente 404, no editable 409, stock por diferencia contra lo ya reservado, franja y fecha sólo si cambian.
      */
     post: operations['OrderController_quote'];
     delete?: never;
@@ -8723,6 +8787,40 @@ export interface components {
        */
       standardEstimatedMinutes?: number;
     };
+    PaymentSurchargeConfigResponseDto: {
+      /** @example 10 */
+      transferPercentage: number;
+      /** @example 10 */
+      mercadoPagoPercentage: number;
+      /** @example 0 */
+      cashPercentage: number;
+      /**
+       * @description true si rigen los valores por omisión (no configuró nada o todo coincide con ellos)
+       * @example true
+       */
+      isDefault: boolean;
+      /** Format: date-time */
+      updatedAt: string | null;
+      /** Format: uuid */
+      updatedByUserId: string | null;
+    };
+    PaymentSurchargeConfigDto: {
+      /**
+       * @description Recargo por transferencia, en % (0 a 30 %, hasta 2 decimales). Obligatorio. Valor por omisión del sistema: 10
+       * @example 10
+       */
+      transferPercentage: number;
+      /**
+       * @description Recargo por Mercado Pago, en % (0 a 30 %, hasta 2 decimales). Obligatorio. Valor por omisión del sistema: 10
+       * @example 10
+       */
+      mercadoPagoPercentage: number;
+      /**
+       * @description Recargo por efectivo, en % (0 a 30 %, hasta 2 decimales). Obligatorio. Valor por omisión del sistema: 0
+       * @example 0
+       */
+      cashPercentage: number;
+    };
     DispatchConfigResponseDto: {
       /**
        * @example [
@@ -9372,9 +9470,15 @@ export interface components {
     MedioDePagoDto: {
       /** @example Efectivo */
       name: string;
-      /** @example CASH */
-      key: string;
-      /** @example 0 */
+      /**
+       * @example CASH
+       * @enum {string}
+       */
+      key: 'CASH' | 'TRANSFER' | 'MERCADOPAGO';
+      /**
+       * @description Recargo en % que la distribuidora cobra con ese medio de pago (parámetro configurable; el monto exacto lo da `POST /orders/quote`)
+       * @example 0
+       */
       surcharge: number;
     };
     DisponiblesDto: {
@@ -9400,6 +9504,33 @@ export interface components {
       message: string;
       /** Format: uuid */
       gasCylinderId: string;
+    };
+    ProductoPublicoDto: {
+      /** Format: uuid */
+      id: string;
+      /** @example 10kg */
+      type: string;
+      /**
+       * @description Peso en kg
+       * @example 10
+       */
+      weight: number;
+      /** @description Precio de lista, antes de promociones */
+      price: number;
+      description: string | null;
+      /** @description URL firmada de lectura corta de la imagen; `null` si no tiene. */
+      photoUrl: string | null;
+      /** @description Promociones por cantidad; vacío si no hay. */
+      promotions: components['schemas']['PromocionDto'][];
+      /** @description Si hay unidades para vender ahora. No expone la cantidad. */
+      inStock: boolean;
+    };
+    CatalogoPublicoDto: {
+      /** @example demo */
+      slug: string;
+      /** @example Distribuidora Demo */
+      name: string;
+      products: components['schemas']['ProductoPublicoDto'][];
     };
     TokenValidoResponseDto: {
       /** @example token valid */
@@ -9713,10 +9844,15 @@ export interface components {
        */
       paymentMethod: 'cash' | 'mercadopago' | 'transfer' | 'account';
       /**
-       * @description Recargo por medio de pago: +10% sobre subtotal + recargo de zona en `mercadopago` y `transfer`; 0 en `cash`
+       * @description Recargo por medio de pago en pesos: `paymentSurchargePercentage` % sobre subtotal + recargo de zona (parámetro de la distribuidora por medio de pago; por omisión 10 en `mercadopago` y `transfer`, 0 en `cash`)
        * @example 1995
        */
       paymentSurcharge: number;
+      /**
+       * @description Porcentaje de recargo del medio de pago con que se calculó `paymentSurcharge` (0 a 30, hasta 2 decimales). Es el que queda guardado en el pedido
+       * @example 10
+       */
+      paymentSurchargePercentage: number;
       /**
        * @description Modalidad cotizada (CU-148)
        * @example standard
@@ -9947,6 +10083,16 @@ export interface components {
        */
       expressSurchargeAmount: number;
       /**
+       * @description Recargo por medio de pago en pesos (0 en efectivo sin recargo). Es parte del `total_amount`: subtotal de ítems + recargo de zona + este recargo (+ el express vigente).
+       * @example 2000
+       */
+      paymentSurchargeAmount: number;
+      /**
+       * @description Porcentaje con que se calculó `paymentSurchargeAmount` (parámetro de la distribuidora al crear o recalcular el pedido; un cambio posterior no lo altera). `null` en pedidos anteriores a que el recargo fuera configurable (regía 10 % online, 0 % en efectivo).
+       * @example 10
+       */
+      paymentSurchargePercentage: number | null;
+      /**
        * Format: date-time
        * @description Cuándo ninguna moto aceptó y el pedido pasó al reparto común sin el recargo (null si no pasó)
        */
@@ -10048,6 +10194,11 @@ export interface components {
        * @enum {string}
        */
       deliveryMode?: 'standard' | 'express';
+      /**
+       * @description Total que el cliente vio en la cotización (`total` de `POST /orders/quote`). Si viene y el total que calcula el alta es otro (cambió una promoción, el recargo por medio de pago, la zona…), responde 409 «Cambió el precio: revisá el total y confirmá de nuevo» y no crea nada. Omitido, el alta no compara.
+       * @example 55781
+       */
+      expectedTotal?: number;
     };
     QuoteOrderDto: {
       /**
@@ -10087,6 +10238,11 @@ export interface components {
        * @enum {string}
        */
       deliveryMode?: 'standard' | 'express';
+      /**
+       * @description Total que el cliente vio en la cotización (`total` de `POST /orders/quote`). Si viene y el total que calcula el alta es otro (cambió una promoción, el recargo por medio de pago, la zona…), responde 409 «Cambió el precio: revisá el total y confirmá de nuevo» y no crea nada. Omitido, el alta no compara.
+       * @example 55781
+       */
+      expectedTotal?: number;
       /**
        * Format: uuid
        * @description Cotización de EDICIÓN de un pedido existente (el del cliente que cotiza, o de la distribuidora del staff; si no, 404). Sólo vale si el pedido es editable (409 con el mismo mensaje que `PATCH /orders/:id`). El stock se compara por la diferencia contra el pedido actual; la franja y la fecha sólo se validan si cambian; lo que no se manda se toma del pedido (dirección y zona incluidas).
@@ -10325,6 +10481,16 @@ export interface components {
        * @example 0
        */
       expressSurchargeAmount: number;
+      /**
+       * @description Recargo por medio de pago en pesos (0 en efectivo sin recargo). Es parte del `total_amount`: subtotal de ítems + recargo de zona + este recargo (+ el express vigente).
+       * @example 2000
+       */
+      paymentSurchargeAmount: number;
+      /**
+       * @description Porcentaje con que se calculó `paymentSurchargeAmount` (parámetro de la distribuidora al crear o recalcular el pedido; un cambio posterior no lo altera). `null` en pedidos anteriores a que el recargo fuera configurable (regía 10 % online, 0 % en efectivo).
+       * @example 10
+       */
+      paymentSurchargePercentage: number | null;
       /**
        * Format: date-time
        * @description Cuándo ninguna moto aceptó y el pedido pasó al reparto común sin el recargo (null si no pasó)
@@ -10591,17 +10757,32 @@ export interface components {
        */
       savedUnitPrice: number;
       /**
-       * @description Precio vigente del catálogo
-       * @example 1100
+       * @description Precio unitario vigente CON la promoción por volumen aplicada: el mismo que cotiza y cobra el pedido (igual a promoUnitPrice)
+       * @example 1050
        */
       currentUnitPrice: number;
       /**
-       * @description Vigente menos guardado: positivo si subió, negativo si bajó, 0 si no cambió
+       * @description Precio de lista vigente del catálogo, sin promoción
+       * @example 1100
+       */
+      listUnitPrice: number;
+      /**
+       * @description % de descuento por volumen que alcanza la cantidad del renglón; 0 si no hay promoción aplicable
+       * @example 5
+       */
+      discountPercentage: number;
+      /**
+       * @description Precio unitario con la promoción aplicada y redondeado a 2 decimales (igual al de lista si no hay promoción)
+       * @example 1045
+       */
+      promoUnitPrice: number;
+      /**
+       * @description Precio de lista vigente menos el guardado: positivo si subió, negativo si bajó, 0 si no cambió (las promociones no cuentan como cambio)
        * @example 100
        */
       priceDifference: number;
       /**
-       * @description Cantidad por precio vigente. 0 si el tipo ya no está disponible
+       * @description Cantidad por precio unitario con promoción. 0 si el tipo ya no está disponible
        * @example 2200
        */
       subtotal: number;
@@ -10622,7 +10803,7 @@ export interface components {
       /** @description Unidades de los ítems disponibles */
       totalUnits: number;
       /**
-       * @description Suma de los subtotales sobre los precios vigentes
+       * @description Suma de los subtotales con promoción. NO incluye recargo de zona, por medio de pago (porcentaje configurable por distribuidora) ni express: el total a pagar y el recargo con su porcentaje los da POST /orders/quote
        * @example 2200
        */
       total: number;
@@ -16741,9 +16922,11 @@ export interface components {
       /** @example 10kg */
       type: string;
       quantity: number;
-      /** @description Precio de lista de hoy */
+      /** @description Precio de lista de hoy, sin promoción (es 0 si el producto ya no existe) */
+      listUnitPrice: number;
+      /** @description Precio unitario de hoy con la promoción por volumen que alcanza la cantidad: el mismo que cotiza el pedido */
       unitPrice: number;
-      /** @description Cantidad por precio de lista (sin promociones ni recargos) */
+      /** @description Cantidad por precio unitario con promoción (sin recargos de zona ni de pago) */
       subtotal: number;
       /** @description false: el producto se dio de baja o ya no hay stock para la cantidad */
       available: boolean;
@@ -16782,7 +16965,7 @@ export interface components {
        */
       estimateSource: 'history' | 'declared';
       items: components['schemas']['InvitationItemDto'][];
-      /** @description Suma de los subtotales; el total real se cotiza con `POST /orders/quote` */
+      /** @description Suma de los subtotales con promoción; el total real (con zona y el recargo por medio de pago, configurable por distribuidora) se cotiza con `POST /orders/quote` */
       estimatedTotal: number;
       address: components['schemas']['InvitationAddressDto'] | null;
       /** @description Su franja habitual, si todavía está activa */
@@ -21232,6 +21415,90 @@ export interface operations {
       };
     };
   };
+  PaymentSurchargeConfigController_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PaymentSurchargeConfigResponseDto'];
+        };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") o porcentaje fuera de 0 a 30 / con más de 2 decimales (detalle por campo) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PaymentSurchargeConfigController_put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PaymentSurchargeConfigDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PaymentSurchargeConfigResponseDto'];
+        };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") o porcentaje fuera de 0 a 30 / con más de 2 decimales (detalle por campo) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   ModuleConfigController_getDispatch: {
     parameters: {
       query?: never;
@@ -23743,6 +24010,76 @@ export interface operations {
       };
       /** @description No existe o es de otra distribuidora */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PublicCatalogController_catalogo: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        slug: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CatalogoPublicoDto'];
+        };
+      };
+      /** @description La distribuidora no existe o no está activa */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Demasiados pedidos seguidos */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PublicCatalogController_mediosDePago: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        slug: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MedioDePagoDto'][];
+        };
+      };
+      /** @description La distribuidora no existe o no está activa */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Demasiados pedidos seguidos */
+      429: {
         headers: {
           [name: string]: unknown;
         };
