@@ -28,6 +28,7 @@ import {
   listCustomerAccounts,
   listDriverLiquidations,
   listDriverSettlements,
+  previewCloseCashSession,
   previewDriverSettlement,
   openCashSession,
   openDriverSettlement,
@@ -73,6 +74,7 @@ import type {
   RegisterPaymentBody,
   ReverseCashMovementBody,
   UnpayDriverLiquidationBody,
+  PreviewCloseCashSessionBody,
   PreviewDriverSettlementBody,
   SubmitDriverSettlementBody,
   TransferCashBody,
@@ -279,6 +281,20 @@ export const useCloseCashSession = () =>
     ({ body }) => body,
     ({ id, body }, key) => closeCashSession(id, body, key),
   );
+
+/**
+ * La diferencia del cierre de una caja según el back, para lo que se está contando. La respuesta queda atada a su
+ * clave (el importe): una lenta de un valor viejo nunca reemplaza a la del valor actual.
+ */
+export const useCloseCashSessionPreview = (id: string, body: PreviewCloseCashSessionBody | null, enabled = true) =>
+  useQuery({
+    queryKey: [...queryKeys.cashSessions.detail(id), 'close-preview', body],
+    queryFn: () => previewCloseCashSession(id, body as PreviewCloseCashSessionBody),
+    enabled: enabled && body !== null,
+    retry: false,
+    gcTime: 0,
+    staleTime: 0,
+  });
 
 // ── Movimientos y categorías ────────────────────────────────────────────────
 

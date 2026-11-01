@@ -3143,6 +3143,26 @@ export interface paths {
     patch: operations['CashSessionController_close'];
     trace?: never;
   };
+  '/api/v2/cash-sessions/{id}/close-preview': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Vista previa de la diferencia antes de cerrar la caja
+     * @description Con lo que se está contando, devuelve lo esperado (apertura + entradas − salidas de la sesión) y la diferencia (contado − esperado) con la misma cuenta que se guarda al cerrar. No escribe nada.
+     */
+    post: operations['CashSessionV2Controller_vistaPrevia'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/cash-movements': {
     parameters: {
       query?: never;
@@ -6837,6 +6857,26 @@ export interface paths {
     };
     /** Neumáticos de un vehículo */
     get: operations['CarFleetController_neumaticos'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/fleet/costs': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Tablero de costos de la flota, con sus totales
+     * @description Los mismos renglones por vehículo que la v1 (de mayor a menor costo por km; sin km, al final) dentro de `vehicles`, y en `summary` los totales de la flota por rubro, el costo total, los km y el costo por km, que sólo cuenta los vehículos con km (`withoutKm` los informa aparte).
+     */
+    get: operations['FleetCostV2Controller_tablero'];
     put?: never;
     post?: never;
     delete?: never;
@@ -12027,6 +12067,42 @@ export interface components {
       countedAmount: number;
       notes?: string;
     };
+    PreviewCloseCashSessionDto: {
+      /**
+       * @description Lo que se está contando en la caja (0 o más)
+       * @example 18250
+       */
+      countedAmount: number;
+    };
+    CloseCashSessionPreviewDto: {
+      /**
+       * @description Monto con que se abrió
+       * @example 5000
+       */
+      openingAmount: number;
+      /**
+       * @description Entradas de la sesión, sin el ajuste de apertura
+       * @example 14000
+       */
+      totalIn: number;
+      /**
+       * @description Salidas de la sesión, sin el ajuste de apertura
+       * @example 750
+       */
+      totalOut: number;
+      /**
+       * @description Apertura + entradas − salidas: lo que debería haber
+       * @example 18250
+       */
+      expectedAmount: number;
+      /** @example 18000 */
+      countedAmount: number;
+      /**
+       * @description Contado − esperado: la misma cuenta que se guarda al cerrar (negativa: faltante; positiva: sobrante)
+       * @example -250
+       */
+      difference: number;
+    };
     CashMovementPageDto: {
       data: components['schemas']['CashMovementResponseDto'][];
       /** @example 40 */
@@ -16485,6 +16561,41 @@ export interface components {
       /** @description `null` si no hubo km */
       costPerKm: number | null;
     };
+    FleetCostTotalsDto: {
+      /**
+       * @description Vehículos del tablero
+       * @example 3
+       */
+      vehicles: number;
+      /** @description Mantenimiento de toda la flota */
+      maintenance: number;
+      /** @description Seguros prorrateados de toda la flota */
+      insurance: number;
+      /** @description Combustible de toda la flota */
+      fuel: number;
+      /** @description Multas de toda la flota */
+      fines: number;
+      /** @description Siniestros de toda la flota */
+      accidents: number;
+      /** @description Costo total del período: suma de los vehículos, con o sin km. Excluye los vehículos dados de baja */
+      total: number;
+      /** @description Suma de los km de los vehículos que tienen km */
+      km: number;
+      /** @description Costo de los vehículos con km sobre sus km. `null` si ninguno tiene km */
+      costPerKm: number | null;
+      /** @description Vehículos sin km: no entran al costo por km */
+      withoutKm: number;
+    };
+    FleetCostBoardDto: {
+      /** @example 2026-10-01 */
+      from: string;
+      /** @example 2026-10-31 */
+      to: string;
+      /** @description Los totales de la flota en el período, calculados por el back */
+      summary: components['schemas']['FleetCostTotalsDto'];
+      /** @description Un renglón por vehículo, de mayor a menor costo por km; sin km, al final */
+      vehicles: components['schemas']['FleetCostSummaryDto'][];
+    };
     FuelLoadV2ResponseDto: {
       /** Format: uuid */
       fuelLoadId: string;
@@ -18186,6 +18297,16 @@ export interface components {
       differences: {
         [key: string]: number;
       };
+      /**
+       * @description Total de diferencias: la suma de `differences` de todos los tipos
+       * @example 3
+       */
+      differenceCount: number;
+      /**
+       * @description Neto de Mercado Pago menos neto de la caja en el rango (negativo: la caja tiene más)
+       * @example -120.5
+       */
+      netGap: number;
       /**
        * @description Filas que ya se habían asentado en otra corrida
        * @example 2
@@ -29680,6 +29801,67 @@ export interface operations {
       };
       /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
       422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CashSessionV2Controller_vistaPrevia: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Sesión UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PreviewCloseCashSessionDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CloseCashSessionPreviewDto'];
+        };
+      };
+      /** @description Importe negativo o con más de dos decimales */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La sesión ya está cerrada */
+      409: {
         headers: {
           [name: string]: unknown;
         };
@@ -42009,6 +42191,49 @@ export interface operations {
       };
       /** @description Vehículo no encontrado */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FleetCostV2Controller_tablero: {
+    parameters: {
+      query: {
+        from: string;
+        to: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FleetCostBoardDto'];
+        };
+      };
+      /** @description Fecha inválida o inicio posterior al fin */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
         headers: {
           [name: string]: unknown;
         };

@@ -79,6 +79,8 @@ const run = (over: Record<string, unknown> = {}) => ({
     mp: { gross: 43100, fees: 2500, taxes: 300, net: 40300 },
     cash: { income: 0, expense: 0, net: 0 },
     differences: { payment_not_in_cash: 1 },
+    differenceCount: 1,
+    netGap: 40300,
     alreadyApplied: 2,
     unreadableRows: 0,
     account: { rows: 3, credit: 475, debit: 40120 },
@@ -171,6 +173,7 @@ describe('MpReconciliationDetails', () => {
     setup();
 
     expect(screen.getByText('Neto según Mercado Pago')).toBeInTheDocument();
+    expect(screen.getByText('Diferencia de neto').parentElement).toHaveTextContent('40.300,00');
     expect(screen.getByText('Cobros sin ingreso en la caja (1)')).toBeInTheDocument();
     expect(screen.getByText('MP-596254552')).toBeInTheDocument();
     expect(screen.getByText(/Mercado Pago \$.*10\.300,00/)).toBeInTheDocument();

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { MpApply, MpReconciliationItem, MpSummary } from '../../services/api/types';
+import type { MpApply, MpReconciliationItem } from '../../services/api/types';
 import {
   amountsLine,
   applySummary,
@@ -8,7 +8,6 @@ import {
   groupByKind,
   isSelectable,
   missingBoxes,
-  netGap,
   newReconciliationSchema,
   selectableIds,
   toApplyBody,
@@ -141,12 +140,5 @@ describe('resultado de aplicar', () => {
 
   it('da el motivo de cada falla', () => {
     expect(failureMessages(result())).toEqual({ b: 'La caja está desactivada', c: 'No se pudo asentar' });
-  });
-});
-
-describe('netGap', () => {
-  it('es lo que Mercado Pago informa de neto menos lo que tiene la caja', () => {
-    const summary = { mp: { net: 40300 }, cash: { net: 40000.1 } } as MpSummary;
-    expect(netGap(summary)).toBe(299.9);
   });
 });

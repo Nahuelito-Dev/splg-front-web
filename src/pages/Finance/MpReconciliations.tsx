@@ -26,9 +26,8 @@ import { MpReconciliationFormModal } from './components/MpReconciliationFormModa
 
 const period = (row: MpReconciliation) => `${formatDay(row.from)} al ${formatDay(row.to)}`;
 
-/** Cuántas diferencias sin asentar tiene una corrida lista (las informativas no cuentan). */
-const differenceCount = (row: MpReconciliation): number =>
-  row.summary ? Object.values(row.summary.differences).reduce((a, n) => a + n, 0) : 0;
+/** Cuántas diferencias tiene una corrida lista: el total lo manda el back. */
+const differenceCount = (row: MpReconciliation): number => row.summary?.differenceCount ?? 0;
 
 const differencesText = (row: MpReconciliation): string => {
   if (row.status === 'failed') return row.failureReason ?? 'Falló';

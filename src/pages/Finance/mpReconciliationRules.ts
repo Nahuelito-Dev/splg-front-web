@@ -4,7 +4,6 @@ import type {
   MpApply,
   MpDifferenceKind,
   MpReconciliationItem,
-  MpSummary,
 } from '../../services/api/types';
 import { formatCurrencyExact } from '../../utils/format';
 import { day } from './financeSchemas';
@@ -165,6 +164,3 @@ export const countsOf = (items: MpReconciliationItem[]): { pending: number; appl
   pending: items.filter(isSelectable).length,
   applied: items.filter((i) => i.status === 'applied').length,
 });
-
-/** Cuánto más neto informa Mercado Pago que lo que tiene la caja en el rango (negativo: la caja tiene más). */
-export const netGap = (summary: MpSummary): number => Math.round((summary.mp.net - summary.cash.net) * 100) / 100;

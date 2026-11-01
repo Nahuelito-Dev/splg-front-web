@@ -11,7 +11,7 @@ import type {
   CreateTireEventBody,
   CreateTrafficFineV2Body,
   CreateVehicleAccidentBody,
-  FleetCostSummary,
+  FleetCostBoard,
   FuelEfficiency,
   FuelLoad,
   FuelLoadPage,
@@ -266,9 +266,15 @@ export const getCarCosts = async (carId: string, range: DayRangeParams): Promise
 /** Los parámetros de GET /fleet/costs: los mismos que usa el exporte completo. */
 export const fleetCostQuery = (range: DayRangeParams) => ({ from: range.from, to: range.to });
 
-/** GET /fleet/costs (CU-204): un renglón por vehículo, de mayor a menor costo por km. */
-export const getFleetCosts = async (range: DayRangeParams): Promise<FleetCostSummary[]> => {
-  const { data } = await http.get<FleetCostSummary[]>('/fleet/costs', { params: fleetCostQuery(range) });
+/**
+ * GET /v2/fleet/costs (CU-204): un renglón por vehículo, de mayor a menor costo por km, y los totales de la flota
+ * (por rubro, costo total y costo por km) que calcula el back.
+ */
+export const getFleetCosts = async (range: DayRangeParams): Promise<FleetCostBoard> => {
+  const { data } = await http.get<FleetCostBoard>('/fleet/costs', {
+    params: fleetCostQuery(range),
+    baseURL: env.apiUrlV2,
+  });
   return data;
 };
 

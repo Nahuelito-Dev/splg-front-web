@@ -12886,6 +12886,69 @@
                 ]
             }
         },
+        "/api/v2/cash-sessions/{id}/close-preview": {
+            "post": {
+                "description": "Con lo que se está contando, devuelve lo esperado (apertura + entradas − salidas de la sesión) y la diferencia (contado − esperado) con la misma cuenta que se guarda al cerrar. No escribe nada.",
+                "operationId": "CashSessionV2Controller_vistaPrevia",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Sesión UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PreviewCloseCashSessionDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CloseCashSessionPreviewDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Importe negativo o con más de dos decimales"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "La sesión ya está cerrada"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Vista previa de la diferencia antes de cerrar la caja",
+                "tags": [
+                    "Finanzas · Cajas (v2)"
+                ]
+            }
+        },
         "/api/v1/cash-movements": {
             "get": {
                 "description": "Del más nuevo al más viejo. Filtra por caja, categoría, sentido, origen y período (días en hora argentina, ambos inclusive).",
@@ -27574,6 +27637,64 @@
                 ]
             }
         },
+        "/api/v2/fleet/costs": {
+            "get": {
+                "description": "Los mismos renglones por vehículo que la v1 (de mayor a menor costo por km; sin km, al final) dentro de `vehicles`, y en `summary` los totales de la flota por rubro, el costo total, los km y el costo por km, que sólo cuenta los vehículos con km (`withoutKm` los informa aparte).",
+                "operationId": "FleetCostV2Controller_tablero",
+                "parameters": [
+                    {
+                        "name": "from",
+                        "required": true,
+                        "in": "query",
+                        "schema": {
+                            "format": "date",
+                            "example": "2026-10-01",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "required": true,
+                        "in": "query",
+                        "schema": {
+                            "format": "date",
+                            "example": "2026-10-31",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FleetCostBoardDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Fecha inválida o inicio posterior al fin"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Tablero de costos de la flota, con sus totales",
+                "tags": [
+                    "Fleet · Costos (v2)"
+                ]
+            }
+        },
         "/api/v2/fleet/fuel-loads": {
             "get": {
                 "operationId": "FuelLoadV2Controller_findAll",
@@ -41501,6 +41622,61 @@
                     "countedAmount"
                 ]
             },
+            "PreviewCloseCashSessionDto": {
+                "type": "object",
+                "properties": {
+                    "countedAmount": {
+                        "type": "number",
+                        "example": 18250,
+                        "description": "Lo que se está contando en la caja (0 o más)"
+                    }
+                },
+                "required": [
+                    "countedAmount"
+                ]
+            },
+            "CloseCashSessionPreviewDto": {
+                "type": "object",
+                "properties": {
+                    "openingAmount": {
+                        "type": "number",
+                        "example": 5000,
+                        "description": "Monto con que se abrió"
+                    },
+                    "totalIn": {
+                        "type": "number",
+                        "example": 14000,
+                        "description": "Entradas de la sesión, sin el ajuste de apertura"
+                    },
+                    "totalOut": {
+                        "type": "number",
+                        "example": 750,
+                        "description": "Salidas de la sesión, sin el ajuste de apertura"
+                    },
+                    "expectedAmount": {
+                        "type": "number",
+                        "example": 18250,
+                        "description": "Apertura + entradas − salidas: lo que debería haber"
+                    },
+                    "countedAmount": {
+                        "type": "number",
+                        "example": 18000
+                    },
+                    "difference": {
+                        "type": "number",
+                        "example": -250,
+                        "description": "Contado − esperado: la misma cuenta que se guarda al cerrar (negativa: faltante; positiva: sobrante)"
+                    }
+                },
+                "required": [
+                    "openingAmount",
+                    "totalIn",
+                    "totalOut",
+                    "expectedAmount",
+                    "countedAmount",
+                    "difference"
+                ]
+            },
             "CashMovementPageDto": {
                 "type": "object",
                 "properties": {
@@ -52909,6 +53085,99 @@
                     "costPerKm"
                 ]
             },
+            "FleetCostTotalsDto": {
+                "type": "object",
+                "properties": {
+                    "vehicles": {
+                        "type": "number",
+                        "example": 3,
+                        "description": "Vehículos del tablero"
+                    },
+                    "maintenance": {
+                        "type": "number",
+                        "description": "Mantenimiento de toda la flota"
+                    },
+                    "insurance": {
+                        "type": "number",
+                        "description": "Seguros prorrateados de toda la flota"
+                    },
+                    "fuel": {
+                        "type": "number",
+                        "description": "Combustible de toda la flota"
+                    },
+                    "fines": {
+                        "type": "number",
+                        "description": "Multas de toda la flota"
+                    },
+                    "accidents": {
+                        "type": "number",
+                        "description": "Siniestros de toda la flota"
+                    },
+                    "total": {
+                        "type": "number",
+                        "description": "Costo total del período: suma de los vehículos, con o sin km. Excluye los vehículos dados de baja"
+                    },
+                    "km": {
+                        "type": "number",
+                        "description": "Suma de los km de los vehículos que tienen km"
+                    },
+                    "costPerKm": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Costo de los vehículos con km sobre sus km. `null` si ninguno tiene km"
+                    },
+                    "withoutKm": {
+                        "type": "number",
+                        "description": "Vehículos sin km: no entran al costo por km"
+                    }
+                },
+                "required": [
+                    "vehicles",
+                    "maintenance",
+                    "insurance",
+                    "fuel",
+                    "fines",
+                    "accidents",
+                    "total",
+                    "km",
+                    "costPerKm",
+                    "withoutKm"
+                ]
+            },
+            "FleetCostBoardDto": {
+                "type": "object",
+                "properties": {
+                    "from": {
+                        "type": "string",
+                        "example": "2026-10-01"
+                    },
+                    "to": {
+                        "type": "string",
+                        "example": "2026-10-31"
+                    },
+                    "summary": {
+                        "description": "Los totales de la flota en el período, calculados por el back",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/FleetCostTotalsDto"
+                            }
+                        ]
+                    },
+                    "vehicles": {
+                        "description": "Un renglón por vehículo, de mayor a menor costo por km; sin km, al final",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/FleetCostSummaryDto"
+                        }
+                    }
+                },
+                "required": [
+                    "from",
+                    "to",
+                    "summary",
+                    "vehicles"
+                ]
+            },
             "FuelLoadV2ResponseDto": {
                 "type": "object",
                 "properties": {
@@ -57275,6 +57544,16 @@
                         },
                         "description": "Cantidad de diferencias pendientes o aplicadas, por tipo"
                     },
+                    "differenceCount": {
+                        "type": "number",
+                        "example": 3,
+                        "description": "Total de diferencias: la suma de `differences` de todos los tipos"
+                    },
+                    "netGap": {
+                        "type": "number",
+                        "example": -120.5,
+                        "description": "Neto de Mercado Pago menos neto de la caja en el rango (negativo: la caja tiene más)"
+                    },
                     "alreadyApplied": {
                         "type": "number",
                         "example": 2,
@@ -57299,6 +57578,8 @@
                     "mp",
                     "cash",
                     "differences",
+                    "differenceCount",
+                    "netGap",
                     "alreadyApplied",
                     "unreadableRows"
                 ]

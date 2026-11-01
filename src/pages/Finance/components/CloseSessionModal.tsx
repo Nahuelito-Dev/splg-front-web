@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import {
@@ -12,10 +12,13 @@ import {
   FormTextArea,
   Form,
 } from '../../../common/components/ui';
-import { useCloseCashSession, useCashSession } from '../../../services/queries/finance';
+import { ApiError } from '../../../services/api/errors';
+import { useDebounce } from '../../../hooks/useDebounce';
+import type { PreviewCloseCashSessionBody } from '../../../services/api/types';
+import { useCloseCashSession, useCloseCashSessionPreview, useCashSession } from '../../../services/queries/finance';
 import { formatCurrency } from '../../../utils/format';
 import { notify } from '../../../utils/notifications';
-import { nonNegativeMoney, optionalText, parseMoney } from '../financeSchemas';
+import { isMoneyText, nonNegativeMoney, optionalText, parseMoney } from '../financeSchemas';
 
 const schema = z.object({
   countedAmount: nonNegativeMoney('Ingresá lo que contaste'),
@@ -41,9 +44,33 @@ export const CloseSessionModal = ({ open, onClose, sessionId }: Props) => {
     if (open) reset({ countedAmount: '', notes: '' });
   }, [open, reset]);
 
-  const expected = session ? session.currentBalance : null;
-  const parsed = counted && !Number.isNaN(parseMoney(counted)) ? parseMoney(counted) : null;
-  const difference = expected !== null && parsed !== null ? Math.round((parsed - expected) * 100) / 100 : null;
+  // Lo que se pide al back: el importe contado, si ya se puede leer. Uno ilegible no se consulta y no se inventa una
+  // diferencia. La respuesta queda atada a su clave: una lenta de un valor viejo no reemplaza a la del valor actual.
+  const previewKey = useMemo(
+    () =>
+      counted && isMoneyText(counted)
+        ? JSON.stringify({ countedAmount: parseMoney(counted) } satisfies PreviewCloseCashSessionBody)
+        : null,
+    [counted],
+  );
+  const settledKey = useDebounce(previewKey, 400);
+  const preview = useCloseCashSessionPreview(
+    sessionId ?? '',
+    settledKey ? (JSON.parse(settledKey) as PreviewCloseCashSessionBody) : null,
+    open && Boolean(sessionId),
+  );
+  const current = previewKey !== null && previewKey === settledKey;
+  const difference = current ? (preview.data?.difference ?? null) : null;
+  const previewFailed = current && preview.isError;
+  // Con la vista previa a la vista, las cifras de arriba son las del back para esa cuenta; sin ella, las de la sesión.
+  const live = current ? preview.data : undefined;
+  const previewError = previewFailed && preview.error instanceof ApiError ? preview.error : null;
+  const previewMessage =
+    previewError?.status === 409
+      ? 'La sesión ya está cerrada.'
+      : previewError?.status === 400
+        ? (previewError.messages[0] ?? 'El importe no es válido.')
+        : 'No se pudo calcular la diferencia ahora. Podés cerrar igual: el back la calcula al guardar.';
 
   const onSubmit = (values: Values) => {
     if (!sessionId) return;
@@ -90,13 +117,22 @@ export const CloseSessionModal = ({ open, onClose, sessionId }: Props) => {
           <DetailList
             items={[
               { label: 'Monto inicial', value: formatCurrency(session.openingAmount), mono: true },
-              { label: 'Entradas', value: formatCurrency(session.totalIn), mono: true },
-              { label: 'Salidas', value: formatCurrency(session.totalOut), mono: true },
-              { label: 'Saldo según el libro', value: formatCurrency(session.currentBalance), mono: true },
+              { label: 'Entradas', value: formatCurrency(live?.totalIn ?? session.totalIn), mono: true },
+              { label: 'Salidas', value: formatCurrency(live?.totalOut ?? session.totalOut), mono: true },
+              {
+                label: 'Saldo según el libro',
+                value: formatCurrency(live?.expectedAmount ?? session.currentBalance),
+                mono: true,
+              },
             ]}
           />
           <Form methods={methods} id="close-session-form" onSubmit={onSubmit} className="grid gap-4">
             <FormInput name="countedAmount" label="Monto contado" required inputMode="decimal" />
+            {previewFailed && (
+              <p role="status" className="text-sm text-warn">
+                {previewMessage}
+              </p>
+            )}
             {difference !== null && (
               <p
                 role="status"
