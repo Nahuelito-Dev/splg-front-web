@@ -9,8 +9,11 @@ vi.mock('./httpClient', async (importOriginal) => ({ ...(await importOriginal<Re
 
 import {
   confirmOrderDelivery,
+  getOrderPaymentState,
   getOrderStatusHistory,
+  listOrderPaymentStates,
   listOrders,
+  releaseFraudHold,
   resolveUnpaidOrder,
   updateOrderStatus,
 } from './orders';
@@ -58,5 +61,38 @@ describe('API de pedidos: historial', () => {
     http.get.mockResolvedValue({ data: [{ id: 'h-1' }] });
     await expect(getOrderStatusHistory('o-1')).resolves.toEqual([{ id: 'h-1' }]);
     expect(http.get.mock.calls[0][0]).toBe('/orders/o-1/status-history');
+  });
+});
+
+describe('API de pedidos: estado del pago de Mercado Pago (v2)', () => {
+  it('el detalle lee /v2/orders/:id/payment', async () => {
+    http.get.mockResolvedValue({ data: { orderId: 'o-1', paymentStatus: 'rejected' } });
+    const state = await getOrderPaymentState('o-1');
+    expect(state.paymentStatus).toBe('rejected');
+    expect(http.get).toHaveBeenCalledWith('/orders/o-1/payment', { baseURL: expect.stringMatching(/\/v2$/) as string });
+  });
+
+  it('la lista manda los ids separados por coma a /v2/orders/payments', async () => {
+    http.get.mockResolvedValue({ data: [] });
+    await listOrderPaymentStates(['o-1', 'o-2']);
+    const [url, config] = http.get.mock.calls[0] as [string, { baseURL: string; params: { ids: string } }];
+    expect(url).toBe('/orders/payments');
+    expect(config.baseURL).toMatch(/\/v2$/);
+    expect(config.params).toEqual({ ids: 'o-1,o-2' });
+  });
+});
+
+describe('API de pedidos: liberar la retención por fraude (v2)', () => {
+  it('PATCH /v2/orders/:id/payment/fraud-hold/release con el motivo y la clave de idempotencia', async () => {
+    await releaseFraudHold('o-1', 'Verifiqué el pago', 'k-1');
+    const [url, body, config] = http.patch.mock.calls[0] as [
+      string,
+      unknown,
+      { baseURL: string; headers: Record<string, string> },
+    ];
+    expect(url).toBe('/orders/o-1/payment/fraud-hold/release');
+    expect(body).toEqual({ reason: 'Verifiqué el pago' });
+    expect(config.baseURL).toMatch(/\/v2$/);
+    expect(config.headers).toEqual({ 'Idempotency-Key': 'k-1' });
   });
 });

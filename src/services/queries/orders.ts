@@ -11,14 +11,17 @@ import {
   getDeliveryOptions,
   getOrder,
   getOrderDeliveryCode,
+  getOrderPaymentState,
   getOrderStatusHistory,
   listAvailableOrders,
   listOrderIncidents,
+  listOrderPaymentStates,
   listOrderTransferReceipts,
   listOrders,
   notifyOrderArrival,
   quoteOrder,
   registerCashPayment,
+  releaseFraudHold,
   registerUnpaidPayment,
   resolveUnpaidOrder,
   updateOrder,
@@ -170,6 +173,32 @@ export const useOrderStatusHistory = (orderId: string | undefined) =>
     queryFn: () => getOrderStatusHistory(orderId ?? ''),
     enabled: Boolean(orderId),
   });
+
+/**
+ * El estado del pago de Mercado Pago de un pedido, con su historial. Cuelga del detalle, así que se refresca cuando
+ * el pedido cambia (el aviso de la pasarela actualiza el pedido y el pago a la vez).
+ */
+export const useOrderPaymentState = (orderId: string | undefined, enabled = true) =>
+  useQuery({
+    queryKey: [...keys.detail(orderId ?? ''), 'payment-state'],
+    queryFn: () => getOrderPaymentState(orderId ?? ''),
+    enabled: Boolean(orderId) && enabled,
+  });
+
+/** Máximo de pedidos por consulta del estado del pago: el tope de la API. */
+const PAYMENT_STATES_BATCH = 50;
+
+/** El estado del pago de los pedidos de Mercado Pago de una lista, en una consulta. Sin ids no consulta. */
+export const useOrderPaymentStates = (orderIds: string[]) => {
+  const ids = [...new Set(orderIds)].slice(0, PAYMENT_STATES_BATCH).sort();
+  return useQuery({
+    queryKey: [...keys.lists(), 'payment-states', ids],
+    queryFn: () => listOrderPaymentStates(ids),
+    enabled: ids.length > 0,
+    placeholderData: keepPreviousData,
+    select: (states) => new Map(states.map((state) => [state.orderId, state])),
+  });
+};
 
 /** Incidencias reportadas para un pedido puntual (se muestran en su detalle). */
 export const useOrderIncidents = (orderId: string | undefined) =>
@@ -391,6 +420,16 @@ export const useRegisterCashPayment = () => {
     mutationFn: ({ id, body, scope }: { id: string; body: RegisterCashBody; scope: string }) =>
       runIntent(queryClient, scope, { id, body }, (key) => registerCashPayment(id, body, key)),
     onSettled: () => invalidateAfterPayment(queryClient),
+  });
+};
+
+/** PATCH /v2/orders/:id/payment/fraud-hold/release: libera la retención por fraude (motivo obligatorio). */
+export const useReleaseFraudHold = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason, scope }: { id: string; reason: string; scope: string }) =>
+      runIntent(queryClient, scope, { id, reason }, (key) => releaseFraudHold(id, reason, key)),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: keys.all }),
   });
 };
 

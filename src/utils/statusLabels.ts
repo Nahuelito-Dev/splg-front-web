@@ -28,8 +28,10 @@ import type {
   InsurancePolicy,
   Leave,
   MpItemStatus,
+  LedgerPaymentStatus,
   MpReconciliationStatus,
   Order,
+  OrderPaymentState,
   OrderRecord,
   PurchaseOrder,
   Refund,
@@ -94,6 +96,49 @@ export const PAYMENT_STATUS: LabelMap<NonNullable<Order['paymentStatus']>> = {
   failed: { text: 'Rechazado', tone: 'danger' },
   unpaid: { text: 'Impago', tone: 'danger' },
   written_off: { text: 'Pérdida', tone: 'neutral' },
+};
+
+/**
+ * Tono de cada uno de los nueve estados de pago de Mercado Pago. El TEXTO lo arma el back (`paymentStatusLabel`):
+ * el panel no lo reinterpreta, sólo elige el color.
+ */
+export const MERCADOPAGO_PAYMENT_TONE: Record<LedgerPaymentStatus, Tone> = {
+  pending: 'warn',
+  in_process: 'warn',
+  authorized: 'warn',
+  approved: 'success',
+  rejected: 'danger',
+  cancelled: 'neutral',
+  refunded: 'neutral',
+  charged_back: 'danger',
+  in_mediation: 'danger',
+};
+
+/**
+ * La etiqueta del pago de Mercado Pago de un pedido: el texto del back con el tono de su estado; `null` si no tiene.
+ * Un contracargo reintegrado (`reimbursed`: Mercado Pago devolvió el dinero al comercio y la caja ya tiene el ingreso)
+ * deja de ser un problema: tono neutro. El resto de los contracargos (dinero retenido, también `in_process`) es peligro,
+ * igual que el egreso que asentó la caja.
+ */
+export const mercadoPagoPaymentLabel = (
+  state:
+    | (Pick<OrderPaymentState, 'paymentStatus' | 'paymentStatusLabel'> &
+        Partial<Pick<OrderPaymentState, 'paymentStatusDetail' | 'paymentFraudHold'>>)
+    | undefined,
+): Label | null => {
+  // Un pedido retenido por una alerta de fraude se ve primero: es lo que pide acción.
+  if (state?.paymentFraudHold) return { text: 'Retenido por fraude', tone: 'danger' };
+  if (!state?.paymentStatus || !state.paymentStatusLabel) return null;
+  const contracargo = state.paymentStatus === 'charged_back' ? state.paymentStatusDetail : undefined;
+  // Contracargo: sólo `settled` (dinero retenido, egreso en la caja) es peligro; `in_process` (disputa abierta, el monto
+  // queda en espera: la caja no se toca) es ámbar; `reimbursed` (dinero reintegrado), neutro.
+  const tone: Tone =
+    contracargo === 'reimbursed'
+      ? 'neutral'
+      : contracargo === 'in_process'
+        ? 'warn'
+        : MERCADOPAGO_PAYMENT_TONE[state.paymentStatus];
+  return { text: state.paymentStatusLabel, tone };
 };
 
 /** Los estados de cobro que se ofrecen como filtro, en el orden del circuito. */

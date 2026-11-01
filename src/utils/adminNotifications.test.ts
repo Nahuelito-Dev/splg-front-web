@@ -77,3 +77,28 @@ describe('Etapa 3: cobros de ventas sin asentar', () => {
     expect(notificationTarget({ entity: 'cash-settings', id: 'd-1' })).toBe('/finance/collection-settings');
   });
 });
+
+describe('Ronda 3 de Mercado Pago: avisos de pagos', () => {
+  it.each([
+    ['payment_in_mediation', 'danger'],
+    ['payment_chargeback_opened', 'danger'],
+    ['payment_chargeback', 'danger'],
+    ['payment_fraud_alert', 'danger'],
+    ['payment_lookup_failed', 'danger'],
+    ['payment_alert_unprocessed', 'danger'],
+    ['payment_chargeback_review', 'warn'],
+    ['payment_chargeback_resolved', 'success'],
+    ['payment_refunded', 'warn'],
+    ['payment_duplicate', 'warn'],
+    ['payment_needs_review', 'warn'],
+    ['payment_without_attempt', 'warn'],
+  ])('%s tiene su propio ícono y tono %s (no el genérico)', (kind, tone) => {
+    const visual = notificationVisuals(kind);
+    expect(visual.tone).toBe(tone);
+    expect(visual.icon).not.toBe(notificationVisuals('tipo_que_no_existe').icon);
+  });
+
+  it('los avisos de pago llevan al pedido', () => {
+    expect(notificationTarget({ entity: 'order', id: 'o-1' })).toBe('/orders/o-1');
+  });
+});

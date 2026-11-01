@@ -64,6 +64,7 @@ vi.mock('../../services/queries/orders', () => {
       total: 3,
     }),
     useOrder: () => ({ data: undefined, error: null, refetch: vi.fn() }),
+    useOrderPaymentStates: () => ({ data: undefined }),
     useAssignOrderDelivery: () => idle,
     useUpdateOrder: () => idle,
     useCancelOrder: () => idle,

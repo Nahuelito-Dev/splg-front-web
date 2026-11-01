@@ -4,7 +4,8 @@ import { UserRoundCog } from 'lucide-react';
 import { Badge, DataTable, EmptyState, IdentityCell, PersonAvatar, RowActions } from '../../../common/components/ui';
 import type { Order } from '../../../services/api/types';
 import { formatCurrency, formatDateTime, formatNumber, formatShortId } from '../../../utils/format';
-import { labelOf, ORDER_STATUS, paymentStatusLabel } from '../../../utils/statusLabels';
+import { useOrderPaymentStates } from '../../../services/queries/orders';
+import { labelOf, mercadoPagoPaymentLabel, ORDER_STATUS, paymentStatusLabel } from '../../../utils/statusLabels';
 import { orderEditBlockedReason } from './orderEdit';
 import { isClosed, assignPaymentBlock } from './orderStatus';
 
@@ -49,6 +50,13 @@ export const OrdersTable = ({
   selection,
   filtered = false,
 }: Props) => {
+  // El pago de Mercado Pago de la página, en una sola consulta: el chip dice en qué quedó (y por qué).
+  const mercadoPagoIds = useMemo(
+    () => rows.filter((row) => row.paymentMethodDetail === 'mercadopago').map((row) => row.order_id),
+    [rows],
+  );
+  const { data: mercadoPago } = useOrderPaymentStates(mercadoPagoIds);
+
   const columns = useMemo<GridColDef<Order>[]>(
     () => [
       {
@@ -101,11 +109,15 @@ export const OrdersTable = ({
       {
         field: 'status',
         headerName: 'Estado',
-        width: 150,
+        width: 200,
         renderCell: ({ row }) => (
           <div className="flex min-w-0 flex-col items-start gap-1 leading-none">
             <Badge label={labelOf(ORDER_STATUS, row.status)} />
             {row.paymentStatus && <Badge label={paymentStatusLabel(row.paymentStatus, row.paymentMethodDetail)} />}
+            {(() => {
+              const detail = mercadoPagoPaymentLabel(mercadoPago?.get(row.order_id));
+              return detail ? <Badge label={detail} /> : null;
+            })()}
           </div>
         ),
       },
@@ -149,7 +161,7 @@ export const OrdersTable = ({
         ),
       },
     ],
-    [onView, onAssign, onEdit, onCancel],
+    [onView, onAssign, onEdit, onCancel, mercadoPago],
   );
 
   return (

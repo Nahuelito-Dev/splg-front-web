@@ -20,9 +20,21 @@ vi.mock('../../../common/components/ui', async (importOriginal) => ({
   ),
 }));
 
+const mpState = vi.hoisted(() => ({ ids: [] as string[][], data: undefined as Map<string, unknown> | undefined }));
+vi.mock('../../../services/queries/orders', () => ({
+  useOrderPaymentStates: (ids: string[]) => {
+    mpState.ids.push(ids);
+    return { data: mpState.data };
+  },
+}));
+
 import { OrdersTable } from './OrdersTable';
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  mpState.ids = [];
+  mpState.data = undefined;
+});
 
 const order = (id: string, over: Partial<Order>) =>
   ({
@@ -166,5 +178,52 @@ describe('OrdersTable: fotos de las personas', () => {
     expect(usePersonPhoto).toHaveBeenCalledWith({ kind: 'user', id: 'user-1' });
     expect(usePersonPhoto).toHaveBeenCalledWith({ kind: 'delivery', id: 'deliv-1' });
     expect(usePersonPhoto).not.toHaveBeenCalledWith({ kind: 'user', id: 'deliv-1' });
+  });
+});
+
+describe('OrdersTable: pago de Mercado Pago', () => {
+  const mp = (id: string, over: Partial<Order> = {}) =>
+    order(id, { paymentMethodDetail: 'mercadopago', paymentStatus: 'failed', ...over } as Partial<Order>);
+
+  it('pide el estado del pago sólo de los pedidos de Mercado Pago de la página', () => {
+    renderTable([mp('a'), order('b', { paymentMethodDetail: 'cash' } as Partial<Order>)]);
+    expect(mpState.ids.at(-1)).toEqual(['a-000000']);
+  });
+
+  it('muestra el texto del back con el motivo, junto al estado del cobro', () => {
+    mpState.data = new Map([
+      [
+        'a-000000',
+        {
+          orderId: 'a-000000',
+          paymentStatus: 'rejected',
+          paymentStatusLabel: 'Fondos insuficientes en el medio de pago',
+        },
+      ],
+    ]);
+    renderTable([mp('a')]);
+    expect(screen.getByText('Fondos insuficientes en el medio de pago')).toBeInTheDocument();
+  });
+
+  it('un reclamo o un contracargo se marcan con el texto del back', () => {
+    mpState.data = new Map([
+      [
+        'a-000000',
+        { orderId: 'a-000000', paymentStatus: 'in_mediation', paymentStatusLabel: 'Reclamo en curso sobre el pago' },
+      ],
+      [
+        'b-000000',
+        { orderId: 'b-000000', paymentStatus: 'charged_back', paymentStatusLabel: 'Contracargo sobre el pago' },
+      ],
+    ]);
+    renderTable([mp('a'), mp('b')]);
+    expect(screen.getByText('Reclamo en curso sobre el pago')).toBeInTheDocument();
+    expect(screen.getByText('Contracargo sobre el pago')).toBeInTheDocument();
+  });
+
+  it('sin respuesta todavía (o sin pagos de Mercado Pago) no dibuja nada de más', () => {
+    mpState.data = new Map([['a-000000', { orderId: 'a-000000', paymentStatus: null, paymentStatusLabel: null }]]);
+    renderTable([mp('a')]);
+    expect(screen.queryByText('Pago en revisión')).not.toBeInTheDocument();
   });
 });

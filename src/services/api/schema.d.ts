@@ -2321,6 +2321,66 @@ export interface paths {
     patch: operations['ReservationV2Controller_confirmDeposit'];
     trace?: never;
   };
+  '/api/v2/orders/payments': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Estado del pago de varios pedidos (la lista del panel)
+     * @description Como `GET /v2/orders/:id/payment`, para hasta 50 pedidos de la distribuidora, sin historial. Un pedido que no existe o es de otra distribuidora no aparece en la respuesta (no es un error). El super admin tiene que mandar `X-Distributor`.
+     */
+    get: operations['OrderPaymentV2Controller_deVarios'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/orders/{id}/payment/fraud-hold/release': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Liberar la retención de un pedido por alerta de fraude
+     * @description Mercado Pago avisó una alerta de fraude sobre el pago y el pedido (o la reserva con seña paga) quedó retenido: no se ofrece, no se asigna ni se acepta y la reserva no se activa. El administrador lo libera con un motivo obligatorio (10 a 500 caracteres); queda guardado quién, cuándo y por qué, y el cambio lo asienta la auditoría. 409 si el pedido no está retenido; 404 si no es de la distribuidora. La alternativa a liberar es cancelar el pedido, que devuelve el pago.
+     */
+    patch: operations['OrderPaymentV2Controller_liberarRetencion'];
+    trace?: never;
+  };
+  '/api/v2/orders/{id}/payment': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Estado del pago de un pedido
+     * @description Uno de los nueve estados de pago de Mercado Pago (`paymentStatus`), su motivo (`paymentStatusDetail`), el texto en castellano armado por el back (`paymentStatusLabel`), si se puede reintentar el pago (`canRetry`) y el enlace para hacerlo (`paymentUrl`). El cliente sólo lee sus pedidos; admin y super admin los de su distribuidora (el super admin manda `X-Distributor`) y además reciben el `history` de cambios. Lo ajeno responde 404.
+     */
+    get: operations['OrderPaymentV2Controller_deUno'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/cart': {
     parameters: {
       query?: never;
@@ -8971,6 +9031,11 @@ export interface components {
     };
     MercadoPagoCredentialsResponseDto: {
       /**
+       * @description Tipo de la cuenta con la que se cobra (la propia si hay, si no la del sistema), según `GET /users/me` de Mercado Pago: `test` = «Cuenta de prueba» (usuario de prueba, no cobra de verdad), `real` = «Cuenta real», `unknown` = no se pudo consultar o no hay token.
+       * @enum {string}
+       */
+      accountType: 'test' | 'real' | 'unknown';
+      /**
        * @description `own`: se cobra con la cuenta de la distribuidora. `system`: con la del sistema.
        * @enum {string}
        */
@@ -10763,6 +10828,78 @@ export interface components {
        * @description Caja de EFECTIVO donde entra la seña recibida en efectivo. Obligatoria si la distribuidora tiene alguna caja de efectivo activa (400 si falta o no es de efectivo); la de otra distribuidora es 404 y una que exige sesión sin sesión abierta, 409. En una seña por transferencia no se manda: entra a la caja de transferencias configurada en `/v2/cash-settings`.
        */
       cashBoxId?: string;
+    };
+    /**
+     * @description Uno de los nueve estados de pago de Mercado Pago. Si el pedido tiene varios intentos, el que lo representa: el acreditado (o con reclamo), si no el contracargo o la devolución, el que está en curso, el pendiente y recién al final un rechazo o cancelación. `null`: el pedido no tiene pagos de Mercado Pago (efectivo, transferencia o todavía sin checkout).
+     * @enum {string}
+     */
+    LedgerPaymentStatus:
+      | 'pending'
+      | 'in_process'
+      | 'authorized'
+      | 'approved'
+      | 'rejected'
+      | 'cancelled'
+      | 'refunded'
+      | 'charged_back'
+      | 'in_mediation';
+    /**
+     * @description De dónde salió la lectura: el aviso de la pasarela, la conciliación o una consulta
+     * @enum {string}
+     */
+    OrigenDelEstadoDelPago: 'webhook' | 'conciliacion' | 'consulta' | 'reintegro';
+    PaymentStatusChangeDto: {
+      /** @description Estado que informó Mercado Pago */
+      status: components['schemas']['LedgerPaymentStatus'];
+      /**
+       * @description Motivo (`status_detail`) que informó Mercado Pago
+       * @example cc_rejected_insufficient_amount
+       */
+      statusDetail: string | null;
+      /**
+       * @description El texto en castellano de ese estado y motivo
+       * @example Fondos insuficientes en el medio de pago
+       */
+      label: string;
+      /** Format: date-time */
+      at: string;
+      /** @description De dónde salió la lectura: el aviso de la pasarela, la conciliación o una consulta */
+      origin: components['schemas']['OrigenDelEstadoDelPago'];
+      /** @description `false`: el aviso llegó fuera de orden (p. ej. «aprobado» después de «devuelto») y no cambió el estado del pago */
+      applied: boolean;
+      /** @description Id del pago en Mercado Pago */
+      gatewayPaymentId: string | null;
+    };
+    OrderPaymentStateDto: {
+      /** Format: uuid */
+      orderId: string;
+      /** @description Uno de los nueve estados de pago de Mercado Pago. Si el pedido tiene varios intentos, el que lo representa: el acreditado (o con reclamo), si no el contracargo o la devolución, el que está en curso, el pendiente y recién al final un rechazo o cancelación. `null`: el pedido no tiene pagos de Mercado Pago (efectivo, transferencia o todavía sin checkout). */
+      paymentStatus: components['schemas']['LedgerPaymentStatus'] | null;
+      /**
+       * @description Motivo del estado que informa Mercado Pago (`status_detail`), tal cual
+       * @example cc_rejected_insufficient_amount
+       */
+      paymentStatusDetail: string | null;
+      /**
+       * @description El texto en castellano del estado y su motivo, armado por el back: las apps y el panel lo muestran sin reinterpretarlo. Un rechazo sin motivo conocido dice «Rechazado por el banco».
+       * @example Rechazado por el banco
+       */
+      paymentStatusLabel: string | null;
+      /** @description `true`: el pedido sigue vivo y sin pagar, el pago no está en curso y el enlace de Mercado Pago no venció: el comprador puede reintentar con otro medio sobre `paymentUrl` */
+      canRetry: boolean;
+      /** @description Enlace de Checkout Pro para reintentar; `null` si `canRetry` es `false` */
+      paymentUrl: string | null;
+      /** @description `true`: Mercado Pago avisó una alerta de fraude sobre el pago y el pedido está retenido (no se despacha ni se activa). Un administrador lo libera con `PATCH /v2/orders/:id/payment/fraud-hold/release` o lo cancela. */
+      paymentFraudHold: boolean;
+      /** @description Historial de cambios de estado, del más viejo al más nuevo. Sólo lo ven admin y super admin. */
+      history?: components['schemas']['PaymentStatusChangeDto'][];
+    };
+    ReleaseFraudHoldDto: {
+      /**
+       * @description Motivo con el que se libera la retención por alerta de fraude. Queda guardado con quién y cuándo (auditado).
+       * @example Hablé con el cliente y verifiqué el pago en Mercado Pago: es legítimo
+       */
+      reason: string;
     };
     CartItemResponseDto: {
       /** Format: uuid */
@@ -26540,6 +26677,159 @@ export interface operations {
       };
       /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
       422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  OrderPaymentV2Controller_deVarios: {
+    parameters: {
+      query: {
+        /** @description UUID de pedidos separados por coma (hasta 50) */
+        ids: unknown;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['OrderPaymentStateDto'][];
+        };
+      };
+      /** @description Falta `ids`, hay uno que no es un UUID, son más de 50, o el super admin no mandó `X-Distributor` */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  OrderPaymentV2Controller_liberarRetencion: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Order UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ReleaseFraudHoldDto'];
+      };
+    };
+    responses: {
+      /** @description Retención liberada */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Pedido no encontrado */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El pedido no está retenido */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  OrderPaymentV2Controller_deUno: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Order UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['OrderPaymentStateDto'];
+        };
+      };
+      /** @description El super admin no mandó `X-Distributor` */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer, admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Pedido no encontrado */
+      404: {
         headers: {
           [name: string]: unknown;
         };

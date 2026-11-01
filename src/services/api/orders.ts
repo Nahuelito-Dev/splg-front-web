@@ -12,6 +12,7 @@ import type {
   Message,
   MotivoDeCobroBody,
   Order,
+  OrderPaymentState,
   OrderReceiptFile,
   OrderStatusHistoryEntry,
   PaginatedOrders,
@@ -68,6 +69,32 @@ export const listOrders = async (params: PageParams, filters: OrderFilters = {})
 /** GET /orders/:id: la ficha completa de un pedido. */
 export const getOrder = async (id: string): Promise<Order> => {
   const { data } = await http.get<Order>(`/orders/${id}`);
+  return data;
+};
+
+/** Base de la v2 de la API (el estado del pago de Mercado Pago sólo existe ahí). */
+const v2 = { baseURL: env.apiUrlV2 };
+
+/**
+ * GET /v2/orders/:id/payment: el estado del pago de Mercado Pago del pedido (uno de los nueve de la pasarela), su
+ * motivo, el texto en castellano que arma el back, si se puede reintentar y el historial de cambios.
+ */
+export const getOrderPaymentState = async (id: string): Promise<OrderPaymentState> => {
+  const { data } = await http.get<OrderPaymentState>(`/orders/${id}/payment`, v2);
+  return data;
+};
+
+/**
+ * PATCH /v2/orders/:id/payment/fraud-hold/release: el administrador libera un pedido retenido por una alerta de
+ * fraude de Mercado Pago, con un motivo obligatorio (queda auditado). Con `Idempotency-Key`.
+ */
+export const releaseFraudHold = async (id: string, reason: string, key: string): Promise<void> => {
+  await http.patch(`/orders/${id}/payment/fraud-hold/release`, { reason }, { ...v2, headers: idempotencyHeaders(key) });
+};
+
+/** GET /v2/orders/payments?ids=…: el estado del pago de varios pedidos (la lista), hasta 50 por consulta. */
+export const listOrderPaymentStates = async (ids: string[]): Promise<OrderPaymentState[]> => {
+  const { data } = await http.get<OrderPaymentState[]>('/orders/payments', { ...v2, params: { ids: ids.join(',') } });
   return data;
 };
 
