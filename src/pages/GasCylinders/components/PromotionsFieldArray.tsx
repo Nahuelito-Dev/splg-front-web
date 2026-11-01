@@ -1,20 +1,16 @@
-import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
+import { useFieldArray, useFormContext } from 'react-hook-form';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { Button, FormError, FormInput, IconButton } from '../../../common/components/ui';
-import { formatCurrency } from '../../../utils/format';
 import type { GasCylinderFormValues } from './gasCylinderSchema';
-import { discountedPrice } from './pricing';
 
-interface Props {
-  price: number;
-}
-
-/** Reglas de descuento por cantidad del producto: "llevando N, X% off". */
-export const PromotionsFieldArray = ({ price }: Props) => {
+/**
+ * Reglas de descuento por cantidad del producto: "llevando N, X% off". El precio final de cada
+ * promoción lo calcula el back al guardar y se ve en el detalle del producto.
+ */
+export const PromotionsFieldArray = () => {
   const { control } = useFormContext<GasCylinderFormValues>();
   const { fields, append, remove } = useFieldArray({ control, name: 'promotions' });
-  const promotions = useWatch({ control, name: 'promotions' });
 
   return (
     <fieldset className="rounded-xl border border-outline p-4">
@@ -36,8 +32,6 @@ export const PromotionsFieldArray = ({ price }: Props) => {
       ) : (
         <div className="mt-3 space-y-3">
           {fields.map((field, index) => {
-            const discount = promotions?.[index]?.discountPercentage;
-            const finalPrice = price > 0 && Number(discount) > 0 ? discountedPrice(price, Number(discount)) : null;
             return (
               <div key={field.id} className="flex flex-wrap items-end gap-3">
                 <FormInput
@@ -52,9 +46,6 @@ export const PromotionsFieldArray = ({ price }: Props) => {
                   type="number"
                   className="w-28"
                 />
-                <p className="pb-2.5 text-xs text-muted">
-                  {finalPrice !== null ? `Queda en ${formatCurrency(finalPrice)} c/u` : ''}
-                </p>
                 <div className="pb-1">
                   <IconButton
                     label="Quitar promoción"

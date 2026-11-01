@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
-import { useForm, useWatch } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { Button, Modal, FormInput, FormTextArea, Form } from '../../../common/components/ui';
 import type { GasCylinder } from '../../../services/api/types';
 import { useCreateGasCylinder, useUpdateGasCylinder } from '../../../services/queries/gasCylinders';
@@ -21,9 +21,7 @@ export const CylinderFormModal = ({ open, onClose, cylinder }: Props) => {
   const createCylinder = useCreateGasCylinder();
   const updateCylinder = useUpdateGasCylinder();
   const methods = useForm<GasCylinderFormValues>({ resolver: zodResolver(gasCylinderSchema) });
-  const { reset, control } = methods;
-
-  const price = useWatch({ control, name: 'price' });
+  const { reset } = methods;
 
   useEffect(() => {
     if (!open) return;
@@ -97,7 +95,7 @@ export const CylinderFormModal = ({ open, onClose, cylinder }: Props) => {
           )}
         </div>
         <FormTextArea name="description" label="Descripción" />
-        <PromotionsFieldArray price={Number(price) || 0} />
+        <PromotionsFieldArray />
       </Form>
     </Modal>
   );
