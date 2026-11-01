@@ -35523,6 +35523,32 @@
                     "price"
                 ]
             },
+            "PromocionConPrecioDto": {
+                "type": "object",
+                "properties": {
+                    "quantity": {
+                        "type": "number",
+                        "description": "Unidades desde las que aplica",
+                        "example": 3
+                    },
+                    "discountPercentage": {
+                        "type": "number",
+                        "description": "Descuento, en porcentaje (hasta 99, 2 decimales)",
+                        "example": 10,
+                        "maximum": 99
+                    },
+                    "unitPrice": {
+                        "type": "number",
+                        "description": "Precio unitario con esta promoción, redondeado a centavos con la misma regla que cobra el pedido. No incluye el recargo de zona ni el del medio de pago, que se aplican sobre el total del pedido",
+                        "example": 13409.99
+                    }
+                },
+                "required": [
+                    "quantity",
+                    "discountPercentage",
+                    "unitPrice"
+                ]
+            },
             "GasCylinderResponseDto": {
                 "type": "object",
                 "properties": {
@@ -35563,7 +35589,7 @@
                         "nullable": true,
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/PromocionDto"
+                            "$ref": "#/components/schemas/PromocionConPrecioDto"
                         }
                     },
                     "createdAt": {
@@ -35747,7 +35773,7 @@
                         "description": "Promociones por cantidad; vacío si no hay.",
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/PromocionDto"
+                            "$ref": "#/components/schemas/PromocionConPrecioDto"
                         }
                     },
                     "inStock": {
@@ -36468,6 +36494,12 @@
                     "subtotal": {
                         "type": "number",
                         "example": 19000
+                    },
+                    "discountPercentage": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": 5,
+                        "description": "Porcentaje de la promoción por volumen que se aplicó a este renglón; null si se cotizó a precio de lista"
                     }
                 },
                 "required": [
@@ -36475,7 +36507,8 @@
                     "title",
                     "quantity",
                     "unitPrice",
-                    "subtotal"
+                    "subtotal",
+                    "discountPercentage"
                 ]
             },
             "QuoteZoneDto": {

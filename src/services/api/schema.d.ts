@@ -9441,6 +9441,23 @@ export interface components {
       /** @description Promociones por cantidad (ej: 3 unidades 10% off) */
       promotions?: components['schemas']['PromocionDto'][];
     };
+    PromocionConPrecioDto: {
+      /**
+       * @description Unidades desde las que aplica
+       * @example 3
+       */
+      quantity: number;
+      /**
+       * @description Descuento, en porcentaje (hasta 99, 2 decimales)
+       * @example 10
+       */
+      discountPercentage: number;
+      /**
+       * @description Precio unitario con esta promoción, redondeado a centavos con la misma regla que cobra el pedido. No incluye el recargo de zona ni el del medio de pago, que se aplican sobre el total del pedido
+       * @example 13409.99
+       */
+      unitPrice: number;
+    };
     GasCylinderResponseDto: {
       /** Format: uuid */
       gas_cylinder_id: string;
@@ -9455,7 +9472,7 @@ export interface components {
       isActive: boolean;
       /** @description URL firmada de la imagen del producto (se abre sin token, vence); `null` si no tiene. */
       photoUrl: string | null;
-      promotions: components['schemas']['PromocionDto'][] | null;
+      promotions: components['schemas']['PromocionConPrecioDto'][] | null;
       /** Format: date-time */
       createdAt: string;
       /** Format: date-time */
@@ -9521,7 +9538,7 @@ export interface components {
       /** @description URL firmada de lectura corta de la imagen; `null` si no tiene. */
       photoUrl: string | null;
       /** @description Promociones por cantidad; vacío si no hay. */
-      promotions: components['schemas']['PromocionDto'][];
+      promotions: components['schemas']['PromocionConPrecioDto'][];
       /** @description Si hay unidades para vender ahora. No expone la cantidad. */
       inStock: boolean;
     };
@@ -9812,6 +9829,11 @@ export interface components {
       unitPrice: number;
       /** @example 19000 */
       subtotal: number;
+      /**
+       * @description Porcentaje de la promoción por volumen que se aplicó a este renglón; null si se cotizó a precio de lista
+       * @example 5
+       */
+      discountPercentage: number | null;
     };
     QuoteZoneDto: {
       coverageZoneId: string;

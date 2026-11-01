@@ -1,10 +1,10 @@
 import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import { Card, EmptyState, CardHeader } from '../../../../common/components/ui';
-import type { PromocionBody } from '../../../../services/api/types';
-import { formatCurrency } from '../../../../utils/format';
-import { discountedPrice } from '../pricing';
+import type { PromocionConPrecio } from '../../../../services/api/types';
+import { formatCurrency, formatCurrencyExact } from '../../../../utils/format';
 
-export const PromotionsList = ({ promotions, price }: { promotions: PromocionBody[]; price: number }) => (
+/** El precio con promoción es el que manda el back (`unitPrice`): el panel no hace la cuenta. */
+export const PromotionsList = ({ promotions, price }: { promotions: PromocionConPrecio[]; price: number }) => (
   <Card className="p-6">
     <CardHeader title="Promociones por cantidad" icon={<LocalOfferIcon />} className="" />
 
@@ -23,8 +23,7 @@ export const PromotionsList = ({ promotions, price }: { promotions: PromocionBod
             <p className="text-2xl font-bold text-ink">{promo.quantity} u.</p>
             <p className="mt-2 text-sm font-semibold text-primary-strong">{promo.discountPercentage}% off</p>
             <p className="mt-1 text-xs text-muted">
-              <span className="line-through">{formatCurrency(price)}</span> →{' '}
-              {formatCurrency(discountedPrice(price, promo.discountPercentage))} c/u
+              <span className="line-through">{formatCurrency(price)}</span> → {formatCurrencyExact(promo.unitPrice)} c/u
             </p>
           </li>
         ))}

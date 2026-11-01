@@ -349,6 +349,7 @@ export type ProcessConfig = S['ProcessConfigResponseDto'];
 export type ProductoDelEnvase = S['ProductoDelEnvaseDto'];
 export type ProductoDelRenglon = S['ProductoDelRenglonDto'];
 export type ProductoPublico = S['ProductoPublicoDto'];
+export type PromocionConPrecio = S['PromocionConPrecioDto'];
 export type PromocionBody = S['PromocionDto'];
 export type PruebaDeEmail = S['PruebaDeEmailResponseDto'];
 export type PurchaseOrderItemInputBody = S['PurchaseOrderItemInputDto'];
