@@ -6,6 +6,7 @@ import type { Order } from '../../../../services/api/types';
 import { OrderSideCards } from './OrderSideCards';
 
 vi.mock('./OrderRefunds', () => ({ OrderRefunds: () => null }));
+vi.mock('./OrderMercadoPagoPayment', () => ({ OrderMercadoPagoPayment: () => null }));
 
 afterEach(cleanup);
 

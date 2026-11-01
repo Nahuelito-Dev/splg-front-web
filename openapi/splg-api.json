@@ -9449,6 +9449,162 @@
                 ]
             }
         },
+        "/api/v2/orders/payments": {
+            "get": {
+                "description": "Como `GET /v2/orders/:id/payment`, para hasta 50 pedidos de la distribuidora, sin historial. Un pedido que no existe o es de otra distribuidora no aparece en la respuesta (no es un error). El super admin tiene que mandar `X-Distributor`.",
+                "operationId": "OrderPaymentV2Controller_deVarios",
+                "parameters": [
+                    {
+                        "name": "ids",
+                        "required": true,
+                        "in": "query",
+                        "description": "UUID de pedidos separados por coma (hasta 50)",
+                        "schema": {
+                            "example": "3f2c0f9e-6a43-4a0f-9f43-6d1c8bf2a111,7d9b6f3e-1a2b-4c3d-8e4f-5a6b7c8d9e0f"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/OrderPaymentStateDto"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta `ids`, hay uno que no es un UUID, son más de 50, o el super admin no mandó `X-Distributor`"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Estado del pago de varios pedidos (la lista del panel)",
+                "tags": [
+                    "Pedidos · Estado del pago (v2)"
+                ]
+            }
+        },
+        "/api/v2/orders/{id}/payment/fraud-hold/release": {
+            "patch": {
+                "description": "Mercado Pago avisó una alerta de fraude sobre el pago y el pedido (o la reserva con seña paga) quedó retenido: no se ofrece, no se asigna ni se acepta y la reserva no se activa. El administrador lo libera con un motivo obligatorio (10 a 500 caracteres); queda guardado quién, cuándo y por qué, y el cambio lo asienta la auditoría. 409 si el pedido no está retenido; 404 si no es de la distribuidora. La alternativa a liberar es cancelar el pedido, que devuelve el pago.",
+                "operationId": "OrderPaymentV2Controller_liberarRetencion",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Order UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ReleaseFraudHoldDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Retención liberada"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Pedido no encontrado"
+                    },
+                    "409": {
+                        "description": "El pedido no está retenido"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Liberar la retención de un pedido por alerta de fraude",
+                "tags": [
+                    "Pedidos · Estado del pago (v2)"
+                ]
+            }
+        },
+        "/api/v2/orders/{id}/payment": {
+            "get": {
+                "description": "Uno de los nueve estados de pago de Mercado Pago (`paymentStatus`), su motivo (`paymentStatusDetail`), el texto en castellano armado por el back (`paymentStatusLabel`), si se puede reintentar el pago (`canRetry`) y el enlace para hacerlo (`paymentUrl`). El cliente sólo lee sus pedidos; admin y super admin los de su distribuidora (el super admin manda `X-Distributor`) y además reciben el `history` de cambios. Lo ajeno responde 404.",
+                "operationId": "OrderPaymentV2Controller_deUno",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Order UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrderPaymentStateDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "El super admin no mandó `X-Distributor`"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: customer, admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Pedido no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Estado del pago de un pedido",
+                "tags": [
+                    "Pedidos · Estado del pago (v2)"
+                ]
+            }
+        },
         "/api/v1/cart": {
             "get": {
                 "description": "Total calculado sobre los precios vigentes del catálogo; cada ítem informa la diferencia con el precio guardado. Sin carrito, responde uno vacío. Un tipo dado de baja se marca `available: false` y no suma.",
@@ -34506,6 +34662,15 @@
             "MercadoPagoCredentialsResponseDto": {
                 "type": "object",
                 "properties": {
+                    "accountType": {
+                        "type": "string",
+                        "enum": [
+                            "test",
+                            "real",
+                            "unknown"
+                        ],
+                        "description": "Tipo de la cuenta con la que se cobra (la propia si hay, si no la del sistema), según `GET /users/me` de Mercado Pago: `test` = «Cuenta de prueba» (usuario de prueba, no cobra de verdad), `real` = «Cuenta real», `unknown` = no se pudo consultar o no hay token."
+                    },
                     "source": {
                         "type": "string",
                         "enum": [
@@ -34545,6 +34710,7 @@
                     }
                 },
                 "required": [
+                    "accountType",
                     "source",
                     "active",
                     "encryptionConfigured",
@@ -38638,6 +38804,159 @@
                         "description": "Caja de EFECTIVO donde entra la seña recibida en efectivo. Obligatoria si la distribuidora tiene alguna caja de efectivo activa (400 si falta o no es de efectivo); la de otra distribuidora es 404 y una que exige sesión sin sesión abierta, 409. En una seña por transferencia no se manda: entra a la caja de transferencias configurada en `/v2/cash-settings`."
                     }
                 }
+            },
+            "LedgerPaymentStatus": {
+                "type": "string",
+                "enum": [
+                    "pending",
+                    "in_process",
+                    "authorized",
+                    "approved",
+                    "rejected",
+                    "cancelled",
+                    "refunded",
+                    "charged_back",
+                    "in_mediation"
+                ],
+                "description": "Uno de los nueve estados de pago de Mercado Pago. Si el pedido tiene varios intentos, el que lo representa: el acreditado (o con reclamo), si no el contracargo o la devolución, el que está en curso, el pendiente y recién al final un rechazo o cancelación. `null`: el pedido no tiene pagos de Mercado Pago (efectivo, transferencia o todavía sin checkout)."
+            },
+            "OrigenDelEstadoDelPago": {
+                "type": "string",
+                "enum": [
+                    "webhook",
+                    "conciliacion",
+                    "consulta",
+                    "reintegro"
+                ],
+                "description": "De dónde salió la lectura: el aviso de la pasarela, la conciliación o una consulta"
+            },
+            "PaymentStatusChangeDto": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "description": "Estado que informó Mercado Pago",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/LedgerPaymentStatus"
+                            }
+                        ]
+                    },
+                    "statusDetail": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "cc_rejected_insufficient_amount",
+                        "description": "Motivo (`status_detail`) que informó Mercado Pago"
+                    },
+                    "label": {
+                        "type": "string",
+                        "example": "Fondos insuficientes en el medio de pago",
+                        "description": "El texto en castellano de ese estado y motivo"
+                    },
+                    "at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "origin": {
+                        "description": "De dónde salió la lectura: el aviso de la pasarela, la conciliación o una consulta",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/OrigenDelEstadoDelPago"
+                            }
+                        ]
+                    },
+                    "applied": {
+                        "type": "boolean",
+                        "description": "`false`: el aviso llegó fuera de orden (p. ej. «aprobado» después de «devuelto») y no cambió el estado del pago"
+                    },
+                    "gatewayPaymentId": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Id del pago en Mercado Pago"
+                    }
+                },
+                "required": [
+                    "status",
+                    "statusDetail",
+                    "label",
+                    "at",
+                    "origin",
+                    "applied",
+                    "gatewayPaymentId"
+                ]
+            },
+            "OrderPaymentStateDto": {
+                "type": "object",
+                "properties": {
+                    "orderId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "paymentStatus": {
+                        "nullable": true,
+                        "description": "Uno de los nueve estados de pago de Mercado Pago. Si el pedido tiene varios intentos, el que lo representa: el acreditado (o con reclamo), si no el contracargo o la devolución, el que está en curso, el pendiente y recién al final un rechazo o cancelación. `null`: el pedido no tiene pagos de Mercado Pago (efectivo, transferencia o todavía sin checkout).",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/LedgerPaymentStatus"
+                            }
+                        ]
+                    },
+                    "paymentStatusDetail": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "cc_rejected_insufficient_amount",
+                        "description": "Motivo del estado que informa Mercado Pago (`status_detail`), tal cual"
+                    },
+                    "paymentStatusLabel": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "Rechazado por el banco",
+                        "description": "El texto en castellano del estado y su motivo, armado por el back: las apps y el panel lo muestran sin reinterpretarlo. Un rechazo sin motivo conocido dice «Rechazado por el banco»."
+                    },
+                    "canRetry": {
+                        "type": "boolean",
+                        "description": "`true`: el pedido sigue vivo y sin pagar, el pago no está en curso y el enlace de Mercado Pago no venció: el comprador puede reintentar con otro medio sobre `paymentUrl`"
+                    },
+                    "paymentUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Enlace de Checkout Pro para reintentar; `null` si `canRetry` es `false`"
+                    },
+                    "paymentFraudHold": {
+                        "type": "boolean",
+                        "description": "`true`: Mercado Pago avisó una alerta de fraude sobre el pago y el pedido está retenido (no se despacha ni se activa). Un administrador lo libera con `PATCH /v2/orders/:id/payment/fraud-hold/release` o lo cancela."
+                    },
+                    "history": {
+                        "description": "Historial de cambios de estado, del más viejo al más nuevo. Sólo lo ven admin y super admin.",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PaymentStatusChangeDto"
+                        }
+                    }
+                },
+                "required": [
+                    "orderId",
+                    "paymentStatus",
+                    "paymentStatusDetail",
+                    "paymentStatusLabel",
+                    "canRetry",
+                    "paymentUrl",
+                    "paymentFraudHold"
+                ]
+            },
+            "ReleaseFraudHoldDto": {
+                "type": "object",
+                "properties": {
+                    "reason": {
+                        "type": "string",
+                        "minLength": 10,
+                        "maxLength": 500,
+                        "example": "Hablé con el cliente y verifiqué el pago en Mercado Pago: es legítimo",
+                        "description": "Motivo con el que se libera la retención por alerta de fraude. Queda guardado con quién y cuándo (auditado)."
+                    }
+                },
+                "required": [
+                    "reason"
+                ]
             },
             "CartItemResponseDto": {
                 "type": "object",

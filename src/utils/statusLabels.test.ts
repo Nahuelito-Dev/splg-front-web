@@ -6,6 +6,8 @@ import {
   PAYMENT_STATUS,
   PAYMENT_STATUS_ORDER,
   paymentFilterLabel,
+  MERCADOPAGO_PAYMENT_TONE,
+  mercadoPagoPaymentLabel,
   paymentStatusLabel,
   RECEIPT_STATUS,
   statusOptions,
@@ -78,5 +80,82 @@ describe('statusParam y statusOptions', () => {
       { value: 'confirmed', label: 'Confirmada', tone: 'success' },
       { value: 'voided', label: 'Anulada', tone: 'danger' },
     ]);
+  });
+});
+
+describe('estado del pago de Mercado Pago', () => {
+  it('cada uno de los nueve estados tiene su tono', () => {
+    expect(Object.keys(MERCADOPAGO_PAYMENT_TONE).sort()).toEqual(
+      [
+        'approved',
+        'authorized',
+        'cancelled',
+        'charged_back',
+        'in_mediation',
+        'in_process',
+        'pending',
+        'refunded',
+        'rejected',
+      ].sort(),
+    );
+  });
+
+  it('el tono de cada estado: lo cobrado en verde; en curso o a la espera, ámbar; reclamos y contracargos, rojo; el resto, neutro', () => {
+    expect(MERCADOPAGO_PAYMENT_TONE).toEqual({
+      pending: 'warn',
+      in_process: 'warn',
+      authorized: 'warn',
+      approved: 'success',
+      rejected: 'danger',
+      cancelled: 'neutral',
+      refunded: 'neutral',
+      charged_back: 'danger',
+      in_mediation: 'danger',
+    });
+  });
+
+  it('el texto es el del back, tal cual; el panel sólo elige el color', () => {
+    expect(
+      mercadoPagoPaymentLabel({
+        paymentStatus: 'rejected',
+        paymentStatusLabel: 'Fondos insuficientes en el medio de pago',
+      }),
+    ).toEqual({ text: 'Fondos insuficientes en el medio de pago', tone: 'danger' });
+    expect(mercadoPagoPaymentLabel({ paymentStatus: 'approved', paymentStatusLabel: 'Pago acreditado' })).toEqual({
+      text: 'Pago acreditado',
+      tone: 'success',
+    });
+    expect(
+      mercadoPagoPaymentLabel({ paymentStatus: 'in_mediation', paymentStatusLabel: 'Reclamo en curso sobre el pago' })
+        ?.tone,
+    ).toBe('danger');
+  });
+
+  it('M-2 / S-1: contracargo con el dinero retenido (settled) es peligro, en disputa (in_process) ámbar y reintegrado (reimbursed) neutro, como la caja', () => {
+    const contracargo = (paymentStatusDetail: string) =>
+      mercadoPagoPaymentLabel({
+        paymentStatus: 'charged_back',
+        paymentStatusDetail,
+        paymentStatusLabel: 'Contracargo',
+      })?.tone;
+    expect(contracargo('settled')).toBe('danger');
+    // S-1: la disputa abierta deja el monto en espera; la caja no se toca.
+    expect(contracargo('in_process')).toBe('warn');
+    expect(contracargo('reimbursed')).toBe('neutral');
+  });
+
+  it('M-1: un pedido retenido por una alerta de fraude se ve primero, en peligro', () => {
+    expect(
+      mercadoPagoPaymentLabel({
+        paymentStatus: 'approved',
+        paymentStatusLabel: 'Pago acreditado',
+        paymentFraudHold: true,
+      }),
+    ).toEqual({ text: 'Retenido por fraude', tone: 'danger' });
+  });
+
+  it('sin estado (efectivo, transferencia o todavía sin cargar) no hay etiqueta', () => {
+    expect(mercadoPagoPaymentLabel(undefined)).toBeNull();
+    expect(mercadoPagoPaymentLabel({ paymentStatus: null, paymentStatusLabel: null })).toBeNull();
   });
 });

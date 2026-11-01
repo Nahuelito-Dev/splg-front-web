@@ -11,6 +11,7 @@ import { DELIVERY_MODE, labelOf, PAYMENT_METHOD, paymentStatusLabel } from '../.
 import { isClosed } from '../orderStatus';
 import { PaymentLink } from '../PaymentLink';
 import { OrderMiniMap } from './OrderMiniMap';
+import { OrderMercadoPagoPayment } from './OrderMercadoPagoPayment';
 import { OrderRefunds } from './OrderRefunds';
 import { orderCoordinates } from './orderLocation';
 
@@ -234,6 +235,7 @@ const PaymentSection = ({ order }: { order: Order }) => (
         distribuidora por fuera.
       </p>
     )}
+    <OrderMercadoPagoPayment order={order} />
     <OrderRefunds order={order} />
     {order.payment_method === 'online' && order.payment_url && !isClosed(order.status) && (
       <PaymentLink url={order.payment_url} />
