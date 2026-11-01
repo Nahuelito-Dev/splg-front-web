@@ -9605,6 +9605,53 @@
                 ]
             }
         },
+        "/api/v2/orders/customer/{customerId}/stats": {
+            "get": {
+                "description": "Total comprado (pedidos entregados), cantidad de pedidos, ticket promedio y último pedido entregado, calculados en la base sobre todos los pedidos del cliente en la distribuidora del contexto (`X-Distributor`). Un cliente sin pedidos en esa distribuidora devuelve ceros y `null`.",
+                "operationId": "CustomerPurchaseStatsController_porCliente",
+                "parameters": [
+                    {
+                        "name": "customerId",
+                        "required": true,
+                        "in": "path",
+                        "description": "Usuario del cliente (`user_id`), como en `GET /orders/customer/:customerId`",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CustomerPurchaseStatsDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta la distribuidora en el contexto o el id no es un UUID"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Lo que un cliente le compró a la distribuidora",
+                "tags": [
+                    "Pedidos · Estadísticas del cliente (v2)"
+                ]
+            }
+        },
         "/api/v1/cart": {
             "get": {
                 "description": "Total calculado sobre los precios vigentes del catálogo; cada ítem informa la diferencia con el precio guardado. Sin carrito, responde uno vacío. Un tipo dado de baja se marca `available: false` y no suma.",
@@ -14656,6 +14703,69 @@
                 "summary": "Reabrir una rendición presentada",
                 "tags": [
                     "Rendiciones del chofer"
+                ]
+            }
+        },
+        "/api/v2/driver-settlements/{id}/preview": {
+            "post": {
+                "description": "Con el efectivo y los gastos que el chofer está escribiendo, devuelve lo esperado en vivo y la diferencia (declarado + gastos − esperado) con la misma cuenta que se guarda al presentar. No escribe nada. El chofer sólo la ve en sus rendiciones.",
+                "operationId": "DriverSettlementV2Controller_preview",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Rendición UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PreviewDriverSettlementDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SettlementPreviewDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Efectivo o gasto negativo, o con más de dos decimales"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin, delivery"
+                    },
+                    "404": {
+                        "description": "No existe, es de otra distribuidora o (chofer) de otro chofer"
+                    },
+                    "409": {
+                        "description": "La rendición no está abierta"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Vista previa de la diferencia antes de presentar la rendición",
+                "tags": [
+                    "Rendiciones del chofer (v2)"
                 ]
             }
         },
@@ -37862,6 +37972,11 @@
                         "example": 17600,
                         "description": "Total menos la seña cobrada"
                     },
+                    "balanceDue": {
+                        "type": "number",
+                        "example": 17600,
+                        "description": "Saldo a cobrar al entregar una vez paga la seña: total menos seña, el mismo número que el `balance` de la cotización del alta. A diferencia de `remainingBalance`, no depende de que la seña ya esté cobrada."
+                    },
                     "paymentUrl": {
                         "type": "string",
                         "nullable": true,
@@ -37897,6 +38012,7 @@
                     "depositAmount",
                     "depositPaid",
                     "remainingBalance",
+                    "balanceDue",
                     "paymentUrl",
                     "timeSlot",
                     "createdAt",
@@ -38956,6 +39072,45 @@
                 },
                 "required": [
                     "reason"
+                ]
+            },
+            "CustomerPurchaseStatsDto": {
+                "type": "object",
+                "properties": {
+                    "totalPurchased": {
+                        "type": "number",
+                        "example": 184500,
+                        "description": "Suma del total de los pedidos entregados (los cancelados y los que siguen en curso no cuentan como compra)"
+                    },
+                    "ordersCount": {
+                        "type": "number",
+                        "example": 12,
+                        "description": "Cuántos pedidos tiene en total, de cualquier estado"
+                    },
+                    "deliveredCount": {
+                        "type": "number",
+                        "example": 9,
+                        "description": "Cuántos de esos están entregados"
+                    },
+                    "averageTicket": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": 20500,
+                        "description": "Ticket promedio: lo comprado dividido los pedidos entregados, a 2 decimales; `null` si todavía no recibió ninguno"
+                    },
+                    "lastDeliveredAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "Cuándo se entregó el último pedido entregado; `null` si no tiene ninguno"
+                    }
+                },
+                "required": [
+                    "totalPurchased",
+                    "ordersCount",
+                    "deliveredCount",
+                    "averageTicket",
+                    "lastDeliveredAt"
                 ]
             },
             "CartItemResponseDto": {
@@ -42792,6 +42947,69 @@
                 },
                 "required": [
                     "cashBoxId"
+                ]
+            },
+            "PreviewExpenseDto": {
+                "type": "object",
+                "properties": {
+                    "amount": {
+                        "type": "number",
+                        "example": 3500,
+                        "description": "Mayor que cero"
+                    }
+                },
+                "required": [
+                    "amount"
+                ]
+            },
+            "PreviewDriverSettlementDto": {
+                "type": "object",
+                "properties": {
+                    "declaredCash": {
+                        "type": "number",
+                        "example": 42000,
+                        "description": "Efectivo que el chofer piensa entregar (0 o más)"
+                    },
+                    "expenses": {
+                        "description": "Gastos que pagó con la cobranza (sólo el importe)",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PreviewExpenseDto"
+                        }
+                    }
+                },
+                "required": [
+                    "declaredCash"
+                ]
+            },
+            "SettlementPreviewDto": {
+                "type": "object",
+                "properties": {
+                    "expectedCash": {
+                        "type": "number",
+                        "example": 40000,
+                        "description": "Efectivo esperado, en vivo"
+                    },
+                    "declaredCash": {
+                        "type": "number",
+                        "example": 42000
+                    },
+                    "driverExpenses": {
+                        "type": "number",
+                        "example": 3500,
+                        "description": "Suma de los gastos"
+                    },
+                    "difference": {
+                        "type": "number",
+                        "example": 5500,
+                        "description": "Declarado + gastos − esperado: la misma cuenta que se guarda al presentar (negativa: faltante; positiva: sobrante)"
+                    }
+                },
+                "required": [
+                    "expectedCash",
+                    "declaredCash",
+                    "driverExpenses",
+                    "difference"
                 ]
             },
             "CommissionRuleResponseDto": {

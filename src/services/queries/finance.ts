@@ -28,6 +28,7 @@ import {
   listCustomerAccounts,
   listDriverLiquidations,
   listDriverSettlements,
+  previewDriverSettlement,
   openCashSession,
   openDriverSettlement,
   payDriverLiquidation,
@@ -72,6 +73,7 @@ import type {
   RegisterPaymentBody,
   ReverseCashMovementBody,
   UnpayDriverLiquidationBody,
+  PreviewDriverSettlementBody,
   SubmitDriverSettlementBody,
   TransferCashBody,
   UpdateCashBoxBody,
@@ -368,6 +370,19 @@ export const useOpenDriverSettlement = () =>
     (body) => body,
     (body, key) => openDriverSettlement(body, key),
   );
+
+/**
+ * La diferencia de una rendición abierta según el back, para lo que se está escribiendo. La respuesta queda atada a su
+ * clave (el efectivo y los gastos): una lenta de un valor viejo nunca reemplaza a la del valor actual.
+ */
+export const useDriverSettlementPreview = (id: string, body: PreviewDriverSettlementBody | null, enabled = true) =>
+  useQuery({
+    queryKey: [...queryKeys.driverSettlements.detail(id), 'preview', body],
+    queryFn: () => previewDriverSettlement(id, body as PreviewDriverSettlementBody),
+    enabled: enabled && body !== null,
+    retry: false,
+    gcTime: 0,
+  });
 
 export const useSubmitDriverSettlement = () =>
   useMoneyMutation<

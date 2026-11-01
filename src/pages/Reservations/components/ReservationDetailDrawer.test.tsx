@@ -25,6 +25,7 @@ const reservation = (overrides: Partial<Reserva> = {}) =>
     depositPaid: false,
     depositAmount: 1000,
     remainingBalance: 2000,
+    balanceDue: 2000,
     total: 3000,
     items: [{ type: 'Garrafa 10 kg', quantity: 1 }],
     ...overrides,
@@ -75,9 +76,16 @@ describe('ReservationDetailDrawer', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('el saldo al entregar es total menos seña aunque la seña esté pendiente (el back sólo descuenta la cobrada)', () => {
-    renderDrawer(reservation({ total: 16700, depositAmount: 500, remainingBalance: 16700, depositPaid: false }));
-    expect(screen.getByText('Saldo al entregar').nextElementSibling).toHaveTextContent('16.200');
+  it('el saldo al entregar es el que manda el back, no una cuenta del panel', () => {
+    renderDrawer(
+      reservation({ total: 16700, depositAmount: 500, remainingBalance: 16700, balanceDue: 12345, depositPaid: false }),
+    );
+    expect(screen.getByText('Saldo al entregar').nextElementSibling).toHaveTextContent('12.345');
+  });
+
+  it('si el back no manda el saldo muestra un guion explícito, no una cuenta', () => {
+    renderDrawer(reservation({ total: 16700, depositAmount: 500, balanceDue: undefined }));
+    expect(screen.getByText('Saldo al entregar').nextElementSibling).toHaveTextContent('—');
   });
 
   it('muestra la franja elegida, o que es sólo por el día', () => {

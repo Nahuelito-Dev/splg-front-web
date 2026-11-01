@@ -37,6 +37,8 @@ import type {
   IncomeStatement,
   OpenCashSessionBody,
   OpenDriverSettlementBody,
+  PreviewDriverSettlementBody,
+  SettlementPreview,
   PayDriverLiquidationBody,
   RegisterAdjustmentBody,
   RegisterPaymentBody,
@@ -241,6 +243,20 @@ export const openDriverSettlement = async (
   key: string,
 ): Promise<DriverSettlementDetail> => {
   const { data } = await http.post<DriverSettlementDetail>('/driver-settlements', body, withKey(key));
+  return data;
+};
+
+/**
+ * POST /v2/driver-settlements/:id/preview: lo esperado y la diferencia que calcula el back para el efectivo y los
+ * gastos que se están escribiendo. No escribe nada.
+ */
+export const previewDriverSettlement = async (
+  id: string,
+  body: PreviewDriverSettlementBody,
+): Promise<SettlementPreview> => {
+  const { data } = await http.post<SettlementPreview>(`/driver-settlements/${id}/preview`, body, {
+    baseURL: env.apiUrlV2,
+  });
   return data;
 };
 
