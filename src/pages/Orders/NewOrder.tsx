@@ -95,6 +95,8 @@ export const NewOrder = () => {
     quoteBody && !quoteQuery.stale ? quoteQuery.data : undefined,
     quoteBody && !quoteQuery.stale && quoteQuery.error ? errorMessage(quoteQuery.error) : null,
   );
+  // El total de la cotización que se está viendo (sólo si ya refleja lo cargado): es lo que el alta tiene que cobrar.
+  const quotedTotal = quoteBody && !quoteQuery.stale && quoteQuery.data ? quoteQuery.data.total : undefined;
   const onAccount = paymentMethod === 'account';
   const accountHint = !onAccount
     ? undefined
@@ -135,6 +137,8 @@ export const NewOrder = () => {
         deliveryMode: values.deliveryMode,
         notes: values.notes,
         ...reservationBody(values),
+        // Lo que se cobra es lo que se cotizó: si el total cambió, el back responde 409 y no crea nada.
+        expectedTotal: quotedTotal,
       },
       {
         onSuccess: (order) => {
@@ -150,7 +154,10 @@ export const NewOrder = () => {
           }
           navigate(to);
         },
-        onError: notify.error,
+        onError: (error) => {
+          notify.error(error);
+          void quoteQuery.refetch();
+        },
       },
     );
   };

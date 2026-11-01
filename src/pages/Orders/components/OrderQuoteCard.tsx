@@ -3,6 +3,7 @@ import { errorMessage } from '../../../services/api/errors';
 import type { QuoteOrderBody } from '../../../services/api/types';
 import { useOrderQuote } from '../../../services/queries/orders';
 import { formatCurrency } from '../../../utils/format';
+import { quoteSurchargeLabel } from './details/orderPricing';
 
 interface Props {
   /** Lo cargado hasta ahora; `null` si todavía no alcanza para cotizar. */
@@ -56,7 +57,7 @@ export const OrderQuoteCard = ({ body, hint }: Props) => {
           {quote.zoneSurcharge > 0 && (
             <Line label={`Recargo de zona${quote.zone ? ` (${quote.zone.name})` : ''}`} amount={quote.zoneSurcharge} />
           )}
-          {quote.paymentSurcharge > 0 && <Line label="Recargo por medio de pago" amount={quote.paymentSurcharge} />}
+          {quote.paymentSurcharge > 0 && <Line label={quoteSurchargeLabel(quote)} amount={quote.paymentSurcharge} />}
           {quote.expressSurcharge > 0 && <Line label="Recargo express" amount={quote.expressSurcharge} />}
           <div className="border-t border-outline pt-1.5">
             <Line label="Total" amount={quote.total} strong />

@@ -131,6 +131,17 @@ describe('NewOrder: administrador general sin distribuidora elegida', () => {
     await waitFor(() => expect(createOrder).toHaveBeenCalledTimes(1));
   });
 
+  it('manda el total de la cotización que se está viendo (lo cotizado es lo cobrado)', async () => {
+    permissions.mockReturnValue({ canWrite: true, writeHint: undefined });
+    quote.data = { items: [], subtotal: 18000, total: 19350, paymentSurcharge: 1350 };
+    renderPage();
+    fillForm();
+    fireEvent.click(screen.getByRole('button', { name: 'Crear pedido' }));
+    await waitFor(() => expect(createOrder).toHaveBeenCalledTimes(1));
+    expect(createOrder).toHaveBeenCalledWith(expect.objectContaining({ expectedTotal: 19350 }), expect.anything());
+    quote.data = undefined;
+  });
+
   it('con distribuidora elegida el botón está habilitado', () => {
     permissions.mockReturnValue({ canWrite: true, writeHint: undefined });
     renderPage();

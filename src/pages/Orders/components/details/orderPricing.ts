@@ -1,20 +1,33 @@
-import type { Order } from '../../../../services/api/types';
+import type { Order, Quote } from '../../../../services/api/types';
 
-/**
- * Recargo por pago online: no viene explícito en la respuesta, pero se puede
- * despejar del total. El back aplica +10% sobre (subtotal + recargo de zona)
- * para MercadoPago y transferencia, 0% en efectivo
- * (`order-pricing.service.ts`, `applyPaymentSurcharge`): se calcula acá en vez
- * de duplicar esa regla, para no desalinearse si cambia el porcentaje.
- */
-export const onlinePaymentSurcharge = (
-  order: Pick<Order, 'total_amount' | 'subtotal_items' | 'zone_surcharge'>,
-): number => {
-  const zoneAmount = order.zone_surcharge?.amount ?? 0;
-  const surcharge = order.total_amount - order.subtotal_items - zoneAmount;
-  return surcharge > 0 ? surcharge : 0;
+/** Recargo por medio de pago en pesos, tal cual lo guardó el back: el panel no lo calcula ni lo deduce del total. */
+export const paymentSurchargeAmount = (order: Pick<Order, 'paymentSurchargeAmount'>): number =>
+  order.paymentSurchargeAmount ?? 0;
+
+const MEDIO: Record<string, string> = {
+  transfer: 'transferencia',
+  mercadopago: 'Mercado Pago',
+  cash: 'efectivo',
 };
 
-/** Cómo se nombra el recargo en el desglose: por el medio de pago real (transferencia o Mercado Pago), no «online». */
-export const paymentSurchargeLabel = (order: Pick<Order, 'paymentMethodDetail'>): string =>
-  order.paymentMethodDetail === 'transfer' ? 'Recargo por transferencia' : 'Recargo por Mercado Pago';
+const formatPercentage = (value: number): string =>
+  new Intl.NumberFormat('es-AR', { maximumFractionDigits: 2 }).format(value);
+
+/**
+ * Cómo se nombra el recargo: por el medio de pago y con el porcentaje con que lo calculó el back
+ * («Recargo por transferencia (10 %)»). Sin porcentaje (pedidos anteriores a que fuera configurable) va sin él.
+ */
+export const paymentSurchargeLabel = (
+  method: string | null | undefined,
+  percentage: number | null | undefined,
+): string => {
+  const medio = method ? MEDIO[method] : undefined;
+  const base = medio ? `Recargo por ${medio}` : 'Recargo por medio de pago';
+  return typeof percentage === 'number' ? `${base} (${formatPercentage(percentage)} %)` : base;
+};
+
+export const orderSurchargeLabel = (order: Pick<Order, 'paymentMethodDetail' | 'paymentSurchargePercentage'>): string =>
+  paymentSurchargeLabel(order.paymentMethodDetail, order.paymentSurchargePercentage);
+
+export const quoteSurchargeLabel = (quote: Pick<Quote, 'paymentMethod' | 'paymentSurchargePercentage'>): string =>
+  paymentSurchargeLabel(quote.paymentMethod, quote.paymentSurchargePercentage);
