@@ -1,14 +1,19 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus, Trash2 } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Button, IconButton, Modal, FormInput, FormTextArea, FormSelect, Form } from '../../../common/components/ui';
-import type { DriverSettlementDetail } from '../../../services/api/types';
-import { useCashCategories, useSubmitDriverSettlement } from '../../../services/queries/finance';
+import { useDebounce } from '../../../hooks/useDebounce';
+import type { DriverSettlementDetail, PreviewDriverSettlementBody } from '../../../services/api/types';
+import {
+  useCashCategories,
+  useDriverSettlementPreview,
+  useSubmitDriverSettlement,
+} from '../../../services/queries/finance';
 import { formatCurrency } from '../../../utils/format';
 import { notify } from '../../../utils/notifications';
-import { nonNegativeMoney, optionalText, parseMoney, positiveMoney } from '../financeSchemas';
+import { isMoneyText, nonNegativeMoney, optionalText, parseMoney, positiveMoney } from '../financeSchemas';
 
 const schema = z.object({
   declaredCash: nonNegativeMoney('Ingresá el efectivo que entrega'),
@@ -43,12 +48,30 @@ export const SubmitSettlementModal = ({ open, onClose, settlement }: Props) => {
     if (open) reset({ declaredCash: '', expenses: [], notes: '' });
   }, [open, reset]);
 
-  const spent = (expenses ?? []).reduce(
-    (sum, e) => sum + (e.amount && !Number.isNaN(parseMoney(e.amount)) ? parseMoney(e.amount) : 0),
-    0,
+  // Lo que se pide al back: el efectivo y los importes de los gastos que ya se pueden leer. Un importe a medio escribir
+  // (vacío, 0) no entra; uno ilegible frena la consulta y se avisa.
+  const expenseTexts = (expenses ?? []).map((e) => (e.amount ?? '').trim());
+  const unreadableExpense = expenseTexts.some((t) => t !== '' && !isMoneyText(t));
+  const previewKey = useMemo(() => {
+    if (!declared || !isMoneyText(declared) || unreadableExpense) return null;
+    const amounts = expenseTexts.filter((t) => isMoneyText(t) && parseMoney(t) > 0).map(parseMoney);
+    const body: PreviewDriverSettlementBody = {
+      declaredCash: parseMoney(declared),
+      ...(amounts.length > 0 ? { expenses: amounts.map((amount) => ({ amount })) } : {}),
+    };
+    return JSON.stringify(body);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [declared, unreadableExpense, expenseTexts.join('|')]);
+  const settledKey = useDebounce(previewKey, 400);
+  const preview = useDriverSettlementPreview(
+    settlement.settlementId,
+    settledKey ? (JSON.parse(settledKey) as PreviewDriverSettlementBody) : null,
+    open,
   );
-  const parsed = declared && !Number.isNaN(parseMoney(declared)) ? parseMoney(declared) : null;
-  const difference = parsed === null ? null : Math.round((parsed + spent - settlement.expectedCash) * 100) / 100;
+  // Mientras se escribe (la clave todavía no se asentó) no se muestra una diferencia de un valor viejo.
+  const difference = previewKey !== null && previewKey === settledKey ? (preview.data?.difference ?? null) : null;
+  const previewFailed = previewKey !== null && previewKey === settledKey && preview.isError;
+  const expected = preview.data?.expectedCash ?? settlement.expectedCash;
 
   const onSubmit = (values: Values) =>
     submit.mutate(
@@ -80,7 +103,7 @@ export const SubmitSettlementModal = ({ open, onClose, settlement }: Props) => {
       closeBlocked={submit.isPending}
       size="md"
       title="Declarar el efectivo rendido"
-      description={`Se esperan ${formatCurrency(settlement.expectedCash)}. La diferencia es lo declarado más los gastos, menos lo esperado.`}
+      description={`Se esperan ${formatCurrency(expected)}. La diferencia es lo declarado más los gastos, menos lo esperado.`}
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>
@@ -129,6 +152,16 @@ export const SubmitSettlementModal = ({ open, onClose, settlement }: Props) => {
             </Button>
           </div>
         </fieldset>
+        {unreadableExpense && (
+          <p role="status" className="text-sm text-warn">
+            Revisá el importe del gasto: no se puede calcular la diferencia.
+          </p>
+        )}
+        {previewFailed && (
+          <p role="status" className="text-sm text-warn">
+            No se pudo calcular la diferencia ahora. Podés presentar igual: el back la calcula al guardar.
+          </p>
+        )}
         {difference !== null && (
           <p
             role="status"

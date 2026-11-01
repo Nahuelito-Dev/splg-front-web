@@ -2381,6 +2381,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/orders/customer/{customerId}/stats': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Lo que un cliente le compró a la distribuidora
+     * @description Total comprado (pedidos entregados), cantidad de pedidos, ticket promedio y último pedido entregado, calculados en la base sobre todos los pedidos del cliente en la distribuidora del contexto (`X-Distributor`). Un cliente sin pedidos en esa distribuidora devuelve ceros y `null`.
+     */
+    get: operations['CustomerPurchaseStatsController_porCliente'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/cart': {
     parameters: {
       query?: never;
@@ -3513,6 +3533,26 @@ export interface paths {
      * @description Sólo una presentada: una aprobada ya movió dinero a una caja y se corrige anulando el movimiento y ajustando la deducción.
      */
     patch: operations['DriverSettlementController_reopen'];
+    trace?: never;
+  };
+  '/api/v2/driver-settlements/{id}/preview': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Vista previa de la diferencia antes de presentar la rendición
+     * @description Con el efectivo y los gastos que el chofer está escribiendo, devuelve lo esperado en vivo y la diferencia (declarado + gastos − esperado) con la misma cuenta que se guarda al presentar. No escribe nada. El chofer sólo la ve en sus rendiciones.
+     */
+    post: operations['DriverSettlementV2Controller_preview'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
   '/api/v1/commission-rules': {
@@ -10403,6 +10443,11 @@ export interface components {
        * @example 17600
        */
       remainingBalance: number;
+      /**
+       * @description Saldo a cobrar al entregar una vez paga la seña: total menos seña, el mismo número que el `balance` de la cotización del alta. A diferencia de `remainingBalance`, no depende de que la seña ya esté cobrada.
+       * @example 17600
+       */
+      balanceDue: number;
       /** @description Enlace de pago de MercadoPago de la seña mientras esté pendiente; `null` si la seña es en efectivo o por transferencia, ya está paga o no se generó */
       paymentUrl: string | null;
       /** @description Franja de entrega elegida; `null` si la reserva es sólo por día */
@@ -10900,6 +10945,33 @@ export interface components {
        * @example Hablé con el cliente y verifiqué el pago en Mercado Pago: es legítimo
        */
       reason: string;
+    };
+    CustomerPurchaseStatsDto: {
+      /**
+       * @description Suma del total de los pedidos entregados (los cancelados y los que siguen en curso no cuentan como compra)
+       * @example 184500
+       */
+      totalPurchased: number;
+      /**
+       * @description Cuántos pedidos tiene en total, de cualquier estado
+       * @example 12
+       */
+      ordersCount: number;
+      /**
+       * @description Cuántos de esos están entregados
+       * @example 9
+       */
+      deliveredCount: number;
+      /**
+       * @description Ticket promedio: lo comprado dividido los pedidos entregados, a 2 decimales; `null` si todavía no recibió ninguno
+       * @example 20500
+       */
+      averageTicket: number | null;
+      /**
+       * Format: date-time
+       * @description Cuándo se entregó el último pedido entregado; `null` si no tiene ninguno
+       */
+      lastDeliveredAt: string | null;
     };
     CartItemResponseDto: {
       /** Format: uuid */
@@ -12545,6 +12617,41 @@ export interface components {
        */
       differenceResolution?: 'none' | 'charged_to_driver' | 'absorbed';
       notes?: string;
+    };
+    PreviewExpenseDto: {
+      /**
+       * @description Mayor que cero
+       * @example 3500
+       */
+      amount: number;
+    };
+    PreviewDriverSettlementDto: {
+      /**
+       * @description Efectivo que el chofer piensa entregar (0 o más)
+       * @example 42000
+       */
+      declaredCash: number;
+      /** @description Gastos que pagó con la cobranza (sólo el importe) */
+      expenses?: components['schemas']['PreviewExpenseDto'][];
+    };
+    SettlementPreviewDto: {
+      /**
+       * @description Efectivo esperado, en vivo
+       * @example 40000
+       */
+      expectedCash: number;
+      /** @example 42000 */
+      declaredCash: number;
+      /**
+       * @description Suma de los gastos
+       * @example 3500
+       */
+      driverExpenses: number;
+      /**
+       * @description Declarado + gastos − esperado: la misma cuenta que se guarda al presentar (negativa: faltante; positiva: sobrante)
+       * @example 5500
+       */
+      difference: number;
     };
     CommissionRuleResponseDto: {
       ruleId: string;
@@ -26837,6 +26944,49 @@ export interface operations {
       };
     };
   };
+  CustomerPurchaseStatsController_porCliente: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Usuario del cliente (`user_id`), como en `GET /orders/customer/:customerId` */
+        customerId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CustomerPurchaseStatsDto'];
+        };
+      };
+      /** @description Falta la distribuidora en el contexto o el id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   CartController_consultar: {
     parameters: {
       query?: never;
@@ -30996,6 +31146,67 @@ export interface operations {
       };
       /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
       422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DriverSettlementV2Controller_preview: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Rendición UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PreviewDriverSettlementDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SettlementPreviewDto'];
+        };
+      };
+      /** @description Efectivo o gasto negativo, o con más de dos decimales */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin, delivery */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe, es de otra distribuidora o (chofer) de otro chofer */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La rendición no está abierta */
+      409: {
         headers: {
           [name: string]: unknown;
         };

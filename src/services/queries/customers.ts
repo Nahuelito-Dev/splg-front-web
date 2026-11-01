@@ -13,7 +13,7 @@ import {
 } from '../api/customers';
 import type { AccountFields } from '../api/registration';
 import type { PageParams } from '../api/httpClient';
-import { listCustomerOrders } from '../api/orders';
+import { getCustomerPurchaseStats, listCustomerOrders } from '../api/orders';
 import { updateUserAccount } from '../api/users';
 import type { UpdateUserBody } from '../api/types';
 import { queryKeys } from './queryKeys';
@@ -140,12 +140,12 @@ export const useFindCustomerByUserId = () =>
   useMutation({ mutationFn: (userId: string) => getCustomerByUserId(userId) });
 
 /**
- * Los últimos pedidos de un cliente (hasta 100) para los números de su portada. Sin `keepPreviousData`: al pasar de
- * una ficha a otra los KPIs no muestran datos del cliente anterior, esperan los propios.
+ * Lo que el cliente compró (total, pedidos, ticket promedio, última entrega), calculado por el back sobre todos sus
+ * pedidos. Sin `keepPreviousData`: al pasar de una ficha a otra los KPIs no muestran datos del cliente anterior.
  */
-export const useCustomerOrderSample = (userId: string | undefined) =>
+export const useCustomerPurchaseStats = (userId: string | undefined) =>
   useQuery({
-    queryKey: [...queryKeys.orders.lists(), { customer: userId, page: 0, pageSize: 100, sample: true }],
-    queryFn: () => listCustomerOrders(userId ?? '', { page: 0, pageSize: 100 }),
+    queryKey: [...queryKeys.orders.lists(), { customer: userId, purchaseStats: true }],
+    queryFn: () => getCustomerPurchaseStats(userId ?? ''),
     enabled: Boolean(userId),
   });

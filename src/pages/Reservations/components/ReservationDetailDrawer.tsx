@@ -8,7 +8,7 @@ import { isKnownPaymentMethod } from './paymentMethod';
 import { CashBoxField } from '../../Orders/components/CashBoxField';
 import { useOrderCashBoxes } from '../../Orders/components/useOrderCashBoxes';
 import { PaymentLink } from '../../Orders/components/PaymentLink';
-import { canConfirmDeposit, confirmDepositLabel, reservationBalance, slotLabel } from './reservationBalance';
+import { canConfirmDeposit, confirmDepositLabel, slotLabel } from './reservationBalance';
 
 interface Props {
   reservation: Reserva | null;
@@ -120,7 +120,11 @@ export const ReservationDetailDrawer = ({ reservation, onClose, onConfirmDeposit
             </div>
             <div>
               <dt className="text-xs text-muted">Saldo al entregar</dt>
-              <dd className="font-mono font-semibold text-ink">{formatCurrency(reservationBalance(reservation))}</dd>
+              <dd className="font-mono font-semibold text-ink">
+                {reservation.balanceDue === undefined || reservation.balanceDue === null
+                  ? '—'
+                  : formatCurrency(reservation.balanceDue)}
+              </dd>
             </div>
           </dl>
         </div>

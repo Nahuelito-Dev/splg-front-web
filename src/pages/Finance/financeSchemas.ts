@@ -8,6 +8,9 @@ const MONEY = /^\d+(?:[.,]\d{1,2})?$/;
 export const MAX_MONEY = 9_999_999_999.99;
 const MAX_MONEY_MESSAGE = 'El importe es demasiado grande (máximo 9.999.999.999,99)';
 
+/** ¿Es un importe legible, como lo escribe una persona (`1234.5` o `1234,50`)? */
+export const isMoneyText = (value: string): boolean => MONEY.test(value.trim());
+
 /** Texto → número (acepta coma decimal). */
 export const parseMoney = (value: string): number => Number(value.trim().replace(',', '.'));
 

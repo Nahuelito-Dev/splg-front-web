@@ -7,6 +7,7 @@ import type {
   ConfirmDeliveryBody,
   ConfirmTransferBody,
   CreateOrderBody,
+  CustomerPurchaseStats,
   DeliveryOptions,
   Incident,
   Message,
@@ -190,6 +191,15 @@ export const listOrderIncidents = async (orderId: string): Promise<Incident[]> =
 /** GET /orders/customer/:userId — el historial de un cliente (por su user_id). Lo usa Clientes. */
 export const listCustomerOrders = async (userId: string, params: PageParams): Promise<PaginatedOrders> => {
   const { data } = await http.get<PaginatedOrders>(`/orders/customer/${userId}`, { params: toQuery(params) });
+  return data;
+};
+
+/**
+ * GET /v2/orders/customer/:userId/stats: lo que el cliente le compró a la distribuidora (total comprado, pedidos,
+ * ticket promedio, última entrega), calculado por el back sobre todos sus pedidos.
+ */
+export const getCustomerPurchaseStats = async (userId: string): Promise<CustomerPurchaseStats> => {
+  const { data } = await http.get<CustomerPurchaseStats>(`/orders/customer/${userId}/stats`, { baseURL: env.apiUrlV2 });
   return data;
 };
 

@@ -23,7 +23,7 @@ import { useBackToList, usePermissions, useProfileTab } from '../../hooks';
 import { useCrumbLeaf } from '../../common/components';
 import type { Claim } from '../../services/api/types';
 import { useClaims } from '../../services/queries/claims';
-import { useCustomer, useCustomerOrderSample, useRemoveCustomer } from '../../services/queries/customers';
+import { useCustomer, useCustomerPurchaseStats, useRemoveCustomer } from '../../services/queries/customers';
 import { useCustomerAccountOf } from '../../services/queries/finance';
 import { useCylinders } from '../../services/queries/physicalCylinders';
 import { useCustomerRepurchase } from '../../services/queries/repurchase';
@@ -46,7 +46,6 @@ import { CustomerOrders } from './components/details/CustomerOrders';
 import { CustomerRepurchase } from './components/details/CustomerRepurchase';
 import { CustomerSummary } from './components/details/CustomerSummary';
 import { removalConfirmation, removalError } from './customerRemoval';
-import { customerStats } from './customerStats';
 import { daysLeftText } from './Repurchase/repurchaseLabels';
 
 /** El texto sale del valor real en centavos: un saldo de $ 0,004 se muestra $ 0,00 y está al día. */
@@ -69,7 +68,7 @@ export const CustomerDetails = () => {
   const [claimId, setClaimId] = useState<string | null>(null);
   const [tab, setTab] = useProfileTab(TAB_KEYS, 'summary');
 
-  const orders = useCustomerOrderSample(customer?.user_id);
+  const purchaseStats = useCustomerPurchaseStats(customer?.user_id);
   const addresses = useUserAddresses(customer?.user_id);
   const heldCylinders = useCylinders(
     { customerUserId: customer?.user_id },
@@ -112,23 +111,34 @@ export const CustomerDetails = () => {
 
   const name = customer?.user?.full_name ?? 'Sin nombre';
   useCrumbLeaf(customer ? name : undefined, goBack);
-  const stats = orders.data ? customerStats(orders.data.orders, orders.data.total) : null;
+  const stats = purchaseStats.data ?? null;
+  const statsFailed = purchaseStats.isError;
+  const statsMissing = statsFailed ? 'No disponible' : '–';
   const consumption = customer?.avgMonthlyConsumptionKg;
   const coverStats: CoverStat[] = [
     {
       label: 'Total comprado',
-      value: stats ? formatCurrency(stats.totalPurchased) : '–',
-      hint: stats?.partial ? 'De sus últimos 100 pedidos' : 'Pedidos entregados',
+      value: stats ? formatCurrency(stats.totalPurchased) : statsMissing,
+      hint: statsFailed ? 'No se pudieron cargar las estadísticas de compra' : 'Pedidos entregados',
     },
-    { label: 'Pedidos', value: stats ? String(stats.ordersCount) : '–' },
+    { label: 'Pedidos', value: stats ? String(stats.ordersCount) : statsMissing },
     {
       label: 'Ticket promedio',
-      value: stats ? (stats.averageTicket === null ? 'Sin entregas' : formatCurrencyExact(stats.averageTicket)) : '–',
-      hint: stats?.partial && stats.averageTicket !== null ? 'De sus últimos 100 pedidos' : undefined,
+      value: stats
+        ? stats.averageTicket === null
+          ? 'Sin entregas'
+          : formatCurrencyExact(stats.averageTicket)
+        : statsMissing,
     },
     {
       label: 'Última compra',
-      value: stats ? (stats.lastPurchaseAt ? formatDate(stats.lastPurchaseAt) : 'Sin pedidos') : '–',
+      value: stats
+        ? stats.lastDeliveredAt
+          ? formatDate(stats.lastDeliveredAt)
+          : stats.ordersCount > 0
+            ? 'Sin entregas'
+            : 'Sin pedidos'
+        : statsMissing,
     },
     {
       label: 'Consumo declarado',

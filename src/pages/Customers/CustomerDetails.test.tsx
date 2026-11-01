@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../../services/api/errors';
-import type { Claim, Customer, Order } from '../../services/api/types';
+import type { Claim, Customer } from '../../services/api/types';
 
 const CUSTOMER = {
   customer_id: 'c-1',
@@ -23,9 +23,6 @@ const CUSTOMER = {
     role: { type: 'customer' },
   },
 } as unknown as Customer;
-
-const order = (status: Order['status'], total: number, at: string) =>
-  ({ order_id: at, status, total_amount: total, created_at: at, order_items: [] }) as unknown as Order;
 
 const claim = (id: string, customerId: string) =>
   ({
@@ -55,9 +52,17 @@ const perms = vi.hoisted(() => ({ needsDistributor: false }));
 const removal = vi.hoisted(() => ({ confirm: vi.fn(), mutate: vi.fn() }));
 const custo = vi.hoisted(() => ({
   consumption: null as number | null,
-  orderTotal: 3,
   deletedAt: null as string | null,
+  stats: undefined as Record<string, unknown> | undefined,
+  statsError: false,
 }));
+const STATS = {
+  totalPurchased: 3500,
+  ordersCount: 3,
+  deliveredCount: 2,
+  averageTicket: 1750,
+  lastDeliveredAt: '2026-09-20T10:00:00Z',
+};
 const accountOf = vi.hoisted(() => vi.fn<[], Record<string, unknown>>());
 vi.mock('../../services/queries/finance', () => ({
   useCustomerAccountOf: () => accountOf(),
@@ -102,16 +107,7 @@ vi.mock('../../services/queries/customers', () => ({
     isPending: false,
     error: null,
   }),
-  useCustomerOrderSample: () => ({
-    data: {
-      orders: [
-        order('delivered', 1000, '2026-09-01T10:00:00Z'),
-        order('delivered', 2500, '2026-09-20T10:00:00Z'),
-        order('cancelled', 900, '2026-09-25T10:00:00Z'),
-      ],
-      total: custo.orderTotal,
-    },
-  }),
+  useCustomerPurchaseStats: () => ({ data: custo.stats, isError: custo.statsError }),
   useCustomerOrders: () => ({ data: { orders: [], total: 0 }, isFetching: false }),
   useRemoveCustomer: () => ({ mutate: removal.mutate }),
 }));
@@ -180,8 +176,9 @@ beforeEach(() => {
   vi.clearAllMocks();
   perms.needsDistributor = false;
   custo.consumption = null;
-  custo.orderTotal = 3;
   custo.deletedAt = null;
+  custo.stats = STATS;
+  custo.statsError = false;
 });
 beforeEach(() => accountOf.mockReturnValue({ data: undefined, isPending: true, isError: false, error: null }));
 const FORECAST = {
@@ -371,10 +368,68 @@ describe('CustomerDetails: portada con KPIs y pestañas', () => {
     expect(screen.getAllByText('Consumo declarado')[0].closest('div')).toHaveTextContent('12 kg/mes');
   });
 
-  it('avisa que el ticket promedio sale de una muestra cuando hay más pedidos que los traídos', () => {
-    custo.orderTotal = 250;
+  it('muestra lo que calcula el back, también con cientos de pedidos, sin avisar de muestras', () => {
+    custo.stats = { ...STATS, totalPurchased: 720800, ordersCount: 175, deliveredCount: 20, averageTicket: 36040 };
     renderPage();
-    expect(screen.getByText('Ticket promedio').closest('div')).toHaveTextContent('De sus últimos 100 pedidos');
+    expect(screen.getByText('Total comprado').closest('div')).toHaveTextContent('720.800');
+    expect(screen.getByText('Pedidos', { selector: 'dt' }).closest('div')).toHaveTextContent('175');
+    expect(screen.getByText('Ticket promedio').closest('div')).toHaveTextContent('36.040');
+    expect(screen.queryByText(/últimos 100 pedidos/)).not.toBeInTheDocument();
+  });
+
+  it('un cliente sin entregas no tiene ticket promedio ni última compra', () => {
+    custo.stats = {
+      ...STATS,
+      totalPurchased: 0,
+      ordersCount: 2,
+      deliveredCount: 0,
+      averageTicket: null,
+      lastDeliveredAt: null,
+    };
+    renderPage();
+    expect(screen.getByText('Ticket promedio').closest('div')).toHaveTextContent('Sin entregas');
+    expect(screen.getByText('Última compra').closest('div')).toHaveTextContent('Sin entregas');
+  });
+
+  it('si falla la carga de las estadísticas lo dice, no deja un guion mudo', () => {
+    custo.stats = undefined;
+    custo.statsError = true;
+    renderPage();
+    expect(screen.getByText('Total comprado').closest('div')).toHaveTextContent('No disponible');
+    expect(screen.getByText('Total comprado').closest('div')).toHaveTextContent('No se pudieron cargar');
+  });
+
+  it('con pedidos pero sin entregas, la última compra dice «Sin entregas»', () => {
+    custo.stats = {
+      ...STATS,
+      totalPurchased: 0,
+      ordersCount: 2,
+      deliveredCount: 0,
+      averageTicket: null,
+      lastDeliveredAt: null,
+    };
+    renderPage();
+    expect(screen.getByText('Última compra').closest('div')).toHaveTextContent('Sin entregas');
+  });
+
+  it('un cliente sin ningún pedido dice «Sin pedidos»', () => {
+    custo.stats = {
+      ...STATS,
+      totalPurchased: 0,
+      ordersCount: 0,
+      deliveredCount: 0,
+      averageTicket: null,
+      lastDeliveredAt: null,
+    };
+    renderPage();
+    expect(screen.getByText('Última compra').closest('div')).toHaveTextContent('Sin pedidos');
+  });
+
+  it('mientras el back no contesta, los KPIs quedan en blanco: no se inventan números', () => {
+    custo.stats = undefined;
+    renderPage();
+    expect(screen.getByText('Total comprado').closest('div')).toHaveTextContent('–');
+    expect(screen.getByText('Ticket promedio').closest('div')).toHaveTextContent('–');
   });
 
   it('el administrador general sin distribuidora no ve la cuenta corriente: pide «Ver como»', () => {

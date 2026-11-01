@@ -12,6 +12,7 @@ const reserva = (overrides: Partial<Reserva>): Reserva => ({
   depositAmount: 5000,
   depositPaid: false,
   remainingBalance: 17600,
+  balanceDue: 17600,
   paymentUrl: null,
   timeSlot: null,
   createdAt: '2026-09-01T00:00:00.000Z',
