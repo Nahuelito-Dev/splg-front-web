@@ -7,6 +7,7 @@ import {
   formatNumber,
   formatShortId,
   scheduledDayOf,
+  formatArgentinaDay,
 } from './format';
 
 describe('format', () => {
@@ -36,6 +37,24 @@ describe('format', () => {
   });
 });
 
+describe('fechas de calendario (YYYY-MM-DD)', () => {
+  // La suite corre en hora argentina (`npm test`) y en UTC (`npm run test:utc`): el día es el mismo en las dos.
+  it('formatDay y formatDate muestran el mismo día, sin pasar por la zona', () => {
+    expect(formatDay('2026-11-02')).toBe('2 nov 2026');
+    expect(formatDate('2026-11-02')).toBe('2 nov 2026');
+    expect(formatDate('2026-11-02')).not.toMatch(/\b1 nov/);
+  });
+
+  it('un YYYY-MM-DD imposible no desborda al mes siguiente: «—»', () => {
+    expect(formatDate('2026-02-30')).toBe('—');
+    expect(formatDate('2026-13-01')).toBe('—');
+  });
+
+  it('un instante con hora sigue en hora local: la zona sí cuenta', () => {
+    expect(formatDate('2026-11-02T01:00:00.000Z')).toBe(process.env.TZ === 'UTC' ? '2 nov 2026' : '1 nov 2026');
+  });
+});
+
 describe('formatShortId y formatElapsed', () => {
   it('el id del pedido son los últimos 6 en mayúscula', () => {
     expect(formatShortId('c59bc7cd-932f-413a-b7f7-794d51cbc4e7')).toBe('#CBC4E7');
@@ -58,5 +77,28 @@ describe('scheduledDayOf', () => {
 
   it('a medianoche UTC exacta es el día de calendario', () => {
     expect(scheduledDayOf('2026-11-11T00:00:00.000Z')).toBe('2026-11-11');
+  });
+});
+
+describe('formatArgentinaDay (vigencias de zonas)', () => {
+  it('desde 00:00 ART y hasta 23:59:59.999 ART del 2/11 se ven como el 2 nov', () => {
+    expect(formatArgentinaDay('2026-11-02T03:00:00.000Z')).toBe('2 nov 2026');
+    expect(formatArgentinaDay('2026-11-03T02:59:59.999Z')).toBe('2 nov 2026');
+  });
+
+  it('sin valor, guion', () => {
+    expect(formatArgentinaDay(null)).toBe('—');
+  });
+});
+
+describe('formatDay con un día que no existe', () => {
+  it('2026-02-30 y 2026-13-01 dan «—», no otra fecha', () => {
+    expect(formatDay('2026-02-30')).toBe('—');
+    expect(formatDay('2026-13-01')).toBe('—');
+    expect(formatDay('2026-02-30T00:00:00.000Z')).toBe('—');
+  });
+
+  it('un 29 de febrero bisiesto sí existe', () => {
+    expect(formatDay('2028-02-29')).toBe('29 feb 2028');
   });
 });

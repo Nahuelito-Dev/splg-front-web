@@ -24,7 +24,7 @@ import {
 import { useCrumbLeaf } from '../../common/components';
 import { useBackToList, usePermissions, useProfileTab } from '../../hooks';
 import { useDeleteEmployee, useEmployee } from '../../services/queries/employees';
-import { formatDate } from '../../utils/format';
+import { formatDay } from '../../utils/format';
 import { confirm, notify } from '../../utils/notifications';
 import { EmployeeAttendanceTab } from './components/EmployeeAttendanceTab';
 import { EmployeeDocumentsTab } from './components/EmployeeDocumentsTab';
@@ -87,7 +87,7 @@ export const EmployeeDetails = () => {
   const coverStats: CoverStat[] = employee
     ? [
         { label: 'Legajo', value: employee.fileNumber },
-        { label: 'Ingreso', value: formatDate(employee.hireDate) },
+        { label: 'Ingreso', value: formatDay(employee.hireDate) },
         { label: 'Modalidad', value: EMPLOYMENT_TYPE_LABELS[employee.employmentType] },
       ]
     : [];
@@ -230,7 +230,7 @@ export const EmployeeDetails = () => {
                       mono: true,
                     },
                     { label: 'CUIL', value: employee.cuil, mono: true },
-                    { label: 'Fecha de nacimiento', value: employee.birthDate ? formatDate(employee.birthDate) : null },
+                    { label: 'Fecha de nacimiento', value: employee.birthDate ? formatDay(employee.birthDate) : null },
                     { label: 'Teléfono', value: employee.phone },
                     { label: 'Email personal', value: employee.personalEmail },
                     {
@@ -253,10 +253,10 @@ export const EmployeeDetails = () => {
                           .join(' · ') || null,
                       wide: true,
                     },
-                    { label: 'Ingreso', value: formatDate(employee.hireDate) },
+                    { label: 'Ingreso', value: formatDay(employee.hireDate) },
                     ...(employee.terminationDate
                       ? [
-                          { label: 'Egreso', value: formatDate(employee.terminationDate) },
+                          { label: 'Egreso', value: formatDay(employee.terminationDate) },
                           {
                             label: 'Motivo del egreso',
                             value: employee.terminationReason

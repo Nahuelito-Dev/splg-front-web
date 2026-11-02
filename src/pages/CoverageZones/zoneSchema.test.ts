@@ -82,7 +82,7 @@ describe('unicidad entre zonas activas', () => {
 });
 
 describe('vigencia', () => {
-  it('validUntil tiene que ser estrictamente posterior a validFrom, como EsPosteriorA', () => {
+  it('validUntil no puede ser anterior a validFrom (el mismo día es una zona de un día, como EsPosteriorA)', () => {
     const base = {
       name: 'Z',
       label: '',
@@ -92,7 +92,8 @@ describe('vigencia', () => {
       priority: 0,
       isActive: true,
     };
-    expect(zoneSchema.safeParse({ ...base, validFrom: '2026-10-01', validUntil: '2026-10-01' }).success).toBe(false);
+    expect(zoneSchema.safeParse({ ...base, validFrom: '2026-10-01', validUntil: '2026-10-01' }).success).toBe(true);
+    expect(zoneSchema.safeParse({ ...base, validFrom: '2026-10-02', validUntil: '2026-10-01' }).success).toBe(false);
     expect(zoneSchema.safeParse({ ...base, validFrom: '2026-10-01', validUntil: '2026-10-02' }).success).toBe(true);
   });
 });

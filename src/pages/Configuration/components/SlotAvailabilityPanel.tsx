@@ -2,9 +2,10 @@ import { useState } from 'react';
 import EventAvailableIcon from '@mui/icons-material/EventAvailable';
 import { Badge, Card, EmptyState, LoadingState, DayFilter, CardHeader } from '../../../common/components/ui';
 import { useTimeSlotAvailability } from '../../../services/queries/timeSlots';
+import { argentinaDay } from '../../../utils/format';
 import type { Label } from '../../../utils/statusLabels';
 
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => argentinaDay(new Date());
 
 const remainingLabel = (remaining: number, capacity: number): Label => {
   if (remaining <= 0) return { text: 'Sin cupo', tone: 'danger' };

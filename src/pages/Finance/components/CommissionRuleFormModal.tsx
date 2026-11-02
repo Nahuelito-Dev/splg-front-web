@@ -7,6 +7,7 @@ import type { CommissionRule } from '../../../services/api/types';
 import { useCreateCommissionRule, useUpdateCommissionRule } from '../../../services/queries/finance';
 import { useEmployees } from '../../../services/queries/employees';
 import { useGasCylinders } from '../../../services/queries/gasCylinders';
+import { argentinaDay } from '../../../utils/format';
 import { notify } from '../../../utils/notifications';
 import { day } from '../financeSchemas';
 
@@ -64,7 +65,7 @@ export const CommissionRuleFormModal = ({ open, onClose, rule }: Props) => {
       gasCylinderId: rule?.gasCylinderId ?? '',
       basis: rule?.basis ?? 'per_unit',
       value: rule ? String(rule.value) : '',
-      validFrom: rule?.validFrom ?? new Date().toISOString().slice(0, 10),
+      validFrom: rule?.validFrom ?? argentinaDay(new Date()),
       validTo: rule?.validTo ?? '',
       isActive: rule?.isActive ?? true,
     });

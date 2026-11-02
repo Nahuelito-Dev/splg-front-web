@@ -30,8 +30,11 @@ export const formatCurrencyExact = (value: number | string | null | undefined): 
 export const formatNumber = (value: number | null | undefined): string =>
   value === null || value === undefined ? '—' : number.format(value);
 
-/** 26 sept 2026 */
+const CALENDAR_DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+/** 26 sept 2026. Un `YYYY-MM-DD` suelto es un día de calendario: se muestra tal cual (ver `formatDay`), sin pasar por la zona. */
 export const formatDate = (value: DateInput): string => {
+  if (typeof value === 'string' && CALENDAR_DAY.test(value)) return formatDay(value);
   const date = value === null || value === undefined ? null : toDate(value);
   return date ? dateOnly.format(date) : '—';
 };
@@ -57,7 +60,10 @@ export const formatTime = (value: DateInput): string => {
 export const formatDay = (value: string | null | undefined): string => {
   if (!value) return '—';
   const [y, m, d] = value.slice(0, 10).split('-').map(Number);
-  return y && m && d ? dateOnly.format(new Date(y, m - 1, d)) : value;
+  if (!y || !m || !d) return value;
+  const day = new Date(y, m - 1, d);
+  // Un día que no existe (2026-02-30) desbordaría al mes siguiente: no se inventa otra fecha.
+  return day.getMonth() === m - 1 && day.getDate() === d ? dateOnly.format(day) : '—';
 };
 
 /** #CBC4E7: los últimos 6 caracteres de un id (pedido, reclamo, chofer…), como lo muestra todo el panel. */

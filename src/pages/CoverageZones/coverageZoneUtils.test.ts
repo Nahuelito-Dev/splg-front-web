@@ -8,6 +8,7 @@ import {
   isValidHexColor,
   latLngsToGeoJsonRing,
   toDateInputValue,
+  vigenciaChanges,
 } from './coverageZoneUtils';
 
 describe('geoJsonRingToLatLngs / latLngsToGeoJsonRing', () => {
@@ -68,6 +69,58 @@ describe('formatValidity', () => {
   });
 });
 
+describe('vigencia de una zona con el día argentino', () => {
+  it('lo que guarda el back para «2 al 10 de nov» se ve del 2 al 10, no un día antes', () => {
+    expect(formatValidity('2026-11-02T03:00:00.000Z', '2026-11-11T02:59:59.999Z')).toBe(
+      'Del 2 nov 2026 al 10 nov 2026',
+    );
+  });
+
+  it('el formulario recibe el mismo día para editar', () => {
+    expect(toDateInputValue('2026-11-02T03:00:00.000Z')).toBe('2026-11-02');
+    expect(toDateInputValue('2026-11-11T02:59:59.999Z')).toBe('2026-11-10');
+  });
+});
+
+describe('vigenciaChanges', () => {
+  const original = { validFrom: '2026-11-02T03:00:00.000Z', validUntil: '2026-11-11T02:59:59.999Z' };
+
+  it('en el alta manda el día elegido, o nada si está vacío', () => {
+    expect(vigenciaChanges(null, { validFrom: '2026-11-02', validUntil: '' })).toEqual({
+      validFrom: '2026-11-02',
+      validUntil: undefined,
+    });
+  });
+
+  it('en la edición no manda lo que no cambió (así no pisa la hora guardada)', () => {
+    expect(vigenciaChanges(original, { validFrom: '2026-11-02', validUntil: '2026-11-10' })).toEqual({
+      validFrom: undefined,
+      validUntil: undefined,
+    });
+  });
+
+  it('manda sólo lo que cambió', () => {
+    expect(vigenciaChanges(original, { validFrom: '2026-11-03', validUntil: '2026-11-10' })).toEqual({
+      validFrom: '2026-11-03',
+      validUntil: undefined,
+    });
+  });
+
+  it('vaciar un campo con fecha manda null para quitar el límite', () => {
+    expect(vigenciaChanges(original, { validFrom: '', validUntil: '2026-11-10' })).toEqual({
+      validFrom: null,
+      validUntil: undefined,
+    });
+  });
+
+  it('vaciar un campo que ya estaba vacío no manda nada', () => {
+    expect(vigenciaChanges({ validFrom: null, validUntil: null }, { validFrom: '', validUntil: '' })).toEqual({
+      validFrom: undefined,
+      validUntil: undefined,
+    });
+  });
+});
+
 describe('hasEnoughVertices', () => {
   it('menos de 3 vértices no alcanza', () => {
     expect(hasEnoughVertices([[0, 0]])).toBe(false);
@@ -87,8 +140,8 @@ describe('hasEnoughVertices', () => {
 });
 
 describe('toDateInputValue', () => {
-  it('recorta un date-time ISO a YYYY-MM-DD', () => {
-    expect(toDateInputValue('2026-10-01T00:00:00.000Z')).toBe('2026-10-01');
+  it('da el día argentino de un date-time ISO en YYYY-MM-DD', () => {
+    expect(toDateInputValue('2026-10-01T03:00:00.000Z')).toBe('2026-10-01');
   });
 
   it('sin fecha, cadena vacía', () => {

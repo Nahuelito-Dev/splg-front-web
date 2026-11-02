@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { Button, Modal, FormInput, FormSelect, Form } from '../../../common/components/ui';
 import { useDeliveryOptions } from '../../../services/queries/deliveries';
 import { useOpenDriverSettlement } from '../../../services/queries/finance';
-import { toIsoDay } from '../../../utils/dates';
+import { argentinaDay } from '../../../utils/format';
 import { notify } from '../../../utils/notifications';
 import { day } from '../financeSchemas';
 
@@ -30,7 +30,7 @@ export const OpenSettlementModal = ({ open, onClose }: Props) => {
   const { reset } = methods;
 
   useEffect(() => {
-    if (open) reset({ deliveryId: '', businessDate: toIsoDay(new Date()) });
+    if (open) reset({ deliveryId: '', businessDate: argentinaDay(new Date()) });
   }, [open, reset]);
 
   const onSubmit = (values: Values) =>

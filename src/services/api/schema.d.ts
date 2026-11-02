@@ -11874,12 +11874,12 @@ export interface components {
       priority: number;
       /**
        * Format: date-time
-       * @description Desde cuándo rige la zona. Sin valor: rige desde siempre.
+       * @description Desde cuándo rige la zona. Un día `YYYY-MM-DD` rige desde las 00:00 de Argentina. Sin valor: rige desde siempre.
        */
       validFrom?: string;
       /**
        * Format: date-time
-       * @description Hasta cuándo rige la zona. Sin valor: no vence.
+       * @description Hasta cuándo rige la zona. Un día `YYYY-MM-DD` incluye ese día entero (vence a las 23:59:59.999 de Argentina). Sin valor: no vence.
        */
       validUntil?: string;
       /** @default true */
@@ -12019,12 +12019,12 @@ export interface components {
       isActive: boolean;
       /**
        * Format: date-time
-       * @description Desde cuándo rige la zona. `null` quita el límite (rige desde siempre).
+       * @description Desde cuándo rige la zona. Un día `YYYY-MM-DD` rige desde las 00:00 de Argentina. `null` quita el límite (rige desde siempre).
        */
       validFrom?: string | null;
       /**
        * Format: date-time
-       * @description Hasta cuándo rige la zona. `null` quita el vencimiento.
+       * @description Hasta cuándo rige la zona. Un día `YYYY-MM-DD` incluye ese día entero (vence a las 23:59:59.999 de Argentina). `null` quita el vencimiento.
        */
       validUntil?: string | null;
     };
