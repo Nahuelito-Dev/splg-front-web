@@ -6,7 +6,7 @@ import { failed, loading, mutation, ok } from '../../test/pageTest';
 import type { FuelLoad } from '../../services/api/types';
 
 const permissions = vi.hoisted(() => ({ canWrite: true }));
-const queries = vi.hoisted(() => ({ load: vi.fn(), last: vi.fn(), create: vi.fn(), update: vi.fn() }));
+const queries = vi.hoisted(() => ({ load: vi.fn(), last: vi.fn(), create: vi.fn(), update: vi.fn(), quote: vi.fn() }));
 const notifySuccess = vi.hoisted(() => vi.fn());
 
 vi.mock('../../utils/notifications', () => ({
@@ -44,6 +44,7 @@ vi.mock('../../services/queries/fleetExpense', () => ({
   useFuelLoads: (...args: unknown[]) => queries.last(...args) as unknown,
   useCreateFuelLoad: () => queries.create() as unknown,
   useUpdateFuelLoad: () => queries.update() as unknown,
+  useFuelLoadQuote: (...args: unknown[]) => queries.quote(...args) as unknown,
 }));
 vi.mock('../Orders/components/useOrderCashBoxes', () => ({
   useOrderCashBoxes: () => ({ boxes: [], required: false, loading: false, failed: false }),
@@ -94,6 +95,7 @@ const renderAt = (url: string) =>
 const setup = () => {
   queries.load.mockReturnValue(ok(undefined));
   queries.last.mockReturnValue(ok(undefined));
+  queries.quote.mockReturnValue({ data: undefined, isError: false, stale: false });
   const succeed = (_vars: unknown, options?: { onSuccess?: () => void }) => options?.onSuccess?.();
   const create = mutation({ mutate: vi.fn(succeed) });
   const update = mutation({ mutate: vi.fn(succeed) });
@@ -118,6 +120,31 @@ describe('FuelLoadForm', () => {
     for (const section of ['Vehículo y combustible', 'Litros e importe', 'Kilometraje', 'Pago y comprobante']) {
       expect(screen.getByRole('heading', { level: 2, name: section })).toBeInTheDocument();
     }
+  });
+
+  it('el importe calculado es el que da el back, y un botón lo carga en el importe total', async () => {
+    setup();
+    queries.quote.mockReturnValue({
+      data: { liters: 40, unitPrice: 1000, totalAmount: 40123.45 },
+      isError: false,
+      stale: false,
+    });
+    renderAt('/fleet/fuel-loads/new');
+    fireEvent.change(screen.getByLabelText(/^Litros/), { target: { value: '40' } });
+    fireEvent.change(screen.getByLabelText(/^Precio por litro/), { target: { value: '1000' } });
+    expect(await screen.findByText(/Litros × precio: .*40\.123,45/)).toBeInTheDocument();
+    expect(queries.quote).toHaveBeenLastCalledWith({ liters: 40, unitPrice: 1000 });
+    fireEvent.click(screen.getByRole('button', { name: 'Usar el importe calculado' }));
+    await waitFor(() => expect(screen.getByLabelText(/^Importe total/)).toHaveValue(40123.45));
+  });
+
+  it('sin la cuenta del back (consultando o con error) no ofrece ningún importe', () => {
+    setup();
+    renderAt('/fleet/fuel-loads/new');
+    fireEvent.change(screen.getByLabelText(/^Litros/), { target: { value: '40' } });
+    fireEvent.change(screen.getByLabelText(/^Precio por litro/), { target: { value: '1000' } });
+    expect(screen.queryByRole('button', { name: 'Usar el importe calculado' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Litros × precio/)).not.toBeInTheDocument();
   });
 
   it('enviar vacío muestra los errores y no llama a la API', async () => {

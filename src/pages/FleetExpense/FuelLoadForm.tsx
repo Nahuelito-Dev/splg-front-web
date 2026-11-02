@@ -24,15 +24,20 @@ import {
 import { usePermissions, useReturnPath, useUnsavedChangesGuard } from '../../hooks';
 import type { FuelLoad } from '../../services/api/types';
 import { useCars } from '../../services/queries/cars';
-import { useCreateFuelLoad, useFuelLoad, useFuelLoads, useUpdateFuelLoad } from '../../services/queries/fleetExpense';
-import { formatCurrency, formatNumber } from '../../utils/format';
+import {
+  useCreateFuelLoad,
+  useFuelLoad,
+  useFuelLoadQuote,
+  useFuelLoads,
+  useUpdateFuelLoad,
+} from '../../services/queries/fleetExpense';
+import { formatCurrencyExact, formatNumber } from '../../utils/format';
 import { notify } from '../../utils/notifications';
 import { CashBoxField } from '../Orders/components/CashBoxField';
 import { useOrderCashBoxes } from '../Orders/components/useOrderCashBoxes';
 import { useCarOptions } from './components/useCarOptions';
 import { fromLocalInput, toLocalInput } from './fleetExpenseDates';
 import {
-  expectedFuelAmount,
   FUEL_PAYMENT_OPTIONS,
   FUEL_TYPE_OPTIONS,
   fuelFitsTank,
@@ -171,7 +176,9 @@ const FuelLoadFormBody = ({ load, warning }: { load?: FuelLoad; warning?: LoadWa
   const unitPrice = Number(watch('unitPrice'));
   const correcting = watch('odometerCorrection');
   const car = cars?.find((c) => c.car_id === carId);
-  const expected = liters > 0 && unitPrice > 0 ? expectedFuelAmount(liters, unitPrice) : null;
+  const quote = useFuelLoadQuote(liters > 0 && unitPrice > 0 ? { liters, unitPrice } : null);
+  const expected =
+    liters > 0 && unitPrice > 0 && !quote.isError && !quote.stale ? (quote.data?.totalAmount ?? null) : null;
   const tankWarning =
     liters > 0 && car && !fuelFitsTank(liters, car.tank_capacity_liters)
       ? `Supera la capacidad del tanque (${car.tank_capacity_liters} L, con 5 % de tolerancia).`
@@ -273,7 +280,7 @@ const FuelLoadFormBody = ({ load, warning }: { load?: FuelLoad; warning?: LoadWa
               step="0.01"
               min={0}
               required
-              hint={expected === null ? undefined : `Litros × precio: ${formatCurrency(expected)}`}
+              hint={expected === null ? undefined : `Litros × precio: ${formatCurrencyExact(expected)}`}
               disabled={locked}
             />
             {expected !== null && !locked && (

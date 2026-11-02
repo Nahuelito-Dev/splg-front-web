@@ -58,18 +58,6 @@ export const FUEL_PAYMENT_OPTIONS = [
   { value: 'fuel_account', label: 'Cuenta corriente de combustible' },
 ];
 
-/**
- * La misma regla del back (CU-195): el importe coincide con los litros por el precio por litro, con una tolerancia
- * del 1 %. Se avisa en el formulario antes de mandar; la API es la que decide.
- */
-export const expectedFuelAmount = (liters: number, unitPrice: number): number =>
-  Math.round(liters * unitPrice * 100) / 100;
-
-export const fuelAmountMatches = (liters: number, unitPrice: number, totalAmount: number): boolean => {
-  const expected = liters * unitPrice;
-  return Math.abs(totalAmount - expected) <= expected * 0.01 + 1e-9;
-};
-
 /** Cuántos litros entran en el tanque (capacidad + 5 %); sin capacidad cargada no se controla. */
 export const fuelFitsTank = (liters: number, capacity: number | null | undefined): boolean =>
   capacity == null || liters <= capacity * 1.05 + 1e-9;
@@ -96,13 +84,6 @@ export const fuelLoadSchema = z
     odometerCorrectionNote: optionalText(500),
   })
   .superRefine((values, ctx) => {
-    if (!fuelAmountMatches(values.liters, values.unitPrice, values.totalAmount)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['totalAmount'],
-        message: `No coincide con los litros por el precio por litro (${expectedFuelAmount(values.liters, values.unitPrice)}, con 1 % de tolerancia)`,
-      });
-    }
     if (values.odometerCorrection && !values.odometerCorrectionNote) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

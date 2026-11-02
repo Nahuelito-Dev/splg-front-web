@@ -2,8 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   accidentSchema,
   closeAccidentSchema,
-  expectedFuelAmount,
-  fuelAmountMatches,
   fuelFitsTank,
   fuelLoadSchema,
   nextAccidentStatuses,
@@ -47,13 +45,9 @@ describe('carga de combustible', () => {
     expect(fuelLoadSchema.safeParse(fuel).success).toBe(true);
   });
 
-  it('el importe se tolera hasta 1 % y no más', () => {
-    expect(fuelAmountMatches(40, 1000, 40399)).toBe(true);
-    expect(fuelAmountMatches(40, 1000, 40401)).toBe(false);
-    const res = fuelLoadSchema.safeParse({ ...fuel, totalAmount: '50000' });
-    expect(res.success).toBe(false);
-    expect(res.error?.issues[0]).toMatchObject({ path: ['totalAmount'] });
-    expect(expectedFuelAmount(40.5, 1050.5)).toBe(42545.25);
+  it('el importe contra litros × precio lo controla el back: el formulario sólo pide un importe', () => {
+    expect(fuelLoadSchema.safeParse({ ...fuel, totalAmount: '50000' }).success).toBe(true);
+    expect(fuelLoadSchema.safeParse({ ...fuel, totalAmount: '' }).success).toBe(false);
   });
 
   it('los litros entran en el tanque con 5 % de tolerancia; sin capacidad no se controla', () => {

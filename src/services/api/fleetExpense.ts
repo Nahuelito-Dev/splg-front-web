@@ -14,6 +14,7 @@ import type {
   FleetCostBoard,
   FuelEfficiency,
   FuelLoad,
+  FuelLoadQuote,
   FuelLoadPage,
   FuelLoadV2,
   Message,
@@ -74,6 +75,15 @@ export const payFuelLoad = async (id: string, body: PayFromCashBoxBody, key: str
   const { data } = await http.post<FuelLoadV2>(`/fleet/fuel-loads/${id}/pay`, body, {
     baseURL: env.apiUrlV2,
     headers: idempotencyHeaders(key),
+  });
+  return data;
+};
+
+/** GET /v2/fleet/fuel-loads/quote: el importe de una carga (litros × precio por litro) lo calcula el back. */
+export const quoteFuelLoad = async (liters: number, unitPrice: number): Promise<FuelLoadQuote> => {
+  const { data } = await http.get<FuelLoadQuote>('/fleet/fuel-loads/quote', {
+    params: { liters, unitPrice },
+    baseURL: env.apiUrlV2,
   });
   return data;
 };

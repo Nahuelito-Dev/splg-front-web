@@ -1,4 +1,12 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  skipToken,
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 import {
   chargeTrafficFine,
   closeVehicleAccident,
@@ -15,6 +23,7 @@ import {
   getVehicleAccident,
   listCarTires,
   listFuelLoads,
+  quoteFuelLoad,
   listTires,
   listTrafficFines,
   listVehicleAccidents,
@@ -85,6 +94,31 @@ export const useFuelLoads = (params: PageParams, filters: FuelLoadFilters, { ena
     placeholderData: keepPreviousData,
     enabled,
   });
+
+const QUOTE_DELAY = 400;
+
+/**
+ * El importe que calcula el back para unos litros y un precio por litro. Con `null` no consulta. Espera a que los
+ * valores dejen de cambiar antes de pedir; `stale` avisa que lo mostrado todavía es de unos valores anteriores.
+ */
+export const useFuelLoadQuote = (input: { liters: number; unitPrice: number } | null) => {
+  const keyOf = (value: typeof input) => (value ? `${value.liters}|${value.unitPrice}` : '');
+  const key = keyOf(input);
+  const [settled, setSettled] = useState(input);
+  useEffect(() => {
+    const id = setTimeout(() => setSettled(input), QUOTE_DELAY);
+    return () => clearTimeout(id);
+    // `input` es un objeto nuevo en cada render: el contenido (`key`) es lo que decide cuándo se vuelve a pedir.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+  const query = useQuery({
+    queryKey: queryKeys.fuelLoads.detail(`quote:${settled?.liters}:${settled?.unitPrice}`),
+    queryFn: settled ? () => quoteFuelLoad(settled.liters, settled.unitPrice) : skipToken,
+    placeholderData: keepPreviousData,
+    retry: false,
+  });
+  return { ...query, stale: query.isPlaceholderData || keyOf(settled) !== key };
+};
 
 export const useFuelLoad = (id: string | undefined) =>
   useQuery({
