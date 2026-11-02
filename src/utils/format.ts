@@ -111,3 +111,14 @@ export const argentinaDay = (value: string | Date): string =>
 /** 26 sept 2026: el día de Buenos Aires de un instante ISO (no el del navegador ni el de UTC). */
 export const formatArgentinaDay = (value: string | null | undefined): string =>
   value ? formatDay(argentinaDay(value)) : '—';
+
+/**
+ * El día del turno de una tarea (YYYY-MM-DD). Los turnos con hora se cuentan en Buenos Aires; una fila guardada a
+ * medianoche UTC exacta es un día de calendario sin hora (alta vieja), y ese día es el que se ve.
+ */
+export const scheduledDayOf = (iso: string): string =>
+  iso.endsWith('T00:00:00.000Z') ? iso.slice(0, 10) : argentinaDay(iso);
+
+/** 26 sept 2026: el día del turno, igual en el formulario y en las fichas. */
+export const formatScheduledDay = (iso: string | null | undefined): string =>
+  iso ? formatDay(scheduledDayOf(iso)) : '—';
