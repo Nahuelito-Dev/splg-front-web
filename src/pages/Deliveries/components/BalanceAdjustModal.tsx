@@ -25,7 +25,7 @@ interface Props {
   delivery: Delivery | null;
 }
 
-/** CU-049: liquidación o descuento manual sobre el saldo del chofer. */
+/** Ajuste manual (acreditar o descontar) sobre el saldo del chofer. */
 export const BalanceAdjustModal = ({ open, onClose, delivery }: Props) => {
   const updateBalance = useUpdateDeliveryBalance();
   const methods = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { amount: 0 } });
@@ -73,7 +73,7 @@ export const BalanceAdjustModal = ({ open, onClose, delivery }: Props) => {
           type="number"
           step="0.01"
           required
-          hint="Ej: 15000 para liquidar ganancias, -3000 para descontar un adelanto."
+          hint="Ej: 15000 para acreditar un reintegro, -3000 para descontar un adelanto."
         />
       </Form>
     </Modal>
