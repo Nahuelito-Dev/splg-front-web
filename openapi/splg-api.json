@@ -25503,7 +25503,7 @@
                         "description": "Requiere rol: admin, super_admin"
                     },
                     "409": {
-                        "description": "La agrupación por recorrido está apagada para la distribuidora"
+                        "description": "La agrupación por recorrido está apagada para la distribuidora, o ya se están armando los lotes de esta distribuidora (cerrojo tomado): reintentar en un momento"
                     },
                     "422": {
                         "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
@@ -45042,7 +45042,8 @@
                     "scheduledAt": {
                         "type": "string",
                         "format": "date-time",
-                        "description": "Cuándo está agendado el turno/trámite, si ya se sabe"
+                        "nullable": true,
+                        "description": "Cuándo está agendado el turno/trámite. Si la tarea tiene un caso del planificador de taller (M2) confirmado cuya ventana no terminó, cambiar el turno mueve esa ventana (y con ella el bloqueo del despacho) en la misma operación: un `YYYY-MM-DD` (o medianoche argentina) la lleva a ese día argentino conservando su hora de inicio; un instante con hora la hace arrancar a esa hora; en ambos casos la duración se conserva y la ventana nueva tiene que ser a futuro (400 si no). `null` borra el turno y cancela el caso confirmado. Un turno igual al guardado no toca la tarea ni el caso."
                     }
                 }
             },
@@ -51532,6 +51533,55 @@
                     }
                 }
             },
+            "RouteBatchRunReasonsDto": {
+                "type": "object",
+                "properties": {
+                    "noDriversNearby": {
+                        "type": "number",
+                        "description": "Pedidos sin lote porque no había ningún chofer de la distribuidora en el radar"
+                    },
+                    "driversNotEligible": {
+                        "type": "number",
+                        "description": "Pedidos sin lote porque los choferes del radar no pueden recibirlo (flota o taller, laboral, carga del camión, pedido en curso, lote ya ofrecido) o no se pudo diagnosticar"
+                    },
+                    "notEnoughStops": {
+                        "type": "number",
+                        "description": "Pedidos sin lote porque había chofer pero el grupo quedó con menos de 2 paradas (radio, franja o capacidad del vehículo) o el pedido quedó solo"
+                    },
+                    "lockConflict": {
+                        "type": "number",
+                        "description": "Pedidos sin lote porque otro proceso (despacho individual) los tomó o cambiaron mientras se armaba"
+                    }
+                },
+                "required": [
+                    "noDriversNearby",
+                    "driversNotEligible",
+                    "notEnoughStops",
+                    "lockConflict"
+                ]
+            },
+            "RouteBatchRunDriverDetailDto": {
+                "type": "object",
+                "properties": {
+                    "driverName": {
+                        "type": "string",
+                        "example": "Ramón Gómez"
+                    },
+                    "reasons": {
+                        "example": [
+                            "su vehículo tiene el taller programado en este horario"
+                        ],
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": [
+                    "driverName",
+                    "reasons"
+                ]
+            },
             "RouteBatchRunResponseDto": {
                 "type": "object",
                 "properties": {
@@ -51546,12 +51596,29 @@
                     "orders": {
                         "type": "number",
                         "description": "Pedidos que quedaron en esos lotes"
+                    },
+                    "reasons": {
+                        "description": "Por qué quedaron pedidos sin lote: cada pedido sin lote se cuenta una vez, en un solo motivo, y la suma de los cuatro es `candidates - orders` (también con un único candidato). Se completa sólo en «armar ahora»; en el cron queda en cero.",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/RouteBatchRunReasonsDto"
+                            }
+                        ]
+                    },
+                    "driversNotEligibleDetail": {
+                        "description": "Hasta 5 choferes de la distribuidora que estaban en el radar y no podían recibir un lote, con los motivos en castellano. Vacío si ningún pedido quedó sin lote por culpa de los choferes.",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RouteBatchRunDriverDetailDto"
+                        }
                     }
                 },
                 "required": [
                     "candidates",
                     "batches",
-                    "orders"
+                    "orders",
+                    "reasons",
+                    "driversNotEligibleDetail"
                 ]
             },
             "DriverRouteBatchOfferDto": {

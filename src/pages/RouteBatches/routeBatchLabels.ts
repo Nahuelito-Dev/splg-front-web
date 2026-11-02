@@ -1,4 +1,4 @@
-import type { RouteBatch } from '../../services/api/types';
+import type { RouteBatch, RouteBatchRun } from '../../services/api/types';
 import type { Label } from '../../utils/statusLabels';
 import { formatNumber } from '../../utils/format';
 
@@ -75,3 +75,57 @@ export const routePoints = (
       ? [{ position: [s.address.latitude, s.address.longitude] as [number, number], sequence: s.sequence }]
       : [],
   );
+
+const plural = (n: number, one: string, many: string): string => `${n} ${n === 1 ? one : many}`;
+
+/** Lo que el diálogo cuenta de los pedidos que quedaron sin lote; los motivos por chofer los redacta el back. */
+const unplacedDetail = ({ reasons, driversNotEligibleDetail: detail }: RouteBatchRun) => {
+  const drivers = detail.map((d) => (d.reasons.length > 0 ? `${d.driverName}: ${d.reasons.join(', ')}` : d.driverName));
+  const lines: string[] = [];
+  if (drivers.length === 0 && reasons.driversNotEligible > 0) {
+    lines.push('Los choferes cercanos no pueden recibir un lote ahora');
+  }
+  if (reasons.noDriversNearby > 0) lines.push('No hay choferes de la distribuidora cerca de los pedidos');
+  if (reasons.notEnoughStops > 0) {
+    lines.push('Los pedidos cercanos no llegan a 2 paradas por radio, franja o capacidad del vehículo');
+  }
+  if (reasons.lockConflict > 0) lines.push('Otro proceso tomó los pedidos mientras se armaba');
+  return { driversTitle: 'Choferes que no pueden recibir el lote', drivers, lines };
+};
+
+export interface RunDialog {
+  title: string;
+  summary: string;
+  driversTitle: string;
+  drivers: string[];
+  lines: string[];
+}
+
+export type RunNotice =
+  { kind: 'toast'; level: 'success' | 'info'; message: string } | ({ kind: 'dialog' } & RunDialog);
+
+/** El resultado de «Armar ahora»: aviso corto si se armó todo o no había nada, diálogo con los motivos si quedó algo sin lote. */
+export const describeRun = (run: RouteBatchRun): RunNotice => {
+  if (run.candidates === 0) {
+    return { kind: 'toast', level: 'info', message: 'No hay pedidos programados para agrupar' };
+  }
+  const unplaced = run.candidates - run.orders;
+  const candidates = plural(run.candidates, 'pedido candidato', 'pedidos candidatos');
+  if (run.batches > 0 && unplaced <= 0) {
+    return {
+      kind: 'toast',
+      level: 'success',
+      message: `${run.batches} lote(s) armado(s) con ${run.orders} pedido(s) de ${candidates}`,
+    };
+  }
+  const detail = unplacedDetail(run);
+  if (run.batches > 0) {
+    return {
+      kind: 'dialog',
+      title: 'Lote armado en parte',
+      summary: `${run.batches} lote(s) armado(s) con ${run.orders} pedido(s) de ${candidates}. ${plural(unplaced, 'pedido quedó', 'pedidos quedaron')} sin lote.`,
+      ...detail,
+    };
+  }
+  return { kind: 'dialog', title: 'No se armó ningún lote', summary: `Había ${candidates}.`, ...detail };
+};

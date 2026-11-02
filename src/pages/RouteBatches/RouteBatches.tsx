@@ -22,7 +22,8 @@ import { formatDateTime, formatShortId } from '../../utils/format';
 import { confirm, notify } from '../../utils/notifications';
 import { RouteBatchDrawer } from './RouteBatchDrawer';
 import { RouteBatchSettingsModal } from './RouteBatchSettingsModal';
-import { ROUTE_BATCH_STATUS, formatKg, stopCountOf } from './routeBatchLabels';
+import { RouteBatchRunDialog } from './RouteBatchRunDialog';
+import { ROUTE_BATCH_STATUS, describeRun, formatKg, stopCountOf, type RunDialog } from './routeBatchLabels';
 
 const STATUS_OPTIONS: StatusOption[] = [
   { value: 'offered', label: 'Ofrecidos', tone: 'info' },
@@ -54,6 +55,7 @@ export const RouteBatches = () => {
   const [{ status, batch: batchParam }, setFilters] = useUrlParams({ status: '', batch: '' });
   const [pagination, setPagination] = useState({ page: 0, pageSize: 10 });
   const [configuring, setConfiguring] = useState(false);
+  const [runResult, setRunResult] = useState<RunDialog | null>(null);
   const filters = status ? { status: status as RouteBatch['status'] } : {};
   const { data, isFetching, error, refetch } = useRouteBatches(pagination, filters, { enabled: !needsDistributor });
   const settings = useRouteBatchSettings({ enabled: configuring && !needsDistributor });
@@ -75,12 +77,11 @@ export const RouteBatches = () => {
     });
     if (!ok) return;
     run.mutate(undefined, {
-      onSuccess: (r) =>
-        notify.success(
-          r.batches > 0
-            ? `${r.batches} lote(s) armado(s) con ${r.orders} pedido(s) de ${r.candidates} candidato(s)`
-            : `No se armó ningún lote (${r.candidates} pedido(s) candidato(s))`,
-        ),
+      onSuccess: (r) => {
+        const notice = describeRun(r);
+        if (notice.kind === 'toast') notify[notice.level](notice.message);
+        else setRunResult(notice);
+      },
       onError: notify.error,
     });
   };
@@ -246,6 +247,7 @@ export const RouteBatches = () => {
           onClose={() => setConfiguring(false)}
         />
       )}
+      {runResult && <RouteBatchRunDialog result={runResult} onClose={() => setRunResult(null)} />}
     </PageContainer>
   );
 };
