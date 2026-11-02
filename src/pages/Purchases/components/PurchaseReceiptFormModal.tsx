@@ -21,7 +21,8 @@ import {
 import { formatCurrency } from '../../../utils/format';
 import { notify } from '../../../utils/notifications';
 import { useCylinderOptions, useWarehouseOptions, withPlaceholder } from '../../Stock/components/useStockOptions';
-import { linesTotal, receiptRowsFromPending } from '../purchaseRules';
+import { receiptRowsFromPending } from '../purchaseRules';
+import { usePurchaseTotal } from '../usePurchaseTotal';
 import { SupplierField } from './SupplierField';
 import { receiptSchema, type ReceiptFormValues } from './receiptSchema';
 
@@ -77,7 +78,7 @@ export const PurchaseReceiptFormModal = ({ open, onClose, order, onSaved }: Prop
   }, [open, order, pending.data, mode, reset]);
 
   const items = watch('items') ?? [];
-  const total = linesTotal(
+  const total = usePurchaseTotal(
     items.map((i) => ({ quantity: Number(i.quantityFull) || 0, unitCost: Number(i.unitCost) || 0 })),
   );
 
@@ -244,7 +245,8 @@ export const PurchaseReceiptFormModal = ({ open, onClose, order, onSaved }: Prop
                 <span />
               )}
               <p className="text-sm text-muted">
-                Total de la recepción: <b className="font-mono text-ink">{formatCurrency(total)}</b>
+                Total de la recepción:{' '}
+                <b className="font-mono text-ink">{total === null ? '—' : formatCurrency(total)}</b>
               </p>
             </div>
           </div>

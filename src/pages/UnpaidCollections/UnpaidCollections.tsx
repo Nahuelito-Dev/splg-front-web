@@ -6,6 +6,7 @@ import { usePermissions } from '../../hooks';
 import type { Incident, Order } from '../../services/api/types';
 import { useIncidents } from '../../services/queries/incidents';
 import { useOrders } from '../../services/queries/orders';
+import { useUnpaidTotal } from '../../services/queries/reports';
 import { errorMessage } from '../../services/api/errors';
 import { formatCurrency } from '../../utils/format';
 import { ResolveUnpaidModal } from '../Orders/components/ResolveUnpaidModal';
@@ -39,7 +40,7 @@ export const UnpaidCollections = () => {
     setPagination((current) => ({ ...current, page: Math.min(current.page - 1, lastPage) }));
   }, [emptyPage, data, pagination.pageSize]);
   const incidentByOrder = useMemo(() => unpaidIncidentsByOrder(incidents.data), [incidents.data]);
-  const pageTotal = (data?.orders ?? []).reduce((acc, order) => acc + Number(order.total_amount), 0);
+  const unpaid = useUnpaidTotal();
 
   return (
     <PageContainer>
@@ -65,7 +66,7 @@ export const UnpaidCollections = () => {
                 <>
                   <b className="font-semibold text-ink">{data.total}</b>{' '}
                   {data.total === 1 ? 'pedido impago' : 'pedidos impagos'}
-                  {data.total > 0 && <> · {formatCurrency(pageTotal)} en esta página</>}
+                  {data.total > 0 && unpaid.data && <> · {formatCurrency(unpaid.data.totalAmount)} adeudados</>}
                 </>
               ) : (
                 'Cargando cobros impagos…'

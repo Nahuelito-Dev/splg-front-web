@@ -16,6 +16,7 @@ import {
   listPurchaseReceipts,
   listSuppliers,
   payPurchaseReceipt,
+  previewPurchaseTotal,
   sendPurchaseOrder,
   updatePurchaseOrder,
   updateReceiptPaymentStatus,
@@ -37,6 +38,7 @@ import type {
   PayFromCashBoxBody,
   UpdatePaymentStatusBody,
   VoidPurchaseReceiptBody,
+  PreviewPurchaseTotalBody,
 } from '../api/types';
 import { refreshFinance, runMoney } from './finance';
 import { runIntent } from './intent';
@@ -266,3 +268,12 @@ export const usePayPurchaseReceipt = () => {
       ]),
   });
 };
+
+/** El total de los renglones según el back. Se queda con el último valor mientras llega el nuevo. */
+export const usePurchaseTotalPreview = (body: PreviewPurchaseTotalBody) =>
+  useQuery({
+    queryKey: [...queryKeys.purchaseOrders.all, 'total-preview', body],
+    queryFn: () => previewPurchaseTotal(body),
+    placeholderData: keepPreviousData,
+    retry: false,
+  });

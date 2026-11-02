@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { rankDrivers, ratingText } from './ranking';
 
 describe('ranking de choferes', () => {
-  it('ordena por ventas y recorta', () => {
+  it('recorta respetando el orden que manda el back', () => {
     const ranking = rankDrivers(
       [
-        { driverId: 'a', driverName: null, totalOrders: 1, totalSales: 10 },
         { driverId: 'b', driverName: 'Bea', totalOrders: 3, totalSales: 50 },
+        { driverId: 'a', driverName: null, totalOrders: 1, totalSales: 10 },
       ],
       1,
     );

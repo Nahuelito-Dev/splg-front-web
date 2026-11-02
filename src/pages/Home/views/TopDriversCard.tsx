@@ -12,7 +12,7 @@ const WINDOW_DAYS = 30;
 export const TopDriversCard = () => {
   const range = dayRange(dayKey(new Date()), WINDOW_DAYS);
   const sales = useSalesByDriver(range);
-  const ranking = rankDrivers(sales.data ?? []);
+  const ranking = rankDrivers(sales.data?.rows ?? []);
   const ratings = useRatingSummaries(ranking.map((driver) => driver.id));
 
   return (

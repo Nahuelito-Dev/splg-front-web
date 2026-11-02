@@ -2,11 +2,11 @@ import { useId, useMemo, useState } from 'react';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { TableroWidget } from '../../../common/components/ui';
 import { cx } from '../../../common/components/ui/cx';
-import { useSalesEvolution } from '../../../services/queries/reports';
+import { useSalesEvolution, useSalesSummary } from '../../../services/queries/reports';
 import brand from '../../../theme/brand.json';
 import { useChartPalette } from '../../../theme/useChartPalette';
 import { formatCurrency, formatNumber, percentChange } from '../../../utils/format';
-import { dayKey, fillMonths, monthStart, splitWindows, totalOf, type SalesPoint } from '../lib/series';
+import { dayKey, dayRange, fillMonths, monthStart, splitWindows, type SalesPoint } from '../lib/series';
 import { useDailySales } from '../lib/useDailySales';
 
 type Period = 'week' | 'month' | 'year';
@@ -34,18 +34,24 @@ export const SalesAreaCard = () => {
     { enabled: period === 'year' },
   );
 
-  const { points, previous } = useMemo((): { points: SalesPoint[]; previous: SalesPoint[] } => {
-    if (period === 'year') {
-      return { points: fillMonths(yearly.data ?? [], dayKey(new Date()), MONTHS), previous: [] };
-    }
-    const windows = splitWindows(daily.points, DAYS[period]);
-    return { points: windows.current, previous: windows.previous };
+  const points = useMemo((): SalesPoint[] => {
+    if (period === 'year') return fillMonths(yearly.data ?? [], dayKey(new Date()), MONTHS);
+    return splitWindows(daily.points, DAYS[period]).current;
   }, [period, daily.points, yearly.data]);
+  // El total, los pedidos y el período anterior los calcula el back para el mismo rango que el gráfico.
+  const summary = useSalesSummary(
+    period === 'year'
+      ? { from: monthStart(daily.today, MONTHS - 1), to: daily.today, compare: false }
+      : dayRange(daily.today, DAYS[period]),
+  );
 
   const active = period === 'year' ? yearly : daily;
-  const total = totalOf(points, 'sales');
-  const orders = totalOf(points, 'orders');
-  const change = previous.length ? percentChange(total, totalOf(previous, 'sales')) : null;
+  const total = summary.data?.current.totalSales ?? 0;
+  const orders = summary.data?.current.totalOrders ?? 0;
+  const previous = summary.data?.previous;
+  const change = previous ? percentChange(total, previous.totalSales) : null;
+  // Si el total no llegó, el gráfico se muestra igual; «sin ventas» se decide por los puntos del gráfico.
+  const noSales = summary.data ? total === 0 : summary.isError ? points.every((p) => p.sales === 0) : false;
   const info = PERIODS.find((p) => p.id === period) ?? PERIODS[0];
 
   const selector = (
@@ -76,16 +82,24 @@ export const SalesAreaCard = () => {
       error={active.error}
       onRetry={() => void active.refetch()}
       empty={
-        total === 0
+        noSales
           ? { title: 'Sin ventas en este período', description: 'Cuando se entregue y cobre un pedido aparece acá.' }
           : null
       }
     >
       <div className="mb-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <strong className="font-mono text-[22px] font-semibold tracking-[-0.03em] text-ink">
-          {formatCurrency(total)}
+          {summary.data ? formatCurrency(total) : '—'}
         </strong>
-        <span className="text-xs text-muted">{formatNumber(orders)} pedidos</span>
+        {summary.data && <span className="text-xs text-muted">{formatNumber(orders)} pedidos</span>}
+        {summary.isError && (
+          <span role="alert" className="text-xs text-danger">
+            No se pudo calcular el total.{' '}
+            <button type="button" className="font-semibold underline" onClick={() => void summary.refetch()}>
+              Reintentar
+            </button>
+          </span>
+        )}
         {change !== null && (
           <span
             className={cx(

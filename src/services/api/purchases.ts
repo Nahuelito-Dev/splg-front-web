@@ -11,12 +11,14 @@ import type {
   CreateSupplierBody,
   Message,
   PayFromCashBoxBody,
+  PreviewPurchaseTotalBody,
   PurchaseOrder,
   PurchaseOrderPage,
   PurchaseOrderPending,
   PurchaseReceipt,
   PurchaseReceiptPage,
   PurchaseReceiptV2,
+  PurchaseTotalPreview,
   Supplier,
   SupplierHistory,
   SupplierPage,
@@ -233,5 +235,16 @@ export const updateReceiptPaymentStatus = async (
 /** GET /purchase-receipts/average-costs */
 export const listAverageCosts = async (): Promise<AverageCost[]> => {
   const { data } = await http.get<AverageCost[]>('/purchase-receipts/average-costs');
+  return data;
+};
+
+/**
+ * POST /v2/purchase-orders/preview-total: el total de una orden o remito según el back (Σ cantidad × costo
+ * unitario a 2 decimales), para mostrarlo mientras se completa el formulario. No guarda nada.
+ */
+export const previewPurchaseTotal = async (body: PreviewPurchaseTotalBody): Promise<PurchaseTotalPreview> => {
+  const { data } = await http.post<PurchaseTotalPreview>('/purchase-orders/preview-total', body, {
+    baseURL: env.apiUrlV2,
+  });
   return data;
 };

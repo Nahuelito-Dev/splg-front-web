@@ -908,7 +908,7 @@ export interface paths {
     get: operations['ModuleConfigController_getProcess'];
     /**
      * Cambiar los parámetros de un proceso automático
-     * @description Reemplaza la configuración: se guarda sólo lo que viene y lo demás toma su valor por omisión (`{}` restablece los valores por omisión, igual que en el despacho y las tareas programadas). Cada proceso valida con su propio esquema (`GET /module-config/processes`): un parámetro desconocido, de otro tipo o fuera de rango responde 400 con el campo. Los valores los leen los módulos M2 a M5 cuando se construyan: hoy se guardan y se validan, pero ningún proceso los consume todavía. Cuando lo hagan, rigen desde la siguiente ejecución; las que están en curso no se interrumpen.
+     * @description Reemplaza la configuración: se guarda sólo lo que viene y lo demás toma su valor por omisión (`{}` restablece los valores por omisión, igual que en el despacho y las tareas programadas). Cada proceso valida con su propio esquema (`GET /module-config/processes`): un parámetro desconocido, de otro tipo o fuera de rango responde 400 con el campo. Los leen los procesos automáticos de cada módulo (M2 planificador de flota, M3 recompra, M4 recorridos, M5 recupero de envases): un cambio rige desde la siguiente ejecución y las que están en curso no se interrumpen. M3, M4 y M5 vienen apagados por omisión (`enabled` = 0) hasta que el administrador los enciende.
      */
     put: operations['ModuleConfigController_putProcess'];
     post?: never;
@@ -5516,9 +5516,129 @@ export interface paths {
     };
     /**
      * Cobros fuera de las ventas
-     * @description Días en hora argentina; `to` es inclusivo; por fecha de entrega. Cifras que NO suman a las ventas: efectivo entregado pendiente de confirmar por el chofer (`pendingCash`), impagos sin resolver (`unpaid`) y pérdidas (`writtenOff`); y transferencias entregadas que un admin todavía no confirmó (`pendingTransfer`) o marcó como no recibidas (`notReceivedTransfer`).
+     * @description Días en hora argentina; `to` es inclusivo; por fecha de entrega. Cifras que NO suman a las ventas: efectivo entregado pendiente de confirmar por el chofer (`pendingCash`), impagos sin resolver (`unpaid`, por lo que falta cobrar: el total menos la seña ya paga) y pérdidas (`writtenOff`); y transferencias entregadas que un admin todavía no confirmó (`pendingTransfer`) o marcó como no recibidas (`notReceivedTransfer`).
      */
     get: operations['ReportsController_getCollections'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/reports/sales-by-driver': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Ventas por repartidor, con totales
+     * @description Mismos criterios que la v1 (días en hora argentina, `to` inclusivo, sólo lo COBRADO). `rows` viene de mayor a menor venta (el ranking) y `totals` suma todas las filas.
+     */
+    get: operations['ReportsV2Controller_ventasPorChofer'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/reports/sales-by-payment': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Ventas por medio de pago, con totales
+     * @description Mismos criterios que la v1 (días en hora argentina, `to` inclusivo, sólo lo COBRADO). `rows` viene de mayor a menor venta y `totals` suma todas las filas.
+     */
+    get: operations['ReportsV2Controller_ventasPorMedioDePago'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/reports/sales-by-product': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Ventas por producto, con totales
+     * @description Mismos criterios que la v1 (días en hora argentina, `to` inclusivo, sólo lo COBRADO). Suma los subtotales de los renglones (sin recargos). `rows` viene de mayor a menor venta y `totals` suma todas las filas.
+     */
+    get: operations['ReportsV2Controller_ventasPorProducto'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/reports/sales-summary': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Ventas, pedidos y ticket promedio de un período y del anterior
+     * @description Mismos criterios que la v1 (días en hora argentina, `to` inclusivo, sólo lo COBRADO). `previous` es el período inmediato anterior de la misma cantidad de días (con `currentRange` y `previousRange` los días exactos); con `compare=false` no se calcula y vienen en null. El ticket promedio es ventas / pedidos a 2 decimales (0 sin pedidos).
+     */
+    get: operations['ReportsV2Controller_resumenDeVentas'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/reports/unpaid-total': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Pedidos impagos y lo adeudado en total
+     * @description Todos los pedidos con `paymentStatus: unpaid` de la distribuidora (sin acotar por fecha), los mismos que lista `GET /orders?paymentStatus=unpaid`: cantidad y lo que falta cobrar de ellos (el total menos la seña ya paga).
+     */
+    get: operations['ReportsV2Controller_unpaidTotal'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/reports/delivery/me/daily-totals': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Lo entregado por el chofer, día por día
+     * @description Por día en hora argentina, los pedidos que el chofer autenticado entregó y lo que había que cobrar de ellos (total menos la seña ya paga). Sólo días con entregas, del más reciente al más antiguo. Sin `from`/`to`, hoy.
+     */
+    get: operations['ReportsV2Controller_totalesDelChofer'];
     put?: never;
     post?: never;
     delete?: never;
@@ -6979,6 +7099,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/fleet/fuel-loads/mine/quote': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Calcular el importe de la carga del chofer
+     * @description Litros × precio por litro a 2 decimales: la misma cuenta con la que `POST /fleet/fuel-loads/mine` valida el importe. La app lo muestra y lo manda como `totalAmount`.
+     */
+    get: operations['FuelLoadMineV2Controller_quote'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v2/fleet/tires': {
     parameters: {
       query?: never;
@@ -8020,6 +8160,26 @@ export interface paths {
      * @description Egreso del total de la recepción de la caja elegida (efectivo, banco o billetera), categoría «Compra de mercadería», en la misma transacción. Sólo una recepción impaga: para corregir un pago se la marca impaga (`PATCH /purchase-receipts/:id/payment-status`), que asienta el contraasiento. **Exige** `Idempotency-Key`.
      */
     post: operations['PurchaseReceiptV2Controller_pay'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/purchase-orders/preview-total': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Calcular el total de una orden o remito de compra
+     * @description Σ cantidad × costo unitario con aritmética decimal, a 2 decimales: la misma cuenta con la que se guardan la orden y el remito. Es una vista previa para el formulario: no guarda nada.
+     */
+    post: operations['PurchaseTotalV2Controller_previewTotal'];
     delete?: never;
     options?: never;
     head?: never;
@@ -15105,6 +15265,71 @@ export interface components {
       /** @description Pedidos COBRADOS (`paymentStatus: paid`: transferencia o MercadoPago) y luego CANCELADOS en el rango (por fecha de la última modificación): el dinero hay que devolverlo. Dato informativo, el sistema no gestiona el reintegro */
       pendingRefund: components['schemas']['CifraDeCobroDto'];
     };
+    TotalesDeVentasDto: {
+      /** @description Suma de pedidos de todas las filas */
+      totalOrders: number;
+      /** @description Suma de ventas de todas las filas */
+      totalSales: number;
+    };
+    VentasPorChoferV2Dto: {
+      /** @description De mayor a menor venta */
+      rows: components['schemas']['VentasPorChoferDto'][];
+      totals: components['schemas']['TotalesDeVentasDto'];
+    };
+    VentasPorMedioDePagoV2Dto: {
+      /** @description De mayor a menor venta */
+      rows: components['schemas']['VentasPorMedioDePagoDto'][];
+      totals: components['schemas']['TotalesDeVentasDto'];
+    };
+    TotalesPorProductoDto: {
+      /** @description Suma de unidades de todas las filas */
+      totalQuantity: number;
+      /** @description Suma de ventas de todas las filas */
+      totalSales: number;
+    };
+    VentasPorProductoV2Dto: {
+      /** @description De mayor a menor venta */
+      rows: components['schemas']['VentasPorProductoDto'][];
+      totals: components['schemas']['TotalesPorProductoDto'];
+    };
+    ResumenDeVentasDto: {
+      /** @description Ventas cobradas del período */
+      totalSales: number;
+      /** @description Pedidos entregados y cobrados del período */
+      totalOrders: number;
+      /** @description Ventas / pedidos, a 2 decimales; 0 si no hubo pedidos */
+      averageTicket: number;
+    };
+    RangoDeDiasDto: {
+      /** @example 2026-10-01 */
+      from: string;
+      /** @example 2026-10-30 */
+      to: string;
+    };
+    ComparativoDeVentasDto: {
+      current: components['schemas']['ResumenDeVentasDto'];
+      /** @description El período inmediato anterior, de la misma cantidad de días; null con `compare=false` */
+      previous: components['schemas']['ResumenDeVentasDto'] | null;
+      currentRange: components['schemas']['RangoDeDiasDto'];
+      previousRange: components['schemas']['RangoDeDiasDto'] | null;
+    };
+    ImpagosDto: {
+      /** @description Pedidos con el cobro impago */
+      totalOrders: number;
+      /** @description Suma del total de esos pedidos */
+      totalAmount: number;
+    };
+    TotalDelDiaDto: {
+      /**
+       * @description Día en hora argentina
+       * @example 2026-10-30
+       */
+      day: string;
+      /** @description Pedidos entregados ese día */
+      deliveredOrders: number;
+      /** @description Lo que había que cobrar de esos pedidos: el total menos la seña ya paga */
+      totalAmount: number;
+    };
     RoutePointDto: {
       /** @example -34.6037 */
       lat: number;
@@ -16717,6 +16942,17 @@ export interface components {
        */
       paidAt: string;
     };
+    CotizacionDeCargaPropiaDto: {
+      /** @example 42.5 */
+      liters: number;
+      /** @example 1050.5 */
+      unitPrice: number;
+      /**
+       * @description Litros × precio por litro, a 2 decimales: el importe con el que se registra la carga
+       * @example 44646.25
+       */
+      totalAmount: number;
+    };
     TireV2ResponseDto: {
       /** Format: uuid */
       tireId: string;
@@ -18168,6 +18404,37 @@ export interface components {
       isPaid: boolean;
       /** Format: date-time */
       paidAt: string | null;
+    };
+    PurchaseLineToPreviewDto: {
+      /**
+       * @description Unidades del renglón
+       * @example 40
+       */
+      quantity: number;
+      /**
+       * @description Costo por unidad
+       * @example 5200.5
+       */
+      unitCost: number;
+    };
+    PreviewPurchaseTotalDto: {
+      items: components['schemas']['PurchaseLineToPreviewDto'][];
+    };
+    PurchaseLinePreviewDto: {
+      /**
+       * @description Cantidad × costo unitario
+       * @example 208020
+       */
+      subtotal: number;
+    };
+    PurchaseTotalPreviewDto: {
+      /** @description Un subtotal por renglón, en el mismo orden */
+      items: components['schemas']['PurchaseLinePreviewDto'][];
+      /**
+       * @description Σ cantidad × costo unitario a 2 decimales: el total con el que se guarda la orden o el remito
+       * @example 208020
+       */
+      total: number;
     };
     CashCollectionSettingsResponseDto: {
       /**
@@ -37752,6 +38019,266 @@ export interface operations {
       };
     };
   };
+  ReportsV2Controller_ventasPorChofer: {
+    parameters: {
+      query?: {
+        /** @description Desde (día en hora argentina), formato YYYY-MM-DD. Si no viene: igual a `to`, o hoy si tampoco viene `to`. */
+        from?: string;
+        /** @description Hasta (día en hora argentina, inclusive), formato YYYY-MM-DD. Si no viene: igual a `from`, o hoy. */
+        to?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['VentasPorChoferV2Dto'];
+        };
+      };
+      /** @description Fecha con formato inválido o from posterior a to */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ReportsV2Controller_ventasPorMedioDePago: {
+    parameters: {
+      query?: {
+        /** @description Desde (día en hora argentina), formato YYYY-MM-DD. Si no viene: igual a `to`, o hoy si tampoco viene `to`. */
+        from?: string;
+        /** @description Hasta (día en hora argentina, inclusive), formato YYYY-MM-DD. Si no viene: igual a `from`, o hoy. */
+        to?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['VentasPorMedioDePagoV2Dto'];
+        };
+      };
+      /** @description Fecha con formato inválido o from posterior a to */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ReportsV2Controller_ventasPorProducto: {
+    parameters: {
+      query?: {
+        /** @description Desde (día en hora argentina), formato YYYY-MM-DD. Si no viene: igual a `to`, o hoy si tampoco viene `to`. */
+        from?: string;
+        /** @description Hasta (día en hora argentina, inclusive), formato YYYY-MM-DD. Si no viene: igual a `from`, o hoy. */
+        to?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['VentasPorProductoV2Dto'];
+        };
+      };
+      /** @description Fecha con formato inválido o from posterior a to */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ReportsV2Controller_resumenDeVentas: {
+    parameters: {
+      query?: {
+        /** @description Desde (día en hora argentina), formato YYYY-MM-DD. Si no viene: igual a `to`, o hoy si tampoco viene `to`. */
+        from?: string;
+        /** @description Hasta (día en hora argentina, inclusive), formato YYYY-MM-DD. Si no viene: igual a `from`, o hoy. */
+        to?: string;
+        /** @description Si es `false` no se calcula el período anterior (`previous` y `previousRange` vienen en null) */
+        compare?: boolean;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ComparativoDeVentasDto'];
+        };
+      };
+      /** @description Fecha con formato inválido o from posterior a to */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ReportsV2Controller_unpaidTotal: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ImpagosDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ReportsV2Controller_totalesDelChofer: {
+    parameters: {
+      query?: {
+        /** @description Desde (día en hora argentina), formato YYYY-MM-DD. Si no viene: igual a `to`, o hoy si tampoco viene `to`. */
+        from?: string;
+        /** @description Hasta (día en hora argentina, inclusive), formato YYYY-MM-DD. Si no viene: igual a `from`, o hoy. */
+        to?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TotalDelDiaDto'][];
+        };
+      };
+      /** @description Fecha con formato inválido o from posterior a to */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: delivery */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   PdfController_remito: {
     parameters: {
       query?: {
@@ -42562,6 +43089,51 @@ export interface operations {
       };
     };
   };
+  FuelLoadMineV2Controller_quote: {
+    parameters: {
+      query: {
+        /** @description Litros cargados */
+        liters: number;
+        /** @description Precio por litro */
+        unitPrice: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CotizacionDeCargaPropiaDto'];
+        };
+      };
+      /** @description Litros o precio inválidos, o importe por encima del máximo */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: delivery */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   TireV2Controller_findAll: {
     parameters: {
       query?: {
@@ -46009,6 +46581,50 @@ export interface operations {
       };
       /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
       422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PurchaseTotalV2Controller_previewTotal: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PreviewPurchaseTotalDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PurchaseTotalPreviewDto'];
+        };
+      };
+      /** @description Renglón inválido o total por encima del máximo */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
         headers: {
           [name: string]: unknown;
         };

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dayKey, dayRange, fillDays, fillMonths, shiftDay, splitWindows, totalOf } from './series';
+import { dayKey, dayRange, fillDays, fillMonths, shiftDay, splitWindows } from './series';
 
 const row = (period: string, totalSales: number, totalOrders = 1) => ({ period, totalSales, totalOrders });
 
@@ -37,8 +37,7 @@ describe('series de ventas', () => {
   it('parte la serie en el período actual y el anterior', () => {
     const points = fillDays([row('2026-09-30T03:00:00.000Z', 10), row('2026-09-28T03:00:00.000Z', 4)], '2026-10-01', 4);
     const { current, previous } = splitWindows(points, 2);
-    expect(totalOf(current, 'sales')).toBe(10);
-    expect(totalOf(previous, 'sales')).toBe(4);
-    expect(totalOf(current, 'orders')).toBe(1);
+    expect(current.map((p) => p.sales)).toEqual([10, 0]);
+    expect(previous.map((p) => p.sales)).toEqual([4, 0]);
   });
 });

@@ -21,10 +21,10 @@ describe('distribución', () => {
     ]);
   });
 
-  it('ordena los métodos de pago por ventas y traduce el nombre', () => {
+  it('conserva el orden del back (de mayor a menor venta) y traduce el nombre', () => {
     const shares = paymentShares([
-      { method: 'cash', totalOrders: 1, totalSales: 10 },
       { method: 'transfer', totalOrders: 2, totalSales: 30 },
+      { method: 'cash', totalOrders: 1, totalSales: 10 },
     ]);
     expect(shares.map((s) => s.label)).toEqual(['Transferencia', 'Efectivo']);
     expect(paymentLabel('bitcoin')).toBe('bitcoin');

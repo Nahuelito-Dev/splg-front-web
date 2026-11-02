@@ -21,7 +21,7 @@ import {
 import { formatCurrency } from '../../../utils/format';
 import { notify } from '../../../utils/notifications';
 import { useCylinderOptions, useWarehouseOptions, withPlaceholder } from '../../Stock/components/useStockOptions';
-import { linesTotal } from '../purchaseRules';
+import { usePurchaseTotal } from '../usePurchaseTotal';
 import { SupplierField } from './SupplierField';
 import { orderCreateBody, orderSchema, orderUpdateBody, type OrderFormValues } from './orderSchema';
 
@@ -64,7 +64,7 @@ export const PurchaseOrderFormModal = ({ open, onClose, order, onSaved }: Props)
   }, [open, order, reset]);
 
   const items = watch('items') ?? [];
-  const total = linesTotal(
+  const total = usePurchaseTotal(
     items.map((i) => ({ quantity: Number(i.quantity) || 0, unitCost: Number(i.unitCost) || 0 })),
   );
 
@@ -170,7 +170,7 @@ export const PurchaseOrderFormModal = ({ open, onClose, order, onSaved }: Props)
                 Agregar otra garrafa
               </Button>
               <p className="text-sm text-muted">
-                Total: <b className="font-mono text-ink">{formatCurrency(total)}</b>
+                Total: <b className="font-mono text-ink">{total === null ? '—' : formatCurrency(total)}</b>
               </p>
             </div>
           </div>

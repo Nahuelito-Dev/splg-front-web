@@ -31,7 +31,7 @@ export const DistributionCard = () => {
     valueLabel: formatNumber(zone.orders),
     tone: zone.name === NO_ZONE ? 'neutral' : 'primary',
   }));
-  const shares = paymentShares(payments.data ?? []);
+  const shares = paymentShares(payments.data?.rows ?? []);
   const paymentItems: TableroBarItem[] = shares.map((share) => ({
     id: share.method,
     label: share.label,
