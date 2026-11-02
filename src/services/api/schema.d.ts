@@ -1972,7 +1972,7 @@ export interface paths {
     };
     /**
      * Obtener el código secreto de entrega (para el QR del chofer)
-     * @description El chofer renderiza este código como QR y lo muestra al cliente al llegar. Solo existe si el pedido ya fue aceptado. El chofer solo puede ver el de SUS pedidos.
+     * @description El chofer renderiza este código como QR y lo muestra al cliente al llegar. Solo existe si el pedido ya fue aceptado. El chofer solo puede ver el de SUS pedidos. Trae `attempts` (códigos incorrectos del cliente) y `blocked` (agotó los 5 intentos: hay que generar un código nuevo). El chofer también se entera en vivo por el socket: `order:delivery-code-failed` en cada error y `order:delivery-code-blocked` al bloquearse.
      */
     get: operations['OrderController_getDeliveryCode'];
     put?: never;
@@ -10753,6 +10753,16 @@ export interface components {
       orderId: string;
       /** @example 482913 */
       deliveryCode: string | null;
+      /**
+       * @description Códigos incorrectos del cliente desde el último código nuevo
+       * @example 0
+       */
+      attempts: number;
+      /**
+       * @description El cliente agotó los intentos: el chofer tiene que generar un código nuevo
+       * @example false
+       */
+      blocked: boolean;
     };
     ConfirmDeliveryDto: {
       /**
