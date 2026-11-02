@@ -5,6 +5,8 @@ import { Button, Modal, FormInput, FormTextArea, FormSelect, Form } from '../../
 import type { FleetTaskUpdateBody } from '../../../services/api/fleet';
 import type { FleetPlan, FleetTask } from '../../../services/api/types';
 import { useCreateFleetTask, useFleetPlans, useUpdateFleetTask } from '../../../services/queries/fleet';
+import { toApiError } from '../../../services/api/errors';
+import { scheduledDayOf } from '../../../utils/format';
 import { notify } from '../../../utils/notifications';
 import { fleetTaskCreateSchema, type FleetTaskCreateValues } from './fleetTaskSchema';
 
@@ -18,6 +20,9 @@ interface Props {
   /** Con tarea es edición (el plan queda fijo); sin ella, alta. */
   task: FleetTask | null;
 }
+
+/** El turno se guarda como instante: el día que se muestra y se edita es el de Buenos Aires, no el de UTC. */
+const scheduledDay = (task: FleetTask | null) => (task?.scheduledAt ? scheduledDayOf(task.scheduledAt) : '');
 
 const appliesToCarType = (plan: FleetPlan, carType: string | null | undefined) =>
   plan.carType === null || !carType || plan.carType === carType;
@@ -47,7 +52,7 @@ export const FleetTaskFormModal = ({ open, onClose, subject, ownerId, carType, t
     // La edición manda el mismo esquema: `planId` ya viene de la tarea (el plan no se cambia).
     resolver: zodResolver(fleetTaskCreateSchema),
   });
-  const { reset, watch, getValues, setValue } = methods;
+  const { reset, watch, getValues, setValue, setError } = methods;
 
   useEffect(() => {
     if (!open) return;
@@ -61,7 +66,7 @@ export const FleetTaskFormModal = ({ open, onClose, subject, ownerId, carType, t
       referenceNumber: task?.referenceNumber ?? '',
       category: task?.category ?? '',
       notes: task?.notes ?? '',
-      scheduledAt: task?.scheduledAt ? task.scheduledAt.slice(0, 10) : '',
+      scheduledAt: scheduledDay(task),
     });
   }, [open, task, reset]);
 
@@ -83,7 +88,13 @@ export const FleetTaskFormModal = ({ open, onClose, subject, ownerId, carType, t
         notify.success(isEditing ? 'Tarea actualizada' : 'Tarea agregada');
         onClose();
       },
-      onError: notify.error,
+      onError: (error: unknown) => {
+        const { status, messages } = toApiError(error);
+        if (status === 400 && messages.length === 1 && messages[0].startsWith('scheduledAt')) {
+          const text = messages[0].replace(/^scheduledAt:\s*/, '');
+          setError('scheduledAt', { message: text.charAt(0).toUpperCase() + text.slice(1) });
+        } else notify.error(error);
+      },
     };
     if (task) {
       // Edición: un campo vacío LIMPIA el dato (la API lo acepta con `null`/`''`), no se omite.
@@ -96,7 +107,8 @@ export const FleetTaskFormModal = ({ open, onClose, subject, ownerId, carType, t
         referenceNumber: values.referenceNumber ?? '',
         category: values.category ?? '',
         notes: values.notes ?? '',
-        scheduledAt: values.scheduledAt || null,
+        // El turno mueve la ventana confirmada del taller en el back: sólo se manda si lo tocaron.
+        ...((values.scheduledAt ?? '') !== scheduledDay(task) && { scheduledAt: values.scheduledAt || null }),
       };
       updateTask.mutate({ id: task.taskId, changes }, options);
     } else {

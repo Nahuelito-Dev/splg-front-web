@@ -1,7 +1,7 @@
 import { Badge, Button, DetailList, Modal } from '../../../common/components/ui';
 import type { FleetTask } from '../../../services/api/types';
 import { useCancelFleetTask } from '../../../services/queries/fleet';
-import { formatDay, formatNumber } from '../../../utils/format';
+import { formatDay, formatNumber, formatScheduledDay } from '../../../utils/format';
 import { confirm, notify } from '../../../utils/notifications';
 import { FLEET_EXPIRATION_STATUS, FLEET_TASK_STATUS, labelOf } from '../../../utils/statusLabels';
 import { FleetTaskAttachments } from './FleetTaskAttachments';
@@ -71,7 +71,7 @@ export const FleetTaskDetailModal = ({ task, onClose, canWrite, onEdit, onReques
               { label: 'Proveedor', value: task.provider || '—' },
               { label: 'Nº de referencia', value: task.referenceNumber || '—', mono: true },
               { label: 'Categoría', value: task.category || '—' },
-              { label: 'Turno agendado', value: formatDay(task.scheduledAt) },
+              { label: 'Turno agendado', value: formatScheduledDay(task.scheduledAt) },
               { label: 'Se hizo el', value: formatDay(task.performedAt) },
               {
                 label: 'Kilometraje al hacerlo',

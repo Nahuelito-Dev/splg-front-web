@@ -17,7 +17,7 @@ import { useCrumbLeaf } from '../../common/components';
 import { useCar } from '../../services/queries/cars';
 import { useEmployee } from '../../services/queries/employees';
 import { useCancelFleetTask, useFleetTask } from '../../services/queries/fleet';
-import { formatDay, formatNumber } from '../../utils/format';
+import { formatDay, formatScheduledDay, formatNumber } from '../../utils/format';
 import { confirm, notify } from '../../utils/notifications';
 import { FLEET_EXPIRATION_STATUS, FLEET_TASK_STATUS, labelOf } from '../../utils/statusLabels';
 import { detailFieldsOf } from '../Employees/documentDetails';
@@ -118,7 +118,7 @@ export const FleetTaskDetail = () => {
                 { label: 'Proveedor', value: task.provider || '—' },
                 { label: 'Nº de referencia', value: task.referenceNumber || '—', mono: true },
                 { label: 'Categoría', value: task.category || '—' },
-                { label: 'Turno agendado', value: formatDay(task.scheduledAt) },
+                { label: 'Turno agendado', value: formatScheduledDay(task.scheduledAt) },
                 { label: 'Se hizo el', value: formatDay(task.performedAt) },
                 {
                   label: 'Kilometraje al hacerlo',

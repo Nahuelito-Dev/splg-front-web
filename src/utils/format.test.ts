@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { formatCurrency, formatDate, formatDay, formatElapsed, formatNumber, formatShortId } from './format';
+import {
+  formatCurrency,
+  formatDate,
+  formatDay,
+  formatElapsed,
+  formatNumber,
+  formatShortId,
+  scheduledDayOf,
+} from './format';
 
 describe('format', () => {
   it('moneda en pesos, sin decimales', () => {
@@ -40,5 +48,15 @@ describe('formatShortId y formatElapsed', () => {
     expect(formatElapsed('2026-09-26T19:55:00Z', now)).toBe('hace 5m');
     expect(formatElapsed('2026-09-26T17:00:00Z', now)).toBe('hace 3h');
     expect(formatElapsed('no es fecha', now)).toBe('hace instantes');
+  });
+});
+
+describe('scheduledDayOf', () => {
+  it('con hora se cuenta en Buenos Aires', () => {
+    expect(scheduledDayOf('2026-11-11T01:00:00.000Z')).toBe('2026-11-10');
+  });
+
+  it('a medianoche UTC exacta es el día de calendario', () => {
+    expect(scheduledDayOf('2026-11-11T00:00:00.000Z')).toBe('2026-11-11');
   });
 });
