@@ -13490,9 +13490,9 @@ export interface components {
       };
       /**
        * Format: date-time
-       * @description Cuándo está agendado el turno/trámite, si ya se sabe
+       * @description Cuándo está agendado el turno/trámite. Si la tarea tiene un caso del planificador de taller (M2) confirmado cuya ventana no terminó, cambiar el turno mueve esa ventana (y con ella el bloqueo del despacho) en la misma operación: un `YYYY-MM-DD` (o medianoche argentina) la lleva a ese día argentino conservando su hora de inicio; un instante con hora la hace arrancar a esa hora; en ambos casos la duración se conserva y la ventana nueva tiene que ser a futuro (400 si no). `null` borra el turno y cancela el caso confirmado. Un turno igual al guardado no toca la tarea ni el caso.
        */
-      scheduledAt?: string;
+      scheduledAt?: string | null;
     };
     CloseFleetTaskDto: {
       /**
@@ -15878,6 +15878,26 @@ export interface components {
        */
       batchingHoldMinutes?: number;
     };
+    RouteBatchRunReasonsDto: {
+      /** @description Pedidos sin lote porque no había ningún chofer de la distribuidora en el radar */
+      noDriversNearby: number;
+      /** @description Pedidos sin lote porque los choferes del radar no pueden recibirlo (flota o taller, laboral, carga del camión, pedido en curso, lote ya ofrecido) o no se pudo diagnosticar */
+      driversNotEligible: number;
+      /** @description Pedidos sin lote porque había chofer pero el grupo quedó con menos de 2 paradas (radio, franja o capacidad del vehículo) o el pedido quedó solo */
+      notEnoughStops: number;
+      /** @description Pedidos sin lote porque otro proceso (despacho individual) los tomó o cambiaron mientras se armaba */
+      lockConflict: number;
+    };
+    RouteBatchRunDriverDetailDto: {
+      /** @example Ramón Gómez */
+      driverName: string;
+      /**
+       * @example [
+       *       "su vehículo tiene el taller programado en este horario"
+       *     ]
+       */
+      reasons: string[];
+    };
     RouteBatchRunResponseDto: {
       /** @description Pedidos programados que podían agruparse */
       candidates: number;
@@ -15885,6 +15905,10 @@ export interface components {
       batches: number;
       /** @description Pedidos que quedaron en esos lotes */
       orders: number;
+      /** @description Por qué quedaron pedidos sin lote: cada pedido sin lote se cuenta una vez, en un solo motivo, y la suma de los cuatro es `candidates - orders` (también con un único candidato). Se completa sólo en «armar ahora»; en el cron queda en cero. */
+      reasons: components['schemas']['RouteBatchRunReasonsDto'];
+      /** @description Hasta 5 choferes de la distribuidora que estaban en el radar y no podían recibir un lote, con los motivos en castellano. Vacío si ningún pedido quedó sin lote por culpa de los choferes. */
+      driversNotEligibleDetail: components['schemas']['RouteBatchRunDriverDetailDto'][];
     };
     DriverRouteBatchOfferDto: {
       /** Format: uuid */
@@ -40639,7 +40663,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La agrupación por recorrido está apagada para la distribuidora */
+      /** @description La agrupación por recorrido está apagada para la distribuidora, o ya se están armando los lotes de esta distribuidora (cerrojo tomado): reintentar en un momento */
       409: {
         headers: {
           [name: string]: unknown;

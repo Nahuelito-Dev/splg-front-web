@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { RouteBatch } from '../../services/api/types';
+import type { RouteBatch, RouteBatchRun } from '../../services/api/types';
 import {
   canDissolve,
+  describeRun,
   formatEta,
   formatKg,
   formatSlot,
@@ -86,5 +87,109 @@ describe('routeBatchLabels', () => {
 
   it('los kilos llevan su unidad', () => {
     expect(formatKg(25)).toBe('25 kg');
+  });
+});
+
+describe('describeRun', () => {
+  const none = { noDriversNearby: 0, driversNotEligible: 0, notEnoughStops: 0, lockConflict: 0 };
+  const run = (over: Partial<RouteBatchRun>): RouteBatchRun => ({
+    candidates: 15,
+    batches: 0,
+    orders: 0,
+    reasons: none,
+    driversNotEligibleDetail: [],
+    ...over,
+  });
+  const ramon = { driverName: 'Ramón Villalba', reasons: ['su vehículo tiene el taller programado en este horario'] };
+  const dialog = (r: RouteBatchRun) => {
+    const n = describeRun(r);
+    if (n.kind !== 'dialog') throw new Error('se esperaba un diálogo');
+    return n;
+  };
+
+  it('ningún lote con un chofer bloqueado: título, resumen y chofer con su motivo', () => {
+    expect(dialog(run({ reasons: { ...none, driversNotEligible: 15 }, driversNotEligibleDetail: [ramon] }))).toEqual({
+      kind: 'dialog',
+      title: 'No se armó ningún lote',
+      summary: 'Había 15 pedidos candidatos.',
+      driversTitle: 'Choferes que no pueden recibir el lote',
+      drivers: ['Ramón Villalba: su vehículo tiene el taller programado en este horario'],
+      lines: [],
+    });
+  });
+
+  it('lista todos los choferes del detalle, uno por renglón, y no deja «Nombre: » colgando', () => {
+    const d = dialog(
+      run({
+        reasons: { ...none, driversNotEligible: 15 },
+        driversNotEligibleDetail: [
+          { driverName: 'A', reasons: ['tiene un pedido en curso', 'sin carga'] },
+          { driverName: 'B', reasons: [] },
+          { driverName: 'C', reasons: ['x'] },
+        ],
+      }),
+    );
+    expect(d.drivers).toEqual(['A: tiene un pedido en curso, sin carga', 'B', 'C: x']);
+    expect(d.lines).toEqual([]);
+  });
+
+  it('driversNotEligible sin detalle', () => {
+    expect(dialog(run({ reasons: { ...none, driversNotEligible: 15 } })).lines).toEqual([
+      'Los choferes cercanos no pueden recibir un lote ahora',
+    ]);
+  });
+
+  it('noDriversNearby', () => {
+    expect(dialog(run({ reasons: { ...none, noDriversNearby: 15 } })).lines).toEqual([
+      'No hay choferes de la distribuidora cerca de los pedidos',
+    ]);
+  });
+
+  it('notEnoughStops', () => {
+    expect(dialog(run({ reasons: { ...none, notEnoughStops: 15 } })).lines).toEqual([
+      'Los pedidos cercanos no llegan a 2 paradas por radio, franja o capacidad del vehículo',
+    ]);
+  });
+
+  it('lockConflict', () => {
+    expect(dialog(run({ reasons: { ...none, lockConflict: 15 } })).lines).toEqual([
+      'Otro proceso tomó los pedidos mientras se armaba',
+    ]);
+  });
+
+  it('detalle más otro motivo: choferes y renglones aparte', () => {
+    const d = dialog(
+      run({ reasons: { ...none, driversNotEligible: 10, notEnoughStops: 5 }, driversNotEligibleDetail: [ramon] }),
+    );
+    expect(d.drivers).toHaveLength(1);
+    expect(d.lines).toEqual(['Los pedidos cercanos no llegan a 2 paradas por radio, franja o capacidad del vehículo']);
+  });
+
+  it('armado en parte: diálogo «Lote armado en parte» con lo armado y lo que quedó', () => {
+    const d = dialog(run({ candidates: 5, batches: 1, orders: 4, reasons: { ...none, notEnoughStops: 1 } }));
+    expect(d.title).toBe('Lote armado en parte');
+    expect(d.summary).toBe('1 lote(s) armado(s) con 4 pedido(s) de 5 pedidos candidatos. 1 pedido quedó sin lote.');
+    expect(
+      dialog(run({ candidates: 6, batches: 1, orders: 4, reasons: { ...none, lockConflict: 2 } })).summary,
+    ).toContain('2 pedidos quedaron sin lote.');
+  });
+
+  it('todo armado: aviso corto de éxito', () => {
+    expect(describeRun(run({ candidates: 4, batches: 1, orders: 4 }))).toEqual({
+      kind: 'toast',
+      level: 'success',
+      message: '1 lote(s) armado(s) con 4 pedido(s) de 4 pedidos candidatos',
+    });
+  });
+
+  it('0 candidatos: aviso informativo; 1 candidato: diálogo en singular', () => {
+    expect(describeRun(run({ candidates: 0 }))).toEqual({
+      kind: 'toast',
+      level: 'info',
+      message: 'No hay pedidos programados para agrupar',
+    });
+    expect(dialog(run({ candidates: 1, reasons: { ...none, notEnoughStops: 1 } })).summary).toBe(
+      'Había 1 pedido candidato.',
+    );
   });
 });

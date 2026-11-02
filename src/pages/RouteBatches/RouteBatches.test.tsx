@@ -35,7 +35,10 @@ vi.mock('./RouteBatchMap', () => ({
     <div role="img" aria-label={label} data-points={points.length} />
   ),
 }));
-const notifications = vi.hoisted(() => ({ confirm: vi.fn(), notify: { success: vi.fn(), error: vi.fn() } }));
+const notifications = vi.hoisted(() => ({
+  confirm: vi.fn(),
+  notify: { success: vi.fn(), warn: vi.fn(), info: vi.fn(), error: vi.fn() },
+}));
 vi.mock('../../utils/notifications', () => notifications);
 
 import { RouteBatches } from './RouteBatches';
@@ -187,13 +190,21 @@ describe('RouteBatches: acciones', () => {
     setup();
     notifications.confirm.mockResolvedValue(true);
     (state.run.mutate as ReturnType<typeof vi.fn>).mockImplementation((_v, options) => {
-      (options as { onSuccess: (r: unknown) => void }).onSuccess({ candidates: 4, batches: 1, orders: 2 });
+      (options as { onSuccess: (r: unknown) => void }).onSuccess({
+        candidates: 4,
+        batches: 1,
+        orders: 4,
+        reasons: { noDriversNearby: 0, driversNotEligible: 0, notEnoughStops: 0, lockConflict: 0 },
+        driversNotEligibleDetail: [],
+      });
     });
     draw();
     fireEvent.click(screen.getByRole('button', { name: 'Armar ahora' }));
     await waitFor(() => expect((state.run.mutate as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(1));
     expect(notifications.confirm).toHaveBeenCalledWith(expect.objectContaining({ title: '¿Armar los lotes ahora?' }));
-    expect(notifications.notify.success).toHaveBeenCalledWith('1 lote(s) armado(s) con 2 pedido(s) de 4 candidato(s)');
+    expect(notifications.notify.success).toHaveBeenCalledWith(
+      '1 lote(s) armado(s) con 4 pedido(s) de 4 pedidos candidatos',
+    );
   });
 
   it('si no se confirma, no arma nada', async () => {
@@ -209,13 +220,26 @@ describe('RouteBatches: acciones', () => {
     setup();
     notifications.confirm.mockResolvedValue(true);
     (state.run.mutate as ReturnType<typeof vi.fn>).mockImplementation((_v, options) => {
-      (options as { onSuccess: (r: unknown) => void }).onSuccess({ candidates: 1, batches: 0, orders: 0 });
+      (options as { onSuccess: (r: unknown) => void }).onSuccess({
+        candidates: 15,
+        batches: 0,
+        orders: 0,
+        reasons: { noDriversNearby: 0, driversNotEligible: 14, notEnoughStops: 0, lockConflict: 0 },
+        driversNotEligibleDetail: [
+          { driverName: 'Ramón Villalba', reasons: ['su vehículo tiene el taller programado en este horario'] },
+        ],
+      });
     });
     draw();
     fireEvent.click(screen.getByRole('button', { name: 'Armar ahora' }));
-    await waitFor(() =>
-      expect(notifications.notify.success).toHaveBeenCalledWith('No se armó ningún lote (1 pedido(s) candidato(s))'),
-    );
+    expect(await screen.findByRole('dialog', { name: 'No se armó ningún lote' })).toBeInTheDocument();
+    expect(screen.getByText('Había 15 pedidos candidatos.')).toBeInTheDocument();
+    expect(
+      screen.getByText('Ramón Villalba: su vehículo tiene el taller programado en este horario'),
+    ).toBeInTheDocument();
+    expect(notifications.notify.success).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Entendido' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
   it('con el módulo apagado el 409 del back sale como error', async () => {
