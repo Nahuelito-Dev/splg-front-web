@@ -1,0 +1,42 @@
+# CodeRabbit. Docs: https://docs.coderabbit.ai/reference/configuration
+# Esquema: https://storage.googleapis.com/coderabbit_public_assets/schema.v2.json
+# yaml-language-server: $schema=https://storage.googleapis.com/coderabbit_public_assets/schema.v2.json
+language: es-AR
+tone_instructions: 'Directo y concreto, en castellano rioplatense. Marcá BLOQUEANTE lo que impide el merge.'
+early_access: false
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: true
+  auto_review:
+    enabled: true
+    drafts: false
+    # Sólo PR contra develop y main (el resto de las ramas no se revisa).
+    base_branches:
+      - develop
+      - main
+  path_filters:
+    - '!**/node_modules/**'
+    - '!**/dist/**'
+    - '!**/*.lock'
+    - '!**/package-lock.json'
+    - '!**/*.g.dart'
+    - '!**/*.freezed.dart'
+  path_instructions:
+    - path: '**'
+      instructions: 'Proyecto: Panel web de SPLG (React + Vite + TypeScript + React Query 5 + MUI/Tailwind + zod). Convenciones: splg-docs/sistema/panel/CONVENCIONES.md. Reglas clave: Datos sólo por services/api (una función tipada por endpoint) + hooks de services/queries con queryKeys. Nada de fetch/axios sueltos en componentes. Tipos de la API generados (npm run api:types), nunca escritos a mano. Cálculos de plata (precio, promo, recargo, total) NO se hacen en el panel: se muestra lo que da la API. Es BLOQUEANTE si el panel recalcula o decide importes.'
+    - path: 'src/pages/**'
+      instructions: 'Tomar src/pages/Customers como referencia. Tablas de 4-5 columnas con IdentityCell y RowActions; componentes del kit common/components/ui; estados de carga, vacío y error; accesibilidad y 320 px.'
+    - path: 'src/services/**'
+      instructions: 'Una función tipada por endpoint, tipos generados desde openapi, queryKeys centralizadas, invalidación correcta tras mutaciones.'
+    - path: 'src/theme/**'
+      instructions: 'Colores sólo de brand.json (Brasa).'
+    - path: '**/*.test.{ts,tsx}'
+      instructions: 'Cada test nuevo debe fallar sin el cambio. Sin depender del TZ de la máquina (corren con America/Argentina/Buenos_Aires y con UTC).'
+    - path: '.github/**'
+      instructions: 'Workflows con permisos mínimos, sin secretos en claro, concurrency y cache.'
+chat:
+  auto_reply: true
