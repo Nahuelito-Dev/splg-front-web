@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { RankBarsChart } from '../../../common/components/ui';
 import type { VentasPorChofer } from '../../../services/api/types';
 import { useSalesByDriver } from '../../../services/queries/reports';
@@ -10,10 +9,10 @@ import type { ReportColumn } from './ReportTable';
 const nameOf = (row: VentasPorChofer) => row.driverName ?? 'Sin nombre';
 
 export const DriverSales = ({ range }: { range: DayRange }) => {
-  const { data: raw = [], isLoading, error, refetch } = useSalesByDriver(range);
-  // Mayor venta primero: la tabla y el gráfico muestran el mismo ranking.
-  const data = useMemo(() => [...raw].sort((a, b) => b.totalSales - a.totalSales), [raw]);
-  const sum = (pick: (row: VentasPorChofer) => number) => data.reduce((acc, row) => acc + pick(row), 0);
+  const { data: report, isLoading, error, refetch } = useSalesByDriver(range);
+  // El back manda las filas de mayor a menor venta y los totales: la tabla y el gráfico muestran el mismo ranking.
+  const data = report?.rows ?? [];
+  const totals = report?.totals;
 
   const columns: ReportColumn<VentasPorChofer>[] = [
     { header: 'Chofer', render: (r) => <span className="font-medium">{nameOf(r)}</span>, csv: nameOf },
@@ -22,14 +21,14 @@ export const DriverSales = ({ range }: { range: DayRange }) => {
       numeric: true,
       render: (r) => formatNumber(r.totalOrders),
       csv: (r) => r.totalOrders,
-      total: formatNumber(sum((r) => r.totalOrders)),
+      total: totals && formatNumber(totals.totalOrders),
     },
     {
       header: 'Ventas',
       numeric: true,
       render: (r) => formatCurrency(r.totalSales),
       csv: (r) => r.totalSales,
-      total: formatCurrency(sum((r) => r.totalSales)),
+      total: totals && formatCurrency(totals.totalSales),
     },
   ];
 

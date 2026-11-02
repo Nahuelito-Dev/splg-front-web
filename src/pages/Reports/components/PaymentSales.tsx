@@ -10,8 +10,9 @@ import type { ReportColumn } from './ReportTable';
 const labelOf = (row: VentasPorMedioDePago) => PAYMENT_LABELS[row.method] ?? row.method;
 
 export const PaymentSales = ({ range }: { range: DayRange }) => {
-  const { data = [], isLoading, error, refetch } = useSalesByPayment(range);
-  const sum = (pick: (row: VentasPorMedioDePago) => number) => data.reduce((acc, row) => acc + pick(row), 0);
+  const { data: report, isLoading, error, refetch } = useSalesByPayment(range);
+  const data = report?.rows ?? [];
+  const totals = report?.totals;
 
   const columns: ReportColumn<VentasPorMedioDePago>[] = [
     { header: 'Método', render: (r) => <span className="font-medium">{labelOf(r)}</span>, csv: labelOf },
@@ -20,14 +21,14 @@ export const PaymentSales = ({ range }: { range: DayRange }) => {
       numeric: true,
       render: (r) => formatNumber(r.totalOrders),
       csv: (r) => r.totalOrders,
-      total: formatNumber(sum((r) => r.totalOrders)),
+      total: totals && formatNumber(totals.totalOrders),
     },
     {
       header: 'Ventas',
       numeric: true,
       render: (r) => formatCurrency(r.totalSales),
       csv: (r) => r.totalSales,
-      total: formatCurrency(sum((r) => r.totalSales)),
+      total: totals && formatCurrency(totals.totalSales),
     },
   ];
 

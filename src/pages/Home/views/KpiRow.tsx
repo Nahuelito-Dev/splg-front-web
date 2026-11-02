@@ -3,7 +3,8 @@ import { KpiCard, type KpiTrend } from '../../../common/components/ui';
 import { useOrderStats } from '../../../services/queries/stats';
 import brand from '../../../theme/brand.json';
 import { formatCurrency, formatNumber, percentChange } from '../../../utils/format';
-import { splitWindows, totalOf } from '../lib/series';
+import { useSalesSummary } from '../../../services/queries/reports';
+import { dayRange, splitWindows } from '../lib/series';
 import { useDailySales } from '../lib/useDailySales';
 import { Sparkline } from './Sparkline';
 import { StackedBar } from './StackedBar';
@@ -30,14 +31,17 @@ const pillOf = (change: number | null) =>
  */
 export const KpiRow = () => {
   const { data: stats, isLoading: statsLoading } = useOrderStats();
-  const { points, isLoading: seriesLoading } = useDailySales();
+  const { points, today: todayKey, isLoading: seriesLoading } = useDailySales();
 
   const last7 = points.slice(-7);
   const today = points[points.length - 1];
   const yesterday = points[points.length - 2];
   const month = splitWindows(points, 30);
-  const monthSales = totalOf(month.current, 'sales');
-  const monthOrders = totalOf(month.current, 'orders');
+  // Las ventas, los pedidos y el ticket de los 30 días y de los 30 anteriores los calcula el back.
+  const monthSummary = useSalesSummary(dayRange(todayKey, 30));
+  const monthSales = monthSummary.data?.current.totalSales ?? 0;
+  const monthOrders = monthSummary.data?.current.totalOrders ?? 0;
+  const monthTicket = monthSummary.data?.current.averageTicket ?? 0;
 
   const pending = stats?.ordersSummary.pending ?? 0;
   const accepted = stats?.ordersSummary.accepted ?? 0;
@@ -101,8 +105,8 @@ export const KpiRow = () => {
       <KpiCard
         title="Ventas cobradas de 30 días"
         icon={Receipt}
-        value={compactMoney.format(monthSales)}
-        loading={seriesLoading}
+        value={monthSummary.isError ? '—' : compactMoney.format(monthSales)}
+        loading={seriesLoading || monthSummary.isLoading}
         aside={
           <Sparkline
             values={month.current.map((p) => p.sales)}
@@ -110,8 +114,20 @@ export const KpiRow = () => {
             label="Ventas de los últimos 30 días"
           />
         }
-        pill={seriesLoading ? undefined : pillOf(percentChange(monthSales, totalOf(month.previous, 'sales')))}
-        hint={monthOrders ? `ticket ${formatCurrency(monthSales / monthOrders)}` : 'vs. 30 días previos'}
+        pill={
+          monthSummary.isError
+            ? { text: 'No se pudo cargar', trend: 'warn' }
+            : monthSummary.data?.previous
+              ? pillOf(percentChange(monthSales, monthSummary.data.previous.totalSales))
+              : undefined
+        }
+        hint={
+          monthSummary.isError
+            ? 'reintentá en un rato'
+            : monthOrders
+              ? `ticket ${formatCurrency(monthTicket)}`
+              : 'vs. 30 días previos'
+        }
       />
     </section>
   );

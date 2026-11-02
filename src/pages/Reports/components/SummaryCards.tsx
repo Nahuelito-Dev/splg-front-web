@@ -1,39 +1,54 @@
 import { PackageCheck, Receipt, ShoppingBag, Wallet } from 'lucide-react';
 import { ErrorState, KpiCard } from '../../../common/components/ui';
 import { useOrders } from '../../../services/queries/orders';
-import { useSalesByPayment } from '../../../services/queries/reports';
+import { useSalesSummary } from '../../../services/queries/reports';
 import { previousRange, type DayRange } from '../../../utils/dateRange';
 import { formatCurrency, formatNumber } from '../../../utils/format';
 import { variationPill } from './variation';
 
 const ONE = { page: 0, pageSize: 1 };
 
-/** Ventas y entregados del período (de los reportes) y todos los pedidos creados en él (del listado). */
+/**
+ * Ventas, entregados y ticket promedio del período y del anterior, ya calculados por el back, y todos los pedidos
+ * creados en cada uno (del listado).
+ */
 const usePeriodTotals = (range: DayRange) => {
-  const payments = useSalesByPayment(range);
+  const summary = useSalesSummary(range);
   const orders = useOrders(ONE, range);
-  const sales = (payments.data ?? []).reduce((acc, p) => acc + Number(p.totalSales), 0);
-  const delivered = (payments.data ?? []).reduce((acc, p) => acc + Number(p.totalOrders), 0);
+  const before = useOrders(ONE, previousRange(range));
+  const now = summary.data?.current;
+  const prev = summary.data?.previous;
   return {
-    loading: payments.isLoading || orders.isLoading,
-    error: payments.error ?? orders.error,
+    loading: summary.isLoading || orders.isLoading,
+    compareLoading: summary.isLoading || before.isLoading,
+    error: summary.error ?? orders.error,
+    compareError: summary.error ?? before.error,
     retry: () => {
-      if (payments.error) void payments.refetch();
+      if (summary.error) void summary.refetch();
       if (orders.error) void orders.refetch();
     },
-    sales,
-    delivered,
-    orders: orders.data?.total ?? 0,
-    ticket: delivered > 0 ? sales / delivered : 0,
+    now: {
+      sales: now?.totalSales ?? 0,
+      delivered: now?.totalOrders ?? 0,
+      ticket: now?.averageTicket ?? 0,
+      orders: orders.data?.total ?? 0,
+    },
+    before: {
+      sales: prev?.totalSales ?? 0,
+      delivered: prev?.totalOrders ?? 0,
+      ticket: prev?.averageTicket ?? 0,
+      orders: before.data?.total ?? 0,
+    },
   };
 };
 
 export const SummaryCards = ({ range }: { range: DayRange }) => {
-  const now = usePeriodTotals(range);
-  const before = usePeriodTotals(previousRange(range));
-  const loading = now.loading;
-  if (now.error) return <ErrorState error={now.error} resource="Los totales del período" onRetry={now.retry} />;
-  const compare = !before.loading && !before.error;
+  const totals = usePeriodTotals(range);
+  const { now, before } = totals;
+  const loading = totals.loading;
+  if (totals.error)
+    return <ErrorState error={totals.error} resource="Los totales del período" onRetry={totals.retry} />;
+  const compare = !totals.compareLoading && !totals.compareError;
   const hint = compare ? 'vs. período anterior' : undefined;
   const pill = (current: number, previous: number) => (compare ? variationPill(current, previous) : undefined);
 

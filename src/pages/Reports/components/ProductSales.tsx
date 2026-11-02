@@ -7,8 +7,9 @@ import { ReportSection } from './ReportSection';
 import type { ReportColumn } from './ReportTable';
 
 export const ProductSales = ({ range }: { range: DayRange }) => {
-  const { data = [], isLoading, error, refetch } = useSalesByProduct(range);
-  const sum = (pick: (row: VentasPorProducto) => number) => data.reduce((acc, row) => acc + pick(row), 0);
+  const { data: report, isLoading, error, refetch } = useSalesByProduct(range);
+  const data = report?.rows ?? [];
+  const totals = report?.totals;
 
   const columns: ReportColumn<VentasPorProducto>[] = [
     {
@@ -27,14 +28,14 @@ export const ProductSales = ({ range }: { range: DayRange }) => {
       numeric: true,
       render: (r) => formatNumber(r.totalQuantity),
       csv: (r) => r.totalQuantity,
-      total: formatNumber(sum((r) => r.totalQuantity)),
+      total: totals && formatNumber(totals.totalQuantity),
     },
     {
       header: 'Ventas',
       numeric: true,
       render: (r) => formatCurrency(r.totalSales),
       csv: (r) => r.totalSales,
-      total: formatCurrency(sum((r) => r.totalSales)),
+      total: totals && formatCurrency(totals.totalSales),
     },
   ];
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PendingItem, PurchaseOrder, PurchaseOrderItem } from '../../services/api/types';
-import { linesTotal, orderActions, receiptRowsFromPending } from './purchaseRules';
+import { orderActions, receiptRowsFromPending } from './purchaseRules';
 
 const names = (status: PurchaseOrder['status']) =>
   Object.entries(orderActions(status))
@@ -14,16 +14,6 @@ describe('orderActions', () => {
     expect(names('partially_received')).toEqual(['canCancel', 'canCloseShort', 'canReceive']));
   it('recibida: sólo cancelar (el 409 explica qué hacer)', () => expect(names('received')).toEqual(['canCancel']));
   it.each(['closed_short', 'cancelled'] as const)('%s: nada', (s) => expect(names(s)).toEqual([]));
-});
-
-describe('linesTotal', () => {
-  it('suma cantidad por costo sin errores de coma flotante', () =>
-    expect(
-      linesTotal([
-        { quantity: 3, unitCost: 0.1 },
-        { quantity: 1, unitCost: 0.2 },
-      ]),
-    ).toBe(0.5));
 });
 
 describe('receiptRowsFromPending', () => {

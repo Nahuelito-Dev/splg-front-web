@@ -73,6 +73,10 @@ const INCIDENTS = [
 const useOrders = vi.hoisted(() => vi.fn<[unknown, { paymentStatus?: string }], unknown>());
 vi.mock('../../services/queries/orders', () => ({ useOrders }));
 const incidentsState = vi.hoisted(() => ({ value: {} as Record<string, unknown> }));
+const unpaidTotal = vi.hoisted(() => ({
+  value: { data: { totalOrders: 1, totalAmount: 12500 } } as Record<string, unknown>,
+}));
+vi.mock('../../services/queries/reports', () => ({ useUnpaidTotal: () => unpaidTotal.value }));
 vi.mock('../../services/queries/incidents', () => ({ useIncidents: () => incidentsState.value }));
 
 import { UnpaidCollections } from './UnpaidCollections';
@@ -89,6 +93,7 @@ afterEach(() => {
   incidentsState.value = { data: INCIDENTS };
   permissions.canOperate = true;
   navigate.mockReset();
+  unpaidTotal.value = { data: { totalOrders: 1, totalAmount: 12500 } };
 });
 
 incidentsState.value = { data: INCIDENTS };
@@ -102,6 +107,14 @@ describe('UnpaidCollections', () => {
     expect(screen.getByText('Chofer Uno')).toBeInTheDocument();
     expect(screen.getByText('Abierta')).toBeInTheDocument();
     expect(screen.getByText(/pedido impago/)).toBeInTheDocument();
+  });
+
+  it('muestra lo adeudado en total tal como lo calcula el back, no la suma de la página', () => {
+    unpaidTotal.value = { data: { totalOrders: 4, totalAmount: 344000 } };
+    useOrders.mockReturnValue({ data: { orders: ORDERS, total: 4 }, isFetching: false });
+    renderPage();
+    expect(screen.getByText(/344\.000 adeudados/)).toBeInTheDocument();
+    expect(screen.queryByText(/en esta página/)).toBeNull();
   });
 
   it('«Resolver impago» abre el modal con el pedido', () => {

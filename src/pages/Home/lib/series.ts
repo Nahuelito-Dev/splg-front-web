@@ -79,6 +79,3 @@ export const splitWindows = (points: SalesPoint[], size: number): SalesWindows =
   current: points.slice(-size),
   previous: points.slice(-size * 2, -size),
 });
-
-export const totalOf = (points: SalesPoint[], field: 'sales' | 'orders'): number =>
-  points.reduce((acc, point) => acc + point[field], 0);

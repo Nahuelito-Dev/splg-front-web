@@ -37,13 +37,11 @@ export interface PaymentShare {
 export const paymentLabel = (method: string): string =>
   method in PAYMENT_METHOD ? PAYMENT_METHOD[method as keyof typeof PAYMENT_METHOD].text : method;
 
-/** Ventas por método de pago, de mayor a menor. */
+/** Ventas por método de pago, en el orden en que las manda el back (de mayor a menor venta). */
 export const paymentShares = (rows: VentasPorMedioDePago[]): PaymentShare[] =>
-  rows
-    .map((row) => ({
-      method: row.method,
-      label: paymentLabel(row.method),
-      orders: row.totalOrders,
-      sales: row.totalSales,
-    }))
-    .sort((a, b) => b.sales - a.sales);
+  rows.map((row) => ({
+    method: row.method,
+    label: paymentLabel(row.method),
+    orders: row.totalOrders,
+    sales: row.totalSales,
+  }));

@@ -3831,7 +3831,7 @@
                 ]
             },
             "put": {
-                "description": "Reemplaza la configuración: se guarda sólo lo que viene y lo demás toma su valor por omisión (`{}` restablece los valores por omisión, igual que en el despacho y las tareas programadas). Cada proceso valida con su propio esquema (`GET /module-config/processes`): un parámetro desconocido, de otro tipo o fuera de rango responde 400 con el campo. Los valores los leen los módulos M2 a M5 cuando se construyan: hoy se guardan y se validan, pero ningún proceso los consume todavía. Cuando lo hagan, rigen desde la siguiente ejecución; las que están en curso no se interrumpen.",
+                "description": "Reemplaza la configuración: se guarda sólo lo que viene y lo demás toma su valor por omisión (`{}` restablece los valores por omisión, igual que en el despacho y las tareas programadas). Cada proceso valida con su propio esquema (`GET /module-config/processes`): un parámetro desconocido, de otro tipo o fuera de rango responde 400 con el campo. Los leen los procesos automáticos de cada módulo (M2 planificador de flota, M3 recompra, M4 recorridos, M5 recupero de envases): un cambio rige desde la siguiente ejecución y las que están en curso no se interrumpen. M3, M4 y M5 vienen apagados por omisión (`enabled` = 0) hasta que el administrador los enciende.",
                 "operationId": "ModuleConfigController_putProcess",
                 "parameters": [
                     {
@@ -22372,7 +22372,7 @@
         },
         "/api/v1/reports/collections": {
             "get": {
-                "description": "Días en hora argentina; `to` es inclusivo; por fecha de entrega. Cifras que NO suman a las ventas: efectivo entregado pendiente de confirmar por el chofer (`pendingCash`), impagos sin resolver (`unpaid`) y pérdidas (`writtenOff`); y transferencias entregadas que un admin todavía no confirmó (`pendingTransfer`) o marcó como no recibidas (`notReceivedTransfer`).",
+                "description": "Días en hora argentina; `to` es inclusivo; por fecha de entrega. Cifras que NO suman a las ventas: efectivo entregado pendiente de confirmar por el chofer (`pendingCash`), impagos sin resolver (`unpaid`, por lo que falta cobrar: el total menos la seña ya paga) y pérdidas (`writtenOff`); y transferencias entregadas que un admin todavía no confirmó (`pendingTransfer`) o marcó como no recibidas (`notReceivedTransfer`).",
                 "operationId": "ReportsController_getCollections",
                 "parameters": [
                     {
@@ -22428,6 +22428,364 @@
                 "summary": "Cobros fuera de las ventas",
                 "tags": [
                     "Reports"
+                ]
+            }
+        },
+        "/api/v2/reports/sales-by-driver": {
+            "get": {
+                "description": "Mismos criterios que la v1 (días en hora argentina, `to` inclusivo, sólo lo COBRADO). `rows` viene de mayor a menor venta (el ranking) y `totals` suma todas las filas.",
+                "operationId": "ReportsV2Controller_ventasPorChofer",
+                "parameters": [
+                    {
+                        "name": "from",
+                        "required": false,
+                        "in": "query",
+                        "description": "Desde (día en hora argentina), formato YYYY-MM-DD. Si no viene: igual a `to`, o hoy si tampoco viene `to`.",
+                        "schema": {
+                            "example": "2026-09-01",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "required": false,
+                        "in": "query",
+                        "description": "Hasta (día en hora argentina, inclusive), formato YYYY-MM-DD. Si no viene: igual a `from`, o hoy.",
+                        "schema": {
+                            "example": "2026-09-30",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VentasPorChoferV2Dto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Fecha con formato inválido o from posterior a to"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ventas por repartidor, con totales",
+                "tags": [
+                    "Reports (v2)"
+                ]
+            }
+        },
+        "/api/v2/reports/sales-by-payment": {
+            "get": {
+                "description": "Mismos criterios que la v1 (días en hora argentina, `to` inclusivo, sólo lo COBRADO). `rows` viene de mayor a menor venta y `totals` suma todas las filas.",
+                "operationId": "ReportsV2Controller_ventasPorMedioDePago",
+                "parameters": [
+                    {
+                        "name": "from",
+                        "required": false,
+                        "in": "query",
+                        "description": "Desde (día en hora argentina), formato YYYY-MM-DD. Si no viene: igual a `to`, o hoy si tampoco viene `to`.",
+                        "schema": {
+                            "example": "2026-09-01",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "required": false,
+                        "in": "query",
+                        "description": "Hasta (día en hora argentina, inclusive), formato YYYY-MM-DD. Si no viene: igual a `from`, o hoy.",
+                        "schema": {
+                            "example": "2026-09-30",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VentasPorMedioDePagoV2Dto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Fecha con formato inválido o from posterior a to"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ventas por medio de pago, con totales",
+                "tags": [
+                    "Reports (v2)"
+                ]
+            }
+        },
+        "/api/v2/reports/sales-by-product": {
+            "get": {
+                "description": "Mismos criterios que la v1 (días en hora argentina, `to` inclusivo, sólo lo COBRADO). Suma los subtotales de los renglones (sin recargos). `rows` viene de mayor a menor venta y `totals` suma todas las filas.",
+                "operationId": "ReportsV2Controller_ventasPorProducto",
+                "parameters": [
+                    {
+                        "name": "from",
+                        "required": false,
+                        "in": "query",
+                        "description": "Desde (día en hora argentina), formato YYYY-MM-DD. Si no viene: igual a `to`, o hoy si tampoco viene `to`.",
+                        "schema": {
+                            "example": "2026-09-01",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "required": false,
+                        "in": "query",
+                        "description": "Hasta (día en hora argentina, inclusive), formato YYYY-MM-DD. Si no viene: igual a `from`, o hoy.",
+                        "schema": {
+                            "example": "2026-09-30",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VentasPorProductoV2Dto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Fecha con formato inválido o from posterior a to"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ventas por producto, con totales",
+                "tags": [
+                    "Reports (v2)"
+                ]
+            }
+        },
+        "/api/v2/reports/sales-summary": {
+            "get": {
+                "description": "Mismos criterios que la v1 (días en hora argentina, `to` inclusivo, sólo lo COBRADO). `previous` es el período inmediato anterior de la misma cantidad de días (con `currentRange` y `previousRange` los días exactos); con `compare=false` no se calcula y vienen en null. El ticket promedio es ventas / pedidos a 2 decimales (0 sin pedidos).",
+                "operationId": "ReportsV2Controller_resumenDeVentas",
+                "parameters": [
+                    {
+                        "name": "from",
+                        "required": false,
+                        "in": "query",
+                        "description": "Desde (día en hora argentina), formato YYYY-MM-DD. Si no viene: igual a `to`, o hoy si tampoco viene `to`.",
+                        "schema": {
+                            "example": "2026-09-01",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "required": false,
+                        "in": "query",
+                        "description": "Hasta (día en hora argentina, inclusive), formato YYYY-MM-DD. Si no viene: igual a `from`, o hoy.",
+                        "schema": {
+                            "example": "2026-09-30",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "compare",
+                        "required": false,
+                        "in": "query",
+                        "description": "Si es `false` no se calcula el período anterior (`previous` y `previousRange` vienen en null)",
+                        "schema": {
+                            "default": true,
+                            "type": "boolean"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ComparativoDeVentasDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Fecha con formato inválido o from posterior a to"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ventas, pedidos y ticket promedio de un período y del anterior",
+                "tags": [
+                    "Reports (v2)"
+                ]
+            }
+        },
+        "/api/v2/reports/unpaid-total": {
+            "get": {
+                "description": "Todos los pedidos con `paymentStatus: unpaid` de la distribuidora (sin acotar por fecha), los mismos que lista `GET /orders?paymentStatus=unpaid`: cantidad y lo que falta cobrar de ellos (el total menos la seña ya paga).",
+                "operationId": "ReportsV2Controller_unpaidTotal",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ImpagosDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Pedidos impagos y lo adeudado en total",
+                "tags": [
+                    "Reports (v2)"
+                ]
+            }
+        },
+        "/api/v2/reports/delivery/me/daily-totals": {
+            "get": {
+                "description": "Por día en hora argentina, los pedidos que el chofer autenticado entregó y lo que había que cobrar de ellos (total menos la seña ya paga). Sólo días con entregas, del más reciente al más antiguo. Sin `from`/`to`, hoy.",
+                "operationId": "ReportsV2Controller_totalesDelChofer",
+                "parameters": [
+                    {
+                        "name": "from",
+                        "required": false,
+                        "in": "query",
+                        "description": "Desde (día en hora argentina), formato YYYY-MM-DD. Si no viene: igual a `to`, o hoy si tampoco viene `to`.",
+                        "schema": {
+                            "example": "2026-09-01",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "required": false,
+                        "in": "query",
+                        "description": "Hasta (día en hora argentina, inclusive), formato YYYY-MM-DD. Si no viene: igual a `from`, o hoy.",
+                        "schema": {
+                            "example": "2026-09-30",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/TotalDelDiaDto"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Fecha con formato inválido o from posterior a to"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: delivery"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Lo entregado por el chofer, día por día",
+                "tags": [
+                    "Reports (v2)"
                 ]
             }
         },
@@ -28027,6 +28385,64 @@
                 ]
             }
         },
+        "/api/v2/fleet/fuel-loads/mine/quote": {
+            "get": {
+                "description": "Litros × precio por litro a 2 decimales: la misma cuenta con la que `POST /fleet/fuel-loads/mine` valida el importe. La app lo muestra y lo manda como `totalAmount`.",
+                "operationId": "FuelLoadMineV2Controller_quote",
+                "parameters": [
+                    {
+                        "name": "liters",
+                        "required": true,
+                        "in": "query",
+                        "description": "Litros cargados",
+                        "schema": {
+                            "example": 42.5,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "unitPrice",
+                        "required": true,
+                        "in": "query",
+                        "description": "Precio por litro",
+                        "schema": {
+                            "example": 1050.5,
+                            "type": "number"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CotizacionDeCargaPropiaDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Litros o precio inválidos, o importe por encima del máximo"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: delivery"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Calcular el importe de la carga del chofer",
+                "tags": [
+                    "Fleet · Combustible (v2)"
+                ]
+            }
+        },
         "/api/v2/fleet/tires": {
             "get": {
                 "operationId": "TireV2Controller_findAll",
@@ -32148,6 +32564,53 @@
                 "summary": "Pagar una recepción desde una caja",
                 "tags": [
                     "Compras · Recepciones (v2)"
+                ]
+            }
+        },
+        "/api/v2/purchase-orders/preview-total": {
+            "post": {
+                "description": "Σ cantidad × costo unitario con aritmética decimal, a 2 decimales: la misma cuenta con la que se guardan la orden y el remito. Es una vista previa para el formulario: no guarda nada.",
+                "operationId": "PurchaseTotalV2Controller_previewTotal",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PreviewPurchaseTotalDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PurchaseTotalPreviewDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Renglón inválido o total por encima del máximo"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Calcular el total de una orden o remito de compra",
+                "tags": [
+                    "Compras · Total (v2)"
                 ]
             }
         },
@@ -49315,6 +49778,210 @@
                     "pendingRefund"
                 ]
             },
+            "TotalesDeVentasDto": {
+                "type": "object",
+                "properties": {
+                    "totalOrders": {
+                        "type": "number",
+                        "description": "Suma de pedidos de todas las filas"
+                    },
+                    "totalSales": {
+                        "type": "number",
+                        "description": "Suma de ventas de todas las filas"
+                    }
+                },
+                "required": [
+                    "totalOrders",
+                    "totalSales"
+                ]
+            },
+            "VentasPorChoferV2Dto": {
+                "type": "object",
+                "properties": {
+                    "rows": {
+                        "description": "De mayor a menor venta",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/VentasPorChoferDto"
+                        }
+                    },
+                    "totals": {
+                        "$ref": "#/components/schemas/TotalesDeVentasDto"
+                    }
+                },
+                "required": [
+                    "rows",
+                    "totals"
+                ]
+            },
+            "VentasPorMedioDePagoV2Dto": {
+                "type": "object",
+                "properties": {
+                    "rows": {
+                        "description": "De mayor a menor venta",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/VentasPorMedioDePagoDto"
+                        }
+                    },
+                    "totals": {
+                        "$ref": "#/components/schemas/TotalesDeVentasDto"
+                    }
+                },
+                "required": [
+                    "rows",
+                    "totals"
+                ]
+            },
+            "TotalesPorProductoDto": {
+                "type": "object",
+                "properties": {
+                    "totalQuantity": {
+                        "type": "number",
+                        "description": "Suma de unidades de todas las filas"
+                    },
+                    "totalSales": {
+                        "type": "number",
+                        "description": "Suma de ventas de todas las filas"
+                    }
+                },
+                "required": [
+                    "totalQuantity",
+                    "totalSales"
+                ]
+            },
+            "VentasPorProductoV2Dto": {
+                "type": "object",
+                "properties": {
+                    "rows": {
+                        "description": "De mayor a menor venta",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/VentasPorProductoDto"
+                        }
+                    },
+                    "totals": {
+                        "$ref": "#/components/schemas/TotalesPorProductoDto"
+                    }
+                },
+                "required": [
+                    "rows",
+                    "totals"
+                ]
+            },
+            "ResumenDeVentasDto": {
+                "type": "object",
+                "properties": {
+                    "totalSales": {
+                        "type": "number",
+                        "description": "Ventas cobradas del período"
+                    },
+                    "totalOrders": {
+                        "type": "number",
+                        "description": "Pedidos entregados y cobrados del período"
+                    },
+                    "averageTicket": {
+                        "type": "number",
+                        "description": "Ventas / pedidos, a 2 decimales; 0 si no hubo pedidos"
+                    }
+                },
+                "required": [
+                    "totalSales",
+                    "totalOrders",
+                    "averageTicket"
+                ]
+            },
+            "RangoDeDiasDto": {
+                "type": "object",
+                "properties": {
+                    "from": {
+                        "type": "string",
+                        "example": "2026-10-01"
+                    },
+                    "to": {
+                        "type": "string",
+                        "example": "2026-10-30"
+                    }
+                },
+                "required": [
+                    "from",
+                    "to"
+                ]
+            },
+            "ComparativoDeVentasDto": {
+                "type": "object",
+                "properties": {
+                    "current": {
+                        "$ref": "#/components/schemas/ResumenDeVentasDto"
+                    },
+                    "previous": {
+                        "nullable": true,
+                        "description": "El período inmediato anterior, de la misma cantidad de días; null con `compare=false`",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ResumenDeVentasDto"
+                            }
+                        ]
+                    },
+                    "currentRange": {
+                        "$ref": "#/components/schemas/RangoDeDiasDto"
+                    },
+                    "previousRange": {
+                        "nullable": true,
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/RangoDeDiasDto"
+                            }
+                        ]
+                    }
+                },
+                "required": [
+                    "current",
+                    "previous",
+                    "currentRange",
+                    "previousRange"
+                ]
+            },
+            "ImpagosDto": {
+                "type": "object",
+                "properties": {
+                    "totalOrders": {
+                        "type": "number",
+                        "description": "Pedidos con el cobro impago"
+                    },
+                    "totalAmount": {
+                        "type": "number",
+                        "description": "Suma del total de esos pedidos"
+                    }
+                },
+                "required": [
+                    "totalOrders",
+                    "totalAmount"
+                ]
+            },
+            "TotalDelDiaDto": {
+                "type": "object",
+                "properties": {
+                    "day": {
+                        "type": "string",
+                        "example": "2026-10-30",
+                        "description": "Día en hora argentina"
+                    },
+                    "deliveredOrders": {
+                        "type": "number",
+                        "description": "Pedidos entregados ese día"
+                    },
+                    "totalAmount": {
+                        "type": "number",
+                        "description": "Lo que había que cobrar de esos pedidos: el total menos la seña ya paga"
+                    }
+                },
+                "required": [
+                    "day",
+                    "deliveredOrders",
+                    "totalAmount"
+                ]
+            },
             "RoutePointDto": {
                 "type": "object",
                 "properties": {
@@ -53516,6 +54183,29 @@
                     "paidAt"
                 ]
             },
+            "CotizacionDeCargaPropiaDto": {
+                "type": "object",
+                "properties": {
+                    "liters": {
+                        "type": "number",
+                        "example": 42.5
+                    },
+                    "unitPrice": {
+                        "type": "number",
+                        "example": 1050.5
+                    },
+                    "totalAmount": {
+                        "type": "number",
+                        "example": 44646.25,
+                        "description": "Litros × precio por litro, a 2 decimales: el importe con el que se registra la carga"
+                    }
+                },
+                "required": [
+                    "liters",
+                    "unitPrice",
+                    "totalAmount"
+                ]
+            },
             "TireV2ResponseDto": {
                 "type": "object",
                 "properties": {
@@ -57293,6 +57983,73 @@
                     "createdAt",
                     "isPaid",
                     "paidAt"
+                ]
+            },
+            "PurchaseLineToPreviewDto": {
+                "type": "object",
+                "properties": {
+                    "quantity": {
+                        "type": "number",
+                        "example": 40,
+                        "description": "Unidades del renglón"
+                    },
+                    "unitCost": {
+                        "type": "number",
+                        "example": 5200.5,
+                        "description": "Costo por unidad"
+                    }
+                },
+                "required": [
+                    "quantity",
+                    "unitCost"
+                ]
+            },
+            "PreviewPurchaseTotalDto": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PurchaseLineToPreviewDto"
+                        }
+                    }
+                },
+                "required": [
+                    "items"
+                ]
+            },
+            "PurchaseLinePreviewDto": {
+                "type": "object",
+                "properties": {
+                    "subtotal": {
+                        "type": "number",
+                        "example": 208020,
+                        "description": "Cantidad × costo unitario"
+                    }
+                },
+                "required": [
+                    "subtotal"
+                ]
+            },
+            "PurchaseTotalPreviewDto": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "description": "Un subtotal por renglón, en el mismo orden",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PurchaseLinePreviewDto"
+                        }
+                    },
+                    "total": {
+                        "type": "number",
+                        "example": 208020,
+                        "description": "Σ cantidad × costo unitario a 2 decimales: el total con el que se guarda la orden o el remito"
+                    }
+                },
+                "required": [
+                    "items",
+                    "total"
                 ]
             },
             "CashCollectionSettingsResponseDto": {

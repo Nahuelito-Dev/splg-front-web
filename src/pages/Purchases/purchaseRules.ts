@@ -17,15 +17,6 @@ export const orderActions = (status: OrderStatus) => ({
   canReceive: status === 'sent' || status === 'partially_received',
 });
 
-export interface LineAmounts {
-  quantity: number;
-  unitCost: number;
-}
-
-/** Total de una orden o remito: cantidad por costo unitario de cada renglón. */
-export const linesTotal = (lines: LineAmounts[]): number =>
-  Math.round(lines.reduce((acc, l) => acc + l.quantity * l.unitCost, 0) * 100) / 100;
-
 export interface ReceiptRowDefaults {
   gasCylinderId: string;
   type: string;
