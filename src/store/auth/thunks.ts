@@ -40,9 +40,6 @@ export const startLoginWithEmailAndPassword = ({ email, password }: ICredentials
         return;
       }
 
-      const expirationDate = new Date();
-      expirationDate.setTime(expirationDate.getTime() + 60 * 60 * 1000);
-      localStorage.setItem('expireTimestamp', JSON.stringify(expirationDate.getTime()));
       dispatch(finishCheckingCredentials());
 
       const payload: LoginPayload = {
@@ -66,6 +63,8 @@ export const startLoginWithEmailAndPassword = ({ email, password }: ICredentials
 
 export const startLogOut = () => {
   return async (dispatch: Dispatch) => {
+    // Cierre voluntario: sin token guardado, `useCheckAuth` no lo toma por una sesión vencida.
+    localStorage.removeItem('token');
     await logOutFirebase();
     dispatch(logOut({}));
   };

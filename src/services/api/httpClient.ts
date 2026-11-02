@@ -2,9 +2,11 @@ import axios, { type AxiosResponse, type InternalAxiosRequestConfig } from 'axio
 import { env } from '../../config/env';
 import { store } from '../../store/store';
 import { logOut } from '../../store/auth';
-import { startLogOut } from '../../store/auth/thunks';
 import { activeDistributor } from './activeDistributor';
-import { getCurrentIdToken } from '../../firebase/providers';
+import { getCurrentIdToken, logOutFirebase } from '../../firebase/providers';
+import { esErrorDeSesion, SESSION_EXPIRED_MESSAGE } from '../../firebase/sessionErrors';
+import { queryClient } from '../queries/queryClient';
+import { toApiError } from './errors';
 
 // Axios no trae estas opciones: las agregan `skipDistributor` y `public` (ver `attachAuthHeaders`).
 declare module 'axios' {
@@ -39,7 +41,36 @@ export const http = axios.create({
 
 const clearLocalSession = () => {
   localStorage.removeItem('token');
-  localStorage.removeItem('expireTimestamp');
+};
+
+export { SESSION_EXPIRED_MESSAGE };
+
+/** Renovación en curso: los pedidos que fallan juntos esperan la misma, así hay una sola contra Firebase. */
+let renovacion: Promise<string | null> | null = null;
+
+/** Renueva el ID token a la fuerza. Null si no hay sesión o Firebase la da por inválida; cualquier otra falla (red, límite de intentos) se relanza. */
+const renovarToken = (): Promise<string | null> => {
+  renovacion ??= getCurrentIdToken(true)
+    .catch((error: unknown) => {
+      if (esErrorDeSesion(error)) return null;
+      throw error;
+    })
+    .finally(() => {
+      renovacion = null;
+    });
+  return renovacion;
+};
+
+/**
+ * Cierra de verdad: token local, caché de la cuenta y sesión de Firebase (si no, la próxima
+ * recarga re-entraría sola). El aviso se despacha antes del signOut para que no lo pise el
+ * `onAuthStateChanged` de `useCheckAuth`.
+ */
+const cerrarSesion = (errorMessage: string) => {
+  clearLocalSession();
+  queryClient.clear();
+  store.dispatch(logOut({ errorMessage }));
+  void logOutFirebase().catch(() => undefined);
 };
 
 /** Token y `X-Distributor` de cada pedido. Aparte para poder probarlo sin armar un axios entero. */
@@ -88,7 +119,13 @@ http.interceptors.response.use(undefined, async (error: unknown) => {
     const original = error.config;
     // Un 401 por token vencido se reintenta una vez con un token renovado antes de cerrar la sesión.
     if (status === 401 && original && !original.reintentoConTokenNuevo) {
-      const renovado = await getCurrentIdToken(true).catch(() => null);
+      let renovado: string | null;
+      try {
+        renovado = await renovarToken();
+      } catch {
+        // Sin red no se puede renovar, pero la sesión sigue siendo válida: se deja el error al llamador.
+        return Promise.reject(error);
+      }
       if (renovado) {
         localStorage.setItem('token', renovado);
         original.reintentoConTokenNuevo = true;
@@ -97,11 +134,10 @@ http.interceptors.response.use(undefined, async (error: unknown) => {
       }
     }
     if (status === 401) {
-      clearLocalSession();
-      store.dispatch(logOut({}));
+      // Con el token recién renovado, el 401 no es vencimiento (cuenta bloqueada, distribuidora inválida, rol): se muestra el motivo de la API.
+      cerrarSesion(original?.reintentoConTokenNuevo ? toApiError(error).message : SESSION_EXPIRED_MESSAGE);
     } else if (code === 'auth/id-token-expired' || code === 'auth/argument-error') {
-      clearLocalSession();
-      void store.dispatch(startLogOut());
+      cerrarSesion(SESSION_EXPIRED_MESSAGE);
     }
   }
   return Promise.reject(error);

@@ -4,9 +4,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('../../store/store', () => ({ store: { dispatch: vi.fn() } }));
 vi.mock('../../store/auth/thunks', () => ({ startLogOut: vi.fn() }));
 const getCurrentIdToken = vi.fn<[boolean | undefined], Promise<string | null>>();
-vi.mock('../../firebase/providers', () => ({ getCurrentIdToken: (force?: boolean) => getCurrentIdToken(force) }));
+const logOutFirebase = vi.fn<[], Promise<void>>();
+vi.mock('../../firebase/providers', () => ({
+  getCurrentIdToken: (force?: boolean) => getCurrentIdToken(force),
+  logOutFirebase: () => logOutFirebase(),
+}));
+const clearCache = vi.fn();
+vi.mock('../queries/queryClient', () => ({ queryClient: { clear: () => void clearCache() } }));
 
-const { attachAuthHeaders, http, toPage, toQuery } = await import('./httpClient');
+const { attachAuthHeaders, http, toPage, toQuery, SESSION_EXPIRED_MESSAGE } = await import('./httpClient');
+const { store } = await import('../../store/store');
 
 const response = (data: number[], headers: Record<string, string> = {}) =>
   ({ data, headers }) as unknown as AxiosResponse<number[]>;
@@ -98,6 +105,8 @@ describe('401 por token vencido', () => {
   beforeEach(() => {
     localStorage.clear();
     getCurrentIdToken.mockReset();
+    logOutFirebase.mockReset().mockResolvedValue();
+    clearCache.mockReset();
   });
 
   it('renueva el token y reintenta una vez antes de cerrar la sesión', async () => {
@@ -139,5 +148,114 @@ describe('401 por token vencido', () => {
     await expect(http.get('/orders', { adapter })).rejects.toThrow('401');
     expect(adapter).toHaveBeenCalledTimes(1);
     expect(localStorage.getItem('token')).toBeNull();
+  });
+
+  const fail401With = (data: unknown) => (cfg: InternalAxiosRequestConfig) =>
+    Promise.reject(
+      Object.assign(new Error('401'), {
+        isAxiosError: true,
+        config: cfg,
+        response: { status: 401, data, headers: {}, config: cfg },
+      }),
+    );
+  const fail401 = fail401With({});
+
+  it('si Firebase no puede renovar, vuelve al login con el aviso de sesión vencida', async () => {
+    vi.mocked(store.dispatch).mockClear();
+    localStorage.setItem('token', 'viejo');
+    getCurrentIdToken.mockResolvedValue(null);
+    await expect(http.get('/orders', { adapter: fail401 })).rejects.toThrow('401');
+    expect(store.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({ payload: { errorMessage: SESSION_EXPIRED_MESSAGE } }),
+    );
+  });
+
+  it('un 401 que sigue tras renovar cierra la sesión sin reintentar de nuevo (nunca un bucle)', async () => {
+    vi.mocked(store.dispatch).mockClear();
+    getCurrentIdToken.mockImplementation((force?: boolean) => Promise.resolve(force ? 'renovado' : 'viejo'));
+    const adapter = vi.fn(fail401With({ message: 'La cuenta está bloqueada. Comuníquese con la distribuidora.' }));
+    await expect(http.get('/orders', { adapter })).rejects.toThrow('401');
+    expect(adapter).toHaveBeenCalledTimes(2);
+    expect(getCurrentIdToken.mock.calls.filter(([force]) => force)).toHaveLength(1);
+    // Renovó y sigue el 401: no es vencimiento, se muestra el motivo de la API.
+    expect(store.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payload: { errorMessage: 'La cuenta está bloqueada. Comuníquese con la distribuidora.' },
+      }),
+    );
+  });
+
+  it('un 401 persistente por distribuidora inválida muestra ese motivo, no «sesión venció»', async () => {
+    vi.mocked(store.dispatch).mockClear();
+    getCurrentIdToken.mockImplementation((force?: boolean) => Promise.resolve(force ? 'renovado' : 'viejo'));
+    const message = "Distribuidora 'vieja' inválida o no disponible";
+    await expect(http.get('/orders', { adapter: fail401With({ message }) })).rejects.toThrow('401');
+    expect(store.dispatch).toHaveBeenCalledWith(expect.objectContaining({ payload: { errorMessage: message } }));
+  });
+
+  it('el cierre por 401 cierra de verdad: limpia la caché, el token y la sesión de Firebase', async () => {
+    localStorage.setItem('token', 'viejo');
+    getCurrentIdToken.mockResolvedValue(null);
+    await expect(http.get('/orders', { adapter: fail401 })).rejects.toThrow('401');
+    expect(clearCache).toHaveBeenCalledTimes(1);
+    expect(logOutFirebase).toHaveBeenCalledTimes(1);
+    expect(localStorage.getItem('token')).toBeNull();
+  });
+
+  it.each(['auth/too-many-requests', 'auth/internal-error'])(
+    '%s al renovar no cierra la sesión: se rechaza el pedido',
+    async (code) => {
+      vi.mocked(store.dispatch).mockClear();
+      getCurrentIdToken.mockImplementation((force?: boolean) =>
+        force ? Promise.reject(Object.assign(new Error(code), { code })) : Promise.resolve('viejo'),
+      );
+      await expect(http.get('/orders', { adapter: fail401 })).rejects.toThrow('401');
+      expect(store.dispatch).not.toHaveBeenCalled();
+      expect(logOutFirebase).not.toHaveBeenCalled();
+    },
+  );
+
+  it('un refresh token revocado (auth/user-token-expired) sí cierra con el aviso de sesión vencida', async () => {
+    vi.mocked(store.dispatch).mockClear();
+    getCurrentIdToken.mockImplementation((force?: boolean) =>
+      force
+        ? Promise.reject(Object.assign(new Error('x'), { code: 'auth/user-token-expired' }))
+        : Promise.resolve('viejo'),
+    );
+    await expect(http.get('/orders', { adapter: fail401 })).rejects.toThrow('401');
+    expect(store.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({ payload: { errorMessage: SESSION_EXPIRED_MESSAGE } }),
+    );
+  });
+
+  it('varios pedidos vencidos a la vez comparten una sola renovación', async () => {
+    let resolver: (t: string) => void = () => undefined;
+    getCurrentIdToken.mockImplementation((force?: boolean) =>
+      force ? new Promise<string>((r) => (resolver = r)) : Promise.resolve('viejo'),
+    );
+    const adapter = vi.fn((cfg: InternalAxiosRequestConfig) =>
+      cfg.headers.Authorization === 'Bearer viejo'
+        ? fail401(cfg)
+        : Promise.resolve({ data: { ok: true }, status: 200, statusText: 'OK', headers: {}, config: cfg }),
+    );
+    const all = Promise.all([http.get('/a', { adapter }), http.get('/b', { adapter }), http.get('/c', { adapter })]);
+    await vi.waitFor(() => expect(getCurrentIdToken.mock.calls.filter(([force]) => force)).toHaveLength(1));
+    resolver('renovado');
+    const results = await all;
+    expect(results.map((r) => r.data as unknown)).toEqual([{ ok: true }, { ok: true }, { ok: true }]);
+    expect(getCurrentIdToken.mock.calls.filter(([force]) => force)).toHaveLength(1);
+  });
+
+  it('una falla de red al renovar no cierra la sesión', async () => {
+    vi.mocked(store.dispatch).mockClear();
+    localStorage.setItem('token', 'viejo');
+    getCurrentIdToken.mockImplementation((force?: boolean) =>
+      force
+        ? Promise.reject(Object.assign(new Error('net'), { code: 'auth/network-request-failed' }))
+        : Promise.resolve('viejo'),
+    );
+    await expect(http.get('/orders', { adapter: fail401 })).rejects.toThrow('401');
+    expect(store.dispatch).not.toHaveBeenCalled();
+    expect(localStorage.getItem('token')).toBe('viejo');
   });
 });
