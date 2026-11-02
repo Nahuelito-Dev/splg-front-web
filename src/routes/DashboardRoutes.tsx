@@ -1,7 +1,5 @@
-import { Suspense, useEffect } from 'react';
+import { Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { useAppDispatch } from '../hooks';
-import { logOut } from '../store/auth';
 import { DashboardLayout } from '../common/layout';
 import { RouteProgressBar } from '../common/layout/RouteProgressBar';
 import { LoadingState } from '../common/components/ui';
@@ -131,19 +129,6 @@ const TruckLoads = lazyPage(() => import('../pages/TruckLoads/TruckLoads'), 'Tru
 const TruckLoadDetails = lazyPage(() => import('../pages/TruckLoads/TruckLoadDetails'), 'TruckLoadDetails');
 
 export const DashboardRoutes = () => {
-  const dispatch = useAppDispatch();
-
-  useEffect(() => {
-    const expireTimestampString = localStorage.getItem('expireTimestamp');
-
-    if (expireTimestampString) {
-      const parsedDate = new Date(parseInt(expireTimestampString, 10));
-      if (parsedDate < new Date()) {
-        dispatch(logOut({}));
-      }
-    }
-  }, [dispatch]);
-
   return (
     <DashboardLayout>
       <Suspense
