@@ -53,7 +53,6 @@ import {
   UserRound,
   Users,
   Landmark,
-  Percent,
   Tags,
   Wallet,
   type LucideIcon,
@@ -160,9 +159,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { title: 'Conciliación MP', path: '/finance/mp-reconciliation', icon: ArrowLeftRight },
       { title: 'Rendiciones', path: '/finance/settlements', icon: HandCoins },
       { title: 'Cuentas corrientes', path: '/finance/accounts', icon: Landmark },
-      { title: 'Comisiones', path: '/finance/commissions', icon: Percent },
-      { title: 'Reglas de comisión', path: '/finance/commission-rules', icon: SlidersHorizontal },
-      { title: 'Liquidaciones', path: '/finance/liquidations', icon: ReceiptText },
+      // Comisiones, reglas de comisión y liquidaciones salieron del alcance (el chofer cobra sueldo mensual).
     ],
   },
   {

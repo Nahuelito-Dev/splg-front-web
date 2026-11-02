@@ -117,13 +117,6 @@ const CustomerAccountDetails = lazyPage(
   () => import('../pages/Finance/CustomerAccountDetails'),
   'CustomerAccountDetails',
 );
-const Commissions = lazyPage(() => import('../pages/Finance/Commissions'), 'Commissions');
-const CommissionRules = lazyPage(() => import('../pages/Finance/CommissionRules'), 'CommissionRules');
-const DriverLiquidations = lazyPage(() => import('../pages/Finance/DriverLiquidations'), 'DriverLiquidations');
-const DriverLiquidationDetails = lazyPage(
-  () => import('../pages/Finance/DriverLiquidationDetails'),
-  'DriverLiquidationDetails',
-);
 const Suppliers = lazyPage(() => import('../pages/Purchases/Suppliers'), 'Suppliers');
 const SupplierDetails = lazyPage(() => import('../pages/Purchases/SupplierDetails'), 'SupplierDetails');
 const PurchaseOrders = lazyPage(() => import('../pages/Purchases/PurchaseOrders'), 'PurchaseOrders');
@@ -273,10 +266,10 @@ export const DashboardRoutes = () => {
             <Route path="finance/accounts" element={<CustomerAccounts />} />
             <Route path="finance/accounts/aging" element={<CustomerAging />} />
             <Route path="finance/accounts/:id" element={<CustomerAccountDetails />} />
-            <Route path="finance/commissions" element={<Commissions />} />
-            <Route path="finance/commission-rules" element={<CommissionRules />} />
-            <Route path="finance/liquidations" element={<DriverLiquidations />} />
-            <Route path="finance/liquidations/:id" element={<DriverLiquidationDetails />} />
+            {/* Comisiones, reglas y liquidaciones salieron del alcance: las páginas siguen en Finance/, sin ruta. */}
+            <Route path="finance/commissions" element={<Navigate to="/finance" replace />} />
+            <Route path="finance/commission-rules" element={<Navigate to="/finance" replace />} />
+            <Route path="finance/liquidations/*" element={<Navigate to="/finance" replace />} />
             <Route path="truck-loads" element={<TruckLoads />} />
             <Route path="truck-loads/:id" element={<TruckLoadDetails />} />
           </Route>

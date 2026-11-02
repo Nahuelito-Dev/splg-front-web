@@ -1,4 +1,4 @@
-import { Banknote, HandCoins, Landmark, Percent, Wallet } from 'lucide-react';
+import { Banknote, HandCoins, Landmark, Wallet } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import {
   Badge,
@@ -62,12 +62,6 @@ export const FinanceDashboard = () => {
                   : undefined
               }
               hint={`${data.receivables.accountsWithDebt} cuentas`}
-            />
-            <KpiCard
-              title="Comisiones por liquidar"
-              icon={Percent}
-              value={formatCurrency(data.commissions.pendingToLiquidate)}
-              hint={`${data.commissions.employees} choferes`}
             />
           </div>
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
