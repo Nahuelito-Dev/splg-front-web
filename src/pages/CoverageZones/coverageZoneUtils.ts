@@ -1,4 +1,4 @@
-import { formatCurrency, formatDate } from '../../utils/format';
+import { argentinaDay, formatArgentinaDay, formatCurrency } from '../../utils/format';
 
 /** Un punto lat/lng, como lo usan Leaflet y el formulario. */
 export type LatLng = [number, number];
@@ -25,9 +25,9 @@ export const formatSurcharge = (type: 'fixed' | 'percentage', value: number): st
  */
 export const formatValidity = (validFrom: string | null, validUntil: string | null): string | null => {
   if (!validFrom && !validUntil) return null;
-  if (validFrom && validUntil) return `Del ${formatDate(validFrom)} al ${formatDate(validUntil)}`;
-  if (validFrom) return `Desde el ${formatDate(validFrom)}`;
-  return `Hasta el ${formatDate(validUntil as string)}`;
+  if (validFrom && validUntil) return `Del ${formatArgentinaDay(validFrom)} al ${formatArgentinaDay(validUntil)}`;
+  if (validFrom) return `Desde el ${formatArgentinaDay(validFrom)}`;
+  return `Hasta el ${formatArgentinaDay(validUntil as string)}`;
 };
 
 /** Mínimo de vértices que exige el back (`ArrayMinSize(3)` en el DTO). */
@@ -36,8 +36,8 @@ export const MIN_POLYGON_VERTICES = 3;
 export const hasEnoughVertices = (ring: number[][] | null | undefined): boolean =>
   Boolean(ring && ring.length >= MIN_POLYGON_VERTICES);
 
-/** El `YYYY-MM-DD` de un `<input type="date">` a partir de un date-time ISO de la API (o vacío sin fecha). */
-export const toDateInputValue = (iso: string | null): string => (iso ? iso.slice(0, 10) : '');
+/** El `YYYY-MM-DD` de un `<input type="date">` a partir del instante de vigencia de la API (su día argentino) (o vacío sin fecha). */
+export const toDateInputValue = (iso: string | null): string => (iso ? argentinaDay(iso) : '');
 
 /** Cantidad de vértices de un anillo GeoJSON: el último punto repite al primero para cerrarlo y no cuenta. */
 export const countVertices = (ring: number[][] | undefined): number => {
@@ -46,4 +46,23 @@ export const countVertices = (ring: number[][] | undefined): number => {
   const last = ring[ring.length - 1];
   const closed = ring.length > 1 && first[0] === last[0] && first[1] === last[1];
   return closed ? ring.length - 1 : ring.length;
+};
+
+/**
+ * Vigencia que se manda al guardar. Alta: el día elegido, o nada si está vacío. Edición: sólo lo que cambió respecto del
+ * valor original; vaciar un campo que tenía fecha manda `null` (el back quita ese límite) y uno que no cambió no se manda.
+ */
+export const vigenciaChanges = (
+  original: { validFrom: string | null; validUntil: string | null } | null,
+  values: { validFrom: string; validUntil: string },
+): { validFrom?: string | null; validUntil?: string | null } => {
+  const pick = (current: string, before: string | null): string | null | undefined => {
+    if (!original) return current || undefined;
+    const was = toDateInputValue(before);
+    return current === was ? undefined : current || null;
+  };
+  return {
+    validFrom: pick(values.validFrom, original?.validFrom ?? null),
+    validUntil: pick(values.validUntil, original?.validUntil ?? null),
+  };
 };

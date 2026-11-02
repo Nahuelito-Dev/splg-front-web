@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Badge, DataTable, EmptyState, IdentityCell, RowActions } from '../../../common/components/ui';
 import { FROM_LIST_STATE } from '../../../hooks';
 import type { EmployeeListItem } from '../../../services/api/types';
-import { formatDate } from '../../../utils/format';
+import { formatDay } from '../../../utils/format';
 import { EMPLOYEE_STATUS_LABELS, employeeFullName } from '../employeeLabels';
 
 interface Props {
@@ -45,7 +45,7 @@ export const EmployeesTable = ({ rows, total, loading, filtered = false, paginat
           />
         ),
       },
-      { field: 'hireDate', headerName: 'Ingreso', width: 130, valueGetter: ({ row }) => formatDate(row.hireDate) },
+      { field: 'hireDate', headerName: 'Ingreso', width: 130, valueGetter: ({ row }) => formatDay(row.hireDate) },
       {
         field: 'actions',
         headerName: '',

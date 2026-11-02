@@ -9,7 +9,7 @@ import {
 } from '../../../services/queries/coverageZones';
 import { DEFAULT_ZONE_COLOR } from '../../../theme/zoneColors';
 import { notify } from '../../../utils/notifications';
-import { hasEnoughVertices, MIN_POLYGON_VERTICES, toDateInputValue } from '../coverageZoneUtils';
+import { hasEnoughVertices, MIN_POLYGON_VERTICES, toDateInputValue, vigenciaChanges } from '../coverageZoneUtils';
 import {
   findZoneConflict,
   nextZonePriority,
@@ -81,8 +81,6 @@ export const ZoneFormPanel = ({ zone, polygon, zones, onSaved, onCancel }: Props
       label: values.label.trim() || undefined,
       color: values.color,
       priority: values.priority,
-      validFrom: values.validFrom || undefined,
-      validUntil: values.validUntil || undefined,
       isActive: values.isActive,
     };
     const options = {
@@ -92,8 +90,17 @@ export const ZoneFormPanel = ({ zone, polygon, zones, onSaved, onCancel }: Props
       },
       onError: notify.error,
     };
-    if (zone) updateZone.mutate({ id: zone.coverage_zone_id, changes: payload }, options);
-    else createZone.mutate(payload, options);
+    if (zone) {
+      updateZone.mutate(
+        { id: zone.coverage_zone_id, changes: { ...payload, ...vigenciaChanges(zone, values) } },
+        options,
+      );
+    } else {
+      createZone.mutate(
+        { ...payload, validFrom: values.validFrom || undefined, validUntil: values.validUntil || undefined },
+        options,
+      );
+    }
   };
 
   return (

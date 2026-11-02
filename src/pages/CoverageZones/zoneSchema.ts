@@ -33,8 +33,8 @@ export const zoneSchema = z
     message: 'Un recargo porcentual tiene que estar entre 0 y 100',
     path: ['surchargeValue'],
   })
-  .refine((data) => !data.validFrom || !data.validUntil || data.validFrom < data.validUntil, {
-    message: 'validUntil tiene que ser posterior a validFrom',
+  .refine((data) => !data.validFrom || !data.validUntil || data.validFrom <= data.validUntil, {
+    message: 'validUntil no puede ser anterior a validFrom',
     path: ['validUntil'],
   });
 

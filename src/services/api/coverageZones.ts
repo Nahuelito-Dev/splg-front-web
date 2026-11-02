@@ -37,7 +37,11 @@ export interface CreateCoverageZonePayload extends CoverageZoneFields {
   polygon: number[][];
 }
 
-export type UpdateCoverageZonePayload = CoverageZoneFields;
+/** En la edición `null` quita el límite de vigencia (rige desde siempre / no vence); sin la clave, no se toca. */
+export type UpdateCoverageZonePayload = Omit<CoverageZoneFields, 'validFrom' | 'validUntil'> & {
+  validFrom?: string | null;
+  validUntil?: string | null;
+};
 
 /** GET /coverage-zones?includeInactive: todas las zonas de la distribuidora (activas e inactivas). */
 export const listCoverageZones = async (includeInactive = true): Promise<Page<CoverageZone>> => {

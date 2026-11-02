@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { Button, Modal, FormInput, FormSelect, Form } from '../../../common/components/ui';
 import { useEmployees } from '../../../services/queries/employees';
 import { useCreateDriverLiquidation } from '../../../services/queries/finance';
-import { toIsoDay } from '../../../utils/dates';
+import { argentinaDay } from '../../../utils/format';
 import { notify } from '../../../utils/notifications';
 import { day } from '../financeSchemas';
 
@@ -34,12 +34,8 @@ export const LiquidationFormModal = ({ open, onClose }: Props) => {
 
   useEffect(() => {
     if (!open) return;
-    const today = new Date();
-    reset({
-      employeeId: '',
-      periodFrom: toIsoDay(new Date(today.getFullYear(), today.getMonth(), 1)),
-      periodTo: toIsoDay(today),
-    });
+    const today = argentinaDay(new Date());
+    reset({ employeeId: '', periodFrom: `${today.slice(0, 7)}-01`, periodTo: today });
   }, [open, reset]);
 
   const onSubmit = (values: Values) =>

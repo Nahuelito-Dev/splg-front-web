@@ -25,6 +25,11 @@ vi.mock('../../services/queries/employees', () => ({
   useEmployee: () => state.employee() as unknown,
   useDeleteEmployee: () => mutation(),
 }));
+// `formatDate` tiene una guarda para el YYYY-MM-DD: acá se la hace fallar para que cada pantalla pruebe que usa `formatDay`.
+vi.mock('../../utils/format', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  formatDate: () => 'USÓ formatDate',
+}));
 vi.mock('./components/TerminateEmployeeModal', () => ({ TerminateEmployeeModal: () => null }));
 vi.mock('./components/ReinstateEmployeeModal', () => ({
   ReinstateEmployeeModal: ({ open }: { open: boolean }) => (open ? <p>Reincorporar (formulario)</p> : null),
@@ -109,5 +114,27 @@ describe('EmployeeDetails: reincorporación y cuenta de acceso', () => {
     draw();
     fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
     expect(refetch).toHaveBeenCalled();
+  });
+});
+
+describe('EmployeeDetails: fechas de calendario', () => {
+  it('ingreso (cabecera y ficha), nacimiento y egreso muestran el día guardado, cada uno el suyo', () => {
+    state.employee.mockReturnValue(
+      ok(
+        EMPLEADO({
+          status: 'terminated',
+          hireDate: '2026-11-02',
+          birthDate: '1990-03-05',
+          terminationDate: '2026-12-01',
+          terminationReason: 'resignation',
+        }),
+      ),
+    );
+    draw();
+    expect(screen.getAllByText('2 nov 2026')).toHaveLength(2);
+    expect(screen.getByText('5 mar 1990')).toBeInTheDocument();
+    expect(screen.getByText('1 dic 2026')).toBeInTheDocument();
+    expect(screen.queryByText('USÓ formatDate')).not.toBeInTheDocument();
+    expect(screen.queryByText('1 nov 2026')).not.toBeInTheDocument();
   });
 });
