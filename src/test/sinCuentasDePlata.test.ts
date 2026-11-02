@@ -180,42 +180,6 @@ const VALIDACION_Y_FORMATO_EN_EL_FRONT: Excepcion[] = [
  */
 const PENDIENTES_DEL_BACK: Excepcion[] = [
   {
-    ruta: 'src/pages/FleetExpense/fleetExpenseSchemas.ts',
-    fragmento: 'unitPrice *',
-    motivo:
-      'total de una carga de combustible (litros × precio) que se carga en totalAmount desde FuelLoadForm: lo tiene que calcular el back',
-  },
-  {
-    ruta: 'src/pages/FleetExpense/fleetExpenseSchemas.ts',
-    fragmento: 'totalAmount -',
-    motivo:
-      'total de una carga de combustible (litros × precio) que se carga en totalAmount desde FuelLoadForm: lo tiene que calcular el back',
-  },
-  {
-    ruta: 'src/pages/FleetExpense/fleetExpenseSchemas.ts',
-    fragmento: 'expected *',
-    motivo:
-      'total de una carga de combustible (litros × precio) que se carga en totalAmount desde FuelLoadForm: lo tiene que calcular el back',
-  },
-  {
-    ruta: 'src/pages/FleetExpense/fleetExpenseSchemas.ts',
-    fragmento: '* unitPrice',
-    motivo:
-      'total de una carga de combustible (litros × precio) que se carga en totalAmount desde FuelLoadForm: lo tiene que calcular el back',
-  },
-  {
-    ruta: 'src/pages/FleetExpense/fleetExpenseSchemas.ts',
-    fragmento: '* unitPrice',
-    motivo:
-      'total de una carga de combustible (litros × precio) que se carga en totalAmount desde FuelLoadForm: lo tiene que calcular el back',
-  },
-  {
-    ruta: 'src/pages/FleetExpense/fleetExpenseSchemas.ts',
-    fragmento: '- expected',
-    motivo:
-      'total de una carga de combustible (litros × precio) que se carga en totalAmount desde FuelLoadForm: lo tiene que calcular el back',
-  },
-  {
     ruta: 'src/pages/Finance/incomeStatementPeriod.ts',
     fragmento: 'total) *',
     motivo: 'porcentaje de cada rubro del estado de resultados',

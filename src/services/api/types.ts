@@ -241,6 +241,7 @@ export type ForecastVehicle = S['ForecastVehicleResponseDto'];
 export type FranjaDeReserva = S['FranjaDeReservaDto'];
 export type FuelEfficiency = S['FuelEfficiencyDto'];
 export type FuelLoadPage = S['FuelLoadPageDto'];
+export type FuelLoadQuote = S['FuelLoadQuoteResponseDto'];
 export type FuelLoad = S['FuelLoadResponseDto'];
 export type FuelLoadV2Page = S['FuelLoadV2PageDto'];
 export type FuelLoadV2 = S['FuelLoadV2ResponseDto'];

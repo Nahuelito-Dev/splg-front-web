@@ -8402,7 +8402,7 @@
                         }
                     },
                     "400": {
-                        "description": "Código inválido o el pedido no está en camino"
+                        "description": "Código inválido o el pedido no está en camino. Si el código no es el del pedido, el cuerpo trae `code`: `DELIVERY_CODE_FORMATO` (no tiene forma de código: mal leído), `DELIVERY_CODE_OTRO_PEDIDO` (es de otro pedido en camino del cliente) o `DELIVERY_CODE_INCORRECTO`."
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -8412,6 +8412,9 @@
                     },
                     "404": {
                         "description": "Order not found"
+                    },
+                    "409": {
+                        "description": "El cliente agotó los 5 intentos: el cuerpo trae `code: DELIVERY_CODE_BLOQUEADO` y el chofer tiene que generar un código nuevo (`POST /api/v2/orders/:id/delivery-code/regenerate`)"
                     },
                     "422": {
                         "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
@@ -9446,6 +9449,59 @@
                 "summary": "Confirmar la seña de una reserva y asentarla en una caja",
                 "tags": [
                     "Pedidos · Reservas (v2)"
+                ]
+            }
+        },
+        "/api/v2/orders/{id}/delivery-code/regenerate": {
+            "post": {
+                "description": "El chofer asignado (o un admin) reemplaza el código del pedido en camino por uno de 6 dígitos y los intentos fallidos del cliente vuelven a 0. Sirve cuando el cliente agotó los intentos (`DELIVERY_CODE_BLOQUEADO`). Queda en la auditoría de datos. El código viejo deja de valer.",
+                "operationId": "DeliveryCodeV2Controller_regenerate",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Order UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CodigoDeEntregaResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "El pedido no está asignado a este chofer"
+                    },
+                    "404": {
+                        "description": "Pedido no encontrado"
+                    },
+                    "409": {
+                        "description": "El pedido no está en camino"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Generar un código de entrega nuevo",
+                "tags": [
+                    "Pedidos · Código de entrega (v2)"
                 ]
             }
         },
@@ -27801,6 +27857,64 @@
                 ]
             }
         },
+        "/api/v2/fleet/fuel-loads/quote": {
+            "get": {
+                "description": "Litros × precio por litro a 2 decimales: la misma cuenta con la que el alta valida el importe. El formulario lo muestra y lo ofrece como importe de la carga.",
+                "operationId": "FuelLoadV2Controller_quote",
+                "parameters": [
+                    {
+                        "name": "liters",
+                        "required": true,
+                        "in": "query",
+                        "description": "Litros cargados",
+                        "schema": {
+                            "example": 42.5,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "unitPrice",
+                        "required": true,
+                        "in": "query",
+                        "description": "Precio por litro",
+                        "schema": {
+                            "example": 1050.5,
+                            "type": "number"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FuelLoadQuoteResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Litros o precio inválidos"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Calcular el importe de una carga",
+                "tags": [
+                    "Fleet · Combustible (v2)"
+                ]
+            }
+        },
         "/api/v2/fleet/fuel-loads/{id}": {
             "get": {
                 "operationId": "FuelLoadV2Controller_findOne",
@@ -38289,7 +38403,7 @@
                     "deliveryCode": {
                         "type": "string",
                         "nullable": true,
-                        "example": "E498F43C8A"
+                        "example": "482913"
                     }
                 },
                 "required": [
@@ -53357,6 +53471,29 @@
                     "data",
                     "total",
                     "totalLiters",
+                    "totalAmount"
+                ]
+            },
+            "FuelLoadQuoteResponseDto": {
+                "type": "object",
+                "properties": {
+                    "liters": {
+                        "type": "number",
+                        "example": 42.5
+                    },
+                    "unitPrice": {
+                        "type": "number",
+                        "example": 1050.5
+                    },
+                    "totalAmount": {
+                        "type": "number",
+                        "example": 44646.25,
+                        "description": "Litros × precio por litro, a 2 decimales: el importe con el que se registra la carga"
+                    }
+                },
+                "required": [
+                    "liters",
+                    "unitPrice",
                     "totalAmount"
                 ]
             },

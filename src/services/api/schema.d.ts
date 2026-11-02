@@ -2321,6 +2321,26 @@ export interface paths {
     patch: operations['ReservationV2Controller_confirmDeposit'];
     trace?: never;
   };
+  '/api/v2/orders/{id}/delivery-code/regenerate': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Generar un código de entrega nuevo
+     * @description El chofer asignado (o un admin) reemplaza el código del pedido en camino por uno de 6 dígitos y los intentos fallidos del cliente vuelven a 0. Sirve cuando el cliente agotó los intentos (`DELIVERY_CODE_BLOQUEADO`). Queda en la auditoría de datos. El código viejo deja de valer.
+     */
+    post: operations['DeliveryCodeV2Controller_regenerate'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v2/orders/payments': {
     parameters: {
       query?: never;
@@ -6902,6 +6922,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/fleet/fuel-loads/quote': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Calcular el importe de una carga
+     * @description Litros × precio por litro a 2 decimales: la misma cuenta con la que el alta valida el importe. El formulario lo muestra y lo ofrece como importe de la carga.
+     */
+    get: operations['FuelLoadV2Controller_quote'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v2/fleet/fuel-loads/{id}': {
     parameters: {
       query?: never;
@@ -10551,7 +10591,7 @@ export interface components {
     CodigoDeEntregaResponseDto: {
       /** Format: uuid */
       orderId: string;
-      /** @example E498F43C8A */
+      /** @example 482913 */
       deliveryCode: string | null;
     };
     ConfirmDeliveryDto: {
@@ -16652,6 +16692,17 @@ export interface components {
       /** @example 530.25 */
       totalLiters: number;
       /** @example 556762.5 */
+      totalAmount: number;
+    };
+    FuelLoadQuoteResponseDto: {
+      /** @example 42.5 */
+      liters: number;
+      /** @example 1050.5 */
+      unitPrice: number;
+      /**
+       * @description Litros × precio por litro, a 2 decimales: el importe con el que se registra la carga
+       * @example 44646.25
+       */
       totalAmount: number;
     };
     PayFromCashBoxDto: {
@@ -25888,7 +25939,7 @@ export interface operations {
           'application/json': components['schemas']['OrderResponseDto'];
         };
       };
-      /** @description Código inválido o el pedido no está en camino */
+      /** @description Código inválido o el pedido no está en camino. Si el código no es el del pedido, el cuerpo trae `code`: `DELIVERY_CODE_FORMATO` (no tiene forma de código: mal leído), `DELIVERY_CODE_OTRO_PEDIDO` (es de otro pedido en camino del cliente) o `DELIVERY_CODE_INCORRECTO`. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -25911,6 +25962,13 @@ export interface operations {
       };
       /** @description Order not found */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El cliente agotó los 5 intentos: el cuerpo trae `code: DELIVERY_CODE_BLOQUEADO` y el chofer tiene que generar un código nuevo (`POST /api/v2/orders/:id/delivery-code/regenerate`) */
+      409: {
         headers: {
           [name: string]: unknown;
         };
@@ -26897,6 +26955,63 @@ export interface operations {
         content?: never;
       };
       /** @description La caja rechazó el ingreso (sin sesión abierta, desactivada) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DeliveryCodeV2Controller_regenerate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Order UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CodigoDeEntregaResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El pedido no está asignado a este chofer */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Pedido no encontrado */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El pedido no está en camino */
       409: {
         headers: {
           [name: string]: unknown;
@@ -42269,6 +42384,51 @@ export interface operations {
         };
       };
       /** @description Filtro inválido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FuelLoadV2Controller_quote: {
+    parameters: {
+      query: {
+        /** @description Litros cargados */
+        liters: number;
+        /** @description Precio por litro */
+        unitPrice: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FuelLoadQuoteResponseDto'];
+        };
+      };
+      /** @description Litros o precio inválidos */
       400: {
         headers: {
           [name: string]: unknown;
