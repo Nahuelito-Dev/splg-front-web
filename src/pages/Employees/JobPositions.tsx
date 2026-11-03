@@ -65,7 +65,7 @@ export const JobPositions = () => {
     });
     if (!ok) return;
     remove.mutate(position.positionId, {
-      onSuccess: () => notify.success('Puesto eliminado'),
+      onSuccess: () => notify.success('Puesto dado de baja'),
       onError: notify.error,
     });
   };

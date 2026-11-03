@@ -4,7 +4,7 @@ import { removalError } from './customerRemoval';
 
 describe('removalError', () => {
   it('un 404 (el cliente ya cambió) se explica sin el texto interno del back', () => {
-    const error = removalError(new ApiError(404, ['Customer with ID: 1b2c not found']));
+    const error = removalError(new ApiError(404, ['Cliente no encontrado']));
     expect(error.message).toBe('El cliente ya no está como lo veías: se actualizó la lista, volvé a intentarlo');
   });
 

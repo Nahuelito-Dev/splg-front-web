@@ -104,8 +104,8 @@ export const listJobPositions = async (): Promise<JobPosition[]> => {
 };
 
 /**
- * El 409 del back nombra campos (`isActive=false`) y dice «eliminar» donde el panel dice «dar de baja»: se traduce a
- * lo que el usuario puede hacer. Lo que no se reconoce pasa tal cual.
+ * El 409 del back nombra campos (`isActive=false`): se traduce a lo que el usuario puede hacer, con «dar de baja» para
+ * quitar el puesto y «desactivar» para que deje de ofrecerse. Lo que no se reconoce pasa tal cual.
  */
 export const friendlyPositionError = (error: unknown): never => {
   const api = toApiError(error);
@@ -115,9 +115,9 @@ export const friendlyPositionError = (error: unknown): never => {
     const active = /lo ocupan (\d+) empleado/.exec(message);
     if (active) return `El puesto lo ocupan ${active[1]} persona(s) activa(s): reasignalas a otro puesto antes.`;
     if (/figura en \d+ legajo/.test(message))
-      return 'El puesto figura en legajos, también de personal egresado: no se puede eliminar. Dalo de baja para que deje de ofrecerse.';
+      return 'El puesto figura en legajos, también de personal egresado: no se puede dar de baja. Desactivalo para que deje de ofrecerse.';
     if (/último puesto activo/.test(message))
-      return 'Es el último puesto activo de su categoría: creá otro antes de darlo de baja, cambiarle la categoría o eliminarlo.';
+      return 'Es el último puesto activo de su categoría: creá otro antes de desactivarlo, cambiarle la categoría o darlo de baja.';
     if (/cuenta cuyo rol no corresponde/.test(message))
       return 'Hay personal con cuenta de acceso cuyo rol no corresponde a la nueva categoría.';
     if (/Ya existe un puesto llamado/.test(message)) return 'Ya existe un puesto con ese nombre.';
