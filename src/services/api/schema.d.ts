@@ -8491,6 +8491,46 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/process-runs/summary': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Última corrida de cada proceso automático
+     * @description Un renglón por proceso con su salud: `ok`, `partial`, `running`, `failed`, `late` (no arrancó en 1,5 veces su período), `stuck` (sigue corriendo pasado el máximo) o `never`. Cliente y chofer reciben 403. De los procesos globales, el admin de una empresa ve sólo la salud (sin contadores ni texto de error); el administrador general ve todo.
+     */
+    get: operations['ProcessRunController_resumen_v2'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/process-runs': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Historial de corridas
+     * @description Las más nuevas primero, paginado. Filtros: `process`, `status`, `from` y `to` (instantes ISO 8601 sobre el inicio de la corrida).
+     */
+    get: operations['ProcessRunController_listar_v2'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -19152,6 +19192,156 @@ export interface components {
       confirmadaEn: string;
       /** @description true si esta importación ya estaba confirmada: no se aplicó de nuevo */
       yaConfirmada: boolean;
+    };
+    ProcessRunResponseDto: {
+      /** @example 9d8e7f60-1b2c-4d3e-8f4a-5b6c7d8e9f01 */
+      id: string;
+      /** @enum {string} */
+      process:
+        | 'dispatch_tick'
+        | 'fleet_planner_daily'
+        | 'fleet_planner_expiry'
+        | 'vehicle_usage_feed'
+        | 'repurchase_anticipate'
+        | 'repurchase_expiry'
+        | 'route_batch_build'
+        | 'route_batch_expiry'
+        | 'cylinder_recovery'
+        | 'attendance_open_alert'
+        | 'receiver_retention'
+        | 'mp_pending_reconciliation'
+        | 'mp_cancelled_reconciliation'
+        | 'reservations_activate'
+        | 'reservations_expire_unpaid'
+        | 'orders_expire_mp_unpaid'
+        | 'payment_inbox_process'
+        | 'payment_inbox_purge'
+        | 's3_orphans_retry'
+        | 'driver_settlement_generate'
+        | 'driver_settlement_alert'
+        | 'coverage_zone_expiry'
+        | 'fine_due_alerts'
+        | 'finance_reconciliation'
+        | 'mp_reconciliation_sync'
+        | 'fleet_alerts'
+        | 'stock_low_alert'
+        | 'stock_reconciliation'
+        | 'insurance_alerts'
+        | 'import_cleanup'
+        | 'process_run_watch'
+        | 'process_run_purge';
+      /** @example Recompra: invitaciones anticipadas */
+      title: string;
+      /**
+       * Format: uuid
+       * @description Distribuidora de la corrida; `null` si fue un barrido global
+       */
+      distributorId: string | null;
+      /** Format: date-time */
+      startedAt: string;
+      /**
+       * Format: date-time
+       * @description `null` mientras corre
+       */
+      finishedAt: string | null;
+      /** @example 1840 */
+      durationMs: number | null;
+      /** @enum {string} */
+      status: 'running' | 'ok' | 'partial' | 'failed' | 'skipped';
+      /**
+       * @description Lo que generó la corrida (casos, avisos, ofertas...), según el proceso
+       * @example {
+       *       "processed": 3,
+       *       "errors": 0
+       *     }
+       */
+      counters: {
+        [key: string]: number;
+      };
+      error: string | null;
+      /** @enum {string} */
+      trigger: 'cron' | 'manual' | 'webhook';
+    };
+    ProcessSummaryItemDto: {
+      /** @enum {string} */
+      process:
+        | 'dispatch_tick'
+        | 'fleet_planner_daily'
+        | 'fleet_planner_expiry'
+        | 'vehicle_usage_feed'
+        | 'repurchase_anticipate'
+        | 'repurchase_expiry'
+        | 'route_batch_build'
+        | 'route_batch_expiry'
+        | 'cylinder_recovery'
+        | 'attendance_open_alert'
+        | 'receiver_retention'
+        | 'mp_pending_reconciliation'
+        | 'mp_cancelled_reconciliation'
+        | 'reservations_activate'
+        | 'reservations_expire_unpaid'
+        | 'orders_expire_mp_unpaid'
+        | 'payment_inbox_process'
+        | 'payment_inbox_purge'
+        | 's3_orphans_retry'
+        | 'driver_settlement_generate'
+        | 'driver_settlement_alert'
+        | 'coverage_zone_expiry'
+        | 'fine_due_alerts'
+        | 'finance_reconciliation'
+        | 'mp_reconciliation_sync'
+        | 'fleet_alerts'
+        | 'stock_low_alert'
+        | 'stock_reconciliation'
+        | 'insurance_alerts'
+        | 'import_cleanup'
+        | 'process_run_watch'
+        | 'process_run_purge';
+      /** @example Recompra: invitaciones anticipadas */
+      title: string;
+      /**
+       * @description Módulo inteligente; `null` si es una tarea programada común
+       * @enum {string|null}
+       */
+      module: 'M1' | 'M2' | 'M3' | 'M4' | 'M5' | null;
+      /**
+       * Format: uuid
+       * @description `null` si el proceso corre como barrido global
+       */
+      distributorId: string | null;
+      /**
+       * @description `late`: no arrancó en 1,5 veces su período; `stuck`: sigue corriendo pasado el máximo; `failed`: la última terminó con error; `never`: todavía no corrió
+       * @enum {string}
+       */
+      health: 'ok' | 'partial' | 'running' | 'failed' | 'late' | 'stuck' | 'never';
+      lastRun: components['schemas']['ProcessRunResponseDto'] | null;
+      /**
+       * Format: date-time
+       * @description Inicio de la última corrida que terminó bien
+       */
+      lastOkAt: string | null;
+      /**
+       * @description Cada cuántos segundos se espera una corrida
+       * @example 3600
+       */
+      expectedEverySeconds: number;
+      /** Format: date-time */
+      nextExpectedAt: string | null;
+    };
+    ProcessSummaryResponseDto: {
+      items: components['schemas']['ProcessSummaryItemDto'][];
+      /**
+       * @description Procesos atrasados, fallidos o colgados
+       * @example 1
+       */
+      alerts: number;
+      /** Format: date-time */
+      generatedAt: string;
+    };
+    ProcessRunListResponseDto: {
+      items: components['schemas']['ProcessRunResponseDto'][];
+      /** @example 42 */
+      total: number;
     };
   };
   responses: never;
@@ -47699,6 +47889,121 @@ export interface operations {
       };
       /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
       422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ProcessRunController_resumen_v2: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProcessSummaryResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ProcessRunController_listar_v2: {
+    parameters: {
+      query?: {
+        /** @description Un proceso */
+        process?:
+          | 'dispatch_tick'
+          | 'fleet_planner_daily'
+          | 'fleet_planner_expiry'
+          | 'vehicle_usage_feed'
+          | 'repurchase_anticipate'
+          | 'repurchase_expiry'
+          | 'route_batch_build'
+          | 'route_batch_expiry'
+          | 'cylinder_recovery'
+          | 'attendance_open_alert'
+          | 'receiver_retention'
+          | 'mp_pending_reconciliation'
+          | 'mp_cancelled_reconciliation'
+          | 'reservations_activate'
+          | 'reservations_expire_unpaid'
+          | 'orders_expire_mp_unpaid'
+          | 'payment_inbox_process'
+          | 'payment_inbox_purge'
+          | 's3_orphans_retry'
+          | 'driver_settlement_generate'
+          | 'driver_settlement_alert'
+          | 'coverage_zone_expiry'
+          | 'fine_due_alerts'
+          | 'finance_reconciliation'
+          | 'mp_reconciliation_sync'
+          | 'fleet_alerts'
+          | 'stock_low_alert'
+          | 'stock_reconciliation'
+          | 'insurance_alerts'
+          | 'import_cleanup'
+          | 'process_run_watch'
+          | 'process_run_purge';
+        status?: 'running' | 'ok' | 'partial' | 'failed' | 'skipped';
+        /** @description Corridas que arrancaron desde este instante (ISO 8601; un día suelto es 00:00 UTC) */
+        from?: string;
+        /** @description Corridas que arrancaron hasta este instante (ISO 8601) */
+        to?: string;
+        limit?: number;
+        offset?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProcessRunListResponseDto'];
+        };
+      };
+      /** @description Filtro inválido: `process` o `status` fuera del enum, `from` o `to` que no son fecha ISO 8601, `from` posterior a `to`, `limit` fuera de 1 a 100 u `offset` negativo */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
         headers: {
           [name: string]: unknown;
         };

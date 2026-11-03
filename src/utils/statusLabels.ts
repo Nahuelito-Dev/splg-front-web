@@ -41,6 +41,8 @@ import type {
   StockMovement,
   Supplier,
   Tire,
+  ProcessRun,
+  ProcessSummaryItem,
   TireEvent,
   TrafficFine,
   TruckLoad,
@@ -161,6 +163,33 @@ export const MP_RECONCILIATION_STATUS: LabelMap<MpReconciliationStatus> = {
   requested: { text: 'Esperando a Mercado Pago', tone: 'warn' },
   ready: { text: 'Lista', tone: 'success' },
   failed: { text: 'Fallida', tone: 'danger' },
+};
+
+/** Salud de un proceso automático: el estado de su última corrida más las alertas (atrasado, colgado). */
+export const PROCESS_HEALTH: LabelMap<ProcessSummaryItem['health']> = {
+  ok: { text: 'Al día', tone: 'success' },
+  partial: { text: 'Con errores', tone: 'warn' },
+  running: { text: 'Corriendo', tone: 'info' },
+  failed: { text: 'Falló', tone: 'danger' },
+  late: { text: 'Atrasado', tone: 'warn' },
+  stuck: { text: 'Colgado', tone: 'danger' },
+  never: { text: 'Sin corridas', tone: 'neutral' },
+};
+
+/** Resultado de una corrida del historial. */
+export const PROCESS_RUN_STATUS: LabelMap<ProcessRun['status']> = {
+  running: { text: 'Corriendo', tone: 'info' },
+  ok: { text: 'Correcta', tone: 'success' },
+  partial: { text: 'Con errores', tone: 'warn' },
+  failed: { text: 'Falló', tone: 'danger' },
+  skipped: { text: 'Salteada (otra instancia)', tone: 'neutral' },
+};
+
+/** Quién disparó una corrida del historial. */
+export const PROCESS_RUN_TRIGGER: Record<ProcessRun['trigger'], string> = {
+  cron: 'Programada',
+  manual: 'Manual',
+  webhook: 'Webhook',
 };
 
 /** Una diferencia de la conciliación: falta asentarla o ya se asentó. */
