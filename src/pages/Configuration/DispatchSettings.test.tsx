@@ -32,6 +32,7 @@ vi.mock('../../utils/notifications', () => ({
 const config = (over: Record<string, unknown> = {}) => ({
   radiusStepsKm: [5, 10, 15, 20],
   offerTtlSeconds: 30,
+  finishingRadiusMeters: 300,
   isDefault: false,
   updatedAt: '2026-10-15T12:00:00.000Z',
   updatedByUserId: 'user-1',
@@ -73,6 +74,7 @@ describe('DispatchSettings', () => {
     expect(screen.getByLabelText('Paso 1 (km)')).toHaveValue(5);
     expect(screen.getByLabelText('Paso 4 (km)')).toHaveValue(20);
     expect(screen.getByLabelText('Segundos')).toHaveValue(30);
+    expect(screen.getByLabelText('Metros al destino')).toHaveValue(300);
     expect(screen.getByText('Ana Admin')).toBeInTheDocument();
     expect(screen.queryByText('Valores por defecto')).not.toBeInTheDocument();
   });
@@ -158,6 +160,18 @@ describe('DispatchSettings', () => {
     await waitFor(() => expect(save()).toBeDisabled());
   });
 
+  it('el radio de por terminar fuera de rango bloquea guardar; 0 es válido (apagado)', async () => {
+    const update = setup();
+    fireEvent.change(screen.getByLabelText('Metros al destino'), { target: { value: '6000' } });
+    expect(await screen.findByText(/entre 0 y 5000 metros/)).toBeInTheDocument();
+    await waitFor(() => expect(save()).toBeDisabled());
+    fireEvent.change(screen.getByLabelText('Metros al destino'), { target: { value: '0' } });
+    await waitFor(() => expect(save()).toBeEnabled());
+    fireEvent.click(save());
+    await waitFor(() => expect(update.mutate).toHaveBeenCalled());
+    expect(update.mutate.mock.calls[0]?.[0]).toMatchObject({ finishingRadiusMeters: 0 });
+  });
+
   it('agrega un paso (hasta 8) y lo quita', () => {
     setup();
     fireEvent.click(screen.getByRole('button', { name: 'Agregar paso' }));
@@ -175,7 +189,11 @@ describe('DispatchSettings', () => {
     await waitFor(() => expect(save()).toBeEnabled());
     fireEvent.click(save());
     await waitFor(() => expect(update.mutate).toHaveBeenCalled());
-    expect(update.mutate.mock.calls[0]?.[0]).toEqual({ radiusStepsKm: [5, 10, 15, 25], offerTtlSeconds: 45 });
+    expect(update.mutate.mock.calls[0]?.[0]).toEqual({
+      radiusStepsKm: [5, 10, 15, 25],
+      offerTtlSeconds: 45,
+      finishingRadiusMeters: 300,
+    });
   });
 
   it('muestra el mensaje del back cuando el guardado falla', async () => {

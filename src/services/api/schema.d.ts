@@ -1784,7 +1784,7 @@ export interface paths {
     };
     /**
      * El pedido en curso del chofer (para retomar al abrir la app)
-     * @description Devuelve el pedido que el chofer tiene en curso, sin importar cuándo se creó: el que lleva `out_for_delivery` o, si no, el `accepted` más antiguo. Si no tiene ninguno, el pedido entregado HOY en efectivo cuyo cobro sigue `pending` (para que confirme el cobro). Responde `204` sin cuerpo si no tiene nada de eso. Sólo del chofer autenticado y de su distribuidora.
+     * @description Devuelve el pedido que el chofer tiene en curso, sin importar cuándo se creó: el que lleva `out_for_delivery` o, si no, el `accepted` más antiguo (si hay uno en camino y otro aceptado en espera, éste aparece al entregar el primero). Si no tiene ninguno, el pedido entregado HOY en efectivo cuyo cobro sigue `pending` (para que confirme el cobro). Responde `204` sin cuerpo si no tiene nada de eso. Sólo del chofer autenticado y de su distribuidora.
      */
     get: operations['OrderController_findMyActive'];
     put?: never;
@@ -9173,6 +9173,8 @@ export interface components {
       radiusStepsKm: number[];
       /** @example 30 */
       offerTtlSeconds: number;
+      /** @example 300 */
+      finishingRadiusMeters: number;
       /**
        * @description true si rigen los valores por omisión (no configuró nada o todo coincide con ellos)
        * @example true
@@ -9205,6 +9207,11 @@ export interface components {
        * @example 30
        */
       offerTtlSeconds?: number;
+      /**
+       * @description Radio en metros al punto de entrega dentro del cual un chofer con un solo pedido en camino cuenta como «por terminar» y puede recibir otra oferta (0 a 5000). 0 lo apaga: sólo se ofrece a choferes sin pedido en curso
+       * @example 300
+       */
+      finishingRadiusMeters?: number;
     };
     ScheduledTasksConfigResponseDto: {
       /** @example 15 */
@@ -26103,7 +26110,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Aceptar (`accepted`) un pedido de Mercado Pago cuyo pago todavía no está aprobado (salvo una reserva con la seña paga) */
+      /** @description Aceptar (`accepted`) un pedido de Mercado Pago cuyo pago todavía no está aprobado (salvo una reserva con la seña paga), o, siendo chofer, tener ya otro pedido aceptado esperando (CU-013: nunca dos encolados; repetir la aceptación del mismo pedido no cuenta) */
       409: {
         headers: {
           [name: string]: unknown;
