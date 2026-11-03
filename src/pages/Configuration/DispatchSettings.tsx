@@ -24,6 +24,8 @@ import { DistributorRequired } from './components/DistributorRequired';
 import { SettingsMeta } from './components/SettingsMeta';
 import { StaleConfigNotice } from './components/StaleConfigNotice';
 import {
+  FINISHING_RADIUS_MAX_METERS,
+  FINISHING_RADIUS_MIN_METERS,
   OFFER_TTL_MAX_SECONDS,
   OFFER_TTL_MIN_SECONDS,
   RADIUS_MAX_KM,
@@ -44,6 +46,7 @@ interface FormProps {
 const valuesOf = (config: DispatchConfig): DispatchFormValues => ({
   steps: config.radiusStepsKm.map((km) => ({ value: String(km) })),
   ttl: String(config.offerTtlSeconds),
+  finishing: String(config.finishingRadiusMeters),
 });
 
 const DispatchForm = ({ config, canWrite, writeHint }: FormProps) => {
@@ -184,6 +187,29 @@ const DispatchForm = ({ config, canWrite, writeHint }: FormProps) => {
         </p>
       </Card>
 
+      <Card className="p-6">
+        <CardHeader title="Choferes por terminar su entrega" className="" />
+        <div className="mt-4 w-48">
+          <FormInput
+            name="finishing"
+            label="Metros al destino"
+            type="number"
+            inputMode="numeric"
+            min={FINISHING_RADIUS_MIN_METERS}
+            max={FINISHING_RADIUS_MAX_METERS}
+            disabled={!canWrite}
+            hint={`${FINISHING_RADIUS_MIN_METERS} a ${FINISHING_RADIUS_MAX_METERS}. Con 0 se apaga`}
+          />
+        </div>
+        <p className="mt-2 text-sm text-muted">
+          Un chofer que lleva un solo pedido en camino y está a esta distancia o menos del punto de entrega (según su
+          ubicación de los últimos 2 minutos) también puede recibir una oferta: acepta un pedido más y lo hace cuando
+          termine el actual. El sistema no le ofrece un segundo pedido en espera; el administrador sí puede asignarle
+          más. Con 0, sólo se ofrece a choferes sin pedido en curso. Dentro de cada radio de búsqueda se ofrece primero
+          a los choferes libres y después a los que están por terminar.
+        </p>
+      </Card>
+
       {serverError && (
         <p role="alert" className="text-sm text-danger">
           {serverError}
@@ -213,7 +239,7 @@ export const DispatchSettings = () => {
     <PageContainer size="sm">
       <PageHeader
         title="Parámetros del despacho"
-        description="Cómo se busca al chofer para cada pedido: hasta dónde se amplía el radio y cuánto tiempo tiene para aceptar."
+        description="Cómo se busca al chofer para cada pedido: hasta dónde se amplía el radio, cuánto tiempo tiene para aceptar y si se ofrece a quien está por terminar otra entrega."
       />
       {needsDistributor ? (
         <DistributorRequired />
