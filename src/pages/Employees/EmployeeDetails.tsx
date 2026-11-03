@@ -71,7 +71,7 @@ export const EmployeeDetails = () => {
     if (!confirmed) return;
     deleteEmployee.mutate(employee.employeeId, {
       onSuccess: () => {
-        notify.success('Legajo eliminado');
+        notify.success('Legajo dado de baja');
         navigate('/employees');
       },
       onError: notify.error,

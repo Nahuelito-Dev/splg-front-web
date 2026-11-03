@@ -19,7 +19,7 @@ import { RoleFormModal } from './RoleFormModal';
 /**
  * Los 4 roles que el código busca por nombre (`admin`, `super_admin`,
  * `customer`, `delivery`): sin ellos el registro de usuarios falla con
- * "Customer role not found" (ver `RoleService.ROLES_DEL_SISTEMA`).
+ * "No existe el rol customer: falta correr el seed de roles" (ver `RoleService.ROLES_DEL_SISTEMA`).
  */
 const SYSTEM_ROLES = ['admin', 'super_admin', 'customer', 'delivery'];
 

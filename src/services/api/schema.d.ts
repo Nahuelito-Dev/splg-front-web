@@ -835,12 +835,12 @@ export interface paths {
     };
     /**
      * Parámetros del despacho de la distribuidora
-     * @description Pasos de radio (km) y ventana de aceptación de la oferta (s). Si la distribuidora no configuró nada, devuelve los valores por omisión (`isDefault: true`).
+     * @description Pasos de radio (km), ventana de aceptación de la oferta (s) y radio en metros al destino para los choferes por terminar su entrega (CU-013). Si la distribuidora no configuró nada, devuelve los valores por omisión (`isDefault: true`).
      */
     get: operations['ModuleConfigController_getDispatch'];
     /**
      * Cambiar los parámetros del despacho
-     * @description Reemplaza la configuración. De 1 a 8 pasos de radio, cada uno entre 1 y 100 km y estrictamente mayor que el anterior; ventana entre 10 y 300 s. Rige para las ofertas que se creen desde ese momento (las ya enviadas conservan su vencimiento); en otras instancias del servidor, como máximo un minuto después.
+     * @description Reemplaza la configuración. De 1 a 8 pasos de radio, cada uno entre 1 y 100 km y estrictamente mayor que el anterior; ventana entre 10 y 300 s; radio de choferes por terminar entre 0 y 5000 m, entero (0 lo apaga: sólo se ofrece a choferes sin pedido en curso). Rige para las ofertas que se creen desde ese momento (las ya enviadas conservan su vencimiento); en otras instancias del servidor, como máximo un minuto después.
      */
     put: operations['ModuleConfigController_putDispatch'];
     post?: never;
@@ -8641,7 +8641,7 @@ export interface components {
       requiresAuth: boolean;
     };
     MessageResponseDto: {
-      /** @example Role deleted successfully */
+      /** @example Rol dado de baja */
       message: string;
     };
     CheckUserExistsDto: {
@@ -9689,7 +9689,7 @@ export interface components {
       tank_capacity_liters?: number | null;
     };
     CarBorradoResponseDto: {
-      /** @example Car deleted successfully */
+      /** @example Vehículo dado de baja */
       message: string;
       /** Format: uuid */
       carId: string;
@@ -9880,7 +9880,7 @@ export interface components {
       promotions?: components['schemas']['PromocionDto'][];
     };
     BajaDeProductoDto: {
-      /** @example Gas cylinder deactivated successfully */
+      /** @example Garrafa dada de baja */
       message: string;
       /** Format: uuid */
       gasCylinderId: string;
@@ -11457,7 +11457,7 @@ export interface components {
       additionalInstructions?: string;
     };
     DireccionBorradaDto: {
-      /** @example Address deleted successfully */
+      /** @example Dirección dada de baja */
       message: string;
       /** Format: uuid */
       addressId: string;
@@ -19475,6 +19475,13 @@ export interface operations {
           'application/json': components['schemas']['PhotoLinkResponseDto'];
         };
       };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description No es su cuenta */
       403: {
         headers: {
@@ -19582,6 +19589,13 @@ export interface operations {
           'application/json': components['schemas']['UserResponseDto'];
         };
       };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Sin token o token inválido */
       401: {
         headers: {
@@ -19624,6 +19638,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['UserResponseDto'];
         };
+      };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Sin token o token inválido */
       401: {
@@ -19668,6 +19689,13 @@ export interface operations {
           'application/json': components['schemas']['MessageResponseDto'];
         };
       };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Sin token o token inválido */
       401: {
         headers: {
@@ -19689,7 +19717,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Es un chofer con pedidos aceptados o en camino (hay que cancelarlos o reasignarlos antes), o el último administrador activo de su distribuidora o el último super administrador */
+      /** @description Es un chofer con pedidos aceptados o en camino (hay que cancelarlos o reasignarlos antes), un chofer con una rendición pendiente (CU-181), o el último administrador activo de su distribuidora o el último super administrador */
       409: {
         headers: {
           [name: string]: unknown;
@@ -20707,7 +20735,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Customer not found */
+      /** @description Cliente no encontrado */
       404: {
         headers: {
           [name: string]: unknown;
@@ -20750,7 +20778,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Customer not found */
+      /** @description Cliente no encontrado */
       404: {
         headers: {
           [name: string]: unknown;
@@ -20804,7 +20832,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Customer not found */
+      /** @description Cliente no encontrado */
       404: {
         headers: {
           [name: string]: unknown;
@@ -20847,7 +20875,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Customer not found */
+      /** @description Cliente no encontrado */
       404: {
         headers: {
           [name: string]: unknown;
@@ -20901,7 +20929,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Customer not found */
+      /** @description Cliente no encontrado */
       404: {
         headers: {
           [name: string]: unknown;
@@ -21120,7 +21148,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Delivery not found (o de otra distribuidora) */
+      /** @description Chofer no encontrado (o de otra distribuidora) */
       404: {
         headers: {
           [name: string]: unknown;
@@ -21163,7 +21191,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Delivery not found (o de otra distribuidora) */
+      /** @description Chofer no encontrado (o de otra distribuidora) */
       404: {
         headers: {
           [name: string]: unknown;
@@ -21195,7 +21223,7 @@ export interface operations {
       };
     };
     responses: {
-      /** @description Delivery updated successfully */
+      /** @description Chofer actualizado */
       200: {
         headers: {
           [name: string]: unknown;
@@ -21225,7 +21253,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Delivery not found (o de otra distribuidora) */
+      /** @description Chofer no encontrado (o de otra distribuidora) */
       404: {
         headers: {
           [name: string]: unknown;
@@ -21269,7 +21297,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Delivery not found (o de otra distribuidora) */
+      /** @description Chofer no encontrado (o de otra distribuidora) */
       404: {
         headers: {
           [name: string]: unknown;
@@ -21290,7 +21318,7 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Delivery validated successfully */
+      /** @description Chofer validado */
       200: {
         headers: {
           [name: string]: unknown;
@@ -21313,7 +21341,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Delivery not found (o de otra distribuidora) */
+      /** @description Chofer no encontrado (o de otra distribuidora) */
       404: {
         headers: {
           [name: string]: unknown;
@@ -21334,7 +21362,7 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Delivery invalidated successfully */
+      /** @description Chofer invalidado */
       200: {
         headers: {
           [name: string]: unknown;
@@ -21357,7 +21385,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Delivery not found (o de otra distribuidora) */
+      /** @description Chofer no encontrado (o de otra distribuidora) */
       404: {
         headers: {
           [name: string]: unknown;
@@ -21382,7 +21410,7 @@ export interface operations {
       };
     };
     responses: {
-      /** @description Location updated successfully */
+      /** @description Ubicación actualizada */
       200: {
         headers: {
           [name: string]: unknown;
@@ -21412,7 +21440,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Delivery not found (o de otra distribuidora) */
+      /** @description Chofer no encontrado (o de otra distribuidora) */
       404: {
         headers: {
           [name: string]: unknown;
@@ -21437,7 +21465,7 @@ export interface operations {
       };
     };
     responses: {
-      /** @description Balance updated successfully */
+      /** @description Saldo actualizado */
       200: {
         headers: {
           [name: string]: unknown;
@@ -21467,7 +21495,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Delivery not found (o de otra distribuidora) */
+      /** @description Chofer no encontrado (o de otra distribuidora) */
       404: {
         headers: {
           [name: string]: unknown;
@@ -21492,7 +21520,7 @@ export interface operations {
       };
     };
     responses: {
-      /** @description Status updated successfully */
+      /** @description Estado actualizado */
       200: {
         headers: {
           [name: string]: unknown;
@@ -21522,7 +21550,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Delivery not found (o de otra distribuidora) */
+      /** @description Chofer no encontrado (o de otra distribuidora) */
       404: {
         headers: {
           [name: string]: unknown;
@@ -23042,6 +23070,13 @@ export interface operations {
           'application/json': components['schemas']['EmployeeResponseDto'];
         };
       };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Sin token o token inválido */
       401: {
         headers: {
@@ -23084,6 +23119,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['MessageResponseDto'];
         };
+      };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Sin token o token inválido */
       401: {
@@ -23198,6 +23240,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['PhotoLinkResponseDto'];
         };
+      };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Sin token o token inválido */
       401: {
@@ -23319,6 +23368,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['EmployeeResponseDto'];
         };
+      };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Sin token o token inválido */
       401: {
@@ -23611,7 +23667,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Car not found */
+      /** @description Vehículo no encontrado */
       404: {
         headers: {
           [name: string]: unknown;
@@ -23654,7 +23710,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Car not found */
+      /** @description Vehículo no encontrado */
       404: {
         headers: {
           [name: string]: unknown;
@@ -23708,7 +23764,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Car not found */
+      /** @description Vehículo no encontrado */
       404: {
         headers: {
           [name: string]: unknown;
@@ -23947,7 +24003,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Car not found */
+      /** @description Vehículo no encontrado */
       404: {
         headers: {
           [name: string]: unknown;
@@ -24426,7 +24482,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Gas cylinder not found */
+      /** @description Garrafa no encontrada */
       404: {
         headers: {
           [name: string]: unknown;
@@ -25618,6 +25674,13 @@ export interface operations {
           'application/json': components['schemas']['PaginatedOrdersResponseDto'];
         };
       };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Sin token o token inválido */
       401: {
         headers: {
@@ -25699,6 +25762,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['PaginatedOrdersResponseDto'];
         };
+      };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Sin token o token inválido */
       401: {
@@ -25818,6 +25888,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['PhotoLinkResponseDto'];
         };
+      };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Sin token o token inválido */
       401: {
@@ -25940,7 +26017,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Order not found */
+      /** @description Pedido no encontrado */
       404: {
         headers: {
           [name: string]: unknown;
@@ -25998,7 +26075,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Order with ID: {id} not found */
+      /** @description Pedido no encontrado */
       404: {
         headers: {
           [name: string]: unknown;
@@ -26052,7 +26129,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Order with ID: {id} not found */
+      /** @description Pedido no encontrado */
       404: {
         headers: {
           [name: string]: unknown;
@@ -26121,7 +26198,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Order not found */
+      /** @description Pedido no encontrado */
       404: {
         headers: {
           [name: string]: unknown;
@@ -26163,6 +26240,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['RechazoDeOfertaResponseDto'];
         };
+      };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Sin token o token inválido */
       401: {
@@ -26235,7 +26319,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Order not found */
+      /** @description Pedido no encontrado */
       404: {
         headers: {
           [name: string]: unknown;
@@ -26290,7 +26374,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Order not found */
+      /** @description Pedido no encontrado */
       404: {
         headers: {
           [name: string]: unknown;
@@ -26610,7 +26694,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Order or delivery not found */
+      /** @description Pedido o chofer no encontrado */
       404: {
         headers: {
           [name: string]: unknown;
@@ -26657,6 +26741,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['OrderResponseDto'];
         };
+      };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Sin token o token inválido */
       401: {
@@ -26888,7 +26979,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Order with ID: {id} not found */
+      /** @description Pedido no encontrado */
       404: {
         headers: {
           [name: string]: unknown;
@@ -26946,7 +27037,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Order with ID: {id} not found */
+      /** @description Pedido no encontrado */
       404: {
         headers: {
           [name: string]: unknown;
@@ -27319,6 +27410,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['CodigoDeEntregaResponseDto'];
         };
+      };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Sin token o token inválido */
       401: {
@@ -27904,7 +28002,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Address not found */
+      /** @description Dirección no encontrada */
       404: {
         headers: {
           [name: string]: unknown;
@@ -27947,7 +28045,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Address not found */
+      /** @description Dirección no encontrada */
       404: {
         headers: {
           [name: string]: unknown;
@@ -28001,7 +28099,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Address not found */
+      /** @description Dirección no encontrada */
       404: {
         headers: {
           [name: string]: unknown;
@@ -28130,7 +28228,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Address not found */
+      /** @description Dirección no encontrada */
       404: {
         headers: {
           [name: string]: unknown;
@@ -29494,6 +29592,13 @@ export interface operations {
           'application/json': components['schemas']['CoverageZoneResponseDto'];
         };
       };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Sin token o token inválido */
       401: {
         headers: {
@@ -29531,6 +29636,13 @@ export interface operations {
     responses: {
       /** @description Sin cuerpo */
       200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El id no es un UUID */
+      400: {
         headers: {
           [name: string]: unknown;
         };
@@ -32896,6 +33008,13 @@ export interface operations {
         };
         content?: never;
       };
+      /** @description El empleado del plan está egresado */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
       422: {
         headers: {
@@ -32924,6 +33043,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['FleetTaskResponseDto'];
         };
+      };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Sin token o token inválido */
       401: {
@@ -32972,7 +33098,7 @@ export interface operations {
           'application/json': components['schemas']['FleetTaskResponseDto'];
         };
       };
-      /** @description La tarea ya está hecha o cancelada */
+      /** @description El id no es un UUID, el cuerpo trae un campo que no se puede editar o con formato inválido (fecha irreal, turno sólo-fecha inválido), el inicio de la vigencia es posterior al vencimiento, la habilitación queda sin vencimiento o el detalle no es válido para el plan */
       400: {
         headers: {
           [name: string]: unknown;
@@ -33000,7 +33126,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La tarea ya está hecha o cancelada (la cerró otra operación mientras se editaba) */
+      /** @description La tarea ya está hecha o cancelada (incluso si la cerró otra operación mientras se editaba) */
       409: {
         headers: {
           [name: string]: unknown;
@@ -33136,6 +33262,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['FleetTaskAttachmentResponseDto'][];
         };
+      };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Sin token o token inválido */
       401: {
@@ -33273,6 +33406,13 @@ export interface operations {
         };
         content?: never;
       };
+      /** @description Un id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Sin token o token inválido */
       401: {
         headers: {
@@ -33312,6 +33452,13 @@ export interface operations {
     responses: {
       /** @description Borrado */
       200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Un id no es un UUID */
+      400: {
         headers: {
           [name: string]: unknown;
         };
@@ -33404,6 +33551,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['FleetTaskV2ResponseDto'];
         };
+      };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Sin token o token inválido */
       401: {
@@ -44829,6 +44983,13 @@ export interface operations {
           'application/json': components['schemas']['RepurchaseInvitationResponseDto'];
         };
       };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Sin token o token inválido */
       401: {
         headers: {
@@ -44876,7 +45037,7 @@ export interface operations {
           'application/json': components['schemas']['AcceptInvitationResponseDto'];
         };
       };
-      /** @description Sin stock para lo sugerido, franja sin fecha (o al revés), dirección fuera de cobertura u otra regla del pedido */
+      /** @description El id no es un UUID, sin stock para lo sugerido, franja sin fecha (o al revés), dirección fuera de cobertura u otra regla del pedido */
       400: {
         headers: {
           [name: string]: unknown;
@@ -44939,6 +45100,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['RepurchaseInvitationResponseDto'];
         };
+      };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Sin token o token inválido */
       401: {

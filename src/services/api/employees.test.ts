@@ -18,12 +18,12 @@ describe('errores de puestos', () => {
   it('el 409 por legajos no expone nombres de campos y dice qué hacer', async () => {
     http.delete.mockRejectedValue(
       conflict(
-        'El puesto "Chofer" figura en 3 legajo(s), también egresados: desactivalo (isActive=false) en vez de eliminarlo',
+        'El puesto "Chofer" figura en 3 legajo(s), también egresados: desactivalo (isActive=false) en vez de darlo de baja',
       ),
     );
     const error = (await deleteJobPosition('p-1').catch((e: unknown) => e)) as ApiError;
     expect(error.messages[0]).not.toContain('isActive');
-    expect(error.messages[0]).toMatch(/Dalo de baja/);
+    expect(error.messages[0]).toMatch(/no se puede dar de baja.*Desactivalo/);
   });
 
   it('el 409 del último puesto activo se explica', async () => {

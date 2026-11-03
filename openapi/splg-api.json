@@ -459,6 +459,9 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "El id no es un UUID"
+                    },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
@@ -516,6 +519,9 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "El id no es un UUID"
+                    },
                     "403": {
                         "description": "No es su cuenta"
                     },
@@ -558,6 +564,9 @@
                                 }
                             }
                         }
+                    },
+                    "400": {
+                        "description": "El id no es un UUID"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -664,6 +673,9 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "El id no es un UUID"
+                    },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
@@ -674,7 +686,7 @@
                         "description": "No existe o es de otra distribuidora"
                     },
                     "409": {
-                        "description": "Es un chofer con pedidos aceptados o en camino (hay que cancelarlos o reasignarlos antes), o el último administrador activo de su distribuidora o el último super administrador"
+                        "description": "Es un chofer con pedidos aceptados o en camino (hay que cancelarlos o reasignarlos antes), un chofer con una rendición pendiente (CU-181), o el último administrador activo de su distribuidora o el último super administrador"
                     }
                 },
                 "security": [
@@ -1804,7 +1816,7 @@
                         "description": "Es de otro cliente"
                     },
                     "404": {
-                        "description": "Customer not found"
+                        "description": "Cliente no encontrado"
                     }
                 },
                 "security": [
@@ -1861,7 +1873,7 @@
                         "description": "Es de otro cliente"
                     },
                     "404": {
-                        "description": "Customer not found"
+                        "description": "Cliente no encontrado"
                     }
                 },
                 "security": [
@@ -1905,7 +1917,7 @@
                         "description": "Requiere rol: admin, super_admin"
                     },
                     "404": {
-                        "description": "Customer not found"
+                        "description": "Cliente no encontrado"
                     }
                 },
                 "security": [
@@ -1954,7 +1966,7 @@
                         "description": "Es de otro cliente"
                     },
                     "404": {
-                        "description": "Customer not found"
+                        "description": "Cliente no encontrado"
                     }
                 },
                 "security": [
@@ -2013,7 +2025,7 @@
                         "description": "Es de otro cliente"
                     },
                     "404": {
-                        "description": "Customer not found"
+                        "description": "Cliente no encontrado"
                     }
                 },
                 "security": [
@@ -2329,7 +2341,7 @@
                         "description": "Requiere rol: admin, super_admin, delivery"
                     },
                     "404": {
-                        "description": "Delivery not found (o de otra distribuidora)"
+                        "description": "Chofer no encontrado (o de otra distribuidora)"
                     }
                 },
                 "security": [
@@ -2370,7 +2382,7 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Delivery updated successfully",
+                        "description": "Chofer actualizado",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -2389,7 +2401,7 @@
                         "description": "Requiere rol: admin, super_admin"
                     },
                     "404": {
-                        "description": "Delivery not found (o de otra distribuidora)"
+                        "description": "Chofer no encontrado (o de otra distribuidora)"
                     }
                 },
                 "security": [
@@ -2436,7 +2448,7 @@
                         "description": "Requiere rol: admin, super_admin"
                     },
                     "404": {
-                        "description": "Delivery not found (o de otra distribuidora)"
+                        "description": "Chofer no encontrado (o de otra distribuidora)"
                     },
                     "409": {
                         "description": "Tiene pedidos aceptados o en camino: hay que cancelarlos o reasignarlos antes"
@@ -2488,7 +2500,7 @@
                         "description": "Requiere rol: admin, super_admin, delivery"
                     },
                     "404": {
-                        "description": "Delivery not found (o de otra distribuidora)"
+                        "description": "Chofer no encontrado (o de otra distribuidora)"
                     }
                 },
                 "security": [
@@ -2521,7 +2533,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Delivery validated successfully",
+                        "description": "Chofer validado",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -2537,7 +2549,7 @@
                         "description": "Requiere rol: admin, super_admin"
                     },
                     "404": {
-                        "description": "Delivery not found (o de otra distribuidora)"
+                        "description": "Chofer no encontrado (o de otra distribuidora)"
                     }
                 },
                 "security": [
@@ -2570,7 +2582,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Delivery invalidated successfully",
+                        "description": "Chofer invalidado",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -2586,7 +2598,7 @@
                         "description": "Requiere rol: admin, super_admin"
                     },
                     "404": {
-                        "description": "Delivery not found (o de otra distribuidora)"
+                        "description": "Chofer no encontrado (o de otra distribuidora)"
                     }
                 },
                 "security": [
@@ -2629,7 +2641,7 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Location updated successfully",
+                        "description": "Ubicación actualizada",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -2648,7 +2660,7 @@
                         "description": "Requiere rol: admin, super_admin, delivery"
                     },
                     "404": {
-                        "description": "Delivery not found (o de otra distribuidora)"
+                        "description": "Chofer no encontrado (o de otra distribuidora)"
                     }
                 },
                 "security": [
@@ -2691,7 +2703,7 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Balance updated successfully",
+                        "description": "Saldo actualizado",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -2710,7 +2722,7 @@
                         "description": "Requiere rol: admin, super_admin"
                     },
                     "404": {
-                        "description": "Delivery not found (o de otra distribuidora)"
+                        "description": "Chofer no encontrado (o de otra distribuidora)"
                     }
                 },
                 "security": [
@@ -2754,7 +2766,7 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Status updated successfully",
+                        "description": "Estado actualizado",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -2773,7 +2785,7 @@
                         "description": "Requiere rol: admin, super_admin"
                     },
                     "404": {
-                        "description": "Delivery not found (o de otra distribuidora)"
+                        "description": "Chofer no encontrado (o de otra distribuidora)"
                     }
                 },
                 "security": [
@@ -3574,7 +3586,7 @@
         },
         "/api/v1/module-config/dispatch": {
             "get": {
-                "description": "Pasos de radio (km) y ventana de aceptación de la oferta (s). Si la distribuidora no configuró nada, devuelve los valores por omisión (`isDefault: true`).",
+                "description": "Pasos de radio (km), ventana de aceptación de la oferta (s) y radio en metros al destino para los choferes por terminar su entrega (CU-013). Si la distribuidora no configuró nada, devuelve los valores por omisión (`isDefault: true`).",
                 "operationId": "ModuleConfigController_getDispatch",
                 "parameters": [],
                 "responses": {
@@ -3609,7 +3621,7 @@
                 ]
             },
             "put": {
-                "description": "Reemplaza la configuración. De 1 a 8 pasos de radio, cada uno entre 1 y 100 km y estrictamente mayor que el anterior; ventana entre 10 y 300 s. Rige para las ofertas que se creen desde ese momento (las ya enviadas conservan su vencimiento); en otras instancias del servidor, como máximo un minuto después.",
+                "description": "Reemplaza la configuración. De 1 a 8 pasos de radio, cada uno entre 1 y 100 km y estrictamente mayor que el anterior; ventana entre 10 y 300 s; radio de choferes por terminar entre 0 y 5000 m, entero (0 lo apaga: sólo se ofrece a choferes sin pedido en curso). Rige para las ofertas que se creen desde ese momento (las ya enviadas conservan su vencimiento); en otras instancias del servidor, como máximo un minuto después.",
                 "operationId": "ModuleConfigController_putDispatch",
                 "parameters": [],
                 "requestBody": {
@@ -4423,6 +4435,9 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "El id no es un UUID"
+                    },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
@@ -4526,6 +4541,9 @@
                                 }
                             }
                         }
+                    },
+                    "400": {
+                        "description": "El id no es un UUID"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -4653,6 +4671,9 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "El id no es un UUID"
+                    },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
@@ -4709,6 +4730,9 @@
                                 }
                             }
                         }
+                    },
+                    "400": {
+                        "description": "El id no es un UUID"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -4985,7 +5009,7 @@
                         "description": "Requiere rol: admin, super_admin"
                     },
                     "404": {
-                        "description": "Car not found"
+                        "description": "Vehículo no encontrado"
                     }
                 },
                 "security": [
@@ -5045,7 +5069,7 @@
                         "description": "Requiere rol: admin, super_admin"
                     },
                     "404": {
-                        "description": "Car not found"
+                        "description": "Vehículo no encontrado"
                     },
                     "409": {
                         "description": "La patente ya está registrada en la distribuidora, o el vehículo está en uso por un chofer: no se le cambia la patente ni el tipo"
@@ -5095,7 +5119,7 @@
                         "description": "Requiere rol: admin, super_admin"
                     },
                     "404": {
-                        "description": "Car not found"
+                        "description": "Vehículo no encontrado"
                     }
                 },
                 "security": [
@@ -5316,7 +5340,7 @@
                         "description": "Requiere rol: admin, super_admin"
                     },
                     "404": {
-                        "description": "Car not found"
+                        "description": "Vehículo no encontrado"
                     }
                 },
                 "security": [
@@ -5961,7 +5985,7 @@
                         "description": "Sin token o token inválido"
                     },
                     "404": {
-                        "description": "Gas cylinder not found"
+                        "description": "Garrafa no encontrada"
                     }
                 },
                 "security": [
@@ -7649,6 +7673,9 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "El id no es un UUID"
+                    },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
@@ -7771,6 +7798,9 @@
                                 }
                             }
                         }
+                    },
+                    "400": {
+                        "description": "El id no es un UUID"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -7944,6 +7974,9 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "El id no es un UUID"
+                    },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
@@ -8063,7 +8096,7 @@
                         "description": "Sin token o token inválido"
                     },
                     "404": {
-                        "description": "Order not found"
+                        "description": "Pedido no encontrado"
                     },
                     "410": {
                         "description": "Sólo para el chofer: el pedido lo tuvo él y ya no es suyo (lo liberó el admin, lo reasignaron o el control de carga lo sacó del pool). La app debe salir de la pantalla del pedido."
@@ -8124,7 +8157,7 @@
                         "description": "Requiere rol: customer, admin, super_admin"
                     },
                     "404": {
-                        "description": "Order with ID: {id} not found"
+                        "description": "Pedido no encontrado"
                     },
                     "409": {
                         "description": "El pedido no está pendiente, tiene chofer (cliente: «El pedido ya fue tomado por un repartidor: no se puede modificar») o pago online"
@@ -8182,7 +8215,7 @@
                         "description": "Requiere rol: admin, super_admin"
                     },
                     "404": {
-                        "description": "Order with ID: {id} not found"
+                        "description": "Pedido no encontrado"
                     }
                 },
                 "security": [
@@ -8245,7 +8278,7 @@
                         "description": "Requiere rol: delivery, admin, super_admin"
                     },
                     "404": {
-                        "description": "Order not found"
+                        "description": "Pedido no encontrado"
                     },
                     "409": {
                         "description": "Aceptar (`accepted`) un pedido de Mercado Pago cuyo pago todavía no está aprobado (salvo una reserva con la seña paga), o, siendo chofer, tener ya otro pedido aceptado esperando (CU-013: nunca dos encolados; repetir la aceptación del mismo pedido no cuenta)"
@@ -8293,6 +8326,9 @@
                                 }
                             }
                         }
+                    },
+                    "400": {
+                        "description": "El id no es un UUID"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -8357,7 +8393,7 @@
                         "description": "Requiere rol: delivery, admin, super_admin"
                     },
                     "404": {
-                        "description": "Order not found"
+                        "description": "Pedido no encontrado"
                     }
                 },
                 "security": [
@@ -8420,7 +8456,7 @@
                         "description": "Requiere rol: customer, admin, super_admin"
                     },
                     "404": {
-                        "description": "Order not found"
+                        "description": "Pedido no encontrado"
                     },
                     "409": {
                         "description": "El cliente agotó los 5 intentos: el cuerpo trae `code: DELIVERY_CODE_BLOQUEADO` y el chofer tiene que generar un código nuevo (`POST /api/v2/orders/:id/delivery-code/regenerate`)"
@@ -8746,7 +8782,7 @@
                         "description": "Requiere rol: admin, super_admin"
                     },
                     "404": {
-                        "description": "Order or delivery not found"
+                        "description": "Pedido o chofer no encontrado"
                     },
                     "409": {
                         "description": "El pedido se paga con Mercado Pago y el pago todavía no está aprobado"
@@ -8804,6 +8840,9 @@
                                 }
                             }
                         }
+                    },
+                    "400": {
+                        "description": "El id no es un UUID"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -9045,7 +9084,7 @@
                         "description": "Requiere rol: customer, delivery, admin, super_admin"
                     },
                     "404": {
-                        "description": "Order with ID: {id} not found"
+                        "description": "Pedido no encontrado"
                     },
                     "422": {
                         "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
@@ -9101,7 +9140,7 @@
                         "description": "Requiere rol: delivery, admin, super_admin"
                     },
                     "404": {
-                        "description": "Order with ID: {id} not found"
+                        "description": "Pedido no encontrado"
                     }
                 },
                 "security": [
@@ -9486,6 +9525,9 @@
                                 }
                             }
                         }
+                    },
+                    "400": {
+                        "description": "El id no es un UUID"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -10137,7 +10179,7 @@
                         "description": "Es de otro usuario"
                     },
                     "404": {
-                        "description": "Address not found"
+                        "description": "Dirección no encontrada"
                     }
                 },
                 "security": [
@@ -10194,7 +10236,7 @@
                         "description": "Es de otro usuario"
                     },
                     "404": {
-                        "description": "Address not found"
+                        "description": "Dirección no encontrada"
                     }
                 },
                 "security": [
@@ -10238,7 +10280,7 @@
                         "description": "Es de otro usuario"
                     },
                     "404": {
-                        "description": "Address not found"
+                        "description": "Dirección no encontrada"
                     }
                 },
                 "security": [
@@ -10379,7 +10421,7 @@
                         "description": "Es de otro usuario"
                     },
                     "404": {
-                        "description": "Address not found"
+                        "description": "Dirección no encontrada"
                     }
                 },
                 "security": [
@@ -12058,6 +12100,9 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "El id no es un UUID"
+                    },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
@@ -12161,6 +12206,9 @@
                 "responses": {
                     "200": {
                         "description": "Sin cuerpo"
+                    },
+                    "400": {
+                        "description": "El id no es un UUID"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -16156,6 +16204,9 @@
                     "404": {
                         "description": "Plan, vehículo o chofer no encontrado"
                     },
+                    "409": {
+                        "description": "El empleado del plan está egresado"
+                    },
                     "422": {
                         "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
                     }
@@ -16321,6 +16372,9 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "El id no es un UUID"
+                    },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
@@ -16376,7 +16430,7 @@
                         }
                     },
                     "400": {
-                        "description": "La tarea ya está hecha o cancelada"
+                        "description": "El id no es un UUID, el cuerpo trae un campo que no se puede editar o con formato inválido (fecha irreal, turno sólo-fecha inválido), el inicio de la vigencia es posterior al vencimiento, la habilitación queda sin vencimiento o el detalle no es válido para el plan"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -16388,7 +16442,7 @@
                         "description": "Tarea no encontrada"
                     },
                     "409": {
-                        "description": "La tarea ya está hecha o cancelada (la cerró otra operación mientras se editaba)"
+                        "description": "La tarea ya está hecha o cancelada (incluso si la cerró otra operación mientras se editaba)"
                     }
                 },
                 "security": [
@@ -16623,6 +16677,9 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "El id no es un UUID"
+                    },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
@@ -16700,6 +16757,9 @@
                     "302": {
                         "description": "Sin `modo`: redirección (302) a la URL firmada de S3, que sirve el archivo con su content-type original"
                     },
+                    "400": {
+                        "description": "Un id no es un UUID"
+                    },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
@@ -16747,6 +16807,9 @@
                 "responses": {
                     "200": {
                         "description": "Borrado"
+                    },
+                    "400": {
+                        "description": "Un id no es un UUID"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -16917,6 +16980,9 @@
                                 }
                             }
                         }
+                    },
+                    "400": {
+                        "description": "El id no es un UUID"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -30360,6 +30426,9 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "El id no es un UUID"
+                    },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
@@ -30418,7 +30487,7 @@
                         }
                     },
                     "400": {
-                        "description": "Sin stock para lo sugerido, franja sin fecha (o al revés), dirección fuera de cobertura u otra regla del pedido"
+                        "description": "El id no es un UUID, sin stock para lo sugerido, franja sin fecha (o al revés), dirección fuera de cobertura u otra regla del pedido"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -30472,6 +30541,9 @@
                                 }
                             }
                         }
+                    },
+                    "400": {
+                        "description": "El id no es un UUID"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -34027,7 +34099,7 @@
                 "properties": {
                     "message": {
                         "type": "string",
-                        "example": "Role deleted successfully"
+                        "example": "Rol dado de baja"
                     }
                 },
                 "required": [
@@ -35231,7 +35303,7 @@
                         "example": 30
                     },
                     "finishingRadiusMeters": {
-                        "type": "number",
+                        "type": "integer",
                         "example": 300
                     },
                     "isDefault": {
@@ -35285,7 +35357,7 @@
                         "maximum": 300
                     },
                     "finishingRadiusMeters": {
-                        "type": "number",
+                        "type": "integer",
                         "description": "Radio en metros al punto de entrega dentro del cual un chofer con un solo pedido en camino cuenta como «por terminar» y puede recibir otra oferta (0 a 5000). 0 lo apaga: sólo se ofrece a choferes sin pedido en curso",
                         "example": 300,
                         "minimum": 0,
@@ -36309,7 +36381,7 @@
                 "properties": {
                     "message": {
                         "type": "string",
-                        "example": "Car deleted successfully"
+                        "example": "Vehículo dado de baja"
                     },
                     "carId": {
                         "type": "string",
@@ -36743,7 +36815,7 @@
                 "properties": {
                     "message": {
                         "type": "string",
-                        "example": "Gas cylinder deactivated successfully"
+                        "example": "Garrafa dada de baja"
                     },
                     "gasCylinderId": {
                         "type": "string",
@@ -40294,7 +40366,7 @@
                 "properties": {
                     "message": {
                         "type": "string",
-                        "example": "Address deleted successfully"
+                        "example": "Dirección dada de baja"
                     },
                     "addressId": {
                         "type": "string",
