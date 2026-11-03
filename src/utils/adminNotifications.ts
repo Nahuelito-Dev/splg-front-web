@@ -1,4 +1,5 @@
 import {
+  Activity,
   Bell,
   CalendarClock,
   CalendarX2,
@@ -56,6 +57,7 @@ const KIND_VISUALS: Record<string, { icon: LucideIcon; tone: Tone }> = {
   cylinder_recovery_escalated: { icon: PackageSearch, tone: 'danger' },
   maintenance_window_agreed: { icon: Wrench, tone: 'warn' },
   vehicle_grounded_expired: { icon: ShieldX, tone: 'danger' },
+  process_run_alert: { icon: Activity, tone: 'danger' },
 };
 
 /** Ícono y tono de un aviso guardado según su `kind`; un tipo que el panel no conoce se muestra con uno genérico. */
@@ -89,6 +91,8 @@ export const notificationTarget = (link: AdminNotification['link'] | undefined):
       return `/fleet/planner?case=${id}`;
     case 'car':
       return `/cars/details/${id}`;
+    case 'process-run':
+      return '/settings/process-monitor';
     default:
       return null;
   }

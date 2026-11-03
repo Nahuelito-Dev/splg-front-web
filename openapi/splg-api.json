@@ -33656,6 +33656,177 @@
                     "Importación masiva"
                 ]
             }
+        },
+        "/api/v2/process-runs/summary": {
+            "get": {
+                "description": "Un renglón por proceso con su salud: `ok`, `partial`, `running`, `failed`, `late` (no arrancó en 1,5 veces su período), `stuck` (sigue corriendo pasado el máximo) o `never`. Cliente y chofer reciben 403. De los procesos globales, el admin de una empresa ve sólo la salud (sin contadores ni texto de error); el administrador general ve todo.",
+                "operationId": "ProcessRunController_resumen_v2",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProcessSummaryResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Última corrida de cada proceso automático",
+                "tags": [
+                    "Procesos automáticos · Monitoreo"
+                ]
+            }
+        },
+        "/api/v2/process-runs": {
+            "get": {
+                "description": "Las más nuevas primero, paginado. Filtros: `process`, `status`, `from` y `to` (instantes ISO 8601 sobre el inicio de la corrida).",
+                "operationId": "ProcessRunController_listar_v2",
+                "parameters": [
+                    {
+                        "name": "process",
+                        "required": false,
+                        "in": "query",
+                        "description": "Un proceso",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "dispatch_tick",
+                                "fleet_planner_daily",
+                                "fleet_planner_expiry",
+                                "vehicle_usage_feed",
+                                "repurchase_anticipate",
+                                "repurchase_expiry",
+                                "route_batch_build",
+                                "route_batch_expiry",
+                                "cylinder_recovery",
+                                "attendance_open_alert",
+                                "receiver_retention",
+                                "mp_pending_reconciliation",
+                                "mp_cancelled_reconciliation",
+                                "reservations_activate",
+                                "reservations_expire_unpaid",
+                                "orders_expire_mp_unpaid",
+                                "payment_inbox_process",
+                                "payment_inbox_purge",
+                                "s3_orphans_retry",
+                                "driver_settlement_generate",
+                                "driver_settlement_alert",
+                                "coverage_zone_expiry",
+                                "fine_due_alerts",
+                                "finance_reconciliation",
+                                "mp_reconciliation_sync",
+                                "fleet_alerts",
+                                "stock_low_alert",
+                                "stock_reconciliation",
+                                "insurance_alerts",
+                                "import_cleanup",
+                                "process_run_watch",
+                                "process_run_purge"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "running",
+                                "ok",
+                                "partial",
+                                "failed",
+                                "skipped"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "required": false,
+                        "in": "query",
+                        "description": "Corridas que arrancaron desde este instante (ISO 8601; un día suelto es 00:00 UTC)",
+                        "schema": {
+                            "example": "2026-11-01",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "required": false,
+                        "in": "query",
+                        "description": "Corridas que arrancaron hasta este instante (ISO 8601)",
+                        "schema": {
+                            "example": "2026-11-03T23:59:59Z",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "minimum": 1,
+                            "maximum": 100,
+                            "default": 20,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "minimum": 0,
+                            "default": 0,
+                            "type": "number"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProcessRunListResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Filtro inválido: `process` o `status` fuera del enum, `from` o `to` que no son fecha ISO 8601, `from` posterior a `to`, `limit` fuera de 1 a 100 u `offset` negativo"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Historial de corridas",
+                "tags": [
+                    "Procesos automáticos · Monitoreo"
+                ]
+            }
         }
     },
     "info": {
@@ -33664,7 +33835,12 @@
         "version": "1.0",
         "contact": {}
     },
-    "tags": [],
+    "tags": [
+        {
+            "name": "Procesos automáticos · Monitoreo",
+            "description": ""
+        }
+    ],
     "servers": [],
     "components": {
         "securitySchemes": {
@@ -59800,6 +59976,279 @@
                     "resumen",
                     "confirmadaEn",
                     "yaConfirmada"
+                ]
+            },
+            "ProcessRunResponseDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "example": "9d8e7f60-1b2c-4d3e-8f4a-5b6c7d8e9f01"
+                    },
+                    "process": {
+                        "type": "string",
+                        "enum": [
+                            "dispatch_tick",
+                            "fleet_planner_daily",
+                            "fleet_planner_expiry",
+                            "vehicle_usage_feed",
+                            "repurchase_anticipate",
+                            "repurchase_expiry",
+                            "route_batch_build",
+                            "route_batch_expiry",
+                            "cylinder_recovery",
+                            "attendance_open_alert",
+                            "receiver_retention",
+                            "mp_pending_reconciliation",
+                            "mp_cancelled_reconciliation",
+                            "reservations_activate",
+                            "reservations_expire_unpaid",
+                            "orders_expire_mp_unpaid",
+                            "payment_inbox_process",
+                            "payment_inbox_purge",
+                            "s3_orphans_retry",
+                            "driver_settlement_generate",
+                            "driver_settlement_alert",
+                            "coverage_zone_expiry",
+                            "fine_due_alerts",
+                            "finance_reconciliation",
+                            "mp_reconciliation_sync",
+                            "fleet_alerts",
+                            "stock_low_alert",
+                            "stock_reconciliation",
+                            "insurance_alerts",
+                            "import_cleanup",
+                            "process_run_watch",
+                            "process_run_purge"
+                        ]
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "Recompra: invitaciones anticipadas"
+                    },
+                    "distributorId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true,
+                        "description": "Distribuidora de la corrida; `null` si fue un barrido global"
+                    },
+                    "startedAt": {
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "finishedAt": {
+                        "format": "date-time",
+                        "type": "string",
+                        "nullable": true,
+                        "description": "`null` mientras corre"
+                    },
+                    "durationMs": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": 1840
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "running",
+                            "ok",
+                            "partial",
+                            "failed",
+                            "skipped"
+                        ]
+                    },
+                    "counters": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "number"
+                        },
+                        "example": {
+                            "processed": 3,
+                            "errors": 0
+                        },
+                        "description": "Lo que generó la corrida (casos, avisos, ofertas...), según el proceso"
+                    },
+                    "error": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "trigger": {
+                        "type": "string",
+                        "enum": [
+                            "cron",
+                            "manual",
+                            "webhook"
+                        ]
+                    }
+                },
+                "required": [
+                    "id",
+                    "process",
+                    "title",
+                    "distributorId",
+                    "startedAt",
+                    "finishedAt",
+                    "durationMs",
+                    "status",
+                    "counters",
+                    "error",
+                    "trigger"
+                ]
+            },
+            "ProcessSummaryItemDto": {
+                "type": "object",
+                "properties": {
+                    "process": {
+                        "type": "string",
+                        "enum": [
+                            "dispatch_tick",
+                            "fleet_planner_daily",
+                            "fleet_planner_expiry",
+                            "vehicle_usage_feed",
+                            "repurchase_anticipate",
+                            "repurchase_expiry",
+                            "route_batch_build",
+                            "route_batch_expiry",
+                            "cylinder_recovery",
+                            "attendance_open_alert",
+                            "receiver_retention",
+                            "mp_pending_reconciliation",
+                            "mp_cancelled_reconciliation",
+                            "reservations_activate",
+                            "reservations_expire_unpaid",
+                            "orders_expire_mp_unpaid",
+                            "payment_inbox_process",
+                            "payment_inbox_purge",
+                            "s3_orphans_retry",
+                            "driver_settlement_generate",
+                            "driver_settlement_alert",
+                            "coverage_zone_expiry",
+                            "fine_due_alerts",
+                            "finance_reconciliation",
+                            "mp_reconciliation_sync",
+                            "fleet_alerts",
+                            "stock_low_alert",
+                            "stock_reconciliation",
+                            "insurance_alerts",
+                            "import_cleanup",
+                            "process_run_watch",
+                            "process_run_purge"
+                        ]
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "Recompra: invitaciones anticipadas"
+                    },
+                    "module": {
+                        "type": "string",
+                        "nullable": true,
+                        "enum": [
+                            "M1",
+                            "M2",
+                            "M3",
+                            "M4",
+                            "M5"
+                        ],
+                        "description": "Módulo inteligente; `null` si es una tarea programada común"
+                    },
+                    "distributorId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true,
+                        "description": "`null` si el proceso corre como barrido global"
+                    },
+                    "health": {
+                        "type": "string",
+                        "enum": [
+                            "ok",
+                            "partial",
+                            "running",
+                            "failed",
+                            "late",
+                            "stuck",
+                            "never"
+                        ],
+                        "description": "`late`: no arrancó en 1,5 veces su período; `stuck`: sigue corriendo pasado el máximo; `failed`: la última terminó con error; `never`: todavía no corrió"
+                    },
+                    "lastRun": {
+                        "nullable": true,
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ProcessRunResponseDto"
+                            }
+                        ]
+                    },
+                    "lastOkAt": {
+                        "format": "date-time",
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Inicio de la última corrida que terminó bien"
+                    },
+                    "expectedEverySeconds": {
+                        "type": "number",
+                        "example": 3600,
+                        "description": "Cada cuántos segundos se espera una corrida"
+                    },
+                    "nextExpectedAt": {
+                        "format": "date-time",
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "process",
+                    "title",
+                    "module",
+                    "distributorId",
+                    "health",
+                    "lastRun",
+                    "lastOkAt",
+                    "expectedEverySeconds",
+                    "nextExpectedAt"
+                ]
+            },
+            "ProcessSummaryResponseDto": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ProcessSummaryItemDto"
+                        }
+                    },
+                    "alerts": {
+                        "type": "number",
+                        "example": 1,
+                        "description": "Procesos atrasados, fallidos o colgados"
+                    },
+                    "generatedAt": {
+                        "format": "date-time",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "items",
+                    "alerts",
+                    "generatedAt"
+                ]
+            },
+            "ProcessRunListResponseDto": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ProcessRunResponseDto"
+                        }
+                    },
+                    "total": {
+                        "type": "number",
+                        "example": 42
+                    }
+                },
+                "required": [
+                    "items",
+                    "total"
                 ]
             }
         }

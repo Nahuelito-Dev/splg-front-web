@@ -54,6 +54,7 @@ const Tires = lazyPage(() => import('../pages/FleetExpense/Tires'), 'Tires');
 const Configuration = lazyPage(() => import('../pages/Configuration/Configuration'), 'Configuration');
 const DispatchSettings = lazyPage(() => import('../pages/Configuration/DispatchSettings'), 'DispatchSettings');
 const AutomaticProcesses = lazyPage(() => import('../pages/Configuration/AutomaticProcesses'), 'AutomaticProcesses');
+const ProcessMonitor = lazyPage(() => import('../pages/Configuration/ProcessMonitor'), 'ProcessMonitor');
 const ExpressSettings = lazyPage(() => import('../pages/Configuration/ExpressSettings'), 'ExpressSettings');
 const Refunds = lazyPage(() => import('../pages/Refunds/Refunds'), 'Refunds');
 const ScheduledTasksSettings = lazyPage(
@@ -190,6 +191,7 @@ export const DashboardRoutes = () => {
           <Route path="settings/dispatch" element={<DispatchSettings />} />
           <Route path="settings/scheduled-tasks" element={<ScheduledTasksSettings />} />
           <Route path="settings/automatic-processes" element={<AutomaticProcesses />} />
+          <Route path="settings/process-monitor" element={<ProcessMonitor />} />
           <Route path="settings/express" element={<ExpressSettings />} />
           <Route path="refunds" element={<Refunds />} />
 

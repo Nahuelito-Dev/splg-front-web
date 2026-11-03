@@ -1,4 +1,5 @@
 import {
+  Activity,
   ArrowLeftRight,
   Bell,
   Bot,
@@ -173,6 +174,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { title: 'Parámetros del despacho', path: '/settings/dispatch', icon: SlidersHorizontal },
       { title: 'Tareas programadas', path: '/settings/scheduled-tasks', icon: Timer },
       { title: 'Procesos automáticos', path: '/settings/automatic-processes', icon: Bot },
+      { title: 'Monitoreo de procesos', path: '/settings/process-monitor', icon: Activity },
       { title: 'Compra express', path: '/settings/express', icon: Zap },
     ],
   },
