@@ -1,4 +1,5 @@
-import type { Employee, JobPosition } from '../../services/api/types';
+import type { Employee, EmployeeListRow, JobPosition } from '../../services/api/types';
+import type { Label } from '../../utils/statusLabels';
 
 export const DOCUMENT_TYPE_LABELS: Record<Employee['documentType'], string> = {
   dni: 'DNI',
@@ -37,3 +38,13 @@ export const EMPLOYEE_STATUS_LABELS: Record<Employee['status'], string> = {
 };
 
 export const employeeFullName = (e: { firstName: string; lastName: string }) => `${e.firstName} ${e.lastName}`;
+
+export type DocumentStatus = NonNullable<EmployeeListRow['documentStatus']>;
+
+/** Estado de la documentación del legajo en el listado (CU-180). */
+export const DOCUMENT_STATUS_LABELS: Record<DocumentStatus, Label> = {
+  up_to_date: { text: 'Al día', tone: 'success' },
+  due_soon: { text: 'Por vencer', tone: 'warn' },
+  expired: { text: 'Vencida', tone: 'danger' },
+  missing: { text: 'Falta cargar', tone: 'neutral' },
+};

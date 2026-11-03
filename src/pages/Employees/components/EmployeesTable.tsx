@@ -3,22 +3,32 @@ import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge, DataTable, EmptyState, IdentityCell, RowActions } from '../../../common/components/ui';
 import { FROM_LIST_STATE } from '../../../hooks';
-import type { EmployeeListItem } from '../../../services/api/types';
+import type { EmployeeListRow } from '../../../services/api/types';
 import { formatDay } from '../../../utils/format';
-import { EMPLOYEE_STATUS_LABELS, employeeFullName } from '../employeeLabels';
+import { DOCUMENT_STATUS_LABELS, EMPLOYEE_STATUS_LABELS, employeeFullName } from '../employeeLabels';
 
 interface Props {
-  rows: EmployeeListItem[];
+  rows: EmployeeListRow[];
   total: number;
   loading: boolean;
   filtered?: boolean;
+  /** Por qué no hay resultados con los filtros puestos, si hay algo más que decir que «no coincide». */
+  emptyDescription?: string;
   pagination: GridPaginationModel;
   onPaginationChange: (model: GridPaginationModel) => void;
 }
 
-export const EmployeesTable = ({ rows, total, loading, filtered = false, pagination, onPaginationChange }: Props) => {
+export const EmployeesTable = ({
+  rows,
+  total,
+  loading,
+  filtered = false,
+  emptyDescription,
+  pagination,
+  onPaginationChange,
+}: Props) => {
   const navigate = useNavigate();
-  const columns = useMemo<GridColDef<EmployeeListItem>[]>(
+  const columns = useMemo<GridColDef<EmployeeListRow>[]>(
     () => [
       {
         field: 'name',
@@ -44,6 +54,26 @@ export const EmployeesTable = ({ rows, total, loading, filtered = false, paginat
             label={{ text: EMPLOYEE_STATUS_LABELS[row.status], tone: row.status === 'active' ? 'success' : 'neutral' }}
           />
         ),
+      },
+      {
+        field: 'documentStatus',
+        headerName: 'Documentación',
+        width: 170,
+        sortable: false,
+        valueGetter: ({ row }) => row.documentStatus,
+        renderCell: ({ row }) =>
+          row.documentStatus ? (
+            <div className="flex flex-col items-start gap-0.5">
+              <Badge label={DOCUMENT_STATUS_LABELS[row.documentStatus]} variant="critical" />
+              {row.nextDocumentDueDate && (row.documentStatus === 'due_soon' || row.documentStatus === 'expired') && (
+                <span className="text-xs text-muted">
+                  {row.documentStatus === 'expired' ? 'Venció' : 'Vence'} {formatDay(row.nextDocumentDueDate)}
+                </span>
+              )}
+            </div>
+          ) : (
+            <span className="text-muted">—</span>
+          ),
       },
       { field: 'hireDate', headerName: 'Ingreso', width: 130, valueGetter: ({ row }) => formatDay(row.hireDate) },
       {
@@ -76,7 +106,7 @@ export const EmployeesTable = ({ rows, total, loading, filtered = false, paginat
           <EmptyState
             illustration="search"
             title="Sin resultados"
-            description="Ningún legajo coincide con los filtros elegidos."
+            description={emptyDescription ?? 'Ningún legajo coincide con los filtros elegidos.'}
           />
         ) : (
           <EmptyState title="No hay legajos" description="Cargá el primer legajo con «Nuevo legajo»." />

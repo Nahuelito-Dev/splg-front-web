@@ -4354,9 +4354,15 @@
                         "name": "documentStatus",
                         "required": false,
                         "in": "query",
-                        "description": "Reservado para la documentación del personal (tanda B-A2): hoy se acepta y se ignora",
+                        "description": "Estado de la documentación (CU-180). Sólo alcanza a los legajos activos: los egresados no tienen estado y no aparecen con este filtro",
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "enum": [
+                                "up_to_date",
+                                "due_soon",
+                                "expired",
+                                "missing"
+                            ]
                         }
                     }
                 ],
@@ -4370,6 +4376,9 @@
                                 }
                             }
                         }
+                    },
+                    "400": {
+                        "description": "Algún filtro inválido (por ejemplo, un `documentStatus` que no es uno de los cuatro estados)"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -35803,7 +35812,7 @@
                     "employmentType"
                 ]
             },
-            "EmployeeListItemDto": {
+            "EmployeeListRowDto": {
                 "type": "object",
                 "properties": {
                     "employeeId": {
@@ -35845,6 +35854,24 @@
                         "type": "string",
                         "nullable": true,
                         "description": "URL firmada de la foto (se abre sin token, vence); `null` si no tiene. Con cuenta de acceso es la foto de perfil del usuario; sin cuenta, la del legajo."
+                    },
+                    "documentStatus": {
+                        "type": "string",
+                        "enum": [
+                            "up_to_date",
+                            "due_soon",
+                            "expired",
+                            "missing"
+                        ],
+                        "nullable": true,
+                        "description": "Estado de la documentación: `expired` (algún documento vencido), `missing` (falta cargar un documento que le aplica), `due_soon` (dentro de la ventana de aviso) o `up_to_date`. `null` si el legajo está egresado."
+                    },
+                    "nextDocumentDueDate": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "date",
+                        "example": "2027-05-10",
+                        "description": "Vencimiento más cercano entre sus documentos abiertos con fecha; `null` si no tiene o está egresado."
                     }
                 },
                 "required": [
@@ -35856,7 +35883,9 @@
                     "status",
                     "hireDate",
                     "hasAccount",
-                    "photoUrl"
+                    "photoUrl",
+                    "documentStatus",
+                    "nextDocumentDueDate"
                 ]
             },
             "EmployeePageDto": {
@@ -35865,7 +35894,7 @@
                     "data": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/EmployeeListItemDto"
+                            "$ref": "#/components/schemas/EmployeeListRowDto"
                         }
                     },
                     "total": {
