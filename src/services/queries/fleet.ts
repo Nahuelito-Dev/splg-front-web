@@ -1,4 +1,4 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import {
   assignVehicle,
   cancelFleetTask,
@@ -44,6 +44,13 @@ import type {
 import { queryKeys } from './queryKeys';
 
 const keys = queryKeys.fleet;
+
+/** Cargar, corregir, cerrar o cancelar un documento cambia el estado de documentación del legajo (listado y contadores). */
+const refreshFleetAndEmployees = (queryClient: QueryClient) =>
+  Promise.all([
+    queryClient.invalidateQueries({ queryKey: keys.all }),
+    queryClient.invalidateQueries({ queryKey: queryKeys.employees.all }),
+  ]);
 
 /**
  * La documentación de un vehículo: sus tareas (seguro, VTV, service) y si está inhabilitado.
@@ -107,7 +114,7 @@ export const useCreateFleetTask = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: CreateFleetTaskBody) => createFleetTask(body),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
+    onSuccess: () => refreshFleetAndEmployees(queryClient),
   });
 };
 
@@ -115,7 +122,7 @@ export const useUpdateFleetTask = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, changes }: { id: string; changes: FleetTaskUpdateBody }) => updateFleetTask(id, changes),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
+    onSuccess: () => refreshFleetAndEmployees(queryClient),
   });
 };
 
@@ -124,7 +131,7 @@ export const useCloseFleetTask = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, body }: { id: string; body: CloseFleetTaskBody }) => closeFleetTask(id, body),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
+    onSuccess: () => refreshFleetAndEmployees(queryClient),
   });
 };
 
@@ -134,7 +141,7 @@ export const useCloseFleetTaskAndPay = () => {
   return useMutation({
     mutationFn: ({ id, body }: { id: string; body: CloseFleetTaskV2Body }) =>
       runMoney(queryClient, `task-close-pay:${id}`, body, (key) => closeFleetTaskAndPay(id, body, key)),
-    onSettled: () => Promise.all([queryClient.invalidateQueries({ queryKey: keys.all }), refreshFinance(queryClient)]),
+    onSettled: () => Promise.all([refreshFleetAndEmployees(queryClient), refreshFinance(queryClient)]),
   });
 };
 
@@ -152,7 +159,7 @@ export const useCancelFleetTask = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, body }: { id: string; body: CancelFleetTaskBody }) => cancelFleetTask(id, body),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
+    onSuccess: () => refreshFleetAndEmployees(queryClient),
   });
 };
 

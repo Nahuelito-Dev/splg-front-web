@@ -9463,7 +9463,7 @@ export interface components {
       bankCbu?: string | null;
       notes?: string | null;
     };
-    EmployeeListItemDto: {
+    EmployeeListRowDto: {
       /** Format: uuid */
       employeeId: string;
       /** @example 0042 */
@@ -9484,9 +9484,20 @@ export interface components {
       hasAccount: boolean;
       /** @description URL firmada de la foto (se abre sin token, vence); `null` si no tiene. Con cuenta de acceso es la foto de perfil del usuario; sin cuenta, la del legajo. */
       photoUrl: string | null;
+      /**
+       * @description Estado de la documentación: `expired` (algún documento vencido), `missing` (falta cargar un documento que le aplica), `due_soon` (dentro de la ventana de aviso) o `up_to_date`. `null` si el legajo está egresado.
+       * @enum {string|null}
+       */
+      documentStatus: 'up_to_date' | 'due_soon' | 'expired' | 'missing' | null;
+      /**
+       * Format: date
+       * @description Vencimiento más cercano entre sus documentos abiertos con fecha; `null` si no tiene o está egresado.
+       * @example 2027-05-10
+       */
+      nextDocumentDueDate: string | null;
     };
     EmployeePageDto: {
-      data: components['schemas']['EmployeeListItemDto'][];
+      data: components['schemas']['EmployeeListRowDto'][];
       /** @example 42 */
       total: number;
     };
@@ -22913,8 +22924,8 @@ export interface operations {
         status?: 'active' | 'terminated';
         /** @description true: con cuenta de acceso; false: sin ella */
         hasAccount?: boolean;
-        /** @description Reservado para la documentación del personal (tanda B-A2): hoy se acepta y se ignora */
-        documentStatus?: string;
+        /** @description Estado de la documentación (CU-180). Sólo alcanza a los legajos activos: los egresados no tienen estado y no aparecen con este filtro */
+        documentStatus?: 'up_to_date' | 'due_soon' | 'expired' | 'missing';
       };
       header?: never;
       path?: never;
@@ -22929,6 +22940,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['EmployeePageDto'];
         };
+      };
+      /** @description Algún filtro inválido (por ejemplo, un `documentStatus` que no es uno de los cuatro estados) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Sin token o token inválido */
       401: {

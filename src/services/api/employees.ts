@@ -3,7 +3,7 @@ import { http, type Page, type PageParams } from './httpClient';
 import type {
   Employee,
   TerminateEmployeeBody,
-  EmployeeListItem,
+  EmployeeListRow,
   EmployeePage,
   GrantEmployeeAccountBody,
   JobPosition,
@@ -21,6 +21,7 @@ export interface EmployeeFilters {
   category?: JobPosition['category'];
   status?: Employee['status'];
   hasAccount?: boolean;
+  documentStatus?: NonNullable<EmployeeListRow['documentStatus']>;
 }
 
 /**
@@ -47,7 +48,7 @@ export type EmployeeBody = Omit<UpdateEmployeeBody, OptionalText> & Partial<Reco
 export const employeeQuery = (filters: EmployeeFilters) => ({ ...filters });
 
 /** GET /employees: legajos de la distribuidora, paginados (`page` desde 1). */
-export const listEmployees = async (params: PageParams, filters: EmployeeFilters): Promise<Page<EmployeeListItem>> => {
+export const listEmployees = async (params: PageParams, filters: EmployeeFilters): Promise<Page<EmployeeListRow>> => {
   const { data } = await http.get<EmployeePage>('/employees', {
     params: { page: params.page + 1, limit: params.pageSize, ...employeeQuery(filters) },
   });

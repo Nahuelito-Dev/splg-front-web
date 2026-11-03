@@ -75,4 +75,30 @@ describe('Employees', () => {
     expect(screen.getByRole('tab', { name: /Activos? 2/ })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /Egresad[oa]s? 1/ })).toBeInTheDocument();
   });
+
+  it('el filtro de documentación viaja al servidor y un valor inventado se ignora', () => {
+    server.mockReturnValue({ data: { rows: [], total: 0 }, isFetching: false, error: null });
+    positions.mockReturnValue({ data: PUESTOS, isPending: false });
+    renderPage('/employees?docs=expired');
+    expect(server).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.objectContaining({ documentStatus: 'expired' }),
+      true,
+    );
+    expect(screen.getByText('Documentación: Vencida')).toBeInTheDocument();
+    cleanup();
+    renderPage('/employees?docs=inventado');
+    expect(server).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.objectContaining({ documentStatus: undefined }),
+      true,
+    );
+  });
+
+  it('con el filtro de documentación, la pestaña de egresados explica por qué queda vacía', () => {
+    server.mockReturnValue({ data: { rows: [], total: 0 }, isFetching: false, error: null });
+    positions.mockReturnValue({ data: PUESTOS, isPending: false });
+    renderPage('/employees?docs=expired&status=terminated');
+    expect(screen.getByText(/egresados no tienen estado de documentación/)).toBeInTheDocument();
+  });
 });
