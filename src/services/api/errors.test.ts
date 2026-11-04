@@ -49,8 +49,12 @@ describe('toApiError', () => {
     );
   });
 
-  it('un id que no es UUID es un id inválido; otro 400 no', () => {
-    expect(toApiError(axiosError(400, { message: 'Validation failed (uuid is expected)' })).invalidId).toBe(true);
+  it('un id que no es UUID es un id inválido (por el código del back, no por el texto); otro 400 no', () => {
+    expect(
+      toApiError(axiosError(400, { message: 'El identificador no es válido', code: 'INVALID_ID' })).invalidId,
+    ).toBe(true);
+    expect(toApiError(axiosError(400, { message: 'El identificador no es válido' })).invalidId).toBe(false);
+    expect(toApiError(axiosError(400, { message: 'otro', code: 'INVALID_ID' })).messages).toEqual(['otro']);
     expect(toApiError(axiosError(400, { message: 'Falta la distribuidora' })).invalidId).toBe(false);
     expect(toApiError(axiosError(404, { message: 'no' })).invalidId).toBe(false);
   });

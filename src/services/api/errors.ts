@@ -5,6 +5,8 @@ interface ErrorBody {
   message?: string | string[];
   error?: string;
   statusCode?: number;
+  /** Código estable del back (en inglés) para decidir sin depender del texto, p. ej. `INVALID_ID`. */
+  code?: string;
 }
 
 const MISSING_DISTRIBUTOR_MESSAGE = 'Elegí una distribuidora en «Ver como» para operar';
@@ -14,6 +16,7 @@ export class ApiError extends Error {
   constructor(
     readonly status: number | null,
     readonly messages: string[],
+    readonly code: string | null = null,
   ) {
     super(messages[0] ?? 'Error inesperado');
     this.name = 'ApiError';
@@ -25,7 +28,7 @@ export class ApiError extends Error {
 
   /** 400 por un id que no es UUID (`/cosas/abc`): para una ficha es lo mismo que "no existe". */
   get invalidId(): boolean {
-    return this.status === 400 && this.messages.some((message) => message.includes('uuid is expected'));
+    return this.status === 400 && this.code === 'INVALID_ID';
   }
 
   /** 400 por falta de `X-Distributor`: el super admin tiene que elegir una distribuidora en «Ver como». */
@@ -72,7 +75,11 @@ export function toApiError(error: unknown): ApiError {
     const status = error.response?.status ?? null;
     const body: unknown = error.response?.data;
     if (isErrorBody(body) && body.message) {
-      return new ApiError(status, friendly(status, Array.isArray(body.message) ? body.message : [body.message]));
+      return new ApiError(
+        status,
+        friendly(status, Array.isArray(body.message) ? body.message : [body.message]),
+        body.code ?? null,
+      );
     }
     if (status === null) return new ApiError(null, ['No se pudo conectar con el servidor']);
     return new ApiError(status, friendly(status, [`Error ${status}`]));
@@ -105,7 +112,7 @@ export async function toApiErrorFromBlob(error: unknown): Promise<ApiError> {
     try {
       const body: unknown = JSON.parse(await readBlobAsText(error.response.data));
       if (isErrorBody(body) && body.message) {
-        return new ApiError(status, Array.isArray(body.message) ? body.message : [body.message]);
+        return new ApiError(status, Array.isArray(body.message) ? body.message : [body.message], body.code ?? null);
       }
     } catch {
       // El cuerpo no era JSON legible: sigue con el mensaje genérico de toApiError.
