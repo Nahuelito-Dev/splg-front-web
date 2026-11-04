@@ -179,7 +179,7 @@ describe('CylinderDetails', () => {
     cylinderQuery.mockReturnValue({
       data: undefined,
       isPending: false,
-      error: new ApiError(400, ['Validation failed (uuid is expected)']),
+      error: new ApiError(400, ['El identificador no es válido'], 'INVALID_ID'),
       refetch: vi.fn(),
     });
     historyQuery.mockReturnValue({ data: undefined, isPending: true, error: null, refetch: vi.fn() });

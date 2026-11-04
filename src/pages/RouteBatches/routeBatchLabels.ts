@@ -8,6 +8,8 @@ type Map<K extends string> = Record<K, Label>;
 export const ROUTE_BATCH_STATUS: Map<RouteBatch['status']> = {
   forming: { text: 'Armándose', tone: 'neutral' },
   offered: { text: 'Ofrecido', tone: 'info' },
+  draft: { text: 'Borrador', tone: 'neutral' },
+  confirmed: { text: 'Confirmado', tone: 'info' },
   assigned: { text: 'Asignado', tone: 'success' },
   dissolved: { text: 'Deshecho', tone: 'warn' },
   completed: { text: 'Completado', tone: 'success' },
@@ -36,6 +38,7 @@ export const CLOSE_REASON: Record<NonNullable<RouteBatch['closeReason']>, string
   exhausted: 'Ningún chofer lo tomó: los pedidos quedaron libres para el despacho',
   orders_unavailable: 'Quedó con menos de dos pedidos disponibles: los que sobraron quedaron libres para el despacho',
   admin: 'Lo deshizo un administrador (o se apagaron los recorridos): los pedidos quedaron libres para el despacho',
+  day_closed: 'Se cerró el día con la hoja todavía en borrador: los pedidos quedaron libres para el despacho',
 };
 
 /** «25 kg». */

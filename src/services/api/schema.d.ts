@@ -5427,6 +5427,46 @@ export interface paths {
     patch: operations['AdminNotificationsController_marcarLeido'];
     trace?: never;
   };
+  '/api/v2/process-runs/summary': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Última corrida de cada proceso automático
+     * @description Un renglón por proceso con su salud: `ok`, `partial`, `running`, `failed`, `late` (no arrancó en 1,5 veces su período), `stuck` (sigue corriendo pasado el máximo) o `never`. Cliente y chofer reciben 403. De los procesos globales, el admin de una empresa ve sólo la salud (sin contadores ni texto de error); el administrador general ve todo.
+     */
+    get: operations['ProcessRunController_resumen'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/process-runs': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Historial de corridas
+     * @description Las más nuevas primero, paginado. Filtros: `process`, `status`, `from` y `to` (instantes ISO 8601 sobre el inicio de la corrida).
+     */
+    get: operations['ProcessRunController_listar'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/reports/sales-by-driver': {
     parameters: {
       query?: never;
@@ -8491,46 +8531,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v2/process-runs/summary': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Última corrida de cada proceso automático
-     * @description Un renglón por proceso con su salud: `ok`, `partial`, `running`, `failed`, `late` (no arrancó en 1,5 veces su período), `stuck` (sigue corriendo pasado el máximo) o `never`. Cliente y chofer reciben 403. De los procesos globales, el admin de una empresa ve sólo la salud (sin contadores ni texto de error); el administrador general ve todo.
-     */
-    get: operations['ProcessRunController_resumen_v2'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v2/process-runs': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Historial de corridas
-     * @description Las más nuevas primero, paginado. Filtros: `process`, `status`, `from` y `to` (instantes ISO 8601 sobre el inicio de la corrida).
-     */
-    get: operations['ProcessRunController_listar_v2'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -9328,7 +9328,7 @@ export interface components {
        * @example repurchase
        * @enum {string}
        */
-      process: 'fleet_planner' | 'repurchase' | 'route_batching' | 'cylinder_recovery';
+      process: 'fleet_planner' | 'repurchase' | 'route_batching' | 'cylinder_recovery' | 'route_planning';
       /** @example Anticipación de recompra */
       title: string;
       description: string;
@@ -11628,7 +11628,7 @@ export interface components {
     CylinderExpiredResponseDto: {
       /** @example 409 */
       statusCode: number;
-      /** @example Conflict */
+      /** @example Conflicto */
       error: string;
       /** @example CYLINDER_EXPIRED */
       code: string;
@@ -11644,7 +11644,7 @@ export interface components {
     PedidoNoDespachableResponseDto: {
       /** @example 409 */
       statusCode: number;
-      /** @example Conflict */
+      /** @example Conflicto */
       error: string;
       /** @example El pedido está entregado: no se le pueden asignar envases */
       message: string;
@@ -15284,6 +15284,156 @@ export interface components {
        */
       updated: number;
     };
+    ProcessRunResponseDto: {
+      /** @example 9d8e7f60-1b2c-4d3e-8f4a-5b6c7d8e9f01 */
+      id: string;
+      /** @enum {string} */
+      process:
+        | 'dispatch_tick'
+        | 'fleet_planner_daily'
+        | 'fleet_planner_expiry'
+        | 'vehicle_usage_feed'
+        | 'repurchase_anticipate'
+        | 'repurchase_expiry'
+        | 'route_batch_build'
+        | 'route_batch_expiry'
+        | 'cylinder_recovery'
+        | 'attendance_open_alert'
+        | 'receiver_retention'
+        | 'mp_pending_reconciliation'
+        | 'mp_cancelled_reconciliation'
+        | 'reservations_activate'
+        | 'reservations_expire_unpaid'
+        | 'orders_expire_mp_unpaid'
+        | 'payment_inbox_process'
+        | 'payment_inbox_purge'
+        | 's3_orphans_retry'
+        | 'driver_settlement_generate'
+        | 'driver_settlement_alert'
+        | 'coverage_zone_expiry'
+        | 'fine_due_alerts'
+        | 'finance_reconciliation'
+        | 'mp_reconciliation_sync'
+        | 'fleet_alerts'
+        | 'stock_low_alert'
+        | 'stock_reconciliation'
+        | 'insurance_alerts'
+        | 'import_cleanup'
+        | 'process_run_watch'
+        | 'process_run_purge';
+      /** @example Recompra: invitaciones anticipadas */
+      title: string;
+      /**
+       * Format: uuid
+       * @description Distribuidora de la corrida; `null` si fue un barrido global
+       */
+      distributorId: string | null;
+      /** Format: date-time */
+      startedAt: string;
+      /**
+       * Format: date-time
+       * @description `null` mientras corre
+       */
+      finishedAt: string | null;
+      /** @example 1840 */
+      durationMs: number | null;
+      /** @enum {string} */
+      status: 'running' | 'ok' | 'partial' | 'failed' | 'skipped';
+      /**
+       * @description Lo que generó la corrida (casos, avisos, ofertas...), según el proceso
+       * @example {
+       *       "processed": 3,
+       *       "errors": 0
+       *     }
+       */
+      counters: {
+        [key: string]: number;
+      };
+      error: string | null;
+      /** @enum {string} */
+      trigger: 'cron' | 'manual' | 'webhook';
+    };
+    ProcessSummaryItemDto: {
+      /** @enum {string} */
+      process:
+        | 'dispatch_tick'
+        | 'fleet_planner_daily'
+        | 'fleet_planner_expiry'
+        | 'vehicle_usage_feed'
+        | 'repurchase_anticipate'
+        | 'repurchase_expiry'
+        | 'route_batch_build'
+        | 'route_batch_expiry'
+        | 'cylinder_recovery'
+        | 'attendance_open_alert'
+        | 'receiver_retention'
+        | 'mp_pending_reconciliation'
+        | 'mp_cancelled_reconciliation'
+        | 'reservations_activate'
+        | 'reservations_expire_unpaid'
+        | 'orders_expire_mp_unpaid'
+        | 'payment_inbox_process'
+        | 'payment_inbox_purge'
+        | 's3_orphans_retry'
+        | 'driver_settlement_generate'
+        | 'driver_settlement_alert'
+        | 'coverage_zone_expiry'
+        | 'fine_due_alerts'
+        | 'finance_reconciliation'
+        | 'mp_reconciliation_sync'
+        | 'fleet_alerts'
+        | 'stock_low_alert'
+        | 'stock_reconciliation'
+        | 'insurance_alerts'
+        | 'import_cleanup'
+        | 'process_run_watch'
+        | 'process_run_purge';
+      /** @example Recompra: invitaciones anticipadas */
+      title: string;
+      /**
+       * @description Módulo inteligente; `null` si es una tarea programada común
+       * @enum {string|null}
+       */
+      module: 'M1' | 'M2' | 'M3' | 'M4' | 'M5' | null;
+      /**
+       * Format: uuid
+       * @description `null` si el proceso corre como barrido global
+       */
+      distributorId: string | null;
+      /**
+       * @description `late`: no arrancó en 1,5 veces su período; `stuck`: sigue corriendo pasado el máximo; `failed`: la última terminó con error; `never`: todavía no corrió
+       * @enum {string}
+       */
+      health: 'ok' | 'partial' | 'running' | 'failed' | 'late' | 'stuck' | 'never';
+      lastRun: components['schemas']['ProcessRunResponseDto'] | null;
+      /**
+       * Format: date-time
+       * @description Inicio de la última corrida que terminó bien
+       */
+      lastOkAt: string | null;
+      /**
+       * @description Cada cuántos segundos se espera una corrida
+       * @example 3600
+       */
+      expectedEverySeconds: number;
+      /** Format: date-time */
+      nextExpectedAt: string | null;
+    };
+    ProcessSummaryResponseDto: {
+      items: components['schemas']['ProcessSummaryItemDto'][];
+      /**
+       * @description Procesos atrasados, fallidos o colgados
+       * @example 1
+       */
+      alerts: number;
+      /** Format: date-time */
+      generatedAt: string;
+    };
+    ProcessRunListResponseDto: {
+      items: components['schemas']['ProcessRunResponseDto'][];
+      /** @example 42 */
+      total: number;
+    };
     VentasPorChoferDto: {
       /**
        * Format: uuid
@@ -15877,7 +16027,7 @@ export interface components {
       /** Format: uuid */
       batchId: string;
       /** @enum {string} */
-      status: 'forming' | 'offered' | 'assigned' | 'dissolved' | 'completed';
+      status: 'forming' | 'offered' | 'draft' | 'confirmed' | 'assigned' | 'dissolved' | 'completed';
       /** @example 75.5 */
       totalWeightKg: number;
       /** Format: date-time */
@@ -15885,7 +16035,7 @@ export interface components {
       /** Format: date-time */
       closedAt: string | null;
       /** @enum {string|null} */
-      closeReason: 'exhausted' | 'orders_unavailable' | 'admin' | null;
+      closeReason: 'exhausted' | 'orders_unavailable' | 'admin' | 'day_closed' | null;
       /** @description El chofer que aceptó el lote */
       driver: components['schemas']['RouteBatchDriverDto'] | null;
       /** @description La oferta vigente (pendiente), si hay */
@@ -15992,7 +16142,7 @@ export interface components {
       /** Format: uuid */
       batchId: string;
       /** @enum {string} */
-      status: 'forming' | 'offered' | 'assigned' | 'dissolved' | 'completed';
+      status: 'forming' | 'offered' | 'draft' | 'confirmed' | 'assigned' | 'dissolved' | 'completed';
       /** @example 75.5 */
       totalWeightKg: number;
       /** @example 3 */
@@ -19193,156 +19343,6 @@ export interface components {
       /** @description true si esta importación ya estaba confirmada: no se aplicó de nuevo */
       yaConfirmada: boolean;
     };
-    ProcessRunResponseDto: {
-      /** @example 9d8e7f60-1b2c-4d3e-8f4a-5b6c7d8e9f01 */
-      id: string;
-      /** @enum {string} */
-      process:
-        | 'dispatch_tick'
-        | 'fleet_planner_daily'
-        | 'fleet_planner_expiry'
-        | 'vehicle_usage_feed'
-        | 'repurchase_anticipate'
-        | 'repurchase_expiry'
-        | 'route_batch_build'
-        | 'route_batch_expiry'
-        | 'cylinder_recovery'
-        | 'attendance_open_alert'
-        | 'receiver_retention'
-        | 'mp_pending_reconciliation'
-        | 'mp_cancelled_reconciliation'
-        | 'reservations_activate'
-        | 'reservations_expire_unpaid'
-        | 'orders_expire_mp_unpaid'
-        | 'payment_inbox_process'
-        | 'payment_inbox_purge'
-        | 's3_orphans_retry'
-        | 'driver_settlement_generate'
-        | 'driver_settlement_alert'
-        | 'coverage_zone_expiry'
-        | 'fine_due_alerts'
-        | 'finance_reconciliation'
-        | 'mp_reconciliation_sync'
-        | 'fleet_alerts'
-        | 'stock_low_alert'
-        | 'stock_reconciliation'
-        | 'insurance_alerts'
-        | 'import_cleanup'
-        | 'process_run_watch'
-        | 'process_run_purge';
-      /** @example Recompra: invitaciones anticipadas */
-      title: string;
-      /**
-       * Format: uuid
-       * @description Distribuidora de la corrida; `null` si fue un barrido global
-       */
-      distributorId: string | null;
-      /** Format: date-time */
-      startedAt: string;
-      /**
-       * Format: date-time
-       * @description `null` mientras corre
-       */
-      finishedAt: string | null;
-      /** @example 1840 */
-      durationMs: number | null;
-      /** @enum {string} */
-      status: 'running' | 'ok' | 'partial' | 'failed' | 'skipped';
-      /**
-       * @description Lo que generó la corrida (casos, avisos, ofertas...), según el proceso
-       * @example {
-       *       "processed": 3,
-       *       "errors": 0
-       *     }
-       */
-      counters: {
-        [key: string]: number;
-      };
-      error: string | null;
-      /** @enum {string} */
-      trigger: 'cron' | 'manual' | 'webhook';
-    };
-    ProcessSummaryItemDto: {
-      /** @enum {string} */
-      process:
-        | 'dispatch_tick'
-        | 'fleet_planner_daily'
-        | 'fleet_planner_expiry'
-        | 'vehicle_usage_feed'
-        | 'repurchase_anticipate'
-        | 'repurchase_expiry'
-        | 'route_batch_build'
-        | 'route_batch_expiry'
-        | 'cylinder_recovery'
-        | 'attendance_open_alert'
-        | 'receiver_retention'
-        | 'mp_pending_reconciliation'
-        | 'mp_cancelled_reconciliation'
-        | 'reservations_activate'
-        | 'reservations_expire_unpaid'
-        | 'orders_expire_mp_unpaid'
-        | 'payment_inbox_process'
-        | 'payment_inbox_purge'
-        | 's3_orphans_retry'
-        | 'driver_settlement_generate'
-        | 'driver_settlement_alert'
-        | 'coverage_zone_expiry'
-        | 'fine_due_alerts'
-        | 'finance_reconciliation'
-        | 'mp_reconciliation_sync'
-        | 'fleet_alerts'
-        | 'stock_low_alert'
-        | 'stock_reconciliation'
-        | 'insurance_alerts'
-        | 'import_cleanup'
-        | 'process_run_watch'
-        | 'process_run_purge';
-      /** @example Recompra: invitaciones anticipadas */
-      title: string;
-      /**
-       * @description Módulo inteligente; `null` si es una tarea programada común
-       * @enum {string|null}
-       */
-      module: 'M1' | 'M2' | 'M3' | 'M4' | 'M5' | null;
-      /**
-       * Format: uuid
-       * @description `null` si el proceso corre como barrido global
-       */
-      distributorId: string | null;
-      /**
-       * @description `late`: no arrancó en 1,5 veces su período; `stuck`: sigue corriendo pasado el máximo; `failed`: la última terminó con error; `never`: todavía no corrió
-       * @enum {string}
-       */
-      health: 'ok' | 'partial' | 'running' | 'failed' | 'late' | 'stuck' | 'never';
-      lastRun: components['schemas']['ProcessRunResponseDto'] | null;
-      /**
-       * Format: date-time
-       * @description Inicio de la última corrida que terminó bien
-       */
-      lastOkAt: string | null;
-      /**
-       * @description Cada cuántos segundos se espera una corrida
-       * @example 3600
-       */
-      expectedEverySeconds: number;
-      /** Format: date-time */
-      nextExpectedAt: string | null;
-    };
-    ProcessSummaryResponseDto: {
-      items: components['schemas']['ProcessSummaryItemDto'][];
-      /**
-       * @description Procesos atrasados, fallidos o colgados
-       * @example 1
-       */
-      alerts: number;
-      /** Format: date-time */
-      generatedAt: string;
-    };
-    ProcessRunListResponseDto: {
-      items: components['schemas']['ProcessRunResponseDto'][];
-      /** @example 42 */
-      total: number;
-    };
   };
   responses: never;
   parameters: never;
@@ -19940,7 +19940,7 @@ export interface operations {
           'application/json': components['schemas']['UserResponseDto'];
         };
       };
-      /** @description Datos inválidos (p. ej.: property email should not exist; phone_number fuera del formato E.164 +549...) */
+      /** @description Datos inválidos (p. ej.: Se envió un dato que no corresponde: Correo electrónico; Teléfono: fuera del formato E.164 +549...) */
       400: {
         headers: {
           [name: string]: unknown;
@@ -20088,7 +20088,7 @@ export interface operations {
           'application/json': components['schemas']['BloqueoDeUsuarioDto'];
         };
       };
-      /** @description Datos inválidos (p. ej.: block tiene que ser true o false) */
+      /** @description Datos inválidos (p. ej.: Bloquear: tiene que ser verdadero o falso) */
       400: {
         headers: {
           [name: string]: unknown;
@@ -20189,7 +20189,7 @@ export interface operations {
           'application/json': components['schemas']['AdminResponseDto'];
         };
       };
-      /** @description Sólo un usuario con rol admin o super_admin tiene perfil de administrador · el perfil de un admin de empresa exige X-Distributor y que coincida con distributor_id · property role_id should not exist; user_id must be a UUID */
+      /** @description Sólo un usuario con rol admin o super_admin tiene perfil de administrador · el perfil de un admin de empresa exige X-Distributor y que coincida con distributor_id · Se envió un dato que no corresponde: Rol; Usuario: no es válido */
       400: {
         headers: {
           [name: string]: unknown;
@@ -20369,7 +20369,7 @@ export interface operations {
           'application/json': components['schemas']['AdminResponseDto'];
         };
       };
-      /** @description Datos inválidos (p. ej.: phoneNumber debe estar en formato E.164; property email should not exist) */
+      /** @description Datos inválidos (p. ej.: Teléfono: tiene que estar en formato E.164; Se envió un dato que no corresponde: Correo electrónico) */
       400: {
         headers: {
           [name: string]: unknown;
@@ -20460,7 +20460,7 @@ export interface operations {
           'application/json': components['schemas']['RoleResponseDto'];
         };
       };
-      /** @description Datos inválidos (p. ej.: type must be a string) */
+      /** @description Datos inválidos (p. ej.: Tipo: tiene que ser un texto) */
       400: {
         headers: {
           [name: string]: unknown;
@@ -20597,7 +20597,7 @@ export interface operations {
           'application/json': components['schemas']['RoleResponseDto'];
         };
       };
-      /** @description Datos inválidos (p. ej.: type must be a string) */
+      /** @description Datos inválidos (p. ej.: Tipo: tiene que ser un texto) */
       400: {
         headers: {
           [name: string]: unknown;
@@ -20732,7 +20732,7 @@ export interface operations {
           'application/json': components['schemas']['UserResponseDto'];
         };
       };
-      /** @description Datos inválidos (p. ej.: email must be an email; password must be longer than or equal to 6 characters) */
+      /** @description Datos inválidos (p. ej.: Correo electrónico: tiene que ser un correo electrónico válido; Contraseña: tiene que tener al menos 6 caracteres) */
       400: {
         headers: {
           [name: string]: unknown;
@@ -21001,7 +21001,7 @@ export interface operations {
           'application/json': components['schemas']['CustomerResponseDto'];
         };
       };
-      /** @description Datos inválidos (p. ej.: property user_id should not exist; property campo_inventado should not exist) */
+      /** @description Datos inválidos (p. ej.: Se envió un dato que no corresponde: Usuario; Se envió un dato que no corresponde) */
       400: {
         headers: {
           [name: string]: unknown;
@@ -21098,7 +21098,7 @@ export interface operations {
           'application/json': components['schemas']['CustomerResponseDto'];
         };
       };
-      /** @description Datos inválidos (p. ej.: latLng debe ser "latitud,longitud", por ejemplo -27.3671,-55.8961) */
+      /** @description Datos inválidos (p. ej.: Coordenadas: tiene que ser "latitud,longitud", por ejemplo -27.3671,-55.8961) */
       400: {
         headers: {
           [name: string]: unknown;
@@ -21422,7 +21422,7 @@ export interface operations {
           'application/json': components['schemas']['DeliveryResponseDto'];
         };
       };
-      /** @description Datos inválidos (p. ej.: property calification should not exist; validated tiene que ser true o false) */
+      /** @description Datos inválidos (p. ej.: Se envió un dato que no corresponde; Validado: tiene que ser verdadero o falso) */
       400: {
         headers: {
           [name: string]: unknown;
@@ -21609,7 +21609,7 @@ export interface operations {
           'application/json': components['schemas']['DeliveryResponseDto'];
         };
       };
-      /** @description Datos inválidos (p. ej.: latLng debe ser "latitud,longitud", por ejemplo -27.3671,-55.8961) */
+      /** @description Datos inválidos (p. ej.: Coordenadas: tiene que ser "latitud,longitud", por ejemplo -27.3671,-55.8961) */
       400: {
         headers: {
           [name: string]: unknown;
@@ -21664,7 +21664,7 @@ export interface operations {
           'application/json': components['schemas']['DeliveryResponseDto'];
         };
       };
-      /** @description Datos inválidos (p. ej.: amount fuera de rango; amount fuera de rango) */
+      /** @description Datos inválidos (p. ej.: Importe: fuera de rango; Importe: fuera de rango) */
       400: {
         headers: {
           [name: string]: unknown;
@@ -21719,7 +21719,7 @@ export interface operations {
           'application/json': components['schemas']['DeliveryResponseDto'];
         };
       };
-      /** @description Datos inválidos (p. ej.: isEnabled tiene que ser true o false) */
+      /** @description Datos inválidos (p. ej.: Habilitado: tiene que ser verdadero o falso) */
       400: {
         headers: {
           [name: string]: unknown;
@@ -21773,7 +21773,7 @@ export interface operations {
           'application/json': components['schemas']['DisponibilidadDelChoferDto'];
         };
       };
-      /** @description Datos inválidos (p. ej.: available tiene que ser true o false) */
+      /** @description Datos inválidos (p. ej.: Disponible: tiene que ser verdadero o falso) */
       400: {
         headers: {
           [name: string]: unknown;
@@ -21857,7 +21857,7 @@ export interface operations {
           'application/json': components['schemas']['DistributorResponseDto'];
         };
       };
-      /** @description Datos inválidos (p. ej.: name must be longer than or equal to 2 characters; slug debe ser minúsculas, números y guiones (ej: demo)) */
+      /** @description Datos inválidos (p. ej.: Nombre: tiene que tener al menos 2 caracteres; Identificador de la distribuidora: tiene que tener sólo minúsculas, números y guiones (ej: demo)) */
       400: {
         headers: {
           [name: string]: unknown;
@@ -22036,7 +22036,7 @@ export interface operations {
           'application/json': components['schemas']['DistributorResponseDto'];
         };
       };
-      /** @description Datos inválidos (p. ej.: property slug should not exist) */
+      /** @description Datos inválidos (p. ej.: Se envió un dato que no corresponde: Identificador de la distribuidora) */
       400: {
         headers: {
           [name: string]: unknown;
@@ -22691,7 +22691,7 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        process: 'fleet_planner' | 'repurchase' | 'route_batching' | 'cylinder_recovery';
+        process: 'fleet_planner' | 'repurchase' | 'route_batching' | 'cylinder_recovery' | 'route_planning';
       };
       cookie?: never;
     };
@@ -22740,7 +22740,7 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        process: 'fleet_planner' | 'repurchase' | 'route_batching' | 'cylinder_recovery';
+        process: 'fleet_planner' | 'repurchase' | 'route_batching' | 'cylinder_recovery' | 'route_planning';
       };
       cookie?: never;
     };
@@ -24748,7 +24748,7 @@ export interface operations {
           'application/json': components['schemas']['GasCylinderResponseDto'];
         };
       };
-      /** @description Datos inválidos (p. ej.: weight debe ser mayor que 0; price debe ser mayor que 0) */
+      /** @description Datos inválidos (p. ej.: Peso: tiene que ser mayor que 0; Precio: tiene que ser mayor que 0) */
       400: {
         headers: {
           [name: string]: unknown;
@@ -26367,7 +26367,7 @@ export interface operations {
           'application/json': components['schemas']['OrderResponseDto'];
         };
       };
-      /** @description Transición de pedido inválida: cancelled → accepted · status debe ser uno de: reserved, pending, accepted, on_the_way, delivered, cancelled · la reserva no tiene la seña paga o todavía no llegó su fecha agendada · al aceptar (status=accepted), el repartidor está deshabilitado, no está validado, o tiene un documento de flota vencido que lo inhabilita (seguro, VTV o licencia) */
+      /** @description Transición de pedido inválida (p. ej. de cancelado a aceptado) · Estado: elegí una opción válida (reservado, pendiente, aceptado, en camino, entregado o cancelado) · la reserva no tiene la seña paga o todavía no llegó su fecha agendada · al aceptar, el repartidor está deshabilitado, no está validado, o tiene un documento de flota vencido que lo inhabilita (seguro, VTV o licencia) */
       400: {
         headers: {
           [name: string]: unknown;
@@ -27148,7 +27148,7 @@ export interface operations {
           'application/json': components['schemas']['OrderResponseDto'];
         };
       };
-      /** @description Falta el motivo (`reason`: obligatorio para cliente y administrador, no para el chofer que libera el pedido), motivo en blanco, o datos inválidos (p. ej.: reason must be shorter than or equal to 500 characters) */
+      /** @description Falta el motivo (obligatorio para cliente y administrador, no para el chofer que libera el pedido), motivo en blanco, o datos inválidos (p. ej.: Motivo: tiene que tener como máximo 500 caracteres) */
       400: {
         headers: {
           [name: string]: unknown;
@@ -28128,7 +28128,7 @@ export interface operations {
           'application/json': components['schemas']['UserAddressResponseDto'];
         };
       };
-      /** @description Datos inválidos (p. ej.: user_id must be a UUID; street must be a string) */
+      /** @description Datos inválidos (p. ej.: Usuario: no es válido; Calle: tiene que ser un texto) */
       400: {
         headers: {
           [name: string]: unknown;
@@ -28268,7 +28268,7 @@ export interface operations {
           'application/json': components['schemas']['UserAddressResponseDto'];
         };
       };
-      /** @description Datos inválidos (p. ej.: latitude debe ser una latitud válida; longitude debe ser una longitud válida) */
+      /** @description Datos inválidos (p. ej.: Latitud: tiene que ser una latitud válida; Longitud: tiene que ser una longitud válida) */
       400: {
         headers: {
           [name: string]: unknown;
@@ -28448,7 +28448,7 @@ export interface operations {
           'application/json': components['schemas']['ResultadoDeEnvioDto'];
         };
       };
-      /** @description Datos inválidos (p. ej.: token no puede estar vacío; title must be shorter than or equal to 100 characters) */
+      /** @description Datos inválidos (p. ej.: Token: no puede estar vacío; Título: tiene que tener como máximo 100 caracteres) */
       400: {
         headers: {
           [name: string]: unknown;
@@ -28492,7 +28492,7 @@ export interface operations {
           'application/json': components['schemas']['ResultadoDeEnvioDto'];
         };
       };
-      /** @description Datos inválidos (p. ej.: customerId debe ser un UUID; orderId debe ser un UUID) */
+      /** @description Datos inválidos (p. ej.: Cliente: no es válido; Pedido: no es válido) */
       400: {
         headers: {
           [name: string]: unknown;
@@ -28578,7 +28578,7 @@ export interface operations {
           'application/json': components['schemas']['ResultadoDeEnvioDto'];
         };
       };
-      /** @description Datos inválidos (p. ej.: userId debe ser un UUID; token no puede estar vacío) */
+      /** @description Datos inválidos (p. ej.: Usuario: no es válido; Token: no puede estar vacío) */
       400: {
         headers: {
           [name: string]: unknown;
@@ -28653,7 +28653,7 @@ export interface operations {
           'application/json': components['schemas']['TimeSlotResponseDto'];
         };
       };
-      /** @description Datos inválidos (p. ej.: name should not be empty; startTime must be in HH:MM format), inicio >= fin o capacidad fuera de 1-10000 */
+      /** @description Datos inválidos (p. ej.: Nombre: no puede estar vacío; Hora de inicio: tiene que ser una hora con formato HH:MM), inicio >= fin o capacidad fuera de 1-10000 */
       400: {
         headers: {
           [name: string]: unknown;
@@ -28918,7 +28918,7 @@ export interface operations {
           'application/json': components['schemas']['CylinderResponseDto'];
         };
       };
-      /** @description Datos inválidos (p. ej.: gasCylinderId must be a UUID) */
+      /** @description Datos inválidos (p. ej.: Producto: no es válido) */
       400: {
         headers: {
           [name: string]: unknown;
@@ -29692,7 +29692,7 @@ export interface operations {
           'application/json': components['schemas']['CoverageZoneResponseDto'];
         };
       };
-      /** @description Datos inválidos (p. ej.: polygon must contain at least 3 elements; surchargeValue: un recargo porcentual tiene que estar entre 0 y 100; color: tiene que ser un hexadecimal de 6 dígitos, ej. #FF7A00), o un polígono que se autointersecta (400 con el motivo que da PostGIS) */
+      /** @description Datos inválidos (p. ej.: Polígono: tiene que tener al menos 3 elementos; Valor del recargo: un recargo porcentual tiene que estar entre 0 y 100; Color: tiene que ser un hexadecimal de 6 dígitos, ej. #FF7A00), o un polígono que se autointersecta (400 con el motivo que da PostGIS) */
       400: {
         headers: {
           [name: string]: unknown;
@@ -29885,7 +29885,7 @@ export interface operations {
           'application/json': components['schemas']['CoverageZoneResponseDto'];
         };
       };
-      /** @description Datos inválidos (p. ej.: polygon must contain at least 3 elements; surchargeValue: un recargo porcentual tiene que estar entre 0 y 100; color: tiene que ser un hexadecimal de 6 dígitos, ej. #FF7A00), o validUntil anterior o igual a validFrom */
+      /** @description Datos inválidos (p. ej.: Polígono: tiene que tener al menos 3 elementos; Valor del recargo: un recargo porcentual tiene que estar entre 0 y 100; Color: tiene que ser un hexadecimal de 6 dígitos, ej. #FF7A00), o validUntil anterior o igual a validFrom */
       400: {
         headers: {
           [name: string]: unknown;
@@ -32903,7 +32903,7 @@ export interface operations {
           'application/json': components['schemas']['PruebaDeEmailResponseDto'];
         };
       };
-      /** @description Datos inválidos (p. ej.: email debe ser un correo válido) */
+      /** @description Datos inválidos (p. ej.: Correo electrónico: tiene que ser un correo electrónico válido) */
       400: {
         headers: {
           [name: string]: unknown;
@@ -37723,7 +37723,7 @@ export interface operations {
           'application/json': components['schemas']['ClaimResponseDto'];
         };
       };
-      /** @description Falta la distribuidora (header X-Distributor, sólo super admin) o datos inválidos (p. ej.: resolution should not be empty; status debe ser uno de: resolved, rejected) o transición de reclamo inválida (p. ej.: resolved → rejected sin reabrir antes) */
+      /** @description Falta la distribuidora (header X-Distributor, sólo super admin) o datos inválidos (p. ej.: Resolución: no puede estar vacío; Estado: elegí una opción válida (resuelto o rechazado)) o transición de reclamo inválida (p. ej.: resolved → rejected sin reabrir antes) */
       400: {
         headers: {
           [name: string]: unknown;
@@ -37827,7 +37827,7 @@ export interface operations {
           'application/json': components['schemas']['ClaimResponseDto'];
         };
       };
-      /** @description Falta la distribuidora (header X-Distributor, sólo super admin), datos inválidos (reason should not be empty) o el reclamo no está resuelto ni rechazado */
+      /** @description Falta la distribuidora (header X-Distributor, sólo super admin), datos inválidos (Motivo: no puede estar vacío) o el reclamo no está resuelto ni rechazado */
       400: {
         headers: {
           [name: string]: unknown;
@@ -38192,6 +38192,121 @@ export interface operations {
       };
       /** @description No existe, o es de otra distribuidora */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ProcessRunController_resumen: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProcessSummaryResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ProcessRunController_listar: {
+    parameters: {
+      query?: {
+        /** @description Un proceso */
+        process?:
+          | 'dispatch_tick'
+          | 'fleet_planner_daily'
+          | 'fleet_planner_expiry'
+          | 'vehicle_usage_feed'
+          | 'repurchase_anticipate'
+          | 'repurchase_expiry'
+          | 'route_batch_build'
+          | 'route_batch_expiry'
+          | 'cylinder_recovery'
+          | 'attendance_open_alert'
+          | 'receiver_retention'
+          | 'mp_pending_reconciliation'
+          | 'mp_cancelled_reconciliation'
+          | 'reservations_activate'
+          | 'reservations_expire_unpaid'
+          | 'orders_expire_mp_unpaid'
+          | 'payment_inbox_process'
+          | 'payment_inbox_purge'
+          | 's3_orphans_retry'
+          | 'driver_settlement_generate'
+          | 'driver_settlement_alert'
+          | 'coverage_zone_expiry'
+          | 'fine_due_alerts'
+          | 'finance_reconciliation'
+          | 'mp_reconciliation_sync'
+          | 'fleet_alerts'
+          | 'stock_low_alert'
+          | 'stock_reconciliation'
+          | 'insurance_alerts'
+          | 'import_cleanup'
+          | 'process_run_watch'
+          | 'process_run_purge';
+        status?: 'running' | 'ok' | 'partial' | 'failed' | 'skipped';
+        /** @description Corridas que arrancaron desde este instante (ISO 8601; un día suelto es 00:00 UTC) */
+        from?: string;
+        /** @description Corridas que arrancaron hasta este instante (ISO 8601) */
+        to?: string;
+        limit?: number;
+        offset?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProcessRunListResponseDto'];
+        };
+      };
+      /** @description Filtro inválido: `process` o `status` fuera del enum, `from` o `to` que no son fecha ISO 8601, `from` posterior a `to`, `limit` fuera de 1 a 100 u `offset` negativo */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
         headers: {
           [name: string]: unknown;
         };
@@ -39663,7 +39778,7 @@ export interface operations {
           'application/json': components['schemas']['IncidentResponseDto'];
         };
       };
-      /** @description Datos inválidos (p. ej.: orderId must be a UUID; type must be one of the following values: damaged, out_of_stock, no_show, other). `unpaid_collection` no se acepta acá: se crea con `PATCH /orders/{id}/payment/unpaid` */
+      /** @description Datos inválidos (p. ej.: Pedido: no es válido; Tipo: elegí una opción válida (dañado, sin stock, cliente ausente u otro)). `unpaid_collection` no se acepta acá: se crea con `PATCH /orders/{id}/payment/unpaid` */
       400: {
         headers: {
           [name: string]: unknown;
@@ -39878,7 +39993,7 @@ export interface operations {
           'application/json': components['schemas']['IncidentResponseDto'];
         };
       };
-      /** @description Falta la distribuidora (header X-Distributor, sólo super admin) o datos inválidos (p. ej.: resolutionNote must be a string) */
+      /** @description Falta la distribuidora (header X-Distributor, sólo super admin) o datos inválidos (p. ej.: Nota de resolución: tiene que ser un texto) */
       400: {
         headers: {
           [name: string]: unknown;
@@ -40885,7 +41000,7 @@ export interface operations {
         page?: number;
         /** @description Texto a buscar */
         term?: string;
-        status?: 'forming' | 'offered' | 'assigned' | 'dissolved' | 'completed';
+        status?: 'forming' | 'offered' | 'draft' | 'confirmed' | 'assigned' | 'dissolved' | 'completed';
       };
       header?: never;
       path?: never;
@@ -47889,121 +48004,6 @@ export interface operations {
       };
       /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
       422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  ProcessRunController_resumen_v2: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ProcessSummaryResponseDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  ProcessRunController_listar_v2: {
-    parameters: {
-      query?: {
-        /** @description Un proceso */
-        process?:
-          | 'dispatch_tick'
-          | 'fleet_planner_daily'
-          | 'fleet_planner_expiry'
-          | 'vehicle_usage_feed'
-          | 'repurchase_anticipate'
-          | 'repurchase_expiry'
-          | 'route_batch_build'
-          | 'route_batch_expiry'
-          | 'cylinder_recovery'
-          | 'attendance_open_alert'
-          | 'receiver_retention'
-          | 'mp_pending_reconciliation'
-          | 'mp_cancelled_reconciliation'
-          | 'reservations_activate'
-          | 'reservations_expire_unpaid'
-          | 'orders_expire_mp_unpaid'
-          | 'payment_inbox_process'
-          | 'payment_inbox_purge'
-          | 's3_orphans_retry'
-          | 'driver_settlement_generate'
-          | 'driver_settlement_alert'
-          | 'coverage_zone_expiry'
-          | 'fine_due_alerts'
-          | 'finance_reconciliation'
-          | 'mp_reconciliation_sync'
-          | 'fleet_alerts'
-          | 'stock_low_alert'
-          | 'stock_reconciliation'
-          | 'insurance_alerts'
-          | 'import_cleanup'
-          | 'process_run_watch'
-          | 'process_run_purge';
-        status?: 'running' | 'ok' | 'partial' | 'failed' | 'skipped';
-        /** @description Corridas que arrancaron desde este instante (ISO 8601; un día suelto es 00:00 UTC) */
-        from?: string;
-        /** @description Corridas que arrancaron hasta este instante (ISO 8601) */
-        to?: string;
-        limit?: number;
-        offset?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ProcessRunListResponseDto'];
-        };
-      };
-      /** @description Filtro inválido: `process` o `status` fuera del enum, `from` o `to` que no son fecha ISO 8601, `from` posterior a `to`, `limit` fuera de 1 a 100 u `offset` negativo */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
         headers: {
           [name: string]: unknown;
         };
