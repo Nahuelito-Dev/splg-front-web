@@ -152,6 +152,9 @@ vi.mock('../../services/queries/physicalCylinders', () => ({
     };
   },
 }));
+vi.mock('./components/details/CustomerContainersCard', () => ({
+  CustomerContainersCard: ({ customerId }: { customerId: string }) => <p>envases de {customerId}</p>,
+}));
 vi.mock('./components/details/CustomerRecoveryCard', () => ({
   CustomerRecoveryCard: ({ userId }: { userId: string }) => <p>recupero de {userId}</p>,
 }));
@@ -254,6 +257,17 @@ describe('CustomerDetails: portada con KPIs y pestañas', () => {
     expect(cylinders).toHaveBeenCalledWith({ customerUserId: 'u-1' });
     expect(screen.getByRole('link', { name: 'SPLG-00001' })).toHaveAttribute('href', '/physical-cylinders/cy-1');
     expect(screen.getByText('Garrafa 10kg · 10 kg')).toBeInTheDocument();
+  });
+
+  it('la pestaña Envases en su poder muestra la tarjeta de envases propios con el id de la ficha', () => {
+    renderPage('/customers/details/c-1?tab=cylinders');
+    expect(screen.getByText('envases de c-1')).toBeInTheDocument();
+  });
+
+  it('sin distribuidora elegida no muestra la tarjeta de envases propios', () => {
+    perms.needsDistributor = true;
+    renderPage('/customers/details/c-1?tab=cylinders');
+    expect(screen.queryByText('envases de c-1')).not.toBeInTheDocument();
   });
 
   it('la pestaña Envases en su poder suma los casos de recupero del cliente', () => {

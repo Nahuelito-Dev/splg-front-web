@@ -16319,6 +16319,209 @@
                 ]
             }
         },
+        "/api/v2/customers/{id}/containers": {
+            "get": {
+                "operationId": "CustomerContainerController_listar",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CustomerContainersResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Cliente no encontrado en la distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Consultar envases propios y prestados de un cliente",
+                "tags": [
+                    "Customer containers"
+                ]
+            }
+        },
+        "/api/v2/customers/{id}/containers/movements": {
+            "get": {
+                "operationId": "CustomerContainerController_movimientos",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "maximum": 100,
+                            "default": 10,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 0,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 1,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "term",
+                        "required": false,
+                        "in": "query",
+                        "description": "Texto a buscar",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CustomerContainerMovementsResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Paginación inválida"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Cliente no encontrado en la distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Historial de movimientos de envases del cliente",
+                "tags": [
+                    "Customer containers"
+                ]
+            }
+        },
+        "/api/v2/customers/{id}/containers/adjustments": {
+            "post": {
+                "operationId": "CustomerContainerController_ajustar",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateContainerAdjustmentDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CustomerContainerResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Envases, Cantidad o Motivo inválidos"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "404": {
+                        "description": "Cliente o tipo de envase no encontrado en la distribuidora"
+                    },
+                    "409": {
+                        "description": "El cliente quedaría con envases negativos"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Registrar un ajuste manual en la cuenta de envases",
+                "tags": [
+                    "Customer containers"
+                ]
+            }
+        },
         "/api/v1/orders/delivery-options": {
             "get": {
                 "description": "La programada (`standard`) siempre figura; la `express` sólo está disponible con la dirección dentro de la cobertura, en horario de servicio y con un chofer en moto habilitado dentro del radio express. Cada una trae su recargo y su tiempo estimado. No escribe nada: `POST /orders` con `deliveryMode` vuelve a evaluar. Cliente sin `X-Distributor`: distribuidora por defecto; el admin manda `customerId`.",
@@ -46252,6 +46455,160 @@
                     "slug",
                     "name",
                     "products"
+                ]
+            },
+            "CustomerContainerResponseDto": {
+                "type": "object",
+                "properties": {
+                    "gasCylinderId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "type": {
+                        "type": "string",
+                        "example": "Garrafa 10 kg"
+                    },
+                    "owned": {
+                        "type": "number",
+                        "minimum": 0
+                    },
+                    "loanedByM5": {
+                        "type": "number",
+                        "minimum": 0
+                    },
+                    "isActive": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "gasCylinderId",
+                    "type",
+                    "owned",
+                    "loanedByM5",
+                    "isActive"
+                ]
+            },
+            "CustomerContainersResponseDto": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CustomerContainerResponseDto"
+                        }
+                    }
+                },
+                "required": [
+                    "items"
+                ]
+            },
+            "CustomerContainerMovementResponseDto": {
+                "type": "object",
+                "properties": {
+                    "movementId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "gasCylinderId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "type": {
+                        "type": "string"
+                    },
+                    "quantity": {
+                        "type": "number"
+                    },
+                    "reason": {
+                        "type": "string",
+                        "enum": [
+                            "initial_from_deliveries",
+                            "purchased",
+                            "manual_adjustment",
+                            "returned"
+                        ]
+                    },
+                    "orderId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "note": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "actorUserId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "createdAt": {
+                        "format": "date-time",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "movementId",
+                    "gasCylinderId",
+                    "type",
+                    "quantity",
+                    "reason",
+                    "orderId",
+                    "note",
+                    "actorUserId",
+                    "createdAt"
+                ]
+            },
+            "CustomerContainerMovementsResponseDto": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CustomerContainerMovementResponseDto"
+                        }
+                    },
+                    "total": {
+                        "type": "number"
+                    },
+                    "limit": {
+                        "type": "number"
+                    },
+                    "offset": {
+                        "type": "number"
+                    }
+                },
+                "required": [
+                    "items",
+                    "total",
+                    "limit",
+                    "offset"
+                ]
+            },
+            "CreateContainerAdjustmentDto": {
+                "type": "object",
+                "properties": {
+                    "gasCylinderId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "quantity": {
+                        "type": "number",
+                        "minimum": -1000,
+                        "maximum": 1000,
+                        "example": 2
+                    },
+                    "note": {
+                        "type": "string",
+                        "minLength": 10,
+                        "maxLength": 500,
+                        "example": "Corrección por inventario inicial."
+                    }
+                },
+                "required": [
+                    "gasCylinderId",
+                    "quantity",
+                    "note"
                 ]
             },
             "DeliveryOptionDto": {
