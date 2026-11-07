@@ -22,7 +22,7 @@ export const ShareDonutChart = ({ data, formatValue, totalLabel }: Props) => {
   return (
     <div className="flex flex-col items-center gap-4">
       <div className="relative h-[200px] w-[200px]" role="img" aria-label={`Participación: ${totalLabel}`}>
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 320, height: 200 }}>
           <PieChart>
             <Pie data={data} dataKey="value" innerRadius={66} outerRadius={94} paddingAngle={3} stroke="none">
               {data.map((slice, i) => (
