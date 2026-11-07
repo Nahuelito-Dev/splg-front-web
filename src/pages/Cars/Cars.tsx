@@ -121,6 +121,8 @@ export const Cars = () => {
           onView={(car) => navigate(`/cars/details/${car.car_id}`)}
           rows={rows}
           loading={loading}
+          searching={searchingPatent}
+          searchFailed={searchingPatent && patentMatch.isError}
           onEdit={canWrite ? (car) => setForm({ open: true, car }) : undefined}
           onDelete={canWrite ? (car) => void handleDelete(car) : undefined}
         />

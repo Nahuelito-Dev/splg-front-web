@@ -11,9 +11,21 @@ interface Props {
   /** Sin él no se muestra el botón (p. ej. superadmin sin distribuidora elegida). */
   onEdit?: (car: Car) => void;
   onDelete?: (car: Car) => void;
+  /** Hay una patente buscada: la tabla vacía es «sin coincidencias», no «no hay vehículos». */
+  searching?: boolean;
+  /** La búsqueda por patente falló: no se sabe si existe, no es «sin resultados». */
+  searchFailed?: boolean;
 }
 
-export const CarsTable = ({ rows, loading, onView, onEdit, onDelete }: Props) => {
+export const CarsTable = ({
+  rows,
+  loading,
+  onView,
+  onEdit,
+  onDelete,
+  searching = false,
+  searchFailed = false,
+}: Props) => {
   const columns = useMemo<GridColDef<Car>[]>(
     () => [
       {
@@ -76,7 +88,13 @@ export const CarsTable = ({ rows, loading, onView, onEdit, onDelete }: Props) =>
       loading={loading}
       onRowClick={onView}
       empty={
-        <EmptyState title="No hay vehículos" description="Agregá uno para que un chofer pueda empezar a operar." />
+        searchFailed ? (
+          <EmptyState title="No se pudo buscar" description="Probá de nuevo en unos segundos." />
+        ) : searching ? (
+          <EmptyState title="Sin resultados" description="No hay un vehículo con esa patente." />
+        ) : (
+          <EmptyState title="No hay vehículos" description="Agregá uno para que un chofer pueda empezar a operar." />
+        )
       }
     />
   );

@@ -28,7 +28,7 @@ export const RankBarsChart = ({ data, formatValue, seriesName }: Props) => {
       role="img"
       aria-label={`Ranking de ${seriesName.toLowerCase()}`}
     >
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 320, height: 200 }}>
         <BarChart data={sorted} layout="vertical" margin={{ top: 0, right: 12, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={palette.grid} />
           <XAxis
