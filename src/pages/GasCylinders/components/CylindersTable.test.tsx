@@ -3,7 +3,10 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
-import type { GasCylinder } from '../../../services/api/types';
+import type { CatalogCylinder } from '../../../services/api/gasCylinders';
+
+// Las columnas que recibió la tabla en el último render.
+let columnFields: string[] = [];
 
 // El DataGrid de MUI no maqueta columnas en jsdom: se renderiza cada celda tal cual.
 vi.mock('../../../common/components/ui', async (importOriginal) => ({
@@ -13,23 +16,25 @@ vi.mock('../../../common/components/ui', async (importOriginal) => ({
     columns,
     empty,
   }: {
-    rows: GasCylinder[];
-    columns: GridColDef<GasCylinder>[];
+    rows: CatalogCylinder[];
+    columns: GridColDef<CatalogCylinder>[];
     empty: React.ReactNode;
-  }) =>
-    rows.length === 0 ? (
+  }) => {
+    columnFields = columns.map((column) => column.field);
+    return rows.length === 0 ? (
       <div>{empty}</div>
     ) : (
       <div>
         {rows.map((row) => (
           <div key={row.gas_cylinder_id}>
             {columns.map((column) => (
-              <div key={column.field}>{column.renderCell?.({ row } as GridRenderCellParams<GasCylinder>)}</div>
+              <div key={column.field}>{column.renderCell?.({ row } as GridRenderCellParams<CatalogCylinder>)}</div>
             ))}
           </div>
         ))}
       </div>
-    ),
+    );
+  },
 }));
 
 import { CylindersTable } from './CylindersTable';
@@ -41,9 +46,10 @@ const cylinder = {
   type: '10kg',
   weight: 10,
   price: 1000,
+  container_price: null,
   stock: 5,
   promotions: null,
-} as GasCylinder;
+} as CatalogCylinder;
 
 const renderTable = (props: Partial<Parameters<typeof CylindersTable>[0]> = {}) =>
   render(
@@ -91,5 +97,22 @@ describe('CylindersTable', () => {
   it('con filtros y sin resultados no se confunde con el vacío del recurso', () => {
     renderTable({ rows: [], total: 0, inactive: true, filtered: true });
     expect(screen.getByText('Sin resultados')).toBeInTheDocument();
+  });
+
+  it('la celda de precio dice «Envase sin cargar» si no tiene precio de envase', () => {
+    renderTable();
+    expect(screen.getByText('Envase sin cargar')).toBeInTheDocument();
+  });
+
+  it('la celda de precio muestra el envase como segunda línea, en moneda', () => {
+    renderTable({ rows: [{ ...cylinder, container_price: 25000 }] });
+    expect(screen.getByText(/^\$\s1\.000$/)).toBeInTheDocument();
+    expect(screen.getByText(/^Envase \$\s25\.000$/)).toBeInTheDocument();
+    expect(screen.queryByText('Envase sin cargar')).not.toBeInTheDocument();
+  });
+
+  it('no suma columnas: siguen siendo 5', () => {
+    renderTable();
+    expect(columnFields).toEqual(['type', 'price', 'stock', 'promotions', 'actions']);
   });
 });

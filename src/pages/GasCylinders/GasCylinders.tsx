@@ -15,7 +15,7 @@ import {
 import { useDebounce, usePermissions, useUrlParams } from '../../hooks';
 import { useImportActions } from '../../hooks/useImportActions';
 import { gasCylinderQuery } from '../../services/api/gasCylinders';
-import type { GasCylinder } from '../../services/api/types';
+import type { CatalogCylinder } from '../../services/api/gasCylinders';
 import {
   useAvailableGasCylinders,
   useDeleteGasCylinder,
@@ -31,12 +31,12 @@ import { CylindersTable } from './components/CylindersTable';
 import { StockAdjustModal } from './components/StockAdjustModal';
 import { ALL_TYPES, buildTypeOptions, resolveTypeFilter } from './components/typeOptions';
 
-type FormState = { open: false } | { open: true; cylinder: GasCylinder | null };
+type FormState = { open: false } | { open: true; cylinder: CatalogCylinder | null };
 
 export const GasCylinders = () => {
   const [pagination, setPagination] = useState<GridPaginationModel>({ page: 0, pageSize: 10 });
   const [form, setForm] = useState<FormState>({ open: false });
-  const [stockTarget, setStockTarget] = useState<GasCylinder | null>(null);
+  const [stockTarget, setStockTarget] = useState<CatalogCylinder | null>(null);
 
   // Los filtros viven en la URL: al volver de una ficha o recargar, el catálogo queda como estaba.
   const [{ q: search, type: typeFilterChoice, available: availableParam, inactive: inactiveParam }, setFilters] =
@@ -133,7 +133,7 @@ export const GasCylinders = () => {
     { resource: 'precios', label: 'Importar precios' },
   ]);
 
-  const handleDelete = async (cylinder: GasCylinder) => {
+  const handleDelete = async (cylinder: CatalogCylinder) => {
     const confirmed = await confirm({
       title: '¿Desactivar producto?',
       text: `"${cylinder.type}" deja de estar disponible en la app. No se borra el historial de pedidos.`,
@@ -147,7 +147,7 @@ export const GasCylinders = () => {
     });
   };
 
-  const handleReactivate = async (cylinder: GasCylinder) => {
+  const handleReactivate = async (cylinder: CatalogCylinder) => {
     const confirmed = await confirm({
       title: '¿Reactivar producto?',
       text: `"${cylinder.type}" vuelve al catálogo de la app con su stock y sus promociones.`,

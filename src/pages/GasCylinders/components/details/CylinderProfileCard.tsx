@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
-import { Banknote, Flame, Package, Weight } from 'lucide-react';
+import { Banknote, Flame, Package, PackageOpen, Weight } from 'lucide-react';
 import { Badge, Card, DetailList, EntityPhoto, PhotoThumb } from '../../../../common/components/ui';
 import { usePermissions } from '../../../../hooks';
-import type { GasCylinder } from '../../../../services/api/types';
+import type { CatalogCylinder } from '../../../../services/api/gasCylinders';
 import { formatCurrency, formatDateTime } from '../../../../utils/format';
 import { stockLabel } from '../stockLabel';
 
@@ -21,7 +21,7 @@ const Metric = ({ icon, label, value }: { icon: ReactNode; label: string; value:
   </div>
 );
 
-export const CylinderProfileCard = ({ cylinder }: { cylinder: GasCylinder }) => {
+export const CylinderProfileCard = ({ cylinder }: { cylinder: CatalogCylinder }) => {
   const { canWrite, writeHint } = usePermissions();
   return (
     <Card className="p-6">
@@ -62,8 +62,19 @@ export const CylinderProfileCard = ({ cylinder }: { cylinder: GasCylinder }) => 
         className="mt-6 max-w-md"
       />
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-3">
+      <div className="mt-6 grid gap-4 sm:grid-cols-2">
         <Metric icon={<Banknote />} label="Precio unitario" value={formatCurrency(cylinder.price)} />
+        <Metric
+          icon={<PackageOpen />}
+          label="Precio del envase"
+          value={
+            cylinder.container_price === null || cylinder.container_price === undefined ? (
+              <span className="font-normal text-muted">Sin cargar</span>
+            ) : (
+              formatCurrency(cylinder.container_price)
+            )
+          }
+        />
         <Metric icon={<Package />} label="Stock" value={<Badge label={stockLabel(cylinder.stock)} />} />
         <Metric icon={<Weight />} label="Peso neto" value={`${cylinder.weight} kg`} />
       </div>
