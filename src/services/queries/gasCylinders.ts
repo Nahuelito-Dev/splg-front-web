@@ -10,9 +10,11 @@ import {
   reactivateGasCylinder,
   updateGasCylinder,
   updateGasCylinderStock,
+  type CreateCatalogCylinderBody,
+  type UpdateCatalogCylinderBody,
 } from '../api/gasCylinders';
 import type { PageParams } from '../api/httpClient';
-import type { CreateGasCylinderBody, UpdateGasCylinderBody, UpdateStockBody } from '../api/types';
+import type { UpdateStockBody } from '../api/types';
 import { runIntent } from './intent';
 import { queryKeys } from './queryKeys';
 import { invalidateStockViews } from './stock';
@@ -68,7 +70,7 @@ export const useAvailableGasCylinders = () =>
 export const useCreateGasCylinder = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: CreateGasCylinderBody) => createGasCylinder(body),
+    mutationFn: (body: CreateCatalogCylinderBody) => createGasCylinder(body),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
   });
 };
@@ -76,7 +78,7 @@ export const useCreateGasCylinder = () => {
 export const useUpdateGasCylinder = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: UpdateGasCylinderBody }) => updateGasCylinder(id, body),
+    mutationFn: ({ id, body }: { id: string; body: UpdateCatalogCylinderBody }) => updateGasCylinder(id, body),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
   });
 };

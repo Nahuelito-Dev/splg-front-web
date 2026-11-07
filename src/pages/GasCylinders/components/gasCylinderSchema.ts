@@ -11,6 +11,13 @@ export const MAX_PROMOTION_DISCOUNT = 99;
 
 const twoDecimals = (value: number) => Math.abs(Math.round(value * 100) - value * 100) < 1e-6;
 
+/** Vacío (o sólo espacios) es `null`: el producto queda sin precio de envase. */
+const blankToNull = (value: unknown) => {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'string') return value.trim() === '' ? null : Number(value);
+  return value;
+};
+
 const promotionSchema = z.object({
   quantity: z.coerce
     .number({ invalid_type_error: 'Ingresá un número' })
@@ -35,6 +42,16 @@ export const gasCylinderSchema = z.object({
     .positive('Tiene que ser mayor que 0')
     .max(MAX_PRICE, 'No puede superar $ 10.000.000')
     .refine(twoDecimals, 'Hasta 2 decimales'),
+  /** F35: lo que se cobra por cada envase que el cliente pide de más (no tiene vacía para canjear). */
+  container_price: z.preprocess(
+    blankToNull,
+    z
+      .number({ invalid_type_error: 'Ingresá un número' })
+      .positive('Tiene que ser mayor que 0')
+      .max(MAX_PRICE, 'No puede superar $ 10.000.000')
+      .refine(twoDecimals, 'Hasta 2 decimales')
+      .nullable(),
+  ),
   stock: z.coerce
     .number({ invalid_type_error: 'Ingresá un número' })
     .int('Tiene que ser un entero')

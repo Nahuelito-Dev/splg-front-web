@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button, Modal, FormInput, FormTextArea, Form } from '../../../common/components/ui';
-import type { GasCylinder } from '../../../services/api/types';
+import type { CatalogCylinder } from '../../../services/api/gasCylinders';
 import { useCreateGasCylinder, useUpdateGasCylinder } from '../../../services/queries/gasCylinders';
 import { notify } from '../../../utils/notifications';
 import { gasCylinderSchema, type GasCylinderFormValues } from './gasCylinderSchema';
@@ -12,10 +12,18 @@ interface Props {
   open: boolean;
   onClose: () => void;
   /** Con producto es edición; sin producto, alta. */
-  cylinder: GasCylinder | null;
+  cylinder: CatalogCylinder | null;
 }
 
-const emptyValues: GasCylinderFormValues = { type: '', weight: 0, price: 0, stock: 0, description: '', promotions: [] };
+const emptyValues: GasCylinderFormValues = {
+  type: '',
+  weight: 0,
+  price: 0,
+  container_price: null,
+  stock: 0,
+  description: '',
+  promotions: [],
+};
 
 export const CylinderFormModal = ({ open, onClose, cylinder }: Props) => {
   const createCylinder = useCreateGasCylinder();
@@ -31,6 +39,7 @@ export const CylinderFormModal = ({ open, onClose, cylinder }: Props) => {
             type: cylinder.type,
             weight: cylinder.weight,
             price: cylinder.price,
+            container_price: cylinder.container_price ?? null,
             stock: cylinder.stock,
             description: cylinder.description ?? '',
             promotions: cylinder.promotions ?? [],
@@ -55,9 +64,15 @@ export const CylinderFormModal = ({ open, onClose, cylinder }: Props) => {
     };
     if (cylinder) {
       // El stock no se edita acá: la API responde 400 si llega. Se ajusta desde "Ajustar stock".
-      updateCylinder.mutate({ id: cylinder.gas_cylinder_id, body: base }, { onSuccess, onError: notify.error });
+      // El precio del envase sólo viaja si cambió: así no pisa el que haya cargado otro admin mientras tanto.
+      const containerPriceChanged = values.container_price !== (cylinder.container_price ?? null);
+      const body = containerPriceChanged ? { ...base, container_price: values.container_price } : base;
+      updateCylinder.mutate({ id: cylinder.gas_cylinder_id, body }, { onSuccess, onError: notify.error });
     } else {
-      createCylinder.mutate({ ...base, stock: values.stock }, { onSuccess, onError: notify.error });
+      createCylinder.mutate(
+        { ...base, container_price: values.container_price, stock: values.stock },
+        { onSuccess, onError: notify.error },
+      );
     }
   };
 
@@ -84,6 +99,13 @@ export const CylinderFormModal = ({ open, onClose, cylinder }: Props) => {
           <FormInput name="type" label="Tipo" required placeholder="Ej: 10kg" />
           <FormInput name="weight" label="Peso (kg)" required type="number" step="0.01" />
           <FormInput name="price" label="Precio ($)" required type="number" step="0.01" />
+          <FormInput
+            name="container_price"
+            label="Precio del envase ($)"
+            type="number"
+            step="0.01"
+            hint="Se cobra cuando el cliente pide más garrafas que los envases que tiene. Vacío: sin precio."
+          />
           {cylinder ? null : (
             <FormInput
               name="stock"

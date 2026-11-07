@@ -3,18 +3,18 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import type { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { GasCylinder } from '../../services/api/types';
+import type { CatalogCylinder } from '../../services/api/gasCylinders';
 import { mutation, ok } from '../../test/pageTest';
 
 // El DataGrid de MUI no maqueta columnas en jsdom: se renderiza cada celda tal cual.
 vi.mock('../../common/components/ui', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
-  DataTable: ({ rows, columns }: { rows: GasCylinder[]; columns: GridColDef<GasCylinder>[] }) => (
+  DataTable: ({ rows, columns }: { rows: CatalogCylinder[]; columns: GridColDef<CatalogCylinder>[] }) => (
     <div>
       {rows.map((row) => (
         <div key={row.gas_cylinder_id}>
           {columns.map((column) => (
-            <div key={column.field}>{column.renderCell?.({ row } as GridRenderCellParams<GasCylinder>)}</div>
+            <div key={column.field}>{column.renderCell?.({ row } as GridRenderCellParams<CatalogCylinder>)}</div>
           ))}
         </div>
       ))}
@@ -59,7 +59,16 @@ vi.mock('../../utils/notifications', async (importOriginal) => ({
 import { GasCylinders } from './GasCylinders';
 
 const cylinder = (id: string, type: string, isActive: boolean) =>
-  ({ gas_cylinder_id: id, type, weight: 10, price: 1000, stock: 5, promotions: null, isActive }) as GasCylinder;
+  ({
+    gas_cylinder_id: id,
+    type,
+    weight: 10,
+    price: 1000,
+    container_price: null,
+    stock: 5,
+    promotions: null,
+    isActive,
+  }) as CatalogCylinder;
 
 const setup = (url = '/cylinders') => {
   state.catalog = ok({ rows: [cylinder('g1', '10kg', true)], total: 1 });

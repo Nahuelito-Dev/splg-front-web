@@ -3,12 +3,12 @@ import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Flame, PackagePlus, RotateCcw } from 'lucide-react';
 import { Badge, DataTable, EmptyState, IdentityCell, RowActions } from '../../../common/components/ui';
-import type { GasCylinder } from '../../../services/api/types';
+import type { CatalogCylinder } from '../../../services/api/gasCylinders';
 import { formatCurrency } from '../../../utils/format';
 import { stockLabel } from './stockLabel';
 
 interface Props {
-  rows: GasCylinder[];
+  rows: CatalogCylinder[];
   total: number;
   loading: boolean;
   /** Hay filtros activos: un vacío significa "sin resultados". */
@@ -18,11 +18,11 @@ interface Props {
   pagination: GridPaginationModel;
   onPaginationChange: (model: GridPaginationModel) => void;
   /** Sin él no se muestra el botón (p. ej. superadmin sin distribuidora elegida). */
-  onEdit?: (cylinder: GasCylinder) => void;
-  onAdjustStock?: (cylinder: GasCylinder) => void;
-  onDelete?: (cylinder: GasCylinder) => void;
+  onEdit?: (cylinder: CatalogCylinder) => void;
+  onAdjustStock?: (cylinder: CatalogCylinder) => void;
+  onDelete?: (cylinder: CatalogCylinder) => void;
   /** Reactivar un producto dado de baja (CU-268); sólo se usa en la vista de inactivos. */
-  onReactivate?: (cylinder: GasCylinder) => void;
+  onReactivate?: (cylinder: CatalogCylinder) => void;
 }
 
 export const CylindersTable = ({
@@ -39,7 +39,7 @@ export const CylindersTable = ({
   onReactivate,
 }: Props) => {
   const navigate = useNavigate();
-  const columns = useMemo<GridColDef<GasCylinder>[]>(
+  const columns = useMemo<GridColDef<CatalogCylinder>[]>(
     () => [
       {
         field: 'type',
@@ -58,9 +58,18 @@ export const CylindersTable = ({
       {
         field: 'price',
         headerName: 'Precio',
-        width: 130,
+        width: 150,
         valueGetter: ({ row }) => formatCurrency(row.price),
-        cellClassName: 'font-mono',
+        renderCell: ({ row }) => (
+          <div className="flex min-w-0 flex-col leading-tight">
+            <span className="font-mono text-ink">{formatCurrency(row.price)}</span>
+            <span className="truncate text-xs text-muted">
+              {row.container_price === null || row.container_price === undefined
+                ? 'Envase sin cargar'
+                : `Envase ${formatCurrency(row.container_price)}`}
+            </span>
+          </div>
+        ),
       },
       {
         field: 'stock',
