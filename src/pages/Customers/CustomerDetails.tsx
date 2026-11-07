@@ -38,6 +38,7 @@ import { roleLabel } from '../Users/roleLabel';
 import { CustomerAccountAction } from '../Finance/components/CustomerAccountAction';
 import { CustomerFormModal } from './components/CustomerFormModal';
 import { CustomerAccountTab } from './components/details/CustomerAccountTab';
+import { CustomerContainersCard } from './components/details/CustomerContainersCard';
 import { CustomerRecoveryCard } from './components/details/CustomerRecoveryCard';
 import { CustomerAddresses } from './components/details/CustomerAddresses';
 import { CustomerClaims } from './components/details/CustomerClaims';
@@ -265,6 +266,11 @@ export const CustomerDetails = () => {
             <CustomerAddresses userId={customer.user_id} />
           </ProfileTabPanel>
           <ProfileTabPanel tabKey="cylinders" value={tab}>
+            {!needsDistributor && (
+              <div className="mb-6">
+                <CustomerContainersCard customerId={customer.customer_id} />
+              </div>
+            )}
             <CylinderLinksCard
               title="Envases en su poder"
               filters={{ customerUserId: customer.user_id }}

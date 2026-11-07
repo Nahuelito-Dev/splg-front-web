@@ -50,6 +50,7 @@ export const queryKeys = {
   commissionEntries: resource('commissionEntries'),
   commissionRules: resource('commissionRules'),
   customerAccounts: resource('customerAccounts'),
+  customerContainers: resource('customerContainers'),
   driverLiquidations: resource('driverLiquidations'),
   driverSettlements: resource('driverSettlements'),
   finance: resource('finance'),

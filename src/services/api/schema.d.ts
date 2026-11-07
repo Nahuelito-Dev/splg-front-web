@@ -3838,6 +3838,57 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/customers/{id}/containers': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Consultar envases propios y prestados de un cliente */
+    get: operations['CustomerContainerController_listar'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/customers/{id}/containers/movements': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Historial de movimientos de envases del cliente */
+    get: operations['CustomerContainerController_movimientos'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/customers/{id}/containers/adjustments': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Registrar un ajuste manual en la cuenta de envases */
+    post: operations['CustomerContainerController_ajustar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/orders/delivery-options': {
     parameters: {
       query?: never;
@@ -13467,6 +13518,49 @@ export interface components {
       /** @example Distribuidora Demo */
       name: string;
       products: components['schemas']['ProductoPublicoDto'][];
+    };
+    CustomerContainerResponseDto: {
+      /** Format: uuid */
+      gasCylinderId: string;
+      /** @example Garrafa 10 kg */
+      type: string;
+      owned: number;
+      loanedByM5: number;
+      isActive: boolean;
+    };
+    CustomerContainersResponseDto: {
+      items: components['schemas']['CustomerContainerResponseDto'][];
+    };
+    CustomerContainerMovementResponseDto: {
+      /** Format: uuid */
+      movementId: string;
+      /** Format: uuid */
+      gasCylinderId: string;
+      type: string;
+      quantity: number;
+      /** @enum {string} */
+      reason: 'initial_from_deliveries' | 'purchased' | 'manual_adjustment' | 'returned';
+      /** Format: uuid */
+      orderId: string | null;
+      note: string | null;
+      /** Format: uuid */
+      actorUserId: string | null;
+      /** Format: date-time */
+      createdAt: string;
+    };
+    CustomerContainerMovementsResponseDto: {
+      items: components['schemas']['CustomerContainerMovementResponseDto'][];
+      total: number;
+      limit: number;
+      offset: number;
+    };
+    CreateContainerAdjustmentDto: {
+      /** Format: uuid */
+      gasCylinderId: string;
+      /** @example 2 */
+      quantity: number;
+      /** @example Corrección por inventario inicial. */
+      note: string;
     };
     DeliveryOptionDto: {
       /** @enum {string} */
@@ -33740,6 +33834,170 @@ export interface operations {
       };
       /** @description Demasiados pedidos seguidos */
       429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CustomerContainerController_listar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CustomerContainersResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Cliente no encontrado en la distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CustomerContainerController_movimientos: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+        page?: number;
+        /** @description Texto a buscar */
+        term?: string;
+      };
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CustomerContainerMovementsResponseDto'];
+        };
+      };
+      /** @description Paginación inválida */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Cliente no encontrado en la distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CustomerContainerController_ajustar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateContainerAdjustmentDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CustomerContainerResponseDto'];
+        };
+      };
+      /** @description Envases, Cantidad o Motivo inválidos */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Cliente o tipo de envase no encontrado en la distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El cliente quedaría con envases negativos */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
         headers: {
           [name: string]: unknown;
         };
