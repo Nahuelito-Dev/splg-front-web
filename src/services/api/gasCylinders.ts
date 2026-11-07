@@ -17,11 +17,11 @@ import type {
  * `GasCylinder`, `CreateGasCylinderBody` y `UpdateGasCylinderBody`.
  */
 /** Un producto del catálogo con su precio de envase (`null`: sin precio cargado). */
-export type CatalogCylinder = GasCylinder & { container_price: number | null };
+export type CatalogCylinder = GasCylinder;
 /** Alta: `container_price` opcional (> 0, hasta 2 decimales) o `null`. */
-export type CreateCatalogCylinderBody = CreateGasCylinderBody & { container_price?: number | null };
+export type CreateCatalogCylinderBody = CreateGasCylinderBody;
 /** Edición: sin `container_price` no se toca; con `null` se borra. */
-export type UpdateCatalogCylinderBody = UpdateGasCylinderBody & { container_price?: number | null };
+export type UpdateCatalogCylinderBody = UpdateGasCylinderBody;
 type CatalogPage = Omit<Catalogo, 'gasCylinders'> & { gasCylinders: CatalogCylinder[] };
 /** `GET /gascylinder/available/list` usa la misma respuesta por producto. */
 export type AvailableCatalog = Omit<Disponibles, 'products'> & { products: CatalogCylinder[] };
