@@ -13642,6 +13642,12 @@ export interface components {
        * @example 5
        */
       discountPercentage: number | null;
+      /** @example 1 */
+      containersCharged: number;
+      /** @example 10000 */
+      containerUnitPrice: number | null;
+      /** @example 10000 */
+      containerSubtotal: number;
     };
     QuoteZoneDto: {
       coverageZoneId: string;
@@ -13661,6 +13667,11 @@ export interface components {
        * @example 19000
        */
       subtotal: number;
+      /**
+       * @description Importe de los envases cobrados, sin promoción ni recargos de zona o express.
+       * @example 10000
+       */
+      containerChargeAmount: number;
       /** @description Zona de cobertura de la dirección y su recargo; `null` si no se mandó `addressId` o la distribuidora no tiene zonas */
       zone: components['schemas']['QuoteZoneDto'] | null;
       /**
@@ -13766,6 +13777,10 @@ export interface components {
        * @example 29800
        */
       subtotal: number;
+      /** @example 1 */
+      containersCharged: number;
+      /** @example 10000 */
+      containerUnitPrice: number | null;
       gas_cylinder: components['schemas']['ProductoDelRenglonDto'] | null;
     };
     CustomerDeOrderDto: {
@@ -13851,6 +13866,11 @@ export interface components {
       /** @example 22600 */
       total_amount: number;
       /**
+       * @description Cargo por envases sin promoción; lleva el recargo por medio de pago, no los recargos de zona ni express.
+       * @example 10000
+       */
+      containerChargeAmount: number;
+      /**
        * @description Estado para las apps: `on_the_way` sale como `out_for_delivery`
        * @enum {string}
        */
@@ -13913,7 +13933,7 @@ export interface components {
        */
       expressSurchargeAmount: number;
       /**
-       * @description Recargo por medio de pago en pesos (0 en efectivo sin recargo). Es parte del `total_amount`: subtotal de ítems + recargo de zona + este recargo (+ el express vigente).
+       * @description Recargo por medio de pago en pesos (0 en efectivo sin recargo), calculado también sobre los envases. Es parte del `total_amount`: subtotal de ítems + envases + recargo de zona + este recargo (+ el express vigente).
        * @example 2000
        */
       paymentSurchargeAmount: number;
@@ -14265,6 +14285,11 @@ export interface components {
       /** @example 22600 */
       total_amount: number;
       /**
+       * @description Cargo por envases sin promoción; lleva el recargo por medio de pago, no los recargos de zona ni express.
+       * @example 10000
+       */
+      containerChargeAmount: number;
+      /**
        * @description Estado para las apps: `on_the_way` sale como `out_for_delivery`
        * @enum {string}
        */
@@ -14327,7 +14352,7 @@ export interface components {
        */
       expressSurchargeAmount: number;
       /**
-       * @description Recargo por medio de pago en pesos (0 en efectivo sin recargo). Es parte del `total_amount`: subtotal de ítems + recargo de zona + este recargo (+ el express vigente).
+       * @description Recargo por medio de pago en pesos (0 en efectivo sin recargo), calculado también sobre los envases. Es parte del `total_amount`: subtotal de ítems + envases + recargo de zona + este recargo (+ el express vigente).
        * @example 2000
        */
       paymentSurchargeAmount: number;
