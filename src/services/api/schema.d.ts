@@ -2602,6 +2602,30 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/container-charge': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Estado del cobro de envases
+     * @description Sin configuración, el cobro está apagado: el canje de envases es 1:1 y no se bloquean pedidos por falta de precio de envase.
+     */
+    get: operations['ContainerChargeConfigController_get'];
+    /**
+     * Cambiar el cobro de envases
+     * @description Al activarlo se cobran los envases que le faltan al cliente y un tipo sin precio de envase bloquea el pedido. Al apagarlo no se cobran envases.
+     */
+    put: operations['ContainerChargeConfigController_put'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/module-config/dispatch': {
     parameters: {
       query?: never;
@@ -11936,6 +11960,20 @@ export interface components {
        * @example 0
        */
       cashPercentage: number;
+    };
+    ContainerChargeConfigResponseDto: {
+      /**
+       * @description Si se cobran los envases faltantes al crear o cotizar pedidos.
+       * @example false
+       */
+      enabled: boolean;
+    };
+    ContainerChargeConfigDto: {
+      /**
+       * @description Activa el cobro de los envases que le faltan al cliente.
+       * @example true
+       */
+      enabled: boolean;
     };
     DispatchConfigResponseDto: {
       /**
@@ -29545,6 +29583,97 @@ export interface operations {
       };
       /** @description Requiere rol: admin, super_admin */
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ContainerChargeConfigController_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ContainerChargeConfigResponseDto'];
+        };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)"). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ContainerChargeConfigController_put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ContainerChargeConfigDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ContainerChargeConfigResponseDto'];
+        };
+      };
+      /** @description Super admin sin X-Distributor o `enabled` ausente/no booleano (detalle por campo). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
         headers: {
           [name: string]: unknown;
         };
