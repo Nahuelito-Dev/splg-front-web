@@ -1,6 +1,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { Order } from '../../../../services/api/types';
+import { formatCurrency } from '../../../../utils/format';
 import { OrderItemsSummary } from './OrderItemsSummary';
 
 afterEach(cleanup);
@@ -17,6 +18,7 @@ const order = (over: Partial<Order>) =>
     expressSurchargeAmount: 0,
     deliveryMode: 'standard',
     zone_surcharge: null,
+    containerChargeAmount: 0,
     order_items: [],
     ...over,
   }) as unknown as Order;
@@ -64,5 +66,31 @@ describe('OrderItemsSummary: medio de pago', () => {
     );
     expect(screen.queryByText(/Recargo por transferencia/)).not.toBeInTheDocument();
     expect(screen.getByText('Recargo express')).toBeInTheDocument();
+  });
+});
+
+/** El importe como lo lee testing-library: el espacio duro de `Intl` queda como espacio común. */
+const money = (value: number) => formatCurrency(value).replace(/\s/g, ' ');
+
+describe('OrderItemsSummary: envases (F35)', () => {
+  it('con envases cobrados muestra «Envases (N)» con el importe del back', () => {
+    render(
+      <OrderItemsSummary
+        order={order({
+          containerChargeAmount: 30000,
+          order_items: [
+            { quantity: 2, unit_price: 100, subtotal: 200, containersCharged: 2, containerUnitPrice: 10000 },
+            { quantity: 1, unit_price: 100, subtotal: 100, containersCharged: 1, containerUnitPrice: 10000 },
+          ] as unknown as Order['order_items'],
+        })}
+      />,
+    );
+    const row = screen.getByText('Envases (3)').closest('div');
+    expect(row).toHaveTextContent(money(30000));
+  });
+
+  it('sin envases cobrados no hay línea', () => {
+    render(<OrderItemsSummary order={order({})} />);
+    expect(screen.queryByText(/Envases/)).not.toBeInTheDocument();
   });
 });

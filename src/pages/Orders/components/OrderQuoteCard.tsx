@@ -1,9 +1,16 @@
+import { Link } from 'react-router-dom';
 import { Card, CardHeader } from '../../../common/components/ui';
 import { errorMessage } from '../../../services/api/errors';
 import type { QuoteOrderBody } from '../../../services/api/types';
 import { useOrderQuote } from '../../../services/queries/orders';
 import { formatCurrency } from '../../../utils/format';
-import { quoteSurchargeLabel } from './details/orderPricing';
+import {
+  containerChargeLabel,
+  containerItemNote,
+  containersChargedCount,
+  isMissingContainerPrice,
+  quoteSurchargeLabel,
+} from './details/orderPricing';
 
 interface Props {
   /** Lo cargado hasta ahora; `null` si todavía no alcanza para cotizar. */
@@ -16,12 +23,17 @@ interface LineProps {
   label: string;
   amount: number;
   strong?: boolean;
+  /** Aclaración debajo del renglón (p. ej. los envases que se cobran aparte). */
+  note?: string | null;
 }
 
-const Line = ({ label, amount, strong }: LineProps) => (
-  <div className={`flex justify-between gap-4 ${strong ? 'text-base font-semibold text-ink' : 'text-sm text-muted'}`}>
-    <dt>{label}</dt>
-    <dd className="font-mono tabular-nums">{formatCurrency(amount)}</dd>
+const Line = ({ label, amount, strong, note }: LineProps) => (
+  <div>
+    <div className={`flex justify-between gap-4 ${strong ? 'text-base font-semibold text-ink' : 'text-sm text-muted'}`}>
+      <dt className="min-w-0 break-words">{label}</dt>
+      <dd className="shrink-0 font-mono tabular-nums">{formatCurrency(amount)}</dd>
+    </div>
+    {note && <p className="text-xs text-muted">{note}</p>}
   </div>
 );
 
@@ -41,6 +53,14 @@ export const OrderQuoteCard = ({ body, hint }: Props) => {
       ) : error && !stale ? (
         <p role="alert" className="text-sm text-danger">
           No se pudo cotizar: {errorMessage(error)}
+          {isMissingContainerPrice(error) && (
+            <>
+              {' '}
+              <Link to="/cylinders" className="font-semibold text-primary-strong underline">
+                Cargar el precio del envase en el catálogo
+              </Link>
+            </>
+          )}
         </p>
       ) : quote ? (
         <dl className="space-y-1.5">
@@ -49,11 +69,18 @@ export const OrderQuoteCard = ({ body, hint }: Props) => {
               key={`${item.gasCylinderId}-${index}`}
               label={`${item.quantity} × ${item.title} (${formatCurrency(item.unitPrice)} c/u)`}
               amount={item.subtotal}
+              note={containerItemNote(item)}
             />
           ))}
           <div className="border-t border-outline pt-1.5">
             <Line label="Subtotal" amount={quote.subtotal} />
           </div>
+          {quote.containerChargeAmount > 0 && (
+            <Line
+              label={containerChargeLabel(containersChargedCount(quote.items))}
+              amount={quote.containerChargeAmount}
+            />
+          )}
           {quote.zoneSurcharge > 0 && (
             <Line label={`Recargo de zona${quote.zone ? ` (${quote.zone.name})` : ''}`} amount={quote.zoneSurcharge} />
           )}

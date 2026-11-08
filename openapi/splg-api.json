@@ -46783,6 +46783,19 @@
                         "nullable": true,
                         "example": 5,
                         "description": "Porcentaje de la promoción por volumen que se aplicó a este renglón; null si se cotizó a precio de lista"
+                    },
+                    "containersCharged": {
+                        "type": "number",
+                        "example": 1
+                    },
+                    "containerUnitPrice": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": 10000
+                    },
+                    "containerSubtotal": {
+                        "type": "number",
+                        "example": 10000
                     }
                 },
                 "required": [
@@ -46791,7 +46804,10 @@
                     "quantity",
                     "unitPrice",
                     "subtotal",
-                    "discountPercentage"
+                    "discountPercentage",
+                    "containersCharged",
+                    "containerUnitPrice",
+                    "containerSubtotal"
                 ]
             },
             "QuoteZoneDto": {
@@ -46841,6 +46857,11 @@
                         "type": "number",
                         "example": 19000,
                         "description": "Suma de los renglones, ya con promociones por volumen"
+                    },
+                    "containerChargeAmount": {
+                        "type": "number",
+                        "example": 10000,
+                        "description": "Importe de los envases cobrados, sin promoción ni recargos de zona o express."
                     },
                     "zone": {
                         "nullable": true,
@@ -46909,6 +46930,7 @@
                 "required": [
                     "items",
                     "subtotal",
+                    "containerChargeAmount",
                     "zone",
                     "zoneSurcharge",
                     "paymentMethod",
@@ -47082,6 +47104,15 @@
                         "example": 29800,
                         "description": "Subtotal del renglón tal como quedó guardado."
                     },
+                    "containersCharged": {
+                        "type": "number",
+                        "example": 1
+                    },
+                    "containerUnitPrice": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": 10000
+                    },
                     "gas_cylinder": {
                         "nullable": true,
                         "allOf": [
@@ -47095,6 +47126,8 @@
                     "quantity",
                     "unit_price",
                     "subtotal",
+                    "containersCharged",
+                    "containerUnitPrice",
                     "gas_cylinder"
                 ]
             },
@@ -47301,6 +47334,11 @@
                         "type": "number",
                         "example": 22600
                     },
+                    "containerChargeAmount": {
+                        "type": "number",
+                        "example": 10000,
+                        "description": "Cargo por envases sin promoción; lleva el recargo por medio de pago, no los recargos de zona ni express."
+                    },
                     "status": {
                         "type": "string",
                         "description": "Estado para las apps: `on_the_way` sale como `out_for_delivery`",
@@ -47400,7 +47438,7 @@
                     "paymentSurchargeAmount": {
                         "type": "number",
                         "example": 2000,
-                        "description": "Recargo por medio de pago en pesos (0 en efectivo sin recargo). Es parte del `total_amount`: subtotal de ítems + recargo de zona + este recargo (+ el express vigente)."
+                        "description": "Recargo por medio de pago en pesos (0 en efectivo sin recargo), calculado también sobre los envases. Es parte del `total_amount`: subtotal de ítems + envases + recargo de zona + este recargo (+ el express vigente)."
                     },
                     "paymentSurchargePercentage": {
                         "type": "number",
@@ -47556,6 +47594,7 @@
                     "order_id",
                     "distributor_id",
                     "total_amount",
+                    "containerChargeAmount",
                     "status",
                     "created_at",
                     "payment_method",
@@ -48260,6 +48299,11 @@
                         "type": "number",
                         "example": 22600
                     },
+                    "containerChargeAmount": {
+                        "type": "number",
+                        "example": 10000,
+                        "description": "Cargo por envases sin promoción; lleva el recargo por medio de pago, no los recargos de zona ni express."
+                    },
                     "status": {
                         "type": "string",
                         "description": "Estado para las apps: `on_the_way` sale como `out_for_delivery`",
@@ -48359,7 +48403,7 @@
                     "paymentSurchargeAmount": {
                         "type": "number",
                         "example": 2000,
-                        "description": "Recargo por medio de pago en pesos (0 en efectivo sin recargo). Es parte del `total_amount`: subtotal de ítems + recargo de zona + este recargo (+ el express vigente)."
+                        "description": "Recargo por medio de pago en pesos (0 en efectivo sin recargo), calculado también sobre los envases. Es parte del `total_amount`: subtotal de ítems + envases + recargo de zona + este recargo (+ el express vigente)."
                     },
                     "paymentSurchargePercentage": {
                         "type": "number",
@@ -48520,6 +48564,7 @@
                     "order_id",
                     "distributor_id",
                     "total_amount",
+                    "containerChargeAmount",
                     "status",
                     "created_at",
                     "payment_method",

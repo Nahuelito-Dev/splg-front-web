@@ -5,6 +5,7 @@ import type { Order } from '../../../services/api/types';
 import { useOrder } from '../../../services/queries/orders';
 import { formatCurrency, formatDateTime, formatShortId } from '../../../utils/format';
 import { labelOf, ORDER_STATUS, paymentStatusLabel, type Label } from '../../../utils/statusLabels';
+import { containerChargeLabel, containersChargedCount } from './details/orderPricing';
 import { assignPaymentBlock, canAssignDriver } from './orderStatus';
 
 /** «Cobro pendiente», «Cobro cobrado»…: sin el prefijo, «Pendiente» se confunde con el estado del pedido. */
@@ -99,6 +100,15 @@ export const OrderQuickDrawer = ({ open, onClose, order: listed, onAssign }: Pro
               ),
             },
             { label: 'Total', value: formatCurrency(order.total_amount), mono: true },
+            ...(order.containerChargeAmount > 0
+              ? [
+                  {
+                    label: containerChargeLabel(containersChargedCount(order.order_items)),
+                    value: formatCurrency(order.containerChargeAmount),
+                    mono: true,
+                  },
+                ]
+              : []),
             ...(order.customer_notes ? [{ label: 'Nota del cliente', value: order.customer_notes, wide: true }] : []),
             ...(order.delivery_notes ? [{ label: 'Nota de entrega', value: order.delivery_notes, wide: true }] : []),
           ]}

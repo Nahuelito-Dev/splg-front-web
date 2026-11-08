@@ -3,7 +3,12 @@ import { Badge, Card, CardHeader } from '../../../../common/components/ui';
 import type { Order } from '../../../../services/api/types';
 import { formatCurrency } from '../../../../utils/format';
 import { labelOf, PAYMENT_METHOD } from '../../../../utils/statusLabels';
-import { orderSurchargeLabel, paymentSurchargeAmount } from './orderPricing';
+import {
+  containerChargeLabel,
+  containersChargedCount,
+  orderSurchargeLabel,
+  paymentSurchargeAmount,
+} from './orderPricing';
 
 const TotalRow = ({ label, value, strong }: { label: string; value: string; strong?: boolean }) => (
   <div className="flex items-baseline justify-between gap-4">
@@ -54,6 +59,12 @@ export const OrderItemsSummary = ({ order }: { order: Order }) => {
 
       <dl className="space-y-2 border-t border-dashed border-outline p-5 text-[13px]">
         <TotalRow label="Subtotal garrafas" value={formatCurrency(order.subtotal_items)} />
+        {order.containerChargeAmount > 0 && (
+          <TotalRow
+            label={containerChargeLabel(containersChargedCount(order.order_items))}
+            value={formatCurrency(order.containerChargeAmount)}
+          />
+        )}
         {zone && zone.amount > 0 && (
           <TotalRow
             label={`Recargo por zona «${zone.name}»${zone.type === 'percentage' ? ` (${zone.value} %)` : ''}`}
