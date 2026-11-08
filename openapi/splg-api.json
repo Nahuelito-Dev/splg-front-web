@@ -11259,6 +11259,91 @@
                 ]
             }
         },
+        "/api/v2/container-charge": {
+            "get": {
+                "description": "Sin configuración, el cobro está apagado: el canje de envases es 1:1 y no se bloquean pedidos por falta de precio de envase.",
+                "operationId": "ContainerChargeConfigController_get",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ContainerChargeConfigResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\")."
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Estado del cobro de envases",
+                "tags": [
+                    "Configuración · Cobro de envases (v2)"
+                ]
+            },
+            "put": {
+                "description": "Al activarlo se cobran los envases que le faltan al cliente y un tipo sin precio de envase bloquea el pedido. Al apagarlo no se cobran envases.",
+                "operationId": "ContainerChargeConfigController_put",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ContainerChargeConfigDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ContainerChargeConfigResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Super admin sin X-Distributor o `enabled` ausente/no booleano (detalle por campo)."
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Cambiar el cobro de envases",
+                "tags": [
+                    "Configuración · Cobro de envases (v2)"
+                ]
+            }
+        },
         "/api/v1/module-config/dispatch": {
             "get": {
                 "description": "Pasos de radio (km), ventana de aceptación de la oferta (s) y radio en metros al destino para los choferes por terminar su entrega (CU-013). Si la distribuidora no configuró nada, devuelve los valores por omisión (`isDefault: true`).",
@@ -42747,6 +42832,32 @@
                     "transferPercentage",
                     "mercadoPagoPercentage",
                     "cashPercentage"
+                ]
+            },
+            "ContainerChargeConfigResponseDto": {
+                "type": "object",
+                "properties": {
+                    "enabled": {
+                        "type": "boolean",
+                        "description": "Si se cobran los envases faltantes al crear o cotizar pedidos.",
+                        "example": false
+                    }
+                },
+                "required": [
+                    "enabled"
+                ]
+            },
+            "ContainerChargeConfigDto": {
+                "type": "object",
+                "properties": {
+                    "enabled": {
+                        "type": "boolean",
+                        "description": "Activa el cobro de los envases que le faltan al cliente.",
+                        "example": true
+                    }
+                },
+                "required": [
+                    "enabled"
                 ]
             },
             "DispatchConfigResponseDto": {

@@ -2,6 +2,7 @@ import { Card, EntityPhoto, PageHeader, PageContainer } from '../../common/compo
 import { usePermissions } from '../../hooks';
 import { useCurrentDistributor } from '../../services/queries/distributors';
 import { BankDetailsCard } from './components/BankDetailsCard';
+import { ContainerChargeCard } from './components/ContainerChargeCard';
 import { MercadoPagoCard } from './components/MercadoPagoCard';
 import { PaymentSurchargesCard } from './components/PaymentSurchargesCard';
 import { StockControlCard } from './components/StockControlCard';
@@ -32,6 +33,7 @@ export const Configuration = () => {
         <BankDetailsCard />
         <MercadoPagoCard />
         <PaymentSurchargesCard />
+        <ContainerChargeCard />
         <StockControlCard />
         <TimeSlotsManager />
         <SlotAvailabilityPanel />
