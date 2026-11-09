@@ -1958,6 +1958,9 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "Filtro o paginación inválidos"
+                    },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
@@ -2036,6 +2039,9 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "Paginación inválida"
+                    },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
@@ -2081,6 +2087,9 @@
                                 }
                             }
                         }
+                    },
+                    "400": {
+                        "description": "El id no es un UUID"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -2189,6 +2198,9 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "El id no es un UUID, o super admin sin X-Distributor"
+                    },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
@@ -2199,7 +2211,7 @@
                         "description": "Chofer no encontrado (o de otra distribuidora)"
                     },
                     "409": {
-                        "description": "Tiene pedidos aceptados o en camino: hay que cancelarlos o reasignarlos antes"
+                        "description": "Tiene pedidos aceptados o en camino, una carga de camión abierta o, si tiene legajo, una rendición pendiente o efectivo sin rendir"
                     }
                 },
                 "security": [
@@ -2240,6 +2252,9 @@
                                 }
                             }
                         }
+                    },
+                    "400": {
+                        "description": "El id no es un UUID"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -2290,6 +2305,9 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "El id no es un UUID, o super admin sin X-Distributor"
+                    },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
@@ -2338,6 +2356,9 @@
                                 }
                             }
                         }
+                    },
+                    "400": {
+                        "description": "El id no es un UUID, o super admin sin X-Distributor"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -6497,6 +6518,9 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "El id no es un UUID o super admin sin X-Distributor"
+                    },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
@@ -6576,6 +6600,9 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "El id no es un UUID o super admin sin X-Distributor"
+                    },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
@@ -6632,7 +6659,7 @@
                         }
                     },
                     "400": {
-                        "description": "El vehículo está inhabilitado por documentación vencida"
+                        "description": "El vehículo está inhabilitado por documentación vencida, datos inválidos, o super admin sin X-Distributor"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -6680,6 +6707,9 @@
                                 }
                             }
                         }
+                    },
+                    "400": {
+                        "description": "El id no es un UUID o super admin sin X-Distributor"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -6769,6 +6799,9 @@
                                 }
                             }
                         }
+                    },
+                    "400": {
+                        "description": "El id no es un UUID, paginación inválida, o super admin sin X-Distributor"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -22684,6 +22717,9 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "Filtro o paginación inválidos, o super admin sin X-Distributor"
+                    },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
@@ -22725,6 +22761,9 @@
                                 }
                             }
                         }
+                    },
+                    "400": {
+                        "description": "Chofer o fecha inválidos, fecha futura, o super admin sin X-Distributor"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -22781,14 +22820,14 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "Fecha inválida o futura"
+                    },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
                     "403": {
                         "description": "Requiere rol: delivery"
-                    },
-                    "404": {
-                        "description": "El usuario no tiene perfil de chofer"
                     }
                 },
                 "security": [
@@ -22830,6 +22869,9 @@
                                 }
                             }
                         }
+                    },
+                    "400": {
+                        "description": "El id no es un UUID o super admin sin X-Distributor"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -22881,7 +22923,7 @@
                     }
                 },
                 "responses": {
-                    "200": {
+                    "201": {
                         "description": "",
                         "content": {
                             "application/json": {
@@ -22892,7 +22934,7 @@
                         }
                     },
                     "400": {
-                        "description": "Efectivo o gasto negativo, o un gasto sin categoría de egreso"
+                        "description": "Efectivo o gasto negativo, un gasto sin categoría de egreso, o super admin sin X-Distributor"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -22961,7 +23003,7 @@
                         }
                     },
                     "400": {
-                        "description": "Hay diferencia y no se indica cómo se resuelve, o un sobrante a cargo del chofer"
+                        "description": "Hay diferencia y no se indica cómo se resuelve, un sobrante a cargo del chofer, datos inválidos, o super admin sin X-Distributor"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -22973,7 +23015,7 @@
                         "description": "La rendición o la caja no existen o son de otra distribuidora"
                     },
                     "409": {
-                        "description": "No está presentada, la caja exige sesión y no la tiene abierta, o la carga del camión no está cerrada"
+                        "description": "No está presentada, la caja exige sesión y no la tiene abierta o está desactivada, la carga del camión no está cerrada, o un faltante a cargo de un chofer sin legajo"
                     },
                     "422": {
                         "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
@@ -23016,6 +23058,9 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "El id no es un UUID o super admin sin X-Distributor"
+                    },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
@@ -23027,9 +23072,6 @@
                     },
                     "409": {
                         "description": "La rendición no está presentada"
-                    },
-                    "422": {
-                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
                     }
                 },
                 "security": [
@@ -25357,6 +25399,9 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "Super admin sin X-Distributor"
+                    },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
@@ -25397,6 +25442,9 @@
                                 }
                             }
                         }
+                    },
+                    "400": {
+                        "description": "Campo faltante o inválido"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -25441,6 +25489,9 @@
                                 }
                             }
                         }
+                    },
+                    "400": {
+                        "description": "El id no es un UUID o super admin sin X-Distributor"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -25620,6 +25671,9 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "Filtro o paginación inválidos"
+                    },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
@@ -25663,6 +25717,9 @@
                                 }
                             }
                         }
+                    },
+                    "400": {
+                        "description": "El id no es un UUID"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -25790,9 +25847,6 @@
                     },
                     "409": {
                         "description": "La carga no está en un estado que lo permita (conflicto de estado)"
-                    },
-                    "422": {
-                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
                     }
                 },
                 "security": [
@@ -26061,6 +26115,9 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "El id no es un UUID, o motivo inválido"
+                    },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
@@ -26184,6 +26241,9 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "El id no es un UUID"
+                    },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
@@ -26237,6 +26297,9 @@
                                 }
                             }
                         }
+                    },
+                    "302": {
+                        "description": "Redirección a la URL firmada (sin `modo`)"
                     },
                     "400": {
                         "description": "El modo no es válido"
@@ -30690,9 +30753,6 @@
                     },
                     "409": {
                         "description": "La agrupación por recorrido está apagada para la distribuidora, o ya se están armando los lotes de esta distribuidora (cerrojo tomado): reintentar en un momento"
-                    },
-                    "422": {
-                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
                     }
                 },
                 "security": [
@@ -30730,6 +30790,9 @@
                                 }
                             }
                         }
+                    },
+                    "400": {
+                        "description": "El id no es un UUID"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -30778,6 +30841,9 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "El id no es un UUID"
+                    },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
@@ -30789,9 +30855,6 @@
                     },
                     "409": {
                         "description": "El lote ya tiene chofer o está cerrado"
-                    },
-                    "422": {
-                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
                     }
                 },
                 "security": [
@@ -30859,6 +30922,9 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "Paginación inválida"
+                    },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
@@ -30901,6 +30967,9 @@
                                 }
                             }
                         }
+                    },
+                    "400": {
+                        "description": "El id no es un UUID"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -30949,6 +31018,9 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "El id no es un UUID, chofer deshabilitado o sin validar, o con documentación vencida"
+                    },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
@@ -30960,9 +31032,6 @@
                     },
                     "409": {
                         "description": "La oferta no está vigente (venció o la tiene otro chofer) o los pedidos ya no están disponibles"
-                    },
-                    "422": {
-                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
                     }
                 },
                 "security": [
@@ -31002,6 +31071,9 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "El id no es un UUID"
+                    },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
@@ -31013,9 +31085,6 @@
                     },
                     "409": {
                         "description": "La oferta no está vigente"
-                    },
-                    "422": {
-                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
                     }
                 },
                 "security": [
