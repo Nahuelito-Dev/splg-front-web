@@ -1,6 +1,6 @@
 import { Flame } from 'lucide-react';
 import { Badge, Card, CardHeader } from '../../../../common/components/ui';
-import type { Order } from '../../../../services/api/types';
+import type { Order, OrderItem } from '../../../../services/api/types';
 import { formatCurrency } from '../../../../utils/format';
 import { labelOf, PAYMENT_METHOD } from '../../../../utils/statusLabels';
 import {
@@ -16,6 +16,17 @@ const TotalRow = ({ label, value, strong }: { label: string; value: string; stro
     <dd className={strong ? 'text-lg font-bold text-ink' : 'text-ink'}>{value}</dd>
   </div>
 );
+
+/** Vacías que el chofer declaró haber recibido; sin declaración o sin vacías esperadas no hay línea. */
+const EmptiesReceivedLine = ({ item }: { item: OrderItem }) => {
+  const { emptiesExpected: expected, emptiesReceived: received } = item;
+  if (received == null || !expected) return null;
+  return (
+    <p className={received < expected ? 'text-xs font-semibold text-warn' : 'text-xs text-muted'}>
+      Vacías: recibidas {received} de {expected}
+    </p>
+  );
+};
 
 /** Ítems del pedido con su garrafa, cantidades y totales, y el desglose de recargos como resumen. */
 export const OrderItemsSummary = ({ order }: { order: Order }) => {
@@ -50,6 +61,7 @@ export const OrderItemsSummary = ({ order }: { order: Order }) => {
                   {item.quantity} × {formatCurrency(item.unit_price)}
                   {cylinder?.description ? ` · ${cylinder.description}` : ''}
                 </p>
+                <EmptiesReceivedLine item={item} />
               </div>
               <p className="shrink-0 font-semibold text-ink">{formatCurrency(item.subtotal)}</p>
             </li>
