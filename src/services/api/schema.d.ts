@@ -21624,6 +21624,13 @@ export interface operations {
           'application/json': components['schemas']['DeliveryResponseDto'][];
         };
       };
+      /** @description Filtro o paginación inválidos */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Sin token o token inválido */
       401: {
         headers: {
@@ -21664,6 +21671,13 @@ export interface operations {
           'application/json': components['schemas']['DeliveryResponseDto'][];
         };
       };
+      /** @description Paginación inválida */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Sin token o token inválido */
       401: {
         headers: {
@@ -21700,6 +21714,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['DeliveryResponseDto'];
         };
+      };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Sin token o token inválido */
       401: {
@@ -21744,6 +21765,13 @@ export interface operations {
           'application/json': components['schemas']['MessageResponseDto'];
         };
       };
+      /** @description El id no es un UUID, o super admin sin X-Distributor */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Sin token o token inválido */
       401: {
         headers: {
@@ -21765,7 +21793,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Tiene pedidos aceptados o en camino: hay que cancelarlos o reasignarlos antes */
+      /** @description Tiene pedidos aceptados o en camino, una carga de camión abierta o, si tiene legajo, una rendición pendiente o efectivo sin rendir */
       409: {
         headers: {
           [name: string]: unknown;
@@ -21850,6 +21878,13 @@ export interface operations {
           'application/json': components['schemas']['DeliveryResponseDto'];
         };
       };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Sin token o token inválido */
       401: {
         headers: {
@@ -21894,6 +21929,13 @@ export interface operations {
           'application/json': components['schemas']['DeliveryResponseDto'];
         };
       };
+      /** @description El id no es un UUID, o super admin sin X-Distributor */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Sin token o token inválido */
       401: {
         headers: {
@@ -21937,6 +21979,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['DeliveryResponseDto'];
         };
+      };
+      /** @description El id no es un UUID, o super admin sin X-Distributor */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Sin token o token inválido */
       401: {
@@ -25437,6 +25486,13 @@ export interface operations {
           'application/json': components['schemas']['FleetDriverDocumentsResponseDto'];
         };
       };
+      /** @description El id no es un UUID o super admin sin X-Distributor */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Sin token o token inválido */
       401: {
         headers: {
@@ -25515,6 +25571,13 @@ export interface operations {
           'application/json': components['schemas']['VehicleInUseResponseDto'];
         };
       };
+      /** @description El id no es un UUID o super admin sin X-Distributor */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Sin token o token inválido */
       401: {
         headers: {
@@ -25562,7 +25625,7 @@ export interface operations {
           'application/json': components['schemas']['VehicleInUseResponseDto'];
         };
       };
-      /** @description El vehículo está inhabilitado por documentación vencida */
+      /** @description El vehículo está inhabilitado por documentación vencida, datos inválidos, o super admin sin X-Distributor */
       400: {
         headers: {
           [name: string]: unknown;
@@ -25619,6 +25682,13 @@ export interface operations {
           'application/json': components['schemas']['MessageResponseDto'];
         };
       };
+      /** @description El id no es un UUID o super admin sin X-Distributor */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Sin token o token inválido */
       401: {
         headers: {
@@ -25674,6 +25744,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['VehicleAssignmentHistoryResponseDto'][];
         };
+      };
+      /** @description El id no es un UUID, paginación inválida, o super admin sin X-Distributor */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Sin token o token inválido */
       401: {
@@ -39490,6 +39567,13 @@ export interface operations {
           'application/json': components['schemas']['DriverSettlementPageDto'];
         };
       };
+      /** @description Filtro o paginación inválidos, o super admin sin X-Distributor */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Sin token o token inválido */
       401: {
         headers: {
@@ -39526,6 +39610,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['DriverSettlementDetailDto'];
         };
+      };
+      /** @description Chofer o fecha inválidos, fecha futura, o super admin sin X-Distributor */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Sin token o token inválido */
       401: {
@@ -39583,6 +39674,13 @@ export interface operations {
           'application/json': components['schemas']['DriverSettlementDetailDto'];
         };
       };
+      /** @description Fecha inválida o futura */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Sin token o token inválido */
       401: {
         headers: {
@@ -39592,13 +39690,6 @@ export interface operations {
       };
       /** @description Requiere rol: delivery */
       403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description El usuario no tiene perfil de chofer */
-      404: {
         headers: {
           [name: string]: unknown;
         };
@@ -39625,6 +39716,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['DriverSettlementDetailDto'];
         };
+      };
+      /** @description El id no es un UUID o super admin sin X-Distributor */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Sin token o token inválido */
       401: {
@@ -39665,7 +39763,7 @@ export interface operations {
       };
     };
     responses: {
-      200: {
+      201: {
         headers: {
           [name: string]: unknown;
         };
@@ -39673,7 +39771,7 @@ export interface operations {
           'application/json': components['schemas']['DriverSettlementDetailDto'];
         };
       };
-      /** @description Efectivo o gasto negativo, o un gasto sin categoría de egreso */
+      /** @description Efectivo o gasto negativo, un gasto sin categoría de egreso, o super admin sin X-Distributor */
       400: {
         headers: {
           [name: string]: unknown;
@@ -39741,7 +39839,7 @@ export interface operations {
           'application/json': components['schemas']['DriverSettlementDetailDto'];
         };
       };
-      /** @description Hay diferencia y no se indica cómo se resuelve, o un sobrante a cargo del chofer */
+      /** @description Hay diferencia y no se indica cómo se resuelve, un sobrante a cargo del chofer, datos inválidos, o super admin sin X-Distributor */
       400: {
         headers: {
           [name: string]: unknown;
@@ -39769,7 +39867,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description No está presentada, la caja exige sesión y no la tiene abierta, o la carga del camión no está cerrada */
+      /** @description No está presentada, la caja exige sesión y no la tiene abierta o está desactivada, la carga del camión no está cerrada, o un faltante a cargo de un chofer sin legajo */
       409: {
         headers: {
           [name: string]: unknown;
@@ -39805,6 +39903,13 @@ export interface operations {
           'application/json': components['schemas']['DriverSettlementDetailDto'];
         };
       };
+      /** @description El id no es un UUID o super admin sin X-Distributor */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Sin token o token inválido */
       401: {
         headers: {
@@ -39828,13 +39933,6 @@ export interface operations {
       };
       /** @description La rendición no está presentada */
       409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
-      422: {
         headers: {
           [name: string]: unknown;
         };
@@ -41663,6 +41761,13 @@ export interface operations {
           'application/json': components['schemas']['StockControlSettingsDto'];
         };
       };
+      /** @description Super admin sin X-Distributor */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Sin token o token inválido */
       401: {
         headers: {
@@ -41700,6 +41805,13 @@ export interface operations {
           'application/json': components['schemas']['StockControlSettingsDto'];
         };
       };
+      /** @description Campo faltante o inválido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Sin token o token inválido */
       401: {
         headers: {
@@ -41735,6 +41847,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['TruckStockDto'];
         };
+      };
+      /** @description El id no es un UUID o super admin sin X-Distributor */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Sin token o token inválido */
       401: {
@@ -41785,6 +41904,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['TruckLoadPageDto'];
         };
+      };
+      /** @description Filtro o paginación inválidos */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Sin token o token inválido */
       401: {
@@ -41886,6 +42012,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['TruckLoadResponseDto'];
         };
+      };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Sin token o token inválido */
       401: {
@@ -42021,13 +42154,6 @@ export interface operations {
       };
       /** @description La carga no está en un estado que lo permita (conflicto de estado) */
       409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
-      422: {
         headers: {
           [name: string]: unknown;
         };
@@ -42260,6 +42386,13 @@ export interface operations {
           'application/json': components['schemas']['TruckLoadResponseDto'];
         };
       };
+      /** @description El id no es un UUID, o motivo inválido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Sin token o token inválido */
       401: {
         headers: {
@@ -42312,6 +42445,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['PhotoLinkResponseDto'];
         };
+      };
+      /** @description Redirección a la URL firmada (sin `modo`) */
+      302: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description El modo no es válido */
       400: {
@@ -42433,6 +42573,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['PhotoCurrentResponseDto'];
         };
+      };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Sin token o token inválido */
       401: {
@@ -46196,13 +46343,6 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
     };
   };
   RouteBatchController_uno: {
@@ -46224,6 +46364,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['RouteBatchResponseDto'];
         };
+      };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Sin token o token inválido */
       401: {
@@ -46268,6 +46415,13 @@ export interface operations {
           'application/json': components['schemas']['RouteBatchResponseDto'];
         };
       };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Sin token o token inválido */
       401: {
         headers: {
@@ -46291,13 +46445,6 @@ export interface operations {
       };
       /** @description El lote ya tiene chofer o está cerrado */
       409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
-      422: {
         headers: {
           [name: string]: unknown;
         };
@@ -46327,6 +46474,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['DriverRouteBatchPageDto'];
         };
+      };
+      /** @description Paginación inválida */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Sin token o token inválido */
       401: {
@@ -46363,6 +46517,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['DriverRouteBatchResponseDto'];
         };
+      };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Sin token o token inválido */
       401: {
@@ -46407,6 +46568,13 @@ export interface operations {
           'application/json': components['schemas']['DriverRouteBatchDecisionDto'];
         };
       };
+      /** @description El id no es un UUID, chofer deshabilitado o sin validar, o con documentación vencida */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Sin token o token inválido */
       401: {
         headers: {
@@ -46435,13 +46603,6 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
     };
   };
   DriverRouteBatchesController_reject: {
@@ -46463,6 +46624,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['DriverRouteBatchDecisionDto'];
         };
+      };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Sin token o token inválido */
       401: {
@@ -46487,13 +46655,6 @@ export interface operations {
       };
       /** @description La oferta no está vigente */
       409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
-      422: {
         headers: {
           [name: string]: unknown;
         };
