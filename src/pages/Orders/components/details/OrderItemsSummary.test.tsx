@@ -94,3 +94,52 @@ describe('OrderItemsSummary: envases (F35)', () => {
     expect(screen.queryByText(/Envases/)).not.toBeInTheDocument();
   });
 });
+
+describe('OrderItemsSummary: vacías recibidas (F35)', () => {
+  const withEmpties = (emptiesExpected: number, emptiesReceived: number | null) =>
+    order({
+      order_items: [
+        { quantity: 2, unit_price: 100, subtotal: 200, emptiesExpected, emptiesReceived },
+      ] as unknown as Order['order_items'],
+    });
+
+  it('una respuesta sin los campos de vacías no muestra la línea', () => {
+    render(
+      <OrderItemsSummary
+        order={order({
+          order_items: [{ quantity: 2, unit_price: 100, subtotal: 200 }] as unknown as Order['order_items'],
+        })}
+      />,
+    );
+    expect(screen.queryByText(/Vacías/)).not.toBeInTheDocument();
+  });
+
+  it('sin declaración del chofer no hay línea', () => {
+    render(<OrderItemsSummary order={withEmpties(2, null)} />);
+    expect(screen.queryByText(/Vacías/)).not.toBeInTheDocument();
+  });
+
+  it('completa: muestra X de Y sin resaltar', () => {
+    render(<OrderItemsSummary order={withEmpties(2, 2)} />);
+    const line = screen.getByText('Vacías: recibidas 2 de 2');
+    expect(line).toHaveClass('text-muted');
+    expect(line).not.toHaveClass('text-warn');
+  });
+
+  it('faltante: muestra X de Y resaltado', () => {
+    render(<OrderItemsSummary order={withEmpties(2, 1)} />);
+    const line = screen.getByText('Vacías: recibidas 1 de 2');
+    expect(line).toHaveClass('text-warn');
+    expect(line).not.toHaveClass('text-muted');
+  });
+
+  it('declaró cero de las esperadas: también es faltante', () => {
+    render(<OrderItemsSummary order={withEmpties(2, 0)} />);
+    expect(screen.getByText('Vacías: recibidas 0 de 2')).toHaveClass('text-warn');
+  });
+
+  it('con cero esperadas no hay línea, aunque venga una declaración', () => {
+    render(<OrderItemsSummary order={withEmpties(0, 0)} />);
+    expect(screen.queryByText(/Vacías/)).not.toBeInTheDocument();
+  });
+});

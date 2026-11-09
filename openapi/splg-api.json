@@ -17942,6 +17942,75 @@
                 ]
             }
         },
+        "/api/v2/orders/{id}/empties": {
+            "patch": {
+                "description": "Sólo el chofer asignado puede declarar las vacías recibidas mientras el pedido está en camino. Idempotente vía header `Idempotency-Key`.",
+                "operationId": "OrderController_declareEmptiesReceived",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Order UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DeclareEmptiesDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrderResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Tipo de envase inexistente en el pedido o cantidad fuera de rango"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: delivery"
+                    },
+                    "404": {
+                        "description": "Pedido no encontrado"
+                    },
+                    "409": {
+                        "description": "El pedido no está en camino"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Declarar las vacías recibidas en la entrega",
+                "tags": [
+                    "Orders"
+                ]
+            }
+        },
         "/api/v1/orders/{id}/payment/cash-received": {
             "patch": {
                 "description": "Sin body. Entregar un pedido en efectivo no lo marca pagado: queda `paymentStatus: pending` hasta que el chofer asignado confirma acá que cobró. Pasa a `paid` y registra `paymentConfirmedAt` y `paymentConfirmedBy` (el chofer). Sólo pedidos `delivered` pagados en efectivo. Repetirlo sobre un pedido ya `paid` devuelve el pedido tal cual (idempotente; también vía header `Idempotency-Key`). Si el pago ya se informó como impago responde 409: lo resuelve un admin.",
@@ -47219,6 +47288,15 @@
                         "type": "number",
                         "example": 1
                     },
+                    "emptiesExpected": {
+                        "type": "number",
+                        "example": 1
+                    },
+                    "emptiesReceived": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": 1
+                    },
                     "containerUnitPrice": {
                         "type": "number",
                         "nullable": true,
@@ -47238,6 +47316,8 @@
                     "unit_price",
                     "subtotal",
                     "containersCharged",
+                    "emptiesExpected",
+                    "emptiesReceived",
                     "containerUnitPrice",
                     "gas_cylinder"
                 ]
@@ -48363,6 +48443,38 @@
                 },
                 "required": [
                     "code"
+                ]
+            },
+            "DeclareEmptiesItemDto": {
+                "type": "object",
+                "properties": {
+                    "gasCylinderId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "emptiesReceived": {
+                        "type": "number",
+                        "minimum": 0,
+                        "example": 1
+                    }
+                },
+                "required": [
+                    "gasCylinderId",
+                    "emptiesReceived"
+                ]
+            },
+            "DeclareEmptiesDto": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DeclareEmptiesItemDto"
+                        }
+                    }
+                },
+                "required": [
+                    "items"
                 ]
             },
             "ResolveUnpaidDto": {

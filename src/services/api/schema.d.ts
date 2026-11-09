@@ -4265,6 +4265,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/orders/{id}/empties': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Declarar las vacías recibidas en la entrega
+     * @description Sólo el chofer asignado puede declarar las vacías recibidas mientras el pedido está en camino. Idempotente vía header `Idempotency-Key`.
+     */
+    patch: operations['OrderController_declareEmptiesReceived'];
+    trace?: never;
+  };
   '/api/v1/orders/{id}/payment/cash-received': {
     parameters: {
       query?: never;
@@ -13817,6 +13837,10 @@ export interface components {
       subtotal: number;
       /** @example 1 */
       containersCharged: number;
+      /** @example 1 */
+      emptiesExpected: number;
+      /** @example 1 */
+      emptiesReceived: number | null;
       /** @example 10000 */
       containerUnitPrice: number | null;
       gas_cylinder: components['schemas']['ProductoDelRenglonDto'] | null;
@@ -14296,6 +14320,15 @@ export interface components {
        * @example El cliente no tiene celular: confirmó por teléfono
        */
       reason?: string;
+    };
+    DeclareEmptiesItemDto: {
+      /** Format: uuid */
+      gasCylinderId: string;
+      /** @example 1 */
+      emptiesReceived: number;
+    };
+    DeclareEmptiesDto: {
+      items: components['schemas']['DeclareEmptiesItemDto'][];
     };
     ResolveUnpaidDto: {
       /**
@@ -35240,6 +35273,74 @@ export interface operations {
         content?: never;
       };
       /** @description El cliente agotó los 5 intentos: el cuerpo trae `code: DELIVERY_CODE_BLOQUEADO` y el chofer tiene que generar un código nuevo (`POST /api/v2/orders/:id/delivery-code/regenerate`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  OrderController_declareEmptiesReceived: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Order UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['DeclareEmptiesDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['OrderResponseDto'];
+        };
+      };
+      /** @description Tipo de envase inexistente en el pedido o cantidad fuera de rango */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: delivery */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Pedido no encontrado */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El pedido no está en camino */
       409: {
         headers: {
           [name: string]: unknown;
