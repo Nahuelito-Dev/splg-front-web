@@ -8924,6 +8924,11 @@ export interface components {
        * @description Obligatoria al confirmar una propuesta que registra un pago
        */
       cashBoxId?: string;
+      /**
+       * Format: uuid
+       * @description Tarea de documentación a renovar cuando la propuesta tiene más de una posible
+       */
+      fleetTaskId?: string;
     };
     CorrectDocumentReadingDto: {
       fields: {
@@ -8934,6 +8939,11 @@ export interface components {
        * @description Obligatoria al corregir una propuesta que registra un pago
        */
       cashBoxId?: string;
+      /**
+       * Format: uuid
+       * @description Tarea de documentación a renovar cuando la propuesta tiene más de una posible
+       */
+      fleetTaskId?: string;
       note?: string;
     };
     RejectDocumentReadingDto: {
@@ -13583,6 +13593,7 @@ export interface components {
       /** @example Garrafa 10 kg */
       type: string;
       owned: number;
+      /** @description Envases con serie de este tipo que el recupero (M5) le puede reclamar al cliente. Con «Cobrar envases» encendido, sólo los que exceden a los propios: max(0, envases en su poder − owned); apagado, todos los que tiene en su poder. */
       loanedByM5: number;
       isActive: boolean;
     };
@@ -17922,6 +17933,8 @@ export interface components {
       escalated: number;
       lost: number;
       closedByReturn: number;
+      /** @description Casos cerrados sin cargo porque, con «Cobrar envases» encendido, el envase quedó cubierto por los envases propios del cliente (cuenta de envases). Con el cobro apagado siempre es 0. */
+      closedCoveredByOwned: number;
       manualReview: number;
     };
     DriverPickupDto: {
@@ -20097,7 +20110,7 @@ export interface operations {
           'application/json': components['schemas']['DocumentReadingDto'];
         };
       };
-      /** @description El id o los datos son inválidos; una diferencia de importe o fecha exige corregir o rechazar. */
+      /** @description El id o los datos son inválidos; una diferencia de importe, fecha o total exige corregir o rechazar; una diferencia de patente o documento, o un apto «no apto», sólo admite rechazar; número o vigencia inválidos, cuotas fuera de la vigencia, vencimiento pasado o más de una tarea posible sin elegir. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -20118,14 +20131,14 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La lectura no existe en esta distribuidora */
+      /** @description La lectura, la póliza, la recepción, el legajo o la tarea elegida no existen en esta distribuidora */
       404: {
         headers: {
           [name: string]: unknown;
         };
         content?: never;
       };
-      /** @description La propuesta ya fue resuelta o el pago choca con su estado actual */
+      /** @description La propuesta ya fue resuelta, el pago choca con su estado, el dueño cambió desde la propuesta, la póliza está cancelada, la recepción está anulada o ya tiene otra factura, el empleado egresó o la tarea elegida ya está cerrada */
       409: {
         headers: {
           [name: string]: unknown;
@@ -20165,7 +20178,7 @@ export interface operations {
           'application/json': components['schemas']['DocumentReadingDto'];
         };
       };
-      /** @description El id, una corrección o los datos del pago son inválidos */
+      /** @description El id, una corrección o los datos del pago son inválidos; el total corregido no coincide con el de la recepción; una diferencia de patente o documento, o un apto «no apto», sólo admite rechazar; número o vigencia inválidos, cuotas fuera de la vigencia, vencimiento pasado o más de una tarea posible sin elegir. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -20186,14 +20199,14 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La lectura no existe en esta distribuidora */
+      /** @description La lectura, la póliza, la recepción, el legajo o la tarea elegida no existen en esta distribuidora */
       404: {
         headers: {
           [name: string]: unknown;
         };
         content?: never;
       };
-      /** @description La propuesta ya fue resuelta o el pago choca con su estado actual */
+      /** @description La propuesta ya fue resuelta, el pago choca con su estado, el dueño cambió desde la propuesta, la póliza está cancelada, la recepción está anulada o ya tiene otra factura, el empleado egresó o la tarea elegida ya está cerrada */
       409: {
         headers: {
           [name: string]: unknown;

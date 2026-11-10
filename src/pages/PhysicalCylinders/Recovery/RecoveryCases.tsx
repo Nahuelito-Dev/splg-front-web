@@ -47,7 +47,10 @@ export const RecoveryCases = () => {
       onSuccess: (r) =>
         notify.success(
           `Recupero corrido: ${r.opened} caso(s) nuevo(s), ${r.notices} aviso(s), ${r.escalated} escalado(s), ${r.lost} perdido(s)` +
-            (r.manualReview > 0 ? `, ${r.manualReview} para revisión manual` : ''),
+            (r.manualReview > 0 ? `, ${r.manualReview} para revisión manual` : '') +
+            (r.closedCoveredByOwned > 0
+              ? `, ${r.closedCoveredByOwned} cerrado(s) porque el envase ya es del cliente`
+              : ''),
         ),
       onError: notify.error,
     });
