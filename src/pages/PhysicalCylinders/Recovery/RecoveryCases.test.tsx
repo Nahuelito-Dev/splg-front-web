@@ -184,6 +184,7 @@ describe('RecoveryCases: acciones', () => {
         lost: 0,
         closedByReturn: 0,
         manualReview: 4,
+        closedCoveredByOwned: 5,
       });
     });
     draw();
@@ -193,6 +194,30 @@ describe('RecoveryCases: acciones', () => {
     expect(pedido.text).toContain('un solo push por cliente');
     expect(notifications.notify.success).toHaveBeenCalledWith(expect.stringContaining('2 caso(s) nuevo(s)'));
     expect(notifications.notify.success).toHaveBeenCalledWith(expect.stringContaining('4 para revisión manual'));
+    expect(notifications.notify.success).toHaveBeenCalledWith(
+      expect.stringContaining('5 cerrado(s) porque el envase ya es del cliente'),
+    );
+  });
+
+  it('sin cierres por la cuenta de envases, el aviso no los menciona', async () => {
+    setup();
+    notifications.confirm.mockResolvedValue(true);
+    (state.run.mutate as ReturnType<typeof vi.fn>).mockImplementation((_v, options) => {
+      (options as { onSuccess: (r: unknown) => void }).onSuccess({
+        opened: 1,
+        notices: 1,
+        offers: 0,
+        escalated: 0,
+        lost: 0,
+        closedByReturn: 0,
+        manualReview: 0,
+        closedCoveredByOwned: 0,
+      });
+    });
+    draw();
+    fireEvent.click(screen.getByRole('button', { name: 'Correr ahora' }));
+    await waitFor(() => expect(notifications.notify.success).toHaveBeenCalled());
+    expect(notifications.notify.success).toHaveBeenCalledWith(expect.not.stringContaining('ya es del cliente'));
   });
 
   it('si no se confirma, «Correr ahora» no corre nada', async () => {
