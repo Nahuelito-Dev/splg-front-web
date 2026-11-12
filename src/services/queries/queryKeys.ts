@@ -27,6 +27,7 @@ export const queryKeys = {
   cylinders: resource('cylinders'),
   deliveries: resource('deliveries'),
   distributors: resource('distributors'),
+  documentReadings: resource('documentReadings'),
   employees: resource('employees'),
   fleet: resource('fleet'),
   fleetCosts: resource('fleetCosts'),

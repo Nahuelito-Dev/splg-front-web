@@ -19,6 +19,7 @@ import type {
   CylinderVigencia,
   Delivery,
   Distributor,
+  DocumentReading,
   FleetExpirationEntry,
   FleetPlan,
   FleetTask,
@@ -163,6 +164,22 @@ export const MP_RECONCILIATION_STATUS: LabelMap<MpReconciliationStatus> = {
   requested: { text: 'Esperando a Mercado Pago', tone: 'warn' },
   ready: { text: 'Lista', tone: 'success' },
   failed: { text: 'Fallida', tone: 'danger' },
+};
+
+/**
+ * Una lectura de documento (M6): lo que hizo el lector y, si hubo propuesta, qué decidió el administrador. «Sin
+ * lector» es la cola sin servicio configurado; «Falló» se reintenta sola hasta agotar los intentos.
+ */
+export const DOCUMENT_READING_STATUS: LabelMap<DocumentReading['status']> = {
+  proposed: { text: 'Por revisar', tone: 'warn' },
+  read: { text: 'Leída', tone: 'info' },
+  pending: { text: 'Sin lector', tone: 'neutral' },
+  unreadable: { text: 'Ilegible', tone: 'danger' },
+  duplicate: { text: 'Duplicada', tone: 'warn' },
+  failed: { text: 'Falló', tone: 'danger' },
+  confirmed: { text: 'Confirmada', tone: 'success' },
+  corrected: { text: 'Corregida', tone: 'success' },
+  rejected: { text: 'Rechazada', tone: 'neutral' },
 };
 
 /** Salud de un proceso automático: el estado de su última corrida más las alertas (atrasado, colgado). */

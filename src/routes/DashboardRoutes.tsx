@@ -45,6 +45,11 @@ const FleetTasks = lazyPage(() => import('../pages/Fleet/FleetTasks'), 'FleetTas
 const FleetTaskDetail = lazyPage(() => import('../pages/Fleet/FleetTaskDetail'), 'FleetTaskDetail');
 const FuelLoads = lazyPage(() => import('../pages/FleetExpense/FuelLoads'), 'FuelLoads');
 const FuelLoadForm = lazyPage(() => import('../pages/FleetExpense/FuelLoadForm'), 'FuelLoadForm');
+const DocumentReadings = lazyPage(() => import('../pages/DocumentReadings/DocumentReadings'), 'DocumentReadings');
+const DocumentReadingDetails = lazyPage(
+  () => import('../pages/DocumentReadings/DocumentReadingDetails'),
+  'DocumentReadingDetails',
+);
 const TrafficFines = lazyPage(() => import('../pages/FleetExpense/TrafficFines'), 'TrafficFines');
 const Insurers = lazyPage(() => import('../pages/Insurance/Insurers'), 'Insurers');
 const VehicleAccidents = lazyPage(() => import('../pages/FleetExpense/VehicleAccidents'), 'VehicleAccidents');
@@ -233,6 +238,9 @@ export const DashboardRoutes = () => {
             <Route path="fleet/fuel-loads/new" element={<FuelLoadForm />} />
             <Route path="fleet/fuel-loads/:id/edit" element={<FuelLoadForm />} />
             <Route path="fleet/fines" element={<TrafficFines />} />
+            {/* Lectura de documentos (M6): las lecturas y las propuestas para revisar */}
+            <Route path="document-readings" element={<DocumentReadings />} />
+            <Route path="document-readings/:id" element={<DocumentReadingDetails />} />
             <Route path="fleet/insurers" element={<Insurers />} />
             <Route path="fleet/accidents" element={<VehicleAccidents />} />
             <Route path="fleet/accidents/new" element={<VehicleAccidentForm />} />
