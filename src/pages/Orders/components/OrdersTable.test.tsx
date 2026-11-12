@@ -20,6 +20,10 @@ vi.mock('../../../common/components/ui', async (importOriginal) => ({
   ),
 }));
 
+vi.mock('../../../hooks', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  usePermissions: () => ({ needsDistributor: false }),
+}));
 const mpState = vi.hoisted(() => ({ ids: [] as string[][], data: undefined as Map<string, unknown> | undefined }));
 vi.mock('../../../services/queries/orders', () => ({
   useOrderPaymentStates: (ids: string[]) => {

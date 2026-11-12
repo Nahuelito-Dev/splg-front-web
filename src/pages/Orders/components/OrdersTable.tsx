@@ -2,6 +2,7 @@ import type { GridColDef, GridPaginationModel } from '@mui/x-data-grid';
 import { useMemo } from 'react';
 import { UserRoundCog } from 'lucide-react';
 import { Badge, DataTable, EmptyState, IdentityCell, PersonAvatar, RowActions } from '../../../common/components/ui';
+import { usePermissions } from '../../../hooks';
 import type { Order } from '../../../services/api/types';
 import { formatCurrency, formatDateTime, formatNumber, formatShortId } from '../../../utils/format';
 import { useOrderPaymentStates } from '../../../services/queries/orders';
@@ -50,12 +51,14 @@ export const OrdersTable = ({
   selection,
   filtered = false,
 }: Props) => {
-  // El pago de Mercado Pago de la página, en una sola consulta: el chip dice en qué quedó (y por qué).
+  // El pago de Mercado Pago de la página, en una sola consulta: el chip dice en qué quedó (y por qué). El administrador
+  // general sin «Ver como» no lo puede pedir (la API exige la distribuidora): se queda con el estado de cobro del pedido.
+  const { needsDistributor } = usePermissions();
   const mercadoPagoIds = useMemo(
     () => rows.filter((row) => row.paymentMethodDetail === 'mercadopago').map((row) => row.order_id),
     [rows],
   );
-  const { data: mercadoPago } = useOrderPaymentStates(mercadoPagoIds);
+  const { data: mercadoPago } = useOrderPaymentStates(mercadoPagoIds, !needsDistributor);
 
   const columns = useMemo<GridColDef<Order>[]>(
     () => [

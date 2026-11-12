@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button, Modal, FormInput, FormTextArea, FormSelect, Form } from '../../../common/components/ui';
+import { usePermissions } from '../../../hooks';
 import type { FleetTaskUpdateBody } from '../../../services/api/fleet';
 import type { FleetPlan, FleetTask } from '../../../services/api/types';
 import { useCreateFleetTask, useFleetPlans, useUpdateFleetTask } from '../../../services/queries/fleet';
@@ -36,7 +37,13 @@ const triggerHint = (trigger: FleetPlan['trigger'] | undefined) => {
 
 export const FleetTaskFormModal = ({ open, onClose, subject, ownerId, carType, task }: Props) => {
   const isEditing = Boolean(task);
-  const { data: plans = [], error: plansError, refetch: refetchPlans } = useFleetPlans({ subject, isActive: true });
+  const { needsDistributor } = usePermissions();
+  // Los planes se piden al abrir: el modal queda montado en las listas y, sin «Ver como», la API los rechaza.
+  const {
+    data: plans = [],
+    error: plansError,
+    refetch: refetchPlans,
+  } = useFleetPlans({ subject, isActive: true }, { enabled: open && !needsDistributor });
   const planOptions = useMemo(
     () =>
       plans
