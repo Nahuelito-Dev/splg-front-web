@@ -188,13 +188,16 @@ export const useOrderPaymentState = (orderId: string | undefined, enabled = true
 /** Máximo de pedidos por consulta del estado del pago: el tope de la API. */
 const PAYMENT_STATES_BATCH = 50;
 
-/** El estado del pago de los pedidos de Mercado Pago de una lista, en una consulta. Sin ids no consulta. */
-export const useOrderPaymentStates = (orderIds: string[]) => {
+/**
+ * El estado del pago de los pedidos de Mercado Pago de una lista, en una consulta. Sin ids no consulta; `enabled` en
+ * `false` tampoco (un super_admin sin «Ver como»: la API la rechaza con MISSING_DISTRIBUTOR).
+ */
+export const useOrderPaymentStates = (orderIds: string[], enabled = true) => {
   const ids = [...new Set(orderIds)].slice(0, PAYMENT_STATES_BATCH).sort();
   return useQuery({
     queryKey: [...keys.lists(), 'payment-states', ids],
     queryFn: () => listOrderPaymentStates(ids),
-    enabled: ids.length > 0,
+    enabled: enabled && ids.length > 0,
     placeholderData: keepPreviousData,
     select: (states) => new Map(states.map((state) => [state.orderId, state])),
   });

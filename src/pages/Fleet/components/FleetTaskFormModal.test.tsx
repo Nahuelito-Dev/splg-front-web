@@ -13,6 +13,10 @@ vi.mock('../../../services/queries/fleet', () => ({
   useUpdateFleetTask: () => update,
   useFleetPlans: () => ({ data: PLANS, error: null, refetch: vi.fn() }),
 }));
+vi.mock('../../../hooks', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  usePermissions: () => ({ needsDistributor: false }),
+}));
 vi.mock('../../../utils/notifications', () => ({ notify: { success: vi.fn(), error: notifyError } }));
 
 import { FleetTaskFormModal } from './FleetTaskFormModal';

@@ -4,11 +4,17 @@ import { queryKeys } from './queryKeys';
 
 const keys = queryKeys.refunds;
 
-export const useRefunds = (params: { page: number; pageSize: number }, filters: RefundFilters = {}) =>
+/** `enabled` en `false` la apaga: un super_admin sin «Ver como» recibiría un 400 (MISSING_DISTRIBUTOR). */
+export const useRefunds = (
+  params: { page: number; pageSize: number },
+  filters: RefundFilters = {},
+  options: { enabled?: boolean } = {},
+) =>
   useQuery({
     queryKey: keys.list({ ...params, ...filters }),
     queryFn: () => listRefunds(params, filters),
     placeholderData: keepPreviousData,
+    enabled: options.enabled ?? true,
   });
 
 /** Las devoluciones de un pedido; `enabled` evita pedirlas cuando el pedido no pudo tener ninguna. */
