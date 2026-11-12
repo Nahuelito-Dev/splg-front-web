@@ -2,6 +2,12 @@
 
 const currency = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 });
 const currencyExact = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
+const usd = new Intl.NumberFormat('es-AR', {
+  style: 'currency',
+  currency: 'USD',
+  currencyDisplay: 'code',
+  maximumFractionDigits: 4,
+});
 const number = new Intl.NumberFormat('es-AR');
 const dateOnly = new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium' });
 const dateTime = new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium', timeStyle: 'short' });
@@ -25,6 +31,10 @@ export const formatCurrencyExact = (value: number | string | null | undefined): 
   const n = Number(value);
   return value === null || value === undefined || value === '' || !Number.isFinite(n) ? '—' : currencyExact.format(n);
 };
+
+/** USD 1,25: costos en dólares (el consumo del lector de documentos). */
+export const formatUsd = (value: number | null | undefined): string =>
+  value === null || value === undefined || !Number.isFinite(value) ? '—' : usd.format(value);
 
 /** 1.234 */
 export const formatNumber = (value: number | null | undefined): string =>

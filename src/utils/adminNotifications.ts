@@ -11,6 +11,7 @@ import {
   PackageSearch,
   Receipt,
   Scale,
+  ScanText,
   SearchCheck,
   ShieldAlert,
   ShieldCheck,
@@ -58,6 +59,8 @@ const KIND_VISUALS: Record<string, { icon: LucideIcon; tone: Tone }> = {
   maintenance_window_agreed: { icon: Wrench, tone: 'warn' },
   vehicle_grounded_expired: { icon: ShieldX, tone: 'danger' },
   process_run_alert: { icon: Activity, tone: 'danger' },
+  document_reading_proposal: { icon: ScanText, tone: 'warn' },
+  document_reading_notice: { icon: FileWarning, tone: 'warn' },
 };
 
 /** Ícono y tono de un aviso guardado según su `kind`; un tipo que el panel no conoce se muestra con uno genérico. */
@@ -93,6 +96,8 @@ export const notificationTarget = (link: AdminNotification['link'] | undefined):
       return `/cars/details/${id}`;
     case 'process-run':
       return '/settings/process-monitor';
+    case 'document-reading':
+      return `/document-readings/${id}`;
     default:
       return null;
   }

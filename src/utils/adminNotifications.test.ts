@@ -2,6 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { notificationTarget, notificationVisuals } from './adminNotifications';
 
 describe('notificationTarget', () => {
+  it('F12: una propuesta o aviso del lector de documentos abre la ficha de la lectura', () => {
+    expect(notificationTarget({ entity: 'document-reading', id: 'r 1' })).toBe('/document-readings/r%201');
+    expect(notificationVisuals('document_reading_proposal').tone).toBe('warn');
+    expect(notificationVisuals('document_reading_notice').tone).toBe('warn');
+  });
+
   it('lleva cada entidad a su pantalla', () => {
     expect(notificationTarget({ entity: 'order', id: 'o-1' })).toBe('/orders/o-1');
     expect(notificationTarget({ entity: 'claim', id: 'c-1' })).toBe('/claims?claim=c-1');

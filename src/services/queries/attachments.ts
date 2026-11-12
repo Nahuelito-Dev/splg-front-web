@@ -31,3 +31,21 @@ export const useAttachmentFile = () =>
     mutationFn: ({ attachmentId, disposition }: { attachmentId: string; disposition?: 'attachment' | 'inline' }) =>
       getAttachmentFile(attachmentId, disposition),
   });
+
+/**
+ * El archivo para mostrarlo dentro de una ficha (`inline`). La URL firmada vence en minutos: no se guarda en el caché
+ * (se pide al abrir la ficha) ni se vuelve a pedir sola al volver a la pestaña.
+ */
+export const useAttachmentPreview = (
+  attachmentId: string | undefined,
+  { enabled = true }: { enabled?: boolean } = {},
+) =>
+  useQuery({
+    queryKey: keys.detail(`preview:${attachmentId}`),
+    queryFn: () => getAttachmentFile(attachmentId ?? '', 'inline'),
+    enabled: Boolean(attachmentId) && enabled,
+    gcTime: 0,
+    staleTime: 0,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
