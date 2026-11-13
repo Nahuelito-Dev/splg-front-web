@@ -17,15 +17,19 @@ import {
 } from '../../common/components/ui';
 import { usePermissions } from '../../hooks';
 import { errorMessage } from '../../services/api/errors';
-import type { DispatchConfig } from '../../services/api/types';
 import { useDispatchConfig, useUpdateDispatchConfig } from '../../services/queries/moduleConfig';
 import { confirm, notify } from '../../utils/notifications';
 import { DistributorRequired } from './components/DistributorRequired';
 import { SettingsMeta } from './components/SettingsMeta';
 import { StaleConfigNotice } from './components/StaleConfigNotice';
 import {
+  ARRIVAL_RADIUS_DEFAULT_METERS,
+  ARRIVAL_RADIUS_MAX_METERS,
+  ARRIVAL_RADIUS_MIN_METERS,
   FINISHING_RADIUS_MAX_METERS,
   FINISHING_RADIUS_MIN_METERS,
+  NO_DRIVER_EXPIRY_MAX_MINUTES,
+  NO_DRIVER_EXPIRY_MIN_MINUTES,
   OFFER_TTL_MAX_SECONDS,
   OFFER_TTL_MIN_SECONDS,
   RADIUS_MAX_KM,
@@ -33,21 +37,17 @@ import {
   RADIUS_STEPS_MAX,
   dispatchSchema,
   toDispatchBody,
+  toDispatchValues,
   type DispatchFormValues,
+  type DispatchSettingsConfig,
 } from './dispatchRules';
 import { useConfigSync } from './useConfigSync';
 
 interface FormProps {
-  config: DispatchConfig;
+  config: DispatchSettingsConfig;
   canWrite: boolean;
   writeHint?: string;
 }
-
-const valuesOf = (config: DispatchConfig): DispatchFormValues => ({
-  steps: config.radiusStepsKm.map((km) => ({ value: String(km) })),
-  ttl: String(config.offerTtlSeconds),
-  finishing: String(config.finishingRadiusMeters),
-});
 
 const DispatchForm = ({ config, canWrite, writeHint }: FormProps) => {
   const update = useUpdateDispatchConfig();
@@ -55,7 +55,7 @@ const DispatchForm = ({ config, canWrite, writeHint }: FormProps) => {
   const methods = useForm<DispatchFormValues>({
     resolver: zodResolver(dispatchSchema),
     mode: 'onChange',
-    defaultValues: valuesOf(config),
+    defaultValues: toDispatchValues(config),
   });
   const {
     control,
@@ -73,7 +73,7 @@ const DispatchForm = ({ config, canWrite, writeHint }: FormProps) => {
     void trigger();
   }, [snapshot, trigger]);
 
-  const load = useCallback((next: DispatchConfig) => reset(valuesOf(next)), [reset]);
+  const load = useCallback((next: DispatchSettingsConfig) => reset(toDispatchValues(next)), [reset]);
   const { stale, adopt, acceptStale } = useConfigSync({ config, isDirty, load });
 
   const addStep = () => {
@@ -210,6 +210,47 @@ const DispatchForm = ({ config, canWrite, writeHint }: FormProps) => {
         </p>
       </Card>
 
+      <Card className="p-6">
+        <CardHeader title="Pedidos sin chofer" className="" />
+        <div className="mt-4 w-48">
+          <FormInput
+            name="expiry"
+            label="Vencimiento de pedidos sin chofer (minutos)"
+            type="number"
+            inputMode="numeric"
+            min={NO_DRIVER_EXPIRY_MIN_MINUTES}
+            max={NO_DRIVER_EXPIRY_MAX_MINUTES}
+            disabled={!canWrite}
+            hint={`${NO_DRIVER_EXPIRY_MIN_MINUTES} a ${NO_DRIVER_EXPIRY_MAX_MINUTES}`}
+          />
+        </div>
+        <p className="mt-2 text-sm text-muted">
+          Es lo que un pedido pendiente espera que lo tome un chofer antes de que el sistema lo cancele. Corre desde que
+          el pedido se puede ofrecer y, si está agendado, nunca antes del inicio de su franja. No corre mientras espera
+          un pago online ni para los pedidos express.
+        </p>
+      </Card>
+
+      <Card className="p-6">
+        <CardHeader title="Control de llegada del chofer" className="" />
+        <div className="mt-4 w-48">
+          <FormInput
+            name="arrival"
+            label="Radio para marcar «Llegué» (metros)"
+            type="number"
+            inputMode="numeric"
+            min={ARRIVAL_RADIUS_MIN_METERS}
+            max={ARRIVAL_RADIUS_MAX_METERS}
+            disabled={!canWrite}
+            hint={`${ARRIVAL_RADIUS_MIN_METERS} a ${ARRIVAL_RADIUS_MAX_METERS}. Con 0 no se controla`}
+          />
+        </div>
+        <p className="mt-2 text-sm text-muted">
+          El chofer sólo puede marcar «Llegué» si está a esta distancia o menos del punto de entrega. Con 0 se apaga el
+          control de distancia. Por omisión, {ARRIVAL_RADIUS_DEFAULT_METERS} metros.
+        </p>
+      </Card>
+
       {serverError && (
         <p role="alert" className="text-sm text-danger">
           {serverError}
@@ -239,7 +280,7 @@ export const DispatchSettings = () => {
     <PageContainer size="sm">
       <PageHeader
         title="Parámetros del despacho"
-        description="Cómo se busca al chofer para cada pedido: hasta dónde se amplía el radio, cuánto tiempo tiene para aceptar y si se ofrece a quien está por terminar otra entrega."
+        description="Cómo se busca al chofer para cada pedido: hasta dónde se amplía el radio, cuánto tiempo tiene para aceptar, si se ofrece a quien está por terminar otra entrega, cuánto espera un pedido sin chofer y desde qué distancia se puede marcar «Llegué»."
       />
       {needsDistributor ? (
         <DistributorRequired />
