@@ -7,6 +7,9 @@ on:
 jobs:
   trigger_netlify_build:
     runs-on: ubuntu-latest
+    # `secrets` no se puede leer en un `if:` (GitHub rechaza el archivo): se pasa por env.
+    env:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
     steps:
       - name: Checkout del código
@@ -20,7 +23,7 @@ jobs:
           echo "date=$(date '+%Y-%m-%d %H:%M')" >> $GITHUB_OUTPUT
 
       - name: 🔔 Slack Notificación (INICIO)
-        if: ${{ secrets.SLACK_WEBHOOK_URL != '' }} # Solo si existe el secreto
+        if: ${{ env.SLACK_WEBHOOK_URL != '' }} # Solo si existe el secreto
         run: |
           curl -X POST -H 'Content-type: application/json' \
           --data "{\"text\":\"🚧 *Deploy iniciado* en Netlify (Yennigas)\n👤 Autor: ${{ steps.vars.outputs.author }}\n🔢 Commit: ${{ steps.vars.outputs.sha_short }}\"}" \
@@ -31,7 +34,7 @@ jobs:
           curl -X POST -d '{}' "${{ secrets.NETLIFY_BUILD_HOOK }}"
 
       - name: ✅ Slack Notificación (EXITO)
-        if: ${{ secrets.SLACK_WEBHOOK_URL != '' }}
+        if: ${{ env.SLACK_WEBHOOK_URL != '' }}
         run: |
           curl -X POST -H 'Content-type: application/json' \
           --data "{\"text\":\"🚀 *Deploy enviado a Netlify* (Yennigas)\n👤 Autor: ${{ steps.vars.outputs.author }}\n🔢 Commit: ${{ steps.vars.outputs.sha_short }}\n📅 Hora: ${{ steps.vars.outputs.date }}\"}" \
