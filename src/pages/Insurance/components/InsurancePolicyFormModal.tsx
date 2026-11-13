@@ -85,9 +85,16 @@ export const InsurancePolicyFormModal = ({ open, onClose, carId, policy }: Props
   }, [watched]);
 
   const rangeError = planOutOfRange(preview, String(validFrom ?? ''), String(validTo ?? ''));
+  // Las aseguradoras se piden al abrir: la de la póliza va como opción desde el primer render, si no el <select> no
+  // conserva el valor que le carga `reset` y muestra «Elegí una aseguradora» hasta que se reabre.
+  const insurerRows = insurers.data?.data ?? [];
+  const current = policy?.insurer;
   const insurerOptions = [
     { value: '', label: 'Elegí una aseguradora' },
-    ...(insurers.data?.data ?? []).map((i) => ({ value: i.insurerId, label: i.name })),
+    ...insurerRows.map((i) => ({ value: i.insurerId, label: i.name })),
+    ...(current && !insurerRows.some((i) => i.insurerId === current.insurerId)
+      ? [{ value: current.insurerId, label: current.name }]
+      : []),
   ];
   const saving = create.isPending || update.isPending;
 

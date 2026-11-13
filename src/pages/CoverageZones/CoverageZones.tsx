@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import { useMediaQuery } from '@mui/material';
 import {
   Button,
   Card,
@@ -36,6 +37,22 @@ export const CoverageZones = () => {
   const [polygon, setPolygon] = useState<number[][] | null>(null);
   const [formSession, setFormSession] = useState(0);
   const [pickedPoint, setPickedPoint] = useState<{ lat: number; lng: number } | null>(null);
+
+  // Desde `lg` el formulario vive al costado del mapa; por debajo, en una sola columna, queda después de la lista y del
+  // mapa. Ahí, si al abrirlo su encabezado quedó fuera de la pantalla, se lo trae a la vista para que «Editar» y «Nueva
+  // zona» no parezcan no hacer nada. En escritorio no se mueve la página. El ancho se lee por ref: cruzar el breakpoint
+  // con el formulario abierto no tiene que desplazar nada.
+  const singleColumn = useMediaQuery('(max-width:1023px)');
+  const singleColumnRef = useRef(singleColumn);
+  singleColumnRef.current = singleColumn;
+  const formRef = useRef<HTMLDivElement>(null);
+  const formOpen = mode === 'draw' || mode === 'edit';
+  useEffect(() => {
+    const form = formRef.current;
+    if (!formOpen || !form || !singleColumnRef.current) return;
+    const { top } = form.getBoundingClientRect();
+    if (top < 0 || top > window.innerHeight - 120) form.scrollIntoView?.({ block: 'start', behavior: 'smooth' });
+  }, [formOpen, selectedZoneId, formSession]);
 
   const editingZone = mode === 'edit' ? (zones.find((zone) => zone.coverage_zone_id === selectedZoneId) ?? null) : null;
 
@@ -132,8 +149,10 @@ export const CoverageZones = () => {
         actions={
           <Button
             icon={<AddCircleOutlineIcon />}
-            disabled={!canWrite || mode !== 'idle'}
-            title={!canWrite ? writeHint : undefined}
+            // Hasta que cargan las zonas no se abre: el mapa (560 px) llegaría después y correría el formulario hacia
+            // abajo, y la prioridad por defecto se calcula con las zonas existentes.
+            disabled={!canWrite || mode !== 'idle' || isPending}
+            title={!canWrite ? writeHint : isPending ? 'Cargando las zonas…' : undefined}
             onClick={startCreate}
           >
             Nueva zona
@@ -167,7 +186,8 @@ export const CoverageZones = () => {
       </Card>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Card className="overflow-hidden lg:col-span-2">
+        {/* `self-start`: el mapa tiene alto fijo; estirado al alto del formulario dejaba un hueco en blanco debajo. */}
+        <Card className="overflow-hidden lg:col-span-2 lg:self-start">
           {isPending ? (
             <LoadingState />
           ) : (
@@ -184,22 +204,24 @@ export const CoverageZones = () => {
         </Card>
 
         <div className="space-y-6">
-          {(mode === 'draw' || mode === 'edit') && (
-            <Card className="p-5">
-              <CardHeader
-                title={editingZone ? `Editar "${editingZone.name}"` : 'Nueva zona'}
-                as="h3"
-                className="mb-3"
-              />
-              <ZoneFormPanel
-                key={editingZone?.coverage_zone_id ?? `new-${formSession}`}
-                zone={editingZone}
-                polygon={polygon}
-                zones={zones}
-                onSaved={resetForm}
-                onCancel={resetForm}
-              />
-            </Card>
+          {formOpen && (
+            <div ref={formRef} className="scroll-mt-20">
+              <Card className="p-5">
+                <CardHeader
+                  title={editingZone ? `Editar "${editingZone.name}"` : 'Nueva zona'}
+                  as="h3"
+                  className="mb-3"
+                />
+                <ZoneFormPanel
+                  key={editingZone?.coverage_zone_id ?? `new-${formSession}`}
+                  zone={editingZone}
+                  polygon={polygon}
+                  zones={zones}
+                  onSaved={resetForm}
+                  onCancel={resetForm}
+                />
+              </Card>
+            </div>
           )}
 
           {mode === 'idle' && selectedZoneId && (
