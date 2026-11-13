@@ -1,15 +1,17 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mutation } from '../../../test/pageTest';
+import type { InsurancePolicy } from '../../../services/api/types';
 
 const create = vi.hoisted(() => ({ current: undefined as unknown }));
 const warn = vi.hoisted(() => vi.fn());
 const info = vi.hoisted(() => vi.fn());
+const insurers = vi.hoisted(() => ({ rows: [{ insurerId: 'i-1', name: 'Sancor Seguros' }] as unknown[] | undefined }));
 
 vi.mock('../../../services/queries/insurance', () => ({
   useCreateInsurancePolicy: () => create.current,
   useUpdateInsurancePolicy: () => ({ mutate: vi.fn(), isPending: false }),
-  useInsurerOptions: () => ({ data: { data: [{ insurerId: 'i-1', name: 'Sancor Seguros' }] } }),
+  useInsurerOptions: () => ({ data: insurers.rows ? { data: insurers.rows } : undefined }),
   useCreateInsurer: () => ({ mutate: vi.fn(), isPending: false }),
   useUpdateInsurer: () => ({ mutate: vi.fn(), isPending: false }),
 }));
@@ -36,6 +38,7 @@ const fill = () => {
 };
 
 beforeEach(() => {
+  insurers.rows = [{ insurerId: 'i-1', name: 'Sancor Seguros' }];
   create.current = mutation();
   warn.mockReset();
   info.mockReset();
@@ -132,5 +135,33 @@ describe('InsurancePolicyFormModal (alta)', () => {
     type(/Importe de cada cuota/, '10.555');
     fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
     expect(await screen.findByText('Hasta 2 decimales')).toBeInTheDocument();
+  });
+});
+
+describe('InsurancePolicyFormModal (edición)', () => {
+  const policy = {
+    policyId: 'p-1',
+    policyNumber: 'POL-9',
+    coverage: 'Terceros completo',
+    paymentCode: null,
+    insurer: { insurerId: 'i-2', name: 'Seguros Rivadavia' },
+  } as unknown as InsurancePolicy;
+
+  // Las aseguradoras se piden al abrir el modal: con la caché fría llegaban después del `reset` y el <select>
+  // mostraba «Elegí una aseguradora» aunque la póliza tuviera una.
+  it('precarga la aseguradora de la póliza aunque la lista todavía no llegó', async () => {
+    insurers.rows = undefined;
+    const { rerender } = render(<InsurancePolicyFormModal open onClose={vi.fn()} carId="c-1" policy={policy} />);
+    const select = screen.getByRole('combobox', { name: /Aseguradora/ });
+    await waitFor(() => expect(select).toHaveValue('i-2'));
+    expect(within(select).getByRole('option', { selected: true })).toHaveTextContent('Seguros Rivadavia');
+
+    insurers.rows = [
+      { insurerId: 'i-1', name: 'Sancor Seguros' },
+      { insurerId: 'i-2', name: 'Seguros Rivadavia' },
+    ];
+    rerender(<InsurancePolicyFormModal open onClose={vi.fn()} carId="c-1" policy={policy} />);
+    expect(screen.getByRole('combobox', { name: /Aseguradora/ })).toHaveValue('i-2');
+    expect(within(select).getAllByRole('option', { name: 'Seguros Rivadavia' })).toHaveLength(1);
   });
 });
