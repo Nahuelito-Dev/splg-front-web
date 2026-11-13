@@ -22,15 +22,13 @@ permissions:
   contents: read
 
 jobs:
+  # El gate y la repetición en UTC corren en paralelo: juntos pasan los 20 minutos.
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     env:
       # El build y los tests validan que exista; en CI no se llama a ninguna API.
       VITE_APP_API_URL: http://localhost:3000/api
-      # El runner corre en UTC a propósito: `npm run test` fija America/Argentina/Buenos_Aires
-      # (como en la Mac de desarrollo) y el paso siguiente repite la suite en UTC para
-      # detectar fechas de negocio que dependan de la zona del proceso.
       TZ: UTC
     steps:
       - uses: actions/checkout@v4
@@ -40,5 +38,22 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run verify
+
+  # `npm run test` fija America/Argentina/Buenos_Aires (como en la Mac de desarrollo);
+  # esta repetición corre la suite en UTC para detectar fechas de negocio que
+  # dependan de la zona del proceso.
+  tests-utc:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      VITE_APP_API_URL: http://localhost:3000/api
+      TZ: UTC
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
       - name: Tests en UTC
         run: npm run test:utc

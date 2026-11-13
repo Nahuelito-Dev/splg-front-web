@@ -4,6 +4,7 @@ import { DashboardLayout } from '../common/layout';
 import { RouteProgressBar } from '../common/layout/RouteProgressBar';
 import { LoadingState } from '../common/components/ui';
 import { RequireDistributor } from '../common/components/RequireDistributor';
+import { RequireSuperAdmin } from '../common/components/RequireSuperAdmin';
 import { lazyPage } from './lazyPage';
 
 // Cada página se carga recién al entrar (un chunk por ruta).
@@ -162,7 +163,9 @@ export const DashboardRoutes = () => {
           <Route path="customers/details/:id" element={<CustomerDetails />} />
 
           {/* Direcciones de entrega de todos los clientes — super_admin */}
-          <Route path="addresses" element={<Addresses />} />
+          <Route element={<RequireSuperAdmin />}>
+            <Route path="addresses" element={<Addresses />} />
+          </Route>
 
           {/* 4. Garrafas / Productos (catálogo) */}
           <Route path="cylinders" element={<GasCylinders />} />
@@ -283,10 +286,12 @@ export const DashboardRoutes = () => {
           <Route path="ratings" element={<Ratings />} />
 
           {/* Gestión de empresas (multi-distribuidora) — super_admin */}
-          <Route path="distributors" element={<Distributors />} />
-          <Route path="distributors/new" element={<DistributorForm />} />
-          <Route path="distributors/:id" element={<DistributorDetails />} />
-          <Route path="distributors/:id/edit" element={<DistributorForm />} />
+          <Route element={<RequireSuperAdmin />}>
+            <Route path="distributors" element={<Distributors />} />
+            <Route path="distributors/new" element={<DistributorForm />} />
+            <Route path="distributors/:id" element={<DistributorDetails />} />
+            <Route path="distributors/:id/edit" element={<DistributorForm />} />
+          </Route>
           {/* Gestión de admins por empresa — super_admin */}
           <Route path="admins" element={<Admins />} />
           <Route path="admins/:id" element={<AdminDetails />} />
@@ -295,7 +300,9 @@ export const DashboardRoutes = () => {
           <Route path="audit" element={<Audit />} />
 
           {/* Estado de la plataforma y herramientas de soporte — super_admin */}
-          <Route path="system" element={<System />} />
+          <Route element={<RequireSuperAdmin />}>
+            <Route path="system" element={<System />} />
+          </Route>
 
           {/* Ruta por defecto */}
           <Route path="/*" element={<Navigate to="/home" />} />
