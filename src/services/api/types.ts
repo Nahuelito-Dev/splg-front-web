@@ -24,6 +24,7 @@ export type AgingReport = S['AgingReportDto'];
 export type ApplyMpItemBody = S['ApplyMpItemDto'];
 export type ApplyMpReconciliationBody = S['ApplyMpReconciliationDto'];
 export type ApproveDriverSettlementBody = S['ApproveDriverSettlementDto'];
+export type ArrivedBody = S['ArrivedDto'];
 export type AsientoDeAuditoria = S['AsientoDeAuditoriaDto'];
 export type AssignCylindersBody = S['AssignCylindersDto'];
 export type AssignStaffRoleBody = S['AssignStaffRoleDto'];

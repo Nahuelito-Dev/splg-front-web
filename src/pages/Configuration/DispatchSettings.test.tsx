@@ -33,6 +33,8 @@ const config = (over: Record<string, unknown> = {}) => ({
   radiusStepsKm: [5, 10, 15, 20],
   offerTtlSeconds: 30,
   finishingRadiusMeters: 300,
+  noDriverExpiryMinutes: 90,
+  arrivalRadiusMeters: 200,
   isDefault: false,
   updatedAt: '2026-10-15T12:00:00.000Z',
   updatedByUserId: 'user-1',
@@ -67,6 +69,8 @@ afterEach(() => {
 });
 
 const save = () => screen.getByRole('button', { name: 'Guardar cambios' });
+const expiryInput = () => screen.getByLabelText('Vencimiento de pedidos sin chofer (minutos)');
+const arrivalInput = () => screen.getByLabelText('Radio para marcar «Llegué» (metros)');
 
 describe('DispatchSettings', () => {
   it('muestra los pasos, la ventana y quién modificó', () => {
@@ -75,6 +79,8 @@ describe('DispatchSettings', () => {
     expect(screen.getByLabelText('Paso 4 (km)')).toHaveValue(20);
     expect(screen.getByLabelText('Segundos')).toHaveValue(30);
     expect(screen.getByLabelText('Metros al destino')).toHaveValue(300);
+    expect(expiryInput()).toHaveValue(90);
+    expect(arrivalInput()).toHaveValue(200);
     expect(screen.getByText('Ana Admin')).toBeInTheDocument();
     expect(screen.queryByText('Valores por defecto')).not.toBeInTheDocument();
   });
@@ -193,7 +199,45 @@ describe('DispatchSettings', () => {
       radiusStepsKm: [5, 10, 15, 25],
       offerTtlSeconds: 45,
       finishingRadiusMeters: 300,
+      noDriverExpiryMinutes: 90,
+      arrivalRadiusMeters: 200,
     });
+  });
+
+  it('al guardar otro parámetro conserva el radio de «Llegué» y el vencimiento ya configurados', async () => {
+    // El PUT reemplaza: un campo que no se manda vuelve a su valor por omisión.
+    const update = setup(config({ arrivalRadiusMeters: 300, noDriverExpiryMinutes: 45 }));
+    fireEvent.change(screen.getByLabelText('Segundos'), { target: { value: '60' } });
+    await waitFor(() => expect(save()).toBeEnabled());
+    fireEvent.click(save());
+    await waitFor(() => expect(update.mutate).toHaveBeenCalled());
+    expect(update.mutate.mock.calls[0]?.[0]).toMatchObject({
+      offerTtlSeconds: 60,
+      arrivalRadiusMeters: 300,
+      noDriverExpiryMinutes: 45,
+    });
+  });
+
+  it('el vencimiento sin chofer fuera de 1..1440 bloquea guardar', async () => {
+    setup();
+    fireEvent.change(expiryInput(), { target: { value: '0' } });
+    expect(await screen.findByText(/entre 1 y 1440 minutos/)).toBeInTheDocument();
+    await waitFor(() => expect(save()).toBeDisabled());
+    fireEvent.change(expiryInput(), { target: { value: '1441' } });
+    expect(await screen.findByText(/entre 1 y 1440 minutos/)).toBeInTheDocument();
+    expect(save()).toBeDisabled();
+  });
+
+  it('el radio de «Llegué» fuera de rango bloquea guardar; 0 es válido (sin control)', async () => {
+    const update = setup();
+    fireEvent.change(arrivalInput(), { target: { value: '5001' } });
+    expect(await screen.findByText(/entre 0 y 5000 metros/)).toBeInTheDocument();
+    await waitFor(() => expect(save()).toBeDisabled());
+    fireEvent.change(arrivalInput(), { target: { value: '0' } });
+    await waitFor(() => expect(save()).toBeEnabled());
+    fireEvent.click(save());
+    await waitFor(() => expect(update.mutate).toHaveBeenCalled());
+    expect(update.mutate.mock.calls[0]?.[0]).toMatchObject({ arrivalRadiusMeters: 0, noDriverExpiryMinutes: 90 });
   });
 
   it('muestra el mensaje del back cuando el guardado falla', async () => {

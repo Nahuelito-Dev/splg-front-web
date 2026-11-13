@@ -5386,6 +5386,26 @@ export interface paths {
     patch: operations['OrderController_notifyArrival'];
     trace?: never;
   };
+  '/api/v2/orders/{id}/arrived': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Avisar al cliente que el repartidor llegó
+     * @description El chofer asignado informa su posición GPS al llegar. Si la distribuidora configuró un radio de llegada y el domicilio tiene ubicación, sólo se notifica dentro de ese radio.
+     */
+    patch: operations['OrderController_notifyArrivalV2'];
+    trace?: never;
+  };
   '/api/v1/orders/{id}/confirm-deposit': {
     parameters: {
       query?: never;
@@ -12395,6 +12415,8 @@ export interface components {
        * @example 120
        */
       noDriverExpiryMinutes: number;
+      /** @example 150 */
+      arrivalRadiusMeters: number;
       /**
        * @description true si rigen los valores por omisión (no configuró nada o todo coincide con ellos)
        * @example true
@@ -12438,6 +12460,12 @@ export interface components {
        * @example 120
        */
       noDriverExpiryMinutes: number;
+      /**
+       * @description Radio en metros dentro del cual el chofer puede marcar «Llegué» (0 a 5000). 0 desactiva el control
+       * @default 150
+       * @example 150
+       */
+      arrivalRadiusMeters: number;
     };
     ScheduledTasksConfigResponseDto: {
       /** @example 15 */
@@ -16129,6 +16157,12 @@ export interface components {
        * @example El cliente no se encontraba en el domicilio
        */
       reason?: string;
+    };
+    ArrivedDto: {
+      /** @example -27.3671 */
+      latitude: number;
+      /** @example -55.8961 */
+      longitude: number;
     };
     SalesChartPointDto: {
       /**
@@ -39834,6 +39868,68 @@ export interface operations {
       };
       /** @description Pedido no encontrado */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  OrderController_notifyArrivalV2: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Order UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ArrivedDto'];
+      };
+    };
+    responses: {
+      /** @description Cliente notificado */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MessageResponseDto'];
+        };
+      };
+      /** @description Latitud o longitud faltante o fuera de rango */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los pedidos (`pedidos.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Pedido no encontrado */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El pedido no está en camino (`code: ORDER_NOT_ON_THE_WAY`), o el chofer está fuera del radio (`code: ARRIVAL_TOO_FAR`, con `distanceMeters` y `radiusMeters`). Un segundo aviso del mismo chofer responde 200 sin volver a notificar al cliente. */
+      409: {
         headers: {
           [name: string]: unknown;
         };
