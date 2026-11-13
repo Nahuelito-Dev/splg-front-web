@@ -83,7 +83,7 @@ export const dispatchSchema = z
   });
 
 /** El cuerpo del PUT a partir de lo tipeado (sólo llamar si no hay errores). */
-export const toDispatchBody = (values: DispatchFormValues): DispatchConfigBody => ({
+export const toDispatchBody = (values: DispatchFormValues): Partial<DispatchConfigBody> => ({
   radiusStepsKm: values.steps.map((step) => Number(step.value)),
   offerTtlSeconds: Number(values.ttl),
   finishingRadiusMeters: Number(values.finishing),

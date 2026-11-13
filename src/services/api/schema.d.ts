@@ -1826,6 +1826,90 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/cars/{carId}/documents': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Listar los documentos y las fotos de patente del vehículo
+     * @description Los adjuntos subidos por `POST /v2/cars/:carId/documents` y `.../patent-photo`, los más nuevos primero. La foto de la patente se distingue por `label = "Foto de patente"`. No confundir con `GET /v1/cars/:carId/documents` (estado de la documentación: seguro, VTV, services). Los adjuntos dados de baja no aparecen.
+     */
+    get: operations['CarDocumentsV2Controller_list'];
+    put?: never;
+    /**
+     * Subir y escanear un documento del vehículo
+     * @description Multipart con `file` (PDF, JPG, PNG o WEBP, hasta 10 MB) y `documentType`. El archivo queda protegido (se baja con URL firmada) y se escanea en el mismo pedido: `scan.data` trae el vencimiento, la emisión, la aseguradora, la póliza y la patente leídos para precargar el formulario, y la lectura queda guardada. `scan.available` es `false` si no hay lector configurado; `scan.data` es `null` (con `scan.warning`) si la lectura falló o tardó más de 30 s: en todos los casos la subida vale y los datos se cargan a mano. Idempotente vía `Idempotency-Key`.
+     */
+    post: operations['CarDocumentsV2Controller_uploadDocument'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/cars/{carId}/documents/{attachmentId}/download': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Bajar un documento o una foto de patente del vehículo
+     * @description Con `?modo=url` devuelve `{ url, expiresAt, requiresAuth }` en JSON (URL firmada de S3, sin redirect): es lo que usa el panel. Sin `modo` redirige (302) a la URL firmada. `?disposicion=inline` lo muestra en el navegador en vez de bajarlo.
+     */
+    get: operations['CarDocumentsV2Controller_download'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/cars/{carId}/documents/{attachmentId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Dar de baja un documento o una foto de patente del vehículo
+     * @description Baja lógica: el adjunto deja de listarse y de poder bajarse; el archivo queda guardado como respaldo. La lectura del escaneo no se borra.
+     */
+    delete: operations['CarDocumentsV2Controller_remove'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/cars/{carId}/documents/patent-photo': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Subir y leer la foto de la patente
+     * @description Multipart con `file` (JPG, PNG o WEBP, hasta 10 MB). La foto se protege como un adjunto separado. Si la patente leída, normalizada sin espacios ni guiones, no coincide con la del vehículo, devuelve `mismatch: true` con `warning` y deja un aviso en la bandeja del administrador. Sin lector, o si no se pudo leer, `mismatch` es `false` y `readPatent` es `null`. Idempotente vía `Idempotency-Key`.
+     */
+    post: operations['CarDocumentsV2Controller_uploadPatentPhoto'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/admin': {
     parameters: {
       query?: never;
@@ -1880,7 +1964,7 @@ export interface paths {
     post?: never;
     /**
      * Dar de baja a un administrador (baja lógica)
-     * @description Es la baja del usuario (`DELETE /users/:id`): queda con `deletedAt`, su cuenta de acceso se deshabilita y nada se borra. Mismos permisos que la edición, y nadie se da de baja a sí mismo. No se puede dar de baja al último administrador activo de una distribuidora ni al último super administrador.
+     * @description Es la baja del usuario (`DELETE /users/:id`): queda con `deletedAt`, su cuenta de acceso se deshabilita y nada se borra. Mismos permisos que la edición, y nadie se da de baja a sí mismo. No se puede dar de baja al último administrador activo de una distribuidora ni al último super administrador. El administrador de una distribuidora dada de baja lo da de baja el super admin sin `X-Distributor` (con ella en el header responde 401), y ahí no se exige que quede otro administrador.
      */
     delete: operations['AdminController_remove'];
     options?: never;
@@ -1890,6 +1974,115 @@ export interface paths {
      * @description Nombre y teléfono (`fullName`, `phoneNumber`). El correo cambia por `POST /email/change-email`; el bloqueo por `PATCH /users/:id/block`. El super admin edita a cualquiera; un admin de empresa sólo a los de su distribuidora, nunca a sí mismo (sus datos van por `PATCH /users/:id`) ni a un super admin.
      */
     patch: operations['AdminController_update'];
+    trace?: never;
+  };
+  '/api/v2/staff-roles': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Listar los roles del personal con su cantidad de administradores
+     * @description Primero el rol de sistema («Administrador»), después los demás por nombre. Los dados de baja no aparecen.
+     */
+    get: operations['StaffRoleController_findAll'];
+    put?: never;
+    /**
+     * Crear un rol del personal
+     * @description Nombre único en la distribuidora (sin distinguir mayúsculas) y permisos del catálogo (`GET /v2/permissions`).
+     */
+    post: operations['StaffRoleController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/staff-roles/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Ficha de un rol del personal */
+    get: operations['StaffRoleController_findOne'];
+    put?: never;
+    post?: never;
+    /**
+     * Dar de baja un rol del personal (baja lógica)
+     * @description Queda con `deletedAt` y deja de listarse. El rol de sistema y uno que todavía tiene administradores no se dan de baja.
+     */
+    delete: operations['StaffRoleController_remove'];
+    options?: never;
+    head?: never;
+    /**
+     * Editar un rol del personal
+     * @description Nombre, descripción o permisos (la lista reemplaza a la anterior). El rol de sistema no se edita. Los administradores que lo tienen ven el cambio en su próxima solicitud.
+     */
+    patch: operations['StaffRoleController_update'];
+    trace?: never;
+  };
+  '/api/v2/admins/{id}/staff-role': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Asignar el rol del personal a un administrador
+     * @description El rol y el administrador tienen que ser de la distribuidora. Un administrador no cambia su propio rol y sólo asigna roles cuyos permisos tiene. Siempre queda al menos un administrador activo con `roles.gestionar`. Repetir la misma asignación no cambia nada.
+     */
+    put: operations['AdminStaffRoleController_assign'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/permissions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Catálogo de permisos, agrupado por módulo del panel
+     * @description Es la lista fija del sistema (no depende de la distribuidora). `implies` dice qué otro permiso viene incluido (`gestionar` incluye `ver`).
+     */
+    get: operations['PermissionsController_findAll'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/me/permissions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Mis permisos
+     * @description El super admin y el rol de sistema tienen todos (`allPermissions: true`). Para el resto, los de su rol con los `ver` que implica cada `gestionar`.
+     */
+    get: operations['MyPermissionsController_mine'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
   '/api/v1/role': {
@@ -2635,12 +2828,12 @@ export interface paths {
     };
     /**
      * Parámetros del despacho de la distribuidora
-     * @description Pasos de radio (km), ventana de aceptación de la oferta (s) y radio en metros al destino para los choferes por terminar su entrega (CU-013). Si la distribuidora no configuró nada, devuelve los valores por omisión (`isDefault: true`).
+     * @description Pasos de radio (km), ventana de aceptación de la oferta (s), radio en metros al destino para los choferes por terminar su entrega (CU-013) y minutos que un pedido pendiente espera chofer antes de que el sistema lo cancele. Si la distribuidora no configuró nada, devuelve los valores por omisión (`isDefault: true`).
      */
     get: operations['ModuleConfigController_getDispatch'];
     /**
      * Cambiar los parámetros del despacho
-     * @description Reemplaza la configuración. De 1 a 8 pasos de radio, cada uno entre 1 y 100 km y estrictamente mayor que el anterior; ventana entre 10 y 300 s; radio de choferes por terminar entre 0 y 5000 m, entero (0 lo apaga: sólo se ofrece a choferes sin pedido en curso). Rige para las ofertas que se creen desde ese momento (las ya enviadas conservan su vencimiento); en otras instancias del servidor, como máximo un minuto después.
+     * @description Reemplaza la configuración. De 1 a 8 pasos de radio, cada uno entre 1 y 100 km y estrictamente mayor que el anterior; ventana entre 10 y 300 s; radio de choferes por terminar entre 0 y 5000 m, entero (0 lo apaga: sólo se ofrece a choferes sin pedido en curso); minutos sin chofer antes de cancelar el pedido entre 1 y 1440, entero (por omisión 120). Rige para las ofertas que se creen desde ese momento (las ya enviadas conservan su vencimiento); en otras instancias del servidor, como máximo un minuto después. El plazo sin chofer se aplica en el próximo barrido del despacho a todos los pedidos que esperan, con el valor vigente.
      */
     put: operations['ModuleConfigController_putDispatch'];
     post?: never;
@@ -3494,7 +3687,157 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v1/auth/registro': {
+  '/api/v1/suppliers': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Listar los proveedores, paginado y filtrable */
+    get: operations['SupplierController_findAll'];
+    put?: never;
+    /**
+     * Crear un proveedor
+     * @description El CUIT se valida (prefijo y dígito verificador) y es único entre los proveedores vigentes de la distribuidora.
+     */
+    post: operations['SupplierController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/suppliers/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Ver un proveedor */
+    get: operations['SupplierController_findOne'];
+    put?: never;
+    post?: never;
+    /** Dar de baja un proveedor (baja lógica) */
+    delete: operations['SupplierController_remove'];
+    options?: never;
+    head?: never;
+    /** Editar un proveedor */
+    patch: operations['SupplierController_update'];
+    trace?: never;
+  };
+  '/api/v1/suppliers/{id}/purchase-history': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Historial de compras de un proveedor
+     * @description Recepciones del proveedor (las anuladas incluidas en la lista), con el total y las llenas de las confirmadas del período. También para un proveedor dado de baja.
+     */
+    get: operations['SupplierController_historial'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/suppliers/{id}/photo': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Ver la foto del proveedor
+     * @description Por defecto redirige (302) a la URL firmada de S3. Con `?modo=url` devuelve `{ url, expiresAt, requiresAuth }` en JSON, sin redirect; si no tiene foto, `url: null`.
+     */
+    get: operations['SupplierPhotoController_ver'];
+    /**
+     * Subir o reemplazar la foto principal del proveedor
+     * @description Multipart, campo `file`: JPG, PNG o WEBP de hasta 5 MB (el tipo se valida por el contenido, no por el header). Si ya tenía foto, la anterior se borra del bucket. Devuelve el enlace vigente `{ url, expiresAt }`.
+     */
+    put: operations['SupplierPhotoController_subir'];
+    post?: never;
+    /**
+     * Sacar la foto del proveedor
+     * @description Quita la referencia (el objeto se borra del bucket en segundo plano); no da de baja al proveedor. Devuelve `{ url: null, expiresAt: null }`.
+     */
+    delete: operations['SupplierPhotoController_quitar'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/purchase-orders': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Listar las órdenes de compra por estado, proveedor y fecha */
+    get: operations['PurchaseOrderController_ordenes'];
+    put?: never;
+    /**
+     * Crear una orden de compra en borrador
+     * @description Número correlativo por distribuidora. Total = Σ cantidad × costo unitario. Sin depósito destino usa el predeterminado.
+     */
+    post: operations['PurchaseOrderController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/purchase-orders/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Ver una orden con sus renglones, lo pendiente y sus recepciones */
+    get: operations['PurchaseOrderController_orden'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Editar una orden (sólo en borrador)
+     * @description Si vienen `items`, reemplazan a todos los renglones anteriores.
+     */
+    patch: operations['PurchaseOrderController_update'];
+    trace?: never;
+  };
+  '/api/v1/purchase-orders/{id}/pending': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Pendiente de recibir de una orden
+     * @description Por garrafa: pedido, recibido y lo que falta. Una orden cancelada no espera nada.
+     */
+    get: operations['PurchaseOrderController_pendiente'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/purchase-orders/{id}/send': {
     parameters: {
       query?: never;
       header?: never;
@@ -3503,15 +3846,187 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Registrarse como cliente (CU-002) */
-    post: operations['RegistroController_registrarCliente'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Enviar la orden al proveedor (borrador a enviada) */
+    patch: operations['PurchaseOrderController_send'];
+    trace?: never;
+  };
+  '/api/v1/purchase-orders/{id}/cancel': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Cancelar una orden (borrador o enviada) con motivo
+     * @description Una orden con recepciones confirmadas (incluso sólo de vacías) no se cancela: responde 409. Se anulan primero las recepciones, o se cierra la orden con faltante.
+     */
+    patch: operations['PurchaseOrderController_cancel'];
+    trace?: never;
+  };
+  '/api/v1/purchase-orders/{id}/close-short': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Cerrar con faltante una orden parcialmente recibida
+     * @description Lo que falta ya no llega: la orden queda `closed_short` con el motivo, deja de esperar mercadería y de bloquear la baja del proveedor. Sus recepciones se pueden seguir anulando.
+     */
+    patch: operations['PurchaseOrderController_closeShort'];
+    trace?: never;
+  };
+  '/api/v1/purchase-receipts': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Listar las recepciones por proveedor, orden, fecha y estado de pago */
+    get: operations['PurchaseReceiptController_recepciones'];
+    put?: never;
+    /**
+     * Registrar la recepción de una compra (con o sin orden)
+     * @description En una transacción: suma las llenas al depósito (sube el vendible), descuenta las vacías que se llevó la planta (sin dejar el depósito en negativo), actualiza lo recibido y el estado de la orden y recalcula el costo promedio ponderado. El número del documento del proveedor es único por proveedor. **Exige** `Idempotency-Key` (400 sin ella). Un `receivedAt` anterior al conteo inicial del depósito responde 400.
+     */
+    post: operations['PurchaseReceiptController_create'];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  '/api/v1/users/customer-registration': {
+  '/api/v1/purchase-receipts/average-costs': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Costo promedio ponderado por garrafa
+     * @description Con el último costo comprado y las llenas que hay hoy. `null` si nunca se compró.
+     */
+    get: operations['PurchaseReceiptController_costos'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/purchase-receipts/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Ver una recepción con sus renglones */
+    get: operations['PurchaseReceiptController_recepcion'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/purchase-receipts/{id}/void': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Anular una recepción (contraasiento del libro, con motivo)
+     * @description Saca las llenas que entraron y devuelve las vacías que se llevó la planta; recalcula lo recibido de la orden y el costo promedio (recalculado de las recepciones que siguen confirmadas). **Exige** `Idempotency-Key`. Si las llenas ya no están en el depósito responde 409 diciendo dónde están; si el depósito fue dado de baja, 409. No se anula una recepción pagada.
+     */
+    patch: operations['PurchaseReceiptController_void'];
+    trace?: never;
+  };
+  '/api/v1/purchase-receipts/{id}/payment-status': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Marcar la recepción como pagada o impaga
+     * @description Marca el pago. Con `paid` + `paidInCash` el total sale de la caja de efectivo `cashBoxId` en la misma transacción (`cashMovementId` guarda la salida; con cajas de efectivo activas `cashBoxId` es obligatorio). Marcarla `unpaid` asienta el contraasiento. Repetir el estado actual no asienta otra vez.
+     */
+    patch: operations['PurchaseReceiptController_paymentStatus'];
+    trace?: never;
+  };
+  '/api/v2/purchase-receipts': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Listar las recepciones, con su estado de pago */
+    get: operations['PurchaseReceiptV2Controller_recepciones'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/purchase-receipts/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Ver una recepción, con su estado de pago */
+    get: operations['PurchaseReceiptV2Controller_recepcion'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/purchase-receipts/{id}/pay': {
     parameters: {
       query?: never;
       header?: never;
@@ -3521,17 +4036,17 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Registrarse como cliente (ruta anterior de /auth/registro)
-     * @deprecated
+     * Pagar una recepción desde una caja
+     * @description Egreso del total de la recepción de la caja elegida (efectivo, banco o billetera), categoría «Compra de mercadería», en la misma transacción. Sólo una recepción impaga: para corregir un pago se la marca impaga (`PATCH /purchase-receipts/:id/payment-status`), que asienta el contraasiento. **Exige** `Idempotency-Key`.
      */
-    post: operations['RegistroController_registrarClienteRutaAnterior'];
+    post: operations['PurchaseReceiptV2Controller_pay'];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  '/api/v1/employees/{id}/account': {
+  '/api/v2/purchase-orders/preview-total': {
     parameters: {
       query?: never;
       header?: never;
@@ -3541,25 +4056,62 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Otorgar una cuenta de acceso a un empleado, con el rol que le corresponde a su puesto (CU-182)
-     * @description Sólo los empleados de categoría driver tienen cuenta (rol chofer, con su perfil de reparto). Cualquier otra categoría responde 400.
+     * Calcular el total de una orden o remito de compra
+     * @description Σ cantidad × costo unitario con aritmética decimal, a 2 decimales: la misma cuenta con la que se guardan la orden y el remito. Es una vista previa para el formulario: no guarda nada.
      */
-    post: operations['EmployeeAccountController_grantAccount'];
+    post: operations['PurchaseTotalV2Controller_previewTotal'];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  '/api/v1/customers': {
+  '/api/v1/warehouses': {
     parameters: {
       query?: never;
       header?: never;
       path?: never;
       cookie?: never;
     };
-    /** Get customers (scopeado por distribuidora: solo los que pidieron a esa empresa) */
-    get: operations['CustomersController_findAll'];
+    /** Listar los depósitos de la distribuidora */
+    get: operations['WarehouseController_findAll'];
+    put?: never;
+    /** Crear un depósito */
+    post: operations['WarehouseController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/warehouses/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Ver un depósito con sus saldos */
+    get: operations['WarehouseController_findOne'];
+    put?: never;
+    post?: never;
+    /** Dar de baja un depósito (baja lógica) */
+    delete: operations['WarehouseController_remove'];
+    options?: never;
+    head?: never;
+    /** Editar un depósito o cambiar el predeterminado */
+    patch: operations['WarehouseController_update'];
+    trace?: never;
+  };
+  '/api/v1/stock': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Saldos por ubicación, tipo de garrafa y condición (CU-208) */
+    get: operations['StockController_saldos'];
     put?: never;
     post?: never;
     delete?: never;
@@ -3568,15 +4120,18 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v2/customers/removed': {
+  '/api/v1/stock/summary': {
     parameters: {
       query?: never;
       header?: never;
       path?: never;
       cookie?: never;
     };
-    /** Clientes que la distribuidora dio de baja (búsqueda por nombre o teléfono) */
-    get: operations['CustomersController_findRemoved'];
+    /**
+     * Resumen galpón vs camiones por tipo de garrafa (CU-208)
+     * @description Llenas, vacías y defectuosas en depósitos y en vehículos, lo reservado por pedidos abiertos, el vendible y el mínimo configurado.
+     */
+    get: operations['StockController_resumen'];
     put?: never;
     post?: never;
     delete?: never;
@@ -3585,34 +4140,15 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v1/customers/{id}': {
+  '/api/v1/stock/locations': {
     parameters: {
       query?: never;
       header?: never;
       path?: never;
       cookie?: never;
     };
-    /** Get customer by ID */
-    get: operations['CustomersController_findOne'];
-    put?: never;
-    post?: never;
-    /** Delete customer by ID (soft delete) */
-    delete: operations['CustomersController_remove'];
-    options?: never;
-    head?: never;
-    /** Update customer by ID */
-    patch: operations['CustomersController_update'];
-    trace?: never;
-  };
-  '/api/v1/customers/user/{userId}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Get customer by user ID */
-    get: operations['CustomersController_findOneByUserId'];
+    /** Ubicaciones de stock: depósitos y vehículos con ubicación */
+    get: operations['StockController_ubicaciones'];
     put?: never;
     post?: never;
     delete?: never;
@@ -3621,7 +4157,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v1/customers/{id}/location': {
+  '/api/v1/stock/movements': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Libro de movimientos de stock, paginado (CU-209)
+     * @description Filtros por tipo de garrafa, ubicación (origen o destino), motivo, tipo de referencia, lote y fechas (días argentinos, `to` inclusivo).
+     */
+    get: operations['StockController_movimientos'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/stock/movements/batches/{batchId}/reverse': {
     parameters: {
       query?: never;
       header?: never;
@@ -3630,15 +4186,18 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    post?: never;
+    /**
+     * Contraasentar una transferencia
+     * @description El libro no se edita: se agregan movimientos inversos (`reversal`) que apuntan a los originales. Sólo transferencias; un ajuste se corrige con otro ajuste. **Exige** `Idempotency-Key` (400 sin ella). No se contraasienta hacia un camión (409): el stock del camión entra sólo por la carga del día.
+     */
+    post: operations['StockController_contraasentar'];
     delete?: never;
     options?: never;
     head?: never;
-    /** Update customer location */
-    patch: operations['CustomersController_updateLocation'];
+    patch?: never;
     trace?: never;
   };
-  '/api/v2/customers/{id}/distributor': {
+  '/api/v1/stock/transfers': {
     parameters: {
       query?: never;
       header?: never;
@@ -3647,34 +4206,176 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Reactivar al cliente dado de baja en la distribuidora */
-    post: operations['CustomersController_restoreInDistributor'];
-    /** Dar de baja al cliente en la distribuidora (no toca su cuenta ni sus pedidos) */
-    delete: operations['CustomersController_removeFromDistributor'];
+    /**
+     * Transferir stock entre depósitos o entre un depósito y un vehículo (CU-212)
+     * @description **Exige** el header `Idempotency-Key` (400 sin él): un reintento sin clave duplicaría el movimiento.
+     */
+    post: operations['StockController_transferir'];
+    delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  '/api/v1/customers/me/consumption': {
+  '/api/v1/stock/initial-counts': {
     parameters: {
       query?: never;
       header?: never;
       path?: never;
       cookie?: never;
     };
-    /** Consumo declarado y recompra estimada del cliente */
-    get: operations['ConsumptionController_obtener'];
+    get?: never;
+    put?: never;
+    /**
+     * Conteo inicial de un depósito
+     * @description **Exige** `Idempotency-Key` (400 sin ella). Carga lo que hay físicamente. Registra un ajuste `initial_count` con las diferencias contra el saldo actual y el vendible acompaña a las llenas. Una vez por depósito.
+     */
+    post: operations['StockController_conteoInicial'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/stock/adjustments': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Listar los ajustes de stock, paginado */
+    get: operations['StockController_ajustes'];
+    put?: never;
+    /**
+     * Registrar un ajuste o una merma de stock (CU-213)
+     * @description **Exige** `Idempotency-Key` (400 sin ella). Motivos: corrección de conteo, merma, fuga, rotura (llena a defectuosa), pérdida y encontrado. Nota obligatoria; el número es correlativo por distribuidora. Si toca llenas, el vendible acompaña y nunca queda negativo.
+     */
+    post: operations['StockController_ajustar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/stock/adjustments/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Ver el detalle de un ajuste de stock */
+    get: operations['StockController_ajuste'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/stock/thresholds': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Mínimos de llenas por depósito y tipo (CU-210) */
+    get: operations['StockController_umbrales'];
+    /**
+     * Configurar mínimos en lote (CU-210)
+     * @description Alta o cambio de varios pares depósito-tipo. Un cron diario (8:00 ART) avisa por email a los administradores cuando las llenas bajan del mínimo.
+     */
+    put: operations['StockController_configurarUmbrales'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/stock/reconciliation': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Conciliar el vendible contra el físico (CU-224)
+     * @description vendible = max(0, Σ llenas en depósitos y camiones − Σ pedidos abiertos). Informa las diferencias, las reservas que el físico no cubre (`overReserved`, p. ej. tras una merma con pedidos abiertos) y las entregas sin movimiento; no corrige nada.
+     */
+    get: operations['StockController_conciliar'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/stock/reconciliation/reapply-deliveries': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Volver a descontar el físico de las entregas pendientes
+     * @description Para después de corregir la causa (por ejemplo, transferir llenas al depósito). Idempotente: no duplica lo ya descontado.
+     */
+    post: operations['StockController_reaplicar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/stock/reconciliation/adjustments': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Corregir el vendible de una garrafa hasta la invariante
+     * @description **Exige** `Idempotency-Key` (400 sin ella). Ajuste de conciliación: deja `gas_cylinder.stock = max(0, llenas − reservado)` SIN tocar el físico (`correction` de la conciliación). Documento numerado con motivo `reconciliation` y nota obligatoria; no genera movimientos físicos. Con `expectedDifference` falla con 409 si la diferencia cambió.
+     */
+    post: operations['StockController_corregirVendible'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/gascylinder/{id}/stock': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
     put?: never;
     post?: never;
     delete?: never;
     options?: never;
     head?: never;
     /**
-     * Modificar el consumo promedio declarado (CU-144)
-     * @description Convierte la declaración a kg por mes con el peso del tipo de garrafa, valida el rango (5 a 500 kg por mes) y recalcula la fecha estimada de recompra desde la última compra entregada (o desde ahora si nunca compró). Fuera de rango responde 400 y pide confirmar con `confirmOutOfRange: true`.
+     * Update gas cylinder stock
+     * @description **Exige** `Idempotency-Key` (400 sin ella): suma y resta son relativas, un reintento sin clave ajustaría dos veces. Suma (positivo) o resta (negativo) llenas en el depósito predeterminado como un ajuste de conteo: deja el rastro en el libro de stock y mantiene el vendible igual al físico menos lo reservado.
+     *
+     *     **Cambio de contrato:** al restar, si el depósito predeterminado no tiene tantas llenas responde 400 con un mensaje que dice dónde están las demás (camiones u otros depósitos) y cómo ajustarlas ahí; antes sólo comparaba contra el vendible.
      */
-    patch: operations['ConsumptionController_actualizar'];
+    patch: operations['CatalogStockController_updateStock'];
     trace?: never;
   };
   '/api/v1/gascylinder': {
@@ -3860,6 +4561,189 @@ export interface paths {
     options?: never;
     head?: never;
     patch?: never;
+    trace?: never;
+  };
+  '/api/v1/auth/registro': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Registrarse como cliente (CU-002) */
+    post: operations['RegistroController_registrarCliente'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/users/customer-registration': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Registrarse como cliente (ruta anterior de /auth/registro)
+     * @deprecated
+     */
+    post: operations['RegistroController_registrarClienteRutaAnterior'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/employees/{id}/account': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Otorgar una cuenta de acceso a un empleado, con el rol que le corresponde a su puesto (CU-182)
+     * @description Sólo los empleados de categoría driver tienen cuenta (rol chofer, con su perfil de reparto). Cualquier otra categoría responde 400.
+     */
+    post: operations['EmployeeAccountController_grantAccount'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/customers': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get customers (scopeado por distribuidora: solo los que pidieron a esa empresa) */
+    get: operations['CustomersController_findAll'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/customers/removed': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Clientes que la distribuidora dio de baja (búsqueda por nombre o teléfono) */
+    get: operations['CustomersController_findRemoved'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/customers/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get customer by ID */
+    get: operations['CustomersController_findOne'];
+    put?: never;
+    post?: never;
+    /** Delete customer by ID (soft delete) */
+    delete: operations['CustomersController_remove'];
+    options?: never;
+    head?: never;
+    /** Update customer by ID */
+    patch: operations['CustomersController_update'];
+    trace?: never;
+  };
+  '/api/v1/customers/user/{userId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get customer by user ID */
+    get: operations['CustomersController_findOneByUserId'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/customers/{id}/location': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Update customer location */
+    patch: operations['CustomersController_updateLocation'];
+    trace?: never;
+  };
+  '/api/v2/customers/{id}/distributor': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Reactivar al cliente dado de baja en la distribuidora */
+    post: operations['CustomersController_restoreInDistributor'];
+    /** Dar de baja al cliente en la distribuidora (no toca su cuenta ni sus pedidos) */
+    delete: operations['CustomersController_removeFromDistributor'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/customers/me/consumption': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Consumo declarado y recompra estimada del cliente */
+    get: operations['ConsumptionController_obtener'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Modificar el consumo promedio declarado (CU-144)
+     * @description Convierte la declaración a kg por mes con el peso del tipo de garrafa, valida el rango (5 a 500 kg por mes) y recalcula la fecha estimada de recompra desde la última compra entregada (o desde ahora si nunca compró). Fuera de rango responde 400 y pide confirmar con `confirmOutOfRange: true`.
+     */
+    patch: operations['ConsumptionController_actualizar'];
     trace?: never;
   };
   '/api/v2/customers/{id}/containers': {
@@ -5807,318 +6691,6 @@ export interface paths {
     patch: operations['DriverLiquidationController_void'];
     trace?: never;
   };
-  '/api/v1/warehouses': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Listar los depósitos de la distribuidora */
-    get: operations['WarehouseController_findAll'];
-    put?: never;
-    /** Crear un depósito */
-    post: operations['WarehouseController_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/warehouses/{id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Ver un depósito con sus saldos */
-    get: operations['WarehouseController_findOne'];
-    put?: never;
-    post?: never;
-    /** Dar de baja un depósito (baja lógica) */
-    delete: operations['WarehouseController_remove'];
-    options?: never;
-    head?: never;
-    /** Editar un depósito o cambiar el predeterminado */
-    patch: operations['WarehouseController_update'];
-    trace?: never;
-  };
-  '/api/v1/stock': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Saldos por ubicación, tipo de garrafa y condición (CU-208) */
-    get: operations['StockController_saldos'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/stock/summary': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Resumen galpón vs camiones por tipo de garrafa (CU-208)
-     * @description Llenas, vacías y defectuosas en depósitos y en vehículos, lo reservado por pedidos abiertos, el vendible y el mínimo configurado.
-     */
-    get: operations['StockController_resumen'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/stock/locations': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Ubicaciones de stock: depósitos y vehículos con ubicación */
-    get: operations['StockController_ubicaciones'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/stock/movements': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Libro de movimientos de stock, paginado (CU-209)
-     * @description Filtros por tipo de garrafa, ubicación (origen o destino), motivo, tipo de referencia, lote y fechas (días argentinos, `to` inclusivo).
-     */
-    get: operations['StockController_movimientos'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/stock/movements/batches/{batchId}/reverse': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Contraasentar una transferencia
-     * @description El libro no se edita: se agregan movimientos inversos (`reversal`) que apuntan a los originales. Sólo transferencias; un ajuste se corrige con otro ajuste. **Exige** `Idempotency-Key` (400 sin ella). No se contraasienta hacia un camión (409): el stock del camión entra sólo por la carga del día.
-     */
-    post: operations['StockController_contraasentar'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/stock/transfers': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Transferir stock entre depósitos o entre un depósito y un vehículo (CU-212)
-     * @description **Exige** el header `Idempotency-Key` (400 sin él): un reintento sin clave duplicaría el movimiento.
-     */
-    post: operations['StockController_transferir'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/stock/initial-counts': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Conteo inicial de un depósito
-     * @description **Exige** `Idempotency-Key` (400 sin ella). Carga lo que hay físicamente. Registra un ajuste `initial_count` con las diferencias contra el saldo actual y el vendible acompaña a las llenas. Una vez por depósito.
-     */
-    post: operations['StockController_conteoInicial'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/stock/adjustments': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Listar los ajustes de stock, paginado */
-    get: operations['StockController_ajustes'];
-    put?: never;
-    /**
-     * Registrar un ajuste o una merma de stock (CU-213)
-     * @description **Exige** `Idempotency-Key` (400 sin ella). Motivos: corrección de conteo, merma, fuga, rotura (llena a defectuosa), pérdida y encontrado. Nota obligatoria; el número es correlativo por distribuidora. Si toca llenas, el vendible acompaña y nunca queda negativo.
-     */
-    post: operations['StockController_ajustar'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/stock/adjustments/{id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Ver el detalle de un ajuste de stock */
-    get: operations['StockController_ajuste'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/stock/thresholds': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Mínimos de llenas por depósito y tipo (CU-210) */
-    get: operations['StockController_umbrales'];
-    /**
-     * Configurar mínimos en lote (CU-210)
-     * @description Alta o cambio de varios pares depósito-tipo. Un cron diario (8:00 ART) avisa por email a los administradores cuando las llenas bajan del mínimo.
-     */
-    put: operations['StockController_configurarUmbrales'];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/stock/reconciliation': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Conciliar el vendible contra el físico (CU-224)
-     * @description vendible = max(0, Σ llenas en depósitos y camiones − Σ pedidos abiertos). Informa las diferencias, las reservas que el físico no cubre (`overReserved`, p. ej. tras una merma con pedidos abiertos) y las entregas sin movimiento; no corrige nada.
-     */
-    get: operations['StockController_conciliar'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/stock/reconciliation/reapply-deliveries': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Volver a descontar el físico de las entregas pendientes
-     * @description Para después de corregir la causa (por ejemplo, transferir llenas al depósito). Idempotente: no duplica lo ya descontado.
-     */
-    post: operations['StockController_reaplicar'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/stock/reconciliation/adjustments': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Corregir el vendible de una garrafa hasta la invariante
-     * @description **Exige** `Idempotency-Key` (400 sin ella). Ajuste de conciliación: deja `gas_cylinder.stock = max(0, llenas − reservado)` SIN tocar el físico (`correction` de la conciliación). Documento numerado con motivo `reconciliation` y nota obligatoria; no genera movimientos físicos. Con `expectedDifference` falla con 409 si la diferencia cambió.
-     */
-    post: operations['StockController_corregirVendible'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/gascylinder/{id}/stock': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /**
-     * Update gas cylinder stock
-     * @description **Exige** `Idempotency-Key` (400 sin ella): suma y resta son relativas, un reintento sin clave ajustaría dos veces. Suma (positivo) o resta (negativo) llenas en el depósito predeterminado como un ajuste de conteo: deja el rastro en el libro de stock y mantiene el vendible igual al físico menos lo reservado.
-     *
-     *     **Cambio de contrato:** al restar, si el depósito predeterminado no tiene tantas llenas responde 400 con un mensaje que dice dónde están las demás (camiones u otros depósitos) y cómo ajustarlas ahí; antes sólo comparaba contra el vendible.
-     */
-    patch: operations['CatalogStockController_updateStock'];
-    trace?: never;
-  };
   '/api/v1/truck-loads/mine': {
     parameters: {
       query?: never;
@@ -7030,7 +7602,7 @@ export interface paths {
     };
     /**
      * Ruta por calles de un pedido activo
-     * @description Ruta del chofer hasta la dirección de entrega de UN pedido, para dibujarla en el mapa sin que las apps lleven la clave de Google. Sólo la pide el chofer asignado (pedido `accepted` u `on_the_way`) o el cliente dueño (`on_the_way`); el destino es siempre la dirección del pedido. El origen es la última posición reciente del chofer; `from` es opcional y se acepta sólo si está a menos de `ROUTES_FROM_MAX_DISTANCE_M` (300 m) de ella. El servidor consulta Google Directions con su propia clave (`GOOGLE_DIRECTIONS_API_KEY`) y, si falta o Google falla, OSRM propio (`OSRM_BASE_URL`; el público sólo en desarrollo); `provider` dice cuál respondió. Cupos: 30 por minuto y usuario, y por día (24 h) 100 por usuario y 3000 por distribuidora, ajustables con `ROUTES_DAILY_LIMIT_PER_USER` y `ROUTES_DAILY_LIMIT_PER_DISTRIBUTOR` (429). Las respuestas se guardan 60 s por origen y destino redondeados a 4 decimales y no cuentan contra el cupo diario.
+     * @description Ruta del chofer hasta la dirección de entrega de UN pedido, para dibujarla en el mapa sin que las apps lleven la clave de Google. Sólo la pide el chofer asignado (pedido `accepted` u `on_the_way`) o el cliente dueño (`on_the_way`); el destino es siempre la dirección del pedido. El origen es la última posición reciente del chofer; `from` es opcional y se acepta sólo si está a menos de `ROUTES_FROM_MAX_DISTANCE_M` (300 m) de ella. El servidor consulta la Routes API de Google con su propia clave (`GOOGLE_DIRECTIONS_API_KEY`) y, si falta o Google falla, OSRM propio (`OSRM_BASE_URL`; el público sólo en desarrollo); `provider` dice cuál respondió. Cupos: 30 por minuto y usuario, y por día (24 h) 100 por usuario y 3000 por distribuidora, ajustables con `ROUTES_DAILY_LIMIT_PER_USER` y `ROUTES_DAILY_LIMIT_PER_DISTRIBUTOR` (429). Las respuestas se guardan 60 s por origen y destino redondeados a 4 decimales y no cuentan contra el cupo diario.
      */
     get: operations['RoutesController_driving'];
     put?: never;
@@ -7910,7 +8482,7 @@ export interface paths {
     put?: never;
     /**
      * Aceptar una invitación: crear el pedido
-     * @description Crea el pedido precargado por el mismo camino que `POST /orders` (reserva de stock, precio y promociones de hoy, recargos, despacho): el cuerpo es opcional y sólo cambia medio de pago, franja (`timeSlotId` y `scheduledDate` van juntos) o notas. Sin franja, la entrega es inmediata. Idempotente vía `Idempotency-Key`. Con MercadoPago, `order.paymentUrl` trae el enlace de cobro.
+     * @description Crea el pedido precargado por el mismo camino que `POST /orders` (reserva de stock, precio y promociones de hoy, recargos, despacho): el cuerpo es opcional y sólo cambia dirección de entrega, medio de pago, franja (`timeSlotId` y `scheduledDate` van juntos) o notas. Sin dirección usa la de la invitación; sin franja, la entrega es inmediata. Idempotente vía `Idempotency-Key`. Con MercadoPago, `order.paymentUrl` trae el enlace de cobro.
      */
     post: operations['RepurchaseCustomerController_aceptar'];
     delete?: never;
@@ -8064,385 +8636,6 @@ export interface paths {
     get: operations['PersonnelController_consultar'];
     put?: never;
     post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/suppliers': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Listar los proveedores, paginado y filtrable */
-    get: operations['SupplierController_findAll'];
-    put?: never;
-    /**
-     * Crear un proveedor
-     * @description El CUIT se valida (prefijo y dígito verificador) y es único entre los proveedores vigentes de la distribuidora.
-     */
-    post: operations['SupplierController_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/suppliers/{id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Ver un proveedor */
-    get: operations['SupplierController_findOne'];
-    put?: never;
-    post?: never;
-    /** Dar de baja un proveedor (baja lógica) */
-    delete: operations['SupplierController_remove'];
-    options?: never;
-    head?: never;
-    /** Editar un proveedor */
-    patch: operations['SupplierController_update'];
-    trace?: never;
-  };
-  '/api/v1/suppliers/{id}/purchase-history': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Historial de compras de un proveedor
-     * @description Recepciones del proveedor (las anuladas incluidas en la lista), con el total y las llenas de las confirmadas del período. También para un proveedor dado de baja.
-     */
-    get: operations['SupplierController_historial'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v2/suppliers/{id}/photo': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Ver la foto del proveedor
-     * @description Por defecto redirige (302) a la URL firmada de S3. Con `?modo=url` devuelve `{ url, expiresAt, requiresAuth }` en JSON, sin redirect; si no tiene foto, `url: null`.
-     */
-    get: operations['SupplierPhotoController_ver'];
-    /**
-     * Subir o reemplazar la foto principal del proveedor
-     * @description Multipart, campo `file`: JPG, PNG o WEBP de hasta 5 MB (el tipo se valida por el contenido, no por el header). Si ya tenía foto, la anterior se borra del bucket. Devuelve el enlace vigente `{ url, expiresAt }`.
-     */
-    put: operations['SupplierPhotoController_subir'];
-    post?: never;
-    /**
-     * Sacar la foto del proveedor
-     * @description Quita la referencia (el objeto se borra del bucket en segundo plano); no da de baja al proveedor. Devuelve `{ url: null, expiresAt: null }`.
-     */
-    delete: operations['SupplierPhotoController_quitar'];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/purchase-orders': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Listar las órdenes de compra por estado, proveedor y fecha */
-    get: operations['PurchaseOrderController_ordenes'];
-    put?: never;
-    /**
-     * Crear una orden de compra en borrador
-     * @description Número correlativo por distribuidora. Total = Σ cantidad × costo unitario. Sin depósito destino usa el predeterminado.
-     */
-    post: operations['PurchaseOrderController_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/purchase-orders/{id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Ver una orden con sus renglones, lo pendiente y sus recepciones */
-    get: operations['PurchaseOrderController_orden'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /**
-     * Editar una orden (sólo en borrador)
-     * @description Si vienen `items`, reemplazan a todos los renglones anteriores.
-     */
-    patch: operations['PurchaseOrderController_update'];
-    trace?: never;
-  };
-  '/api/v1/purchase-orders/{id}/pending': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Pendiente de recibir de una orden
-     * @description Por garrafa: pedido, recibido y lo que falta. Una orden cancelada no espera nada.
-     */
-    get: operations['PurchaseOrderController_pendiente'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/purchase-orders/{id}/send': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /** Enviar la orden al proveedor (borrador a enviada) */
-    patch: operations['PurchaseOrderController_send'];
-    trace?: never;
-  };
-  '/api/v1/purchase-orders/{id}/cancel': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /**
-     * Cancelar una orden (borrador o enviada) con motivo
-     * @description Una orden con recepciones confirmadas (incluso sólo de vacías) no se cancela: responde 409. Se anulan primero las recepciones, o se cierra la orden con faltante.
-     */
-    patch: operations['PurchaseOrderController_cancel'];
-    trace?: never;
-  };
-  '/api/v1/purchase-orders/{id}/close-short': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /**
-     * Cerrar con faltante una orden parcialmente recibida
-     * @description Lo que falta ya no llega: la orden queda `closed_short` con el motivo, deja de esperar mercadería y de bloquear la baja del proveedor. Sus recepciones se pueden seguir anulando.
-     */
-    patch: operations['PurchaseOrderController_closeShort'];
-    trace?: never;
-  };
-  '/api/v1/purchase-receipts': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Listar las recepciones por proveedor, orden, fecha y estado de pago */
-    get: operations['PurchaseReceiptController_recepciones'];
-    put?: never;
-    /**
-     * Registrar la recepción de una compra (con o sin orden)
-     * @description En una transacción: suma las llenas al depósito (sube el vendible), descuenta las vacías que se llevó la planta (sin dejar el depósito en negativo), actualiza lo recibido y el estado de la orden y recalcula el costo promedio ponderado. El número del documento del proveedor es único por proveedor. **Exige** `Idempotency-Key` (400 sin ella). Un `receivedAt` anterior al conteo inicial del depósito responde 400.
-     */
-    post: operations['PurchaseReceiptController_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/purchase-receipts/average-costs': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Costo promedio ponderado por garrafa
-     * @description Con el último costo comprado y las llenas que hay hoy. `null` si nunca se compró.
-     */
-    get: operations['PurchaseReceiptController_costos'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/purchase-receipts/{id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Ver una recepción con sus renglones */
-    get: operations['PurchaseReceiptController_recepcion'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/purchase-receipts/{id}/void': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /**
-     * Anular una recepción (contraasiento del libro, con motivo)
-     * @description Saca las llenas que entraron y devuelve las vacías que se llevó la planta; recalcula lo recibido de la orden y el costo promedio (recalculado de las recepciones que siguen confirmadas). **Exige** `Idempotency-Key`. Si las llenas ya no están en el depósito responde 409 diciendo dónde están; si el depósito fue dado de baja, 409. No se anula una recepción pagada.
-     */
-    patch: operations['PurchaseReceiptController_void'];
-    trace?: never;
-  };
-  '/api/v1/purchase-receipts/{id}/payment-status': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /**
-     * Marcar la recepción como pagada o impaga
-     * @description Marca el pago. Con `paid` + `paidInCash` el total sale de la caja de efectivo `cashBoxId` en la misma transacción (`cashMovementId` guarda la salida; con cajas de efectivo activas `cashBoxId` es obligatorio). Marcarla `unpaid` asienta el contraasiento. Repetir el estado actual no asienta otra vez.
-     */
-    patch: operations['PurchaseReceiptController_paymentStatus'];
-    trace?: never;
-  };
-  '/api/v2/purchase-receipts': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Listar las recepciones, con su estado de pago */
-    get: operations['PurchaseReceiptV2Controller_recepciones'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v2/purchase-receipts/{id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Ver una recepción, con su estado de pago */
-    get: operations['PurchaseReceiptV2Controller_recepcion'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v2/purchase-receipts/{id}/pay': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Pagar una recepción desde una caja
-     * @description Egreso del total de la recepción de la caja elegida (efectivo, banco o billetera), categoría «Compra de mercadería», en la misma transacción. Sólo una recepción impaga: para corregir un pago se la marca impaga (`PATCH /purchase-receipts/:id/payment-status`), que asienta el contraasiento. **Exige** `Idempotency-Key`.
-     */
-    post: operations['PurchaseReceiptV2Controller_pay'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v2/purchase-orders/preview-total': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Calcular el total de una orden o remito de compra
-     * @description Σ cantidad × costo unitario con aritmética decimal, a 2 decimales: la misma cuenta con la que se guardan la orden y el remito. Es una vista previa para el formulario: no guarda nada.
-     */
-    post: operations['PurchaseTotalV2Controller_previewTotal'];
     delete?: never;
     options?: never;
     head?: never;
@@ -8852,6 +9045,7 @@ export interface components {
         | 'poliza'
         | 'revision_tecnica'
         | 'cedula_del_vehiculo'
+        | 'foto_de_patente'
         | 'licencia_de_conducir'
         | 'apto_medico'
         | 'otro'
@@ -8863,6 +9057,7 @@ export interface components {
         | 'poliza'
         | 'revision_tecnica'
         | 'cedula_del_vehiculo'
+        | 'foto_de_patente'
         | 'licencia_de_conducir'
         | 'apto_medico'
         | 'otro'
@@ -10051,7 +10246,8 @@ export interface components {
       | 'insurance_policy'
       | 'insurance_installment'
       | 'traffic_fine_payment'
-      | 'mp_reconciliation';
+      | 'mp_reconciliation'
+      | 'car_document';
     AttachmentResponseDto: {
       /** Format: uuid */
       attachmentId: string;
@@ -11096,6 +11292,59 @@ export interface components {
       /** @description Otra ventana que le sirve. Tiene que caber en un día dentro del horario de taller, respetar el aviso mínimo, caer antes del vencimiento proyectado y no dejar la zona bajo el mínimo de unidades. Si es viable, queda acordada a la espera del administrador; si no, 400. */
       alternative?: components['schemas']['WindowDto'];
     };
+    CarDocumentScanDataDto: {
+      /** @enum {string|null} */
+      detectedType:
+        | 'comprobante_de_pago'
+        | 'factura_o_remito'
+        | 'poliza'
+        | 'revision_tecnica'
+        | 'cedula_del_vehiculo'
+        | 'foto_de_patente'
+        | 'licencia_de_conducir'
+        | 'apto_medico'
+        | 'otro'
+        | null;
+      /** Format: date */
+      expirationDate: string | null;
+      /** Format: date */
+      issueDate: string | null;
+      insurer: string | null;
+      policyNumber: string | null;
+      /** @example AB123CD */
+      patent: string | null;
+      warnings: string[];
+    };
+    CarDocumentScanDto: {
+      /** @description False si el lector no está configurado. */
+      available: boolean;
+      /** @description Lo leído para precargar el formulario; null sin lector o si no se pudo leer. */
+      data: components['schemas']['CarDocumentScanDataDto'] | null;
+      /** @description Presente si el escaneo falló o tardó demasiado: los datos se cargan a mano. */
+      warning?: string;
+    };
+    UploadedCarDocumentDto: {
+      attachment: components['schemas']['AttachmentResponseDto'];
+      scan: components['schemas']['CarDocumentScanDto'];
+    };
+    UploadedPatentPhotoDto: {
+      attachment: components['schemas']['AttachmentResponseDto'];
+      scan: components['schemas']['CarDocumentScanDto'];
+      /** @description True sólo si la patente leída no coincide. */
+      mismatch: boolean;
+      /**
+       * @description Patente cargada en el vehículo.
+       * @example AB123CD
+       */
+      expectedPatent: string | null;
+      /**
+       * @description Patente leída en la foto, en mayúsculas y sin espacios ni guiones; null si no se pudo leer.
+       * @example AC456EF
+       */
+      readPatent: string | null;
+      /** @description Advertencia para mostrar si la patente leída no coincide (además queda un aviso en la bandeja). */
+      warning: string | null;
+    };
     CreateAdminDto: {
       /** Format: uuid */
       user_id: string;
@@ -11127,6 +11376,13 @@ export interface components {
       /** Format: date-time */
       deletedAt: string | null;
     };
+    AdminStaffRoleDto: {
+      /** Format: uuid */
+      staffRoleId: string;
+      name: string;
+      /** @description Es el rol de sistema «Administrador» (todos los permisos) */
+      isSystem: boolean;
+    };
     AdminResponseDto: {
       /** Format: uuid */
       admin_id: string;
@@ -11144,6 +11400,8 @@ export interface components {
       user?: components['schemas']['UserResponseDto'];
       role?: components['schemas']['RoleResponseDto'];
       distributor?: components['schemas']['DistributorResponseDto'];
+      /** @description Rol de personal del administrador (F37); null para el super admin */
+      staffRole?: components['schemas']['AdminStaffRoleDto'] | null;
     };
     AdminVistaResponseDto: {
       /** Format: uuid */
@@ -11159,6 +11417,119 @@ export interface components {
       fullName?: string;
       /** @example +5493764000000 */
       phoneNumber?: string;
+    };
+    StaffRoleResponseDto: {
+      /** Format: uuid */
+      staffRoleId: string;
+      /** @example Encargado de depósito */
+      name: string;
+      description: string | null;
+      /** @description Rol de sistema («Administrador»): tiene todos los permisos y no se edita ni se da de baja */
+      isSystem: boolean;
+      /**
+       * @description Permisos elegidos, en el orden del catálogo. El rol de sistema lista el catálogo entero.
+       * @example [
+       *       "stock.gestionar",
+       *       "compras.gestionar"
+       *     ]
+       */
+      permissions: string[];
+      /**
+       * @description Administradores (no dados de baja) con este rol
+       * @example 2
+       */
+      adminCount: number;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    CreateStaffRoleDto: {
+      /** @example Encargado de depósito */
+      name: string;
+      /** @example Stock, compras y cargas de camión */
+      description?: string | null;
+      /**
+       * @description Claves del catálogo (`GET /v2/permissions`). `gestionar` ya incluye `ver` del mismo módulo. Una clave fuera del catálogo responde 400 con su nombre.
+       * @example [
+       *       "stock.gestionar",
+       *       "compras.gestionar"
+       *     ]
+       */
+      permissions: string[];
+    };
+    UpdateStaffRoleDto: {
+      /** @example Encargado de depósito */
+      name?: string;
+      /** @example Stock, compras y cargas de camión */
+      description?: string | null;
+      /**
+       * @description Claves del catálogo (`GET /v2/permissions`). `gestionar` ya incluye `ver` del mismo módulo. Una clave fuera del catálogo responde 400 con su nombre.
+       * @example [
+       *       "stock.gestionar",
+       *       "compras.gestionar"
+       *     ]
+       */
+      permissions?: string[];
+    };
+    AssignStaffRoleDto: {
+      /**
+       * Format: uuid
+       * @description Rol de personal a asignar
+       */
+      staffRoleId: string;
+    };
+    StaffRoleSummaryDto: {
+      /** Format: uuid */
+      staffRoleId: string;
+      /** @example Administrador */
+      name: string;
+      isSystem: boolean;
+    };
+    AdminStaffRoleResponseDto: {
+      /** Format: uuid */
+      adminId: string;
+      /** Format: uuid */
+      userId: string;
+      staffRole: components['schemas']['StaffRoleSummaryDto'];
+    };
+    PermissionResponseDto: {
+      /** @example pedidos.gestionar */
+      key: string;
+      /** @example gestionar los pedidos */
+      label: string;
+      /** @example Crear, editar, cancelar y cobrar pedidos. */
+      description: string;
+      /**
+       * @description Permisos que vienen incluidos con este
+       * @example [
+       *       "pedidos.ver"
+       *     ]
+       */
+      implies: string[];
+    };
+    PermissionModuleResponseDto: {
+      /** @example pedidos */
+      key: string;
+      /** @example Pedidos y despacho */
+      label: string;
+      permissions: components['schemas']['PermissionResponseDto'][];
+    };
+    MyPermissionsResponseDto: {
+      /** @enum {string} */
+      role: 'admin' | 'super_admin';
+      /** @description Tiene todos los permisos (super admin o rol de sistema): el panel no oculta nada */
+      allPermissions: boolean;
+      /** @description Rol de personal del administrador; null para el super admin */
+      staffRole: components['schemas']['StaffRoleSummaryDto'] | null;
+      /**
+       * @description Permisos efectivos, con los `ver` que implica cada `gestionar`, en el orden del catálogo
+       * @example [
+       *       "pedidos.ver",
+       *       "pedidos.gestionar"
+       *     ]
+       */
+      permissions: string[];
     };
     CreateRoleDto: {
       /** @example qa_pruebas */
@@ -12020,6 +12391,11 @@ export interface components {
       /** @example 300 */
       finishingRadiusMeters: number;
       /**
+       * @description Minutos que un pedido pendiente puede esperar chofer antes de que el sistema lo cancele
+       * @example 120
+       */
+      noDriverExpiryMinutes: number;
+      /**
        * @description true si rigen los valores por omisión (no configuró nada o todo coincide con ellos)
        * @example true
        */
@@ -12056,6 +12432,12 @@ export interface components {
        * @example 300
        */
       finishingRadiusMeters?: number;
+      /**
+       * @description Minutos que un pedido pendiente puede esperar chofer antes de que el sistema lo cancele (1 a 1440, entero). Corren desde que el pedido se puede ofrecer (alta, pago aprobado, liberación del chofer, fin de la retención por fraude, cambio de agenda o reserva activada) y, si está agendado, nunca antes del inicio de su franja. No corren mientras espera un pago online ni para los express
+       * @default 120
+       * @example 120
+       */
+      noDriverExpiryMinutes: number;
     };
     ScheduledTasksConfigResponseDto: {
       /** @example 15 */
@@ -13281,6 +13663,1247 @@ export interface components {
        */
       amount: number;
     };
+    SupplierResponseDto: {
+      /** Format: uuid */
+      supplierId: string;
+      /** @example Gas del Litoral S.A. */
+      businessName: string;
+      /** @example 30715123456 */
+      cuit: string;
+      /** @enum {string} */
+      kind: 'filling_plant' | 'other';
+      contactName: string | null;
+      phone: string | null;
+      email: string | null;
+      address: string | null;
+      /** @example 30 */
+      paymentTermsDays: number | null;
+      isActive: boolean;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    SupplierPageDto: {
+      data: components['schemas']['SupplierResponseDto'][];
+      /** @example 12 */
+      total: number;
+    };
+    CreateSupplierDto: {
+      /** @example Gas del Litoral S.A. */
+      businessName: string;
+      /**
+       * @description CUIT de 11 dígitos (se aceptan guiones). Único entre los proveedores vigentes de la distribuidora.
+       * @example 30715123456
+       */
+      cuit: string;
+      /**
+       * @description `filling_plant` es la planta fraccionadora que llena y canjea envases
+       * @example filling_plant
+       * @enum {string}
+       */
+      kind: 'filling_plant' | 'other';
+      /** @example Marta Gómez */
+      contactName?: string | null;
+      /** @example +5493624123456 */
+      phone?: string | null;
+      /**
+       * Format: email
+       * @example compras@gasdellitoral.com.ar
+       */
+      email?: string | null;
+      /** @example Ruta 11 km 1005, Resistencia */
+      address?: string | null;
+      /**
+       * @description Plazo de pago en días (0 = contado)
+       * @example 30
+       */
+      paymentTermsDays?: number | null;
+    };
+    PurchaseReceiptSummaryDto: {
+      /** Format: uuid */
+      receiptId: string;
+      /**
+       * @description Número interno correlativo
+       * @example 3
+       */
+      number: number;
+      /** Format: uuid */
+      supplierId: string;
+      /** @example Gas del Litoral S.A. */
+      supplierName: string;
+      /** Format: uuid */
+      purchaseOrderId: string | null;
+      /** @example 7 */
+      purchaseOrderNumber: number | null;
+      /** Format: uuid */
+      warehouseId: string;
+      /** @example Depósito central */
+      warehouseName: string;
+      /** @enum {string} */
+      supplierDocumentType: 'delivery_note' | 'invoice';
+      /** @example 0001-00004567 */
+      supplierDocumentNumber: string;
+      /** Format: date-time */
+      receivedAt: string;
+      /** @example 130012.5 */
+      totalAmount: number;
+      /** @enum {string} */
+      paymentStatus: 'unpaid' | 'paid';
+      /** @enum {string} */
+      status: 'confirmed' | 'voided';
+    };
+    SupplierHistoryDto: {
+      /** Format: uuid */
+      supplierId: string;
+      /** @example Gas del Litoral S.A. */
+      supplierName: string;
+      /**
+       * @description Recepciones confirmadas del período
+       * @example 4
+       */
+      receiptsCount: number;
+      /**
+       * @description Σ de las recepciones confirmadas del período
+       * @example 520050
+       */
+      totalAmount: number;
+      /**
+       * @description Llenas recibidas (confirmadas) del período
+       * @example 100
+       */
+      fullReceived: number;
+      data: components['schemas']['PurchaseReceiptSummaryDto'][];
+      /**
+       * @description Total de recepciones (con las anuladas) para paginar
+       * @example 5
+       */
+      total: number;
+    };
+    UpdateSupplierDto: {
+      /** @example Gas del Litoral S.A. */
+      businessName?: string;
+      /**
+       * @description CUIT de 11 dígitos (se aceptan guiones). Único entre los proveedores vigentes de la distribuidora.
+       * @example 30715123456
+       */
+      cuit?: string;
+      /**
+       * @description `filling_plant` es la planta fraccionadora que llena y canjea envases
+       * @example filling_plant
+       * @enum {string}
+       */
+      kind?: 'filling_plant' | 'other';
+      /** @example Marta Gómez */
+      contactName?: string | null;
+      /** @example +5493624123456 */
+      phone?: string | null;
+      /**
+       * Format: email
+       * @example compras@gasdellitoral.com.ar
+       */
+      email?: string | null;
+      /** @example Ruta 11 km 1005, Resistencia */
+      address?: string | null;
+      /**
+       * @description Plazo de pago en días (0 = contado)
+       * @example 30
+       */
+      paymentTermsDays?: number | null;
+      /** @description false lo deja fuera de las listas de operación */
+      isActive?: boolean;
+    };
+    PhotoCurrentResponseDto: {
+      /** @description URL firmada de S3 de la foto vigente (se abre sin token); `null` si no tiene foto. */
+      url: string | null;
+      /**
+       * Format: date-time
+       * @description Cuándo vence la URL; `null` si no tiene foto.
+       */
+      expiresAt: string | null;
+    };
+    PurchaseOrderItemInputDto: {
+      /**
+       * Format: uuid
+       * @description Tipo de garrafa
+       */
+      gasCylinderId: string;
+      /**
+       * @description Llenas que se piden
+       * @example 40
+       */
+      quantity: number;
+      /**
+       * @description Costo por garrafa llena (hasta 2 decimales)
+       * @example 5200.5
+       */
+      unitCost: number;
+      /**
+       * @description Vacíos que se entregan a la planta a cambio
+       * @default 0
+       * @example 40
+       */
+      emptiesToExchange: number;
+    };
+    CreatePurchaseOrderDto: {
+      /** Format: uuid */
+      supplierId: string;
+      /**
+       * Format: uuid
+       * @description Depósito donde se recibe; si falta, el predeterminado
+       */
+      destinationWarehouseId?: string;
+      /**
+       * Format: date
+       * @example 2026-10-20
+       */
+      expectedDate?: string | null;
+      /** @example Entrega en horario de la mañana */
+      notes?: string | null;
+      items: components['schemas']['PurchaseOrderItemInputDto'][];
+    };
+    PurchaseOrderItemResponseDto: {
+      /** Format: uuid */
+      itemId: string;
+      /** Format: uuid */
+      gasCylinderId: string;
+      /** @example 10kg */
+      gasCylinderType: string;
+      /** @example 40 */
+      quantity: number;
+      /** @example 5200.5 */
+      unitCost: number;
+      /** @example 208020 */
+      subtotal: number;
+      /** @example 40 */
+      emptiesToExchange: number;
+      /** @example 25 */
+      receivedQuantity: number;
+      /** @example 15 */
+      pendingQuantity: number;
+    };
+    PurchaseOrderResponseDto: {
+      /** Format: uuid */
+      purchaseOrderId: string;
+      /** @example 7 */
+      number: number;
+      /** Format: uuid */
+      supplierId: string;
+      /** @example Gas del Litoral S.A. */
+      supplierName: string;
+      /** Format: uuid */
+      destinationWarehouseId: string;
+      /** @example Depósito central */
+      destinationWarehouseName: string;
+      /** @enum {string} */
+      status: 'draft' | 'sent' | 'partially_received' | 'received' | 'closed_short' | 'cancelled';
+      /** Format: date-time */
+      issuedAt: string | null;
+      /** @example 2026-10-20 */
+      expectedDate: string | null;
+      /** @example 208020 */
+      totalAmount: number;
+      cancelReason: string | null;
+      /** @description Motivo del cierre con faltante (`closed_short`) */
+      closeReason: string | null;
+      notes: string | null;
+      /** @example 40 */
+      orderedQuantity: number;
+      /** @example 25 */
+      receivedQuantity: number;
+      /** @example 15 */
+      pendingQuantity: number;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+      items: components['schemas']['PurchaseOrderItemResponseDto'][];
+      /** @description Recepciones de esta orden (las anuladas incluidas) */
+      receipts: components['schemas']['PurchaseReceiptSummaryDto'][];
+    };
+    PurchaseOrderSummaryDto: {
+      /** Format: uuid */
+      purchaseOrderId: string;
+      /** @example 7 */
+      number: number;
+      /** Format: uuid */
+      supplierId: string;
+      /** @example Gas del Litoral S.A. */
+      supplierName: string;
+      /** Format: uuid */
+      destinationWarehouseId: string;
+      /** @example Depósito central */
+      destinationWarehouseName: string;
+      /** @enum {string} */
+      status: 'draft' | 'sent' | 'partially_received' | 'received' | 'closed_short' | 'cancelled';
+      /** Format: date-time */
+      issuedAt: string | null;
+      /** @example 2026-10-20 */
+      expectedDate: string | null;
+      /** @example 208020 */
+      totalAmount: number;
+      cancelReason: string | null;
+      /** @description Motivo del cierre con faltante (`closed_short`) */
+      closeReason: string | null;
+      notes: string | null;
+      /** @example 40 */
+      orderedQuantity: number;
+      /** @example 25 */
+      receivedQuantity: number;
+      /** @example 15 */
+      pendingQuantity: number;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    PurchaseOrderPageDto: {
+      data: components['schemas']['PurchaseOrderSummaryDto'][];
+      /** @example 12 */
+      total: number;
+    };
+    PendingItemDto: {
+      /** Format: uuid */
+      gasCylinderId: string;
+      /** @example 10kg */
+      gasCylinderType: string;
+      /** @example 40 */
+      ordered: number;
+      /** @example 25 */
+      received: number;
+      /** @example 15 */
+      pending: number;
+      /**
+       * @description Vacíos que se canjean por el pedido
+       * @example 40
+       */
+      emptiesToExchange: number;
+    };
+    PurchaseOrderPendingDto: {
+      /** Format: uuid */
+      purchaseOrderId: string;
+      /** @example 7 */
+      number: number;
+      /** @enum {string} */
+      status: 'draft' | 'sent' | 'partially_received' | 'received' | 'closed_short' | 'cancelled';
+      items: components['schemas']['PendingItemDto'][];
+      /** @example 15 */
+      totalPending: number;
+    };
+    UpdatePurchaseOrderDto: {
+      /** Format: uuid */
+      supplierId?: string;
+      /**
+       * Format: uuid
+       * @description Depósito donde se recibe; si falta, el predeterminado
+       */
+      destinationWarehouseId?: string;
+      /**
+       * Format: date
+       * @example 2026-10-20
+       */
+      expectedDate?: string | null;
+      /** @example Entrega en horario de la mañana */
+      notes?: string | null;
+      items?: components['schemas']['PurchaseOrderItemInputDto'][];
+    };
+    CancelPurchaseOrderDto: {
+      /** @example El proveedor no tiene stock este mes */
+      reason: string;
+    };
+    CloseShortPurchaseOrderDto: {
+      /** @example La planta no repone el resto este mes */
+      reason: string;
+    };
+    PurchaseReceiptItemInputDto: {
+      /**
+       * Format: uuid
+       * @description Tipo de garrafa
+       */
+      gasCylinderId: string;
+      /**
+       * @description Llenas que llegaron
+       * @example 25
+       */
+      quantityFull: number;
+      /**
+       * @description Vacías que se llevó la planta; salen del depósito y no pueden dejarlo en negativo
+       * @default 0
+       * @example 25
+       */
+      quantityEmptyOut: number;
+      /**
+       * @description Costo por llena del remito. Con orden de compra, si falta se usa el de la orden; sin orden es obligatorio.
+       * @example 5200.5
+       */
+      unitCost?: number;
+    };
+    CreatePurchaseReceiptDto: {
+      /**
+       * Format: uuid
+       * @description Orden de compra que se recibe; sin ella es una compra directa
+       */
+      purchaseOrderId?: string;
+      /**
+       * Format: uuid
+       * @description Obligatorio sin orden; con orden tiene que ser el de la orden
+       */
+      supplierId?: string;
+      /**
+       * Format: uuid
+       * @description Depósito destino. Con orden: el de la orden (si se indica otro, 400); sin orden: el indicado o el predeterminado
+       */
+      warehouseId?: string;
+      /**
+       * @example delivery_note
+       * @enum {string}
+       */
+      supplierDocumentType: 'delivery_note' | 'invoice';
+      /**
+       * @description Número del remito o la factura del proveedor; único por proveedor
+       * @example 0001-00004567
+       */
+      supplierDocumentNumber: string;
+      /**
+       * @description Cuándo llegó (default: ahora). No puede ser futuro.
+       * @example 2026-10-12T14:30:00-03:00
+       */
+      receivedAt?: string;
+      /** @example Llegó en el camión de las 14 */
+      notes?: string | null;
+      items: components['schemas']['PurchaseReceiptItemInputDto'][];
+    };
+    PurchaseReceiptItemResponseDto: {
+      /** Format: uuid */
+      itemId: string;
+      /** Format: uuid */
+      gasCylinderId: string;
+      /** @example 10kg */
+      gasCylinderType: string;
+      /** @example 25 */
+      quantityFull: number;
+      /** @example 25 */
+      quantityEmptyOut: number;
+      /** @example 5200.5 */
+      unitCost: number;
+      /** @example 130012.5 */
+      subtotal: number;
+    };
+    PurchaseReceiptResponseDto: {
+      /** Format: uuid */
+      receiptId: string;
+      /**
+       * @description Número interno correlativo
+       * @example 3
+       */
+      number: number;
+      /** Format: uuid */
+      supplierId: string;
+      /** @example Gas del Litoral S.A. */
+      supplierName: string;
+      /** Format: uuid */
+      purchaseOrderId: string | null;
+      /** @example 7 */
+      purchaseOrderNumber: number | null;
+      /** Format: uuid */
+      warehouseId: string;
+      /** @example Depósito central */
+      warehouseName: string;
+      /** @enum {string} */
+      supplierDocumentType: 'delivery_note' | 'invoice';
+      /** @example 0001-00004567 */
+      supplierDocumentNumber: string;
+      /** Format: date-time */
+      receivedAt: string;
+      /** @example 130012.5 */
+      totalAmount: number;
+      /** @enum {string} */
+      paymentStatus: 'unpaid' | 'paid';
+      /** @enum {string} */
+      status: 'confirmed' | 'voided';
+      items: components['schemas']['PurchaseReceiptItemResponseDto'][];
+      notes: string | null;
+      voidReason: string | null;
+      /** Format: date-time */
+      voidedAt: string | null;
+      /** Format: uuid */
+      receivedByUserId: string;
+      /**
+       * Format: uuid
+       * @description Lote del libro de movimientos (GET /stock/movements?batchId=)
+       */
+      batchId: string;
+      /** Format: uuid */
+      voidBatchId: string | null;
+      /**
+       * Format: uuid
+       * @description Salida de caja del pago en efectivo; `null` si no se pagó en efectivo. Al marcar la recepción como impaga se asienta el contraasiento y vuelve a `null`
+       */
+      cashMovementId: string | null;
+      /** Format: date-time */
+      createdAt: string;
+    };
+    PurchaseReceiptPageDto: {
+      data: components['schemas']['PurchaseReceiptSummaryDto'][];
+      /** @example 12 */
+      total: number;
+    };
+    AverageCostDto: {
+      /** Format: uuid */
+      gasCylinderId: string;
+      /** @example 10kg */
+      gasCylinderType: string;
+      /**
+       * @description Costo promedio ponderado; null si nunca se compró
+       * @example 5180.25
+       */
+      averageUnitCost: number | null;
+      /** @example 5200.5 */
+      lastUnitCost: number | null;
+      /** Format: date-time */
+      lastReceivedAt: string | null;
+      /**
+       * @description Llenas en depósitos y camiones
+       * @example 85
+       */
+      fullOnHand: number;
+    };
+    VoidPurchaseReceiptDto: {
+      /** @example Remito cargado dos veces */
+      reason: string;
+    };
+    UpdatePaymentStatusDto: {
+      /**
+       * @example paid
+       * @enum {string}
+       */
+      paymentStatus: 'unpaid' | 'paid';
+      /** @description Con `paymentStatus: paid`: se pagó en efectivo de una caja de la distribuidora (por omisión, no). Con cajas de efectivo activas exige `cashBoxId` */
+      paidInCash?: boolean;
+      /**
+       * Format: uuid
+       * @description Caja de efectivo de la que sale el pago; sólo con `paidInCash`
+       */
+      cashBoxId?: string;
+    };
+    PurchaseReceiptV2SummaryDto: {
+      /** Format: uuid */
+      receiptId: string;
+      /**
+       * @description Número interno correlativo
+       * @example 3
+       */
+      number: number;
+      /** Format: uuid */
+      supplierId: string;
+      /** @example Gas del Litoral S.A. */
+      supplierName: string;
+      /** Format: uuid */
+      purchaseOrderId: string | null;
+      /** @example 7 */
+      purchaseOrderNumber: number | null;
+      /** Format: uuid */
+      warehouseId: string;
+      /** @example Depósito central */
+      warehouseName: string;
+      /** @enum {string} */
+      supplierDocumentType: 'delivery_note' | 'invoice';
+      /** @example 0001-00004567 */
+      supplierDocumentNumber: string;
+      /** Format: date-time */
+      receivedAt: string;
+      /** @example 130012.5 */
+      totalAmount: number;
+      /** @enum {string} */
+      paymentStatus: 'unpaid' | 'paid';
+      /** @enum {string} */
+      status: 'confirmed' | 'voided';
+      /** @description Si la recepción figura como pagada */
+      isPaid: boolean;
+      /**
+       * Format: uuid
+       * @description Salida de caja del pago; `null` si no salió de una caja
+       */
+      cashMovementId: string | null;
+      /**
+       * Format: date-time
+       * @description Cuándo se pagó; `null` si está impaga o figura pagada desde antes de registrar la fecha
+       */
+      paidAt: string | null;
+    };
+    PurchaseReceiptV2PageDto: {
+      data: components['schemas']['PurchaseReceiptV2SummaryDto'][];
+      /** @example 12 */
+      total: number;
+    };
+    PurchaseReceiptV2ResponseDto: {
+      /** Format: uuid */
+      receiptId: string;
+      /**
+       * @description Número interno correlativo
+       * @example 3
+       */
+      number: number;
+      /** Format: uuid */
+      supplierId: string;
+      /** @example Gas del Litoral S.A. */
+      supplierName: string;
+      /** Format: uuid */
+      purchaseOrderId: string | null;
+      /** @example 7 */
+      purchaseOrderNumber: number | null;
+      /** Format: uuid */
+      warehouseId: string;
+      /** @example Depósito central */
+      warehouseName: string;
+      /** @enum {string} */
+      supplierDocumentType: 'delivery_note' | 'invoice';
+      /** @example 0001-00004567 */
+      supplierDocumentNumber: string;
+      /** Format: date-time */
+      receivedAt: string;
+      /** @example 130012.5 */
+      totalAmount: number;
+      /** @enum {string} */
+      paymentStatus: 'unpaid' | 'paid';
+      /** @enum {string} */
+      status: 'confirmed' | 'voided';
+      items: components['schemas']['PurchaseReceiptItemResponseDto'][];
+      notes: string | null;
+      voidReason: string | null;
+      /** Format: date-time */
+      voidedAt: string | null;
+      /** Format: uuid */
+      receivedByUserId: string;
+      /**
+       * Format: uuid
+       * @description Lote del libro de movimientos (GET /stock/movements?batchId=)
+       */
+      batchId: string;
+      /** Format: uuid */
+      voidBatchId: string | null;
+      /**
+       * Format: uuid
+       * @description Salida de caja del pago en efectivo; `null` si no se pagó en efectivo. Al marcar la recepción como impaga se asienta el contraasiento y vuelve a `null`
+       */
+      cashMovementId: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      /** @description Si la recepción figura como pagada */
+      isPaid: boolean;
+      /** Format: date-time */
+      paidAt: string | null;
+    };
+    PurchaseLineToPreviewDto: {
+      /**
+       * @description Unidades del renglón
+       * @example 40
+       */
+      quantity: number;
+      /**
+       * @description Costo por unidad
+       * @example 5200.5
+       */
+      unitCost: number;
+    };
+    PreviewPurchaseTotalDto: {
+      items: components['schemas']['PurchaseLineToPreviewDto'][];
+    };
+    PurchaseLinePreviewDto: {
+      /**
+       * @description Cantidad × costo unitario
+       * @example 208020
+       */
+      subtotal: number;
+    };
+    PurchaseTotalPreviewDto: {
+      /** @description Un subtotal por renglón, en el mismo orden */
+      items: components['schemas']['PurchaseLinePreviewDto'][];
+      /**
+       * @description Σ cantidad × costo unitario a 2 decimales: el total con el que se guarda la orden o el remito
+       * @example 208020
+       */
+      total: number;
+    };
+    WarehouseResponseDto: {
+      /** Format: uuid */
+      warehouseId: string;
+      /**
+       * Format: uuid
+       * @description Ubicación de stock del depósito
+       */
+      locationId: string;
+      name: string;
+      code: string;
+      /** @enum {string} */
+      kind: 'depot' | 'branch';
+      address: string | null;
+      isDefault: boolean;
+      isActive: boolean;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    CreateWarehouseDto: {
+      /** @example Depósito central */
+      name: string;
+      /**
+       * @description Código corto, único entre los depósitos vigentes. Se guarda en mayúsculas.
+       * @example CENTRAL
+       */
+      code: string;
+      /**
+       * @default depot
+       * @enum {string}
+       */
+      kind: 'depot' | 'branch';
+      /** @example Av. Siempreviva 742 */
+      address?: string;
+      /** @description Lo deja como predeterminado (el que usa la entrega cuando el camión no tiene stock). El primero que se crea lo es siempre. */
+      isDefault?: boolean;
+    };
+    StockBalanceDto: {
+      /** Format: uuid */
+      locationId: string;
+      locationName: string;
+      /** @enum {string} */
+      locationKind: 'warehouse' | 'vehicle';
+      /** Format: uuid */
+      warehouseId: string | null;
+      /** Format: uuid */
+      carId: string | null;
+      /** Format: uuid */
+      gasCylinderId: string;
+      /** @example 10kg */
+      gasCylinderType: string;
+      /** @enum {string} */
+      condition: 'full' | 'empty' | 'defective';
+      /** @example 40 */
+      quantity: number;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    WarehouseDetailDto: {
+      /** Format: uuid */
+      warehouseId: string;
+      /**
+       * Format: uuid
+       * @description Ubicación de stock del depósito
+       */
+      locationId: string;
+      name: string;
+      code: string;
+      /** @enum {string} */
+      kind: 'depot' | 'branch';
+      address: string | null;
+      isDefault: boolean;
+      isActive: boolean;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+      /** @description Saldos del depósito (sólo los positivos) */
+      balances: components['schemas']['StockBalanceDto'][];
+    };
+    UpdateWarehouseDto: {
+      /** @example Depósito central */
+      name?: string;
+      /**
+       * @description Código corto, único entre los depósitos vigentes. Se guarda en mayúsculas.
+       * @example CENTRAL
+       */
+      code?: string;
+      /** @example Av. Siempreviva 742 */
+      address?: string;
+      /** @description Lo deja como predeterminado (el que usa la entrega cuando el camión no tiene stock). El primero que se crea lo es siempre. */
+      isDefault?: boolean;
+      /**
+       * @description Sólo cambia si se envía; si falta, conserva el tipo actual
+       * @enum {string}
+       */
+      kind?: 'depot' | 'branch';
+      /** @description false lo deja fuera de las listas de operación; no se puede con el predeterminado */
+      isActive?: boolean;
+    };
+    ConditionTotalsDto: {
+      full: number;
+      empty: number;
+      defective: number;
+    };
+    StockSummaryDto: {
+      /** Format: uuid */
+      gasCylinderId: string;
+      /** @example 10kg */
+      gasCylinderType: string;
+      /** @description En los depósitos */
+      warehouses: components['schemas']['ConditionTotalsDto'];
+      /** @description En los camiones */
+      vehicles: components['schemas']['ConditionTotalsDto'];
+      /** @description Llenas en depósitos y camiones */
+      physicalFull: number;
+      /** @description Unidades de pedidos abiertos */
+      reserved: number;
+      /** @description `gas_cylinder.stock`: lo que se puede vender */
+      sellable: number;
+      /** @description Suma de los mínimos de llenas configurados; null si no hay */
+      minimumFull: number | null;
+    };
+    StockLocationDto: {
+      /** Format: uuid */
+      locationId: string;
+      /** @example Depósito central */
+      name: string;
+      /** @enum {string} */
+      kind: 'warehouse' | 'vehicle';
+      /** Format: uuid */
+      warehouseId: string | null;
+      /** Format: uuid */
+      carId: string | null;
+    };
+    StockLocationRefDto: {
+      /** Format: uuid */
+      locationId: string;
+      /** @example Depósito central */
+      name: string;
+      /** @enum {string} */
+      kind: 'warehouse' | 'vehicle';
+    };
+    StockMovementDto: {
+      /** Format: uuid */
+      movementId: string;
+      /** Format: uuid */
+      batchId: string;
+      /** Format: date-time */
+      occurredAt: string;
+      /** Format: uuid */
+      gasCylinderId: string;
+      /** @example 10kg */
+      gasCylinderType: string;
+      /** @example 5 */
+      quantity: number;
+      from: components['schemas']['StockLocationRefDto'] | null;
+      /** @enum {string|null} */
+      fromCondition: 'full' | 'empty' | 'defective' | null;
+      to: components['schemas']['StockLocationRefDto'] | null;
+      /** @enum {string|null} */
+      toCondition: 'full' | 'empty' | 'defective' | null;
+      /** @enum {string} */
+      reason:
+        | 'initial_count'
+        | 'purchase_receipt'
+        | 'plant_empty_out'
+        | 'truck_load'
+        | 'truck_return'
+        | 'delivery'
+        | 'empty_collected'
+        | 'transfer'
+        | 'adjustment'
+        | 'shrinkage'
+        | 'condition_change'
+        | 'reversal';
+      /** @enum {string} */
+      referenceType: 'order' | 'purchase_receipt' | 'truck_load' | 'stock_adjustment' | 'transfer' | 'initial';
+      /** Format: uuid */
+      referenceId: string | null;
+      /**
+       * Format: uuid
+       * @description Si es un contraasiento, el movimiento que anula
+       */
+      reversedMovementId: string | null;
+      notes: string | null;
+      /** @description Quién lo hizo; null si lo hizo el sistema */
+      actorName: string | null;
+    };
+    StockMovementPageDto: {
+      data: components['schemas']['StockMovementDto'][];
+      /** @example 120 */
+      total: number;
+    };
+    ReverseBatchDto: {
+      /** @example Se cargó al camión equivocado */
+      notes?: string;
+    };
+    StockOperationResultDto: {
+      /**
+       * Format: uuid
+       * @description Identifica el lote de movimientos de la operación
+       */
+      batchId: string;
+      movements: components['schemas']['StockMovementDto'][];
+    };
+    UbicacionDto: {
+      /**
+       * Format: uuid
+       * @description Un depósito
+       */
+      warehouseId?: string;
+      /**
+       * Format: uuid
+       * @description Un vehículo (el camión del chofer): se indica su carId
+       */
+      carId?: string;
+    };
+    TransferItemDto: {
+      /** Format: uuid */
+      gasCylinderId: string;
+      /**
+       * @default full
+       * @enum {string}
+       */
+      condition: 'full' | 'empty' | 'defective';
+      /** @example 10 */
+      quantity: number;
+    };
+    CreateTransferDto: {
+      from: components['schemas']['UbicacionDto'];
+      to: components['schemas']['UbicacionDto'];
+      items: components['schemas']['TransferItemDto'][];
+      /** @example Carga de la mañana */
+      notes?: string;
+    };
+    InitialCountItemDto: {
+      /** Format: uuid */
+      gasCylinderId: string;
+      /**
+       * @description Llenas contadas
+       * @example 40
+       */
+      full: number;
+      /**
+       * @description Vacías contadas
+       * @default 0
+       * @example 25
+       */
+      empty: number;
+      /**
+       * @description Defectuosas contadas
+       * @default 0
+       * @example 1
+       */
+      defective: number;
+    };
+    CreateInitialCountDto: {
+      /**
+       * Format: uuid
+       * @description Depósito que se cuenta
+       */
+      warehouseId: string;
+      /** @description Lo que hay físicamente de cada tipo. Los tipos que no se listan no se tocan. */
+      items: components['schemas']['InitialCountItemDto'][];
+      /** @example Toma de inventario de apertura */
+      notes?: string;
+    };
+    StockAdjustmentItemResponseDto: {
+      /** Format: uuid */
+      gasCylinderId: string;
+      /** @example 10kg */
+      gasCylinderType: string;
+      /** @enum {string} */
+      condition: 'full' | 'empty' | 'defective';
+      /** @example -2 */
+      quantityDelta: number;
+    };
+    StockAdjustmentResponseDto: {
+      /** Format: uuid */
+      adjustmentId: string;
+      /**
+       * @description Correlativo por distribuidora
+       * @example 7
+       */
+      number: number;
+      location: components['schemas']['StockLocationRefDto'];
+      /** @enum {string} */
+      reason:
+        'count_correction' | 'shrinkage' | 'leak' | 'damaged' | 'lost' | 'found' | 'initial_count' | 'reconciliation';
+      notes: string;
+      /** Format: uuid */
+      batchId: string;
+      createdByName: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      items: components['schemas']['StockAdjustmentItemResponseDto'][];
+    };
+    AdjustmentItemDto: {
+      /** Format: uuid */
+      gasCylinderId: string;
+      /** @enum {string} */
+      condition: 'full' | 'empty' | 'defective';
+      /**
+       * @description Cuánto cambia el saldo de esa condición (entero distinto de cero). Merma, fuga, rotura y pérdida: negativo. Encontrado: positivo. Corrección de conteo: cualquiera. Rotura: condición `full`; las llenas pasan a defectuosas en la misma ubicación.
+       * @example -2
+       */
+      quantityDelta: number;
+    };
+    CreateAdjustmentDto: {
+      location: components['schemas']['UbicacionDto'];
+      /**
+       * @example shrinkage
+       * @enum {string}
+       */
+      reason: 'count_correction' | 'shrinkage' | 'leak' | 'damaged' | 'lost' | 'found';
+      /**
+       * @description Obligatoria: explica por qué cambia el stock
+       * @example Dos garrafas con la válvula floja, se descartaron
+       */
+      notes: string;
+      items: components['schemas']['AdjustmentItemDto'][];
+    };
+    StockAdjustmentPageDto: {
+      data: components['schemas']['StockAdjustmentResponseDto'][];
+      /** @example 12 */
+      total: number;
+    };
+    StockThresholdDto: {
+      /** Format: uuid */
+      thresholdId: string;
+      /** Format: uuid */
+      warehouseId: string;
+      warehouseName: string;
+      /** Format: uuid */
+      gasCylinderId: string;
+      /** @example 10kg */
+      gasCylinderType: string;
+      /** @example 20 */
+      minFull: number;
+      /**
+       * @description Llenas que hay hoy en el depósito
+       * @example 35
+       */
+      currentFull: number;
+      /**
+       * Format: date-time
+       * @description Cuándo se avisó; null si no hay aviso vigente
+       */
+      alertedAt: string | null;
+    };
+    ThresholdItemDto: {
+      /** Format: uuid */
+      warehouseId: string;
+      /** Format: uuid */
+      gasCylinderId: string;
+      /**
+       * @description Mínimo de llenas. 0 desactiva el aviso de ese par.
+       * @example 20
+       */
+      minFull: number;
+    };
+    UpsertThresholdsDto: {
+      thresholds: components['schemas']['ThresholdItemDto'][];
+    };
+    DiferenciaDeVendibleDto: {
+      /** Format: uuid */
+      gasCylinderId: string;
+      /** @example 10kg */
+      gasCylinderType: string;
+      /** @description `gas_cylinder.stock` */
+      sellable: number;
+      /** @description Llenas en depósitos y camiones */
+      physicalFull: number;
+      /** @description Unidades de pedidos abiertos */
+      reserved: number;
+      /** @description Lo que debería valer el vendible: max(0, llenas - reservadas) */
+      expected: number;
+      /** @description Reservas de pedidos abiertos que el físico no cubre (max(0, reservadas - llenas)). Mientras sea mayor que cero el vendible queda en 0: cancelar pedidos o reponer stock lo cubre primero y sólo el resto vuelve a ser vendible */
+      overReserved: number;
+      /** @description sellable - expected; distinto de cero es una discrepancia */
+      difference: number;
+      /** @description Déficit de reservas guardado (`gas_cylinder.reservation_deficit`): lo que el vendible en cero ocultó cuando una pérdida dejó las reservas por encima del físico */
+      reservationDeficit: number;
+      /** @description `reservationDeficit - overReserved`; distinto de cero es un desfasaje del déficit (se corrige con POST /stock/reconciliation/adjustments aunque `difference` sea 0) */
+      deficitDifference: number;
+      /** @description Variación a aplicar al vendible para que cierre (-difference). Se aplica con POST /stock/reconciliation/adjustments */
+      correction: number;
+    };
+    PedidoEntregadoSinMovimientoDto: {
+      /** Format: uuid */
+      orderId: string;
+      /** Format: date-time */
+      deliveredAt: string;
+      /** Format: uuid */
+      gasCylinderId: string;
+      /** @example 10kg */
+      gasCylinderType: string;
+      quantity: number;
+    };
+    StockReconciliationDto: {
+      /** Format: date-time */
+      checkedAt: string;
+      /** @description true si todas las garrafas cumplen la invariante, ninguna tiene reservas por encima del físico y no hay entregas sin movimiento */
+      consistent: boolean;
+      cylinders: components['schemas']['DiferenciaDeVendibleDto'][];
+      /** @description Renglones de pedidos entregados desde que arrancó el módulo que no descontaron el físico (no había saldo donde sacar) */
+      deliveriesWithoutMovement: components['schemas']['PedidoEntregadoSinMovimientoDto'][];
+    };
+    ReapplyDeliveriesResultDto: {
+      /** @description Pedidos entregados que no tenían su movimiento */
+      revisados: number;
+      /** @description Pedidos a los que se les descontó el físico ahora */
+      reaplicados: number;
+      /** @description Pedidos que siguen sin saldo de donde sacar */
+      pendientes: number;
+    };
+    CreateReconciliationAdjustmentDto: {
+      /** Format: uuid */
+      gasCylinderId: string;
+      /**
+       * @description Obligatoria: explica por qué se corrige el vendible
+       * @example El vendible se tocó a mano antes del módulo de stock
+       */
+      notes: string;
+      /**
+       * @description `difference` que vio el administrador en la conciliación. Si cambió mientras tanto, responde 409 en vez de corregir un número viejo.
+       * @example 4
+       */
+      expectedDifference?: number;
+    };
+    UpdateStockDto: {
+      /**
+       * @description Unidades a sumar (positivo) o restar (negativo) del stock
+       * @example 10
+       */
+      quantity: number;
+    };
+    PromocionConPrecioDto: {
+      /**
+       * @description Unidades desde las que aplica
+       * @example 3
+       */
+      quantity: number;
+      /**
+       * @description Descuento, en porcentaje (hasta 99, 2 decimales)
+       * @example 10
+       */
+      discountPercentage: number;
+      /**
+       * @description Precio unitario con esta promoción, redondeado a centavos con la misma regla que cobra el pedido. No incluye el recargo de zona ni el del medio de pago, que se aplican sobre el total del pedido
+       * @example 13409.99
+       */
+      unitPrice: number;
+    };
+    GasCylinderResponseDto: {
+      /** Format: uuid */
+      gas_cylinder_id: string;
+      /** Format: uuid */
+      distributor_id: string;
+      /** @example 10kg */
+      type: string;
+      weight: number;
+      price: number;
+      /** @description Precio del envase vacío de este tipo; null: sin precio cargado */
+      container_price: number | null;
+      stock: number;
+      description: string | null;
+      isActive: boolean;
+      /** @description URL firmada de la imagen del producto (se abre sin token, vence); `null` si no tiene. */
+      photoUrl: string | null;
+      promotions: components['schemas']['PromocionConPrecioDto'][] | null;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    PromocionDto: {
+      /**
+       * @description Unidades desde las que aplica
+       * @example 3
+       */
+      quantity: number;
+      /**
+       * @description Descuento, en porcentaje (hasta 99, 2 decimales)
+       * @example 10
+       */
+      discountPercentage: number;
+    };
+    CreateGasCylinderDto: {
+      /** @description Tipo de garrafa (10, 15, 45 kg) */
+      type: string;
+      /** @description Peso en kg (hasta 1000, 2 decimales) */
+      weight: number;
+      /** @description Precio unitario (hasta 10.000.000, 2 decimales) */
+      price: number;
+      /** @description Precio de venta del envase vacío de este tipo (se cobra cuando el cliente pide más garrafas que los envases que tiene). null: sin precio cargado */
+      container_price?: number | null;
+      /** @description Stock vendible inicial: se registra como físico del depósito predeterminado. En la edición (PATCH /gascylinder/{id}) no se admite: responde 400; el stock cambia con PATCH /gascylinder/{id}/stock. */
+      stock?: number;
+      /** @description Descripción */
+      description?: string;
+      /** @description Promociones por cantidad (ej: 3 unidades 10% off) */
+      promotions?: components['schemas']['PromocionDto'][];
+    };
+    CatalogoDto: {
+      gasCylinders: components['schemas']['GasCylinderResponseDto'][];
+      total: number;
+      limit: number;
+      offset: number;
+    };
+    MedioDePagoDto: {
+      /** @example Efectivo */
+      name: string;
+      /**
+       * @example CASH
+       * @enum {string}
+       */
+      key: 'CASH' | 'TRANSFER' | 'MERCADOPAGO';
+      /**
+       * @description Recargo en % que la distribuidora cobra con ese medio de pago (parámetro configurable; el monto exacto lo da `POST /orders/quote`)
+       * @example 0
+       */
+      surcharge: number;
+    };
+    DisponiblesDto: {
+      products: components['schemas']['GasCylinderResponseDto'][];
+      paymentMethods: components['schemas']['MedioDePagoDto'][];
+    };
+    UpdateGasCylinderDto: {
+      /** @description Tipo de garrafa (10, 15, 45 kg) */
+      type?: string;
+      /** @description Peso en kg (hasta 1000, 2 decimales) */
+      weight?: number;
+      /** @description Precio unitario (hasta 10.000.000, 2 decimales) */
+      price?: number;
+      /** @description Precio de venta del envase vacío de este tipo (se cobra cuando el cliente pide más garrafas que los envases que tiene). null: sin precio cargado */
+      container_price?: number | null;
+      /** @description Stock vendible inicial: se registra como físico del depósito predeterminado. En la edición (PATCH /gascylinder/{id}) no se admite: responde 400; el stock cambia con PATCH /gascylinder/{id}/stock. */
+      stock?: number;
+      /** @description Descripción */
+      description?: string;
+      /** @description Promociones por cantidad (ej: 3 unidades 10% off) */
+      promotions?: components['schemas']['PromocionDto'][];
+    };
+    BajaDeProductoDto: {
+      /** @example Garrafa dada de baja */
+      message: string;
+      /** Format: uuid */
+      gasCylinderId: string;
+    };
+    ProductoPublicoDto: {
+      /** Format: uuid */
+      id: string;
+      /** @example 10kg */
+      type: string;
+      /**
+       * @description Peso en kg
+       * @example 10
+       */
+      weight: number;
+      /** @description Precio de lista, antes de promociones */
+      price: number;
+      description: string | null;
+      /** @description URL firmada de lectura corta de la imagen; `null` si no tiene. */
+      photoUrl: string | null;
+      /** @description Promociones por cantidad; vacío si no hay. */
+      promotions: components['schemas']['PromocionConPrecioDto'][];
+      /** @description Si hay unidades para vender ahora. No expone la cantidad. */
+      inStock: boolean;
+    };
+    CatalogoPublicoDto: {
+      /** @example demo */
+      slug: string;
+      /** @example Distribuidora Demo */
+      name: string;
+      products: components['schemas']['ProductoPublicoDto'][];
+    };
     DeclareConsumptionDto: {
       /**
        * Format: uuid
@@ -13446,146 +15069,6 @@ export interface components {
        * @example 2
        */
       quantityPerMonth?: number;
-    };
-    PromocionDto: {
-      /**
-       * @description Unidades desde las que aplica
-       * @example 3
-       */
-      quantity: number;
-      /**
-       * @description Descuento, en porcentaje (hasta 99, 2 decimales)
-       * @example 10
-       */
-      discountPercentage: number;
-    };
-    CreateGasCylinderDto: {
-      /** @description Tipo de garrafa (10, 15, 45 kg) */
-      type: string;
-      /** @description Peso en kg (hasta 1000, 2 decimales) */
-      weight: number;
-      /** @description Precio unitario (hasta 10.000.000, 2 decimales) */
-      price: number;
-      /** @description Precio de venta del envase vacío de este tipo (se cobra cuando el cliente pide más garrafas que los envases que tiene). null: sin precio cargado */
-      container_price?: number | null;
-      /** @description Stock vendible inicial: se registra como físico del depósito predeterminado. En la edición (PATCH /gascylinder/{id}) no se admite: responde 400; el stock cambia con PATCH /gascylinder/{id}/stock. */
-      stock?: number;
-      /** @description Descripción */
-      description?: string;
-      /** @description Promociones por cantidad (ej: 3 unidades 10% off) */
-      promotions?: components['schemas']['PromocionDto'][];
-    };
-    PromocionConPrecioDto: {
-      /**
-       * @description Unidades desde las que aplica
-       * @example 3
-       */
-      quantity: number;
-      /**
-       * @description Descuento, en porcentaje (hasta 99, 2 decimales)
-       * @example 10
-       */
-      discountPercentage: number;
-      /**
-       * @description Precio unitario con esta promoción, redondeado a centavos con la misma regla que cobra el pedido. No incluye el recargo de zona ni el del medio de pago, que se aplican sobre el total del pedido
-       * @example 13409.99
-       */
-      unitPrice: number;
-    };
-    GasCylinderResponseDto: {
-      /** Format: uuid */
-      gas_cylinder_id: string;
-      /** Format: uuid */
-      distributor_id: string;
-      /** @example 10kg */
-      type: string;
-      weight: number;
-      price: number;
-      /** @description Precio del envase vacío de este tipo; null: sin precio cargado */
-      container_price: number | null;
-      stock: number;
-      description: string | null;
-      isActive: boolean;
-      /** @description URL firmada de la imagen del producto (se abre sin token, vence); `null` si no tiene. */
-      photoUrl: string | null;
-      promotions: components['schemas']['PromocionConPrecioDto'][] | null;
-      /** Format: date-time */
-      createdAt: string;
-      /** Format: date-time */
-      updatedAt: string;
-    };
-    CatalogoDto: {
-      gasCylinders: components['schemas']['GasCylinderResponseDto'][];
-      total: number;
-      limit: number;
-      offset: number;
-    };
-    MedioDePagoDto: {
-      /** @example Efectivo */
-      name: string;
-      /**
-       * @example CASH
-       * @enum {string}
-       */
-      key: 'CASH' | 'TRANSFER' | 'MERCADOPAGO';
-      /**
-       * @description Recargo en % que la distribuidora cobra con ese medio de pago (parámetro configurable; el monto exacto lo da `POST /orders/quote`)
-       * @example 0
-       */
-      surcharge: number;
-    };
-    DisponiblesDto: {
-      products: components['schemas']['GasCylinderResponseDto'][];
-      paymentMethods: components['schemas']['MedioDePagoDto'][];
-    };
-    UpdateGasCylinderDto: {
-      /** @description Tipo de garrafa (10, 15, 45 kg) */
-      type?: string;
-      /** @description Peso en kg (hasta 1000, 2 decimales) */
-      weight?: number;
-      /** @description Precio unitario (hasta 10.000.000, 2 decimales) */
-      price?: number;
-      /** @description Precio de venta del envase vacío de este tipo (se cobra cuando el cliente pide más garrafas que los envases que tiene). null: sin precio cargado */
-      container_price?: number | null;
-      /** @description Stock vendible inicial: se registra como físico del depósito predeterminado. En la edición (PATCH /gascylinder/{id}) no se admite: responde 400; el stock cambia con PATCH /gascylinder/{id}/stock. */
-      stock?: number;
-      /** @description Descripción */
-      description?: string;
-      /** @description Promociones por cantidad (ej: 3 unidades 10% off) */
-      promotions?: components['schemas']['PromocionDto'][];
-    };
-    BajaDeProductoDto: {
-      /** @example Garrafa dada de baja */
-      message: string;
-      /** Format: uuid */
-      gasCylinderId: string;
-    };
-    ProductoPublicoDto: {
-      /** Format: uuid */
-      id: string;
-      /** @example 10kg */
-      type: string;
-      /**
-       * @description Peso en kg
-       * @example 10
-       */
-      weight: number;
-      /** @description Precio de lista, antes de promociones */
-      price: number;
-      description: string | null;
-      /** @description URL firmada de lectura corta de la imagen; `null` si no tiene. */
-      photoUrl: string | null;
-      /** @description Promociones por cantidad; vacío si no hay. */
-      promotions: components['schemas']['PromocionConPrecioDto'][];
-      /** @description Si hay unidades para vender ahora. No expone la cantidad. */
-      inStock: boolean;
-    };
-    CatalogoPublicoDto: {
-      /** @example demo */
-      slug: string;
-      /** @example Distribuidora Demo */
-      name: string;
-      products: components['schemas']['ProductoPublicoDto'][];
     };
     CustomerContainerResponseDto: {
       /** Format: uuid */
@@ -15394,15 +16877,6 @@ export interface components {
       orderId?: string;
       note?: string;
     };
-    PhotoCurrentResponseDto: {
-      /** @description URL firmada de S3 de la foto vigente (se abre sin token); `null` si no tiene foto. */
-      url: string | null;
-      /**
-       * Format: date-time
-       * @description Cuándo vence la URL; `null` si no tiene foto.
-       */
-      expiresAt: string | null;
-    };
     CreateCoverageZoneDto: {
       /** @example Villa Lanús */
       name: string;
@@ -16349,445 +17823,6 @@ export interface components {
     UnpayDriverLiquidationDto: {
       /** @example Se pagó por la caja equivocada */
       reason: string;
-    };
-    WarehouseResponseDto: {
-      /** Format: uuid */
-      warehouseId: string;
-      /**
-       * Format: uuid
-       * @description Ubicación de stock del depósito
-       */
-      locationId: string;
-      name: string;
-      code: string;
-      /** @enum {string} */
-      kind: 'depot' | 'branch';
-      address: string | null;
-      isDefault: boolean;
-      isActive: boolean;
-      /** Format: date-time */
-      createdAt: string;
-      /** Format: date-time */
-      updatedAt: string;
-    };
-    CreateWarehouseDto: {
-      /** @example Depósito central */
-      name: string;
-      /**
-       * @description Código corto, único entre los depósitos vigentes. Se guarda en mayúsculas.
-       * @example CENTRAL
-       */
-      code: string;
-      /**
-       * @default depot
-       * @enum {string}
-       */
-      kind: 'depot' | 'branch';
-      /** @example Av. Siempreviva 742 */
-      address?: string;
-      /** @description Lo deja como predeterminado (el que usa la entrega cuando el camión no tiene stock). El primero que se crea lo es siempre. */
-      isDefault?: boolean;
-    };
-    StockBalanceDto: {
-      /** Format: uuid */
-      locationId: string;
-      locationName: string;
-      /** @enum {string} */
-      locationKind: 'warehouse' | 'vehicle';
-      /** Format: uuid */
-      warehouseId: string | null;
-      /** Format: uuid */
-      carId: string | null;
-      /** Format: uuid */
-      gasCylinderId: string;
-      /** @example 10kg */
-      gasCylinderType: string;
-      /** @enum {string} */
-      condition: 'full' | 'empty' | 'defective';
-      /** @example 40 */
-      quantity: number;
-      /** Format: date-time */
-      updatedAt: string;
-    };
-    WarehouseDetailDto: {
-      /** Format: uuid */
-      warehouseId: string;
-      /**
-       * Format: uuid
-       * @description Ubicación de stock del depósito
-       */
-      locationId: string;
-      name: string;
-      code: string;
-      /** @enum {string} */
-      kind: 'depot' | 'branch';
-      address: string | null;
-      isDefault: boolean;
-      isActive: boolean;
-      /** Format: date-time */
-      createdAt: string;
-      /** Format: date-time */
-      updatedAt: string;
-      /** @description Saldos del depósito (sólo los positivos) */
-      balances: components['schemas']['StockBalanceDto'][];
-    };
-    UpdateWarehouseDto: {
-      /** @example Depósito central */
-      name?: string;
-      /**
-       * @description Código corto, único entre los depósitos vigentes. Se guarda en mayúsculas.
-       * @example CENTRAL
-       */
-      code?: string;
-      /** @example Av. Siempreviva 742 */
-      address?: string;
-      /** @description Lo deja como predeterminado (el que usa la entrega cuando el camión no tiene stock). El primero que se crea lo es siempre. */
-      isDefault?: boolean;
-      /**
-       * @description Sólo cambia si se envía; si falta, conserva el tipo actual
-       * @enum {string}
-       */
-      kind?: 'depot' | 'branch';
-      /** @description false lo deja fuera de las listas de operación; no se puede con el predeterminado */
-      isActive?: boolean;
-    };
-    ConditionTotalsDto: {
-      full: number;
-      empty: number;
-      defective: number;
-    };
-    StockSummaryDto: {
-      /** Format: uuid */
-      gasCylinderId: string;
-      /** @example 10kg */
-      gasCylinderType: string;
-      /** @description En los depósitos */
-      warehouses: components['schemas']['ConditionTotalsDto'];
-      /** @description En los camiones */
-      vehicles: components['schemas']['ConditionTotalsDto'];
-      /** @description Llenas en depósitos y camiones */
-      physicalFull: number;
-      /** @description Unidades de pedidos abiertos */
-      reserved: number;
-      /** @description `gas_cylinder.stock`: lo que se puede vender */
-      sellable: number;
-      /** @description Suma de los mínimos de llenas configurados; null si no hay */
-      minimumFull: number | null;
-    };
-    StockLocationDto: {
-      /** Format: uuid */
-      locationId: string;
-      /** @example Depósito central */
-      name: string;
-      /** @enum {string} */
-      kind: 'warehouse' | 'vehicle';
-      /** Format: uuid */
-      warehouseId: string | null;
-      /** Format: uuid */
-      carId: string | null;
-    };
-    StockLocationRefDto: {
-      /** Format: uuid */
-      locationId: string;
-      /** @example Depósito central */
-      name: string;
-      /** @enum {string} */
-      kind: 'warehouse' | 'vehicle';
-    };
-    StockMovementDto: {
-      /** Format: uuid */
-      movementId: string;
-      /** Format: uuid */
-      batchId: string;
-      /** Format: date-time */
-      occurredAt: string;
-      /** Format: uuid */
-      gasCylinderId: string;
-      /** @example 10kg */
-      gasCylinderType: string;
-      /** @example 5 */
-      quantity: number;
-      from: components['schemas']['StockLocationRefDto'] | null;
-      /** @enum {string|null} */
-      fromCondition: 'full' | 'empty' | 'defective' | null;
-      to: components['schemas']['StockLocationRefDto'] | null;
-      /** @enum {string|null} */
-      toCondition: 'full' | 'empty' | 'defective' | null;
-      /** @enum {string} */
-      reason:
-        | 'initial_count'
-        | 'purchase_receipt'
-        | 'plant_empty_out'
-        | 'truck_load'
-        | 'truck_return'
-        | 'delivery'
-        | 'empty_collected'
-        | 'transfer'
-        | 'adjustment'
-        | 'shrinkage'
-        | 'condition_change'
-        | 'reversal';
-      /** @enum {string} */
-      referenceType: 'order' | 'purchase_receipt' | 'truck_load' | 'stock_adjustment' | 'transfer' | 'initial';
-      /** Format: uuid */
-      referenceId: string | null;
-      /**
-       * Format: uuid
-       * @description Si es un contraasiento, el movimiento que anula
-       */
-      reversedMovementId: string | null;
-      notes: string | null;
-      /** @description Quién lo hizo; null si lo hizo el sistema */
-      actorName: string | null;
-    };
-    StockMovementPageDto: {
-      data: components['schemas']['StockMovementDto'][];
-      /** @example 120 */
-      total: number;
-    };
-    ReverseBatchDto: {
-      /** @example Se cargó al camión equivocado */
-      notes?: string;
-    };
-    StockOperationResultDto: {
-      /**
-       * Format: uuid
-       * @description Identifica el lote de movimientos de la operación
-       */
-      batchId: string;
-      movements: components['schemas']['StockMovementDto'][];
-    };
-    UbicacionDto: {
-      /**
-       * Format: uuid
-       * @description Un depósito
-       */
-      warehouseId?: string;
-      /**
-       * Format: uuid
-       * @description Un vehículo (el camión del chofer): se indica su carId
-       */
-      carId?: string;
-    };
-    TransferItemDto: {
-      /** Format: uuid */
-      gasCylinderId: string;
-      /**
-       * @default full
-       * @enum {string}
-       */
-      condition: 'full' | 'empty' | 'defective';
-      /** @example 10 */
-      quantity: number;
-    };
-    CreateTransferDto: {
-      from: components['schemas']['UbicacionDto'];
-      to: components['schemas']['UbicacionDto'];
-      items: components['schemas']['TransferItemDto'][];
-      /** @example Carga de la mañana */
-      notes?: string;
-    };
-    InitialCountItemDto: {
-      /** Format: uuid */
-      gasCylinderId: string;
-      /**
-       * @description Llenas contadas
-       * @example 40
-       */
-      full: number;
-      /**
-       * @description Vacías contadas
-       * @default 0
-       * @example 25
-       */
-      empty: number;
-      /**
-       * @description Defectuosas contadas
-       * @default 0
-       * @example 1
-       */
-      defective: number;
-    };
-    CreateInitialCountDto: {
-      /**
-       * Format: uuid
-       * @description Depósito que se cuenta
-       */
-      warehouseId: string;
-      /** @description Lo que hay físicamente de cada tipo. Los tipos que no se listan no se tocan. */
-      items: components['schemas']['InitialCountItemDto'][];
-      /** @example Toma de inventario de apertura */
-      notes?: string;
-    };
-    StockAdjustmentItemResponseDto: {
-      /** Format: uuid */
-      gasCylinderId: string;
-      /** @example 10kg */
-      gasCylinderType: string;
-      /** @enum {string} */
-      condition: 'full' | 'empty' | 'defective';
-      /** @example -2 */
-      quantityDelta: number;
-    };
-    StockAdjustmentResponseDto: {
-      /** Format: uuid */
-      adjustmentId: string;
-      /**
-       * @description Correlativo por distribuidora
-       * @example 7
-       */
-      number: number;
-      location: components['schemas']['StockLocationRefDto'];
-      /** @enum {string} */
-      reason:
-        'count_correction' | 'shrinkage' | 'leak' | 'damaged' | 'lost' | 'found' | 'initial_count' | 'reconciliation';
-      notes: string;
-      /** Format: uuid */
-      batchId: string;
-      createdByName: string | null;
-      /** Format: date-time */
-      createdAt: string;
-      items: components['schemas']['StockAdjustmentItemResponseDto'][];
-    };
-    AdjustmentItemDto: {
-      /** Format: uuid */
-      gasCylinderId: string;
-      /** @enum {string} */
-      condition: 'full' | 'empty' | 'defective';
-      /**
-       * @description Cuánto cambia el saldo de esa condición (entero distinto de cero). Merma, fuga, rotura y pérdida: negativo. Encontrado: positivo. Corrección de conteo: cualquiera. Rotura: condición `full`; las llenas pasan a defectuosas en la misma ubicación.
-       * @example -2
-       */
-      quantityDelta: number;
-    };
-    CreateAdjustmentDto: {
-      location: components['schemas']['UbicacionDto'];
-      /**
-       * @example shrinkage
-       * @enum {string}
-       */
-      reason: 'count_correction' | 'shrinkage' | 'leak' | 'damaged' | 'lost' | 'found';
-      /**
-       * @description Obligatoria: explica por qué cambia el stock
-       * @example Dos garrafas con la válvula floja, se descartaron
-       */
-      notes: string;
-      items: components['schemas']['AdjustmentItemDto'][];
-    };
-    StockAdjustmentPageDto: {
-      data: components['schemas']['StockAdjustmentResponseDto'][];
-      /** @example 12 */
-      total: number;
-    };
-    StockThresholdDto: {
-      /** Format: uuid */
-      thresholdId: string;
-      /** Format: uuid */
-      warehouseId: string;
-      warehouseName: string;
-      /** Format: uuid */
-      gasCylinderId: string;
-      /** @example 10kg */
-      gasCylinderType: string;
-      /** @example 20 */
-      minFull: number;
-      /**
-       * @description Llenas que hay hoy en el depósito
-       * @example 35
-       */
-      currentFull: number;
-      /**
-       * Format: date-time
-       * @description Cuándo se avisó; null si no hay aviso vigente
-       */
-      alertedAt: string | null;
-    };
-    ThresholdItemDto: {
-      /** Format: uuid */
-      warehouseId: string;
-      /** Format: uuid */
-      gasCylinderId: string;
-      /**
-       * @description Mínimo de llenas. 0 desactiva el aviso de ese par.
-       * @example 20
-       */
-      minFull: number;
-    };
-    UpsertThresholdsDto: {
-      thresholds: components['schemas']['ThresholdItemDto'][];
-    };
-    DiferenciaDeVendibleDto: {
-      /** Format: uuid */
-      gasCylinderId: string;
-      /** @example 10kg */
-      gasCylinderType: string;
-      /** @description `gas_cylinder.stock` */
-      sellable: number;
-      /** @description Llenas en depósitos y camiones */
-      physicalFull: number;
-      /** @description Unidades de pedidos abiertos */
-      reserved: number;
-      /** @description Lo que debería valer el vendible: max(0, llenas - reservadas) */
-      expected: number;
-      /** @description Reservas de pedidos abiertos que el físico no cubre (max(0, reservadas - llenas)). Mientras sea mayor que cero el vendible queda en 0: cancelar pedidos o reponer stock lo cubre primero y sólo el resto vuelve a ser vendible */
-      overReserved: number;
-      /** @description sellable - expected; distinto de cero es una discrepancia */
-      difference: number;
-      /** @description Déficit de reservas guardado (`gas_cylinder.reservation_deficit`): lo que el vendible en cero ocultó cuando una pérdida dejó las reservas por encima del físico */
-      reservationDeficit: number;
-      /** @description `reservationDeficit - overReserved`; distinto de cero es un desfasaje del déficit (se corrige con POST /stock/reconciliation/adjustments aunque `difference` sea 0) */
-      deficitDifference: number;
-      /** @description Variación a aplicar al vendible para que cierre (-difference). Se aplica con POST /stock/reconciliation/adjustments */
-      correction: number;
-    };
-    PedidoEntregadoSinMovimientoDto: {
-      /** Format: uuid */
-      orderId: string;
-      /** Format: date-time */
-      deliveredAt: string;
-      /** Format: uuid */
-      gasCylinderId: string;
-      /** @example 10kg */
-      gasCylinderType: string;
-      quantity: number;
-    };
-    StockReconciliationDto: {
-      /** Format: date-time */
-      checkedAt: string;
-      /** @description true si todas las garrafas cumplen la invariante, ninguna tiene reservas por encima del físico y no hay entregas sin movimiento */
-      consistent: boolean;
-      cylinders: components['schemas']['DiferenciaDeVendibleDto'][];
-      /** @description Renglones de pedidos entregados desde que arrancó el módulo que no descontaron el físico (no había saldo donde sacar) */
-      deliveriesWithoutMovement: components['schemas']['PedidoEntregadoSinMovimientoDto'][];
-    };
-    ReapplyDeliveriesResultDto: {
-      /** @description Pedidos entregados que no tenían su movimiento */
-      revisados: number;
-      /** @description Pedidos a los que se les descontó el físico ahora */
-      reaplicados: number;
-      /** @description Pedidos que siguen sin saldo de donde sacar */
-      pendientes: number;
-    };
-    CreateReconciliationAdjustmentDto: {
-      /** Format: uuid */
-      gasCylinderId: string;
-      /**
-       * @description Obligatoria: explica por qué se corrige el vendible
-       * @example El vendible se tocó a mano antes del módulo de stock
-       */
-      notes: string;
-      /**
-       * @description `difference` que vio el administrador en la conciliación. Si cambió mientras tanto, responde 409 en vez de corregir un número viejo.
-       * @example 4
-       */
-      expectedDifference?: number;
-    };
-    UpdateStockDto: {
-      /**
-       * @description Unidades a sumar (positivo) o restar (negativo) del stock
-       * @example 10
-       */
-      quantity: number;
     };
     TruckLoadItemResponseDto: {
       /** Format: uuid */
@@ -18440,6 +19475,11 @@ export interface components {
     };
     AcceptInvitationDto: {
       /**
+       * Format: uuid
+       * @description Dirección de entrega; por omisión la de la invitación. Tiene que ser una dirección vigente del cliente
+       */
+      addressId?: string;
+      /**
        * @description Medio de pago; por omisión el de la invitación
        * @enum {string}
        */
@@ -18551,659 +19591,6 @@ export interface components {
       /** @description Empleados con una licencia aprobada que cubre el día de hoy */
       onLeaveToday: number;
       documents: components['schemas']['DocumentsByStatusDto'];
-    };
-    SupplierResponseDto: {
-      /** Format: uuid */
-      supplierId: string;
-      /** @example Gas del Litoral S.A. */
-      businessName: string;
-      /** @example 30715123456 */
-      cuit: string;
-      /** @enum {string} */
-      kind: 'filling_plant' | 'other';
-      contactName: string | null;
-      phone: string | null;
-      email: string | null;
-      address: string | null;
-      /** @example 30 */
-      paymentTermsDays: number | null;
-      isActive: boolean;
-      /** Format: date-time */
-      createdAt: string;
-      /** Format: date-time */
-      updatedAt: string;
-    };
-    SupplierPageDto: {
-      data: components['schemas']['SupplierResponseDto'][];
-      /** @example 12 */
-      total: number;
-    };
-    CreateSupplierDto: {
-      /** @example Gas del Litoral S.A. */
-      businessName: string;
-      /**
-       * @description CUIT de 11 dígitos (se aceptan guiones). Único entre los proveedores vigentes de la distribuidora.
-       * @example 30715123456
-       */
-      cuit: string;
-      /**
-       * @description `filling_plant` es la planta fraccionadora que llena y canjea envases
-       * @example filling_plant
-       * @enum {string}
-       */
-      kind: 'filling_plant' | 'other';
-      /** @example Marta Gómez */
-      contactName?: string | null;
-      /** @example +5493624123456 */
-      phone?: string | null;
-      /**
-       * Format: email
-       * @example compras@gasdellitoral.com.ar
-       */
-      email?: string | null;
-      /** @example Ruta 11 km 1005, Resistencia */
-      address?: string | null;
-      /**
-       * @description Plazo de pago en días (0 = contado)
-       * @example 30
-       */
-      paymentTermsDays?: number | null;
-    };
-    PurchaseReceiptSummaryDto: {
-      /** Format: uuid */
-      receiptId: string;
-      /**
-       * @description Número interno correlativo
-       * @example 3
-       */
-      number: number;
-      /** Format: uuid */
-      supplierId: string;
-      /** @example Gas del Litoral S.A. */
-      supplierName: string;
-      /** Format: uuid */
-      purchaseOrderId: string | null;
-      /** @example 7 */
-      purchaseOrderNumber: number | null;
-      /** Format: uuid */
-      warehouseId: string;
-      /** @example Depósito central */
-      warehouseName: string;
-      /** @enum {string} */
-      supplierDocumentType: 'delivery_note' | 'invoice';
-      /** @example 0001-00004567 */
-      supplierDocumentNumber: string;
-      /** Format: date-time */
-      receivedAt: string;
-      /** @example 130012.5 */
-      totalAmount: number;
-      /** @enum {string} */
-      paymentStatus: 'unpaid' | 'paid';
-      /** @enum {string} */
-      status: 'confirmed' | 'voided';
-    };
-    SupplierHistoryDto: {
-      /** Format: uuid */
-      supplierId: string;
-      /** @example Gas del Litoral S.A. */
-      supplierName: string;
-      /**
-       * @description Recepciones confirmadas del período
-       * @example 4
-       */
-      receiptsCount: number;
-      /**
-       * @description Σ de las recepciones confirmadas del período
-       * @example 520050
-       */
-      totalAmount: number;
-      /**
-       * @description Llenas recibidas (confirmadas) del período
-       * @example 100
-       */
-      fullReceived: number;
-      data: components['schemas']['PurchaseReceiptSummaryDto'][];
-      /**
-       * @description Total de recepciones (con las anuladas) para paginar
-       * @example 5
-       */
-      total: number;
-    };
-    UpdateSupplierDto: {
-      /** @example Gas del Litoral S.A. */
-      businessName?: string;
-      /**
-       * @description CUIT de 11 dígitos (se aceptan guiones). Único entre los proveedores vigentes de la distribuidora.
-       * @example 30715123456
-       */
-      cuit?: string;
-      /**
-       * @description `filling_plant` es la planta fraccionadora que llena y canjea envases
-       * @example filling_plant
-       * @enum {string}
-       */
-      kind?: 'filling_plant' | 'other';
-      /** @example Marta Gómez */
-      contactName?: string | null;
-      /** @example +5493624123456 */
-      phone?: string | null;
-      /**
-       * Format: email
-       * @example compras@gasdellitoral.com.ar
-       */
-      email?: string | null;
-      /** @example Ruta 11 km 1005, Resistencia */
-      address?: string | null;
-      /**
-       * @description Plazo de pago en días (0 = contado)
-       * @example 30
-       */
-      paymentTermsDays?: number | null;
-      /** @description false lo deja fuera de las listas de operación */
-      isActive?: boolean;
-    };
-    PurchaseOrderItemInputDto: {
-      /**
-       * Format: uuid
-       * @description Tipo de garrafa
-       */
-      gasCylinderId: string;
-      /**
-       * @description Llenas que se piden
-       * @example 40
-       */
-      quantity: number;
-      /**
-       * @description Costo por garrafa llena (hasta 2 decimales)
-       * @example 5200.5
-       */
-      unitCost: number;
-      /**
-       * @description Vacíos que se entregan a la planta a cambio
-       * @default 0
-       * @example 40
-       */
-      emptiesToExchange: number;
-    };
-    CreatePurchaseOrderDto: {
-      /** Format: uuid */
-      supplierId: string;
-      /**
-       * Format: uuid
-       * @description Depósito donde se recibe; si falta, el predeterminado
-       */
-      destinationWarehouseId?: string;
-      /**
-       * Format: date
-       * @example 2026-10-20
-       */
-      expectedDate?: string | null;
-      /** @example Entrega en horario de la mañana */
-      notes?: string | null;
-      items: components['schemas']['PurchaseOrderItemInputDto'][];
-    };
-    PurchaseOrderItemResponseDto: {
-      /** Format: uuid */
-      itemId: string;
-      /** Format: uuid */
-      gasCylinderId: string;
-      /** @example 10kg */
-      gasCylinderType: string;
-      /** @example 40 */
-      quantity: number;
-      /** @example 5200.5 */
-      unitCost: number;
-      /** @example 208020 */
-      subtotal: number;
-      /** @example 40 */
-      emptiesToExchange: number;
-      /** @example 25 */
-      receivedQuantity: number;
-      /** @example 15 */
-      pendingQuantity: number;
-    };
-    PurchaseOrderResponseDto: {
-      /** Format: uuid */
-      purchaseOrderId: string;
-      /** @example 7 */
-      number: number;
-      /** Format: uuid */
-      supplierId: string;
-      /** @example Gas del Litoral S.A. */
-      supplierName: string;
-      /** Format: uuid */
-      destinationWarehouseId: string;
-      /** @example Depósito central */
-      destinationWarehouseName: string;
-      /** @enum {string} */
-      status: 'draft' | 'sent' | 'partially_received' | 'received' | 'closed_short' | 'cancelled';
-      /** Format: date-time */
-      issuedAt: string | null;
-      /** @example 2026-10-20 */
-      expectedDate: string | null;
-      /** @example 208020 */
-      totalAmount: number;
-      cancelReason: string | null;
-      /** @description Motivo del cierre con faltante (`closed_short`) */
-      closeReason: string | null;
-      notes: string | null;
-      /** @example 40 */
-      orderedQuantity: number;
-      /** @example 25 */
-      receivedQuantity: number;
-      /** @example 15 */
-      pendingQuantity: number;
-      /** Format: date-time */
-      createdAt: string;
-      /** Format: date-time */
-      updatedAt: string;
-      items: components['schemas']['PurchaseOrderItemResponseDto'][];
-      /** @description Recepciones de esta orden (las anuladas incluidas) */
-      receipts: components['schemas']['PurchaseReceiptSummaryDto'][];
-    };
-    PurchaseOrderSummaryDto: {
-      /** Format: uuid */
-      purchaseOrderId: string;
-      /** @example 7 */
-      number: number;
-      /** Format: uuid */
-      supplierId: string;
-      /** @example Gas del Litoral S.A. */
-      supplierName: string;
-      /** Format: uuid */
-      destinationWarehouseId: string;
-      /** @example Depósito central */
-      destinationWarehouseName: string;
-      /** @enum {string} */
-      status: 'draft' | 'sent' | 'partially_received' | 'received' | 'closed_short' | 'cancelled';
-      /** Format: date-time */
-      issuedAt: string | null;
-      /** @example 2026-10-20 */
-      expectedDate: string | null;
-      /** @example 208020 */
-      totalAmount: number;
-      cancelReason: string | null;
-      /** @description Motivo del cierre con faltante (`closed_short`) */
-      closeReason: string | null;
-      notes: string | null;
-      /** @example 40 */
-      orderedQuantity: number;
-      /** @example 25 */
-      receivedQuantity: number;
-      /** @example 15 */
-      pendingQuantity: number;
-      /** Format: date-time */
-      createdAt: string;
-      /** Format: date-time */
-      updatedAt: string;
-    };
-    PurchaseOrderPageDto: {
-      data: components['schemas']['PurchaseOrderSummaryDto'][];
-      /** @example 12 */
-      total: number;
-    };
-    PendingItemDto: {
-      /** Format: uuid */
-      gasCylinderId: string;
-      /** @example 10kg */
-      gasCylinderType: string;
-      /** @example 40 */
-      ordered: number;
-      /** @example 25 */
-      received: number;
-      /** @example 15 */
-      pending: number;
-      /**
-       * @description Vacíos que se canjean por el pedido
-       * @example 40
-       */
-      emptiesToExchange: number;
-    };
-    PurchaseOrderPendingDto: {
-      /** Format: uuid */
-      purchaseOrderId: string;
-      /** @example 7 */
-      number: number;
-      /** @enum {string} */
-      status: 'draft' | 'sent' | 'partially_received' | 'received' | 'closed_short' | 'cancelled';
-      items: components['schemas']['PendingItemDto'][];
-      /** @example 15 */
-      totalPending: number;
-    };
-    UpdatePurchaseOrderDto: {
-      /** Format: uuid */
-      supplierId?: string;
-      /**
-       * Format: uuid
-       * @description Depósito donde se recibe; si falta, el predeterminado
-       */
-      destinationWarehouseId?: string;
-      /**
-       * Format: date
-       * @example 2026-10-20
-       */
-      expectedDate?: string | null;
-      /** @example Entrega en horario de la mañana */
-      notes?: string | null;
-      items?: components['schemas']['PurchaseOrderItemInputDto'][];
-    };
-    CancelPurchaseOrderDto: {
-      /** @example El proveedor no tiene stock este mes */
-      reason: string;
-    };
-    CloseShortPurchaseOrderDto: {
-      /** @example La planta no repone el resto este mes */
-      reason: string;
-    };
-    PurchaseReceiptItemInputDto: {
-      /**
-       * Format: uuid
-       * @description Tipo de garrafa
-       */
-      gasCylinderId: string;
-      /**
-       * @description Llenas que llegaron
-       * @example 25
-       */
-      quantityFull: number;
-      /**
-       * @description Vacías que se llevó la planta; salen del depósito y no pueden dejarlo en negativo
-       * @default 0
-       * @example 25
-       */
-      quantityEmptyOut: number;
-      /**
-       * @description Costo por llena del remito. Con orden de compra, si falta se usa el de la orden; sin orden es obligatorio.
-       * @example 5200.5
-       */
-      unitCost?: number;
-    };
-    CreatePurchaseReceiptDto: {
-      /**
-       * Format: uuid
-       * @description Orden de compra que se recibe; sin ella es una compra directa
-       */
-      purchaseOrderId?: string;
-      /**
-       * Format: uuid
-       * @description Obligatorio sin orden; con orden tiene que ser el de la orden
-       */
-      supplierId?: string;
-      /**
-       * Format: uuid
-       * @description Depósito destino. Con orden: el de la orden (si se indica otro, 400); sin orden: el indicado o el predeterminado
-       */
-      warehouseId?: string;
-      /**
-       * @example delivery_note
-       * @enum {string}
-       */
-      supplierDocumentType: 'delivery_note' | 'invoice';
-      /**
-       * @description Número del remito o la factura del proveedor; único por proveedor
-       * @example 0001-00004567
-       */
-      supplierDocumentNumber: string;
-      /**
-       * @description Cuándo llegó (default: ahora). No puede ser futuro.
-       * @example 2026-10-12T14:30:00-03:00
-       */
-      receivedAt?: string;
-      /** @example Llegó en el camión de las 14 */
-      notes?: string | null;
-      items: components['schemas']['PurchaseReceiptItemInputDto'][];
-    };
-    PurchaseReceiptItemResponseDto: {
-      /** Format: uuid */
-      itemId: string;
-      /** Format: uuid */
-      gasCylinderId: string;
-      /** @example 10kg */
-      gasCylinderType: string;
-      /** @example 25 */
-      quantityFull: number;
-      /** @example 25 */
-      quantityEmptyOut: number;
-      /** @example 5200.5 */
-      unitCost: number;
-      /** @example 130012.5 */
-      subtotal: number;
-    };
-    PurchaseReceiptResponseDto: {
-      /** Format: uuid */
-      receiptId: string;
-      /**
-       * @description Número interno correlativo
-       * @example 3
-       */
-      number: number;
-      /** Format: uuid */
-      supplierId: string;
-      /** @example Gas del Litoral S.A. */
-      supplierName: string;
-      /** Format: uuid */
-      purchaseOrderId: string | null;
-      /** @example 7 */
-      purchaseOrderNumber: number | null;
-      /** Format: uuid */
-      warehouseId: string;
-      /** @example Depósito central */
-      warehouseName: string;
-      /** @enum {string} */
-      supplierDocumentType: 'delivery_note' | 'invoice';
-      /** @example 0001-00004567 */
-      supplierDocumentNumber: string;
-      /** Format: date-time */
-      receivedAt: string;
-      /** @example 130012.5 */
-      totalAmount: number;
-      /** @enum {string} */
-      paymentStatus: 'unpaid' | 'paid';
-      /** @enum {string} */
-      status: 'confirmed' | 'voided';
-      items: components['schemas']['PurchaseReceiptItemResponseDto'][];
-      notes: string | null;
-      voidReason: string | null;
-      /** Format: date-time */
-      voidedAt: string | null;
-      /** Format: uuid */
-      receivedByUserId: string;
-      /**
-       * Format: uuid
-       * @description Lote del libro de movimientos (GET /stock/movements?batchId=)
-       */
-      batchId: string;
-      /** Format: uuid */
-      voidBatchId: string | null;
-      /**
-       * Format: uuid
-       * @description Salida de caja del pago en efectivo; `null` si no se pagó en efectivo. Al marcar la recepción como impaga se asienta el contraasiento y vuelve a `null`
-       */
-      cashMovementId: string | null;
-      /** Format: date-time */
-      createdAt: string;
-    };
-    PurchaseReceiptPageDto: {
-      data: components['schemas']['PurchaseReceiptSummaryDto'][];
-      /** @example 12 */
-      total: number;
-    };
-    AverageCostDto: {
-      /** Format: uuid */
-      gasCylinderId: string;
-      /** @example 10kg */
-      gasCylinderType: string;
-      /**
-       * @description Costo promedio ponderado; null si nunca se compró
-       * @example 5180.25
-       */
-      averageUnitCost: number | null;
-      /** @example 5200.5 */
-      lastUnitCost: number | null;
-      /** Format: date-time */
-      lastReceivedAt: string | null;
-      /**
-       * @description Llenas en depósitos y camiones
-       * @example 85
-       */
-      fullOnHand: number;
-    };
-    VoidPurchaseReceiptDto: {
-      /** @example Remito cargado dos veces */
-      reason: string;
-    };
-    UpdatePaymentStatusDto: {
-      /**
-       * @example paid
-       * @enum {string}
-       */
-      paymentStatus: 'unpaid' | 'paid';
-      /** @description Con `paymentStatus: paid`: se pagó en efectivo de una caja de la distribuidora (por omisión, no). Con cajas de efectivo activas exige `cashBoxId` */
-      paidInCash?: boolean;
-      /**
-       * Format: uuid
-       * @description Caja de efectivo de la que sale el pago; sólo con `paidInCash`
-       */
-      cashBoxId?: string;
-    };
-    PurchaseReceiptV2SummaryDto: {
-      /** Format: uuid */
-      receiptId: string;
-      /**
-       * @description Número interno correlativo
-       * @example 3
-       */
-      number: number;
-      /** Format: uuid */
-      supplierId: string;
-      /** @example Gas del Litoral S.A. */
-      supplierName: string;
-      /** Format: uuid */
-      purchaseOrderId: string | null;
-      /** @example 7 */
-      purchaseOrderNumber: number | null;
-      /** Format: uuid */
-      warehouseId: string;
-      /** @example Depósito central */
-      warehouseName: string;
-      /** @enum {string} */
-      supplierDocumentType: 'delivery_note' | 'invoice';
-      /** @example 0001-00004567 */
-      supplierDocumentNumber: string;
-      /** Format: date-time */
-      receivedAt: string;
-      /** @example 130012.5 */
-      totalAmount: number;
-      /** @enum {string} */
-      paymentStatus: 'unpaid' | 'paid';
-      /** @enum {string} */
-      status: 'confirmed' | 'voided';
-      /** @description Si la recepción figura como pagada */
-      isPaid: boolean;
-      /**
-       * Format: uuid
-       * @description Salida de caja del pago; `null` si no salió de una caja
-       */
-      cashMovementId: string | null;
-      /**
-       * Format: date-time
-       * @description Cuándo se pagó; `null` si está impaga o figura pagada desde antes de registrar la fecha
-       */
-      paidAt: string | null;
-    };
-    PurchaseReceiptV2PageDto: {
-      data: components['schemas']['PurchaseReceiptV2SummaryDto'][];
-      /** @example 12 */
-      total: number;
-    };
-    PurchaseReceiptV2ResponseDto: {
-      /** Format: uuid */
-      receiptId: string;
-      /**
-       * @description Número interno correlativo
-       * @example 3
-       */
-      number: number;
-      /** Format: uuid */
-      supplierId: string;
-      /** @example Gas del Litoral S.A. */
-      supplierName: string;
-      /** Format: uuid */
-      purchaseOrderId: string | null;
-      /** @example 7 */
-      purchaseOrderNumber: number | null;
-      /** Format: uuid */
-      warehouseId: string;
-      /** @example Depósito central */
-      warehouseName: string;
-      /** @enum {string} */
-      supplierDocumentType: 'delivery_note' | 'invoice';
-      /** @example 0001-00004567 */
-      supplierDocumentNumber: string;
-      /** Format: date-time */
-      receivedAt: string;
-      /** @example 130012.5 */
-      totalAmount: number;
-      /** @enum {string} */
-      paymentStatus: 'unpaid' | 'paid';
-      /** @enum {string} */
-      status: 'confirmed' | 'voided';
-      items: components['schemas']['PurchaseReceiptItemResponseDto'][];
-      notes: string | null;
-      voidReason: string | null;
-      /** Format: date-time */
-      voidedAt: string | null;
-      /** Format: uuid */
-      receivedByUserId: string;
-      /**
-       * Format: uuid
-       * @description Lote del libro de movimientos (GET /stock/movements?batchId=)
-       */
-      batchId: string;
-      /** Format: uuid */
-      voidBatchId: string | null;
-      /**
-       * Format: uuid
-       * @description Salida de caja del pago en efectivo; `null` si no se pagó en efectivo. Al marcar la recepción como impaga se asienta el contraasiento y vuelve a `null`
-       */
-      cashMovementId: string | null;
-      /** Format: date-time */
-      createdAt: string;
-      /** @description Si la recepción figura como pagada */
-      isPaid: boolean;
-      /** Format: date-time */
-      paidAt: string | null;
-    };
-    PurchaseLineToPreviewDto: {
-      /**
-       * @description Unidades del renglón
-       * @example 40
-       */
-      quantity: number;
-      /**
-       * @description Costo por unidad
-       * @example 5200.5
-       */
-      unitCost: number;
-    };
-    PreviewPurchaseTotalDto: {
-      items: components['schemas']['PurchaseLineToPreviewDto'][];
-    };
-    PurchaseLinePreviewDto: {
-      /**
-       * @description Cantidad × costo unitario
-       * @example 208020
-       */
-      subtotal: number;
-    };
-    PurchaseTotalPreviewDto: {
-      /** @description Un subtotal por renglón, en el mismo orden */
-      items: components['schemas']['PurchaseLinePreviewDto'][];
-      /**
-       * @description Σ cantidad × costo unitario a 2 decimales: el total con el que se guarda la orden o el remito
-       * @example 208020
-       */
-      total: number;
     };
     CashCollectionSettingsResponseDto: {
       /**
@@ -19910,7 +20297,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las lecturas de documentos (`lectura.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -19953,6 +20340,7 @@ export interface operations {
           | 'poliza'
           | 'revision_tecnica'
           | 'cedula_del_vehiculo'
+          | 'foto_de_patente'
           | 'licencia_de_conducir'
           | 'apto_medico'
           | 'otro';
@@ -19987,7 +20375,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las lecturas de documentos (`lectura.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -20027,7 +20415,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las lecturas de documentos (`lectura.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -20070,7 +20458,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las lecturas de documentos (`lectura.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -20124,7 +20512,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para decidir las lecturas de documentos (`lectura.decidir`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -20192,7 +20580,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para decidir las lecturas de documentos (`lectura.decidir`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -20260,7 +20648,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para decidir las lecturas de documentos (`lectura.decidir`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -20327,7 +20715,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -20371,7 +20759,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -20421,7 +20809,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -20463,7 +20851,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -20524,7 +20912,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -20574,7 +20962,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -20625,7 +21013,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -20682,7 +21070,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -20736,7 +21124,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -20797,7 +21185,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -20868,7 +21256,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -20904,7 +21292,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -20958,7 +21346,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -21022,7 +21410,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -21104,7 +21492,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -21158,7 +21546,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -21202,7 +21590,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -21252,7 +21640,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -21295,7 +21683,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -21349,7 +21737,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -21399,7 +21787,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -21435,7 +21823,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -21467,6 +21855,13 @@ export interface operations {
           'application/json': components['schemas']['PhotoLinkResponseDto'];
         };
       };
+      /** @description Redirige a la URL firmada de la foto */
+      302: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description El modo no es válido */
       400: {
         headers: {
@@ -21481,7 +21876,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -21538,7 +21933,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -21595,7 +21990,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -21651,7 +22046,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el personal (`personal.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -21698,7 +22093,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el personal (`personal.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -21742,7 +22137,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin, delivery */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el personal (`personal.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -21792,7 +22187,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el personal (`personal.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -21854,7 +22249,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el personal (`personal.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -21905,7 +22300,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin, delivery */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el personal (`personal.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -21956,7 +22351,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el personal (`personal.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -22007,7 +22402,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el personal (`personal.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -22062,7 +22457,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin, delivery */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el personal (`personal.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -22117,7 +22512,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el personal (`personal.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -22172,7 +22567,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el personal (`personal.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -22226,7 +22621,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin, delivery */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el personal (`personal.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -22330,7 +22725,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los clientes (`clientes.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -22374,7 +22769,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los clientes (`clientes.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -22409,6 +22804,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['PhotoLinkResponseDto'];
         };
+      };
+      /** @description Redirige a la URL firmada de la foto */
+      302: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description El modo no es válido */
       400: {
@@ -22576,6 +22978,13 @@ export interface operations {
           'application/json': components['schemas']['PhotoLinkResponseDto'];
         };
       };
+      /** @description Redirige a la URL firmada de la foto */
+      302: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description El id no es un UUID o el modo no es válido */
       400: {
         headers: {
@@ -22647,7 +23056,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los clientes (`clientes.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -22711,7 +23120,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los clientes (`clientes.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -22811,7 +23220,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los clientes (`clientes.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -22825,7 +23234,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Es un chofer con pedidos aceptados o en camino (hay que cancelarlos o reasignarlos antes), un chofer con una rendición pendiente (CU-181), o el último administrador activo de su distribuidora o el último super administrador */
+      /** @description Es un chofer con pedidos aceptados o en camino (hay que cancelarlos o reasignarlos antes), un chofer con una rendición pendiente (CU-181), o el último administrador activo de su distribuidora o el último super administrador, o el último administrador activo que puede gestionar los roles y permisos de la distribuidora (`LAST_ROLES_MANAGER`) */
       409: {
         headers: {
           [name: string]: unknown;
@@ -22929,7 +23338,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los clientes (`clientes.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -23020,7 +23429,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los clientes (`clientes.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -23034,7 +23443,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Es el último administrador activo de su distribuidora o el último super administrador */
+      /** @description Es el último administrador activo de su distribuidora o el último super administrador, o el último administrador activo que puede gestionar los roles y permisos de la distribuidora (`LAST_ROLES_MANAGER`) */
       409: {
         headers: {
           [name: string]: unknown;
@@ -23076,7 +23485,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las finanzas (`finanzas.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -23120,7 +23529,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las finanzas (`finanzas.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -23170,7 +23579,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las finanzas (`finanzas.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -23217,7 +23626,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las finanzas (`finanzas.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -23282,7 +23691,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las finanzas (`finanzas.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -23336,7 +23745,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las finanzas (`finanzas.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -23393,7 +23802,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las finanzas (`finanzas.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -23447,7 +23856,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las finanzas (`finanzas.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -23515,7 +23924,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las finanzas (`finanzas.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -23606,7 +24015,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las finanzas (`finanzas.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -23657,7 +24066,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las finanzas (`finanzas.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -23722,7 +24131,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las finanzas (`finanzas.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -23790,7 +24199,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para anular movimientos de caja (`caja.anular`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -23858,7 +24267,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para anular movimientos de caja (`caja.anular`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -23958,7 +24367,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las finanzas (`finanzas.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -24007,7 +24416,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin, delivery */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las finanzas (`finanzas.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -24044,7 +24453,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las finanzas (`finanzas.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -24094,7 +24503,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las finanzas (`finanzas.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -24148,7 +24557,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las finanzas (`finanzas.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -24199,7 +24608,7 @@ export interface operations {
           'application/json': components['schemas']['AttachmentResponseDto'][];
         };
       };
-      /** @description El tipo de dueño todavía no admite adjuntos */
+      /** @description El tipo de dueño todavía no admite adjuntos, o es `car_document` (los documentos del vehículo se listan por `GET /api/v2/cars/:carId/documents`) */
       400: {
         headers: {
           [name: string]: unknown;
@@ -24213,7 +24622,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Un chofer no puede acceder a ese tipo de dueño */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el catálogo y la cobertura (`catalogo.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -24272,7 +24681,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Un chofer no puede adjuntar a ese tipo de dueño */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el catálogo y la cobertura (`catalogo.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -24342,6 +24751,13 @@ export interface operations {
         };
         content?: never;
       };
+      /** @description Id mal formado, o es un documento del vehículo: se baja por `GET /api/v2/cars/:carId/documents/:attachmentId/download` */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Sin token o token inválido */
       401: {
         headers: {
@@ -24349,7 +24765,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin, delivery */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el catálogo y la cobertura (`catalogo.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -24398,7 +24814,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin, delivery */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el catálogo y la cobertura (`catalogo.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -24442,7 +24858,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -24486,7 +24902,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -24522,7 +24938,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -24576,7 +24992,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -24628,7 +25044,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -24672,7 +25088,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -24736,7 +25152,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -24790,7 +25206,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -24851,7 +25267,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -24905,7 +25321,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -24955,7 +25371,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -25012,7 +25428,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -25098,7 +25514,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -25149,7 +25565,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -25201,7 +25617,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -25244,7 +25660,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -25298,7 +25714,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -25366,7 +25782,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -25427,7 +25843,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -25463,7 +25879,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -25513,7 +25929,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el personal (`personal.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -25598,7 +26014,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -25652,7 +26068,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -25709,7 +26125,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -25772,7 +26188,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -25821,7 +26237,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -25864,7 +26280,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el personal (`personal.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -25914,7 +26330,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -25978,7 +26394,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -26020,7 +26436,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -26060,7 +26476,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -26104,7 +26520,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -26144,7 +26560,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -26187,7 +26603,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -26241,7 +26657,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -26302,7 +26718,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -26370,7 +26786,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -26434,7 +26850,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -26697,6 +27113,330 @@ export interface operations {
       };
     };
   };
+  CarDocumentsV2Controller_list: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Car UUID */
+        carId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AttachmentResponseDto'][];
+        };
+      };
+      /** @description Id mal formado, o el super admin no eligió distribuidora (`X-Distributor`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Vehículo no encontrado o de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CarDocumentsV2Controller_uploadDocument: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Car UUID */
+        carId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'multipart/form-data': {
+          /** Format: binary */
+          file: string;
+          /** @enum {unknown} */
+          documentType: 'seguro' | 'vtv' | 'cedula' | 'otro';
+        };
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['UploadedCarDocumentDto'];
+        };
+      };
+      /** @description Id mal formado, falta el tipo de documento o no es válido, falta el archivo o está vacío, o el super admin no eligió distribuidora (`X-Distributor`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Vehículo no encontrado o de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El archivo supera el máximo permitido (10 MB) */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No es un PDF ni una imagen (JPG, PNG, WEBP), o el contenido no coincide con el tipo declarado */
+      415: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro archivo u otros datos. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CarDocumentsV2Controller_download: {
+    parameters: {
+      query?: {
+        /** @description `url` devuelve `{ url, expiresAt, requiresAuth }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada de S3). */
+        modo?: components['schemas']['DownloadMode'];
+        /** @description `attachment` (por defecto) baja el archivo; `inline` lo muestra en el navegador. `inline` sólo se respeta para PDF, JPG, PNG, WEBP y GIF: cualquier otro tipo (HTML, SVG...) se entrega como `attachment`. */
+        disposicion?: components['schemas']['DownloadDisposition'];
+      };
+      header?: never;
+      path: {
+        /** @description Car UUID */
+        carId: string;
+        /** @description Attachment UUID */
+        attachmentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Con `?modo=url`: el enlace `{ url, expiresAt, requiresAuth }` */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DownloadLinkResponseDto'];
+        };
+      };
+      /** @description Sin `modo`: redirección (302) a la URL firmada de S3 */
+      302: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Id mal formado, `modo` o `disposicion` inválidos, o el super admin no eligió distribuidora (`X-Distributor`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Vehículo no encontrado o de otra distribuidora, o el adjunto no existe, no es de ese vehículo o está dado de baja */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CarDocumentsV2Controller_remove: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Car UUID */
+        carId: string;
+        /** @description Attachment UUID */
+        attachmentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Dado de baja */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Id mal formado, o el super admin no eligió distribuidora (`X-Distributor`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Vehículo no encontrado o de otra distribuidora, o el adjunto no existe, no es de ese vehículo o ya estaba dado de baja */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CarDocumentsV2Controller_uploadPatentPhoto: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Car UUID */
+        carId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'multipart/form-data': {
+          /** Format: binary */
+          file: string;
+        };
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['UploadedPatentPhotoDto'];
+        };
+      };
+      /** @description Id mal formado, falta el archivo o está vacío, o el super admin no eligió distribuidora (`X-Distributor`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Vehículo no encontrado o de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El archivo supera el máximo permitido (10 MB) */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No es una imagen JPG, PNG o WEBP, o el contenido no coincide con el tipo declarado */
+      415: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro archivo u otros datos. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   AdminController_findAll: {
     parameters: {
       query?: {
@@ -26731,7 +27471,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los administradores (`administradores.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -26825,7 +27565,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los administradores (`administradores.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -26874,7 +27614,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los administradores (`administradores.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -26909,7 +27649,7 @@ export interface operations {
           'application/json': components['schemas']['MessageResponseDto'];
         };
       };
-      /** @description El id no es un UUID */
+      /** @description El id no es un UUID, o super admin sin `X-Distributor` sobre un administrador de una distribuidora vigente */
       400: {
         headers: {
           [name: string]: unknown;
@@ -26923,7 +27663,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los administradores (`administradores.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -26937,7 +27677,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Es el último administrador activo de la distribuidora o el último super administrador */
+      /** @description Es el último administrador activo de la distribuidora o el último super administrador, o el último administrador activo que puede gestionar los roles y permisos de la distribuidora (`LAST_ROLES_MANAGER`) */
       409: {
         headers: {
           [name: string]: unknown;
@@ -26983,7 +27723,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los administradores (`administradores.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -26999,6 +27739,413 @@ export interface operations {
       };
       /** @description El teléfono ya lo usa otra cuenta */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  StaffRoleController_findAll: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StaffRoleResponseDto'][];
+        };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los roles y permisos (`roles.gestionar`) ni para gestionar los administradores (`administradores.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  StaffRoleController_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateStaffRoleDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StaffRoleResponseDto'];
+        };
+      };
+      /** @description Datos inválidos (detalle por campo), permiso fuera del catálogo (`code: UNKNOWN_PERMISSION`, con su nombre) o Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Cuenta que no es del panel, administrador sin `roles.gestionar` (`PERMISSION_DENIED`), o permisos que quien crea no tiene: nadie da lo que no tiene (`STAFF_ROLE_PERMISSION_NOT_HELD`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya existe un rol con ese nombre (`code: STAFF_ROLE_NAME_TAKEN`) o la `Idempotency-Key` está en uso por otra solicitud en curso */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  StaffRoleController_findOne: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Rol UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StaffRoleResponseDto'];
+        };
+      };
+      /** @description El id no es un UUID o Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los roles y permisos (`roles.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe, está dado de baja o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  StaffRoleController_remove: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Rol UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MessageResponseDto'];
+        };
+      };
+      /** @description El id no es un UUID o Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los roles y permisos (`roles.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe, ya está dado de baja o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Es el rol de sistema (`STAFF_ROLE_IS_SYSTEM`), tiene administradores asignados (`STAFF_ROLE_HAS_ADMINS`) o la `Idempotency-Key` está en uso */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  StaffRoleController_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Rol UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateStaffRoleDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StaffRoleResponseDto'];
+        };
+      };
+      /** @description El id no es un UUID, datos inválidos, permiso fuera del catálogo (`code: UNKNOWN_PERMISSION`) o Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Cuenta que no es del panel, administrador sin `roles.gestionar` (`PERMISSION_DENIED`), es el rol que tiene asignado quien edita (`STAFF_ROLE_OWN_ROLE`) o le suma permisos que quien edita no tiene (`STAFF_ROLE_PERMISSION_NOT_HELD`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe, está dado de baja o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Es el rol de sistema (`STAFF_ROLE_IS_SYSTEM`), el nombre ya existe (`STAFF_ROLE_NAME_TAKEN`), quitarle `roles.gestionar` dejaría a la distribuidora sin nadie que gestione los roles (`LAST_ROLES_MANAGER`) o la `Idempotency-Key` está en uso */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AdminStaffRoleController_assign: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Administrador UUID (`adminId`) */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AssignStaffRoleDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AdminStaffRoleResponseDto'];
+        };
+      };
+      /** @description El id no es un UUID, `staffRoleId` falta o no es un UUID, o Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Cuenta que no es del panel, administrador sin `administradores.gestionar` (`PERMISSION_DENIED`), se quiere cambiar el propio rol (`STAFF_ROLE_SELF_ASSIGN`) o el rol tiene permisos que quien asigna no tiene, como el de sistema (`STAFF_ROLE_PERMISSION_NOT_HELD`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El administrador o el rol no existen, están dados de baja o son de otra distribuidora (un super admin tampoco se encuentra) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Dejaría a la distribuidora sin nadie que gestione los roles (`LAST_ROLES_MANAGER`) o la `Idempotency-Key` está en uso */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PermissionsController_findAll: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PermissionModuleResponseDto'][];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MyPermissionsController_mine: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MyPermissionsResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin */
+      403: {
         headers: {
           [name: string]: unknown;
         };
@@ -27424,7 +28571,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el personal (`personal.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -27468,7 +28615,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el personal (`personal.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -27511,7 +28658,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el personal (`personal.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -27565,7 +28712,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el personal (`personal.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -27631,7 +28778,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el personal (`personal.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -27675,7 +28822,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el personal (`personal.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -27732,7 +28879,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el personal (`personal.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -27782,7 +28929,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el personal (`personal.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -27843,7 +28990,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el personal (`personal.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -27889,6 +29036,13 @@ export interface operations {
           'application/json': components['schemas']['PhotoLinkResponseDto'];
         };
       };
+      /** @description Redirige a la URL firmada de la foto */
+      302: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description El modo no es válido */
       400: {
         headers: {
@@ -27903,7 +29057,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el personal (`personal.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -27960,7 +29114,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el personal (`personal.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -28031,7 +29185,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el personal (`personal.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -28092,7 +29246,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el personal (`personal.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -28160,7 +29314,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el personal (`personal.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -28228,7 +29382,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el personal (`personal.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -28295,7 +29449,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el personal (`personal.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -28361,7 +29515,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el personal (`personal.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -28408,7 +29562,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el personal (`personal.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -28458,7 +29612,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el personal (`personal.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -28519,7 +29673,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el personal (`personal.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -28569,7 +29723,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el personal (`personal.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -28756,7 +29910,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la auditoría (`auditoria.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -28806,7 +29960,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la auditoría (`auditoria.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -28841,7 +29995,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la auditoría (`auditoria.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -28881,7 +30035,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la auditoría (`auditoria.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -28933,7 +30087,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la auditoría (`auditoria.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -28968,7 +30122,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la auditoría (`auditoria.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -29008,7 +30162,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la auditoría (`auditoria.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -29317,6 +30471,13 @@ export interface operations {
           'application/json': components['schemas']['PhotoLinkResponseDto'];
         };
       };
+      /** @description Redirige a la URL firmada de la foto */
+      302: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description El modo no es válido */
       400: {
         headers: {
@@ -29331,7 +30492,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la configuración (`configuracion.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -29388,7 +30549,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la configuración (`configuracion.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -29452,7 +30613,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la configuración (`configuracion.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -29492,7 +30653,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la configuración (`configuracion.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -29536,7 +30697,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la configuración (`configuracion.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -29576,7 +30737,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la configuración (`configuracion.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -29620,7 +30781,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la configuración (`configuracion.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -29660,7 +30821,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la configuración (`configuracion.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -29704,7 +30865,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la configuración (`configuracion.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -29744,7 +30905,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la configuración (`configuracion.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -29788,7 +30949,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la configuración (`configuracion.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -29835,7 +30996,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la configuración (`configuracion.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -29879,7 +31040,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la configuración (`configuracion.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -29919,7 +31080,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la configuración (`configuracion.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -29963,7 +31124,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la configuración (`configuracion.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -30003,7 +31164,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la configuración (`configuracion.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -30051,7 +31212,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la configuración (`configuracion.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -30112,7 +31273,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la configuración (`configuracion.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -30159,7 +31320,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la configuración (`configuracion.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -30203,7 +31364,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la configuración (`configuracion.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -30264,7 +31425,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la configuración (`configuracion.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -30321,7 +31482,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -30365,7 +31526,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -30423,7 +31584,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: delivery */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -30473,7 +31634,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -30516,7 +31677,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -30577,7 +31738,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -30638,7 +31799,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -30707,7 +31868,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -30751,7 +31912,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -30808,7 +31969,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -30862,7 +32023,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -30923,7 +32084,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -30984,7 +32145,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -31045,7 +32206,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -31107,7 +32268,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -31151,7 +32312,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -31208,7 +32369,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -31262,7 +32423,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -31326,7 +32487,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -31408,7 +32569,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -31476,7 +32637,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -31520,7 +32681,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -31578,7 +32739,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: delivery */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -31628,7 +32789,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -31682,7 +32843,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -31743,7 +32904,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -31795,7 +32956,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -31839,7 +33000,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -31889,7 +33050,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -31943,7 +33104,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -32010,7 +33171,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -32063,7 +33224,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -32113,7 +33274,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -32153,7 +33314,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -32203,7 +33364,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -32253,7 +33414,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -32298,7 +33459,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -32334,7 +33495,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -32388,7 +33549,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -32492,7 +33653,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -32528,7 +33689,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -32582,7 +33743,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -32650,7 +33811,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -32686,7 +33847,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -32740,7 +33901,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -32808,7 +33969,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -32831,6 +33992,3156 @@ export interface operations {
       };
       /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
       422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SupplierController_findAll: {
+    parameters: {
+      query?: {
+        limit?: number;
+        page?: number;
+        /** @description Texto a buscar */
+        term?: string;
+        kind?: 'filling_plant' | 'other';
+        /** @description true también trae los proveedores inactivos (default: sólo los activos) */
+        includeInactive?: boolean;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SupplierPageDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SupplierController_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateSupplierDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SupplierResponseDto'];
+        };
+      };
+      /** @description Datos inválidos o CUIT mal formado */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las compras (`compras.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya hay un proveedor vigente con ese CUIT */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SupplierController_findOne: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Proveedor UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SupplierResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SupplierController_remove: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Proveedor UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MessageResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las compras (`compras.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Tiene órdenes de compra abiertas */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SupplierController_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Proveedor UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateSupplierDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SupplierResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las compras (`compras.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El CUIT ya lo tiene otro proveedor vigente */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SupplierController_historial: {
+    parameters: {
+      query?: {
+        limit?: number;
+        page?: number;
+        from?: string | null;
+        to?: string | null;
+      };
+      header?: never;
+      path: {
+        /** @description Proveedor UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SupplierHistoryDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SupplierPhotoController_ver: {
+    parameters: {
+      query?: {
+        /** @description `url` devuelve `{ url, expiresAt, requiresAuth }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada de S3). */
+        modo?: components['schemas']['DownloadMode'];
+      };
+      header?: never;
+      path: {
+        /** @description Proveedor UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PhotoLinkResponseDto'];
+        };
+      };
+      /** @description Redirige a la URL firmada de la foto */
+      302: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El modo no es válido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora; sin `modo`, también si no tiene foto */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SupplierPhotoController_subir: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Proveedor UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'multipart/form-data': {
+          /** Format: binary */
+          file: string;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PhotoCurrentResponseDto'];
+        };
+      };
+      /** @description Falta la foto o está vacía */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las compras (`compras.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La foto supera los 5 MB */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No es JPG, PNG ni WEBP (o el contenido no coincide) */
+      415: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SupplierPhotoController_quitar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Proveedor UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PhotoCurrentResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las compras (`compras.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PurchaseOrderController_ordenes: {
+    parameters: {
+      query?: {
+        limit?: number;
+        page?: number;
+        status?: 'draft' | 'sent' | 'partially_received' | 'received' | 'closed_short' | 'cancelled';
+        supplierId?: string;
+        from?: string | null;
+        to?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PurchaseOrderPageDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PurchaseOrderController_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreatePurchaseOrderDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PurchaseOrderResponseDto'];
+        };
+      };
+      /** @description Datos inválidos, proveedor inactivo o garrafa repetida */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las compras (`compras.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Proveedor, depósito o garrafa inexistente */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PurchaseOrderController_orden: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Orden de compra UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PurchaseOrderResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PurchaseOrderController_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Orden de compra UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdatePurchaseOrderDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PurchaseOrderResponseDto'];
+        };
+      };
+      /** @description La orden ya no está en borrador, o datos inválidos */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las compras (`compras.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PurchaseOrderController_pendiente: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Orden de compra UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PurchaseOrderPendingDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PurchaseOrderController_send: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Orden de compra UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PurchaseOrderResponseDto'];
+        };
+      };
+      /** @description La orden no está en borrador */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las compras (`compras.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PurchaseOrderController_cancel: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Orden de compra UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CancelPurchaseOrderDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PurchaseOrderResponseDto'];
+        };
+      };
+      /** @description Sin motivo, o la orden ya está cerrada */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las compras (`compras.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La orden tiene recepciones confirmadas (aunque sean sólo de vacías) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PurchaseOrderController_closeShort: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Orden de compra UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CloseShortPurchaseOrderDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PurchaseOrderResponseDto'];
+        };
+      };
+      /** @description Sin motivo, o la orden no está parcialmente recibida */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las compras (`compras.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PurchaseReceiptController_recepciones: {
+    parameters: {
+      query?: {
+        limit?: number;
+        page?: number;
+        supplierId?: string;
+        purchaseOrderId?: string;
+        paymentStatus?: 'unpaid' | 'paid';
+        status?: 'confirmed' | 'voided';
+        from?: string | null;
+        to?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PurchaseReceiptPageDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PurchaseReceiptController_create: {
+    parameters: {
+      query?: never;
+      header: {
+        'idempotency-key': string;
+        /** @description UUID v4 de la operación. Obligatoria: sin ella responde 400 (un reintento duplicaría el movimiento). */
+        'Idempotency-Key': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreatePurchaseReceiptDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PurchaseReceiptResponseDto'];
+        };
+      };
+      /** @description Sin `Idempotency-Key`, orden no recibible, `warehouseId` distinto al depósito de la orden, la recepción se pasa de lo pendiente, fecha anterior al conteo inicial del depósito, no alcanzan las vacías o faltan datos */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las compras (`compras.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Orden, proveedor, depósito o garrafa inexistente */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya hay una recepción de ese proveedor con ese documento */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PurchaseReceiptController_costos: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AverageCostDto'][];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PurchaseReceiptController_recepcion: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Recepción UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PurchaseReceiptResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PurchaseReceiptController_void: {
+    parameters: {
+      query?: never;
+      header: {
+        'idempotency-key': string;
+        /** @description UUID v4 de la operación. Obligatoria: sin ella responde 400 (un reintento duplicaría el movimiento). */
+        'Idempotency-Key': string;
+      };
+      path: {
+        /** @description Recepción UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['VoidPurchaseReceiptDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PurchaseReceiptResponseDto'];
+        };
+      };
+      /** @description Sin motivo, sin `Idempotency-Key` o la recepción figura como pagada */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las compras (`compras.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya está anulada, las llenas ya no están en el depósito donde entraron, o ese depósito fue dado de baja */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PurchaseReceiptController_paymentStatus: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Recepción UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdatePaymentStatusDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PurchaseReceiptResponseDto'];
+        };
+      };
+      /** @description La recepción está anulada, falta la caja de efectivo o la caja no es de efectivo */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las compras (`compras.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora (también la caja) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La caja no tiene una sesión abierta o no alcanza el saldo */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PurchaseReceiptV2Controller_recepciones: {
+    parameters: {
+      query?: {
+        limit?: number;
+        page?: number;
+        supplierId?: string;
+        purchaseOrderId?: string;
+        paymentStatus?: 'unpaid' | 'paid';
+        status?: 'confirmed' | 'voided';
+        from?: string | null;
+        to?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PurchaseReceiptV2PageDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PurchaseReceiptV2Controller_recepcion: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Recepción UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PurchaseReceiptV2ResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PurchaseReceiptV2Controller_pay: {
+    parameters: {
+      query?: never;
+      header: {
+        'idempotency-key': string;
+        /** @description UUID v4 de la operación. Obligatoria: sin ella responde 400 (un reintento duplicaría el movimiento). */
+        'Idempotency-Key': string;
+      };
+      path: {
+        /** @description Recepción UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PayFromCashBoxDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PurchaseReceiptV2ResponseDto'];
+        };
+      };
+      /** @description Sin `Idempotency-Key`, recepción anulada, `paidAt` futuro o caja que no admite el pago */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las compras (`compras.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora (también la caja) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya está pagada, o la caja no tiene una sesión abierta o no alcanza el saldo */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PurchaseTotalV2Controller_previewTotal: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PreviewPurchaseTotalDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PurchaseTotalPreviewDto'];
+        };
+      };
+      /** @description Renglón inválido o total por encima del máximo */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las compras (`compras.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  WarehouseController_findAll: {
+    parameters: {
+      query?: {
+        /** @description true incluye los depósitos inactivos (default: sólo los activos) */
+        includeInactive?: boolean;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['WarehouseResponseDto'][];
+        };
+      };
+      /** @description Filtros inválidos o falta la distribuidora */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  WarehouseController_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateWarehouseDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['WarehouseResponseDto'];
+        };
+      };
+      /** @description Datos inválidos */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el stock (`stock.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya hay un depósito vigente con ese código */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  WarehouseController_findOne: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Depósito UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['WarehouseDetailDto'];
+        };
+      };
+      /** @description El identificador no es válido o falta la distribuidora */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  WarehouseController_remove: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Depósito UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MessageResponseDto'];
+        };
+      };
+      /** @description El identificador no es válido o falta la distribuidora */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el stock (`stock.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Es el predeterminado o todavía tiene garrafas */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  WarehouseController_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Depósito UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateWarehouseDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['WarehouseResponseDto'];
+        };
+      };
+      /** @description Datos o identificador inválidos, o falta la distribuidora */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el stock (`stock.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Código repetido, o se intenta sacar la marca / desactivar el predeterminado */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  StockController_saldos: {
+    parameters: {
+      query?: {
+        locationId?: string;
+        warehouseId?: string;
+        carId?: string;
+        gasCylinderId?: string;
+        /** @description true también trae los saldos en cero (default: sólo los positivos) */
+        includeZero?: boolean;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StockBalanceDto'][];
+        };
+      };
+      /** @description Filtros inválidos o falta la distribuidora */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  StockController_resumen: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StockSummaryDto'][];
+        };
+      };
+      /** @description Falta la distribuidora */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  StockController_ubicaciones: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StockLocationDto'][];
+        };
+      };
+      /** @description Falta la distribuidora */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  StockController_movimientos: {
+    parameters: {
+      query?: {
+        limit?: number;
+        page?: number;
+        /** @description Tipo de garrafa */
+        gasCylinderId?: string;
+        /** @description Movimientos que salen de o entran a esta ubicación */
+        locationId?: string;
+        reason?:
+          | 'initial_count'
+          | 'purchase_receipt'
+          | 'plant_empty_out'
+          | 'truck_load'
+          | 'truck_return'
+          | 'delivery'
+          | 'empty_collected'
+          | 'transfer'
+          | 'adjustment'
+          | 'shrinkage'
+          | 'condition_change'
+          | 'reversal';
+        referenceType?: 'order' | 'purchase_receipt' | 'truck_load' | 'stock_adjustment' | 'transfer' | 'initial';
+        /** @description Movimientos de un lote */
+        batchId?: string;
+        /** @description Movimientos de un documento (por ejemplo el id de una carga de camión, con referenceType) */
+        referenceId?: string;
+        from?: string | null;
+        to?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StockMovementPageDto'];
+        };
+      };
+      /** @description Fechas inválidas */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  StockController_contraasentar: {
+    parameters: {
+      query?: never;
+      header: {
+        'idempotency-key': string;
+        /** @description UUID v4 de la operación. Obligatoria: sin ella responde 400 (un reintento duplicaría el movimiento). */
+        'Idempotency-Key': string;
+      };
+      path: {
+        /** @description Lote de la transferencia */
+        batchId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ReverseBatchDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StockOperationResultDto'];
+        };
+      };
+      /** @description El lote no es una transferencia */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el stock (`stock.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El lote no existe en la distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya fue contraasentado, o las garrafas ya no están donde estaban */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  StockController_transferir: {
+    parameters: {
+      query?: never;
+      header: {
+        'idempotency-key': string;
+        /** @description UUID v4 de la operación. Obligatoria: sin ella responde 400 (un reintento duplicaría el movimiento). */
+        'Idempotency-Key': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateTransferDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StockOperationResultDto'];
+        };
+      };
+      /** @description Stock insuficiente en el origen, o ubicaciones inválidas */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el stock (`stock.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Depósito, vehículo o garrafa inexistente o de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  StockController_conteoInicial: {
+    parameters: {
+      query?: never;
+      header: {
+        'idempotency-key': string;
+        /** @description UUID v4 de la operación. Obligatoria: sin ella responde 400 (un reintento duplicaría el movimiento). */
+        'Idempotency-Key': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateInitialCountDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StockAdjustmentResponseDto'];
+        };
+      };
+      /** @description Sin diferencias, o el vendible quedaría negativo (hay pedidos abiertos que reservan esas llenas) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el stock (`stock.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Depósito o garrafa inexistente */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El depósito ya tiene su conteo inicial */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  StockController_ajustes: {
+    parameters: {
+      query?: {
+        limit?: number;
+        page?: number;
+        reason?:
+          'count_correction' | 'shrinkage' | 'leak' | 'damaged' | 'lost' | 'found' | 'initial_count' | 'reconciliation';
+        from?: string | null;
+        to?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StockAdjustmentPageDto'];
+        };
+      };
+      /** @description Filtros inválidos o falta la distribuidora */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  StockController_ajustar: {
+    parameters: {
+      query?: never;
+      header: {
+        'idempotency-key': string;
+        /** @description UUID v4 de la operación. Obligatoria: sin ella responde 400 (un reintento duplicaría el movimiento). */
+        'Idempotency-Key': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateAdjustmentDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StockAdjustmentResponseDto'];
+        };
+      };
+      /** @description Sin nota, signo inválido para el motivo, saldo o vendible negativo */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el stock (`stock.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ubicación o garrafa inexistente */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  StockController_ajuste: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Ajuste UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StockAdjustmentResponseDto'];
+        };
+      };
+      /** @description El identificador no es válido o falta la distribuidora */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  StockController_umbrales: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StockThresholdDto'][];
+        };
+      };
+      /** @description Falta la distribuidora */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  StockController_configurarUmbrales: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpsertThresholdsDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StockThresholdDto'][];
+        };
+      };
+      /** @description Datos inválidos o falta la distribuidora */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el stock (`stock.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Depósito o garrafa inexistente */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  StockController_conciliar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StockReconciliationDto'];
+        };
+      };
+      /** @description Falta la distribuidora */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  StockController_reaplicar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ReapplyDeliveriesResultDto'];
+        };
+      };
+      /** @description Falta la distribuidora */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el stock (`stock.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  StockController_corregirVendible: {
+    parameters: {
+      query?: never;
+      header: {
+        'idempotency-key': string;
+        /** @description UUID v4 de la operación. Obligatoria: sin ella responde 400 (un reintento duplicaría el movimiento). */
+        'Idempotency-Key': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateReconciliationAdjustmentDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StockAdjustmentResponseDto'];
+        };
+      };
+      /** @description Sin diferencia, sin nota o sin `Idempotency-Key` */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el stock (`stock.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La garrafa no existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La diferencia cambió */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CatalogStockController_updateStock: {
+    parameters: {
+      query?: never;
+      header: {
+        'idempotency-key': string;
+        /** @description UUID v4 de la operación. Obligatoria: sin ella responde 400 (un reintento duplicaría el movimiento). */
+        'Idempotency-Key': string;
+      };
+      path: {
+        /** @description Gas cylinder UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateStockDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GasCylinderResponseDto'];
+        };
+      };
+      /** @description El stock quedaría negativo: vendible, o llenas del depósito predeterminado (el mensaje indica dónde está el resto) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el stock (`stock.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  GasCylinderController_findAll: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+        page?: number;
+        /** @description Texto a buscar */
+        term?: string;
+        distributor?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CatalogoDto'];
+        };
+      };
+    };
+  };
+  GasCylinderController_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateGasCylinderDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GasCylinderResponseDto'];
+        };
+      };
+      /** @description Datos inválidos o tipo repetido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el catálogo y la cobertura (`catalogo.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  GasCylinderController_findInactive: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+        page?: number;
+        /** @description Texto a buscar */
+        term?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CatalogoDto'];
+        };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el catálogo y la cobertura (`catalogo.ver`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  GasCylinderController_findOne: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Gas cylinder UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GasCylinderResponseDto'];
+        };
+      };
+      /** @description El identificador no es válido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Garrafa no encontrada */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  GasCylinderController_remove: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Gas cylinder UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BajaDeProductoDto'];
+        };
+      };
+      /** @description El identificador no es válido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el catálogo y la cobertura (`catalogo.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  GasCylinderController_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Gas cylinder UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateGasCylinderDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GasCylinderResponseDto'];
+        };
+      };
+      /** @description Datos o identificador inválidos (p. ej.: Peso: tiene que ser mayor que 0; Precio: tiene que ser mayor que 0) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el catálogo y la cobertura (`catalogo.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  GasCylinderController_findByType: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Gas cylinder type (10kg, 15kg, etc) */
+        type: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GasCylinderResponseDto'];
+        };
+      };
+      /** @description El tipo no es válido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No hay un producto activo de ese tipo */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  GasCylinderController_getAvailableCylinders: {
+    parameters: {
+      query?: {
+        distributor?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DisponiblesDto'];
+        };
+      };
+      /** @description La distribuidora no es válida */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  GasCylinderController_reactivate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Gas cylinder UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GasCylinderResponseDto'];
+        };
+      };
+      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el catálogo y la cobertura (`catalogo.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora (no se distingue) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  GasCylinderController_getPhoto: {
+    parameters: {
+      query?: {
+        /** @description `url` devuelve `{ url, expiresAt, requiresAuth }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada de S3). */
+        modo?: components['schemas']['DownloadMode'];
+      };
+      header?: never;
+      path: {
+        /** @description Gas cylinder UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PhotoLinkResponseDto'];
+        };
+      };
+      /** @description Redirige a la URL firmada de la foto */
+      302: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El modo no es válido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora; sin `modo`, también si no tiene foto */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  GasCylinderController_uploadPhoto: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Gas cylinder UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'multipart/form-data': {
+          /** Format: binary */
+          file: string;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GasCylinderResponseDto'];
+        };
+      };
+      /** @description Falta la foto o está vacía */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el catálogo y la cobertura (`catalogo.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La foto supera los 5 MB */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No es JPG, PNG ni WEBP (o el contenido no coincide) */
+      415: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  GasCylinderController_removePhoto: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Gas cylinder UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GasCylinderResponseDto'];
+        };
+      };
+      /** @description El identificador no es válido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el catálogo y la cobertura (`catalogo.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PublicCatalogController_catalogo: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        slug: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CatalogoPublicoDto'];
+        };
+      };
+      /** @description La distribuidora no existe o no está activa */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Demasiados pedidos seguidos */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PublicCatalogController_mediosDePago: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        slug: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MedioDePagoDto'][];
+        };
+      };
+      /** @description La distribuidora no existe o no está activa */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Demasiados pedidos seguidos */
+      429: {
         headers: {
           [name: string]: unknown;
         };
@@ -32964,7 +37275,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los administradores (`administradores.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -33026,7 +37337,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los clientes (`clientes.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -33067,7 +37378,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los clientes (`clientes.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -33160,7 +37471,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los clientes (`clientes.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -33368,7 +37679,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los clientes (`clientes.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -33418,7 +37729,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los clientes (`clientes.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -33532,592 +37843,6 @@ export interface operations {
       };
     };
   };
-  GasCylinderController_findAll: {
-    parameters: {
-      query?: {
-        limit?: number;
-        offset?: number;
-        page?: number;
-        /** @description Texto a buscar */
-        term?: string;
-        distributor?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['CatalogoDto'];
-        };
-      };
-    };
-  };
-  GasCylinderController_create: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CreateGasCylinderDto'];
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['GasCylinderResponseDto'];
-        };
-      };
-      /** @description Datos inválidos o tipo repetido */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  GasCylinderController_findInactive: {
-    parameters: {
-      query?: {
-        limit?: number;
-        offset?: number;
-        page?: number;
-        /** @description Texto a buscar */
-        term?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['CatalogoDto'];
-        };
-      };
-      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  GasCylinderController_findOne: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Gas cylinder UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['GasCylinderResponseDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Garrafa no encontrada */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  GasCylinderController_remove: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Gas cylinder UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['BajaDeProductoDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  GasCylinderController_update: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Gas cylinder UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['UpdateGasCylinderDto'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['GasCylinderResponseDto'];
-        };
-      };
-      /** @description Datos inválidos (p. ej.: Peso: tiene que ser mayor que 0; Precio: tiene que ser mayor que 0) */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  GasCylinderController_findByType: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Gas cylinder type (10kg, 15kg, etc) */
-        type: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['GasCylinderResponseDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No hay un producto activo de ese tipo */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  GasCylinderController_getAvailableCylinders: {
-    parameters: {
-      query?: {
-        distributor?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['DisponiblesDto'];
-        };
-      };
-    };
-  };
-  GasCylinderController_reactivate: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Gas cylinder UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['GasCylinderResponseDto'];
-        };
-      };
-      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora (no se distingue) */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  GasCylinderController_getPhoto: {
-    parameters: {
-      query?: {
-        /** @description `url` devuelve `{ url, expiresAt, requiresAuth }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada de S3). */
-        modo?: components['schemas']['DownloadMode'];
-      };
-      header?: never;
-      path: {
-        /** @description Gas cylinder UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PhotoLinkResponseDto'];
-        };
-      };
-      /** @description El modo no es válido */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora; sin `modo`, también si no tiene foto */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  GasCylinderController_uploadPhoto: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Gas cylinder UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'multipart/form-data': {
-          /** Format: binary */
-          file: string;
-        };
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['GasCylinderResponseDto'];
-        };
-      };
-      /** @description Falta la foto o está vacía */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La foto supera los 5 MB */
-      413: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No es JPG, PNG ni WEBP (o el contenido no coincide) */
-      415: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  GasCylinderController_removePhoto: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Gas cylinder UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['GasCylinderResponseDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  PublicCatalogController_catalogo: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        slug: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['CatalogoPublicoDto'];
-        };
-      };
-      /** @description La distribuidora no existe o no está activa */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Demasiados pedidos seguidos */
-      429: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  PublicCatalogController_mediosDePago: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        slug: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['MedioDePagoDto'][];
-        };
-      };
-      /** @description La distribuidora no existe o no está activa */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Demasiados pedidos seguidos */
-      429: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
   CustomerContainerController_listar: {
     parameters: {
       query?: never;
@@ -34144,7 +37869,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los clientes (`clientes.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -34199,7 +37924,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los clientes (`clientes.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -34252,7 +37977,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los clientes (`clientes.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -34318,7 +38043,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: customer, admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los pedidos (`pedidos.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -34503,7 +38228,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los pedidos (`pedidos.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -34613,7 +38338,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: customer, admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los pedidos (`pedidos.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -34676,7 +38401,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: customer, admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los pedidos (`pedidos.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -34765,7 +38490,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: delivery, admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los pedidos (`pedidos.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -34812,7 +38537,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: delivery, admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los pedidos (`pedidos.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -34852,7 +38577,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -34884,6 +38609,13 @@ export interface operations {
           'application/json': components['schemas']['PhotoLinkResponseDto'];
         };
       };
+      /** @description Redirige a la URL firmada de la foto */
+      302: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description El modo no es válido */
       400: {
         headers: {
@@ -34898,7 +38630,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description El pedido lo tiene otro chofer */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los pedidos (`pedidos.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -34950,6 +38682,13 @@ export interface operations {
       };
       /** @description Sin token o token inválido */
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los pedidos (`pedidos.ver`) */
+      403: {
         headers: {
           [name: string]: unknown;
         };
@@ -35056,7 +38795,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los pedidos (`pedidos.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -35110,7 +38849,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: customer, admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los pedidos (`pedidos.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -35179,7 +38918,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: delivery, admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los pedidos (`pedidos.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -35293,7 +39032,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: delivery, admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los pedidos (`pedidos.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -35348,7 +39087,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: customer, admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los pedidos (`pedidos.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -35542,7 +39281,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los pedidos (`pedidos.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -35609,7 +39348,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los pedidos (`pedidos.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -35676,7 +39415,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los pedidos (`pedidos.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -35743,7 +39482,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -35845,7 +39584,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los pedidos (`pedidos.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -36028,7 +39767,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description El chofer que cancela no es el del pedido */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los pedidos (`pedidos.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -36086,7 +39825,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: delivery, admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los pedidos (`pedidos.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -36137,7 +39876,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los pedidos (`pedidos.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -36177,7 +39916,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los pedidos (`pedidos.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -36220,7 +39959,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: customer, admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los pedidos (`pedidos.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -36410,7 +40149,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los pedidos (`pedidos.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -36474,7 +40213,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description El pedido no está asignado a este chofer */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -36531,7 +40270,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los pedidos (`pedidos.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -36577,7 +40316,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los pedidos (`pedidos.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -36641,7 +40380,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: customer, admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los pedidos (`pedidos.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -36691,7 +40430,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los clientes (`clientes.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -37552,7 +41291,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el catálogo y la cobertura (`catalogo.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -37596,7 +41335,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el catálogo y la cobertura (`catalogo.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -37718,7 +41457,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el catálogo y la cobertura (`catalogo.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -37771,7 +41510,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el catálogo y la cobertura (`catalogo.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -37838,7 +41577,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -37882,8 +41621,15 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el stock (`stock.gestionar`) */
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El producto no existe en la distribuidora */
+      404: {
         headers: {
           [name: string]: unknown;
         };
@@ -37933,7 +41679,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin, delivery */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el stock (`stock.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -38004,7 +41750,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -38039,7 +41785,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -38075,6 +41821,13 @@ export interface operations {
           'application/json': components['schemas']['CylinderResponseDto'];
         };
       };
+      /** @description El identificador no es válido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Sin token o token inválido */
       401: {
         headers: {
@@ -38082,7 +41835,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin, delivery */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -38136,7 +41889,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el stock (`stock.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -38179,6 +41932,13 @@ export interface operations {
           'application/json': components['schemas']['CylinderVigenciaResponseDto'];
         };
       };
+      /** @description El identificador no es válido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Sin token o token inválido */
       401: {
         headers: {
@@ -38186,7 +41946,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -38240,7 +42000,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el stock (`stock.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -38283,6 +42043,13 @@ export interface operations {
           'application/json': components['schemas']['CylinderMovementResponseDto'][];
         };
       };
+      /** @description El identificador no es válido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Sin token o token inválido */
       401: {
         headers: {
@@ -38290,7 +42057,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -38344,7 +42111,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el stock (`stock.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -38398,7 +42165,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin, delivery */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el stock (`stock.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -38448,6 +42215,13 @@ export interface operations {
           'application/json': components['schemas']['PhotoLinkResponseDto'];
         };
       };
+      /** @description Redirige a la URL firmada de la foto */
+      302: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description El modo no es válido */
       400: {
         headers: {
@@ -38462,7 +42236,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin, delivery */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -38519,7 +42293,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el stock (`stock.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -38569,6 +42343,13 @@ export interface operations {
           'application/json': components['schemas']['PhotoCurrentResponseDto'];
         };
       };
+      /** @description El identificador no es válido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Sin token o token inválido */
       401: {
         headers: {
@@ -38576,7 +42357,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el stock (`stock.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -38619,7 +42400,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el catálogo y la cobertura (`catalogo.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -38663,7 +42444,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el catálogo y la cobertura (`catalogo.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -38717,7 +42498,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: customer, admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el catálogo y la cobertura (`catalogo.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -38760,7 +42541,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el catálogo y la cobertura (`catalogo.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -38809,7 +42590,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el catálogo y la cobertura (`catalogo.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -38863,7 +42644,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el catálogo y la cobertura (`catalogo.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -38922,7 +42703,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los reintegros (`reintegros.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -38964,7 +42745,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los reintegros (`reintegros.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -39013,7 +42794,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los reintegros (`reintegros.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -39127,7 +42908,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las finanzas (`finanzas.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -39171,7 +42952,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las finanzas (`finanzas.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -39232,7 +43013,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las finanzas (`finanzas.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -39275,7 +43056,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las finanzas (`finanzas.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -39329,7 +43110,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las finanzas (`finanzas.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -39401,7 +43182,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las finanzas (`finanzas.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -39455,7 +43236,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin, delivery */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las finanzas (`finanzas.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -39523,7 +43304,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las finanzas (`finanzas.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -39594,7 +43375,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las finanzas (`finanzas.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -39638,7 +43419,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las finanzas (`finanzas.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -39701,7 +43482,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: delivery */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las finanzas (`finanzas.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -39744,7 +43525,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin, delivery */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las finanzas (`finanzas.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -39798,7 +43579,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin, delivery */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las finanzas (`finanzas.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -39866,7 +43647,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las finanzas (`finanzas.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -39930,7 +43711,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las finanzas (`finanzas.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -39991,7 +43772,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin, delivery */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las finanzas (`finanzas.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -40048,7 +43829,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las finanzas (`finanzas.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -40092,7 +43873,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las finanzas (`finanzas.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -40160,7 +43941,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las finanzas (`finanzas.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -40234,7 +44015,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las finanzas (`finanzas.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -40325,7 +44106,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las finanzas (`finanzas.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -40369,7 +44150,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las finanzas (`finanzas.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -40426,7 +44207,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las finanzas (`finanzas.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -40469,7 +44250,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las finanzas (`finanzas.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -40530,7 +44311,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las finanzas (`finanzas.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -40598,7 +44379,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las finanzas (`finanzas.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -40655,7 +44436,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las finanzas (`finanzas.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -40671,1045 +44452,6 @@ export interface operations {
       };
       /** @description Está pagada (anulá antes el pago) o ya anulada */
       409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  WarehouseController_findAll: {
-    parameters: {
-      query?: {
-        /** @description true incluye los depósitos inactivos (default: sólo los activos) */
-        includeInactive?: boolean;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['WarehouseResponseDto'][];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  WarehouseController_create: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CreateWarehouseDto'];
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['WarehouseResponseDto'];
-        };
-      };
-      /** @description Datos inválidos */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Ya hay un depósito vigente con ese código */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  WarehouseController_findOne: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Depósito UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['WarehouseDetailDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  WarehouseController_remove: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Depósito UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['MessageResponseDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Es el predeterminado o todavía tiene garrafas */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  WarehouseController_update: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Depósito UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['UpdateWarehouseDto'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['WarehouseResponseDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Código repetido, o se intenta sacar la marca / desactivar el predeterminado */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  StockController_saldos: {
-    parameters: {
-      query?: {
-        locationId?: string;
-        warehouseId?: string;
-        carId?: string;
-        gasCylinderId?: string;
-        /** @description true también trae los saldos en cero (default: sólo los positivos) */
-        includeZero?: boolean;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['StockBalanceDto'][];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  StockController_resumen: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['StockSummaryDto'][];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  StockController_ubicaciones: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['StockLocationDto'][];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  StockController_movimientos: {
-    parameters: {
-      query?: {
-        limit?: number;
-        page?: number;
-        /** @description Tipo de garrafa */
-        gasCylinderId?: string;
-        /** @description Movimientos que salen de o entran a esta ubicación */
-        locationId?: string;
-        reason?:
-          | 'initial_count'
-          | 'purchase_receipt'
-          | 'plant_empty_out'
-          | 'truck_load'
-          | 'truck_return'
-          | 'delivery'
-          | 'empty_collected'
-          | 'transfer'
-          | 'adjustment'
-          | 'shrinkage'
-          | 'condition_change'
-          | 'reversal';
-        referenceType?: 'order' | 'purchase_receipt' | 'truck_load' | 'stock_adjustment' | 'transfer' | 'initial';
-        /** @description Movimientos de un lote */
-        batchId?: string;
-        /** @description Movimientos de un documento (por ejemplo el id de una carga de camión, con referenceType) */
-        referenceId?: string;
-        from?: string | null;
-        to?: string | null;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['StockMovementPageDto'];
-        };
-      };
-      /** @description Fechas inválidas */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  StockController_contraasentar: {
-    parameters: {
-      query?: never;
-      header: {
-        'idempotency-key': string;
-        /** @description UUID v4 de la operación. Obligatoria: sin ella responde 400 (un reintento duplicaría el movimiento). */
-        'Idempotency-Key': string;
-      };
-      path: {
-        /** @description Lote de la transferencia */
-        batchId: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['ReverseBatchDto'];
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['StockOperationResultDto'];
-        };
-      };
-      /** @description El lote no es una transferencia */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description El lote no existe en la distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Ya fue contraasentado, o las garrafas ya no están donde estaban */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  StockController_transferir: {
-    parameters: {
-      query?: never;
-      header: {
-        'idempotency-key': string;
-        /** @description UUID v4 de la operación. Obligatoria: sin ella responde 400 (un reintento duplicaría el movimiento). */
-        'Idempotency-Key': string;
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CreateTransferDto'];
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['StockOperationResultDto'];
-        };
-      };
-      /** @description Stock insuficiente en el origen, o ubicaciones inválidas */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Depósito, vehículo o garrafa inexistente o de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  StockController_conteoInicial: {
-    parameters: {
-      query?: never;
-      header: {
-        'idempotency-key': string;
-        /** @description UUID v4 de la operación. Obligatoria: sin ella responde 400 (un reintento duplicaría el movimiento). */
-        'Idempotency-Key': string;
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CreateInitialCountDto'];
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['StockAdjustmentResponseDto'];
-        };
-      };
-      /** @description Sin diferencias, o el vendible quedaría negativo (hay pedidos abiertos que reservan esas llenas) */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Depósito o garrafa inexistente */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description El depósito ya tiene su conteo inicial */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  StockController_ajustes: {
-    parameters: {
-      query?: {
-        limit?: number;
-        page?: number;
-        reason?:
-          'count_correction' | 'shrinkage' | 'leak' | 'damaged' | 'lost' | 'found' | 'initial_count' | 'reconciliation';
-        from?: string | null;
-        to?: string | null;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['StockAdjustmentPageDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  StockController_ajustar: {
-    parameters: {
-      query?: never;
-      header: {
-        'idempotency-key': string;
-        /** @description UUID v4 de la operación. Obligatoria: sin ella responde 400 (un reintento duplicaría el movimiento). */
-        'Idempotency-Key': string;
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CreateAdjustmentDto'];
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['StockAdjustmentResponseDto'];
-        };
-      };
-      /** @description Sin nota, signo inválido para el motivo, saldo o vendible negativo */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Ubicación o garrafa inexistente */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  StockController_ajuste: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Ajuste UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['StockAdjustmentResponseDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  StockController_umbrales: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['StockThresholdDto'][];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  StockController_configurarUmbrales: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['UpsertThresholdsDto'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['StockThresholdDto'][];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Depósito o garrafa inexistente */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  StockController_conciliar: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['StockReconciliationDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  StockController_reaplicar: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ReapplyDeliveriesResultDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  StockController_corregirVendible: {
-    parameters: {
-      query?: never;
-      header: {
-        'idempotency-key': string;
-        /** @description UUID v4 de la operación. Obligatoria: sin ella responde 400 (un reintento duplicaría el movimiento). */
-        'Idempotency-Key': string;
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CreateReconciliationAdjustmentDto'];
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['StockAdjustmentResponseDto'];
-        };
-      };
-      /** @description Sin diferencia, sin nota o sin `Idempotency-Key` */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La garrafa no existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La diferencia cambió */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  CatalogStockController_updateStock: {
-    parameters: {
-      query?: never;
-      header: {
-        'idempotency-key': string;
-        /** @description UUID v4 de la operación. Obligatoria: sin ella responde 400 (un reintento duplicaría el movimiento). */
-        'Idempotency-Key': string;
-      };
-      path: {
-        /** @description Gas cylinder UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['UpdateStockDto'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['GasCylinderResponseDto'];
-        };
-      };
-      /** @description El stock quedaría negativo: vendible, o llenas del depósito predeterminado (el mensaje indica dónde está el resto) */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
         headers: {
           [name: string]: unknown;
         };
@@ -41748,7 +44490,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: delivery */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -41788,7 +44530,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -41832,7 +44574,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el stock (`stock.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -41875,7 +44617,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -41932,7 +44674,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -41976,7 +44718,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el stock (`stock.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -42040,7 +44782,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin, delivery */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -42094,7 +44836,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el stock (`stock.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -42151,7 +44893,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin, delivery */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el stock (`stock.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -42216,7 +44958,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el stock (`stock.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -42284,7 +45026,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin, delivery */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el stock (`stock.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -42345,7 +45087,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el stock (`stock.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -42413,7 +45155,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el stock (`stock.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -42459,7 +45201,7 @@ export interface operations {
           'application/json': components['schemas']['PhotoLinkResponseDto'];
         };
       };
-      /** @description Redirección a la URL firmada (sin `modo`) */
+      /** @description Redirige a la URL firmada de la foto */
       302: {
         headers: {
           [name: string]: unknown;
@@ -42480,7 +45222,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin, delivery */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -42537,7 +45279,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el stock (`stock.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -42601,7 +45343,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el stock (`stock.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -42641,7 +45383,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los reclamos e incidencias (`reclamos.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -42685,7 +45427,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: customer, admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los reclamos e incidencias (`reclamos.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -42780,7 +45522,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los reclamos e incidencias (`reclamos.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -42834,7 +45576,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los reclamos e incidencias (`reclamos.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -42895,7 +45637,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los reclamos e incidencias (`reclamos.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -42945,7 +45687,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los reclamos e incidencias (`reclamos.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -42999,7 +45741,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los reclamos e incidencias (`reclamos.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -43046,7 +45788,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: customer, admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los reclamos e incidencias (`reclamos.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -43103,7 +45845,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: customer, admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los reclamos e incidencias (`reclamos.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -43174,7 +45916,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: customer, admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los reclamos e incidencias (`reclamos.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -43381,7 +46123,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la configuración (`configuracion.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -43465,7 +46207,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la configuración (`configuracion.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -43510,7 +46252,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los reportes (`reportes.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -43555,7 +46297,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los reportes (`reportes.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -43600,7 +46342,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los reportes (`reportes.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -43647,7 +46389,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los reportes (`reportes.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -43692,7 +46434,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los reportes (`reportes.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -43737,7 +46479,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los reportes (`reportes.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -43782,7 +46524,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los reportes (`reportes.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -43827,7 +46569,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los reportes (`reportes.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -43874,7 +46616,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los reportes (`reportes.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -43907,7 +46649,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los reportes (`reportes.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -43952,7 +46694,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: delivery */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los reportes (`reportes.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -43999,7 +46741,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: customer, admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los pedidos (`pedidos.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -44046,7 +46788,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: customer, admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los pedidos (`pedidos.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -44100,7 +46842,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin, delivery */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las finanzas (`finanzas.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -44147,7 +46889,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las finanzas (`finanzas.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -44194,7 +46936,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las finanzas (`finanzas.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -44247,7 +46989,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los reportes (`reportes.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -44688,6 +47430,13 @@ export interface operations {
         };
         content?: never;
       };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los reclamos e incidencias (`reclamos.ver`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
   };
   RatingController_findForUser: {
@@ -44724,7 +47473,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los reclamos e incidencias (`reclamos.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -44767,7 +47516,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los reclamos e incidencias (`reclamos.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -44821,7 +47570,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los reclamos e incidencias (`reclamos.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -44882,7 +47631,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los reclamos e incidencias (`reclamos.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -44929,7 +47678,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los reclamos e incidencias (`reclamos.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -44973,7 +47722,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: delivery, admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los reclamos e incidencias (`reclamos.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -45030,7 +47779,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: delivery, admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los reclamos e incidencias (`reclamos.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -45073,7 +47822,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los reclamos e incidencias (`reclamos.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -45127,7 +47876,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los reclamos e incidencias (`reclamos.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -45188,7 +47937,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los reclamos e incidencias (`reclamos.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -45234,6 +47983,13 @@ export interface operations {
           'application/json': components['schemas']['PhotoLinkResponseDto'];
         };
       };
+      /** @description Redirige a la URL firmada de la foto */
+      302: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description El modo no es válido */
       400: {
         headers: {
@@ -45248,7 +48004,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: delivery, admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los reclamos e incidencias (`reclamos.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -45305,7 +48061,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: delivery, admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los reclamos e incidencias (`reclamos.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -45369,7 +48125,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: delivery, admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los reclamos e incidencias (`reclamos.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -45497,7 +48253,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los pedidos (`pedidos.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -45603,6 +48359,13 @@ export interface operations {
           'application/json': components['schemas']['RecoveryCaseDetailDto'];
         };
       };
+      /** @description El identificador no es válido o super admin sin x-distributor ("falta la distribuidora: enviá el header x-distributor (slug o id)") */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Sin token o token inválido */
       401: {
         headers: {
@@ -45650,7 +48413,7 @@ export interface operations {
           'application/json': components['schemas']['RecoveryCaseDetailDto'];
         };
       };
-      /** @description Falta la nota o la decisión es inválida */
+      /** @description Falta la nota, la decisión o el identificador es inválido; también falta la distribuidora */
       400: {
         headers: {
           [name: string]: unknown;
@@ -45795,7 +48558,7 @@ export interface operations {
           'application/json': components['schemas']['ProcessConfigResponseDto'];
         };
       };
-      /** @description Valor fuera de rango */
+      /** @description Valor fuera de rango o super admin sin x-distributor ("falta la distribuidora: enviá el header x-distributor (slug o id)") */
       400: {
         headers: {
           [name: string]: unknown;
@@ -46218,7 +48981,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -46258,7 +49021,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -46302,7 +49065,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -46342,7 +49105,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -46392,7 +49155,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -46442,7 +49205,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -46711,7 +49474,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los reportes (`reportes.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -46754,7 +49517,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los reportes (`reportes.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -46811,7 +49574,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los reportes (`reportes.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -46856,7 +49619,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los reportes (`reportes.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -46900,7 +49663,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los reportes (`reportes.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -47163,7 +49926,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description No existe o es de otro cliente */
+      /** @description No existe o es de otro cliente, o la dirección elegida no pertenece al cliente */
       404: {
         headers: {
           [name: string]: unknown;
@@ -47281,7 +50044,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el personal (`personal.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -47351,7 +50114,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el personal (`personal.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -47398,7 +50161,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el personal (`personal.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -47581,1392 +50344,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  SupplierController_findAll: {
-    parameters: {
-      query?: {
-        limit?: number;
-        page?: number;
-        /** @description Texto a buscar */
-        term?: string;
-        kind?: 'filling_plant' | 'other';
-        /** @description true también trae los proveedores inactivos (default: sólo los activos) */
-        includeInactive?: boolean;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['SupplierPageDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  SupplierController_create: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CreateSupplierDto'];
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['SupplierResponseDto'];
-        };
-      };
-      /** @description Datos inválidos o CUIT mal formado */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Ya hay un proveedor vigente con ese CUIT */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  SupplierController_findOne: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Proveedor UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['SupplierResponseDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  SupplierController_remove: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Proveedor UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['MessageResponseDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Tiene órdenes de compra abiertas */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  SupplierController_update: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Proveedor UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['UpdateSupplierDto'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['SupplierResponseDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description El CUIT ya lo tiene otro proveedor vigente */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  SupplierController_historial: {
-    parameters: {
-      query?: {
-        limit?: number;
-        page?: number;
-        from?: string | null;
-        to?: string | null;
-      };
-      header?: never;
-      path: {
-        /** @description Proveedor UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['SupplierHistoryDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  SupplierPhotoController_ver: {
-    parameters: {
-      query?: {
-        /** @description `url` devuelve `{ url, expiresAt, requiresAuth }` en JSON (sin redirect: sirve para el panel y las apps, que no siguen un 302 cross-origin con el token). `archivo` devuelve el archivo (302 a la URL firmada de S3). */
-        modo?: components['schemas']['DownloadMode'];
-      };
-      header?: never;
-      path: {
-        /** @description Proveedor UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PhotoLinkResponseDto'];
-        };
-      };
-      /** @description El modo no es válido */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora; sin `modo`, también si no tiene foto */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  SupplierPhotoController_subir: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Proveedor UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'multipart/form-data': {
-          /** Format: binary */
-          file: string;
-        };
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PhotoCurrentResponseDto'];
-        };
-      };
-      /** @description Falta la foto o está vacía */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La foto supera los 5 MB */
-      413: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No es JPG, PNG ni WEBP (o el contenido no coincide) */
-      415: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  SupplierPhotoController_quitar: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Proveedor UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PhotoCurrentResponseDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  PurchaseOrderController_ordenes: {
-    parameters: {
-      query?: {
-        limit?: number;
-        page?: number;
-        status?: 'draft' | 'sent' | 'partially_received' | 'received' | 'closed_short' | 'cancelled';
-        supplierId?: string;
-        from?: string | null;
-        to?: string | null;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PurchaseOrderPageDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  PurchaseOrderController_create: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CreatePurchaseOrderDto'];
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PurchaseOrderResponseDto'];
-        };
-      };
-      /** @description Datos inválidos, proveedor inactivo o garrafa repetida */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Proveedor, depósito o garrafa inexistente */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  PurchaseOrderController_orden: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Orden de compra UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PurchaseOrderResponseDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  PurchaseOrderController_update: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Orden de compra UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['UpdatePurchaseOrderDto'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PurchaseOrderResponseDto'];
-        };
-      };
-      /** @description La orden ya no está en borrador, o datos inválidos */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  PurchaseOrderController_pendiente: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Orden de compra UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PurchaseOrderPendingDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  PurchaseOrderController_send: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Orden de compra UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PurchaseOrderResponseDto'];
-        };
-      };
-      /** @description La orden no está en borrador */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  PurchaseOrderController_cancel: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Orden de compra UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CancelPurchaseOrderDto'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PurchaseOrderResponseDto'];
-        };
-      };
-      /** @description Sin motivo, o la orden ya está cerrada */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La orden tiene recepciones confirmadas (aunque sean sólo de vacías) */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  PurchaseOrderController_closeShort: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Orden de compra UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CloseShortPurchaseOrderDto'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PurchaseOrderResponseDto'];
-        };
-      };
-      /** @description Sin motivo, o la orden no está parcialmente recibida */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  PurchaseReceiptController_recepciones: {
-    parameters: {
-      query?: {
-        limit?: number;
-        page?: number;
-        supplierId?: string;
-        purchaseOrderId?: string;
-        paymentStatus?: 'unpaid' | 'paid';
-        status?: 'confirmed' | 'voided';
-        from?: string | null;
-        to?: string | null;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PurchaseReceiptPageDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  PurchaseReceiptController_create: {
-    parameters: {
-      query?: never;
-      header: {
-        'idempotency-key': string;
-        /** @description UUID v4 de la operación. Obligatoria: sin ella responde 400 (un reintento duplicaría el movimiento). */
-        'Idempotency-Key': string;
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CreatePurchaseReceiptDto'];
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PurchaseReceiptResponseDto'];
-        };
-      };
-      /** @description Sin `Idempotency-Key`, orden no recibible, `warehouseId` distinto al depósito de la orden, la recepción se pasa de lo pendiente, fecha anterior al conteo inicial del depósito, no alcanzan las vacías o faltan datos */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Orden, proveedor, depósito o garrafa inexistente */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Ya hay una recepción de ese proveedor con ese documento */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  PurchaseReceiptController_costos: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['AverageCostDto'][];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  PurchaseReceiptController_recepcion: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Recepción UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PurchaseReceiptResponseDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  PurchaseReceiptController_void: {
-    parameters: {
-      query?: never;
-      header: {
-        'idempotency-key': string;
-        /** @description UUID v4 de la operación. Obligatoria: sin ella responde 400 (un reintento duplicaría el movimiento). */
-        'Idempotency-Key': string;
-      };
-      path: {
-        /** @description Recepción UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['VoidPurchaseReceiptDto'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PurchaseReceiptResponseDto'];
-        };
-      };
-      /** @description Sin motivo, sin `Idempotency-Key` o la recepción figura como pagada */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Ya está anulada, las llenas ya no están en el depósito donde entraron, o ese depósito fue dado de baja */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  PurchaseReceiptController_paymentStatus: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Recepción UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['UpdatePaymentStatusDto'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PurchaseReceiptResponseDto'];
-        };
-      };
-      /** @description La recepción está anulada, falta la caja de efectivo o la caja no es de efectivo */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora (también la caja) */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La caja no tiene una sesión abierta o no alcanza el saldo */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  PurchaseReceiptV2Controller_recepciones: {
-    parameters: {
-      query?: {
-        limit?: number;
-        page?: number;
-        supplierId?: string;
-        purchaseOrderId?: string;
-        paymentStatus?: 'unpaid' | 'paid';
-        status?: 'confirmed' | 'voided';
-        from?: string | null;
-        to?: string | null;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PurchaseReceiptV2PageDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  PurchaseReceiptV2Controller_recepcion: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Recepción UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PurchaseReceiptV2ResponseDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  PurchaseReceiptV2Controller_pay: {
-    parameters: {
-      query?: never;
-      header: {
-        'idempotency-key': string;
-        /** @description UUID v4 de la operación. Obligatoria: sin ella responde 400 (un reintento duplicaría el movimiento). */
-        'Idempotency-Key': string;
-      };
-      path: {
-        /** @description Recepción UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['PayFromCashBoxDto'];
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PurchaseReceiptV2ResponseDto'];
-        };
-      };
-      /** @description Sin `Idempotency-Key`, recepción anulada, `paidAt` futuro o caja que no admite el pago */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No existe o es de otra distribuidora (también la caja) */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Ya está pagada, o la caja no tiene una sesión abierta o no alcanza el saldo */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  PurchaseTotalV2Controller_previewTotal: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['PreviewPurchaseTotalDto'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PurchaseTotalPreviewDto'];
-        };
-      };
-      /** @description Renglón inválido o total por encima del máximo */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el personal (`personal.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -48999,7 +50377,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las finanzas (`finanzas.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -49043,7 +50421,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las finanzas (`finanzas.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -49093,7 +50471,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las finanzas (`finanzas.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -49137,7 +50515,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las finanzas (`finanzas.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -49180,7 +50558,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las finanzas (`finanzas.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -49227,7 +50605,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las finanzas (`finanzas.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -49271,7 +50649,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las finanzas (`finanzas.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -49328,7 +50706,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las finanzas (`finanzas.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -49382,7 +50760,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las finanzas (`finanzas.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -49439,7 +50817,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las finanzas (`finanzas.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -49488,7 +50866,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las finanzas (`finanzas.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -49535,7 +50913,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las finanzas (`finanzas.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -49586,7 +50964,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los reportes (`reportes.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -49637,7 +51015,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el personal (`personal.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -49683,7 +51061,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el catálogo y la cobertura (`catalogo.ver`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -49732,7 +51110,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el catálogo y la cobertura (`catalogo.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -49788,7 +51166,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el catálogo y la cobertura (`catalogo.gestionar`) */
       403: {
         headers: {
           [name: string]: unknown;
