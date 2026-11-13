@@ -67,9 +67,9 @@ describe('SearchDialog', () => {
     permissions.mockReturnValue({ isSuperAdmin: false, needsDistributor: false });
     search.mockReturnValue(EMPTY);
     renderDialog();
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'garrafas' } });
-    fireEvent.click(screen.getByRole('option', { name: /Garrafas/ }));
-    expect(screen.getByTestId('where')).toHaveTextContent('/cylinders');
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'zonas' } });
+    fireEvent.click(screen.getByRole('option', { name: /Zonas de cobertura/ }));
+    expect(screen.getByTestId('where')).toHaveTextContent('/coverage-zones');
   });
 
   it('sin resultados lo dice', () => {

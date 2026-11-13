@@ -31,7 +31,11 @@ describe('screenResults', () => {
   });
 
   it('también busca por el nombre de la sección', () => {
-    expect(screenResults('posventa', false).map((r) => r.to)).toEqual(['/claims', '/incidents']);
+    expect(screenResults('garrafas y envases', false).map((r) => r.to)).toEqual([
+      '/cylinders',
+      '/physical-cylinders',
+      '/physical-cylinders/recovery',
+    ]);
   });
 });
 
