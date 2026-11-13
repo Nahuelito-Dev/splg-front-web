@@ -25,7 +25,7 @@ export const useDispatchConfig = ({ enabled = true }: Options = {}) =>
 export const useUpdateDispatchConfig = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: DispatchConfigBody) => putDispatchConfig(body),
+    mutationFn: (body: Partial<DispatchConfigBody>) => putDispatchConfig(body),
     onSuccess: (saved) => {
       queryClient.setQueryData(keys.detail('dispatch'), saved);
     },

@@ -19,6 +19,7 @@ export const queryKeys = {
   attendance: resource('attendance'),
   audit: resource('audit'),
   cars: resource('cars'),
+  carDocuments: resource('carDocuments'),
   claims: resource('claims'),
   containerCharge: resource('containerCharge'),
   coverageZones: resource('coverageZones'),

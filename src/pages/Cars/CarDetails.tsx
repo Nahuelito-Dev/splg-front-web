@@ -38,6 +38,7 @@ import { CarFormModal } from './components/CarFormModal';
 import { CarSummary } from './components/CarSummary';
 import { carIcon } from './components/carIcon';
 import { CarNextWindowCard } from './components/CarNextWindowCard';
+import { CarScannedDocuments } from './components/CarScannedDocuments';
 import { CurrentDriverCard } from './components/CurrentDriverCard';
 
 const TABS: ProfileTabItem[] = [
@@ -215,6 +216,11 @@ export const CarDetails = () => {
               canWrite={canWrite}
               writeHint={writeHint}
             />
+            {!needsDistributor && tab === 'documents' && (
+              <div className="mt-6">
+                <CarScannedDocuments carId={car.car_id} canWrite={canWrite} writeHint={writeHint} />
+              </div>
+            )}
           </ProfileTabPanel>
           <ProfileTabPanel tabKey="history" value={tab}>
             {needsDistributor ? (

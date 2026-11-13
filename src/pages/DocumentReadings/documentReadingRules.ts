@@ -13,6 +13,7 @@ export const DOCUMENT_TYPE_LABEL: Record<DocumentType, string> = {
   cedula_del_vehiculo: 'Cédula del vehículo',
   licencia_de_conducir: 'Licencia de conducir',
   apto_medico: 'Apto médico',
+  foto_de_patente: 'Foto de patente',
   otro: 'Otro',
 };
 
@@ -120,6 +121,7 @@ export const FIELDS_BY_TYPE: Record<DocumentType, string[]> = {
   cedula_del_vehiculo: ['patente', 'titular', 'marca', 'modelo', 'anio', 'vencimiento'],
   licencia_de_conducir: ['titular', 'documento', 'categoria', 'vencimiento'],
   apto_medico: ['titular', 'documento', 'fecha', 'vencimiento', 'resultado'],
+  foto_de_patente: ['patente'],
   otro: [],
 };
 

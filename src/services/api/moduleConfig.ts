@@ -16,7 +16,8 @@ export const getDispatchConfig = async (): Promise<DispatchConfig> => {
 };
 
 /** PUT /module-config/dispatch: los campos que no se envían toman el valor por omisión (`{}` restablece todo). */
-export const putDispatchConfig = async (body: DispatchConfigBody): Promise<DispatchConfig> => {
+/** El PUT es parcial: lo que no se manda vuelve a su valor por omisión (el esquema marca obligatorio lo que tiene `default`). */
+export const putDispatchConfig = async (body: Partial<DispatchConfigBody>): Promise<DispatchConfig> => {
   const { data } = await http.put<DispatchConfig>('/module-config/dispatch', body);
   return data;
 };
