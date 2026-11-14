@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { failed, loading, mutation, ok, renderPage } from '../../test/pageTest';
 
@@ -47,6 +47,22 @@ describe('Warehouses', () => {
     expect(screen.getByRole('heading', { name: 'Galpones' })).toBeInTheDocument();
     expect(screen.getByText('Galpón Central')).toBeInTheDocument();
     expect(screen.getByText('GC-01')).toBeInTheDocument();
+  });
+
+  it('dice qué galpón está ubicado y cuál no', () => {
+    state.list.mockReturnValue(
+      ok([
+        { ...GALPON, latitude: -27.3671, longitude: -55.8961 },
+        { ...GALPON, warehouseId: 'w-2', name: 'Galpón Sur', code: 'GS-01', latitude: null, longitude: null },
+      ]),
+    );
+    state.update.mockReturnValue(mutation());
+    state.remove.mockReturnValue(mutation());
+    renderPage(<Warehouses />);
+    const card = (name: string) => within(screen.getByText(name).closest('li') as HTMLElement);
+    expect(card('Galpón Central').getByText('Ubicado')).toBeInTheDocument();
+    expect(card('Galpón Central').queryByText('Sin ubicar')).not.toBeInTheDocument();
+    expect(card('Galpón Sur').getByText('Sin ubicar')).toBeInTheDocument();
   });
 
   it('sin galpones muestra el vacío y no una tabla', () => {

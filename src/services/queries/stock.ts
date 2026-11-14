@@ -31,7 +31,7 @@ import type {
   CreateInitialCountBody,
   CreateReconciliationAdjustmentBody,
   CreateTransferBody,
-  CreateWarehouseBody,
+  CreateWarehouseV2Body,
   ReverseBatchBody,
   UpsertThresholdsBody,
 } from '../api/types';
@@ -77,7 +77,7 @@ export const useWarehouse = (id: string | undefined, { enabled = true }: Options
 export const useCreateWarehouse = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: CreateWarehouseBody) => createWarehouse(body),
+    mutationFn: (body: CreateWarehouseV2Body) => createWarehouse(body),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.warehouses.all }),
   });
 };

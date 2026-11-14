@@ -17661,6 +17661,213 @@
                 ]
             }
         },
+        "/api/v2/warehouses": {
+            "get": {
+                "operationId": "WarehouseController_findAllV2",
+                "parameters": [
+                    {
+                        "name": "includeInactive",
+                        "required": false,
+                        "in": "query",
+                        "description": "true incluye los depósitos inactivos (default: sólo los activos)",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/WarehouseV2ResponseDto"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Filtros inválidos o falta la distribuidora"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Listar los depósitos de la distribuidora, con su ubicación",
+                "tags": [
+                    "Stock · Depósitos"
+                ]
+            },
+            "post": {
+                "description": "La ubicación (`latitude` y `longitude`, juntas o ninguna) es el punto de salida de las hojas de ruta: sin ella la hoja avisa `no_warehouse` y sale del centro de las paradas. No se geocodifica la dirección.",
+                "operationId": "WarehouseController_createV2",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateWarehouseV2Dto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WarehouseV2ResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Datos inválidos: latitud o longitud fuera de rango, una sola de las dos, o falta la distribuidora"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el stock (`stock.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`)"
+                    },
+                    "409": {
+                        "description": "Ya hay un depósito vigente con ese código"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Crear un depósito, con su ubicación",
+                "tags": [
+                    "Stock · Depósitos"
+                ]
+            }
+        },
+        "/api/v2/warehouses/{id}": {
+            "get": {
+                "operationId": "WarehouseController_findOneV2",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Depósito UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WarehouseV2DetailDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "El identificador no es válido o falta la distribuidora"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`)"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ver un depósito con su ubicación y sus saldos",
+                "tags": [
+                    "Stock · Depósitos"
+                ]
+            },
+            "patch": {
+                "description": "La ubicación (`latitude` y `longitude`, juntas o ninguna) es el punto de salida de las hojas de ruta: sin ella la hoja avisa `no_warehouse` y sale del centro de las paradas. No se geocodifica la dirección. Las dos en null borran la ubicación; si no vienen, no se toca.",
+                "operationId": "WarehouseController_updateV2",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Depósito UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateWarehouseV2Dto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WarehouseV2ResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Datos o identificador inválidos (latitud o longitud fuera de rango, una sola de las dos), o falta la distribuidora"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el stock (`stock.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`)"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "Código repetido, o se intenta sacar la marca / desactivar el predeterminado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Editar un depósito (también su ubicación) o cambiar el predeterminado",
+                "tags": [
+                    "Stock · Depósitos"
+                ]
+            }
+        },
         "/api/v1/stock": {
             "get": {
                 "operationId": "StockController_saldos",
@@ -51425,6 +51632,260 @@
                     "isActive": {
                         "type": "boolean",
                         "description": "false lo deja fuera de las listas de operación; no se puede con el predeterminado"
+                    }
+                }
+            },
+            "WarehouseV2ResponseDto": {
+                "type": "object",
+                "properties": {
+                    "warehouseId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "locationId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Ubicación de stock del depósito"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "code": {
+                        "type": "string"
+                    },
+                    "kind": {
+                        "type": "string",
+                        "enum": [
+                            "depot",
+                            "branch"
+                        ]
+                    },
+                    "address": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "isDefault": {
+                        "type": "boolean"
+                    },
+                    "isActive": {
+                        "type": "boolean"
+                    },
+                    "createdAt": {
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "updatedAt": {
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "latitude": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": -27.3671,
+                        "description": "Latitud del depósito; null si no está ubicado (la hoja de ruta avisa `no_warehouse`)"
+                    },
+                    "longitude": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": -55.8961,
+                        "description": "Longitud del depósito; null si no está ubicado"
+                    }
+                },
+                "required": [
+                    "warehouseId",
+                    "locationId",
+                    "name",
+                    "code",
+                    "kind",
+                    "address",
+                    "isDefault",
+                    "isActive",
+                    "createdAt",
+                    "updatedAt",
+                    "latitude",
+                    "longitude"
+                ]
+            },
+            "CreateWarehouseV2Dto": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "example": "Depósito central",
+                        "maxLength": 80
+                    },
+                    "code": {
+                        "type": "string",
+                        "example": "CENTRAL",
+                        "description": "Código corto, único entre los depósitos vigentes. Se guarda en mayúsculas.",
+                        "maxLength": 12
+                    },
+                    "kind": {
+                        "type": "string",
+                        "enum": [
+                            "depot",
+                            "branch"
+                        ],
+                        "default": "depot"
+                    },
+                    "address": {
+                        "type": "string",
+                        "example": "Av. Siempreviva 742"
+                    },
+                    "isDefault": {
+                        "type": "boolean",
+                        "description": "Lo deja como predeterminado (el que usa la entrega cuando el camión no tiene stock). El primero que se crea lo es siempre."
+                    },
+                    "latitude": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": -27.3671,
+                        "minimum": -90,
+                        "maximum": 90,
+                        "description": "Latitud del depósito (WGS 84). Va junto con `longitude`; en la edición, las dos en null borran la ubicación."
+                    },
+                    "longitude": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": -55.8961,
+                        "minimum": -180,
+                        "maximum": 180,
+                        "description": "Longitud del depósito (WGS 84). Va junto con `latitude`; en la edición, las dos en null borran la ubicación."
+                    }
+                },
+                "required": [
+                    "name",
+                    "code"
+                ]
+            },
+            "WarehouseV2DetailDto": {
+                "type": "object",
+                "properties": {
+                    "warehouseId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "locationId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Ubicación de stock del depósito"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "code": {
+                        "type": "string"
+                    },
+                    "kind": {
+                        "type": "string",
+                        "enum": [
+                            "depot",
+                            "branch"
+                        ]
+                    },
+                    "address": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "isDefault": {
+                        "type": "boolean"
+                    },
+                    "isActive": {
+                        "type": "boolean"
+                    },
+                    "createdAt": {
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "updatedAt": {
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "latitude": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": -27.3671,
+                        "description": "Latitud del depósito; null si no está ubicado (la hoja de ruta avisa `no_warehouse`)"
+                    },
+                    "longitude": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": -55.8961,
+                        "description": "Longitud del depósito; null si no está ubicado"
+                    },
+                    "balances": {
+                        "description": "Saldos del depósito (sólo los positivos)",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/StockBalanceDto"
+                        }
+                    }
+                },
+                "required": [
+                    "warehouseId",
+                    "locationId",
+                    "name",
+                    "code",
+                    "kind",
+                    "address",
+                    "isDefault",
+                    "isActive",
+                    "createdAt",
+                    "updatedAt",
+                    "latitude",
+                    "longitude",
+                    "balances"
+                ]
+            },
+            "UpdateWarehouseV2Dto": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "example": "Depósito central",
+                        "maxLength": 80
+                    },
+                    "code": {
+                        "type": "string",
+                        "example": "CENTRAL",
+                        "description": "Código corto, único entre los depósitos vigentes. Se guarda en mayúsculas.",
+                        "maxLength": 12
+                    },
+                    "address": {
+                        "type": "string",
+                        "example": "Av. Siempreviva 742"
+                    },
+                    "isDefault": {
+                        "type": "boolean",
+                        "description": "Lo deja como predeterminado (el que usa la entrega cuando el camión no tiene stock). El primero que se crea lo es siempre."
+                    },
+                    "kind": {
+                        "type": "string",
+                        "enum": [
+                            "depot",
+                            "branch"
+                        ],
+                        "description": "Sólo cambia si se envía; si falta, conserva el tipo actual"
+                    },
+                    "isActive": {
+                        "type": "boolean",
+                        "description": "false lo deja fuera de las listas de operación; no se puede con el predeterminado"
+                    },
+                    "latitude": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": -27.3671,
+                        "minimum": -90,
+                        "maximum": 90,
+                        "description": "Latitud del depósito (WGS 84). Va junto con `longitude`; en la edición, las dos en null borran la ubicación."
+                    },
+                    "longitude": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": -55.8961,
+                        "minimum": -180,
+                        "maximum": 180,
+                        "description": "Longitud del depósito (WGS 84). Va junto con `latitude`; en la edición, las dos en null borran la ubicación."
                     }
                 }
             },

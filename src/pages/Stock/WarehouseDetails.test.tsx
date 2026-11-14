@@ -47,6 +47,17 @@ afterEach(() => {
 });
 
 describe('WarehouseDetails', () => {
+  it('muestra la ubicación del galpón o que está sin ubicar', () => {
+    state.warehouse.mockReturnValue(ok({ ...GALPON, latitude: -27.3671, longitude: -55.8961 }));
+    state.count.mockReturnValue(ok(COUNT));
+    draw();
+    expect(screen.getByText('-27.367100, -55.896100')).toBeInTheDocument();
+    cleanup();
+    state.warehouse.mockReturnValue(ok({ ...GALPON, latitude: null, longitude: null }));
+    draw();
+    expect(screen.getByText(/^Sin ubicar/)).toBeInTheDocument();
+  });
+
   it('con el conteo inicial hecho lo enlaza y no ofrece hacerlo de nuevo', () => {
     state.warehouse.mockReturnValue(ok(GALPON));
     state.count.mockReturnValue(ok(COUNT));
