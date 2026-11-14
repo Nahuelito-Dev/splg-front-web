@@ -12,12 +12,15 @@ export interface ProcessRunFilters {
 }
 
 export interface ProcessRunsParams extends ProcessRunFilters {
+  /** Sólo las corridas de esa empresa. */
+  distributorId?: string;
   limit: number;
   offset: number;
 }
 
 /** Los días del filtro son argentinos: el back recibe instantes ISO 8601. */
-export const processRunsQuery = ({ from, to, process, status, limit, offset }: ProcessRunsParams) => ({
+export const processRunsQuery = ({ from, to, process, status, distributorId, limit, offset }: ProcessRunsParams) => ({
+  distributorId: distributorId || undefined,
   process: process || undefined,
   status: status || undefined,
   from: from ? `${from}T00:00:00-03:00` : undefined,
@@ -26,13 +29,19 @@ export const processRunsQuery = ({ from, to, process, status, limit, offset }: P
   offset,
 });
 
-/** GET /v2/process-runs/summary: la última corrida de cada proceso automático con su salud. */
-export const getProcessSummary = async (): Promise<ProcessSummary> => {
-  const { data } = await http.get<ProcessSummary>('/process-runs/summary', { baseURL: env.apiUrlV2 });
+/**
+ * GET /v2/process-runs/summary (sólo plataforma): la última corrida de cada proceso automático con su salud, por
+ * empresa y las globales; con `distributorId`, sólo los de esa empresa.
+ */
+export const getProcessSummary = async (distributorId?: string): Promise<ProcessSummary> => {
+  const { data } = await http.get<ProcessSummary>('/process-runs/summary', {
+    baseURL: env.apiUrlV2,
+    params: { distributorId: distributorId || undefined },
+  });
   return data;
 };
 
-/** GET /v2/process-runs: el historial de corridas, las más nuevas primero. */
+/** GET /v2/process-runs (sólo plataforma): el historial de corridas, las más nuevas primero. */
 export const listProcessRuns = async (params: ProcessRunsParams): Promise<ProcessRunList> => {
   const { data } = await http.get<ProcessRunList>('/process-runs', {
     baseURL: env.apiUrlV2,

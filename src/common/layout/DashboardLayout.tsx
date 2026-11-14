@@ -3,6 +3,7 @@ import { CrumbProvider, Navbar, SideMenu } from '../components';
 import { NAV_MINI_KEY, useStoredFlag } from '../../hooks';
 import { cx } from '../components/ui/cx';
 import { CompanySupportStrip } from '../support/CompanySupportStrip';
+import { OwnedCompanyBanner } from '../support/OwnedCompanyBanner';
 import { SupportBanner } from '../support/SupportBanner';
 
 interface Props {
@@ -33,6 +34,7 @@ export const DashboardLayout = ({ children }: Props) => {
           {/* La banda del modo soporte queda pegada arriba junto con la barra: se ve en todas las pantallas. */}
           <div className="sticky top-0 z-20">
             <SupportBanner />
+            <OwnedCompanyBanner />
             <Navbar onOpenMenu={() => setMobileNavOpen(true)} />
           </div>
           <CompanySupportStrip />

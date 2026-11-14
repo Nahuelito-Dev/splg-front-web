@@ -39,12 +39,17 @@ const ROLE_TABS: { id: UserRoleTab; label: string }[] = [
 
 const TABS_ID = 'users';
 
+/** Lo que la plataforma (fuera de una empresa) ya no administra: clientes y choferes son de cada empresa. */
+const COMPANY_ONLY_TABS: ReadonlySet<UserRoleTab> = new Set(['delivery', 'customer']);
+
 export const Users = () => {
   const navigate = useNavigate();
   const { canManageCustomerAccounts, isSuperAdmin, needsDistributor, readOnly } = usePermissions();
   // El rol y la búsqueda viven en la URL: al volver de una ficha o recargar, la lista queda como estaba.
   const [{ role: roleParam, q: search, page: pageParam }, setFilters] = useUrlParams({ role: 'all', q: '', page: '1' });
-  const visibleTabs = ROLE_TABS.filter((tab) => tab.id !== 'super_admin' || isSuperAdmin);
+  const visibleTabs = ROLE_TABS.filter((tab) =>
+    isSuperAdmin ? !COMPANY_ONLY_TABS.has(tab.id) : tab.id !== 'super_admin',
+  );
   const role: UserRoleTab = visibleTabs.find((tab) => tab.id === roleParam)?.id ?? 'all';
   const debouncedSearch = useDebounce(search.trim());
   const pagination: GridPaginationModel = { page: Math.max(0, Number(pageParam) - 1 || 0), pageSize: 10 };
@@ -112,11 +117,18 @@ export const Users = () => {
     <PageContainer>
       <PageHeader
         title="Usuarios"
-        description="Todos los usuarios de la plataforma: clientes, choferes y administradores."
+        description={
+          isSuperAdmin
+            ? 'Las cuentas de la plataforma y los administradores de cada empresa.'
+            : 'Los usuarios de la empresa: clientes, choferes y administradores.'
+        }
         actions={
-          <Button variant="secondary" icon={<SearchCheck />} onClick={() => setFindingByPhone(true)}>
-            Buscar por teléfono
-          </Button>
+          // Ubicar una cuenta por teléfono es para clientes y choferes: es de empresa, no de la plataforma.
+          !isSuperAdmin && (
+            <Button variant="secondary" icon={<SearchCheck />} onClick={() => setFindingByPhone(true)}>
+              Buscar por teléfono
+            </Button>
+          )
         }
       />
 

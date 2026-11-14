@@ -91,13 +91,26 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     title: 'Operación',
     items: [
-      { title: 'Tablero', path: '/home', icon: House, scope: 'both' },
+      { title: 'Tablero', path: '/home', icon: House },
       { title: 'Pedidos', path: '/orders', icon: ReceiptText, showPendingOrders: true },
       { title: 'Tablero de despacho', path: '/orders/dispatch', icon: Columns3 },
       { title: 'Seguimiento en vivo', path: '/tracking', icon: Navigation },
       { title: 'Recorridos', path: '/route-batches', icon: RouteIcon },
       { title: 'Hojas de ruta', path: '/route-sheets', icon: Waypoints, permission: 'despacho.gestionar' },
       { title: 'Reservas', path: '/reservations', icon: CalendarDays },
+    ],
+  },
+  {
+    // El menú del administrador general fuera del modo soporte (§3.4 del diseño de la plataforma), en ese orden.
+    title: 'Plataforma',
+    items: [
+      { title: 'Tablero', path: '/home', icon: House, scope: 'platform' },
+      { title: 'Distribuidoras', path: '/distributors', icon: Building2, scope: 'platform' },
+      { title: 'Monitoreo', path: '/platform/monitoring', icon: Activity, scope: 'platform' },
+      { title: 'Tareas programadas', path: '/platform/scheduled-tasks', icon: Timer, scope: 'platform' },
+      { title: 'Uso y costo de servicios', path: '/platform/service-usage', icon: ScanText, scope: 'platform' },
+      { title: 'Auditoría de plataforma', path: '/platform/activity', icon: FileClock, scope: 'platform' },
+      { title: 'Sistema', path: '/system', icon: ServerCog, scope: 'platform' },
     ],
   },
   {
@@ -191,7 +204,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { title: 'Notificaciones', path: '/notifications', icon: Bell, scope: 'both' },
       { title: 'Usuarios', path: '/users', icon: UserRound, scope: 'both' },
       { title: 'Administradores', path: '/admins', icon: ShieldCheck, scope: 'both' },
-      { title: 'Auditoría', path: '/audit', icon: FileClock, scope: 'both' },
+      { title: 'Auditoría', path: '/audit', icon: FileClock },
       {
         title: 'Accesos de soporte',
         path: '/support-access',
@@ -199,8 +212,6 @@ export const NAV_SECTIONS: NavSection[] = [
         permission: 'soporte.ver',
         companyAdminOnly: true,
       },
-      { title: 'Distribuidoras', path: '/distributors', icon: Building2, scope: 'platform' },
-      { title: 'Sistema', path: '/system', icon: ServerCog, scope: 'platform' },
     ],
   },
   {
@@ -212,7 +223,6 @@ export const NAV_SECTIONS: NavSection[] = [
       { title: 'Compra express', path: '/settings/express', icon: Zap },
       { title: 'Procesos automáticos', path: '/settings/automatic-processes', icon: Bot },
       { title: 'Tareas programadas', path: '/settings/scheduled-tasks', icon: Timer },
-      { title: 'Monitoreo de procesos', path: '/settings/process-monitor', icon: Activity, scope: 'both' },
     ],
   },
 ];

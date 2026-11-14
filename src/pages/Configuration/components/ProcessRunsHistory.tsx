@@ -10,6 +10,8 @@ import { ProcessRunsTable } from './ProcessRunsTable';
 interface Props {
   /** Los procesos conocidos (del tablero), para el filtro y los chips. */
   processes: Pick<ProcessSummaryItem, 'process' | 'title'>[];
+  /** Sólo las corridas de esa empresa; sin ella, las de todas. */
+  distributorId?: string;
 }
 
 const STATUS_OPTIONS = [
@@ -21,10 +23,11 @@ const STATUS_OPTIONS = [
 ];
 
 /** El historial de corridas con filtros por proceso, resultado y fechas (paginado contra la API). */
-export const ProcessRunsHistory = ({ processes }: Props) => {
+export const ProcessRunsHistory = ({ processes, distributorId }: Props) => {
   const [filters, setFilters] = useState<ProcessRunFiltersState>(EMPTY_PROCESS_RUN_FILTERS);
   const [pagination, setPagination] = useState<GridPaginationModel>({ page: 0, pageSize: 25 });
   const { data, isFetching, error, refetch } = useProcessRuns({
+    distributorId: distributorId || undefined,
     process: filters.process || undefined,
     status: filters.status || undefined,
     from: filters.from || undefined,

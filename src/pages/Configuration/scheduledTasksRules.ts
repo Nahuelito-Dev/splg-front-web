@@ -1,7 +1,12 @@
 import { z } from 'zod';
-import type { ScheduledTasksConfigBody } from '../../services/api/types';
+import type {
+  EmpresaScheduledTasksBody,
+  PlatformScheduledTasksBody,
+  ScheduledTasksConfig,
+} from '../../services/api/types';
 
-export type IntervalField = Exclude<keyof ScheduledTasksConfigBody, 'fleetAlertHour'>;
+/** Las cuatro frecuencias: las fija la plataforma (la empresa sólo las ve). */
+export type IntervalField = keyof PlatformScheduledTasksBody;
 
 export const MAX_INTERVAL_SECONDS = 86400;
 export const FLEET_ALERT_HOUR_MAX = 23;
@@ -97,16 +102,15 @@ export const draftFromSeconds = (seconds: number): IntervalDraft => {
 
 export type IntervalDrafts = Record<IntervalField, IntervalDraft>;
 
-/** Lo que tipea la persona en el formulario de tareas. */
-export interface ScheduledTasksFormValues {
+/** Lo que tipea el administrador general en las frecuencias de una empresa. */
+export interface IntervalsFormValues {
   intervals: IntervalDrafts;
-  hour: string;
 }
 
 const draftSchema = z.object({ amount: z.string(), unit: z.enum(['seconds', 'minutes', 'hours']) });
 
-/** El esquema del formulario: tic, tope y hora, con el mensaje en el campo que corresponde. */
-export const scheduledTasksSchema = z
+/** Las frecuencias (plataforma): tic y tope, con el mensaje en el campo que corresponde. */
+export const intervalsSchema = z
   .object({
     intervals: z.object({
       dispatchRetrySeconds: draftSchema,
@@ -114,30 +118,44 @@ export const scheduledTasksSchema = z
       unpaidReservationExpirySeconds: draftSchema,
       unpaidMercadoPagoExpirySeconds: draftSchema,
     }),
-    hour: z.string(),
   })
   .superRefine((values, ctx) => {
     for (const task of TASKS) {
       const message = validateInterval(toSeconds(values.intervals[task.field]), task.tickSeconds, task.maxSeconds);
       if (message) ctx.addIssue({ code: 'custom', message, path: ['intervals', task.field, 'amount'] });
     }
-    const hour = values.hour.trim() === '' ? Number.NaN : Number(values.hour);
-    const hourMessage = validateFleetAlertHour(hour);
-    if (hourMessage) ctx.addIssue({ code: 'custom', message: hourMessage, path: ['hour'] });
   });
 
-export const toScheduledTasksValues = (config: Required<ScheduledTasksConfigBody>): ScheduledTasksFormValues => ({
+export const toIntervalsValues = (config: Pick<ScheduledTasksConfig, IntervalField>): IntervalsFormValues => ({
   intervals: Object.fromEntries(
     TASKS.map((task) => [task.field, draftFromSeconds(config[task.field])]),
   ) as IntervalDrafts,
-  hour: String(config.fleetAlertHour),
 });
 
-/** El cuerpo del PUT con todos los campos (sólo llamar si no hay errores). */
-export const toScheduledTasksBody = ({ intervals, hour }: ScheduledTasksFormValues): ScheduledTasksConfigBody => ({
+/** El cuerpo del PUT de la plataforma con las cuatro frecuencias (sólo llamar si no hay errores). */
+export const toIntervalsBody = ({ intervals }: IntervalsFormValues): Required<PlatformScheduledTasksBody> => ({
   dispatchRetrySeconds: toSeconds(intervals.dispatchRetrySeconds),
   reservationActivationSeconds: toSeconds(intervals.reservationActivationSeconds),
   unpaidReservationExpirySeconds: toSeconds(intervals.unpaidReservationExpirySeconds),
   unpaidMercadoPagoExpirySeconds: toSeconds(intervals.unpaidMercadoPagoExpirySeconds),
+});
+
+/** Lo que tipea el admin de la empresa: sólo la hora del aviso de flota. */
+export interface FleetAlertHourFormValues {
+  hour: string;
+}
+
+export const fleetAlertHourSchema = z.object({ hour: z.string() }).superRefine((values, ctx) => {
+  const hour = values.hour.trim() === '' ? Number.NaN : Number(values.hour);
+  const message = validateFleetAlertHour(hour);
+  if (message) ctx.addIssue({ code: 'custom', message, path: ['hour'] });
+});
+
+export const toFleetAlertHourValues = (config: Pick<ScheduledTasksConfig, 'fleetAlertHour'>) => ({
+  hour: String(config.fleetAlertHour),
+});
+
+/** El cuerpo del PUT v2 de la empresa: sólo la hora (las frecuencias las conserva el back). */
+export const toFleetAlertHourBody = ({ hour }: FleetAlertHourFormValues): Required<EmpresaScheduledTasksBody> => ({
   fleetAlertHour: Number(hour),
 });

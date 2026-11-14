@@ -4,7 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const state = vi.hoisted(() => ({
   role: 'super_admin' as string | null,
   active: null as { id: string; scope: string[] } | null,
+  owned: null as { id: string; slug: string; name: string } | null,
 }));
+vi.mock('./useOwnedCompany', () => ({ useOwnedCompany: () => state.owned }));
 vi.mock('./reduxHooks', () => ({
   useAppSelector: (pick: (s: { auth: { role: string | null } }) => unknown) => pick({ auth: { role: state.role } }),
 }));
@@ -24,6 +26,7 @@ import {
 beforeEach(() => {
   state.role = 'super_admin';
   state.active = null;
+  state.owned = null;
 });
 
 describe('usePermissions', () => {
@@ -36,7 +39,41 @@ describe('usePermissions', () => {
       canWrite: false,
       writeHint: OPERATE_HINT,
       readOnly: false,
+      // La plataforma fuera de una empresa ya no administra cuentas de clientes.
+      canManageCustomerAccounts: false,
     });
+  });
+
+  it('administrador general en la empresa propia: como su admin, escribe y sin atajos de plataforma', () => {
+    state.owned = { id: 'c-own', slug: 'prueba-orixtech', name: 'Prueba' };
+    const { result } = renderHook(() => usePermissions());
+    expect(result.current).toMatchObject({
+      mode: 'owned',
+      isSuperAdmin: false,
+      isSuperAdminRole: true,
+      needsDistributor: false,
+      readOnly: false,
+      canWrite: true,
+      writeHint: undefined,
+      canOperate: true,
+      canSeeFiles: true,
+      canExport: true,
+      canManageCustomerAccounts: false,
+    });
+  });
+
+  it('con una sesión de soporte activa manda el soporte aunque haya empresa propia elegida', () => {
+    state.owned = { id: 'c-own', slug: 'prueba-orixtech', name: 'Prueba' };
+    state.active = { id: 's-1', scope: [] };
+    const { result } = renderHook(() => usePermissions());
+    expect(result.current).toMatchObject({ mode: 'support', readOnly: true });
+  });
+
+  it('un admin de empresa nunca está en modo empresa propia', () => {
+    state.role = 'admin';
+    state.owned = { id: 'c-own', slug: 'prueba-orixtech', name: 'Prueba' };
+    const { result } = renderHook(() => usePermissions());
+    expect(result.current.mode).toBe('company');
   });
 
   it('administrador general en modo soporte: como el admin de la empresa, en sólo lectura con aviso', () => {

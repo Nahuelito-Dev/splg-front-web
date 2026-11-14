@@ -8,7 +8,7 @@ const permissions = vi.hoisted(() => ({ isSuperAdmin: true }));
 
 vi.mock('../../hooks', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
-  usePermissions: () => ({ canManageCustomerAccounts: true, isSuperAdmin: permissions.isSuperAdmin }),
+  usePermissions: () => ({ canManageCustomerAccounts: false, isSuperAdmin: permissions.isSuperAdmin }),
 }));
 vi.mock('../../services/queries/users', () => ({
   useUsersByRole: (tab: string) => byRole(tab) as unknown,
@@ -36,7 +36,8 @@ const user = (id: string, name: string): User =>
 const Search = () => <output data-testid="search">{useLocation().search}</output>;
 
 describe('Users: pestañas por rol', () => {
-  it('muestra la cantidad de cada rol y pide la lista del rol elegido', () => {
+  it('en una empresa muestra la cantidad de cada rol y pide la lista del rol elegido', () => {
+    permissions.isSuperAdmin = false;
     byRole.mockReturnValue({
       data: { rows: [user('u1', 'Ana Pérez')], total: 25 },
       isLoading: false,
@@ -52,13 +53,28 @@ describe('Users: pestañas por rol', () => {
     expect(screen.getByRole('tab', { name: 'Clientes 24' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Choferes 5' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Administradores 1' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Super administradores 1' })).toBeInTheDocument();
     expect(byRole).toHaveBeenLastCalledWith('all');
 
     fireEvent.click(screen.getByRole('tab', { name: 'Choferes 5' }));
     expect(byRole).toHaveBeenLastCalledWith('delivery');
     expect(screen.getByTestId('search')).toHaveTextContent('?role=delivery');
     expect(screen.getByRole('group', { name: 'Filtros activos' })).toHaveTextContent('Choferes');
+    permissions.isSuperAdmin = true;
+  });
+
+  it('en la plataforma no hay clientes ni choferes: ni pestañas, ni rol en la URL, ni buscar por teléfono', () => {
+    byRole.mockReturnValue({ data: { rows: [], total: 0 }, isLoading: false, isFetching: false });
+    render(
+      <MemoryRouter initialEntries={['/users?role=customer']}>
+        <Users />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole('tab', { name: 'Super administradores 1' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Administradores 1' })).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /Clientes/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /Choferes/ })).not.toBeInTheDocument();
+    expect(byRole).toHaveBeenLastCalledWith('all');
+    expect(screen.queryByRole('button', { name: 'Buscar por teléfono' })).not.toBeInTheDocument();
   });
 
   it('la pestaña Super administradores es sólo del super admin', () => {

@@ -1,36 +1,89 @@
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Ban, CircleCheck, Pencil, Trash2 } from 'lucide-react';
+import { Ban, Building2, CircleCheck, LogIn, Pencil, Trash2 } from 'lucide-react';
 import {
   AuditHistoryLink,
   Badge,
+  Button,
   Card,
-  DetailList,
-  DetailSkeleton,
   EmptyState,
-  EntityPhoto,
   ErrorState,
-  PageHeader,
+  LoadingState,
   PageContainer,
+  PageHeader,
+  Tabs,
+  tabPanelProps,
   type MenuAction,
 } from '../../common/components/ui';
-import { useBackToList, usePermissions } from '../../hooks';
+import { useBackToList, usePermissions, useProfileTab, useUrlParams } from '../../hooks';
 import { useCrumbLeaf } from '../../common/components';
 import { RequestSupportButton } from '../../common/support/RequestSupportButton';
-import { useDistributor } from '../../services/queries/distributors';
-import { formatDateTime } from '../../utils/format';
+import { errorMessage } from '../../services/api/errors';
+import type { CompanyProfile } from '../../services/api/types';
+import { usePlatformCompany, useSetCompanyOwnedByPlatform } from '../../services/queries/platformConsole';
+import { confirm, notify } from '../../utils/notifications';
 import { DISTRIBUTOR_STATUS, labelOf } from '../../utils/statusLabels';
-import { DistributorAdmins } from './components/DistributorAdmins';
+import { OwnedBadge } from '../Platform/components/OwnedBadge';
+import { CompanyAdminsTab } from './components/CompanyAdminsTab';
+import { CompanyDataTab } from './components/CompanyDataTab';
+import { CompanySupportTab } from './components/CompanySupportTab';
+import { CompanyUsageTab } from './components/CompanyUsageTab';
 import { useDistributorActions } from './useDistributorActions';
+import { useEnterOwnedCompany } from '../Platform/useEnterOwnedCompany';
 
-/** La ficha de una empresa (`GET /distributor/:id`), sólo para el administrador general. */
+const TABS_ID = 'company';
+const TAB_KEYS = ['data', 'usage', 'admins', 'support'];
+
+/** Marcar o desmarcar la empresa propia, con confirmación; el rechazo de la API queda a la vista. */
+const useOwnedToggle = () => {
+  const setOwned = useSetCompanyOwnedByPlatform();
+  const [error, setError] = useState<string | null>(null);
+  const toggle = async (company: CompanyProfile) => {
+    const marking = !company.ownedByPlatform;
+    const ok = await confirm(
+      marking
+        ? {
+            title: `¿Marcar «${company.name}» como empresa propia?`,
+            text: 'La plataforma la opera directo, sin pedir acceso de soporte. Sólo se puede con una empresa de prueba creada por la plataforma, sin clientes, admins ni pedidos reales. Se avisa a sus administradores y queda en la auditoría.',
+            confirmText: 'Marcar como propia',
+          }
+        : {
+            title: `¿Desmarcar «${company.name}»?`,
+            text: 'Deja de ser la empresa propia: ya no se entra directo, y para verla hay que pedir acceso de soporte como a cualquier otra. Se avisa a sus administradores y queda en la auditoría.',
+            confirmText: 'Desmarcar',
+            danger: true,
+          },
+    );
+    if (!ok) return;
+    setError(null);
+    setOwned.mutate(
+      { id: company.id, ownedByPlatform: marking },
+      {
+        onSuccess: () => notify.success(marking ? 'Marcada como empresa propia' : 'Ya no es la empresa propia'),
+        onError: (err) => setError(errorMessage(err)),
+      },
+    );
+  };
+  return { toggle, error, clearError: () => setError(null), busy: setOwned.isPending };
+};
+
+/**
+ * La ficha de una empresa en la plataforma (`GET /v2/platform/companies/:id`), sólo para el administrador general:
+ * Datos, Uso (métricas del período, lector y procesos), Admins y Soporte.
+ */
 export const DistributorDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const goBack = useBackToList('/distributors');
   const { isSuperAdmin } = usePermissions();
-  const { data: distributor, isPending, error, refetch } = useDistributor(id, isSuperAdmin);
-  useCrumbLeaf(distributor?.name, goBack);
+  const [range, setRange] = useUrlParams({ from: '', to: '' });
+  const [tab, setTab] = useProfileTab(TAB_KEYS, 'data');
+  const { data: detail, isPending, error, refetch } = usePlatformCompany(isSuperAdmin ? id : undefined, range);
+  const company = detail?.company;
+  useCrumbLeaf(company?.name, goBack);
   const { toggleStatus, remove } = useDistributorActions({ onDeleted: () => navigate('/distributors') });
+  const owned = useOwnedToggle();
+  const enterOwned = useEnterOwnedCompany();
 
   if (!isSuperAdmin) {
     return (
@@ -40,74 +93,94 @@ export const DistributorDetails = () => {
     );
   }
 
-  // La primaria es pedir acceso de soporte para mirar la empresa; el resto de la gestión va al menú ⋮.
-  const headerPrimary = distributor ? (
+  const headerPrimary = company ? (
     <>
-      <AuditHistoryLink entity="Distributor" recordId={distributor.distributor_id} />
-      <RequestSupportButton size="sm" distributorId={distributor.distributor_id} />
+      <AuditHistoryLink entity="Distributor" recordId={company.id} />
+      {/* A la propia se entra directo; a cualquier otra, con un acceso de soporte que la empresa aprueba. */}
+      {company.ownedByPlatform ? (
+        <Button size="sm" icon={<LogIn />} onClick={() => enterOwned(company)}>
+          Entrar a la empresa
+        </Button>
+      ) : (
+        <RequestSupportButton size="sm" distributorId={company.id} />
+      )}
     </>
   ) : undefined;
-  const headerSecondary: MenuAction[] = distributor
+  const headerSecondary: MenuAction[] = company
     ? [
+        { label: 'Editar', icon: <Pencil />, onClick: () => navigate(`/distributors/${company.id}/edit`) },
         {
-          label: 'Editar',
-          icon: <Pencil />,
-          onClick: () => navigate(`/distributors/${distributor.distributor_id}/edit`),
+          label: company.ownedByPlatform ? 'Desmarcar como empresa propia' : 'Marcar como empresa propia',
+          icon: <Building2 />,
+          disabled: owned.busy,
+          onClick: () => void owned.toggle(company),
         },
-        distributor.status === 'active'
-          ? { label: 'Suspender', icon: <Ban />, onClick: () => void toggleStatus(distributor) }
-          : { label: 'Activar', icon: <CircleCheck />, onClick: () => void toggleStatus(distributor) },
-        { label: 'Dar de baja', icon: <Trash2 />, tone: 'danger' as const, onClick: () => void remove(distributor) },
+        company.status === 'active'
+          ? { label: 'Suspender', icon: <Ban />, onClick: () => void toggleStatus(company) }
+          : { label: 'Activar', icon: <CircleCheck />, onClick: () => void toggleStatus(company) },
+        { label: 'Dar de baja', icon: <Trash2 />, tone: 'danger' as const, onClick: () => void remove(company) },
+      ]
+    : [];
+
+  const tabs = detail
+    ? [
+        { id: 'data', label: 'Datos' },
+        { id: 'usage', label: 'Uso' },
+        { id: 'admins', label: 'Admins', count: detail.admins.length },
+        { id: 'support', label: 'Soporte', count: detail.supportSessions.length },
       ]
     : [];
 
   return (
-    <PageContainer>
-      <PageHeader title="Ficha de la empresa" actions={headerPrimary} secondaryActions={headerSecondary} />
+    <PageContainer stack>
+      <PageHeader
+        title={company?.name ?? 'Ficha de la empresa'}
+        eyebrow={company?.slug}
+        badges={
+          company && (
+            <>
+              <Badge label={labelOf(DISTRIBUTOR_STATUS, company.status)} variant="critical" />
+              {company.ownedByPlatform && <OwnedBadge />}
+            </>
+          )
+        }
+        actions={headerPrimary}
+        secondaryActions={headerSecondary}
+      />
+
+      {owned.error && (
+        <div
+          role="alert"
+          className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-danger-soft px-4 py-2.5 text-sm font-medium text-danger"
+        >
+          {owned.error}
+          <button type="button" onClick={owned.clearError} className="text-xs underline">
+            Cerrar
+          </button>
+        </div>
+      )}
 
       {isPending ? (
-        <DetailSkeleton />
-      ) : error || !distributor ? (
+        <LoadingState fullPage label="Cargando la empresa…" />
+      ) : error || !detail ? (
         <ErrorState error={error} resource="La empresa" onRetry={() => void refetch()} />
       ) : (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <Card className="min-w-0 self-start p-6">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0">
-                <h2 className="truncate text-lg font-semibold text-ink">{distributor.name}</h2>
-                <p className="truncate font-mono text-sm text-muted">{distributor.slug}</p>
-              </div>
-              <Badge label={labelOf(DISTRIBUTOR_STATUS, distributor.status)} variant="critical" />
-            </div>
-            <EntityPhoto
-              kind="distributor"
-              id={distributor.distributor_id}
-              url={distributor.photoUrl ?? distributor.logo_url}
-              subject="de la empresa"
-              label="Logo"
-              fit="contain"
-              canEdit
-              className="mt-5 border-t border-outline pt-5"
-            />
-            <DetailList
-              className="mt-5 border-t border-outline pt-5"
-              items={[
-                { label: 'Razón social', value: distributor.legal_name ?? '—', wide: true },
-                { label: 'CUIT', value: distributor.tax_id ?? '—', mono: true },
-                { label: 'Teléfono', value: distributor.phone ?? '—', mono: true },
-                { label: 'Email', value: distributor.email ?? '—', wide: true },
-                { label: 'Plan', value: distributor.plan ?? 'Sin plan asignado' },
-                { label: 'Alta', value: formatDateTime(distributor.createdAt) },
-                { label: 'Última modificación', value: formatDateTime(distributor.updatedAt) },
-                { label: 'Id', value: distributor.distributor_id, mono: true, wide: true },
-              ]}
-            />
+        <>
+          <Card>
+            <Tabs items={tabs} value={tab} onChange={setTab} label="Secciones de la empresa" idPrefix={TABS_ID} />
           </Card>
-
-          <div className="min-w-0 lg:col-span-2">
-            <DistributorAdmins distributorId={distributor.distributor_id} />
+          <div {...tabPanelProps(TABS_ID, tab)}>
+            {tab === 'usage' ? (
+              <CompanyUsageTab detail={detail} range={range} onRangeChange={setRange} />
+            ) : tab === 'admins' ? (
+              <CompanyAdminsTab admins={detail.admins} />
+            ) : tab === 'support' ? (
+              <CompanySupportTab sessions={detail.supportSessions} />
+            ) : (
+              <CompanyDataTab detail={detail} />
+            )}
           </div>
-        </div>
+        </>
       )}
     </PageContainer>
   );

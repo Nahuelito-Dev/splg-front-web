@@ -2852,14 +2852,34 @@ export interface paths {
     };
     /**
      * Frecuencia de las tareas programadas de la distribuidora
-     * @description Intervalo (s) de cada tarea y hora del aviso de vencimientos de flota. Sin configuración, los valores por omisión (los vigentes antes de CU-173).
+     * @description Ruta v1 congelada: intervalos (s) de cada tarea y hora del aviso de vencimientos de flota. Sin configuración, los valores por omisión (los vigentes antes de CU-173). Las frecuencias están deprecadas en v1; la escritura nueva de plataforma vive en v2.
      */
     get: operations['ModuleConfigController_getScheduledTasks'];
     /**
-     * Cambiar la frecuencia de las tareas programadas
-     * @description Reemplaza la configuración. Cada intervalo es un múltiplo entero del ciclo de base de su tarea (15 s, 5 min, 1 h, 30 min) y de hasta 24 h; la hora del aviso de flota va de 0 a 23. Al guardar se borran las marcas de última ejecución de la distribuidora: los intervalos nuevos rigen desde el ciclo siguiente.
+     * Cambiar las tareas programadas de la distribuidora
+     * @description Ruta v1 congelada: conserva el contrato histórico y acepta las cuatro frecuencias y `fleetAlertHour`. Reemplaza toda la configuración: lo omitido vuelve a su valor por omisión. Las frecuencias están deprecadas en v1; los clientes nuevos las administran con `PUT /v2/platform/companies/{id}/scheduled-tasks`.
      */
     put: operations['ModuleConfigController_putScheduledTasks'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/module-config/scheduled_tasks': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Cambiar la hora del aviso de flota de la distribuidora
+     * @description Ruta v2 para el panel de empresa. Actualiza sólo `fleetAlertHour` y conserva las frecuencias que administra la plataforma en `PUT /v2/platform/companies/{id}/scheduled-tasks`.
+     */
+    put: operations['ModuleConfigController_putScheduledTasksV2'];
     post?: never;
     delete?: never;
     options?: never;
@@ -7235,8 +7255,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Última corrida de cada proceso automático
-     * @description Un renglón por proceso con su salud: `ok`, `partial`, `running`, `failed`, `late` (no arrancó en 1,5 veces su período), `stuck` (sigue corriendo pasado el máximo) o `never`. Cliente y chofer reciben 403. De los procesos globales, el admin de una empresa ve sólo la salud (sin contadores ni texto de error); el administrador general ve todo.
+     * Última corrida de cada proceso automático, por empresa
+     * @description Un renglón por proceso y empresa (y uno por cada proceso global de la plataforma) con su salud: `ok`, `partial`, `running`, `failed`, `late` (no arrancó en 1,5 veces su período), `stuck` (sigue corriendo pasado el máximo) o `never`. Con `distributorId`, sólo los de esa empresa. Sólo el administrador general: el admin de una empresa recibe 403.
      */
     get: operations['ProcessRunController_resumen'];
     put?: never;
@@ -7255,8 +7275,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Historial de corridas
-     * @description Las más nuevas primero, paginado. Filtros: `process`, `status`, `from` y `to` (instantes ISO 8601 sobre el inicio de la corrida).
+     * Historial de corridas de todas las empresas
+     * @description Las más nuevas primero, paginado. Filtros: `distributorId` (una empresa), `process`, `status` (p. ej. `failed` para las fallas), `from` y `to` (instantes ISO 8601 sobre el inicio de la corrida). Los atrasos (`late`) y las corridas trabadas salen del resumen. Sólo el administrador general.
      */
     get: operations['ProcessRunController_listar'];
     put?: never;
@@ -9643,6 +9663,170 @@ export interface paths {
      */
     get: operations['PlatformController_datos'];
     put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/platform/overview': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Tablero de la plataforma
+     * @description Empresas por estado; pedidos, ventas, facturación, choferes y clientes sumados de todas las empresas vigentes en el período (`from`/`to`, por omisión el mes en curso); uso y costo del lector del mes; alertas y fallas de los procesos; sesiones de soporte activas y pendientes. Los totales son la suma exacta de las filas de `GET /v2/platform/companies`.
+     */
+    get: operations['PlatformConsoleController_overview'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/platform/companies': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Empresas con sus métricas
+     * @description Las empresas vigentes, primero las propias de la plataforma y después por nombre, paginadas, con las métricas del período (sin datos personales), última actividad, alertas de procesos y si tienen una sesión de soporte activa o pedidos pendientes. Filtros opcionales por `status` y `ownedByPlatform`. Esta marca indica que el administrador general la opera directo con `X-Distributor`, sin sesión de soporte.
+     */
+    get: operations['PlatformConsoleController_list'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/platform/companies/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Ficha consolidada de una empresa
+     * @description Datos de la empresa como cliente (sin teléfono, datos bancarios ni credenciales), métricas del período, uso del lector del mes con su tope, salud de sus procesos, sus administradores (nombre, correo, rol de personal, último ingreso: son cuentas del panel) y sus últimas 10 sesiones de soporte.
+     */
+    get: operations['PlatformConsoleController_detail'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/platform/companies/{id}/scheduled-tasks': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Frecuencia de las tareas programadas de una empresa
+     * @description Las cuatro frecuencias (las fija la plataforma) y la hora del aviso de vencimientos de flota (la fija la empresa, acá sólo se lee).
+     */
+    get: operations['PlatformConsoleController_scheduledTasks'];
+    /**
+     * Cambiar la frecuencia de las tareas programadas de una empresa
+     * @description Actualiza por merge las frecuencias que llegan; la hora del aviso de flota de la empresa se conserva y no se acepta en el cuerpo. Cada intervalo es múltiplo de su ciclo de base (15 s, 5 min, 1 h, 30 min); el reintento del despacho, hasta 5 min, y los demás hasta 24 h. Los intervalos nuevos rigen desde el ciclo siguiente.
+     */
+    put: operations['PlatformConsoleController_saveScheduledTasks'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/platform/processes': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Monitoreo agregado de los procesos automáticos
+     * @description Por proceso: cuántas empresas hay en cada estado de salud (`ok`, `partial`, `running`, `failed`, `late`, `stuck`, `never`), alertas actuales, corridas fallidas en 24 h y la última corrida. El detalle por empresa y el historial están en `GET /v2/process-runs/summary` y `GET /v2/process-runs`.
+     */
+    get: operations['PlatformConsoleController_processesSummary'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/platform/document-reading-usage': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Uso y costo del lector de documentos por empresa
+     * @description Del mes pedido (`month`, AAAA-MM; por omisión el en curso): lecturas que llegaron al proveedor y su costo en dólares por empresa vigente, con el tope mensual y el porcentaje usado, de mayor a menor costo; más los totales.
+     */
+    get: operations['PlatformConsoleController_documentReadingUsage'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/platform/activity': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Actividad de la plataforma
+     * @description La auditoría propia de la plataforma, las más nuevas primero y paginada: escrituras de los administradores generales, cambios de empresas y de sesiones de soporte (también la aprobación o revocación de una empresa) e ingresos de los administradores generales. Filtros: `from`, `to` (instantes ISO 8601), `actorUserId`, `distributorId`. No incluye el detalle de los cambios ni textos de error.
+     */
+    get: operations['PlatformConsoleController_activityList'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/platform/companies/{id}/owned-by-platform': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Marcar o desmarcar una empresa como propia de la plataforma
+     * @description Una empresa propia (de prueba) la opera el administrador general directo, con lectura y escritura, mandando su slug o id en `X-Distributor`, sin sesión de soporte; las demás siguen exigiendo el modo soporte. Idempotente. El cambio queda en la auditoría con el administrador general como actor; desmarcarla corta el acceso directo en la request siguiente.
+     */
+    put: operations['PlatformCompaniesController_marcar'];
     post?: never;
     delete?: never;
     options?: never;
@@ -13204,6 +13388,13 @@ export interface components {
        */
       fleetAlertHour?: number;
     };
+    EmpresaScheduledTasksDto: {
+      /**
+       * @description Hora del día (0 a 23, hora de Argentina) del aviso de vencimientos de flota
+       * @example 8
+       */
+      fleetAlertHour?: number;
+    };
     MercadoPagoCredentialsResponseDto: {
       /**
        * @description Tipo de la cuenta con la que se cobra (la propia si hay, si no la del sistema), según `GET /users/me` de Mercado Pago: `test` = «Cuenta de prueba» (usuario de prueba, no cobra de verdad), `real` = «Cuenta real», `unknown` = no se pudo consultar o no hay token.
@@ -15185,15 +15376,15 @@ export interface components {
       /** @description Lo deja como predeterminado (el que usa la entrega cuando el camión no tiene stock). El primero que se crea lo es siempre. */
       isDefault?: boolean;
       /**
-       * @description Latitud del depósito (WGS 84). Va junto con `longitude`; en la edición, las dos en null borran la ubicación.
+       * @description Latitud del depósito (WGS 84). Va junto con `longitude`.
        * @example -27.3671
        */
-      latitude?: number | null;
+      latitude?: number;
       /**
-       * @description Longitud del depósito (WGS 84). Va junto con `latitude`; en la edición, las dos en null borran la ubicación.
+       * @description Longitud del depósito (WGS 84). Va junto con `latitude`.
        * @example -55.8961
        */
-      longitude?: number | null;
+      longitude?: number;
     };
     WarehouseV2DetailDto: {
       /** Format: uuid */
@@ -15247,12 +15438,12 @@ export interface components {
       /** @description false lo deja fuera de las listas de operación; no se puede con el predeterminado */
       isActive?: boolean;
       /**
-       * @description Latitud del depósito (WGS 84). Va junto con `longitude`; en la edición, las dos en null borran la ubicación.
+       * @description Latitud del depósito (WGS 84). Va junto con `longitude`; las dos en null borran la ubicación.
        * @example -27.3671
        */
       latitude?: number | null;
       /**
-       * @description Longitud del depósito (WGS 84). Va junto con `latitude`; en la edición, las dos en null borran la ubicación.
+       * @description Longitud del depósito (WGS 84). Va junto con `latitude`; las dos en null borran la ubicación.
        * @example -55.8961
        */
       longitude?: number | null;
@@ -21694,6 +21885,512 @@ export interface components {
        * @example soporte@example.com
        */
       supportEmail: string | null;
+    };
+    PlatformRangeDto: {
+      /**
+       * @description Primer día (inclusive)
+       * @example 2026-11-01
+       */
+      from: string;
+      /**
+       * @description Último día (inclusive)
+       * @example 2026-11-14
+       */
+      to: string;
+    };
+    CompanyCountsDto: {
+      /**
+       * @description Empresas vigentes (sin las dadas de baja)
+       * @example 12
+       */
+      total: number;
+      /** @example 9 */
+      active: number;
+      /** @example 1 */
+      suspended: number;
+    };
+    CompanyMetricsDto: {
+      /**
+       * @description Pedidos creados en el período (cualquier estado)
+       * @example 182
+       */
+      orders: number;
+      /**
+       * @description Ventas: pedidos entregados y cobrados en el período (el mismo criterio que `GET /v2/reports/sales-summary` de la empresa)
+       * @example 150
+       */
+      salesOrders: number;
+      /**
+       * @description Facturación: suma de los totales de las ventas del período, en pesos con 2 decimales (cuadra con `totalSales` del reporte de la empresa)
+       * @example 1234567.5
+       */
+      revenue: number;
+      /**
+       * @description Choferes habilitados y validados (sin los dados de baja)
+       * @example 7
+       */
+      activeDrivers: number;
+      /**
+       * @description Clientes vinculados a la empresa (sin los desvinculados)
+       * @example 320
+       */
+      customers: number;
+    };
+    DocumentReadingTotalsDto: {
+      /**
+       * @description Mes calendario (hora argentina)
+       * @example 2026-11
+       */
+      month: string;
+      /**
+       * @description Lecturas que llegaron al proveedor en el mes
+       * @example 412
+       */
+      readings: number;
+      /**
+       * @description Costo en dólares (6 decimales)
+       * @example 3.284511
+       */
+      costUsd: number;
+    };
+    ProcessTotalsDto: {
+      /**
+       * @description Procesos (por empresa y globales) atrasados, fallidos o trabados ahora
+       * @example 2
+       */
+      alerts: number;
+      /**
+       * @description Corridas fallidas en las últimas 24 horas
+       * @example 5
+       */
+      failuresLast24h: number;
+    };
+    SupportTotalsDto: {
+      /** @example 1 */
+      active: number;
+      /** @example 0 */
+      pending: number;
+    };
+    PlatformOverviewResponseDto: {
+      range: components['schemas']['PlatformRangeDto'];
+      companies: components['schemas']['CompanyCountsDto'];
+      /** @description Suma de las métricas de todas las empresas vigentes: cuadra con la suma de `GET /v2/platform/companies` */
+      totals: components['schemas']['CompanyMetricsDto'];
+      /** @description Del mes en curso */
+      documentReading: components['schemas']['DocumentReadingTotalsDto'];
+      processes: components['schemas']['ProcessTotalsDto'];
+      supportSessions: components['schemas']['SupportTotalsDto'];
+      /** Format: date-time */
+      generatedAt: string;
+    };
+    CompanyListItemDto: {
+      /** Format: uuid */
+      id: string;
+      /** @example Gas del Norte */
+      name: string;
+      /** @example gas-del-norte */
+      slug: string;
+      /** @enum {string} */
+      status: 'active' | 'suspended';
+      /** @description Empresa propia de la plataforma: el administrador general la opera con `X-Distributor`, sin sesión de soporte */
+      ownedByPlatform: boolean;
+      /** @example null */
+      plan: string | null;
+      /**
+       * Format: date-time
+       * @description Alta
+       */
+      createdAt: string;
+      /**
+       * Format: date-time
+       * @description Última actividad: el pedido más nuevo o la última escritura de su gente en la API (sin las del administrador general)
+       */
+      lastActivityAt: string | null;
+      metrics: components['schemas']['CompanyMetricsDto'];
+      /**
+       * @description Procesos automáticos de la empresa atrasados, fallidos o trabados ahora
+       * @example 0
+       */
+      processAlerts: number;
+      /** @description Si hay una sesión de soporte activa sobre la empresa */
+      supportSessionActive: boolean;
+      /**
+       * @description Pedidos de acceso de soporte pendientes de aprobación
+       * @example 0
+       */
+      supportRequestsPending: number;
+    };
+    CompanyListResponseDto: {
+      range: components['schemas']['PlatformRangeDto'];
+      items: components['schemas']['CompanyListItemDto'][];
+      /**
+       * @description Empresas con ese filtro
+       * @example 12
+       */
+      total: number;
+    };
+    CompanyProfileDto: {
+      /** Format: uuid */
+      id: string;
+      /** @example Gas del Norte */
+      name: string;
+      /** @example gas-del-norte */
+      slug: string;
+      /** @example Gas del Norte S. A. */
+      legalName: string | null;
+      /**
+       * @description CUIT
+       * @example 30712345678
+       */
+      taxId: string | null;
+      /**
+       * @description Correo de contacto de la empresa (no de una persona)
+       * @example contacto@gasdelnorte.com.ar
+       */
+      contactEmail: string | null;
+      /** @enum {string} */
+      status: 'active' | 'suspended';
+      /** @description Empresa propia de la plataforma: el administrador general la opera con `X-Distributor`, sin sesión de soporte */
+      ownedByPlatform: boolean;
+      plan: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      /** @description La empresa permite el acceso de soporte de emergencia */
+      supportEmergencyAllowed: boolean;
+      /** @description La empresa aprueba sola los pedidos de acceso de soporte */
+      supportAutoApprove: boolean;
+    };
+    CompanyDocumentReadingDto: {
+      /**
+       * @description Mes calendario (hora argentina)
+       * @example 2026-11
+       */
+      month: string;
+      /**
+       * @description Lecturas que llegaron al proveedor en el mes
+       * @example 412
+       */
+      readings: number;
+      /**
+       * @description Costo en dólares (6 decimales)
+       * @example 3.284511
+       */
+      costUsd: number;
+      /** @description Si la lectura automática está encendida */
+      enabled: boolean;
+      /**
+       * @description Tope de gasto mensual configurado (USD)
+       * @example 20
+       */
+      monthlyBudgetUsd: number;
+    };
+    CompanyProcessDto: {
+      /** @enum {string} */
+      process:
+        | 'dispatch_tick'
+        | 'fleet_planner_daily'
+        | 'fleet_planner_expiry'
+        | 'vehicle_usage_feed'
+        | 'repurchase_anticipate'
+        | 'repurchase_expiry'
+        | 'route_batch_build'
+        | 'route_batch_expiry'
+        | 'cylinder_recovery'
+        | 'attendance_open_alert'
+        | 'receiver_retention'
+        | 'mp_pending_reconciliation'
+        | 'mp_cancelled_reconciliation'
+        | 'reservations_activate'
+        | 'reservations_expire_unpaid'
+        | 'orders_expire_mp_unpaid'
+        | 'payment_inbox_process'
+        | 'payment_inbox_purge'
+        | 's3_orphans_retry'
+        | 'driver_settlement_generate'
+        | 'driver_settlement_alert'
+        | 'coverage_zone_expiry'
+        | 'fine_due_alerts'
+        | 'finance_reconciliation'
+        | 'mp_reconciliation_sync'
+        | 'fleet_alerts'
+        | 'stock_low_alert'
+        | 'stock_reconciliation'
+        | 'insurance_alerts'
+        | 'import_cleanup'
+        | 'process_run_watch'
+        | 'process_run_purge'
+        | 'document_reading'
+        | 'document_reading_proposals'
+        | 'route_planning_propose'
+        | 'route_planning_close_days'
+        | 'support_session_expiry';
+      /** @example Recupero de envases */
+      title: string;
+      /** @enum {string} */
+      health: 'ok' | 'partial' | 'running' | 'failed' | 'late' | 'stuck' | 'never';
+      /** Format: date-time */
+      lastRunAt: string | null;
+      /**
+       * @description Corridas fallidas en las últimas 24 horas
+       * @example 0
+       */
+      failuresLast24h: number;
+    };
+    CompanyAdminDto: {
+      /** Format: uuid */
+      userId: string;
+      /** @example Lucía Pérez */
+      name: string | null;
+      /** @example lucia@gasdelnorte.com.ar */
+      email: string | null;
+      /**
+       * @description Rol de personal (F37); `null` si no tiene uno asignado
+       * @example Administrador
+       */
+      staffRole: string | null;
+      /** @description Si la cuenta está bloqueada */
+      blocked: boolean;
+      /** Format: date-time */
+      lastLoginAt: string | null;
+    };
+    CompanySupportSessionDto: {
+      /** Format: uuid */
+      id: string;
+      /** @enum {string} */
+      kind: 'consented' | 'emergency';
+      /** @enum {string} */
+      status: 'pending' | 'rejected' | 'expired_request' | 'cancelled' | 'active' | 'ended' | 'revoked' | 'expired';
+      /**
+       * @description Nombre del administrador general que la pidió
+       * @example Soporte Plataforma
+       */
+      requestedByName: string | null;
+      /** @example El tablero de despacho no muestra los pedidos de hoy */
+      reason: string;
+      /** @example 60 */
+      requestedMinutes: number;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      startedAt: string | null;
+      /** Format: date-time */
+      expiresAt: string | null;
+      /** Format: date-time */
+      endedAt: string | null;
+      /** @enum {string|null} */
+      endReason: 'exit' | 'revoked_by_company' | 'revoked_by_platform' | 'expired' | null;
+    };
+    CompanyDetailResponseDto: {
+      range: components['schemas']['PlatformRangeDto'];
+      company: components['schemas']['CompanyProfileDto'];
+      metrics: components['schemas']['CompanyMetricsDto'];
+      /** Format: date-time */
+      lastActivityAt: string | null;
+      /** @description Del mes en curso */
+      documentReading: components['schemas']['CompanyDocumentReadingDto'];
+      /** @description Sólo los procesos de la empresa (sin los globales) */
+      processes: components['schemas']['CompanyProcessDto'][];
+      admins: components['schemas']['CompanyAdminDto'][];
+      /** @description Las últimas 10 */
+      supportSessions: components['schemas']['CompanySupportSessionDto'][];
+    };
+    PlatformScheduledTasksDto: {
+      /**
+       * @description Reintentos del despacho (ofertas vencidas y pedidos sin oferta), en segundos. Múltiplo de 15, hasta 300 s (5 min)
+       * @example 15
+       */
+      dispatchRetrySeconds?: number;
+      /**
+       * @description Activación de reservas con la seña paga, en segundos. Múltiplo de 300, hasta 24 h
+       * @example 300
+       */
+      reservationActivationSeconds?: number;
+      /**
+       * @description Vencimiento de reservas sin seña, en segundos. Múltiplo de 3600, hasta 24 h
+       * @example 3600
+       */
+      unpaidReservationExpirySeconds?: number;
+      /**
+       * @description Vencimiento de pedidos de MercadoPago sin pagar, en segundos. Múltiplo de 1800, hasta 24 h
+       * @example 1800
+       */
+      unpaidMercadoPagoExpirySeconds?: number;
+    };
+    PlatformProcessDto: {
+      /** @enum {string} */
+      process:
+        | 'dispatch_tick'
+        | 'fleet_planner_daily'
+        | 'fleet_planner_expiry'
+        | 'vehicle_usage_feed'
+        | 'repurchase_anticipate'
+        | 'repurchase_expiry'
+        | 'route_batch_build'
+        | 'route_batch_expiry'
+        | 'cylinder_recovery'
+        | 'attendance_open_alert'
+        | 'receiver_retention'
+        | 'mp_pending_reconciliation'
+        | 'mp_cancelled_reconciliation'
+        | 'reservations_activate'
+        | 'reservations_expire_unpaid'
+        | 'orders_expire_mp_unpaid'
+        | 'payment_inbox_process'
+        | 'payment_inbox_purge'
+        | 's3_orphans_retry'
+        | 'driver_settlement_generate'
+        | 'driver_settlement_alert'
+        | 'coverage_zone_expiry'
+        | 'fine_due_alerts'
+        | 'finance_reconciliation'
+        | 'mp_reconciliation_sync'
+        | 'fleet_alerts'
+        | 'stock_low_alert'
+        | 'stock_reconciliation'
+        | 'insurance_alerts'
+        | 'import_cleanup'
+        | 'process_run_watch'
+        | 'process_run_purge'
+        | 'document_reading'
+        | 'document_reading_proposals'
+        | 'route_planning_propose'
+        | 'route_planning_close_days'
+        | 'support_session_expiry';
+      /** @example Recupero de envases */
+      title: string;
+      /** @example M5 */
+      module: string | null;
+      /** @description Si tiene corridas globales (una corrida recorre a todas las empresas) */
+      global: boolean;
+      /**
+       * @description Cuántas empresas tienen corridas propias de este proceso
+       * @example 9
+       */
+      companies: number;
+      /**
+       * @description Cada cuánto tiene que correr
+       * @example 3600
+       */
+      expectedEverySeconds: number;
+      /**
+       * @description Cuántas empresas (o la corrida global) hay en cada estado de salud
+       * @example {
+       *       "ok": 8,
+       *       "failed": 1
+       *     }
+       */
+      health: {
+        [key: string]: number;
+      };
+      /**
+       * @description Atrasados, fallidos o trabados ahora
+       * @example 1
+       */
+      alerts: number;
+      /**
+       * @description Corridas fallidas en las últimas 24 horas
+       * @example 2
+       */
+      failuresLast24h: number;
+      /** Format: date-time */
+      lastRunAt: string | null;
+    };
+    PlatformProcessesResponseDto: {
+      items: components['schemas']['PlatformProcessDto'][];
+      /** @example 1 */
+      alerts: number;
+      /** Format: date-time */
+      generatedAt: string;
+    };
+    DocumentReadingUsageItemDto: {
+      /** Format: uuid */
+      distributorId: string;
+      /** @example Gas del Norte */
+      name: string;
+      /** @example 41 */
+      readings: number;
+      /** @example 0.318204 */
+      costUsd: number;
+      /** @example 20 */
+      monthlyBudgetUsd: number;
+      /** @description Si la lectura automática está encendida */
+      enabled: boolean;
+      /**
+       * @description Porcentaje del tope usado (2 decimales)
+       * @example 1.6
+       */
+      budgetUsedPct: number;
+    };
+    DocumentReadingUsageResponseDto: {
+      /** @example 2026-11 */
+      month: string;
+      /** @description Las empresas vigentes, de mayor a menor costo */
+      items: components['schemas']['DocumentReadingUsageItemDto'][];
+      /** @example 412 */
+      totalReadings: number;
+      /** @example 3.284511 */
+      totalCostUsd: number;
+    };
+    ActivityItemDto: {
+      /** @example 6f1c… */
+      id: string;
+      /** Format: date-time */
+      at: string;
+      /**
+       * @description Una escritura en la API o un ingreso al panel
+       * @enum {string}
+       */
+      kind: 'request' | 'login';
+      /** Format: uuid */
+      actorUserId: string | null;
+      /** @example Soporte Plataforma */
+      actorName: string | null;
+      /** @example super_admin */
+      actorRole: string | null;
+      /** @example PATCH */
+      method: string | null;
+      /**
+       * @description Recurso (primer tramo de la ruta)
+       * @example distributor
+       */
+      resource: string;
+      resourceId: string | null;
+      /**
+       * @description Patrón de la ruta (sin valores)
+       * @example /api/distributor/:id
+       */
+      path: string | null;
+      /** Format: uuid */
+      distributorId: string | null;
+      /** @example Gas del Norte */
+      distributorName: string | null;
+      /** @enum {string} */
+      result: 'success' | 'failure';
+      /** @example 200 */
+      statusCode: number;
+    };
+    ActivityListResponseDto: {
+      items: components['schemas']['ActivityItemDto'][];
+      /** @example 57 */
+      total: number;
+    };
+    SetOwnedByPlatformDto: {
+      /** @description true: la empresa pasa a ser propia de la plataforma (el administrador general la opera directo, sin sesión de soporte); false: vuelve a ser una empresa cliente */
+      ownedByPlatform: boolean;
+    };
+    PlatformCompanyDto: {
+      /** Format: uuid */
+      id: string;
+      /** @example Distribuidora de prueba OrixTech */
+      name: string;
+      /** @example prueba-orixtech */
+      slug: string;
+      /** @enum {string} */
+      status: 'active' | 'suspended';
+      /** @description Empresa propia de la plataforma: el administrador general la opera con `X-Distributor`, sin sesión de soporte */
+      ownedByPlatform: boolean;
+      /** Format: date-time */
+      createdAt: string;
     };
   };
   responses: never;
@@ -29553,7 +30250,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`) */
+      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
       403: {
         headers: {
           [name: string]: unknown;
@@ -29586,7 +30283,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`) */
+      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
       403: {
         headers: {
           [name: string]: unknown;
@@ -31721,7 +32418,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`) */
+      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
       403: {
         headers: {
           [name: string]: unknown;
@@ -32552,7 +33249,51 @@ export interface operations {
           'application/json': components['schemas']['ScheduledTasksConfigResponseDto'];
         };
       };
-      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") o cuerpo fuera de los límites (detalle por campo) */
+      /** @description Intervalo u hora inválidos, o Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") o cuerpo fuera de los límites (detalle por campo) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la configuración (`configuracion.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ModuleConfigController_putScheduledTasksV2: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['EmpresaScheduledTasksDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ScheduledTasksConfigResponseDto'];
+        };
+      };
+      /** @description Hora inválida, frecuencia no permitida o Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") o cuerpo fuera de los límites (detalle por campo) */
       400: {
         headers: {
           [name: string]: unknown;
@@ -47684,7 +48425,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`) */
+      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
       403: {
         headers: {
           [name: string]: unknown;
@@ -47717,7 +48458,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`) */
+      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
       403: {
         headers: {
           [name: string]: unknown;
@@ -47750,7 +48491,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`) */
+      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
       403: {
         headers: {
           [name: string]: unknown;
@@ -47792,7 +48533,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`) */
+      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
       403: {
         headers: {
           [name: string]: unknown;
@@ -47810,7 +48551,10 @@ export interface operations {
   };
   ProcessRunController_resumen: {
     parameters: {
-      query?: never;
+      query?: {
+        /** @description Sólo los procesos de esa empresa (sin las corridas globales de la plataforma) */
+        distributorId?: string;
+      };
       header?: never;
       path?: never;
       cookie?: never;
@@ -47825,6 +48569,13 @@ export interface operations {
           'application/json': components['schemas']['ProcessSummaryResponseDto'];
         };
       };
+      /** @description `distributorId` que no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Sin token o token inválido */
       401: {
         headers: {
@@ -47832,7 +48583,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la configuración (`configuracion.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description Requiere rol: super_admin */
       403: {
         headers: {
           [name: string]: unknown;
@@ -47844,6 +48595,8 @@ export interface operations {
   ProcessRunController_listar: {
     parameters: {
       query?: {
+        /** @description Sólo los procesos de esa empresa (sin las corridas globales de la plataforma) */
+        distributorId?: string;
         /** @description Un proceso */
         process?:
           | 'dispatch_tick'
@@ -47905,7 +48658,7 @@ export interface operations {
           'application/json': components['schemas']['ProcessRunListResponseDto'];
         };
       };
-      /** @description Filtro inválido: `process` o `status` fuera del enum, `from` o `to` que no son fecha ISO 8601, `from` posterior a `to`, `limit` fuera de 1 a 100 u `offset` negativo */
+      /** @description Filtro inválido: `distributorId` que no es un UUID, `process` o `status` fuera del enum, `from` o `to` que no son fecha ISO 8601, `from` posterior a `to`, `limit` fuera de 1 a 100 u `offset` negativo */
       400: {
         headers: {
           [name: string]: unknown;
@@ -47919,7 +48672,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la configuración (`configuracion.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description Requiere rol: super_admin */
       403: {
         headers: {
           [name: string]: unknown;
@@ -50042,7 +50795,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`) */
+      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
       403: {
         headers: {
           [name: string]: unknown;
@@ -50085,7 +50838,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`) */
+      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
       403: {
         headers: {
           [name: string]: unknown;
@@ -50139,7 +50892,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`) */
+      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
       403: {
         headers: {
           [name: string]: unknown;
@@ -50200,7 +50953,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`) */
+      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
       403: {
         headers: {
           [name: string]: unknown;
@@ -50240,7 +50993,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`) */
+      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
       403: {
         headers: {
           [name: string]: unknown;
@@ -50284,7 +51037,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`) */
+      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
       403: {
         headers: {
           [name: string]: unknown;
@@ -50324,7 +51077,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`) */
+      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
       403: {
         headers: {
           [name: string]: unknown;
@@ -54819,6 +55572,445 @@ export interface operations {
         content: {
           'application/json': components['schemas']['PlatformResponseDto'];
         };
+      };
+    };
+  };
+  PlatformConsoleController_overview: {
+    parameters: {
+      query?: {
+        /** @description Desde (día en hora argentina, AAAA-MM-DD). Sin `from`: el primero del mes de `to` (o del mes en curso). */
+        from?: string;
+        /** @description Hasta (día en hora argentina, inclusive, AAAA-MM-DD). Sin `to`: hoy. El período abarca hasta 366 días. */
+        to?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PlatformOverviewResponseDto'];
+        };
+      };
+      /** @description Período inválido: fecha que no es AAAA-MM-DD, «desde» posterior a «hasta» o más de 366 días */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformConsoleController_list: {
+    parameters: {
+      query?: {
+        /** @description Desde (día en hora argentina, AAAA-MM-DD). Sin `from`: el primero del mes de `to` (o del mes en curso). */
+        from?: string;
+        /** @description Hasta (día en hora argentina, inclusive, AAAA-MM-DD). Sin `to`: hoy. El período abarca hasta 366 días. */
+        to?: string;
+        /** @description true: sólo las empresas propias de la plataforma; false: sólo las de clientes */
+        ownedByPlatform?: boolean;
+        status?: 'active' | 'suspended';
+        limit?: number;
+        offset?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CompanyListResponseDto'];
+        };
+      };
+      /** @description Período inválido: fecha que no es AAAA-MM-DD, «desde» posterior a «hasta» o más de 366 días, `ownedByPlatform` que no es true/false, estado desconocido o paginación fuera de rango (`limit` 1 a 100, `offset` ≥ 0) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformConsoleController_detail: {
+    parameters: {
+      query?: {
+        /** @description Desde (día en hora argentina, AAAA-MM-DD). Sin `from`: el primero del mes de `to` (o del mes en curso). */
+        from?: string;
+        /** @description Hasta (día en hora argentina, inclusive, AAAA-MM-DD). Sin `to`: hoy. El período abarca hasta 366 días. */
+        to?: string;
+      };
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CompanyDetailResponseDto'];
+        };
+      };
+      /** @description El identificador de la empresa no es un UUID o Período inválido: fecha que no es AAAA-MM-DD, «desde» posterior a «hasta» o más de 366 días */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La empresa no existe o está dada de baja */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformConsoleController_scheduledTasks: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ScheduledTasksConfigResponseDto'];
+        };
+      };
+      /** @description El identificador de la empresa no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La empresa no existe o está dada de baja */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformConsoleController_saveScheduledTasks: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PlatformScheduledTasksDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ScheduledTasksConfigResponseDto'];
+        };
+      };
+      /** @description El identificador de la empresa no es un UUID, intervalo que no es múltiplo de su ciclo o pasa el tope, o un campo que no es de la plataforma (`fleetAlertHour`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La empresa no existe o está dada de baja */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformConsoleController_processesSummary: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PlatformProcessesResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformConsoleController_documentReadingUsage: {
+    parameters: {
+      query?: {
+        /** @description Mes calendario (AAAA-MM, hora argentina). Sin `month`: el mes en curso. */
+        month?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DocumentReadingUsageResponseDto'];
+        };
+      };
+      /** @description Mes que no es AAAA-MM */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformConsoleController_activityList: {
+    parameters: {
+      query?: {
+        /** @description Desde este instante (ISO 8601, inclusive) */
+        from?: string;
+        /** @description Hasta este instante (ISO 8601, exclusivo) */
+        to?: string;
+        /** @description Quién lo hizo */
+        actorUserId?: string;
+        /** @description Sobre qué empresa */
+        distributorId?: string;
+        limit?: number;
+        offset?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ActivityListResponseDto'];
+        };
+      };
+      /** @description Filtro inválido: fecha que no es ISO 8601, «desde» posterior a «hasta», ids que no son UUID o paginación fuera de rango */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformCompaniesController_marcar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Distributor UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SetOwnedByPlatformDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PlatformCompanyDto'];
+        };
+      };
+      /** @description El id no es un UUID, o falta `ownedByPlatform` o no es booleano */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La empresa no existe o está dada de baja */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sólo se puede marcar una empresa de prueba creada por la plataforma, sin admins, clientes ni pedidos ajenos (`COMPANY_NOT_PLATFORM_OWNED`). Desmarcar siempre está permitido. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
     };
   };

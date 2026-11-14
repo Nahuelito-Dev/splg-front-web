@@ -11,6 +11,8 @@ import type { CreateDistributorBody, UpdateDistributorBody } from '../api/types'
 import { queryKeys } from './queryKeys';
 
 const keys = queryKeys.distributors;
+/** Lo que cambia una empresa también cambia el listado y la ficha de la plataforma. */
+const platformKeys = queryKeys.platformConsole;
 
 /** GET /distributor es sólo del administrador general: el resto no la pide (`enabled`). */
 export const useDistributors = (enabled = true) => useQuery({ queryKey: keys.all, queryFn: listDistributors, enabled });
@@ -40,7 +42,11 @@ export const useCreateDistributor = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: CreateDistributorBody) => createDistributor(body),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: keys.all }),
+        queryClient.invalidateQueries({ queryKey: platformKeys.all }),
+      ]),
   });
 };
 
@@ -48,7 +54,11 @@ export const useUpdateDistributor = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, changes }: { id: string; changes: UpdateDistributorBody }) => updateDistributor(id, changes),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: keys.all }),
+        queryClient.invalidateQueries({ queryKey: platformKeys.all }),
+      ]),
   });
 };
 
@@ -56,6 +66,10 @@ export const useDeleteDistributor = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => deleteDistributor(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: keys.all }),
+        queryClient.invalidateQueries({ queryKey: platformKeys.all }),
+      ]),
   });
 };

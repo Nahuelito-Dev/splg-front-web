@@ -2,7 +2,10 @@ import { AxiosHeaders, type AxiosResponse, type InternalAxiosRequestConfig } fro
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SupportSession } from './types';
 
-vi.mock('../../store/store', () => ({ store: { dispatch: vi.fn() } }));
+const authRole = vi.hoisted(() => ({ value: 'super_admin' as string | null, uid: 'uid-sa' as string | null }));
+vi.mock('../../store/store', () => ({
+  store: { dispatch: vi.fn(), getState: () => ({ auth: { role: authRole.value, uid: authRole.uid } }) },
+}));
 vi.mock('../../store/auth/thunks', () => ({ startLogOut: vi.fn() }));
 const getCurrentIdToken = vi.fn<[boolean | undefined], Promise<string | null>>();
 const logOutFirebase = vi.fn<[], Promise<void>>();
@@ -25,6 +28,7 @@ vi.mock('../queries/queryClient', () => ({ queryClient: { clear: () => void clea
 const { attachAuthHeaders, http, toPage, toQuery, SESSION_EXPIRED_MESSAGE } = await import('./httpClient');
 const { store } = await import('../../store/store');
 const { supportMode } = await import('./supportMode');
+const { ownedCompany } = await import('./ownedCompany');
 
 const response = (data: number[], headers: Record<string, string> = {}) =>
   ({ data, headers }) as unknown as AxiosResponse<number[]>;
@@ -323,5 +327,182 @@ describe('modo soporte: la API dice que la sesión terminó', () => {
     };
     await expect(http.get('/orders', { adapter })).rejects.toThrow();
     expect(supportMode.activeId()).toBe('ses-2');
+  });
+});
+
+const OWN = { id: 'c-own', slug: 'prueba-orixtech', name: 'Distribuidora de prueba' };
+
+describe('empresa propia: X-Distributor', () => {
+  const fail403With = (data: unknown) => (cfg: InternalAxiosRequestConfig) =>
+    Promise.reject(
+      Object.assign(new Error('403'), {
+        isAxiosError: true,
+        config: cfg,
+        response: { status: 403, data, headers: {}, config: cfg },
+      }),
+    );
+
+  beforeEach(() => {
+    localStorage.clear();
+    localStorage.setItem('token', 'el-token');
+    supportMode.reset();
+    ownedCompany.reset();
+    authRole.value = 'super_admin';
+    authRole.uid = 'uid-sa';
+    getCurrentIdToken.mockReset().mockResolvedValue(null);
+    clearCache.mockReset();
+    notifyWarn.mockReset();
+  });
+
+  it('con la empresa propia elegida, todo pedido lleva su slug en X-Distributor', async () => {
+    ownedCompany.enter(OWN, 'uid-sa');
+    localStorage.setItem('token', 'el-token');
+    const result = await attachAuthHeaders(config());
+    expect(result.headers['X-Distributor']).toBe('prueba-orixtech');
+    expect(result.headers['X-Support-Session']).toBeUndefined();
+  });
+
+  it('las llamadas de identidad y del modo soporte van sin él', async () => {
+    ownedCompany.enter(OWN, 'uid-sa');
+    localStorage.setItem('token', 'el-token');
+    const result = await attachAuthHeaders(config(true));
+    expect(result.headers['X-Distributor']).toBeUndefined();
+  });
+
+  it('con una sesión de soporte activa manda la sesión, no la empresa propia', async () => {
+    ownedCompany.enter(OWN, 'uid-sa');
+    localStorage.setItem('token', 'el-token');
+    supportMode.update(session('active'));
+    const result = await attachAuthHeaders(config());
+    expect(result.headers['X-Support-Session']).toBe('ses-1');
+    expect(result.headers['X-Distributor']).toBeUndefined();
+  });
+
+  it('una cuenta que no es administrador general nunca lo manda (aunque haya quedado guardado)', async () => {
+    ownedCompany.enter(OWN, 'uid-sa');
+    localStorage.setItem('token', 'el-token');
+    authRole.value = 'admin';
+    const result = await attachAuthHeaders(config());
+    expect(result.headers['X-Distributor']).toBeUndefined();
+  });
+
+  it('entrar y salir vacía la caché y la elección sobrevive a la recarga (localStorage, no la URL)', () => {
+    ownedCompany.enter(OWN, 'uid-sa');
+    expect(clearCache).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(localStorage.getItem('ownedCompany') ?? 'null')).toEqual({ ...OWN, ownerUid: 'uid-sa' });
+    ownedCompany.exit();
+    expect(clearCache).toHaveBeenCalledTimes(2);
+    expect(localStorage.getItem('ownedCompany')).toBeNull();
+    expect(notifyWarn).not.toHaveBeenCalled();
+  });
+
+  it('si la API corta la vigencia (403 SUPPORT_SESSION_REQUIRED con el encabezado), sale solo con aviso', async () => {
+    ownedCompany.enter(OWN, 'uid-sa');
+    localStorage.setItem('token', 'el-token');
+    await expect(
+      http.get('/orders', { adapter: fail403With({ code: 'SUPPORT_SESSION_REQUIRED', message: 'x' }) }),
+    ).rejects.toThrow();
+    expect(ownedCompany.getStored()).toBeNull();
+    expect(notifyWarn).toHaveBeenCalledWith(expect.stringContaining('dejó de ser la empresa propia'));
+  });
+
+  it('otro 403 (por ejemplo, de permisos) no lo saca de la empresa propia', async () => {
+    ownedCompany.enter(OWN, 'uid-sa');
+    localStorage.setItem('token', 'el-token');
+    await expect(http.get('/orders', { adapter: fail403With({ code: 'FORBIDDEN', message: 'x' }) })).rejects.toThrow();
+    expect(ownedCompany.getFor('uid-sa')).toEqual(OWN);
+  });
+
+  it('otro administrador general en el mismo navegador no hereda el X-Distributor', async () => {
+    ownedCompany.enter(OWN, 'uid-sa');
+    localStorage.setItem('token', 'el-token');
+    authRole.uid = 'uid-otro';
+    const result = await attachAuthHeaders(config());
+    expect(result.headers['X-Distributor']).toBeUndefined();
+  });
+
+  it('el valor en memoria no sobrevive a un localStorage.clear()', async () => {
+    ownedCompany.enter(OWN, 'uid-sa');
+    localStorage.clear();
+    localStorage.setItem('token', 'el-token');
+    const result = await attachAuthHeaders(config());
+    expect(result.headers['X-Distributor']).toBeUndefined();
+    expect(ownedCompany.getStored()).toBeNull();
+  });
+});
+
+describe('empresa propia: identidad', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    ownedCompany.reset();
+  });
+
+  it('syncIdentity con la misma cuenta no toca nada', () => {
+    ownedCompany.enter(OWN, 'uid-sa');
+    ownedCompany.syncIdentity('uid-sa');
+    expect(ownedCompany.getFor('uid-sa')).toEqual(OWN);
+  });
+
+  it('otra cuenta, deslogueo o falla de login: se borra en memoria y en el storage', () => {
+    for (const uid of ['uid-otro', null]) {
+      ownedCompany.enter(OWN, 'uid-sa');
+      ownedCompany.syncIdentity(uid);
+      expect(ownedCompany.getStored()).toBeNull();
+      expect(localStorage.getItem('ownedCompany')).toBeNull();
+    }
+  });
+
+  it('lo guardado sin dueño (formato viejo o tocado a mano) se ignora', () => {
+    localStorage.setItem('ownedCompany', JSON.stringify(OWN));
+    expect(ownedCompany.getStored()).toBeNull();
+    expect(ownedCompany.getFor('uid-sa')).toBeNull();
+  });
+});
+
+describe('empresa propia: entre pestañas', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    ownedCompany.reset();
+    clearCache.mockReset();
+  });
+
+  /** Lo que hace el navegador cuando otra pestaña cambia el storage: escribe y dispara `storage` en esta. */
+  const otherTab = (value: string | null) => {
+    if (value === null) localStorage.removeItem('ownedCompany');
+    else localStorage.setItem('ownedCompany', value);
+    window.dispatchEvent(new StorageEvent('storage', { key: 'ownedCompany', newValue: value }));
+  };
+
+  it('si en otra pestaña se sale, esta deja de mandar el encabezado, vacía la caché y avisa a quien escucha', async () => {
+    ownedCompany.enter(OWN, 'uid-sa');
+    clearCache.mockReset();
+    const listener = vi.fn();
+    const unsubscribe = ownedCompany.subscribe(listener);
+    otherTab(null);
+    expect(clearCache).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalled();
+    localStorage.setItem('token', 'el-token');
+    const result = await attachAuthHeaders(config());
+    expect(result.headers['X-Distributor']).toBeUndefined();
+    unsubscribe();
+  });
+
+  it('si en otra pestaña se entra, esta empieza a mandarlo sin esperar nada', async () => {
+    const listener = vi.fn();
+    const unsubscribe = ownedCompany.subscribe(listener);
+    otherTab(JSON.stringify({ ...OWN, ownerUid: 'uid-sa' }));
+    expect(clearCache).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalled();
+    localStorage.setItem('token', 'el-token');
+    const result = await attachAuthHeaders(config());
+    expect(result.headers['X-Distributor']).toBe('prueba-orixtech');
+    unsubscribe();
+  });
+
+  it('un cambio de otra clave del storage no hace nada', () => {
+    ownedCompany.enter(OWN, 'uid-sa');
+    clearCache.mockReset();
+    window.dispatchEvent(new StorageEvent('storage', { key: 'theme', newValue: 'dark' }));
+    expect(clearCache).not.toHaveBeenCalled();
   });
 });

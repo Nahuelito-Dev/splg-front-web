@@ -10,6 +10,7 @@ import {
 import { store } from '../store/store';
 import { errorMessage } from '../services/api/errors';
 import { getAdmin } from '../services/api/auth';
+import { ownedCompany } from '../services/api/ownedCompany';
 import { queryClient } from '../services/queries/queryClient';
 import { login, logOut, type LoginPayload } from '../store/auth/authSlice';
 import { useAppDispatch, useAppSelector } from './reduxHooks';
@@ -29,6 +30,8 @@ export const useCheckAuth = () => {
         const hadSession = localStorage.getItem('token') !== null;
         localStorage.removeItem('token');
         queryClient.clear();
+        // Sin usuario no hay a quién atar la empresa propia elegida.
+        ownedCompany.syncIdentity(null);
         // Si el cierre ya lo despachó otro (401 del interceptor, logout voluntario), no se pisa su aviso.
         if (store.getState().auth.status === 'not-authenticated') return;
         dispatch(logOut(hadSession ? { errorMessage: SESSION_EXPIRED_MESSAGE } : {}));
@@ -44,6 +47,7 @@ export const useCheckAuth = () => {
           } catch (error) {
             if (!esErrorDeSesion(error)) throw error;
             localStorage.removeItem('token');
+            ownedCompany.syncIdentity(null);
             dispatch(logOut({ errorMessage: SESSION_EXPIRED_MESSAGE }));
             return;
           }
@@ -51,11 +55,14 @@ export const useCheckAuth = () => {
           localStorage.setItem('token', token);
 
           const { uid, email, displayName } = user;
+          // Lo elegido por otra cuenta en este navegador se borra antes de la primera request de esta.
+          ownedCompany.syncIdentity(uid);
           const { fullName, role } = await getAdmin(email ?? '');
 
           const payload: LoginPayload = { uid, email, displayName, fullName, role };
           dispatch(login(payload));
         } catch (error) {
+          ownedCompany.syncIdentity(null);
           dispatch(logOut({ errorMessage: esFallaDeRed(error) ? NO_CONNECTION_MESSAGE : errorMessage(error) }));
         }
       })();

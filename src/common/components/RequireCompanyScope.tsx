@@ -24,8 +24,11 @@ export const RequireCompanyScope = () => {
   );
 };
 
-/** Pantallas sólo del admin de la empresa: la API se las niega al administrador general, esté o no en modo soporte. */
+/**
+ * Pantallas sólo del admin de la empresa: la API se las niega al administrador general en la plataforma y en modo
+ * soporte. En la empresa propia es su admin a todos los efectos.
+ */
 export const RequireCompanyAdmin = () => {
   const { mode } = usePermissions();
-  return mode === 'company' ? <Outlet /> : <Navigate to="/home" replace />;
+  return mode === 'company' || mode === 'owned' ? <Outlet /> : <Navigate to="/home" replace />;
 };
