@@ -1,0 +1,99 @@
+import type { RoutePlanDay, RouteSheet, RouteSheetStop, UnassignedOrder } from '../services/api/types';
+
+/** Un uuid v4 de prueba distinto por número (los formularios validan uuid). */
+export const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
+
+export const stop = (n: number, over: Partial<RouteSheetStop> = {}): RouteSheetStop => ({
+  orderId: uuid(100 + n),
+  sequence: n,
+  locked: false,
+  customerName: `Cliente ${n}`,
+  customerPhone: null,
+  address: `Calle ${n}`,
+  lat: -27.38 - n / 1000,
+  lng: -55.93,
+  slotName: 'Mañana',
+  slotStart: '2026-11-14T11:00:00.000Z',
+  slotEnd: '2026-11-14T15:00:00.000Z',
+  etaAt: `2026-11-14T1${n}:00:00.000Z`,
+  plannedEtaAt: null,
+  legDistanceKm: 1.2,
+  legDurationMin: 5,
+  late: false,
+  units: 1,
+  weightKg: 10,
+  unpaidOnline: false,
+  ...over,
+});
+
+export const sheet = (over: Partial<RouteSheet> = {}): RouteSheet => ({
+  id: uuid(1),
+  number: null,
+  planDate: '2026-11-14',
+  status: 'draft',
+  version: 3,
+  deliveryId: uuid(10),
+  driverName: 'Ana Chofer',
+  carId: uuid(20),
+  carPatent: 'AB123CD',
+  originWarehouseId: null,
+  plannedStartAt: '2026-11-14T10:30:00.000Z',
+  proposedBy: 'system',
+  optimizationMethod: 'nn_2opt',
+  matrixSource: 'osrm',
+  editedAt: null,
+  confirmedAt: null,
+  closedAt: null,
+  closeReason: null,
+  totals: { distanceKm: 8.4, durationMin: 95, units: 3, peakUnits: 3, weightKg: 30 },
+  capacity: { kg: 950, units: null },
+  stops: [stop(1), stop(2), stop(3)],
+  warnings: [],
+  ...over,
+});
+
+export const unassigned = (n: number, over: Partial<UnassignedOrder> = {}): UnassignedOrder => ({
+  orderId: uuid(200 + n),
+  customerName: `Suelto ${n}`,
+  address: `Avenida ${n}`,
+  lat: -27.39,
+  lng: -55.94,
+  slotName: 'Tarde',
+  slotStart: '2026-11-14T19:00:00.000Z',
+  slotEnd: '2026-11-14T23:00:00.000Z',
+  units: 2,
+  weightKg: 20,
+  blockedReason: null,
+  ...over,
+});
+
+export const planDay = (over: Partial<RoutePlanDay> = {}): RoutePlanDay => ({
+  plan: {
+    date: '2026-11-14',
+    status: 'proposed',
+    cutoffAt: '2026-11-13T21:00:00.000Z',
+    proposedAt: '2026-11-13T21:05:00.000Z',
+    summary: null,
+    closedAt: null,
+  },
+  sheets: [sheet()],
+  unassigned: [unassigned(1), unassigned(2, { blockedReason: 'tiene una oferta del despacho esperando respuesta' })],
+  resources: {
+    drivers: [
+      { deliveryId: uuid(10), name: 'Ana Chofer', available: true, busySheetId: null, usualCarId: uuid(20) },
+      { deliveryId: uuid(11), name: 'Beto Chofer', available: false, busySheetId: null, usualCarId: null },
+    ],
+    cars: [
+      {
+        carId: uuid(20),
+        patent: 'AB123CD',
+        description: 'Camioneta',
+        capacityKg: 950,
+        capacityUnits: null,
+        available: true,
+        busySheetId: null,
+      },
+    ],
+  },
+  ...over,
+});

@@ -21228,7 +21228,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Si el chofer no puede recibir pedidos por su carga de camión (sin carga con el control activo, carga sin salir o ya devuelta), `orders` viene vacío, `openLoadRequired` es true y `message` dice por qué (\"Abrí tu carga para recibir pedidos\"). La app también lo sabe por `GET /truck-loads/mine`.",
+                        "description": "Pedidos pendientes sin chofer de la distribuidora. No incluye las paradas de un recorrido que se está ofreciendo (M4) ni las de una hoja de ruta en borrador o confirmada (F34): vuelven al listado si se sacan de la hoja o la hoja se cancela. Si el chofer no puede recibir pedidos por su carga de camión (sin carga con el control activo, carga sin salir o ya devuelta), `orders` viene vacío, `openLoadRequired` es true y `message` dice por qué (\"Abrí tu carga para recibir pedidos\"). La app también lo sabe por `GET /truck-loads/mine`.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -21648,7 +21648,7 @@
                         "description": "Pedido no encontrado"
                     },
                     "409": {
-                        "description": "Aceptar (`accepted`) un pedido de Mercado Pago cuyo pago todavía no está aprobado (salvo una reserva con la seña paga), o, siendo chofer, tener ya otro pedido aceptado esperando (CU-013: nunca dos encolados; repetir la aceptación del mismo pedido no cuenta)"
+                        "description": "Aceptar (`accepted`) un pedido de Mercado Pago cuyo pago todavía no está aprobado (salvo una reserva con la seña paga), o, siendo chofer, tener ya otro pedido aceptado esperando (CU-013: nunca dos encolados; repetir la aceptación del mismo pedido no cuenta), o aceptar un pedido que es parada de un recorrido que se está ofreciendo (M4), o aceptar o asignar un pedido que es parada de una hoja de ruta en borrador o confirmada (`code: ORDER_IN_ROUTE_SHEET`: lo lleva el chofer de la hoja; hay que sacarlo de la hoja primero)"
                     },
                     "422": {
                         "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
@@ -22221,7 +22221,7 @@
                         "description": "Pedido o chofer no encontrado"
                     },
                     "409": {
-                        "description": "El pedido se paga con Mercado Pago y el pago todavía no está aprobado"
+                        "description": "El pedido se paga con Mercado Pago y el pago todavía no está aprobado, o es parada de una hoja de ruta en borrador o confirmada (`code: ORDER_IN_ROUTE_SHEET`): no se asigna ni se reasigna por fuera de la hoja"
                     }
                 },
                 "security": [
@@ -29887,7 +29887,9 @@
                                 "process_run_watch",
                                 "process_run_purge",
                                 "document_reading",
-                                "document_reading_proposals"
+                                "document_reading_proposals",
+                                "route_planning_propose",
+                                "route_planning_close_days"
                             ]
                         }
                     },
@@ -33750,6 +33752,1310 @@
                 "summary": "Rechazar el recorrido",
                 "tags": [
                     "Driver · Route batches (v2)"
+                ]
+            }
+        },
+        "/api/v2/route-plans/{date}": {
+            "get": {
+                "description": "Estado del día (cierre, resumen de la última propuesta), las hojas vivas con sus paradas, la columna «Sin asignar» (pedidos del día sin hoja, con el motivo si no pueden ir en una) y los recursos: choferes y vehículos con su disponibilidad y la hoja confirmada que ya tengan.",
+                "operationId": "RoutePlansController_dia",
+                "parameters": [
+                    {
+                        "name": "date",
+                        "required": true,
+                        "in": "path",
+                        "description": "Día de reparto (YYYY-MM-DD, hora argentina)",
+                        "schema": {
+                            "example": "2026-11-14",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RoutePlanDayDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta la distribuidora (super admin sin X-Distributor) o la fecha no tiene el formato AAAA-MM-DD"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`)"
+                    },
+                    "404": {
+                        "description": "El día no tiene planificación abierta (ROUTE_PLAN_NOT_FOUND)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Planificación del día",
+                "tags": [
+                    "Route plans (v2)"
+                ]
+            }
+        },
+        "/api/v2/route-plans/{date}/open": {
+            "post": {
+                "description": "Idempotente: si ya estaba abierta (o propuesta, o cerrada) devuelve el día como está. Desde que se abre, los pedidos de ese día quedan retenidos para la hoja (el despacho individual no los ofrece).",
+                "operationId": "RoutePlansController_abrir",
+                "parameters": [
+                    {
+                        "name": "date",
+                        "required": true,
+                        "in": "path",
+                        "description": "Día de reparto (YYYY-MM-DD, hora argentina)",
+                        "schema": {
+                            "example": "2026-11-14",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RoutePlanDayDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta la distribuidora (super admin sin X-Distributor) o la fecha no tiene el formato AAAA-MM-DD"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`)"
+                    },
+                    "409": {
+                        "description": "El día ya pasó (ROUTE_PLAN_DATE_PAST)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Abrir la planificación del día",
+                "tags": [
+                    "Route plans (v2)"
+                ]
+            }
+        },
+        "/api/v2/route-plans/{date}/propose": {
+            "post": {
+                "description": "Reparte los pedidos del día entre los pares chofer–vehículo libres (barrido + inserción + 2-opt/Or-opt + relocate) y crea las hojas en borrador. Re-proponer rehace sólo los borradores del sistema sin ediciones; las confirmadas y las tocadas a mano se conservan con sus pedidos. Con `dryRun: true` devuelve la propuesta sin crear nada.",
+                "operationId": "RoutePlansController_proponer",
+                "parameters": [
+                    {
+                        "name": "date",
+                        "required": true,
+                        "in": "path",
+                        "description": "Día de reparto (YYYY-MM-DD, hora argentina)",
+                        "schema": {
+                            "example": "2026-11-14",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ProposeRoutePlanDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RoutePlanProposalDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta la distribuidora (super admin sin X-Distributor) o la fecha no tiene el formato AAAA-MM-DD"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`)"
+                    },
+                    "409": {
+                        "description": "Hoja de ruta apagada (ROUTE_PLANNING_DISABLED), día cerrado (ROUTE_PLAN_CLOSED), día pasado (ROUTE_PLAN_DATE_PAST) o ya se está proponiendo (ROUTE_PLAN_BUSY)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Proponer (o re-proponer) las hojas del día",
+                "tags": [
+                    "Route plans (v2)"
+                ]
+            }
+        },
+        "/api/v2/route-plans/{date}/close": {
+            "post": {
+                "description": "Los borradores que quedan se descartan (`dissolved`, `day_closed`) y sus pedidos vuelven al despacho del día. Las confirmadas siguen.",
+                "operationId": "RoutePlansController_cerrar",
+                "parameters": [
+                    {
+                        "name": "date",
+                        "required": true,
+                        "in": "path",
+                        "description": "Día de reparto (YYYY-MM-DD, hora argentina)",
+                        "schema": {
+                            "example": "2026-11-14",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RoutePlanDayDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta la distribuidora (super admin sin X-Distributor) o la fecha no tiene el formato AAAA-MM-DD"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`)"
+                    },
+                    "404": {
+                        "description": "El día no tiene planificación (ROUTE_PLAN_NOT_FOUND)"
+                    },
+                    "409": {
+                        "description": "Ya estaba cerrada (ROUTE_PLAN_CLOSED)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Cerrar la planificación del día",
+                "tags": [
+                    "Route plans (v2)"
+                ]
+            }
+        },
+        "/api/v2/route-plans/{date}/confirm-all": {
+            "post": {
+                "description": "Confirma cada borrador que cumple las reglas (sin aceptar paradas fuera de franja) y devuelve los que no pudo, con el motivo y las violaciones.",
+                "operationId": "RoutePlansController_confirmarTodas",
+                "parameters": [
+                    {
+                        "name": "date",
+                        "required": true,
+                        "in": "path",
+                        "description": "Día de reparto (YYYY-MM-DD, hora argentina)",
+                        "schema": {
+                            "example": "2026-11-14",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConfirmAllResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta la distribuidora (super admin sin X-Distributor) o la fecha no tiene el formato AAAA-MM-DD"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`)"
+                    },
+                    "404": {
+                        "description": "El día no tiene planificación (ROUTE_PLAN_NOT_FOUND)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Confirmar todos los borradores válidos del día",
+                "tags": [
+                    "Route plans (v2)"
+                ]
+            }
+        },
+        "/api/v2/route-plans/{date}/late-orders": {
+            "get": {
+                "description": "Pedidos del día creados después del cierre que no están en ninguna hoja, con la mejor inserción factible en los borradores (hoja, posición y minutos que agrega) o `null`. Con `lateOrderPolicy = 0` no hay sugerencias (`suggestion: null`: van al despacho del día). Es una sugerencia: se inserta con `POST /route-sheets/:id/stops`.",
+                "operationId": "RoutePlansController_tardios",
+                "parameters": [
+                    {
+                        "name": "date",
+                        "required": true,
+                        "in": "path",
+                        "description": "Día de reparto (YYYY-MM-DD, hora argentina)",
+                        "schema": {
+                            "example": "2026-11-14",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/LateOrderDto"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta la distribuidora (super admin sin X-Distributor) o la fecha no tiene el formato AAAA-MM-DD"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`)"
+                    },
+                    "404": {
+                        "description": "El día no tiene planificación (ROUTE_PLAN_NOT_FOUND)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Pedidos tardíos del día",
+                "tags": [
+                    "Route plans (v2)"
+                ]
+            }
+        },
+        "/api/v2/route-sheets": {
+            "post": {
+                "description": "Crea un borrador del día (abre la planificación si hacía falta) con chofer, vehículo y pedidos opcionales, en el orden dado.",
+                "operationId": "RouteSheetsController_crear",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateRouteSheetDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RouteSheetDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Cuerpo inválido, id que no es UUID o falta la distribuidora (super admin sin X-Distributor)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`)"
+                    },
+                    "404": {
+                        "description": "Chofer, vehículo o pedido inexistente o de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "Día pasado o cerrado, pedido ya en otra hoja o lote (ORDER_ALREADY_IN_ROUTE), pedido que no es de ese día o no está pendiente (ORDER_NOT_PLANNABLE), o más paradas que el máximo"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Alta manual de una hoja",
+                "tags": [
+                    "Route sheets (v2)"
+                ]
+            },
+            "get": {
+                "description": "Del día más nuevo al más viejo; filtra por día, estado y chofer.",
+                "operationId": "RouteSheetsController_listar",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "maximum": 100,
+                            "default": 10,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 0,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 1,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "term",
+                        "required": false,
+                        "in": "query",
+                        "description": "Texto a buscar",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "date",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "example": "2026-11-14",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "draft",
+                                "confirmed",
+                                "assigned",
+                                "completed",
+                                "dissolved"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "deliveryId",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RouteSheetPageDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Cuerpo inválido, id que no es UUID o falta la distribuidora (super admin sin X-Distributor)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Hojas de ruta (paginado)",
+                "tags": [
+                    "Route sheets (v2)"
+                ]
+            }
+        },
+        "/api/v2/route-sheets/{id}": {
+            "get": {
+                "description": "Paradas en orden con ETA, franja y carga; totales, capacidad y advertencias.",
+                "operationId": "RouteSheetsController_detalle",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RouteSheetDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Cuerpo inválido, id que no es UUID o falta la distribuidora (super admin sin X-Distributor)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`)"
+                    },
+                    "404": {
+                        "description": "La hoja no existe o es de otra distribuidora (ROUTE_SHEET_NOT_FOUND)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Detalle de una hoja",
+                "tags": [
+                    "Route sheets (v2)"
+                ]
+            },
+            "patch": {
+                "description": "Sólo en borrador. Recalcula horas y totales.",
+                "operationId": "RouteSheetsController_editar",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateRouteSheetDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RouteSheetDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Cuerpo inválido, id que no es UUID o falta la distribuidora (super admin sin X-Distributor)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`)"
+                    },
+                    "404": {
+                        "description": "La hoja no existe o es de otra distribuidora (ROUTE_SHEET_NOT_FOUND); o chofer, vehículo o depósito de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "Otro administrador cambió la hoja (ROUTE_SHEET_VERSION_CONFLICT), la hoja no está en borrador (ROUTE_SHEET_NOT_EDITABLE) o se está editando en otra sesión (ROUTE_SHEET_BUSY); o el chofer o el vehículo ya tienen otra hoja confirmada ese día"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Cambiar chofer, vehículo, salida o depósito",
+                "tags": [
+                    "Route sheets (v2)"
+                ]
+            }
+        },
+        "/api/v2/route-sheets/{id}/stops": {
+            "post": {
+                "description": "En la posición pedida o, sin posición, en la inserción más barata que respeta franjas y capacidad.",
+                "operationId": "RouteSheetsController_agregar",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AddRouteSheetStopDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RouteSheetDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Cuerpo inválido, id que no es UUID o falta la distribuidora (super admin sin X-Distributor)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`)"
+                    },
+                    "404": {
+                        "description": "La hoja no existe o es de otra distribuidora (ROUTE_SHEET_NOT_FOUND); o el pedido no existe o es de otra distribuidora (ORDER_NOT_FOUND)"
+                    },
+                    "409": {
+                        "description": "Otro administrador cambió la hoja (ROUTE_SHEET_VERSION_CONFLICT), la hoja no está en borrador (ROUTE_SHEET_NOT_EDITABLE) o se está editando en otra sesión (ROUTE_SHEET_BUSY); pedido ya en otra hoja o lote, que no es de ese día o no está pendiente, o que no entra (ROUTE_STOP_NOT_FEASIBLE): en la posición pedida o en ninguna, por franja (salvo acceptLateStops), capacidad del vehículo o máximo de paradas"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Agregar una parada",
+                "tags": [
+                    "Route sheets (v2)"
+                ]
+            }
+        },
+        "/api/v2/route-sheets/{id}/stops/{orderId}": {
+            "delete": {
+                "description": "Borrado lógico de la parada (motivo `admin`): el pedido vuelve a «Sin asignar».",
+                "operationId": "RouteSheetsController_quitar",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "orderId",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/VersionRouteSheetDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RouteSheetDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Cuerpo inválido, id que no es UUID o falta la distribuidora (super admin sin X-Distributor)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`)"
+                    },
+                    "404": {
+                        "description": "La hoja no existe o es de otra distribuidora (ROUTE_SHEET_NOT_FOUND); o el pedido no es parada de la hoja (ROUTE_STOP_NOT_FOUND)"
+                    },
+                    "409": {
+                        "description": "Otro administrador cambió la hoja (ROUTE_SHEET_VERSION_CONFLICT), la hoja no está en borrador (ROUTE_SHEET_NOT_EDITABLE) o se está editando en otra sesión (ROUTE_SHEET_BUSY)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Quitar una parada",
+                "tags": [
+                    "Route sheets (v2)"
+                ]
+            }
+        },
+        "/api/v2/route-sheets/{id}/stops/{orderId}/move": {
+            "post": {
+                "description": "Manda la versión de las dos hojas. Sin posición, la inserción más barata en la de destino. Responde las dos hojas.",
+                "operationId": "RouteSheetsController_mover",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "orderId",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/MoveRouteSheetStopDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RouteSheetMoveResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Cuerpo inválido, id que no es UUID o falta la distribuidora (super admin sin X-Distributor); o la hoja de destino es la misma (ROUTE_SHEET_SAME_TARGET)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`)"
+                    },
+                    "404": {
+                        "description": "La hoja no existe o es de otra distribuidora (ROUTE_SHEET_NOT_FOUND) (cualquiera de las dos); o el pedido no es parada de la hoja"
+                    },
+                    "409": {
+                        "description": "Otro administrador cambió la hoja (ROUTE_SHEET_VERSION_CONFLICT), la hoja no está en borrador (ROUTE_SHEET_NOT_EDITABLE) o se está editando en otra sesión (ROUTE_SHEET_BUSY) (cualquiera de las dos); hojas de días distintos (ROUTE_SHEET_OTHER_DAY) o no entra en la de destino (ROUTE_STOP_NOT_FEASIBLE: franja salvo acceptLateStops, capacidad o máximo de paradas)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Mover una parada a otra hoja del mismo día",
+                "tags": [
+                    "Route sheets (v2)"
+                ]
+            }
+        },
+        "/api/v2/route-sheets/{id}/sequence": {
+            "put": {
+                "description": "Exactamente las paradas de la hoja en el orden nuevo; `locked` fija posiciones. Queda `optimizationMethod: manual`.",
+                "operationId": "RouteSheetsController_ordenar",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SetRouteSheetSequenceDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RouteSheetDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Cuerpo inválido, id que no es UUID o falta la distribuidora (super admin sin X-Distributor); o no son exactamente las paradas de la hoja (ROUTE_SHEET_SEQUENCE_INVALID)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`)"
+                    },
+                    "404": {
+                        "description": "La hoja no existe o es de otra distribuidora (ROUTE_SHEET_NOT_FOUND)"
+                    },
+                    "409": {
+                        "description": "Otro administrador cambió la hoja (ROUTE_SHEET_VERSION_CONFLICT), la hoja no está en borrador (ROUTE_SHEET_NOT_EDITABLE) o se está editando en otra sesión (ROUTE_SHEET_BUSY)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Orden manual",
+                "tags": [
+                    "Route sheets (v2)"
+                ]
+            }
+        },
+        "/api/v2/route-sheets/{id}/optimize": {
+            "post": {
+                "description": "Vecino más cercano con franjas + 2-opt / Or-opt, respetando las fijadas. Devuelve cómo estaba y cómo quedó.",
+                "operationId": "RouteSheetsController_optimizar",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/VersionRouteSheetDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RouteSheetOptimizeResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Cuerpo inválido, id que no es UUID o falta la distribuidora (super admin sin X-Distributor)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`)"
+                    },
+                    "404": {
+                        "description": "La hoja no existe o es de otra distribuidora (ROUTE_SHEET_NOT_FOUND)"
+                    },
+                    "409": {
+                        "description": "Otro administrador cambió la hoja (ROUTE_SHEET_VERSION_CONFLICT), la hoja no está en borrador (ROUTE_SHEET_NOT_EDITABLE) o se está editando en otra sesión (ROUTE_SHEET_BUSY)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Re-optimizar el orden",
+                "tags": [
+                    "Route sheets (v2)"
+                ]
+            }
+        },
+        "/api/v2/route-sheets/{id}/confirm": {
+            "post": {
+                "description": "Exige chofer y vehículo habilitados y sin otra hoja ese día, al menos una parada, la carga dentro de la capacidad y las paradas en franja (o `acceptLateStops`). Le da número a la hoja y congela la ETA prometida. NO asigna los pedidos: siguen pendientes y retenidos hasta que el chofer la inicie.",
+                "operationId": "RouteSheetsController_confirmar",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ConfirmRouteSheetDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RouteSheetDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Cuerpo inválido, id que no es UUID o falta la distribuidora (super admin sin X-Distributor)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`)"
+                    },
+                    "404": {
+                        "description": "La hoja no existe o es de otra distribuidora (ROUTE_SHEET_NOT_FOUND)"
+                    },
+                    "409": {
+                        "description": "Otro administrador cambió la hoja (ROUTE_SHEET_VERSION_CONFLICT), la hoja no está en borrador (ROUTE_SHEET_NOT_EDITABLE) o se está editando en otra sesión (ROUTE_SHEET_BUSY); o no cumple las reglas (ROUTE_SHEET_NOT_CONFIRMABLE, con `violations[]`)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RouteSheetNotConfirmableDto"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Confirmar la hoja",
+                "tags": [
+                    "Route sheets (v2)"
+                ]
+            }
+        },
+        "/api/v2/route-sheets/{id}/reopen": {
+            "post": {
+                "description": "Vuelve a borrador para editarla. Sólo si no se inició y el día no está cerrado.",
+                "operationId": "RouteSheetsController_reabrir",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/VersionRouteSheetDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RouteSheetDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Cuerpo inválido, id que no es UUID o falta la distribuidora (super admin sin X-Distributor)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`)"
+                    },
+                    "404": {
+                        "description": "La hoja no existe o es de otra distribuidora (ROUTE_SHEET_NOT_FOUND)"
+                    },
+                    "409": {
+                        "description": "Otro administrador cambió la hoja (ROUTE_SHEET_VERSION_CONFLICT), la hoja no está en borrador (ROUTE_SHEET_NOT_EDITABLE) o se está editando en otra sesión (ROUTE_SHEET_BUSY); no está confirmada o ya se inició; o el día está cerrado (ROUTE_PLAN_CLOSED)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Reabrir una hoja confirmada",
+                "tags": [
+                    "Route sheets (v2)"
+                ]
+            }
+        },
+        "/api/v2/route-sheets/{id}/cancel": {
+            "post": {
+                "description": "Borrador o confirmada que no se inició: queda `dissolved` (`admin`), las paradas salen y los pedidos vuelven al despacho del día.",
+                "operationId": "RouteSheetsController_cancelar",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/VersionRouteSheetDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RouteSheetDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Cuerpo inválido, id que no es UUID o falta la distribuidora (super admin sin X-Distributor)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`)"
+                    },
+                    "404": {
+                        "description": "La hoja no existe o es de otra distribuidora (ROUTE_SHEET_NOT_FOUND)"
+                    },
+                    "409": {
+                        "description": "Otro administrador cambió la hoja (ROUTE_SHEET_VERSION_CONFLICT), la hoja no está en borrador (ROUTE_SHEET_NOT_EDITABLE) o se está editando en otra sesión (ROUTE_SHEET_BUSY); o ya se inició o está cerrada"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Cancelar la hoja",
+                "tags": [
+                    "Route sheets (v2)"
+                ]
+            }
+        },
+        "/api/v2/route-sheets/{id}/load-suggestion": {
+            "get": {
+                "description": "Llenas a cargar y vacías que vuelven del canje, para precargar la carga del camión.",
+                "operationId": "RouteSheetsController_cargaSugerida",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LoadSuggestionDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Cuerpo inválido, id que no es UUID o falta la distribuidora (super admin sin X-Distributor)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`)"
+                    },
+                    "404": {
+                        "description": "La hoja no existe o es de otra distribuidora (ROUTE_SHEET_NOT_FOUND)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Carga sugerida por garrafa",
+                "tags": [
+                    "Route sheets (v2)"
+                ]
+            }
+        },
+        "/api/v2/route-sheets/{id}/pdf": {
+            "get": {
+                "description": "Número, fecha, chofer, patente, salida, paradas en orden (cliente, dirección, teléfono, franja, llegada, garrafas), totales y firma. Un borrador sale marcado como tal.",
+                "operationId": "RouteSheetsController_pdf",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "El PDF (A4)",
+                        "content": {
+                            "application/pdf": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Cuerpo inválido, id que no es UUID o falta la distribuidora (super admin sin X-Distributor)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`)"
+                    },
+                    "404": {
+                        "description": "La hoja no existe o es de otra distribuidora (ROUTE_SHEET_NOT_FOUND)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Hoja de ruta en PDF",
+                "tags": [
+                    "Route sheets (v2)"
+                ]
+            }
+        },
+        "/api/v2/route-planning/settings": {
+            "get": {
+                "description": "Los valores vigentes con su rango y omisión. Los mismos de `GET /module-config/route_planning`.",
+                "operationId": "RoutePlanningSettingsController_settings",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProcessConfigResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta la distribuidora (super admin sin X-Distributor) o la fecha no tiene el formato AAAA-MM-DD"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Parámetros de la hoja de ruta",
+                "tags": [
+                    "Route plans (v2)"
+                ]
+            },
+            "patch": {
+                "description": "Cambia sólo los que vienen; el resto conserva su valor.",
+                "operationId": "RoutePlanningSettingsController_patch",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchRoutePlanningSettingsDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProcessConfigResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Valor fuera de rango o falta la distribuidora"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Cambiar parámetros de la hoja de ruta",
+                "tags": [
+                    "Route plans (v2)"
                 ]
             }
         },
@@ -58536,7 +59842,9 @@
                             "process_run_watch",
                             "process_run_purge",
                             "document_reading",
-                            "document_reading_proposals"
+                            "document_reading_proposals",
+                            "route_planning_propose",
+                            "route_planning_close_days"
                         ]
                     },
                     "title": {
@@ -58651,7 +59959,9 @@
                             "process_run_watch",
                             "process_run_purge",
                             "document_reading",
-                            "document_reading_proposals"
+                            "document_reading_proposals",
+                            "route_planning_propose",
+                            "route_planning_close_days"
                         ]
                     },
                     "title": {
@@ -60919,6 +62229,1332 @@
                     "accepted",
                     "assignedOrders"
                 ]
+            },
+            "RoutePlanSummaryDto": {
+                "type": "object",
+                "properties": {
+                    "candidates": {
+                        "type": "number"
+                    },
+                    "sheets": {
+                        "type": "number"
+                    },
+                    "unassigned": {
+                        "type": "number"
+                    },
+                    "method": {
+                        "type": "string"
+                    },
+                    "matrixSource": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "candidates",
+                    "sheets",
+                    "unassigned",
+                    "method",
+                    "matrixSource"
+                ]
+            },
+            "RoutePlanDto": {
+                "type": "object",
+                "properties": {
+                    "date": {
+                        "type": "string",
+                        "example": "2026-11-14"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "open",
+                            "proposed",
+                            "closed"
+                        ]
+                    },
+                    "cutoffAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Cierre de la planificación (D−1 a la hora del parámetro)"
+                    },
+                    "proposedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "summary": {
+                        "nullable": true,
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/RoutePlanSummaryDto"
+                            }
+                        ]
+                    },
+                    "closedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "date",
+                    "status",
+                    "cutoffAt",
+                    "proposedAt",
+                    "summary",
+                    "closedAt"
+                ]
+            },
+            "RouteSheetTotalsDto": {
+                "type": "object",
+                "properties": {
+                    "distanceKm": {
+                        "type": "number"
+                    },
+                    "durationMin": {
+                        "type": "number",
+                        "description": "Viaje + servicio + esperas"
+                    },
+                    "units": {
+                        "type": "number",
+                        "description": "Garrafas llenas a cargar"
+                    },
+                    "peakUnits": {
+                        "type": "number",
+                        "description": "Pico de envases a bordo"
+                    },
+                    "weightKg": {
+                        "type": "number",
+                        "description": "Kilos de gas a cargar"
+                    }
+                },
+                "required": [
+                    "distanceKm",
+                    "durationMin",
+                    "units",
+                    "peakUnits",
+                    "weightKg"
+                ]
+            },
+            "RouteSheetCapacityDto": {
+                "type": "object",
+                "properties": {
+                    "kg": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "null: el vehículo no tiene capacidad cargada"
+                    },
+                    "units": {
+                        "type": "number",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "kg",
+                    "units"
+                ]
+            },
+            "RouteSheetStopDto": {
+                "type": "object",
+                "properties": {
+                    "orderId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "sequence": {
+                        "type": "number",
+                        "description": "Orden en la hoja (1 = primera)"
+                    },
+                    "locked": {
+                        "type": "boolean",
+                        "description": "El administrador fijó la posición: el optimizador no la mueve"
+                    },
+                    "customerName": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "customerPhone": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "address": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "lat": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "lng": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "slotName": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "Mañana"
+                    },
+                    "slotStart": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "slotEnd": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "etaAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "Llegada estimada vigente"
+                    },
+                    "plannedEtaAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "Llegada prometida (congelada al confirmar)"
+                    },
+                    "legDistanceKm": {
+                        "type": "number",
+                        "description": "Kilómetros desde la parada anterior"
+                    },
+                    "legDurationMin": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Minutos desde la parada anterior"
+                    },
+                    "late": {
+                        "type": "boolean",
+                        "description": "Llegaría después de que cierra su franja"
+                    },
+                    "units": {
+                        "type": "number",
+                        "description": "Garrafas llenas a entregar"
+                    },
+                    "weightKg": {
+                        "type": "number",
+                        "description": "Kilos de gas a entregar"
+                    },
+                    "unpaidOnline": {
+                        "type": "boolean",
+                        "description": "Mercado Pago todavía sin pagar (entra con advertencia)"
+                    }
+                },
+                "required": [
+                    "orderId",
+                    "sequence",
+                    "locked",
+                    "customerName",
+                    "customerPhone",
+                    "address",
+                    "lat",
+                    "lng",
+                    "slotName",
+                    "slotStart",
+                    "slotEnd",
+                    "etaAt",
+                    "plannedEtaAt",
+                    "legDistanceKm",
+                    "legDurationMin",
+                    "late",
+                    "units",
+                    "weightKg",
+                    "unpaidOnline"
+                ]
+            },
+            "RouteSheetWarningDto": {
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "enum": [
+                            "late_stops",
+                            "no_capacity",
+                            "capacity",
+                            "straight_line",
+                            "no_warehouse",
+                            "unpaid_online",
+                            "stops_not_plannable"
+                        ]
+                    },
+                    "message": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "code",
+                    "message"
+                ]
+            },
+            "RouteSheetDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "number": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Número de hoja: se asigna al confirmar"
+                    },
+                    "planDate": {
+                        "type": "string",
+                        "example": "2026-11-14"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "draft",
+                            "confirmed",
+                            "assigned",
+                            "completed",
+                            "dissolved"
+                        ]
+                    },
+                    "version": {
+                        "type": "number",
+                        "description": "Versión: toda edición la manda y recibe 409 si cambió"
+                    },
+                    "deliveryId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "driverName": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "carId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "carPatent": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "originWarehouseId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "plannedStartAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "proposedBy": {
+                        "type": "string",
+                        "enum": [
+                            "system",
+                            "admin"
+                        ],
+                        "nullable": true
+                    },
+                    "optimizationMethod": {
+                        "type": "string",
+                        "enum": [
+                            "nn_2opt",
+                            "manual"
+                        ],
+                        "nullable": true
+                    },
+                    "matrixSource": {
+                        "type": "string",
+                        "enum": [
+                            "osrm",
+                            "google",
+                            "haversine"
+                        ],
+                        "nullable": true
+                    },
+                    "editedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "confirmedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "closedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "closeReason": {
+                        "type": "string",
+                        "enum": [
+                            "admin",
+                            "day_closed",
+                            "exhausted",
+                            "orders_unavailable"
+                        ],
+                        "nullable": true
+                    },
+                    "totals": {
+                        "$ref": "#/components/schemas/RouteSheetTotalsDto"
+                    },
+                    "capacity": {
+                        "$ref": "#/components/schemas/RouteSheetCapacityDto"
+                    },
+                    "stops": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RouteSheetStopDto"
+                        }
+                    },
+                    "warnings": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RouteSheetWarningDto"
+                        }
+                    }
+                },
+                "required": [
+                    "id",
+                    "number",
+                    "planDate",
+                    "status",
+                    "version",
+                    "deliveryId",
+                    "driverName",
+                    "carId",
+                    "carPatent",
+                    "originWarehouseId",
+                    "plannedStartAt",
+                    "proposedBy",
+                    "optimizationMethod",
+                    "matrixSource",
+                    "editedAt",
+                    "confirmedAt",
+                    "closedAt",
+                    "closeReason",
+                    "totals",
+                    "capacity",
+                    "stops",
+                    "warnings"
+                ]
+            },
+            "UnassignedOrderDto": {
+                "type": "object",
+                "properties": {
+                    "orderId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "customerName": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "address": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "lat": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "lng": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "slotName": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "slotStart": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "slotEnd": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "units": {
+                        "type": "number"
+                    },
+                    "weightKg": {
+                        "type": "number"
+                    },
+                    "blockedReason": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Por qué no puede ir en una hoja (null: se puede agregar)"
+                    }
+                },
+                "required": [
+                    "orderId",
+                    "customerName",
+                    "address",
+                    "lat",
+                    "lng",
+                    "slotName",
+                    "slotStart",
+                    "slotEnd",
+                    "units",
+                    "weightKg",
+                    "blockedReason"
+                ]
+            },
+            "DriverResourceDto": {
+                "type": "object",
+                "properties": {
+                    "deliveryId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "available": {
+                        "type": "boolean",
+                        "description": "Habilitado para repartir"
+                    },
+                    "busySheetId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true,
+                        "description": "Hoja confirmada o en curso de ese día"
+                    },
+                    "usualCarId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "deliveryId",
+                    "name",
+                    "available",
+                    "busySheetId",
+                    "usualCarId"
+                ]
+            },
+            "CarResourceDto": {
+                "type": "object",
+                "properties": {
+                    "carId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "patent": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "description": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "capacityKg": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "capacityUnits": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "available": {
+                        "type": "boolean"
+                    },
+                    "busySheetId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "carId",
+                    "patent",
+                    "description",
+                    "capacityKg",
+                    "capacityUnits",
+                    "available",
+                    "busySheetId"
+                ]
+            },
+            "RoutePlanResourcesDto": {
+                "type": "object",
+                "properties": {
+                    "drivers": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DriverResourceDto"
+                        }
+                    },
+                    "cars": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CarResourceDto"
+                        }
+                    }
+                },
+                "required": [
+                    "drivers",
+                    "cars"
+                ]
+            },
+            "RoutePlanDayDto": {
+                "type": "object",
+                "properties": {
+                    "plan": {
+                        "$ref": "#/components/schemas/RoutePlanDto"
+                    },
+                    "sheets": {
+                        "description": "Hojas vivas del día (sin las canceladas)",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RouteSheetDto"
+                        }
+                    },
+                    "unassigned": {
+                        "description": "Columna «Sin asignar»",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/UnassignedOrderDto"
+                        }
+                    },
+                    "resources": {
+                        "$ref": "#/components/schemas/RoutePlanResourcesDto"
+                    }
+                },
+                "required": [
+                    "plan",
+                    "sheets",
+                    "unassigned",
+                    "resources"
+                ]
+            },
+            "ProposeRoutePlanDto": {
+                "type": "object",
+                "properties": {
+                    "dryRun": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "true: calcula la propuesta y la devuelve sin crear hojas"
+                    }
+                }
+            },
+            "ProposedSheetDto": {
+                "type": "object",
+                "properties": {
+                    "sheetId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true,
+                        "description": "null en una corrida de prueba"
+                    },
+                    "deliveryId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "carId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "orderIds": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "distanceKm": {
+                        "type": "number"
+                    },
+                    "durationMin": {
+                        "type": "number"
+                    },
+                    "units": {
+                        "type": "number"
+                    },
+                    "peakUnits": {
+                        "type": "number"
+                    },
+                    "weightKg": {
+                        "type": "number"
+                    }
+                },
+                "required": [
+                    "sheetId",
+                    "deliveryId",
+                    "carId",
+                    "orderIds",
+                    "distanceKm",
+                    "durationMin",
+                    "units",
+                    "peakUnits",
+                    "weightKg"
+                ]
+            },
+            "ProposalUnassignedDto": {
+                "type": "object",
+                "properties": {
+                    "orderId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "reason": {
+                        "type": "string",
+                        "enum": [
+                            "capacity",
+                            "window",
+                            "window_unverified",
+                            "no_point",
+                            "no_vehicles",
+                            "not_plannable",
+                            "dispatch_offer",
+                            "in_route"
+                        ],
+                        "description": "`in_route`: mientras se armaba la propuesta, el administrador lo puso en otra hoja"
+                    }
+                },
+                "required": [
+                    "orderId",
+                    "reason"
+                ]
+            },
+            "RoutePlanProposalDto": {
+                "type": "object",
+                "properties": {
+                    "dryRun": {
+                        "type": "boolean"
+                    },
+                    "candidates": {
+                        "type": "number"
+                    },
+                    "matrixSource": {
+                        "type": "string",
+                        "enum": [
+                            "osrm",
+                            "haversine"
+                        ]
+                    },
+                    "sheets": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ProposedSheetDto"
+                        }
+                    },
+                    "unassigned": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ProposalUnassignedDto"
+                        }
+                    },
+                    "keptSheetIds": {
+                        "description": "Hojas que se conservaron (confirmadas o tocadas a mano)",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": [
+                    "dryRun",
+                    "candidates",
+                    "matrixSource",
+                    "sheets",
+                    "unassigned",
+                    "keptSheetIds"
+                ]
+            },
+            "RouteSheetViolationDto": {
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "enum": [
+                            "driver_missing",
+                            "car_missing",
+                            "no_stops",
+                            "driver_unavailable",
+                            "car_unavailable",
+                            "driver_taken",
+                            "car_taken",
+                            "capacity_kg",
+                            "capacity_units",
+                            "late_stops",
+                            "stops_not_plannable"
+                        ]
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "orderIds": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": [
+                    "code",
+                    "message"
+                ]
+            },
+            "ConfirmAllFailureDto": {
+                "type": "object",
+                "properties": {
+                    "sheetId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "violations": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RouteSheetViolationDto"
+                        }
+                    }
+                },
+                "required": [
+                    "sheetId",
+                    "message",
+                    "violations"
+                ]
+            },
+            "ConfirmAllResponseDto": {
+                "type": "object",
+                "properties": {
+                    "confirmed": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "failed": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ConfirmAllFailureDto"
+                        }
+                    }
+                },
+                "required": [
+                    "confirmed",
+                    "failed"
+                ]
+            },
+            "LateOrderSuggestionDto": {
+                "type": "object",
+                "properties": {
+                    "sheetId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "position": {
+                        "type": "number",
+                        "description": "Posición sugerida (1 = primera)"
+                    },
+                    "addedMinutes": {
+                        "type": "number",
+                        "description": "Minutos que se corre el fin de la hoja"
+                    }
+                },
+                "required": [
+                    "sheetId",
+                    "position",
+                    "addedMinutes"
+                ]
+            },
+            "LateOrderDto": {
+                "type": "object",
+                "properties": {
+                    "orderId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "customerName": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "address": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "lat": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "lng": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "slotName": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "slotStart": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "slotEnd": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "units": {
+                        "type": "number"
+                    },
+                    "weightKg": {
+                        "type": "number"
+                    },
+                    "blockedReason": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Por qué no puede ir en una hoja (null: se puede agregar)"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "suggestion": {
+                        "nullable": true,
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/LateOrderSuggestionDto"
+                            }
+                        ]
+                    }
+                },
+                "required": [
+                    "orderId",
+                    "customerName",
+                    "address",
+                    "lat",
+                    "lng",
+                    "slotName",
+                    "slotStart",
+                    "slotEnd",
+                    "units",
+                    "weightKg",
+                    "blockedReason",
+                    "createdAt",
+                    "suggestion"
+                ]
+            },
+            "CreateRouteSheetDto": {
+                "type": "object",
+                "properties": {
+                    "planDate": {
+                        "type": "string",
+                        "example": "2026-11-14"
+                    },
+                    "deliveryId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Chofer (`delivery_id`)"
+                    },
+                    "carId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "orderIds": {
+                        "description": "Pedidos del día, en el orden de entrega",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": [
+                    "planDate"
+                ]
+            },
+            "RouteSheetPageDto": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RouteSheetDto"
+                        }
+                    },
+                    "total": {
+                        "type": "number"
+                    },
+                    "limit": {
+                        "type": "number"
+                    },
+                    "offset": {
+                        "type": "number"
+                    }
+                },
+                "required": [
+                    "items",
+                    "total",
+                    "limit",
+                    "offset"
+                ]
+            },
+            "UpdateRouteSheetDto": {
+                "type": "object",
+                "properties": {
+                    "version": {
+                        "type": "number",
+                        "minimum": 1,
+                        "description": "Versión de la hoja que vio quien edita"
+                    },
+                    "deliveryId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "carId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "plannedStartAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Hora de salida prevista"
+                    },
+                    "originWarehouseId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Depósito de salida"
+                    }
+                },
+                "required": [
+                    "version"
+                ]
+            },
+            "AddRouteSheetStopDto": {
+                "type": "object",
+                "properties": {
+                    "version": {
+                        "type": "number",
+                        "minimum": 1,
+                        "description": "Versión de la hoja que vio quien edita"
+                    },
+                    "orderId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "position": {
+                        "type": "number",
+                        "minimum": 1,
+                        "description": "Posición (1 = primera). Sin posición: la inserción más barata que respeta franjas y capacidad"
+                    },
+                    "lock": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Fija la posición: el optimizador no la mueve"
+                    },
+                    "acceptLateStops": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Acepta que la parada quede fuera de franja (en la posición pedida o, sin posición, donde menos se atrasa) en vez de responder 409. La capacidad del vehículo no se puede saltear"
+                    }
+                },
+                "required": [
+                    "version",
+                    "orderId"
+                ]
+            },
+            "VersionRouteSheetDto": {
+                "type": "object",
+                "properties": {
+                    "version": {
+                        "type": "number",
+                        "minimum": 1,
+                        "description": "Versión de la hoja que vio quien edita"
+                    }
+                },
+                "required": [
+                    "version"
+                ]
+            },
+            "MoveRouteSheetStopDto": {
+                "type": "object",
+                "properties": {
+                    "version": {
+                        "type": "number",
+                        "minimum": 1,
+                        "description": "Versión de la hoja que vio quien edita"
+                    },
+                    "targetSheetId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "targetVersion": {
+                        "type": "number",
+                        "minimum": 1,
+                        "description": "Versión de la hoja de destino"
+                    },
+                    "position": {
+                        "type": "number",
+                        "minimum": 1,
+                        "description": "Posición en la hoja de destino (sin ella: la más barata)"
+                    },
+                    "acceptLateStops": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Acepta que la parada (u otras de la hoja de destino) quede fuera de franja; sin esto, 409 ROUTE_STOP_NOT_FEASIBLE"
+                    }
+                },
+                "required": [
+                    "version",
+                    "targetSheetId",
+                    "targetVersion"
+                ]
+            },
+            "RouteSheetMoveResponseDto": {
+                "type": "object",
+                "properties": {
+                    "source": {
+                        "$ref": "#/components/schemas/RouteSheetDto"
+                    },
+                    "target": {
+                        "$ref": "#/components/schemas/RouteSheetDto"
+                    }
+                },
+                "required": [
+                    "source",
+                    "target"
+                ]
+            },
+            "SetRouteSheetSequenceDto": {
+                "type": "object",
+                "properties": {
+                    "version": {
+                        "type": "number",
+                        "minimum": 1,
+                        "description": "Versión de la hoja que vio quien edita"
+                    },
+                    "orderIds": {
+                        "description": "Exactamente las paradas de la hoja, en el orden nuevo",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "locked": {
+                        "description": "Paradas cuya posición queda fija (reemplaza a las fijadas antes; sin el campo se conservan)",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": [
+                    "version",
+                    "orderIds"
+                ]
+            },
+            "RouteOrderSummaryDto": {
+                "type": "object",
+                "properties": {
+                    "durationMin": {
+                        "type": "number"
+                    },
+                    "distanceKm": {
+                        "type": "number"
+                    },
+                    "lateStops": {
+                        "type": "number"
+                    }
+                },
+                "required": [
+                    "durationMin",
+                    "distanceKm",
+                    "lateStops"
+                ]
+            },
+            "RouteSheetOptimizeResponseDto": {
+                "type": "object",
+                "properties": {
+                    "before": {
+                        "$ref": "#/components/schemas/RouteOrderSummaryDto"
+                    },
+                    "after": {
+                        "$ref": "#/components/schemas/RouteOrderSummaryDto"
+                    },
+                    "sheet": {
+                        "$ref": "#/components/schemas/RouteSheetDto"
+                    }
+                },
+                "required": [
+                    "before",
+                    "after",
+                    "sheet"
+                ]
+            },
+            "ConfirmRouteSheetDto": {
+                "type": "object",
+                "properties": {
+                    "version": {
+                        "type": "number",
+                        "minimum": 1,
+                        "description": "Versión de la hoja que vio quien edita"
+                    },
+                    "acceptLateStops": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Confirma aunque haya paradas que llegan fuera de su franja (quedan advertidas)"
+                    }
+                },
+                "required": [
+                    "version"
+                ]
+            },
+            "RouteSheetNotConfirmableDto": {
+                "type": "object",
+                "properties": {
+                    "statusCode": {
+                        "type": "number",
+                        "example": 409
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "code": {
+                        "type": "string",
+                        "example": "ROUTE_SHEET_NOT_CONFIRMABLE"
+                    },
+                    "violations": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RouteSheetViolationDto"
+                        }
+                    }
+                },
+                "required": [
+                    "statusCode",
+                    "message",
+                    "code",
+                    "violations"
+                ]
+            },
+            "LoadSuggestionItemDto": {
+                "type": "object",
+                "properties": {
+                    "gasCylinderId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "type": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "fullUnits": {
+                        "type": "number",
+                        "description": "Llenas a cargar"
+                    },
+                    "emptyUnitsBack": {
+                        "type": "number",
+                        "description": "Vacías que vuelven del canje"
+                    }
+                },
+                "required": [
+                    "gasCylinderId",
+                    "type",
+                    "fullUnits",
+                    "emptyUnitsBack"
+                ]
+            },
+            "LoadSuggestionDto": {
+                "type": "object",
+                "properties": {
+                    "sheetId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/LoadSuggestionItemDto"
+                        }
+                    }
+                },
+                "required": [
+                    "sheetId",
+                    "items"
+                ]
+            },
+            "PatchRoutePlanningSettingsDto": {
+                "type": "object",
+                "properties": {
+                    "enabled": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1,
+                        "description": "1 enciende la hoja de ruta"
+                    },
+                    "cutoffHour": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 23,
+                        "description": "Hora del cierre del día anterior"
+                    },
+                    "cutoffMinute": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 59
+                    },
+                    "autoPropose": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1,
+                        "description": "Al cierre, el sistema arma la propuesta solo"
+                    },
+                    "maxStopsPerSheet": {
+                        "type": "number",
+                        "minimum": 2,
+                        "maximum": 40
+                    },
+                    "serviceMinutes": {
+                        "type": "number",
+                        "minimum": 1,
+                        "maximum": 60,
+                        "description": "Minutos por parada"
+                    },
+                    "trafficFactor": {
+                        "type": "number",
+                        "minimum": 1,
+                        "maximum": 3,
+                        "description": "Multiplica los tiempos de OSRM"
+                    },
+                    "etaWindowMinutes": {
+                        "type": "number",
+                        "minimum": 10,
+                        "maximum": 120
+                    },
+                    "etaRecalcMinSeconds": {
+                        "type": "number",
+                        "minimum": 30,
+                        "maximum": 900
+                    },
+                    "etaRecalcMinMeters": {
+                        "type": "number",
+                        "minimum": 50,
+                        "maximum": 5000
+                    },
+                    "etaNotifyShiftMinutes": {
+                        "type": "number",
+                        "minimum": 5,
+                        "maximum": 120
+                    },
+                    "lateOrderPolicy": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1,
+                        "description": "0: el tardío va a M1; 1: se sugiere la hoja"
+                    },
+                    "notStartedAlertMinutes": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 240
+                    }
+                }
             },
             "RepurchaseCustomerRefDto": {
                 "type": "object",

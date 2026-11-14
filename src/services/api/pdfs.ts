@@ -14,7 +14,8 @@ export type PdfRequest =
   | { kind: 'settlement'; settlementId: string }
   | { kind: 'liquidation'; liquidationId: string }
   | { kind: 'cash-session'; sessionId: string }
-  | { kind: 'sales'; from: string; to: string };
+  | { kind: 'sales'; from: string; to: string }
+  | { kind: 'route-sheet'; sheetId: string; planDate: string; number: number | null };
 
 const fetchPdf = async (path: string, filename: string, params: Record<string, string> = {}): Promise<PdfFile> => {
   try {
@@ -56,6 +57,13 @@ export const downloadCashSessionPdf = (sessionId: string) =>
 export const downloadSalesPdf = (from: string, to: string) =>
   fetchPdf('/reports/sales.pdf', `ventas-${from}_${to}.pdf`, { desde: from, hasta: to });
 
+/** GET /v2/route-sheets/:id/pdf: el mismo nombre que arma el back (`hoja-de-ruta-<día>-<número|borrador-…>.pdf`). */
+export const downloadRouteSheetPdf = (sheetId: string, planDate: string, number: number | null) =>
+  fetchPdf(
+    `/route-sheets/${sheetId}/pdf`,
+    `hoja-de-ruta-${planDate}-${number ? String(number).padStart(4, '0') : `borrador-${sheetId.slice(0, 8)}`}.pdf`,
+  );
+
 export const downloadPdf = (request: PdfRequest): Promise<PdfFile> => {
   switch (request.kind) {
     case 'order-remito':
@@ -70,5 +78,7 @@ export const downloadPdf = (request: PdfRequest): Promise<PdfFile> => {
       return downloadCashSessionPdf(request.sessionId);
     case 'sales':
       return downloadSalesPdf(request.from, request.to);
+    case 'route-sheet':
+      return downloadRouteSheetPdf(request.sheetId, request.planDate, request.number);
   }
 };

@@ -127,6 +127,31 @@ const NO_SON_PLATA: Excepcion[] = [
     fragmento: 'total = values.some((count) => count === null) ? null : values.reduce<number>(',
     motivo: 'suma de conteos por estado',
   },
+  {
+    ruta: 'src/pages/RouteSheets/PlanView.tsx',
+    fragmento: '.reduce((sum, s) => sum + s.total',
+    motivo: 'kilómetros de las hojas del día (KPI), no plata',
+  },
+  {
+    ruta: 'src/pages/RouteSheets/PlanView.tsx',
+    fragmento: '+ s.total',
+    motivo: 'kilómetros de las hojas del día (KPI), no plata',
+  },
+  {
+    ruta: 'src/pages/RouteSheets/PlanView.tsx',
+    fragmento: '.reduce((sum, s) => sum + s.total',
+    motivo: 'garrafas de las hojas del día (KPI), no plata',
+  },
+  {
+    ruta: 'src/pages/RouteSheets/PlanView.tsx',
+    fragmento: '+ s.total',
+    motivo: 'garrafas de las hojas del día (KPI), no plata',
+  },
+  {
+    ruta: 'src/pages/RouteSheets/routeSheetLabels.ts',
+    fragmento: '+ sheet.total',
+    motivo: 'hora de regreso: salida más la duración en minutos',
+  },
 ];
 
 /**
