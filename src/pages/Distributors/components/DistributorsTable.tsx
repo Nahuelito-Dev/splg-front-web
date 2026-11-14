@@ -1,15 +1,15 @@
 import type { GridColDef } from '@mui/x-data-grid';
 import { useMemo } from 'react';
-import { ArrowLeftRight, Ban, CircleCheck } from 'lucide-react';
-import { Badge, Button, DataTable, EmptyState, IdentityCell, RowActions } from '../../../common/components/ui';
+import { Ban, CircleCheck, LifeBuoy } from 'lucide-react';
+import { Badge, DataTable, EmptyState, IdentityCell, RowActions } from '../../../common/components/ui';
 import type { Distributor } from '../../../services/api/types';
 import { DISTRIBUTOR_STATUS, labelOf } from '../../../utils/statusLabels';
 
 interface Props {
   rows: Distributor[];
   loading: boolean;
-  viewingSlug: string;
-  onViewAs: (distributor: Distributor) => void;
+  /** Abre el pedido de acceso de soporte con la empresa elegida. */
+  onRequestSupport: (distributor: Distributor) => void;
   onView: (distributor: Distributor) => void;
   onEdit: (distributor: Distributor) => void;
   onToggleStatus: (distributor: Distributor) => void;
@@ -19,8 +19,7 @@ interface Props {
 export const DistributorsTable = ({
   rows,
   loading,
-  viewingSlug,
-  onViewAs,
+  onRequestSupport,
   onView,
   onEdit,
   onToggleStatus,
@@ -65,18 +64,11 @@ export const DistributorsTable = ({
       {
         field: 'actions',
         headerName: '',
-        width: 300,
+        width: 90,
         sortable: false,
         align: 'right',
         renderCell: ({ row }) => (
           <div className="flex items-center gap-1.5" onClick={(event) => event.stopPropagation()}>
-            {viewingSlug === row.slug ? (
-              <span className="px-2 text-xs font-semibold text-primary-strong">Viendo</span>
-            ) : (
-              <Button variant="secondary" size="sm" icon={<ArrowLeftRight />} onClick={() => onViewAs(row)}>
-                Ver como
-              </Button>
-            )}
             <RowActions
               rowLabel={row.name}
               onView={() => onView(row)}
@@ -84,6 +76,7 @@ export const DistributorsTable = ({
               onDelete={() => onDelete(row)}
               deleteLabel="Dar de baja"
               actions={[
+                { label: 'Pedir acceso de soporte', icon: LifeBuoy, onClick: () => onRequestSupport(row) },
                 row.status === 'active'
                   ? { label: 'Suspender', icon: Ban, tone: 'danger', onClick: () => onToggleStatus(row) }
                   : { label: 'Activar', icon: CircleCheck, onClick: () => onToggleStatus(row) },
@@ -93,7 +86,7 @@ export const DistributorsTable = ({
         ),
       },
     ],
-    [viewingSlug, onViewAs, onView, onEdit, onToggleStatus, onDelete],
+    [onRequestSupport, onView, onEdit, onToggleStatus, onDelete],
   );
 
   return (

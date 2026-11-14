@@ -4,9 +4,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Claim } from '../../services/api/types';
 
 const claimsQuery = vi.hoisted(() => vi.fn());
+const ro = vi.hoisted(() => ({ value: { canOperate: true, operateHint: undefined } as Record<string, unknown> }));
 vi.mock('../../hooks', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
-  usePermissions: () => ({ canOperate: true, operateHint: undefined }),
+  usePermissions: () => ro.value,
 }));
 vi.mock('../../services/queries/claims', () => {
   const mutation = { mutate: vi.fn(), isPending: false };
@@ -118,5 +119,21 @@ describe('Claims', () => {
     renderPage();
     fireEvent.click(screen.getByRole('button', { name: 'Más' }));
     expect(screen.getByRole('menuitem', { name: 'Exportar CSV' })).not.toHaveAttribute('aria-disabled', 'true');
+  });
+});
+
+describe('modo soporte (sólo lectura)', () => {
+  it('«Cargar reclamo» queda apagado con el aviso', () => {
+    ro.value = {
+      canOperate: false,
+      operateHint: 'Modo soporte: sólo lectura',
+      canWrite: false,
+      writeHint: 'Modo soporte: sólo lectura',
+    };
+    renderPage();
+    const button = screen.getByRole('button', { name: /Cargar reclamo/ });
+    expect(button).toHaveAttribute('aria-disabled', 'true');
+    expect(button).toHaveAttribute('title', 'Modo soporte: sólo lectura');
+    ro.value = { canOperate: true, operateHint: undefined };
   });
 });

@@ -29,7 +29,7 @@ export const getUser = async (id: string): Promise<User> => {
 
 /** GET /users/email/:email: la cuenta de la propia sesión (el panel sólo conoce su correo). */
 export const getUserByEmail = async (email: string): Promise<User> => {
-  const { data } = await http.get<User>(`/users/email/${encodeURIComponent(email)}`, { skipDistributor: true });
+  const { data } = await http.get<User>(`/users/email/${encodeURIComponent(email)}`, { skipSupportSession: true });
   return data;
 };
 

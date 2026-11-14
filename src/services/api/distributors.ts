@@ -26,8 +26,8 @@ export const updateDistributor = async (id: string, body: UpdateDistributorBody)
 };
 
 /**
- * GET /distributor/current: la empresa de la sesión (la del admin, o la que
- * eligió el administrador general con "Ver como"). 404 si no hay una.
+ * GET /distributor/current: la empresa de la sesión (la del admin, o la de la
+ * sesión de soporte del administrador general). Sin sesión de soporte, 404.
  */
 export const getCurrentDistributor = async (): Promise<Distributor> => {
   const { data } = await http.get<Distributor>('/distributor/current');
@@ -37,7 +37,7 @@ export const getCurrentDistributor = async (): Promise<Distributor> => {
 /**
  * DELETE /distributor/:id: baja lógica (soft delete). La fila queda en la
  * base con `deletedAt`, pero el back la excluye de `findAll`/`findOne` y de
- * la resolución por header `X-Distributor`: sus choferes, admins y pedidos
+ * la resolución de la empresa: sus choferes, admins y pedidos
  * NO se tocan (siguen con su `distributor_id`), pero la empresa deja de
  * poder resolverse. Sin cuerpo de respuesta.
  */

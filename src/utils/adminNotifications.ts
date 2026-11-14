@@ -6,6 +6,7 @@ import {
   Copy,
   Gavel,
   Landmark,
+  LifeBuoy,
   FileWarning,
   MessageSquareWarning,
   PackageSearch,
@@ -61,6 +62,9 @@ const KIND_VISUALS: Record<string, { icon: LucideIcon; tone: Tone }> = {
   process_run_alert: { icon: Activity, tone: 'danger' },
   document_reading_proposal: { icon: ScanText, tone: 'warn' },
   document_reading_notice: { icon: FileWarning, tone: 'warn' },
+  support_access_requested: { icon: LifeBuoy, tone: 'warn' },
+  support_emergency_opened: { icon: LifeBuoy, tone: 'danger' },
+  support_access_auto_approved: { icon: LifeBuoy, tone: 'info' },
 };
 
 /** Ícono y tono de un aviso guardado según su `kind`; un tipo que el panel no conoce se muestra con uno genérico. */
@@ -98,6 +102,8 @@ export const notificationTarget = (link: AdminNotification['link'] | undefined):
       return '/settings/process-monitor';
     case 'document-reading':
       return `/document-readings/${id}`;
+    case 'support-session':
+      return `/support-access?session=${id}`;
     default:
       return null;
   }

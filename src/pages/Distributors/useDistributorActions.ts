@@ -1,13 +1,12 @@
 import type { Distributor } from '../../services/api/types';
-import { activeDistributor } from '../../services/api/activeDistributor';
 import { useDeleteDistributor, useUpdateDistributor } from '../../services/queries/distributors';
 import { confirm, notify } from '../../utils/notifications';
 
 /**
  * Suspender/activar y dar de baja una empresa: la lista y la ficha comparten el mismo
- * comportamiento (confirmaciones y el cuidado con el header `X-Distributor`).
+ * comportamiento (confirmaciones).
  */
-export const useDistributorActions = (callbacks: { onViewingChanged?: () => void; onDeleted?: () => void } = {}) => {
+export const useDistributorActions = (callbacks: { onDeleted?: () => void } = {}) => {
   const updateDistributor = useUpdateDistributor();
   const deleteDistributor = useDeleteDistributor();
 
@@ -43,32 +42,12 @@ export const useDistributorActions = (callbacks: { onViewingChanged?: () => void
     });
     if (!confirmed) return;
 
-    // Si es la que se está "viendo como", el header X-Distributor se saca ANTES
-    // de borrar (no después del éxito): la invalidación de la lista dispara un
-    // refetch de inmediato, y si todavía manda ese header la API ya no puede
-    // resolverlo → 401 → la sesión se cierra sola antes de poder avisar nada.
-    // DELETE /distributor/:id no necesita el header (es una acción de
-    // plataforma), así que sacarlo antes no afecta el borrado en sí.
-    const wasViewingThis = activeDistributor.get() === distributor.slug;
-    if (wasViewingThis) activeDistributor.set(null);
-
     deleteDistributor.mutate(distributor.distributor_id, {
       onSuccess: () => {
         notify.success('Empresa dada de baja');
-        if (wasViewingThis) {
-          // Mismo criterio que "Ver todas": recarga para que todo el panel
-          // (permisos, tenant en memoria) arranque limpio sin esa empresa.
-          callbacks.onViewingChanged?.();
-          callbacks.onDeleted?.();
-          window.location.reload();
-          return;
-        }
         callbacks.onDeleted?.();
       },
-      onError: (err) => {
-        if (wasViewingThis) activeDistributor.set(distributor.slug);
-        notify.error(err);
-      },
+      onError: notify.error,
     });
   };
 

@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { Customer, Order } from '../../../services/api/types';
+import type { NavViewer } from '../sidemenu/navScope';
 import { buildSearchGroups, normalizeText, screenResults } from './searchItems';
+
+const ADMIN: NavViewer = { mode: 'company', permissions: 'all' };
+const PLATFORM: NavViewer = { mode: 'platform', permissions: 'all' };
+const SUPPORT: NavViewer = { mode: 'support', permissions: 'all' };
 
 const customer = { customer_id: 'c1', user: { full_name: 'Emilia Villalba', email: 'e@x.com' } } as unknown as Customer;
 const order = {
@@ -18,20 +23,26 @@ describe('normalizeText', () => {
 
 describe('screenResults', () => {
   it('encuentra pantallas sin tildes ni mayúsculas', () => {
-    expect(screenResults('VEHICULOS', false).map((r) => r.to)).toContain('/cars');
+    expect(screenResults('VEHICULOS', ADMIN).map((r) => r.to)).toContain('/cars');
   });
 
   it('sin término ofrece unas pocas pantallas', () => {
-    expect(screenResults('', false)).toHaveLength(8);
+    expect(screenResults('', ADMIN)).toHaveLength(8);
   });
 
-  it('las pantallas de superAdminOnly sólo las ve el administrador general', () => {
-    expect(screenResults('distribuidoras', false)).toEqual([]);
-    expect(screenResults('distribuidoras', true).map((r) => r.to)).toEqual(['/distributors']);
+  it('las pantallas de plataforma sólo las ve el administrador general fuera del modo soporte', () => {
+    expect(screenResults('distribuidoras', ADMIN)).toEqual([]);
+    expect(screenResults('distribuidoras', SUPPORT)).toEqual([]);
+    expect(screenResults('distribuidoras', PLATFORM).map((r) => r.to)).toEqual(['/distributors']);
+  });
+
+  it('en la plataforma no ofrece pantallas de empresa', () => {
+    expect(screenResults('pedidos', PLATFORM)).toEqual([]);
+    expect(screenResults('pedidos', SUPPORT).map((r) => r.to)).toContain('/orders');
   });
 
   it('también busca por el nombre de la sección', () => {
-    expect(screenResults('garrafas y envases', false).map((r) => r.to)).toEqual([
+    expect(screenResults('garrafas y envases', ADMIN).map((r) => r.to)).toEqual([
       '/cylinders',
       '/physical-cylinders',
       '/physical-cylinders/recovery',
@@ -41,7 +52,7 @@ describe('screenResults', () => {
 
 describe('buildSearchGroups', () => {
   it('agrupa por tipo en orden fijo, con la ficha de cada uno, y omite los grupos vacíos', () => {
-    const groups = buildSearchGroups(screenResults('clientes', false), {
+    const groups = buildSearchGroups(screenResults('clientes', ADMIN), {
       orders: [order],
       customers: [customer],
       deliveries: [],

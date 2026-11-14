@@ -155,7 +155,6 @@ export const DispatchBoard = () => {
         onConfirm={handleAssign}
         assigning={assignDelivery.isPending}
         error={assignDelivery.error}
-        distributorId={assigning?.distributor_id}
       />
     </PageContainer>
   );

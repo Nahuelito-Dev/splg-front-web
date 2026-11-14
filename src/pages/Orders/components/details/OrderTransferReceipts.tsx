@@ -1,4 +1,4 @@
-import { ExternalLink, FileText, Landmark } from 'lucide-react';
+import { ExternalLink, FileText, Landmark, Lock } from 'lucide-react';
 import { Card, CardHeader, Skeleton } from '../../../../common/components/ui';
 import { errorMessage } from '../../../../services/api/errors';
 import type { OrderReceiptFile } from '../../../../services/api/types';
@@ -12,6 +12,9 @@ const kindLabel = (file: OrderReceiptFile) => (file.mimeType === 'application/pd
  * Los comprobantes que subió el cliente para el pedido que paga por transferencia, para mirarlos antes de confirmar o
  * rechazar el pago. Las URL son firmadas y vencen: la consulta las renueva sola antes de que caduquen.
  */
+/** En modo soporte sin el alcance «Archivos» el back no firma la URL (`url: null`). */
+const HIDDEN_HINT = 'Oculto en modo soporte';
+
 /** La etiqueta con la que el back guarda el comprobante que sube el cliente. */
 const RECEIPT_LABEL = 'Comprobante de transferencia';
 
@@ -41,34 +44,54 @@ export const OrderTransferReceipts = ({ orderId }: { orderId: string }) => {
               key={file.attachmentId}
               className="flex items-center gap-3 border-b border-outline pb-3 last:border-0 last:pb-0"
             >
-              <a
-                href={file.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={`Abrir ${file.originalName}`}
-                className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-md border border-outline bg-surface-sunken text-muted"
-              >
-                {isImage(file) ? (
-                  <img src={file.url} alt={`Comprobante ${file.originalName}`} className="h-full w-full object-cover" />
-                ) : (
-                  <FileText className="h-6 w-6" aria-hidden="true" />
-                )}
-              </a>
+              {file.url ? (
+                <a
+                  href={file.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Abrir ${file.originalName}`}
+                  className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-md border border-outline bg-surface-sunken text-muted"
+                >
+                  {isImage(file) ? (
+                    <img
+                      src={file.url}
+                      alt={`Comprobante ${file.originalName}`}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <FileText className="h-6 w-6" aria-hidden="true" />
+                  )}
+                </a>
+              ) : (
+                <span
+                  title={HIDDEN_HINT}
+                  className="flex h-14 w-14 shrink-0 items-center justify-center rounded-md border border-outline bg-surface-sunken text-muted"
+                >
+                  <Lock className="h-5 w-5" aria-hidden="true" />
+                </span>
+              )}
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-ink">{file.originalName}</p>
                 <p className="text-xs text-muted">
                   {kindLabel(file)} · {formatDateTime(file.uploadedAt)}
                 </p>
               </div>
-              <a
-                href={file.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-primary-strong underline"
-              >
-                Abrir
-                <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-              </a>
+              {file.url ? (
+                <a
+                  href={file.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-primary-strong underline"
+                >
+                  Abrir
+                  <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                </a>
+              ) : (
+                <span className="inline-flex shrink-0 items-center gap-1 text-xs text-muted">
+                  <Lock className="h-3.5 w-3.5" aria-hidden="true" />
+                  {HIDDEN_HINT}
+                </span>
+              )}
             </li>
           ))}
         </ul>

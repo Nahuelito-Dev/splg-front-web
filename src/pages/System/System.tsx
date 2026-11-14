@@ -9,7 +9,7 @@ import { SystemHealthCard } from './components/SystemHealthCard';
  * Herramientas de plataforma para el administrador general: estado del
  * sistema, pruebas de correo y push, y los roles del sistema. Sólo super
  * admin: la API rechaza cada uno de estos endpoints con 403 para un admin de
- * empresa, así que además de ocultarse del menú (`superAdminOnly`), si
+ * empresa, así que además de ocultarse del menú (`scope: platform`), si
  * alguien entra igual por URL cada tarjeta va a mostrar su propio error.
  */
 export const System = () => (

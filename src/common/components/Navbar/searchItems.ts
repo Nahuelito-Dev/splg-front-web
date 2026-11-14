@@ -3,6 +3,7 @@ import type { Car, Customer, Delivery, Order } from '../../../services/api/types
 import { formatCurrency, formatShortId } from '../../../utils/format';
 import { labelOf, ORDER_STATUS } from '../../../utils/statusLabels';
 import { NAV_SECTIONS } from '../sidemenu/navConfig';
+import { isNavItemVisible, type NavViewer } from '../sidemenu/navScope';
 
 export interface SearchResult {
   id: string;
@@ -28,12 +29,12 @@ export const normalizeText = (value: string): string =>
     .toLowerCase()
     .trim();
 
-/** Las pantallas del menú que coinciden con el término (o las primeras, sin término). Respeta `superAdminOnly`. */
-export const screenResults = (term: string, isSuperAdmin: boolean): SearchResult[] => {
+/** Las pantallas del menú que coinciden con el término (o las primeras, sin término). Respeta el alcance del menú. */
+export const screenResults = (term: string, viewer: NavViewer): SearchResult[] => {
   const needle = normalizeText(term);
   const all = NAV_SECTIONS.flatMap((section) =>
     section.items
-      .filter((item) => !item.superAdminOnly || isSuperAdmin)
+      .filter((item) => isNavItemVisible(item, viewer))
       .map<SearchResult>((item) => ({
         id: `screen-${item.path}`,
         group: 'Pantallas',

@@ -74,6 +74,8 @@ export const queryKeys = {
   stats: resource('stats'),
   stock: resource('stock'),
   suppliers: resource('suppliers'),
+  supportAccess: resource('supportAccess'),
+  platform: resource('platform'),
   timeSlots: resource('timeSlots'),
   tires: resource('tires'),
   trafficFines: resource('trafficFines'),

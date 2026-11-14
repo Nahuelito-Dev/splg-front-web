@@ -10,6 +10,7 @@ import { CarFormModal } from '../../Cars/components/CarFormModal';
 import type { Car } from '../../../services/api/types';
 import { useCarsByUser, useDeleteCar } from '../../../services/queries/cars';
 import { confirm, notify } from '../../../utils/notifications';
+import { usePermissions } from '../../../hooks';
 
 const carIcon = (type: string | null) => {
   const t = type?.toLowerCase() ?? '';
@@ -21,6 +22,7 @@ const carIcon = (type: string | null) => {
 type FormState = { open: false } | { open: true; car: Car | null };
 
 export const CarsManager = ({ userId }: { userId: string }) => {
+  const { canWrite, writeHint } = usePermissions();
   const { data: cars = [], isPending } = useCarsByUser(userId);
   const deleteCar = useDeleteCar();
   const [form, setForm] = useState<FormState>({ open: false });
@@ -46,7 +48,12 @@ export const CarsManager = ({ userId }: { userId: string }) => {
           <CardHeader title="Vehículos asignados" className="" />
           <p className="text-sm text-muted">La flota operativa de este chofer.</p>
         </div>
-        <Button size="sm" icon={<AddCircleOutlineIcon />} onClick={() => setForm({ open: true, car: null })}>
+        <Button
+          size="sm"
+          icon={<AddCircleOutlineIcon />}
+          onClick={() => setForm({ open: true, car: null })}
+          blockedReason={canWrite ? undefined : writeHint}
+        >
           Nuevo vehículo
         </Button>
       </div>
@@ -83,12 +90,16 @@ export const CarsManager = ({ userId }: { userId: string }) => {
                 <IconButton
                   label="Editar vehículo"
                   icon={<EditOutlinedIcon />}
+                  disabled={!canWrite}
+                  title={writeHint}
                   onClick={() => setForm({ open: true, car })}
                 />
                 <IconButton
                   label="Dar de baja el vehículo"
                   tone="danger"
                   icon={<DeleteOutlineIcon />}
+                  disabled={!canWrite}
+                  title={writeHint}
                   onClick={() => void handleDelete(car)}
                 />
               </div>

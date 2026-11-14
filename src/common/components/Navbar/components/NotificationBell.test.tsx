@@ -170,7 +170,7 @@ describe('NotificationBell: suscripción', () => {
   });
 });
 
-describe('NotificationBell: «Ver como» otra distribuidora', () => {
+describe('NotificationBell: eventos que el filtro de empresa descarta', () => {
   it('ignora incident:created y order:* de otra distribuidora y acepta los de la elegida', () => {
     scope.viewing = 'dist-A';
     setup();

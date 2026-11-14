@@ -42,7 +42,7 @@ const SearchResult = ({ term }: { term: string }) => {
 };
 
 export const Admins = () => {
-  const { isSuperAdmin } = usePermissions();
+  const { isSuperAdmin, readOnly, writeHint } = usePermissions();
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<Admin | null>(null);
   const { stateOf, remove, blockedReason } = useAdminManagement();
@@ -57,7 +57,11 @@ export const Admins = () => {
         title="Administradores"
         description="Gestión de admins por empresa (distribuidora)."
         actions={
-          <Button icon={<PersonAddAlt1Icon />} onClick={() => setCreateOpen(true)}>
+          <Button
+            icon={<PersonAddAlt1Icon />}
+            onClick={() => setCreateOpen(true)}
+            blockedReason={readOnly ? writeHint : undefined}
+          >
             Nuevo admin
           </Button>
         }

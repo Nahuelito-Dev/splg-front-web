@@ -20,7 +20,7 @@ export interface ServerExport {
  */
 export const useServerExport = (config: ServerExport | undefined): MenuAction[] => {
   const descarga = useDownloadExport();
-  const { operateHint } = usePermissions();
+  const { exportHint } = usePermissions();
   const NOMBRE: Record<ExportFormat, string> = { csv: 'CSV', xlsx: 'Excel' };
   if (!config) return [];
 
@@ -44,13 +44,13 @@ export const useServerExport = (config: ServerExport | undefined): MenuAction[] 
       label: 'Exportar CSV',
       icon: <Download />,
       onClick: () => exportar('csv'),
-      blockedReason: config.blockedReason ?? operateHint ?? ocupado,
+      blockedReason: config.blockedReason ?? exportHint ?? ocupado,
     },
     {
       label: 'Exportar Excel',
       icon: <Sheet />,
       onClick: () => exportar('xlsx'),
-      blockedReason: config.blockedReason ?? operateHint ?? ocupado,
+      blockedReason: config.blockedReason ?? exportHint ?? ocupado,
     },
   ];
 };

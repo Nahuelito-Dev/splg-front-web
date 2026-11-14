@@ -15,7 +15,7 @@ interface Props {
 /** Menú lateral: fijo en escritorio (reducible a íconos), drawer accesible (foco atrapado, Escape) en móvil. */
 export const SideMenu = ({ mobileOpen, onCloseMobile, mini, onToggleMini }: Props) => {
   const { fullName } = useAppSelector((state) => state.auth);
-  const { isSuperAdmin } = usePermissions();
+  const { isSuperAdminRole: isSuperAdmin } = usePermissions();
   const handleLogout = useLogout();
 
   return (

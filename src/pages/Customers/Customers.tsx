@@ -44,7 +44,7 @@ const PAGE_SIZE = 10;
 const CSV_HEADERS = ['Cliente', 'Email', 'Teléfono', 'Alta'];
 
 export const Customers = () => {
-  const { canManageCustomerAccounts, needsDistributor, operateHint } = usePermissions();
+  const { canManageCustomerAccounts, needsDistributor, operateHint, canWrite, writeHint } = usePermissions();
   // La búsqueda, el segmento y la página viven en la URL: al volver de una ficha se conservan.
   const [{ q: search, status: statusParam, page: pageParam }, setFilters] = useUrlParams({
     q: '',
@@ -148,7 +148,11 @@ export const Customers = () => {
             <Button variant="secondary" icon={<SearchCheck />} onClick={() => setFindingByUser(true)}>
               Buscar por usuario
             </Button>
-            <Button icon={<PersonAddAlt1Icon />} onClick={() => setForm({ open: true, customer: null })}>
+            <Button
+              icon={<PersonAddAlt1Icon />}
+              onClick={() => setForm({ open: true, customer: null })}
+              blockedReason={canWrite ? undefined : writeHint}
+            >
               Nuevo cliente
             </Button>
           </div>

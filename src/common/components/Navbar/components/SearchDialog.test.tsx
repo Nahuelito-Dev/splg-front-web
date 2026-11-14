@@ -6,9 +6,9 @@ import type { Customer, Order } from '../../../../services/api/types';
 const permissions = vi.fn();
 const search = vi.fn();
 vi.mock('../../../../hooks', () => ({
-  usePermissions: () => permissions() as unknown,
   useDebounce: <T,>(value: T) => value,
 }));
+vi.mock('../../sidemenu/useNavViewer', () => ({ useNavViewer: () => permissions() as unknown }));
 vi.mock('../../../../services/queries/globalSearch', () => ({
   MIN_SEARCH_LENGTH: 2,
   useGlobalSearch: (term: string, enabled: boolean) => search(term, enabled) as unknown,
@@ -44,7 +44,7 @@ afterEach(() => {
 
 describe('SearchDialog', () => {
   it('muestra los resultados agrupados por tipo y navega con flechas y Enter', () => {
-    permissions.mockReturnValue({ isSuperAdmin: false, needsDistributor: false });
+    permissions.mockReturnValue({ mode: 'company', permissions: 'all' });
     search.mockReturnValue({ ...EMPTY, orders: [ORDER], customers: [CUSTOMER] });
     const onClose = vi.fn();
     renderDialog(onClose);
@@ -64,7 +64,7 @@ describe('SearchDialog', () => {
   });
 
   it('con una sola pantalla posible, un clic la abre', () => {
-    permissions.mockReturnValue({ isSuperAdmin: false, needsDistributor: false });
+    permissions.mockReturnValue({ mode: 'company', permissions: 'all' });
     search.mockReturnValue(EMPTY);
     renderDialog();
     fireEvent.change(screen.getByRole('combobox'), { target: { value: 'zonas' } });
@@ -73,25 +73,33 @@ describe('SearchDialog', () => {
   });
 
   it('sin resultados lo dice', () => {
-    permissions.mockReturnValue({ isSuperAdmin: false, needsDistributor: false });
+    permissions.mockReturnValue({ mode: 'company', permissions: 'all' });
     search.mockReturnValue(EMPTY);
     renderDialog();
     fireEvent.change(screen.getByRole('combobox'), { target: { value: 'zzzz' } });
     expect(screen.getByText('Sin resultados para «zzzz»')).toBeInTheDocument();
   });
 
-  it('el administrador general sin distribuidora también busca datos', () => {
-    permissions.mockReturnValue({ isSuperAdmin: true, needsDistributor: true });
+  it('el administrador general en la plataforma no busca datos de empresas, sólo pantallas', () => {
+    permissions.mockReturnValue({ mode: 'platform', permissions: 'all' });
+    search.mockReturnValue(EMPTY);
+    renderDialog();
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'distribuidoras' } });
+    expect(search).toHaveBeenLastCalledWith('distribuidoras', false);
+    expect(screen.getByRole('option', { name: /Distribuidoras/ })).toBeInTheDocument();
+  });
+
+  it('en modo soporte busca datos de la empresa', () => {
+    permissions.mockReturnValue({ mode: 'support', permissions: 'all' });
     search.mockReturnValue({ ...EMPTY, orders: [ORDER] });
     renderDialog();
     fireEvent.change(screen.getByRole('combobox'), { target: { value: 'emilia' } });
     expect(search).toHaveBeenLastCalledWith('emilia', true);
-    expect(screen.queryByText(/elegí una distribuidora/)).not.toBeInTheDocument();
     expect(screen.getByRole('group', { name: 'Pedidos' })).toBeInTheDocument();
   });
 
   it('el diálogo tiene nombre accesible y el campo toma el foco', () => {
-    permissions.mockReturnValue({ isSuperAdmin: false, needsDistributor: false });
+    permissions.mockReturnValue({ mode: 'company', permissions: 'all' });
     search.mockReturnValue(EMPTY);
     renderDialog();
     expect(screen.getByRole('dialog', { name: 'Buscador global' })).toBeInTheDocument();

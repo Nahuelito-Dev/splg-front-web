@@ -13,3 +13,4 @@ export * from './useUnsavedChangesGuard';
 export * from './useReturnPath';
 export * from './usePdfDownload';
 export * from './usePermiso';
+export * from './useSupportSession';

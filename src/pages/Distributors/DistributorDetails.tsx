@@ -1,9 +1,8 @@
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeftRight, Ban, CircleCheck, Pencil, Trash2 } from 'lucide-react';
+import { Ban, CircleCheck, Pencil, Trash2 } from 'lucide-react';
 import {
   AuditHistoryLink,
   Badge,
-  Button,
   Card,
   DetailList,
   DetailSkeleton,
@@ -16,8 +15,7 @@ import {
 } from '../../common/components/ui';
 import { useBackToList, usePermissions } from '../../hooks';
 import { useCrumbLeaf } from '../../common/components';
-import { switchDistributor } from '../../utils/switchDistributor';
-import { activeDistributor } from '../../services/api/activeDistributor';
+import { RequestSupportButton } from '../../common/support/RequestSupportButton';
 import { useDistributor } from '../../services/queries/distributors';
 import { formatDateTime } from '../../utils/format';
 import { DISTRIBUTOR_STATUS, labelOf } from '../../utils/statusLabels';
@@ -34,10 +32,6 @@ export const DistributorDetails = () => {
   useCrumbLeaf(distributor?.name, goBack);
   const { toggleStatus, remove } = useDistributorActions({ onDeleted: () => navigate('/distributors') });
 
-  const viewAs = (slug: string) => {
-    void switchDistributor(slug);
-  };
-
   if (!isSuperAdmin) {
     return (
       <PageContainer>
@@ -46,19 +40,11 @@ export const DistributorDetails = () => {
     );
   }
 
-  const isViewing = distributor ? activeDistributor.get() === distributor.slug : false;
-
-  // La primaria es entrar a operar la empresa («Ver como»); el resto de la gestión va al menú ⋮.
+  // La primaria es pedir acceso de soporte para mirar la empresa; el resto de la gestión va al menú ⋮.
   const headerPrimary = distributor ? (
     <>
       <AuditHistoryLink entity="Distributor" recordId={distributor.distributor_id} />
-      {isViewing ? (
-        <span className="self-center px-2 text-xs font-semibold text-primary-strong">Viendo como esta empresa</span>
-      ) : (
-        <Button size="sm" icon={<ArrowLeftRight />} onClick={() => viewAs(distributor.slug)}>
-          Ver como
-        </Button>
-      )}
+      <RequestSupportButton size="sm" distributorId={distributor.distributor_id} />
     </>
   ) : undefined;
   const headerSecondary: MenuAction[] = distributor

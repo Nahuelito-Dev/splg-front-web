@@ -9,6 +9,8 @@ const permissions = vi.hoisted(() => ({
   canManageCustomerAccounts: false,
   needsDistributor: false,
   operateHint: undefined as string | undefined,
+  readOnly: false,
+  writeHint: undefined as string | undefined,
 }));
 
 vi.mock('../../hooks', async (importOriginal) => ({
@@ -137,5 +139,28 @@ describe('UserDetails: administrador general sin distribuidora elegida', () => {
     renderDetails();
     fireEvent.click(screen.getByRole('button', { name: 'Más acciones' }));
     expect(screen.getByRole('menuitem', { name: 'Bloquear' })).not.toHaveAttribute('aria-disabled');
+  });
+});
+
+describe('UserDetails: administrador general en modo soporte', () => {
+  it('la cuenta de un chofer de la empresa se ve, pero editar, foto, bloquear y baja quedan apagados', () => {
+    const READ_ONLY = 'Modo soporte: sólo lectura';
+    Object.assign(permissions, {
+      canManageCustomerAccounts: false,
+      needsDistributor: false,
+      operateHint: READ_ONLY,
+      readOnly: true,
+      writeHint: READ_ONLY,
+    });
+    user.current = makeUser(false, 'delivery');
+    renderDetails();
+    for (const name of ['Editar cuenta', 'Reemplazar', 'Quitar']) {
+      expect(screen.getByRole('button', { name })).toHaveAttribute('title', READ_ONLY);
+    }
+    fireEvent.click(screen.getByRole('button', { name: 'Más acciones' }));
+    for (const name of ['Bloquear', 'Dar de baja']) {
+      expect(screen.getByRole('menuitem', { name })).toHaveAttribute('aria-disabled', 'true');
+    }
+    Object.assign(permissions, { readOnly: false, writeHint: undefined, operateHint: undefined });
   });
 });

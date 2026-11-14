@@ -1,6 +1,5 @@
 import type { Dispatch } from 'redux';
 import { checkingCredentials, finishCheckingCredentials, login, logOut, type LoginPayload } from './authSlice';
-import { activeDistributor } from '../../services/api/activeDistributor';
 import { getAdmin } from '../../services/api/auth';
 import { errorMessage } from '../../services/api/errors';
 import { loginWithEmailAndPassword, logOutFirebase, type ICredentials } from '../../firebase/providers';
@@ -9,10 +8,6 @@ import { notify } from '../../utils/notifications';
 export const startLoginWithEmailAndPassword = ({ email, password }: ICredentials) => {
   return async (dispatch: Dispatch) => {
     dispatch(checkingCredentials());
-
-    // Una distribuidora elegida en la sesión anterior (o de una que ya no existe) no debe
-    // seguir viajando en X-Distributor: la elige de nuevo quien entre, si la necesita.
-    activeDistributor.set(null);
 
     const result = await loginWithEmailAndPassword({ email, password });
 

@@ -3,9 +3,13 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { DashboardLayout } from '../common/layout';
 import { RouteProgressBar } from '../common/layout/RouteProgressBar';
 import { LoadingState } from '../common/components/ui';
-import { RequireDistributor } from '../common/components/RequireDistributor';
+import { RequireCompanyAdmin, RequireCompanyScope } from '../common/components/RequireCompanyScope';
 import { RequireSuperAdmin } from '../common/components/RequireSuperAdmin';
 import { lazyPage } from './lazyPage';
+import { CheckingAuth } from '../common/components/Spinner';
+import { useAppSelector, useSupportSession } from '../hooks';
+import { useSupportEndedEvent } from '../hooks/useSupportEndedEvent';
+import { useSupportModeSync } from '../services/queries/supportSessions';
 
 // Cada página se carga recién al entrar (un chunk por ruta).
 const Home = lazyPage(() => import('../pages/Home/Home'), 'Home');
@@ -21,7 +25,6 @@ const EmployeeForm = lazyPage(() => import('../pages/Employees/EmployeeForm'), '
 const EmployeeDetails = lazyPage(() => import('../pages/Employees/EmployeeDetails'), 'EmployeeDetails');
 const Attendance = lazyPage(() => import('../pages/Attendance/Attendance'), 'Attendance');
 const Leaves = lazyPage(() => import('../pages/Leaves/Leaves'), 'Leaves');
-const Addresses = lazyPage(() => import('../pages/Addresses/Addresses'), 'Addresses');
 const GasCylinders = lazyPage(() => import('../pages/GasCylinders/GasCylinders'), 'GasCylinders');
 const GasCylinderDetails = lazyPage(() => import('../pages/GasCylinders/GasCylinderDetails'), 'GasCylinderDetails');
 const PhysicalCylinders = lazyPage(() => import('../pages/PhysicalCylinders/PhysicalCylinders'), 'PhysicalCylinders');
@@ -86,6 +89,7 @@ const DistributorDetails = lazyPage(() => import('../pages/Distributors/Distribu
 const Admins = lazyPage(() => import('../pages/Admins/Admins'), 'Admins');
 const AdminDetails = lazyPage(() => import('../pages/Admins/AdminDetails'), 'AdminDetails');
 const Ratings = lazyPage(() => import('../pages/Ratings/Ratings'), 'Ratings');
+const SupportAccess = lazyPage(() => import('../pages/SupportAccess/SupportAccess'), 'SupportAccess');
 const Audit = lazyPage(() => import('../pages/Audit/Audit'), 'Audit');
 const System = lazyPage(() => import('../pages/System/System'), 'System');
 const StockSummary = lazyPage(() => import('../pages/Stock/StockSummary'), 'StockSummary');
@@ -137,8 +141,19 @@ const TruckLoads = lazyPage(() => import('../pages/TruckLoads/TruckLoads'), 'Tru
 const TruckLoadDetails = lazyPage(() => import('../pages/TruckLoads/TruckLoadDetails'), 'TruckLoadDetails');
 
 export const DashboardRoutes = () => {
+  const role = useAppSelector((state) => state.auth.role);
+  const isSuperAdminRole = role === 'super_admin';
+  useSupportModeSync(isSuperAdminRole);
+  useSupportEndedEvent(isSuperAdminRole);
+  const { loaded, active } = useSupportSession();
+
+  // El administrador general no ve nada hasta saber si está en modo soporte: si no, el panel mostraría un instante la
+  // plataforma (o la empresa) equivocada y pediría datos sin la sesión.
+  if (isSuperAdminRole && !loaded) return <CheckingAuth />;
+
   return (
-    <DashboardLayout>
+    // Al entrar o salir del modo soporte se monta todo de nuevo: ninguna pantalla conserva datos del otro lado.
+    <DashboardLayout key={active?.id ?? 'sin-soporte'}>
       <Suspense
         fallback={
           <>
@@ -148,81 +163,74 @@ export const DashboardRoutes = () => {
         }
       >
         <Routes>
-          {/* 1. Dashboard General */}
+          {/* «Ambos» (§2 del diseño del modo soporte): el admin de empresa y el administrador general, cada uno con lo suyo */}
           <Route path="home" element={<Home />} />
-
-          {/* Mi cuenta: perfil, correo y contraseña del admin logueado */}
           <Route path="account" element={<Account />} />
-
-          {/* 2. Usuarios del Sistema */}
           <Route path="users" element={<Users />} />
           <Route path="users/details/:leadId" element={<UserDetails />} />
+          <Route path="settings/process-monitor" element={<ProcessMonitor />} />
+          <Route path="notifications" element={<Notifications />} />
+          <Route path="admins" element={<Admins />} />
+          <Route path="admins/:id" element={<AdminDetails />} />
+          <Route path="audit" element={<Audit />} />
 
-          {/* 3. Clientes */}
-          <Route path="customers" element={<Customers />} />
-          <Route path="customers/repurchase" element={<Repurchase />} />
-          <Route path="customers/details/:id" element={<CustomerDetails />} />
-
-          {/* Direcciones de entrega de todos los clientes — super_admin */}
-          <Route element={<RequireSuperAdmin />}>
-            <Route path="addresses" element={<Addresses />} />
+          {/* «Accesos de soporte»: sólo el admin de la empresa (la API se lo niega al administrador general) */}
+          <Route element={<RequireCompanyAdmin />}>
+            <Route path="support-access" element={<SupportAccess />} />
           </Route>
 
-          {/* 4. Garrafas / Productos (catálogo) */}
-          <Route path="cylinders" element={<GasCylinders />} />
-          <Route path="cylinders/details/:id" element={<GasCylinderDetails />} />
+          {/* Plataforma: sólo el administrador general fuera del modo soporte */}
+          <Route element={<RequireSuperAdmin />}>
+            <Route path="distributors" element={<Distributors />} />
+            <Route path="distributors/new" element={<DistributorForm />} />
+            <Route path="distributors/:id" element={<DistributorDetails />} />
+            <Route path="distributors/:id/edit" element={<DistributorForm />} />
+            <Route path="system" element={<System />} />
+          </Route>
 
-          {/* 4b. Envases físicos (garrafas serializadas, ciclo de canje) */}
-          <Route path="physical-cylinders" element={<PhysicalCylinders />} />
-          <Route path="physical-cylinders/expirations" element={<CylinderExpirations />} />
-          <Route path="physical-cylinders/recovery" element={<RecoveryCases />} />
-          <Route path="physical-cylinders/:id" element={<CylinderDetails />} />
-
-          {/* Legajos del personal */}
-          <Route path="employees" element={<Employees />} />
-          <Route path="employees/new" element={<EmployeeForm />} />
-          <Route path="employees/:id/edit" element={<EmployeeForm />} />
-          <Route path="employees/details/:id" element={<EmployeeDetails />} />
-          <Route path="employees/positions" element={<JobPositions />} />
-          <Route path="attendance" element={<Attendance />} />
-          <Route path="leaves" element={<Leaves />} />
-
-          {/* 5. Repartidores (Deliveries) */}
-          <Route path="deliveries" element={<Deliveries />} />
-          <Route path="deliveries/new" element={<DeliveryForm />} />
-          <Route path="deliveries/:id/edit" element={<DeliveryForm />} />
-          <Route path="deliveries/details/:id" element={<DeliveryDetails />} />
-
-          {/* 6. Vehículos (Cars) - NUEVA RUTA */}
-          <Route path="cars" element={<Cars />} />
-          <Route path="cars/details/:id" element={<CarDetails />} />
-          <Route path="settings" element={<Configuration />} />
-          <Route path="settings/dispatch" element={<DispatchSettings />} />
-          <Route path="settings/scheduled-tasks" element={<ScheduledTasksSettings />} />
-          <Route path="settings/automatic-processes" element={<AutomaticProcesses />} />
-          <Route path="settings/process-monitor" element={<ProcessMonitor />} />
-          <Route path="settings/express" element={<ExpressSettings />} />
-          <Route path="refunds" element={<Refunds />} />
-
-          {/* Documentación de la flota: vencimientos (CU-139), planes (CU-105/140) y tareas */}
-          <Route path="fleet/expirations" element={<FleetExpirations />} />
-          <Route path="fleet/planner" element={<FleetPlanner />} />
-          <Route path="fleet/files" element={<FleetFiles />} />
-          <Route path="fleet/plans" element={<FleetPlans />} />
-          <Route path="fleet/plans/:id" element={<FleetPlanDetails />} />
-          <Route path="fleet/tasks" element={<FleetTasks />} />
-          <Route path="fleet/tasks/:id" element={<FleetTaskDetail />} />
-
-          {/* 7. Ordenes */}
-          <Route path="orders" element={<Orders />} />
-          <Route path="orders/dispatch" element={<DispatchBoard />} />
-          <Route path="route-batches" element={<RouteBatches />} />
-          <Route path="route-sheets" element={<RouteSheets />} />
-          <Route path="orders/new" element={<NewOrder />} />
-          <Route path="orders/:id" element={<OrderDetails />} />
-
-          {/* Stock físico, compras y cargas del camión: sólo dentro de una distribuidora */}
-          <Route element={<RequireDistributor />}>
+          {/* Empresa: el admin de la empresa, y el administrador general sólo en modo soporte (en sólo lectura) */}
+          <Route element={<RequireCompanyScope />}>
+            <Route path="customers" element={<Customers />} />
+            <Route path="customers/repurchase" element={<Repurchase />} />
+            <Route path="customers/details/:id" element={<CustomerDetails />} />
+            <Route path="cylinders" element={<GasCylinders />} />
+            <Route path="cylinders/details/:id" element={<GasCylinderDetails />} />
+            <Route path="physical-cylinders" element={<PhysicalCylinders />} />
+            <Route path="physical-cylinders/expirations" element={<CylinderExpirations />} />
+            <Route path="physical-cylinders/recovery" element={<RecoveryCases />} />
+            <Route path="physical-cylinders/:id" element={<CylinderDetails />} />
+            <Route path="employees" element={<Employees />} />
+            <Route path="employees/new" element={<EmployeeForm />} />
+            <Route path="employees/:id/edit" element={<EmployeeForm />} />
+            <Route path="employees/details/:id" element={<EmployeeDetails />} />
+            <Route path="employees/positions" element={<JobPositions />} />
+            <Route path="attendance" element={<Attendance />} />
+            <Route path="leaves" element={<Leaves />} />
+            <Route path="deliveries" element={<Deliveries />} />
+            <Route path="deliveries/new" element={<DeliveryForm />} />
+            <Route path="deliveries/:id/edit" element={<DeliveryForm />} />
+            <Route path="deliveries/details/:id" element={<DeliveryDetails />} />
+            <Route path="cars" element={<Cars />} />
+            <Route path="cars/details/:id" element={<CarDetails />} />
+            <Route path="settings" element={<Configuration />} />
+            <Route path="settings/dispatch" element={<DispatchSettings />} />
+            <Route path="settings/scheduled-tasks" element={<ScheduledTasksSettings />} />
+            <Route path="settings/automatic-processes" element={<AutomaticProcesses />} />
+            <Route path="settings/express" element={<ExpressSettings />} />
+            <Route path="refunds" element={<Refunds />} />
+            <Route path="fleet/expirations" element={<FleetExpirations />} />
+            <Route path="fleet/planner" element={<FleetPlanner />} />
+            <Route path="fleet/files" element={<FleetFiles />} />
+            <Route path="fleet/plans" element={<FleetPlans />} />
+            <Route path="fleet/plans/:id" element={<FleetPlanDetails />} />
+            <Route path="fleet/tasks" element={<FleetTasks />} />
+            <Route path="fleet/tasks/:id" element={<FleetTaskDetail />} />
+            <Route path="orders" element={<Orders />} />
+            <Route path="orders/dispatch" element={<DispatchBoard />} />
+            <Route path="route-batches" element={<RouteBatches />} />
+            <Route path="route-sheets" element={<RouteSheets />} />
+            <Route path="orders/new" element={<NewOrder />} />
+            <Route path="orders/:id" element={<OrderDetails />} />
             <Route path="stock" element={<StockSummary />} />
             <Route path="stock/warehouses" element={<Warehouses />} />
             <Route path="stock/warehouses/:id" element={<WarehouseDetails />} />
@@ -243,7 +251,6 @@ export const DashboardRoutes = () => {
             <Route path="fleet/fuel-loads/new" element={<FuelLoadForm />} />
             <Route path="fleet/fuel-loads/:id/edit" element={<FuelLoadForm />} />
             <Route path="fleet/fines" element={<TrafficFines />} />
-            {/* Lectura de documentos (M6): las lecturas y las propuestas para revisar */}
             <Route path="document-readings" element={<DocumentReadings />} />
             <Route path="document-readings/:id" element={<DocumentReadingDetails />} />
             <Route path="fleet/insurers" element={<Insurers />} />
@@ -266,44 +273,19 @@ export const DashboardRoutes = () => {
             <Route path="finance/accounts" element={<CustomerAccounts />} />
             <Route path="finance/accounts/aging" element={<CustomerAging />} />
             <Route path="finance/accounts/:id" element={<CustomerAccountDetails />} />
-            {/* Comisiones, reglas y liquidaciones salieron del alcance: las páginas siguen en Finance/, sin ruta. */}
             <Route path="finance/commissions" element={<Navigate to="/finance" replace />} />
             <Route path="finance/commission-rules" element={<Navigate to="/finance" replace />} />
             <Route path="finance/liquidations/*" element={<Navigate to="/finance" replace />} />
             <Route path="truck-loads" element={<TruckLoads />} />
             <Route path="truck-loads/:id" element={<TruckLoadDetails />} />
-          </Route>
-
-          <Route path="unpaid-collections" element={<UnpaidCollections />} />
-
-          {/* 8. Tracking en vivo de choferes */}
-          <Route path="tracking" element={<Tracking />} />
-
-          <Route path="claims" element={<Claims />} />
-          <Route path="incidents" element={<Incidents />} />
-          <Route path="notifications" element={<Notifications />} />
-          <Route path="coverage-zones" element={<CoverageZones />} />
-          <Route path="reservations" element={<Reservations />} />
-          <Route path="reports" element={<Reports />} />
-          <Route path="ratings" element={<Ratings />} />
-
-          {/* Gestión de empresas (multi-distribuidora) — super_admin */}
-          <Route element={<RequireSuperAdmin />}>
-            <Route path="distributors" element={<Distributors />} />
-            <Route path="distributors/new" element={<DistributorForm />} />
-            <Route path="distributors/:id" element={<DistributorDetails />} />
-            <Route path="distributors/:id/edit" element={<DistributorForm />} />
-          </Route>
-          {/* Gestión de admins por empresa — super_admin */}
-          <Route path="admins" element={<Admins />} />
-          <Route path="admins/:id" element={<AdminDetails />} />
-
-          {/* Auditoría (CU-152) — admin y super_admin */}
-          <Route path="audit" element={<Audit />} />
-
-          {/* Estado de la plataforma y herramientas de soporte — super_admin */}
-          <Route element={<RequireSuperAdmin />}>
-            <Route path="system" element={<System />} />
+            <Route path="unpaid-collections" element={<UnpaidCollections />} />
+            <Route path="tracking" element={<Tracking />} />
+            <Route path="claims" element={<Claims />} />
+            <Route path="incidents" element={<Incidents />} />
+            <Route path="coverage-zones" element={<CoverageZones />} />
+            <Route path="reservations" element={<Reservations />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="ratings" element={<Ratings />} />
           </Route>
 
           {/* Ruta por defecto */}

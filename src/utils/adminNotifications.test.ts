@@ -8,6 +8,12 @@ describe('notificationTarget', () => {
     expect(notificationVisuals('document_reading_notice').tone).toBe('warn');
   });
 
+  it('un pedido o una emergencia de soporte abre «Accesos de soporte» con esa sesión', () => {
+    expect(notificationTarget({ entity: 'support-session', id: 's-1' })).toBe('/support-access?session=s-1');
+    expect(notificationVisuals('support_access_requested').tone).toBe('warn');
+    expect(notificationVisuals('support_emergency_opened').tone).toBe('danger');
+  });
+
   it('lleva cada entidad a su pantalla', () => {
     expect(notificationTarget({ entity: 'order', id: 'o-1' })).toBe('/orders/o-1');
     expect(notificationTarget({ entity: 'claim', id: 'c-1' })).toBe('/claims?claim=c-1');

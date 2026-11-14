@@ -2,9 +2,10 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { Dialog } from '@mui/material';
 import { Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useDebounce, usePermissions } from '../../../../hooks';
+import { useDebounce } from '../../../../hooks';
 import { MIN_SEARCH_LENGTH, useGlobalSearch } from '../../../../services/queries/globalSearch';
 import { cx } from '../../ui/cx';
+import { useNavViewer } from '../../sidemenu/useNavViewer';
 import { buildSearchGroups, screenResults, type SearchResult } from '../searchItems';
 
 interface Props {
@@ -19,7 +20,7 @@ interface Props {
 export const SearchDialog = ({ open, onClose }: Props) => {
   const navigate = useNavigate();
   const listId = useId();
-  const { isSuperAdmin } = usePermissions();
+  const viewer = useNavViewer();
   const titleId = `${listId}-title`;
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [term, setTerm] = useState('');
@@ -27,8 +28,9 @@ export const SearchDialog = ({ open, onClose }: Props) => {
   const debounced = useDebounce(term.trim(), 300);
   const itemRefs = useRef<Record<string, HTMLElement | null>>({});
 
-  const found = useGlobalSearch(debounced, open);
-  const groups = buildSearchGroups(screenResults(term, isSuperAdmin), found);
+  // En la plataforma no hay pedidos, clientes ni choferes que buscar: sólo pantallas.
+  const found = useGlobalSearch(debounced, open && viewer.mode !== 'platform');
+  const groups = buildSearchGroups(screenResults(term, viewer), found);
   const flat = groups.flatMap((group) => group.results);
   const current = flat[Math.min(activeIndex, flat.length - 1)];
 

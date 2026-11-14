@@ -2,7 +2,8 @@ import { useState, type ReactNode } from 'react';
 import { CrumbProvider, Navbar, SideMenu } from '../components';
 import { NAV_MINI_KEY, useStoredFlag } from '../../hooks';
 import { cx } from '../components/ui/cx';
-import { DistributorNotice } from './DistributorNotice';
+import { CompanySupportStrip } from '../support/CompanySupportStrip';
+import { SupportBanner } from '../support/SupportBanner';
 
 interface Props {
   children: ReactNode;
@@ -29,8 +30,12 @@ export const DashboardLayout = ({ children }: Props) => {
             navMini ? 'lg:pl-[76px]' : 'lg:pl-64',
           )}
         >
-          <Navbar onOpenMenu={() => setMobileNavOpen(true)} />
-          <DistributorNotice />
+          {/* La banda del modo soporte queda pegada arriba junto con la barra: se ve en todas las pantallas. */}
+          <div className="sticky top-0 z-20">
+            <SupportBanner />
+            <Navbar onOpenMenu={() => setMobileNavOpen(true)} />
+          </div>
+          <CompanySupportStrip />
           <main className="flex-1">{children}</main>
         </div>
       </div>
