@@ -4,6 +4,7 @@ import { ChevronDown, LogOut } from 'lucide-react';
 import { useAppSelector } from '../../../hooks';
 import { useOrders } from '../../../services/queries/orders';
 import { useMyAccount } from '../../../services/queries/users';
+import { CompanyBrand, PoweredByPlatform } from '../CompanyBrand';
 import { LogoSplg } from '../LogoSplg';
 import { cx } from '../ui/cx';
 import { MyAvatar } from '../MyAvatar';
@@ -69,12 +70,22 @@ export const SideMenuContent = ({ isSuperAdmin, fullName, mini = false, onNaviga
 
   return (
     <div className="side-glow relative flex h-full flex-col gap-5 overflow-hidden bg-side px-3.5 py-[18px] text-side-text">
-      <LogoSplg
-        subtitle={mini ? undefined : 'Gestión de reparto'}
-        markOnly={mini}
-        className={cx('relative', mini ? 'justify-center' : 'px-1.5')}
-      />
-      <TenantCard mini={mini} onNavigate={onNavigate} />
+      {/* La plataforma lleva la marca de la plataforma; una empresa, la suya (su Apariencia). */}
+      {viewer.mode === 'platform' ? (
+        <LogoSplg
+          subtitle={mini ? undefined : 'Gestión de reparto'}
+          markOnly={mini}
+          className={cx('relative', mini ? 'justify-center' : 'px-1.5')}
+        />
+      ) : (
+        <CompanyBrand
+          subtitle={mini ? undefined : 'Gestión de reparto'}
+          markOnly={mini}
+          className={cx('relative', mini ? 'justify-center' : 'px-1.5')}
+        />
+      )}
+      {/* En la empresa del admin el encabezado ya la nombra; en soporte y en la propia, la tarjeta dice cómo se mira. */}
+      {viewer.mode !== 'company' && <TenantCard mini={mini} onNavigate={onNavigate} />}
 
       <nav aria-label="Secciones del panel" className="relative -mx-3.5 flex-1 space-y-1.5 overflow-y-auto px-3.5">
         {NAV_SECTIONS.map((section) => {
@@ -121,6 +132,7 @@ export const SideMenuContent = ({ isSuperAdmin, fullName, mini = false, onNaviga
         })}
       </nav>
 
+      {viewer.mode !== 'platform' && !mini && <PoweredByPlatform className="relative -mb-2" />}
       <div
         className={cx(
           'relative flex items-center rounded-[11px] border border-side-line',

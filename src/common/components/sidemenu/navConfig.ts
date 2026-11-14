@@ -46,6 +46,7 @@ import {
   ReceiptText,
   Repeat,
   ServerCog,
+  Palette,
   Settings,
   SlidersHorizontal,
   Timer,
@@ -220,6 +221,7 @@ export const NAV_SECTIONS: NavSection[] = [
     title: 'Configuración',
     items: [
       { title: 'Configuración general', path: '/settings', icon: Settings },
+      { title: 'Apariencia', path: '/settings/appearance', icon: Palette, permission: 'configuracion.ver' },
       { title: 'Zonas de cobertura', path: '/coverage-zones', icon: MapIcon },
       { title: 'Parámetros del despacho', path: '/settings/dispatch', icon: SlidersHorizontal },
       { title: 'Compra express', path: '/settings/express', icon: Zap },

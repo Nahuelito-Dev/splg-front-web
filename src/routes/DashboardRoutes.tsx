@@ -64,6 +64,7 @@ const FleetCosts = lazyPage(() => import('../pages/FleetExpense/FleetCosts'), 'F
 const Tires = lazyPage(() => import('../pages/FleetExpense/Tires'), 'Tires');
 const Configuration = lazyPage(() => import('../pages/Configuration/Configuration'), 'Configuration');
 const DispatchSettings = lazyPage(() => import('../pages/Configuration/DispatchSettings'), 'DispatchSettings');
+const Appearance = lazyPage(() => import('../pages/Configuration/Appearance'), 'Appearance');
 const AutomaticProcesses = lazyPage(() => import('../pages/Configuration/AutomaticProcesses'), 'AutomaticProcesses');
 const PlatformMonitoring = lazyPage(() => import('../pages/Platform/PlatformMonitoring'), 'PlatformMonitoring');
 const PlatformScheduledTasks = lazyPage(
@@ -230,6 +231,7 @@ export const DashboardRoutes = () => {
             <Route path="cars" element={<Cars />} />
             <Route path="cars/details/:id" element={<CarDetails />} />
             <Route path="settings" element={<Configuration />} />
+            <Route path="settings/appearance" element={<Appearance />} />
             <Route path="settings/dispatch" element={<DispatchSettings />} />
             <Route path="settings/scheduled-tasks" element={<ScheduledTasksSettings />} />
             <Route path="settings/automatic-processes" element={<AutomaticProcesses />} />

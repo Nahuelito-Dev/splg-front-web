@@ -1,6 +1,7 @@
 import { Tooltip } from '@mui/material';
 import { Layers } from 'lucide-react';
 import { usePermissions } from '../../../hooks';
+import { useCompanyDisplayName } from '../useCompanyDisplayName';
 import { useCurrentDistributor } from '../../../services/queries/distributors';
 import { usePlatform } from '../../../services/queries/supportSessions';
 import { PhotoThumb } from '../ui/PhotoThumb';
@@ -10,7 +11,7 @@ import { initialsOf } from '../../../utils/format';
 const CARD = 'relative flex items-center rounded-[11px] border border-side-line bg-side-raised px-2.5 py-2';
 
 /**
- * Quién se está mirando: la empresa del admin, la empresa de la sesión de soporte o, para el administrador general en
+ * Quién se está mirando: la empresa del admin (con el nombre de su Apariencia), la de la sesión de soporte o, para el administrador general en
  * la plataforma, el nombre de la plataforma (de `GET /v2/platform`, nunca escrito en el panel).
  */
 export const TenantCard = ({ mini = false }: { mini?: boolean; onNavigate?: () => void }) => {
@@ -18,8 +19,9 @@ export const TenantCard = ({ mini = false }: { mini?: boolean; onNavigate?: () =
   const isPlatform = mode === 'platform';
   const { data: distributor } = useCurrentDistributor(!isPlatform);
   const { data: platform } = usePlatform();
+  const companyName = useCompanyDisplayName();
 
-  const name = isPlatform ? (platform?.name ?? '…') : (distributor?.name ?? '…');
+  const name = isPlatform ? (platform?.name ?? '…') : (companyName ?? '…');
   const detail = isPlatform
     ? 'Plataforma'
     : mode === 'support'

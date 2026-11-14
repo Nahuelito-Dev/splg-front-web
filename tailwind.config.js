@@ -13,6 +13,11 @@ import plugin from 'tailwindcss/plugin.js';
  * inyectadas más abajo) para poder cambiar de valor sin cambiar de clase.
  * Las escalas (`llama`, `gas`, `tinta`) y el menú lateral (`side`) quedan
  * fijos: el menú ya es oscuro en los dos temas.
+ *
+ * Tema por distribuidora: los roles de marca (`primary`, sus variantes y el
+ * gradiente, `on-primary`, `accent`) también son variables. Acá llevan Brasa
+ * (la plataforma y la empresa sin tema propio); en el contexto de una empresa
+ * con tema, `src/theme/companyTheme.ts` las pisa con los tokens de la API.
  */
 const brand = createRequire(import.meta.url)('./src/theme/brand.json');
 const { llama, gas, tinta, canvas, sidebar, status, statusSoft, primaryGradient, dark } = brand;
@@ -34,7 +39,19 @@ const channels = (hex) => {
 /** Variable CSS reactiva al tema: valor claro en :root, oscuro en .dark. */
 const themed = (name) => `rgb(var(--c-${name}) / <alpha-value>)`;
 
+/** Los roles de marca con Brasa: iguales en claro y oscuro salvo los suaves y el fuerte. */
+const BRAND_VARS = {
+  primary: llama['600'],
+  'primary-hover': llama['700'],
+  'primary-from': primaryGradient.from,
+  'primary-to': primaryGradient.to,
+  'primary-edge': primaryGradient.border,
+  'on-primary': '#FFFFFF',
+  accent: gas['400'],
+};
+
 const LIGHT_VARS = {
+  ...BRAND_VARS,
   bg: canvas,
   surface: '#FFFFFF',
   'surface-hover': tinta['50'],
@@ -61,6 +78,7 @@ const LIGHT_VARS = {
 };
 
 const DARK_VARS = {
+  ...BRAND_VARS,
   bg: dark.canvas,
   surface: dark.surface,
   'surface-hover': dark.surfaceHover,
@@ -111,16 +129,16 @@ export default {
         gas,
         tinta,
         primary: {
-          DEFAULT: llama[600],
-          hover: llama[700],
+          DEFAULT: themed('primary'),
+          hover: themed('primary-hover'),
           strong: themed('primary-strong'),
           soft: themed('primary-soft'),
-          from: primaryGradient.from,
-          to: primaryGradient.to,
-          edge: primaryGradient.border,
+          from: themed('primary-from'),
+          to: themed('primary-to'),
+          edge: themed('primary-edge'),
         },
-        'on-primary': '#FFFFFF',
-        accent: { DEFAULT: gas[400], soft: themed('accent-soft') },
+        'on-primary': themed('on-primary'),
+        accent: { DEFAULT: themed('accent'), soft: themed('accent-soft') },
         'on-accent': themed('on-accent'),
         ink: themed('ink'),
         'ink-2': themed('ink-2'),
