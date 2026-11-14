@@ -1,18 +1,24 @@
-import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import { useMutation, useQueries, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { toApiError } from '../api/errors';
 import {
   ROUTE_SHEET_CODES,
   addRouteSheetStop,
   cancelRouteSheet,
   closeRoutePlanDay,
+  closeRouteSheet,
   confirmAllRouteSheets,
+  createRoutePlanningHoliday,
   confirmRouteSheet,
   createRouteSheet,
+  deleteRoutePlanningHoliday,
+  failRouteSheetStop,
   getLateOrders,
   getLoadSuggestion,
   getRoutePlanDay,
   getRoutePlanningSettings,
   getRouteSheet,
+  getRouteSheetExecution,
+  listRoutePlanningHolidays,
   listRouteSheets,
   moveRouteSheetStop,
   openRoutePlanDay,
@@ -22,13 +28,18 @@ import {
   removeRouteSheetStop,
   reopenRouteSheet,
   setRouteSheetSequence,
+  startRouteSheet,
   updateRouteSheet,
 } from '../api/routeSheets';
+import { cancelOrder, updateOrder } from '../api/orders';
 import type {
+  CreateRoutePlanningHolidayBody,
   CreateRouteSheetBody,
+  FailedStopBody,
   PatchRoutePlanningSettingsBody,
   RoutePlanDay,
   RouteSheet,
+  RouteSheetExecution,
   UpdateRouteSheetBody,
 } from '../api/types';
 import { queryKeys } from './queryKeys';
@@ -41,11 +52,14 @@ export const routePlanKeys = {
   day: (date: string) => plans.detail(date),
   lateOrders: (date: string) => [...plans.detail(date), 'late-orders'] as const,
   settings: () => plans.detail('settings'),
+  holidays: () => plans.detail('holidays'),
 };
 
 export const routeSheetKeys = {
   detail: (id: string) => sheets.detail(id),
   loadSuggestion: (id: string) => [...sheets.detail(id), 'load-suggestion'] as const,
+  /** Cuelga del detalle: lo que invalida la hoja también refresca su seguimiento. */
+  execution: (id: string) => [...sheets.detail(id), 'execution'] as const,
   dissolved: (date: string) => sheets.list({ date, status: 'dissolved' }),
 };
 
@@ -74,6 +88,21 @@ export const useDissolvedRouteSheets = (date: string, { enabled = true }: Option
 
 export const useRouteSheet = (id: string | undefined) =>
   useQuery({ queryKey: routeSheetKeys.detail(id ?? ''), queryFn: () => getRouteSheet(id ?? ''), enabled: !!id });
+
+/**
+ * El seguimiento de una hoja confirmada, en curso o cerrada. `refetchInterval` es el respaldo del socket (sin él,
+ * o en modo soporte, que no recibe tiempo real).
+ */
+export const useRouteSheetExecution = (
+  id: string | undefined,
+  { enabled = true, refetchInterval = false }: Options & { refetchInterval?: number | false } = {},
+) =>
+  useQuery({
+    queryKey: routeSheetKeys.execution(id ?? ''),
+    queryFn: () => getRouteSheetExecution(id ?? ''),
+    enabled: enabled && !!id,
+    refetchInterval,
+  });
 
 export const useLoadSuggestion = (id: string | undefined) =>
   useQuery({
@@ -258,3 +287,100 @@ export const useReopenRouteSheet = () =>
 
 export const useCancelRouteSheet = () =>
   useSheetMutation((sheet: RouteSheet) => cancelRouteSheet(sheet.id, sheet.version), one);
+
+/**
+ * Las acciones sobre la hoja en curso (iniciar, no entregada, cerrar) no devuelven la hoja: al terminar se refresca
+ * el día, la hoja, su seguimiento y los pedidos. Si la hoja está tomada, reintenta sola.
+ */
+const useExecutionMutation = <V, R>(mutationFn: (variables: V) => Promise<R>) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn,
+    retry: retryWhenBusy,
+    retryDelay: busyDelay,
+    onSuccess: () => refreshAll(queryClient),
+  });
+};
+
+export const useStartRouteSheet = () =>
+  useExecutionMutation(({ sheetId, acknowledgeShortages }: { sheetId: string; acknowledgeShortages?: boolean }) =>
+    startRouteSheet(sheetId, { acknowledgeShortages: Boolean(acknowledgeShortages) }),
+  );
+
+export const useFailRouteSheetStop = () =>
+  useExecutionMutation(({ sheetId, orderId, body }: { sheetId: string; orderId: string; body: FailedStopBody }) =>
+    failRouteSheetStop(sheetId, orderId, body),
+  );
+
+export const useCloseRouteSheet = () =>
+  useExecutionMutation(({ sheetId, reason }: { sheetId: string; reason: string }) =>
+    closeRouteSheet(sheetId, { reason }),
+  );
+
+/** Las horas nuevas que manda el socket, sobre el seguimiento guardado (sin volver a pedirlo). */
+export const withEtas = (
+  execution: RouteSheetExecution | undefined,
+  etas: { orderId: string; etaAt: string; late: boolean }[],
+): RouteSheetExecution | undefined => {
+  if (!execution) return execution;
+  const byOrder = new Map(etas.map((e) => [e.orderId, e]));
+  return {
+    ...execution,
+    stops: execution.stops.map((stop) => {
+      const eta = byOrder.get(stop.orderId);
+      return eta ? { ...stop, etaAt: eta.etaAt, late: eta.late } : stop;
+    }),
+  };
+};
+
+/**
+ * El seguimiento de varias hojas a la vez (las en curso o cerradas del día): de ahí salen los pedidos que esperan al
+ * admin. La API no tiene un listado propio de esos pedidos.
+ */
+export const useRouteSheetExecutions = (ids: string[], { enabled = true }: Options = {}) =>
+  useQueries({
+    queries: ids.map((id) => ({
+      queryKey: routeSheetKeys.execution(id),
+      queryFn: () => getRouteSheetExecution(id),
+      enabled,
+    })),
+  });
+
+/** Un pedido que espera al admin: cambiarle la fecha (`PATCH /orders/:id`, la franja la decide la planificación). */
+export const useRescheduleAwaitingOrder = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ orderId, scheduledDate }: { orderId: string; scheduledDate: string }) =>
+      updateOrder(orderId, { scheduledDate }),
+    onSuccess: () => refreshAll(queryClient),
+  });
+};
+
+/** Un pedido que espera al admin: cancelarlo con motivo (`PATCH /orders/:id/cancel`). */
+export const useCancelAwaitingOrder = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ orderId, reason }: { orderId: string; reason: string }) => cancelOrder(orderId, { reason }),
+    onSuccess: () => refreshAll(queryClient),
+  });
+};
+
+/** Los feriados de la distribuidora desde hoy. */
+export const useRoutePlanningHolidays = ({ enabled = true }: Options = {}) =>
+  useQuery({ queryKey: routePlanKeys.holidays(), queryFn: () => listRoutePlanningHolidays(), enabled });
+
+export const useCreateRoutePlanningHoliday = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: CreateRoutePlanningHolidayBody) => createRoutePlanningHoliday(body),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: routePlanKeys.holidays() }),
+  });
+};
+
+export const useDeleteRoutePlanningHoliday = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteRoutePlanningHoliday(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: routePlanKeys.holidays() }),
+  });
+};

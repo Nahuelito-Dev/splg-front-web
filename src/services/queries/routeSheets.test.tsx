@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { planDay, sheet, uuid } from '../../test/routeSheetFixtures';
+import { execution, planDay, sheet, uuid } from '../../test/routeSheetFixtures';
 import { ApiError } from '../api/errors';
 
 const api = vi.hoisted(() => ({
@@ -11,6 +11,14 @@ const api = vi.hoisted(() => ({
   cancelRouteSheet: vi.fn(),
   confirmRouteSheet: vi.fn(),
   proposeRoutePlan: vi.fn(),
+  startRouteSheet: vi.fn(),
+  failRouteSheetStop: vi.fn(),
+  closeRouteSheet: vi.fn(),
+}));
+const orders = vi.hoisted(() => ({ updateOrder: vi.fn(), cancelOrder: vi.fn() }));
+vi.mock('../api/orders', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  ...orders,
 }));
 vi.mock('../api/routeSheets', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
@@ -22,11 +30,17 @@ import type { RoutePlanDay } from '../api/types';
 import {
   routePlanKeys,
   routeSheetKeys,
+  useCancelAwaitingOrder,
   useCancelRouteSheet,
+  useCloseRouteSheet,
   useConfirmRouteSheet,
+  useFailRouteSheetStop,
   useMoveRouteSheetStop,
   useProposeRoutePlan,
+  useRescheduleAwaitingOrder,
   useSetRouteSheetSequence,
+  useStartRouteSheet,
+  withEtas,
 } from './routeSheets';
 
 const setup = <T,>(hook: () => T) => {
@@ -145,5 +159,69 @@ describe('hooks de hojas de ruta', () => {
     expect(client.getQueryData<RoutePlanDay>(routePlanKeys.day('2026-11-14'))?.sheets.map((s) => s.id)).toEqual([
       uuid(2),
     ]);
+  });
+
+  it('iniciar manda acknowledgeShortages sólo si se aceptaron los faltantes y refresca día, hojas y pedidos', async () => {
+    api.startRouteSheet.mockResolvedValue({ sheetId: uuid(1), alreadyStarted: false, droppedOrderIds: [] });
+    const { invalidate, result } = setup(useStartRouteSheet);
+    await result.current.mutateAsync({ sheetId: uuid(1) });
+    await result.current.mutateAsync({ sheetId: uuid(1), acknowledgeShortages: true });
+    expect(api.startRouteSheet).toHaveBeenNthCalledWith(1, uuid(1), { acknowledgeShortages: false });
+    expect(api.startRouteSheet).toHaveBeenNthCalledWith(2, uuid(1), { acknowledgeShortages: true });
+    expect(invalidated(invalidate)).toEqual(
+      expect.arrayContaining([queryKeys.routePlans.all[0], queryKeys.routeSheets.all[0], queryKeys.orders.all[0]]),
+    );
+  });
+
+  it('iniciar reintenta si la hoja está tomada y no reintenta los faltantes', async () => {
+    api.startRouteSheet
+      .mockRejectedValueOnce(new ApiError(409, ['Tomada'], 'ROUTE_SHEET_BUSY'))
+      .mockRejectedValueOnce(new ApiError(409, ['Faltan garrafas'], 'ROUTE_SHEET_SHORTAGES'));
+    const { result } = setup(useStartRouteSheet);
+    await expect(result.current.mutateAsync({ sheetId: uuid(1) })).rejects.toBeInstanceOf(ApiError);
+    expect(api.startRouteSheet).toHaveBeenCalledTimes(2);
+  });
+
+  it('no entregada y cerrar llaman a su endpoint y refrescan; un error no refresca', async () => {
+    api.failRouteSheetStop.mockResolvedValue({ sheetId: uuid(1), orderId: uuid(102), nextOrderId: uuid(103) });
+    api.closeRouteSheet.mockRejectedValue(new ApiError(409, ['No está en curso'], 'ROUTE_SHEET_NOT_IN_PROGRESS'));
+    const failed = setup(useFailRouteSheetStop);
+    await failed.result.current.mutateAsync({
+      sheetId: uuid(1),
+      orderId: uuid(102),
+      body: { reason: 'customer_absent' },
+    });
+    expect(api.failRouteSheetStop).toHaveBeenCalledWith(uuid(1), uuid(102), { reason: 'customer_absent' });
+    expect(failed.invalidate).toHaveBeenCalled();
+    const closed = setup(useCloseRouteSheet);
+    await expect(closed.result.current.mutateAsync({ sheetId: uuid(1), reason: 'Se rompió' })).rejects.toBeTruthy();
+    expect(api.closeRouteSheet).toHaveBeenCalledWith(uuid(1), { reason: 'Se rompió' });
+    expect(closed.invalidate).not.toHaveBeenCalled();
+  });
+
+  it('el seguimiento cuelga del detalle de la hoja: invalidar la hoja lo refresca', () => {
+    expect(routeSheetKeys.execution(uuid(1)).slice(0, -1)).toEqual([...routeSheetKeys.detail(uuid(1))]);
+  });
+
+  it('withEtas cambia sólo la hora y el atraso de las paradas que vienen en el evento', () => {
+    const current = execution();
+    const next = withEtas(current, [{ orderId: uuid(103), etaAt: '2026-11-14T14:45:00.000Z', late: true }]);
+    expect(next?.stops[2]).toMatchObject({ etaAt: '2026-11-14T14:45:00.000Z', late: true });
+    expect(next?.stops[1]).toBe(current.stops[1]);
+    expect(withEtas(undefined, [])).toBeUndefined();
+  });
+
+  it('pedidos que esperan al admin: cambiar la fecha y cancelar van por pedidos y refrescan la hoja y el día', async () => {
+    orders.updateOrder.mockResolvedValue({});
+    orders.cancelOrder.mockResolvedValue({});
+    const moved = setup(useRescheduleAwaitingOrder);
+    await moved.result.current.mutateAsync({ orderId: uuid(103), scheduledDate: '2026-11-16' });
+    expect(orders.updateOrder).toHaveBeenCalledWith(uuid(103), { scheduledDate: '2026-11-16' });
+    expect(invalidated(moved.invalidate)).toEqual(
+      expect.arrayContaining([queryKeys.routePlans.all[0], queryKeys.routeSheets.all[0], queryKeys.orders.all[0]]),
+    );
+    const cancelled = setup(useCancelAwaitingOrder);
+    await cancelled.result.current.mutateAsync({ orderId: uuid(103), reason: 'Ya no lo quiere' });
+    expect(orders.cancelOrder).toHaveBeenCalledWith(uuid(103), { reason: 'Ya no lo quiere' });
   });
 });

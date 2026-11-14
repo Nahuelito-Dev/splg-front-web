@@ -3,17 +3,24 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from './errors';
 import {
   RouteSheetNotConfirmableError,
+  RouteSheetShortagesError,
   addRouteSheetStop,
   cancelRouteSheet,
   closeRoutePlanDay,
+  closeRouteSheet,
   confirmAllRouteSheets,
   confirmRouteSheet,
+  createRoutePlanningHoliday,
   createRouteSheet,
+  deleteRoutePlanningHoliday,
+  failRouteSheetStop,
   getLateOrders,
   getLoadSuggestion,
   getRoutePlanDay,
   getRoutePlanningSettings,
   getRouteSheet,
+  getRouteSheetExecution,
+  listRoutePlanningHolidays,
   listRouteSheets,
   moveRouteSheetStop,
   openRoutePlanDay,
@@ -23,6 +30,7 @@ import {
   removeRouteSheetStop,
   reopenRouteSheet,
   setRouteSheetSequence,
+  startRouteSheet,
   updateRouteSheet,
 } from './routeSheets';
 
@@ -166,5 +174,62 @@ describe('API de hojas de ruta (v2)', () => {
     const error: unknown = await confirmRouteSheet(ID, { version: 1, acceptLateStops: false }).catch((e: unknown) => e);
     expect(error).toBe(original);
     expect(error).not.toBeInstanceOf(ApiError);
+  });
+
+  it('ejecución: seguimiento, iniciar, no entregada y cierre a mano', async () => {
+    await getRouteSheetExecution(ID);
+    await startRouteSheet(ID, { acknowledgeShortages: false });
+    await startRouteSheet(ID, { acknowledgeShortages: true });
+    await failRouteSheetStop(ID, ORDER, { reason: 'other', note: 'Portón cerrado' });
+    await closeRouteSheet(ID, { reason: 'Se rompió el camión' });
+    expect(http.get).toHaveBeenCalledWith(`/route-sheets/${ID}/execution`, V2);
+    expect(http.post).toHaveBeenNthCalledWith(1, `/route-sheets/${ID}/start`, { acknowledgeShortages: false }, V2);
+    expect(http.post).toHaveBeenNthCalledWith(2, `/route-sheets/${ID}/start`, { acknowledgeShortages: true }, V2);
+    expect(http.post).toHaveBeenNthCalledWith(
+      3,
+      `/route-sheets/${ID}/stops/${ORDER}/failed`,
+      { reason: 'other', note: 'Portón cerrado' },
+      V2,
+    );
+    expect(http.post).toHaveBeenNthCalledWith(4, `/route-sheets/${ID}/close`, { reason: 'Se rompió el camión' }, V2);
+  });
+
+  it('iniciar: el 409 de faltantes llega como RouteSheetShortagesError con cada garrafa', async () => {
+    const shortages = [{ gasCylinderId: ORDER, type: '10 kg', required: 5, onTruck: 3, missing: 2 }];
+    http.post.mockRejectedValueOnce(
+      axiosError(409, {
+        statusCode: 409,
+        message: 'Al camión le faltan garrafas para la hoja',
+        code: 'ROUTE_SHEET_SHORTAGES',
+        shortages,
+      }),
+    );
+    const error: unknown = await startRouteSheet(ID, { acknowledgeShortages: false }).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(RouteSheetShortagesError);
+    expect((error as RouteSheetShortagesError).shortages).toEqual(shortages);
+    expect((error as RouteSheetShortagesError).messages).toEqual(['Al camión le faltan garrafas para la hoja']);
+  });
+
+  it('iniciar: otro 409 (vehículo no en uso) sigue siendo el error de siempre', async () => {
+    const original = axiosError(409, { message: 'No tenés un vehículo en uso', code: 'ROUTE_SHEET_CAR_NOT_IN_USE' });
+    http.post.mockRejectedValueOnce(original);
+    const error: unknown = await startRouteSheet(ID, { acknowledgeShortages: false }).catch((e: unknown) => e);
+    expect(error).toBe(original);
+  });
+
+  it('feriados: listar desde una fecha, cargar y dar de baja', async () => {
+    await listRoutePlanningHolidays({ from: '2026-11-14' });
+    await createRoutePlanningHoliday({ date: '2026-11-23', description: 'Soberanía' });
+    await deleteRoutePlanningHoliday(ID);
+    expect(http.get).toHaveBeenCalledWith(
+      '/route-planning/holidays',
+      expect.objectContaining({ params: { from: '2026-11-14' } }),
+    );
+    expect(http.post).toHaveBeenCalledWith(
+      '/route-planning/holidays',
+      { date: '2026-11-23', description: 'Soberanía' },
+      V2,
+    );
+    expect(http.delete).toHaveBeenCalledWith(`/route-planning/holidays/${ID}`, V2);
   });
 });

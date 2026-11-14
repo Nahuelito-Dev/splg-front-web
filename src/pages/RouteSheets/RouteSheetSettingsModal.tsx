@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useId, useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useFormContext } from 'react-hook-form';
 import { Button, Checkbox, Form, FormInput, Modal } from '../../common/components/ui';
 import { errorMessage } from '../../services/api/errors';
 import type { PatchRoutePlanningSettingsBody, ProcessConfig, ProcessConfigField } from '../../services/api/types';
@@ -8,6 +8,7 @@ import { useUpdateRoutePlanningSettings } from '../../services/queries/routeShee
 import { notify } from '../../utils/notifications';
 import { SettingsMeta } from '../Configuration/components/SettingsMeta';
 import { buildProcessSchema, processValues, rangeHint, type ProcessFormValues } from '../Configuration/processRules';
+import { WEEK_DAYS, toggleWorkingDay } from './routeSheetLabels';
 
 interface Props {
   config: ProcessConfig;
@@ -26,10 +27,45 @@ const SWITCHES: Record<string, { label: string; hint: string }> = {
     label: 'Proponer solo al cierre',
     hint: 'A la hora de cierre del día anterior el sistema arma los borradores sin que nadie lo pida.',
   },
+  autoConfirm: {
+    label: 'Confirmar solo al vencer la revisión',
+    hint: 'Pasados los minutos de revisión desde la propuesta, el sistema confirma los borradores que se pueden confirmar. Apagado, esperan al administrador.',
+  },
   lateOrderPolicy: {
     label: 'Sugerir dónde van los pedidos tardíos',
     hint: 'Para los pedidos que entran después del cierre, el sistema sugiere la hoja y la posición que menos alargan el recorrido.',
   },
+};
+
+/** Los días en que se reparte: casillas de lunes a domingo sobre la máscara de bits de `workingDays`. */
+const WorkingDaysField = ({ field, disabled }: { field: ProcessConfigField; disabled: boolean }) => {
+  const { watch, setValue, getFieldState, formState } = useFormContext<ProcessFormValues>();
+  const mask = Number(watch(field.key)) || 0;
+  const error = getFieldState(field.key, formState).error ? 'Elegí al menos un día' : undefined;
+  return (
+    <fieldset className="sm:col-span-2">
+      <legend className="mb-1.5 text-[13px] font-medium text-ink">{field.description}</legend>
+      <div className="flex flex-wrap gap-x-4 gap-y-2">
+        {WEEK_DAYS.map((day) => (
+          <Checkbox
+            key={day.bit}
+            label={day.label}
+            disabled={disabled}
+            checked={(mask & day.bit) !== 0}
+            onChange={(e) =>
+              setValue(field.key, String(toggleWorkingDay(mask, day.bit, e.target.checked)), {
+                shouldDirty: true,
+                shouldValidate: true,
+              })
+            }
+          />
+        ))}
+      </div>
+      <p className={error ? 'mt-1 text-xs text-danger' : 'mt-1 text-xs text-muted'} role={error ? 'alert' : undefined}>
+        {error ?? 'La propuesta automática y la reprogramación saltean los días que no se reparte y los feriados.'}
+      </p>
+    </fieldset>
+  );
 };
 
 const isSwitch = (field: ProcessConfigField) => field.type === 'integer' && field.min === 0 && field.max === 1;
@@ -98,7 +134,9 @@ export const RouteSheetSettingsModal = ({ config, canWrite, writeHint, onClose }
       />
       <Form methods={methods} id={formId} onSubmit={submit} className="mt-4 grid gap-4 sm:grid-cols-2">
         {config.fields.map((field) =>
-          isSwitch(field) ? (
+          field.key === 'workingDays' ? (
+            <WorkingDaysField key={field.key} field={field} disabled={!canWrite} />
+          ) : isSwitch(field) ? (
             <div key={field.key} className="sm:col-span-2">
               <Checkbox
                 label={SWITCHES[field.key]?.label ?? field.description}

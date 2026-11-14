@@ -1,4 +1,13 @@
-import { CalendarPlus, CheckCheck, Lock, Plus, SlidersHorizontal, Sparkles, Waypoints } from 'lucide-react';
+import {
+  CalendarOff,
+  CalendarPlus,
+  CheckCheck,
+  Lock,
+  Plus,
+  SlidersHorizontal,
+  Sparkles,
+  Waypoints,
+} from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import {
   Badge,
@@ -30,6 +39,7 @@ import { formatDay } from '../../utils/format';
 import { confirm, notify } from '../../utils/notifications';
 import { ConfirmAllResultDialog } from './ConfirmAllResultDialog';
 import { DriverView } from './DriverView';
+import { HolidaysModal } from './HolidaysModal';
 import { PlanView } from './PlanView';
 import { ProposalDialog } from './ProposalDialog';
 import { PLAN_STATUS, tomorrow } from './routeSheetLabels';
@@ -81,6 +91,7 @@ export const RouteSheets = () => {
   const date = /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? dateParam : tomorrow();
   const day = useRoutePlanDay(date, { enabled: !needsDistributor && despacho.allowed });
   const [configuring, setConfiguring] = useState(false);
+  const [holidaysOpen, setHolidaysOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [proposal, setProposal] = useState<RoutePlanProposal | null>(null);
   const [confirmAllResult, setConfirmAllResult] = useState<ConfirmAll | null>(null);
@@ -193,6 +204,12 @@ export const RouteSheets = () => {
                   blockedReason: needsDistributor ? writeHint : undefined,
                 },
                 {
+                  label: 'Feriados',
+                  icon: <CalendarOff className="h-4 w-4" />,
+                  onClick: () => setHolidaysOpen(true),
+                  blockedReason: needsDistributor ? writeHint : undefined,
+                },
+                {
                   label: 'Cerrar el día',
                   icon: <Lock className="h-4 w-4" />,
                   onClick: () => void handleClose(),
@@ -260,7 +277,9 @@ export const RouteSheets = () => {
             idPrefix="route-sheets"
           />
           <div {...tabPanelProps('route-sheets', view)} className="p-4 md:p-5">
-            {view === 'plan' && <PlanView day={data} canWrite={canWrite && !closed} onOpen={openSheet} />}
+            {view === 'plan' && (
+              <PlanView day={data} canWrite={canWrite && !closed} canDecide={canWrite} onOpen={openSheet} />
+            )}
             {view === 'sheet' && <SheetView day={data} sheetId={sheetId} canWrite={canWrite} onPick={openSheet} />}
             {view === 'driver' && <DriverView day={data} sheetId={sheetId} onPick={openSheet} />}
           </div>
@@ -302,6 +321,9 @@ export const RouteSheets = () => {
             openSheet(created.id);
           }}
         />
+      )}
+      {holidaysOpen && (
+        <HolidaysModal canWrite={canWrite} writeHint={writeHint} onClose={() => setHolidaysOpen(false)} />
       )}
       {configuring && settings.data && (
         <RouteSheetSettingsModal

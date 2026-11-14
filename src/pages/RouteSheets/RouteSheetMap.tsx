@@ -2,17 +2,25 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useEffect, useMemo } from 'react';
 import { MapContainer, Marker, Polyline, TileLayer, useMap } from 'react-leaflet';
-import type { RouteSheetStop } from '../../services/api/types';
+import type { RouteSheetExecutionStop } from '../../services/api/types';
 import brand from '../../theme/brand.json';
 import '../Tracking/leafletIconFix';
-import { stopName } from './routeSheetLabels';
+import { hhmm, stopName } from './routeSheetLabels';
 
 /** Posadas, Misiones: donde opera la distribuidora. */
 const DEFAULT_CENTER: [number, number] = [-27.3671, -55.8961];
 
-const TONE = { normal: 'bg-primary text-on-primary', late: 'bg-danger text-white', locked: 'bg-ink text-surface' };
+const TONE = {
+  normal: 'bg-primary text-on-primary',
+  late: 'bg-danger text-white',
+  locked: 'bg-ink text-surface',
+  current: 'bg-info text-white',
+  done: 'bg-success text-white',
+};
 
-const numbered = (sequence: number, tone: keyof typeof TONE, selected: boolean) =>
+type Tone = keyof typeof TONE;
+
+const numbered = (sequence: number, tone: Tone, selected: boolean) =>
   L.divIcon({
     className: '',
     html: `<span class="flex ${selected ? 'h-9 w-9 ring-4 ring-primary/40' : 'h-7 w-7'} items-center justify-center rounded-full border-2 border-surface ${TONE[tone]} text-xs font-semibold shadow-control">${sequence}</span>`,
@@ -20,8 +28,34 @@ const numbered = (sequence: number, tone: keyof typeof TONE, selected: boolean) 
     iconAnchor: selected ? [18, 18] : [14, 14],
   });
 
-type Located = RouteSheetStop & { lat: number; lng: number };
-const located = (stop: RouteSheetStop): stop is Located => stop.lat !== null && stop.lng !== null;
+const driverIcon = L.divIcon({
+  className: '',
+  html: '<span class="block h-5 w-5 rounded-full border-[3px] border-surface bg-info shadow-control ring-4 ring-info-soft"></span>',
+  iconSize: [20, 20],
+  iconAnchor: [10, 10],
+});
+
+/** Lo que el mapa necesita de una parada: sirve la del plan y la del seguimiento. */
+export interface MapStop {
+  orderId: string;
+  sequence: number | null;
+  customerName: string | null;
+  lat: number | null;
+  lng: number | null;
+  late: boolean;
+  locked?: boolean;
+  progress?: RouteSheetExecutionStop['progress'];
+}
+
+type Located = MapStop & { lat: number; lng: number; sequence: number };
+const located = (stop: MapStop): stop is Located => stop.lat !== null && stop.lng !== null && stop.sequence !== null;
+
+const toneOf = (stop: MapStop): Tone => {
+  if (stop.progress === 'delivered') return 'done';
+  if (stop.progress === 'on_the_way') return 'current';
+  if (stop.late) return 'late';
+  return stop.locked ? 'locked' : 'normal';
+};
 
 const FitRoute = ({ points }: { points: [number, number][] }) => {
   const map = useMap();
@@ -32,13 +66,18 @@ const FitRoute = ({ points }: { points: [number, number][] }) => {
 };
 
 interface Props {
-  stops: RouteSheetStop[];
+  stops: MapStop[];
   selectedId: string | null;
   onSelect: (orderId: string) => void;
+  /** Última posición del chofer (hoja en curso). */
+  driver?: { lat: number; lng: number; at: string | null } | null;
 }
 
-/** El recorrido de la hoja sobre el mapa: cada parada numerada en su orden, unidas en línea recta. */
-export const RouteSheetMap = ({ stops, selectedId, onSelect }: Props) => {
+/**
+ * El recorrido de la hoja sobre el mapa: cada parada numerada en su orden, unidas en línea recta. En la calle, las
+ * entregadas en verde, la que está en camino resaltada y el chofer en su última posición. Las que salieron no van.
+ */
+export const RouteSheetMap = ({ stops, selectedId, onSelect, driver }: Props) => {
   const points = useMemo(() => stops.filter(located), [stops]);
   const positions = useMemo(() => points.map((s): [number, number] => [s.lat, s.lng]), [points]);
   return (
@@ -62,14 +101,18 @@ export const RouteSheetMap = ({ stops, selectedId, onSelect }: Props) => {
             key={stop.orderId}
             position={[stop.lat, stop.lng]}
             title={`${stop.sequence}. ${stopName(stop)}`}
-            icon={numbered(
-              stop.sequence,
-              stop.late ? 'late' : stop.locked ? 'locked' : 'normal',
-              stop.orderId === selectedId,
-            )}
+            icon={numbered(stop.sequence, toneOf(stop), stop.orderId === selectedId)}
             eventHandlers={{ click: () => onSelect(stop.orderId) }}
           />
         ))}
+        {driver && (
+          <Marker
+            position={[driver.lat, driver.lng]}
+            title={driver.at ? `Chofer · ${hhmm(driver.at)}` : 'Chofer'}
+            icon={driverIcon}
+            zIndexOffset={1000}
+          />
+        )}
       </MapContainer>
     </div>
   );

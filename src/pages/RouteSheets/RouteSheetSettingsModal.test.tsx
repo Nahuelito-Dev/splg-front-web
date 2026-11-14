@@ -65,4 +65,41 @@ describe('RouteSheetSettingsModal', () => {
       ),
     );
   });
+
+  it('los días de reparto son casillas sobre la máscara de bits; sin ninguno no se guarda', async () => {
+    update.current = mutation();
+    const withDays = {
+      ...config,
+      fields: [
+        { key: 'autoConfirm', type: 'integer', min: 0, max: 1, default: 1, unit: null, description: 'Confirmar' },
+        {
+          key: 'workingDays',
+          type: 'integer',
+          min: 1,
+          max: 127,
+          default: 63,
+          unit: null,
+          description: 'Días de reparto',
+        },
+      ],
+      params: { autoConfirm: 1, workingDays: 63 },
+    } as ProcessConfig;
+    render(<RouteSheetSettingsModal config={withDays} canWrite onClose={vi.fn()} />);
+    expect(screen.getByLabelText(/^Confirmar solo al vencer la revisión/)).toBeChecked();
+    expect(screen.getByLabelText('Sábado')).toBeChecked();
+    expect(screen.getByLabelText('Domingo')).not.toBeChecked();
+    for (const day of ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']) {
+      fireEvent.click(screen.getByLabelText(day));
+    }
+    expect(await screen.findByText('Elegí al menos un día')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Guardar cambios' })).toBeDisabled();
+    fireEvent.click(screen.getByLabelText('Lunes'));
+    fireEvent.click(screen.getByLabelText('Domingo'));
+    fireEvent.click(screen.getByLabelText(/^Confirmar solo al vencer la revisión/));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Guardar cambios' })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+    await waitFor(() =>
+      expect(update.current.mutate).toHaveBeenCalledWith({ autoConfirm: 0, workingDays: 65 }, expect.anything()),
+    );
+  });
 });

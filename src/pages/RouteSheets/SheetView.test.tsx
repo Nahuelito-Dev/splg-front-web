@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../../services/api/errors';
-import { RouteSheetNotConfirmableError } from '../../services/api/routeSheets';
+import { RouteSheetNotConfirmableError, RouteSheetShortagesError } from '../../services/api/routeSheets';
 import type { RouteSheet, RouteSheetViolation } from '../../services/api/types';
 import { mutation, ok } from '../../test/pageTest';
 import { planDay, sheet, stop, uuid } from '../../test/routeSheetFixtures';
@@ -16,6 +16,7 @@ const state = vi.hoisted(() => ({
   optimize: {} as Record<string, unknown>,
   cancel: {} as Record<string, unknown>,
   reopen: {} as Record<string, unknown>,
+  start: {} as Record<string, unknown>,
   pdf: vi.fn(),
 }));
 
@@ -34,6 +35,7 @@ vi.mock('../../services/queries/routeSheets', async (importOriginal) => ({
   useOptimizeRouteSheet: () => state.optimize,
   useCancelRouteSheet: () => state.cancel,
   useReopenRouteSheet: () => state.reopen,
+  useStartRouteSheet: () => state.start,
   useAddRouteSheetStop: () => mutation(),
   useMoveRouteSheetStop: () => mutation(),
   useUpdateRouteSheet: () => mutation(),
@@ -44,6 +46,11 @@ vi.mock('../../services/queries/stock', () => ({
     ok([
       { warehouseId: '00000000-0000-4000-8000-000000000900', name: 'Galpón Norte', isDefault: false, address: null },
     ]),
+}));
+vi.mock('./SheetTracking', () => ({
+  SheetTracking: ({ sheet: current }: { sheet: RouteSheet }) => (
+    <section aria-label="Seguimiento">{current.id}</section>
+  ),
 }));
 vi.mock('./RouteSheetMap', () => ({
   RouteSheetMap: ({ stops }: { stops: unknown[] }) => (
@@ -83,6 +90,7 @@ beforeEach(() => {
   state.optimize = mutation();
   state.cancel = mutation();
   state.reopen = mutation();
+  state.start = mutation();
 });
 afterEach(() => {
   cleanup();
@@ -278,5 +286,126 @@ describe('SheetView: aviso de depósito sin ubicar', () => {
     withWarnings([{ code: 'late_stops', message: 'Hay paradas fuera de su franja' }]);
     expect(screen.getByText(/Hay paradas fuera de su franja/)).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Ubicar el depósito' })).not.toBeInTheDocument();
+  });
+});
+
+describe('SheetView: iniciar y seguir la hoja', () => {
+  const started = {
+    sheetId: uuid(1),
+    alreadyStarted: false,
+    assignedOrderIds: [uuid(101), uuid(102)],
+    droppedOrderIds: [uuid(103)],
+    shortages: [],
+    truckLoadId: null,
+    notifiedCustomers: 2,
+  };
+  const confirmed = () => sheet({ status: 'confirmed', number: 7 });
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-14T12:00:00.000Z'));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('iniciar en nombre del chofer pide confirmación, manda el inicio y avisa los pedidos que ya no estaban', async () => {
+    notifications.confirm.mockResolvedValue(true);
+    state.start = answering({ ok: started });
+    draw(confirmed());
+    fireEvent.click(screen.getByRole('button', { name: 'Iniciar viaje en nombre del chofer' }));
+    await vi.waitFor(() =>
+      expect(state.start.mutate).toHaveBeenCalledWith(
+        { sheetId: uuid(1), acknowledgeShortages: undefined },
+        expect.anything(),
+      ),
+    );
+    expect(notifications.notify.success).toHaveBeenCalledWith(
+      'Hoja 7 en viaje: se les avisó a 2 cliente(s) que su pedido está en camino',
+    );
+    expect(notifications.notify.warn).toHaveBeenCalledWith(
+      '1 pedido(s) ya no estaban disponibles y salieron de la hoja',
+    );
+  });
+
+  it('si no se confirma, no inicia', async () => {
+    notifications.confirm.mockResolvedValue(false);
+    draw(confirmed());
+    fireEvent.click(screen.getByRole('button', { name: 'Iniciar viaje en nombre del chofer' }));
+    await vi.waitFor(() => expect(notifications.confirm).toHaveBeenCalled());
+    expect(state.start.mutate).not.toHaveBeenCalled();
+  });
+
+  it('409 de faltantes: muestra qué falta dentro de la página y «Iniciar igual» reintenta aceptándolos', async () => {
+    notifications.confirm.mockResolvedValue(true);
+    const shortages = [{ gasCylinderId: uuid(50), type: '10 kg', required: 5, onTruck: 3, missing: 2 }];
+    const mutate = vi.fn((variables: { acknowledgeShortages?: boolean }, options?: Options) => {
+      if (variables.acknowledgeShortages) options?.onSuccess?.({ ...started, droppedOrderIds: [] });
+      else options?.onError?.(new RouteSheetShortagesError(['Faltan garrafas'], shortages));
+    });
+    state.start = mutation({ mutate });
+    draw(confirmed());
+    fireEvent.click(screen.getByRole('button', { name: 'Iniciar viaje en nombre del chofer' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('10 kg')).toBeInTheDocument();
+    expect(within(dialog).getByText(/faltan 2/)).toBeInTheDocument();
+    expect(within(dialog).getByText('La hoja pide 5 llena(s) y el camión lleva 3.')).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Iniciar igual' }));
+    expect(mutate).toHaveBeenLastCalledWith({ sheetId: uuid(1), acknowledgeShortages: true }, expect.anything());
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(notifications.notify.warn).not.toHaveBeenCalled();
+  });
+
+  it('otro 409 al iniciar (vehículo no en uso) se muestra tal cual lo manda el back', async () => {
+    notifications.confirm.mockResolvedValue(true);
+    const error = new ApiError(409, ['No tenés un vehículo en uso'], 'ROUTE_SHEET_CAR_NOT_IN_USE');
+    state.start = answering({ error });
+    draw(confirmed());
+    fireEvent.click(screen.getByRole('button', { name: 'Iniciar viaje en nombre del chofer' }));
+    await vi.waitFor(() => expect(notifications.notify.error).toHaveBeenCalledWith(error));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('una hoja de otro día no se inicia (el botón dice por qué)', () => {
+    draw(sheet({ status: 'confirmed', number: 7, planDate: '2026-11-15' }));
+    const button = screen.getByRole('button', { name: 'Iniciar viaje en nombre del chofer' });
+    expect(button).toHaveAttribute('aria-disabled', 'true');
+    expect(button).toHaveAttribute('title', 'Sólo se inicia el día del reparto');
+    fireEvent.click(button);
+    expect(notifications.confirm).not.toHaveBeenCalled();
+  });
+
+  it('sin permiso de escritura (modo soporte) no se ofrece iniciar', () => {
+    render(<SheetView day={planDay({ sheets: [confirmed()] })} sheetId={uuid(1)} canWrite={false} onPick={vi.fn()} />);
+    expect(screen.queryByRole('button', { name: 'Iniciar viaje en nombre del chofer' })).not.toBeInTheDocument();
+  });
+
+  it('una hoja en reparto o cerrada muestra el seguimiento en lugar de la edición', () => {
+    draw(sheet({ status: 'assigned', number: 7 }));
+    expect(screen.getByRole('region', { name: 'Seguimiento' })).toBeInTheDocument();
+    expect(screen.queryByRole('list', { name: 'Paradas de la hoja' })).not.toBeInTheDocument();
+    cleanup();
+    draw(sheet({ status: 'completed', number: 7 }));
+    expect(screen.getByRole('region', { name: 'Seguimiento' })).toBeInTheDocument();
+  });
+
+  it('una confirmada sigue mostrando el plan', () => {
+    draw(confirmed());
+    expect(screen.queryByRole('region', { name: 'Seguimiento' })).not.toBeInTheDocument();
+    expect(screen.getByRole('list', { name: 'Paradas de la hoja' })).toBeInTheDocument();
+  });
+});
+
+describe('SheetView: hoja confirmada del chofer', () => {
+  it('dice si los pedidos ya se le asignaron al chofer o cuándo se le asignan', () => {
+    draw(sheet({ status: 'confirmed', number: 7, assignedAt: '2026-11-14T09:00:00.000Z' }));
+    expect(screen.getByTestId('assigned-at')).toHaveTextContent(
+      'Pedidos asignados al chofer a las 06:00: espera la carga para iniciar el viaje',
+    );
+    cleanup();
+    draw(sheet({ status: 'confirmed', number: 7, planDate: '2026-11-20' }));
+    expect(screen.getByTestId('assigned-at')).toHaveTextContent(
+      'Los pedidos se le asignan al chofer al empezar el día del reparto',
+    );
   });
 });
