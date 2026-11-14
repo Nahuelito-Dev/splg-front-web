@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   formatCurrency,
   formatDate,
+  formatDateTime,
   formatDay,
+  formatLongDay,
+  formatTime,
   formatElapsed,
   formatNumber,
   formatShortId,
@@ -50,8 +53,12 @@ describe('fechas de calendario (YYYY-MM-DD)', () => {
     expect(formatDate('2026-13-01')).toBe('—');
   });
 
-  it('un instante con hora sigue en hora local: la zona sí cuenta', () => {
-    expect(formatDate('2026-11-02T01:00:00.000Z')).toBe(process.env.TZ === 'UTC' ? '2 nov 2026' : '1 nov 2026');
+  it('un instante con hora se muestra en hora de Buenos Aires, no en la del navegador', () => {
+    // Corre igual en hora argentina y en UTC (`npm run test:utc`): el resultado no depende de la zona del runner.
+    expect(formatDate('2026-11-02T01:00:00.000Z')).toBe('1 nov 2026');
+    expect(formatDateTime('2026-11-02T01:00:00.000Z')).toBe('1 nov 2026, 10:00 p. m.');
+    expect(formatTime('2026-11-14T18:45:00.000Z')).toBe('03:45 p. m.');
+    expect(formatLongDay(new Date('2026-11-15T01:00:00.000Z'))).toBe('Sábado, 14 de noviembre');
   });
 });
 

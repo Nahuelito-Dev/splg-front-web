@@ -3,6 +3,7 @@ import { http, type Page, type PageParams, toQuery } from './httpClient';
 import type {
   ApproveSupportAccessBody,
   CreateSupportSessionBody,
+  EndSupportSessionBody,
   RejectSupportAccessBody,
   SupportAccessEntry,
   SupportAccessList,
@@ -47,9 +48,66 @@ export const requestSupportSession = async (body: CreateSupportSessionBody): Pro
   return data;
 };
 
-/** DELETE /v2/support-sessions/:id: sale de la sesión activa o retira el pedido pendiente. */
-export const endSupportSession = async (id: string): Promise<void> => {
-  await http.delete(`/support-sessions/${encodeURIComponent(id)}`, V2);
+/**
+ * DELETE /v2/support-sessions/:id: sale de la sesión activa o retira el pedido pendiente. La de otro administrador
+ * general se corta con `reason` (obligatorio para la API: queda en la auditoría).
+ */
+export const endSupportSession = async (id: string, body?: EndSupportSessionBody): Promise<void> => {
+  await http.delete(`/support-sessions/${encodeURIComponent(id)}`, body ? { ...V2, data: body } : V2);
+};
+
+export interface SupportSessionsParams {
+  status?: SupportStatus | '';
+  distributorId?: string;
+  requestedBy?: string;
+  /** Días argentinos (`AAAA-MM-DD`); el back recibe instantes, sobre la fecha del pedido. */
+  from?: string;
+  to?: string;
+  limit: number;
+  offset: number;
+}
+
+/** Los días del filtro son argentinos: `to` incluye el día entero. Lo vacío no viaja. */
+export const supportSessionsQuery = ({
+  status,
+  distributorId,
+  requestedBy,
+  from,
+  to,
+  limit,
+  offset,
+}: SupportSessionsParams) => ({
+  status: status || undefined,
+  distributorId: distributorId || undefined,
+  requestedBy: requestedBy || undefined,
+  from: from ? `${from}T00:00:00-03:00` : undefined,
+  to: to ? `${to}T23:59:59.999-03:00` : undefined,
+  limit,
+  offset,
+});
+
+/** GET /v2/support-sessions: el historial de sesiones de soporte de toda la plataforma, las más nuevas primero. */
+export const listSupportSessions = async (params: SupportSessionsParams): Promise<SupportSessionList> => {
+  const { data } = await http.get<SupportSessionList>('/support-sessions', {
+    ...V2,
+    params: supportSessionsQuery(params),
+  });
+  return data;
+};
+
+/** GET /v2/support-sessions/:id */
+export const getSupportSession = async (id: string): Promise<SupportSession> => {
+  const { data } = await http.get<SupportSession>(`/support-sessions/${encodeURIComponent(id)}`, V2);
+  return data;
+};
+
+/** GET /v2/support-sessions/:id/accesses: qué miró el soporte en esa sesión. */
+export const listSupportSessionAccesses = async (id: string, params: PageParams): Promise<Page<SupportAccessEntry>> => {
+  const { data } = await http.get<SupportAccessList>(`/support-sessions/${encodeURIComponent(id)}/accesses`, {
+    ...V2,
+    params: toQuery(params),
+  });
+  return { rows: data.items, total: data.total };
 };
 
 // ── Empresa (admin): «Accesos de soporte» ─────────────────────────────────────

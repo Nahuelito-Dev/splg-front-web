@@ -8,18 +8,23 @@ import {
   endSupportSession,
   getCurrentSupportSession,
   getSupportAccess,
+  getSupportSession,
   getSupportPolicy,
   listSupportAccess,
   listSupportAccessEntries,
+  listSupportSessionAccesses,
+  listSupportSessions,
   rejectSupportAccess,
   requestSupportSession,
   revokeSupportAccess,
   updateSupportPolicy,
+  type SupportSessionsParams,
   type SupportStatus,
 } from '../api/supportSessions';
 import type {
   ApproveSupportAccessBody,
   CreateSupportSessionBody,
+  EndSupportSessionBody,
   RejectSupportAccessBody,
   UpdateSupportPolicyBody,
 } from '../api/types';
@@ -63,6 +68,52 @@ export const useRequestSupportSession = () =>
 
 /** Salir de la sesión activa o retirar el pedido pendiente. */
 export const useEndSupportSession = () => useMutation({ mutationFn: (id: string) => endSupportSession(id) });
+
+// ── Plataforma: «Sesiones de soporte» ─────────────────────────────────────────
+
+const sessionKeys = queryKeys.supportSessions;
+
+/** El historial de sesiones de soporte de toda la plataforma, con los filtros y la página de la URL. */
+export const useSupportSessions = (params: SupportSessionsParams) =>
+  useQuery({
+    queryKey: sessionKeys.list(params),
+    queryFn: () => listSupportSessions(params),
+    placeholderData: keepPreviousData,
+  });
+
+/** La ficha de una sesión (`GET /v2/support-sessions/:id`), siempre la versión de la API. */
+export const useSupportSessionDetail = (id: string | undefined) =>
+  useQuery({
+    queryKey: sessionKeys.detail(id ?? ''),
+    queryFn: () => getSupportSession(id ?? ''),
+    enabled: Boolean(id),
+    retry: false,
+  });
+
+/** Lo que miró el soporte en una sesión, visto desde la plataforma. */
+export const useSupportSessionEntries = (id: string | undefined, pagination: PageParams) =>
+  useQuery({
+    queryKey: [...sessionKeys.detail(id ?? ''), 'accesses', pagination] as const,
+    queryFn: () => listSupportSessionAccesses(id ?? '', pagination),
+    enabled: Boolean(id),
+    placeholderData: keepPreviousData,
+  });
+
+/**
+ * Cortar una sesión desde la plataforma: la propia sin motivo, la de otro administrador general con motivo. Pase lo
+ * que pase (también un 409 porque ya había terminado) se refrescan la lista, la ficha y la de la empresa.
+ */
+export const useCutSupportSession = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body?: EndSupportSessionBody }) => endSupportSession(id, body),
+    onSettled: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: sessionKeys.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.platformConsole.all }),
+      ]),
+  });
+};
 
 // ── Plataforma ────────────────────────────────────────────────────
 

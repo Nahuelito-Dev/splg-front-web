@@ -33,6 +33,7 @@ import {
   Flame,
   FolderOpen,
   HardHat,
+  Headset,
   Briefcase,
   IdCard,
   HandCoins,
@@ -106,6 +107,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { title: 'Tablero', path: '/home', icon: House, scope: 'platform' },
       { title: 'Distribuidoras', path: '/distributors', icon: Building2, scope: 'platform' },
+      { title: 'Sesiones de soporte', path: '/platform/support-sessions', icon: Headset, scope: 'platform' },
       { title: 'Monitoreo', path: '/platform/monitoring', icon: Activity, scope: 'platform' },
       { title: 'Tareas programadas', path: '/platform/scheduled-tasks', icon: Timer, scope: 'platform' },
       { title: 'Uso y costo de servicios', path: '/platform/service-usage', icon: ScanText, scope: 'platform' },

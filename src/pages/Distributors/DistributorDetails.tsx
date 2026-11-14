@@ -175,7 +175,7 @@ export const DistributorDetails = () => {
             ) : tab === 'admins' ? (
               <CompanyAdminsTab admins={detail.admins} />
             ) : tab === 'support' ? (
-              <CompanySupportTab sessions={detail.supportSessions} />
+              <CompanySupportTab distributorId={detail.company.id} sessions={detail.supportSessions} />
             ) : (
               <CompanyDataTab detail={detail} />
             )}

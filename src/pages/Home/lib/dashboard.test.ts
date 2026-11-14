@@ -27,6 +27,7 @@ describe('tablero', () => {
   });
 
   it('fecha larga con mayúscula inicial', () => {
-    expect(formatLongDay(new Date(2026, 8, 26))).toBe('Sábado, 26 de septiembre');
+    // Un instante (mediodía en Buenos Aires): el día que se muestra es el argentino, corra donde corra el test.
+    expect(formatLongDay(new Date('2026-09-26T15:00:00.000Z'))).toBe('Sábado, 26 de septiembre');
   });
 });

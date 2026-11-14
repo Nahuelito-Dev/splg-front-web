@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { activityAction, activityArea, routeOf } from './activityLabels';
+import { activityAction, activityArea, routeOf, supportAccessAction } from './activityLabels';
 
 const request = (method: string, path: string, resource = 'x') => ({
   kind: 'request' as const,
@@ -41,5 +41,28 @@ describe('auditoría de plataforma en castellano', () => {
 
   it('nunca devuelve la ruta cruda', () => {
     expect(activityAction(request('PUT', '/api/v2/cylinders/:id/photo', 'cylinders'))).not.toMatch(/\/|:id/);
+  });
+});
+
+describe('lo que miró el soporte, en castellano', () => {
+  it('una lectura se lee «Consultó · área», sin método ni ruta', () => {
+    const text = supportAccessAction({ httpMethod: 'GET', path: '/api/v2/orders/3f1c2a', resource: 'orders' });
+    expect(text).toBe('Consultó · Pedidos');
+    expect(text).not.toMatch(/GET|\/api|orders/);
+  });
+
+  it('sin recurso informado sale de la ruta; lo desconocido no muestra la ruta', () => {
+    expect(supportAccessAction({ httpMethod: 'GET', path: '/api/v1/customers', resource: null })).toBe(
+      'Consultó · Clientes',
+    );
+    expect(supportAccessAction({ httpMethod: 'GET', path: '/api/v2/algo-raro/1', resource: null })).toBe(
+      'Consultó · Otra pantalla',
+    );
+  });
+
+  it('lo que no es lectura se lee como en la auditoría de plataforma', () => {
+    expect(supportAccessAction({ httpMethod: 'DELETE', path: '/api/v2/support-sessions/:id', resource: null })).toBe(
+      'Salió del modo soporte o retiró el pedido',
+    );
   });
 });

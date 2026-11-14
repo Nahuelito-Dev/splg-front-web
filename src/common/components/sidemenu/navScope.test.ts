@@ -22,6 +22,7 @@ describe('menú por alcance', () => {
         '/platform/monitoring',
         '/platform/scheduled-tasks',
         '/platform/service-usage',
+        '/platform/support-sessions',
         '/system',
         '/users',
       ].sort(),
@@ -29,9 +30,10 @@ describe('menú por alcance', () => {
   });
 
   it('el menú de plataforma va primero y en el orden del diseño', () => {
-    expect(visiblePaths(PLATFORM).slice(0, 7)).toEqual([
+    expect(visiblePaths(PLATFORM).slice(0, 8)).toEqual([
       '/home',
       '/distributors',
+      '/platform/support-sessions',
       '/platform/monitoring',
       '/platform/scheduled-tasks',
       '/platform/service-usage',
@@ -48,6 +50,11 @@ describe('menú por alcance', () => {
 
   it('la empresa propia ve lo mismo que el admin de una empresa y nada de plataforma', () => {
     expect(visiblePaths(OWNED)).toEqual(visiblePaths(ADMIN));
+  });
+
+  it('las sesiones de soporte son de la plataforma: ni el admin ni el modo soporte las ven', () => {
+    for (const viewer of [SUPPORT, ADMIN, OWNED])
+      expect(visiblePaths(viewer)).not.toContain('/platform/support-sessions');
   });
 
   it('el monitoreo es sólo de la plataforma: ni el admin ni el modo soporte lo ven', () => {
