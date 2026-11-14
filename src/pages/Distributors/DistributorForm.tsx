@@ -52,7 +52,7 @@ export const DistributorForm = () => {
       <PageContainer size="sm">
         <PageHeader title={title} />
         {isPending ? (
-          <LoadingState />
+          <LoadingState fullPage />
         ) : (
           <Card className="p-6">
             <ErrorState error={error} resource="La empresa" onRetry={() => void refetch()} />

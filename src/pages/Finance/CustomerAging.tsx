@@ -68,7 +68,7 @@ export const CustomerAging = () => {
         description="La deuda abierta repartida por la antigüedad de cada comprobante."
       />
       {isPending ? (
-        <LoadingState label="Calculando la deuda…" />
+        <LoadingState label="Calculando la deuda…" fullPage />
       ) : error || !data ? (
         <ErrorState error={error} resource="El reporte" onRetry={() => void refetch()} />
       ) : (

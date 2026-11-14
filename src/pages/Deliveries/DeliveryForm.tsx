@@ -66,7 +66,7 @@ export const DeliveryForm = () => {
       <PageContainer size="sm">
         <PageHeader title={title} />
         {isPending ? (
-          <LoadingState />
+          <LoadingState fullPage />
         ) : (
           <Card className="p-6">
             <ErrorState error={error} resource="El chofer" onRetry={() => void refetch()} />

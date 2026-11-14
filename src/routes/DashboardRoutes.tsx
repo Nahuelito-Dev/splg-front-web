@@ -158,7 +158,7 @@ export const DashboardRoutes = () => {
         fallback={
           <>
             <RouteProgressBar />
-            <LoadingState />
+            <LoadingState fullPage />
           </>
         }
       >
