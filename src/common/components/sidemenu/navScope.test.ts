@@ -8,21 +8,57 @@ const visiblePaths = (viewer: NavViewer) =>
 const PLATFORM: NavViewer = { mode: 'platform', permissions: 'all' };
 const SUPPORT: NavViewer = { mode: 'support', permissions: 'all' };
 const ADMIN: NavViewer = { mode: 'company', permissions: 'all' };
+const OWNED: NavViewer = { mode: 'owned', permissions: 'all' };
 
 describe('menú por alcance', () => {
   it('el administrador general sin sesión ve sólo plataforma y «ambos»: nada de la operación', () => {
     expect(visiblePaths(PLATFORM).sort()).toEqual(
       [
         '/admins',
-        '/audit',
         '/distributors',
         '/home',
         '/notifications',
-        '/settings/process-monitor',
+        '/platform/activity',
+        '/platform/monitoring',
+        '/platform/scheduled-tasks',
+        '/platform/service-usage',
         '/system',
         '/users',
       ].sort(),
     );
+  });
+
+  it('el menú de plataforma va primero y en el orden del diseño', () => {
+    expect(visiblePaths(PLATFORM).slice(0, 7)).toEqual([
+      '/home',
+      '/distributors',
+      '/platform/monitoring',
+      '/platform/scheduled-tasks',
+      '/platform/service-usage',
+      '/platform/activity',
+      '/system',
+    ]);
+  });
+
+  it('la auditoría de datos es de empresa: la plataforma ve sólo la suya', () => {
+    expect(visiblePaths(PLATFORM)).not.toContain('/audit');
+    expect(visiblePaths(PLATFORM)).toContain('/platform/activity');
+    for (const viewer of [SUPPORT, ADMIN, OWNED]) expect(visiblePaths(viewer)).toContain('/audit');
+  });
+
+  it('la empresa propia ve lo mismo que el admin de una empresa y nada de plataforma', () => {
+    expect(visiblePaths(OWNED)).toEqual(visiblePaths(ADMIN));
+  });
+
+  it('el monitoreo es sólo de la plataforma: ni el admin ni el modo soporte lo ven', () => {
+    for (const viewer of [SUPPORT, ADMIN]) {
+      const paths = visiblePaths(viewer);
+      expect(paths).not.toContain('/platform/monitoring');
+      expect(paths).not.toContain('/settings/process-monitor');
+      expect(paths).toContain('/settings/scheduled-tasks');
+      expect(paths).toContain('/home');
+    }
+    expect(visiblePaths(PLATFORM)).not.toContain('/settings/scheduled-tasks');
   });
 
   it('en modo soporte ve las de empresa y «ambos», no las de plataforma ni «Accesos de soporte»', () => {

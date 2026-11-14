@@ -16,7 +16,16 @@ vi.mock('../services/api/auth', () => ({ getAdmin }));
 import { store } from '../store/store';
 import { NO_CONNECTION_MESSAGE, SESSION_EXPIRED_MESSAGE } from '../firebase/sessionErrors';
 import { checkingCredentials, logOut } from '../store/auth';
+import { ownedCompany } from '../services/api/ownedCompany';
 import { useCheckAuth } from './useCheckAuth';
+
+const OWN = { id: 'c-own', slug: 'prueba-orixtech', name: 'Prueba' };
+const firebaseUser = (uid: string) => ({
+  uid,
+  email: `${uid}@splg.com`,
+  displayName: uid,
+  getIdToken: vi.fn().mockResolvedValue('tok'),
+});
 
 const wrapper = ({ children }: { children: ReactNode }) => <Provider store={store}>{children}</Provider>;
 
@@ -98,5 +107,45 @@ describe('useCheckAuth', () => {
     const user = { uid: 'u', email: 'a@b.c', displayName: 'Ana', getIdToken: vi.fn().mockResolvedValue('nuevo') };
     onAuthStateChanged.mock.calls[0][1](user);
     await waitFor(() => expect(store.getState().auth.status).toBe('authenticated'));
+  });
+
+  describe('empresa propia atada a la identidad', () => {
+    it('si entra otra cuenta, se borra lo elegido por la anterior antes de la primera request', async () => {
+      ownedCompany.enter(OWN, 'uid-a');
+      getAdmin.mockImplementation(() => {
+        // Ya en la primera request (getAdmin) no queda nada de la otra cuenta.
+        expect(ownedCompany.getStored()).toBeNull();
+        return Promise.resolve({ fullName: 'B', role: 'super_admin', blocked: false });
+      });
+      renderHook(() => useCheckAuth(), { wrapper });
+      onAuthStateChanged.mock.calls[0][1](firebaseUser('uid-b'));
+      await waitFor(() => expect(store.getState().auth.status).toBe('authenticated'));
+      expect(localStorage.getItem('ownedCompany')).toBeNull();
+    });
+
+    it('la misma cuenta la conserva al recargar', async () => {
+      ownedCompany.enter(OWN, 'uid-a');
+      getAdmin.mockResolvedValue({ fullName: 'A', role: 'super_admin', blocked: false });
+      renderHook(() => useCheckAuth(), { wrapper });
+      onAuthStateChanged.mock.calls[0][1](firebaseUser('uid-a'));
+      await waitFor(() => expect(store.getState().auth.status).toBe('authenticated'));
+      expect(ownedCompany.getFor('uid-a')).toEqual(OWN);
+    });
+
+    it('sin usuario (deslogueo) se borra', () => {
+      ownedCompany.enter(OWN, 'uid-a');
+      renderHook(() => useCheckAuth(), { wrapper });
+      onAuthStateChanged.mock.calls[0][1](null);
+      expect(ownedCompany.getStored()).toBeNull();
+    });
+
+    it('si falla la validación del login, se borra', async () => {
+      ownedCompany.enter(OWN, 'uid-a');
+      getAdmin.mockRejectedValue(new Error('rol inválido'));
+      renderHook(() => useCheckAuth(), { wrapper });
+      onAuthStateChanged.mock.calls[0][1](firebaseUser('uid-a'));
+      await waitFor(() => expect(store.getState().auth.status).toBe('not-authenticated'));
+      expect(ownedCompany.getStored()).toBeNull();
+    });
   });
 });

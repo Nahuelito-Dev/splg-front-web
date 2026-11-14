@@ -5,9 +5,12 @@ import {
   draftFromSeconds,
   formatInterval,
   toSeconds,
-  scheduledTasksSchema,
-  toScheduledTasksBody,
-  toScheduledTasksValues,
+  fleetAlertHourSchema,
+  intervalsSchema,
+  toFleetAlertHourBody,
+  toFleetAlertHourValues,
+  toIntervalsBody,
+  toIntervalsValues,
   validateFleetAlertHour,
   validateInterval,
 } from './scheduledTasksRules';
@@ -81,33 +84,46 @@ describe('validateFleetAlertHour', () => {
   });
 });
 
-describe('scheduledTasksSchema', () => {
+describe('intervalsSchema (plataforma)', () => {
   const defaults = {
     dispatchRetrySeconds: 15,
     reservationActivationSeconds: 300,
     unpaidReservationExpirySeconds: 3600,
     unpaidMercadoPagoExpirySeconds: 1800,
-    fleetAlertHour: 8,
   };
 
   it('los reintentos del despacho topean en 300 s', () => {
     expect(TASKS.find((task) => task.field === 'dispatchRetrySeconds')?.maxSeconds).toBe(300);
-    const values = toScheduledTasksValues({ ...defaults, dispatchRetrySeconds: 600 });
-    const result = scheduledTasksSchema.safeParse(values);
+    const values = toIntervalsValues({ ...defaults, dispatchRetrySeconds: 600 });
+    const result = intervalsSchema.safeParse(values);
     const issue = result.success ? undefined : result.error.issues[0];
     expect(issue?.path.join('.')).toBe('intervals.dispatchRetrySeconds.amount');
     expect(issue?.message).toBe('No puede superar 5 minutos');
   });
 
   it('otra tarea sigue pudiendo llegar a 24 h', () => {
-    const values = toScheduledTasksValues({ ...defaults, unpaidReservationExpirySeconds: 86400 });
-    expect(scheduledTasksSchema.safeParse(values).success).toBe(true);
+    const values = toIntervalsValues({ ...defaults, unpaidReservationExpirySeconds: 86400 });
+    expect(intervalsSchema.safeParse(values).success).toBe(true);
   });
 
-  it('ida y vuelta de los valores y la hora inválida va a su campo', () => {
-    const values = toScheduledTasksValues(defaults);
-    expect(toScheduledTasksBody(values)).toEqual(defaults);
-    const bad = scheduledTasksSchema.safeParse({ ...values, hour: '24' });
-    expect(bad.success ? '' : bad.error.issues[0]?.path.join('.')).toBe('hour');
+  it('ida y vuelta: el cuerpo lleva las cuatro frecuencias y nunca la hora', () => {
+    const body = toIntervalsBody(toIntervalsValues(defaults));
+    expect(body).toEqual(defaults);
+    expect(body).not.toHaveProperty('fleetAlertHour');
+  });
+});
+
+describe('fleetAlertHourSchema (empresa)', () => {
+  it('ida y vuelta: el cuerpo lleva sólo la hora', () => {
+    const values = toFleetAlertHourValues({ fleetAlertHour: 8 });
+    expect(values).toEqual({ hour: '8' });
+    expect(toFleetAlertHourBody(values)).toEqual({ fleetAlertHour: 8 });
+  });
+
+  it('la hora inválida o vacía va a su campo', () => {
+    for (const hour of ['24', '', '7.5']) {
+      const bad = fleetAlertHourSchema.safeParse({ hour });
+      expect(bad.success ? '' : bad.error.issues[0]?.path.join('.')).toBe('hour');
+    }
   });
 });

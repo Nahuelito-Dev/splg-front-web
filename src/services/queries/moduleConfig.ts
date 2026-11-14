@@ -10,7 +10,7 @@ import {
   putScheduledTasksConfig,
   type ProcessConfigBody,
 } from '../api/moduleConfig';
-import type { DispatchConfigBody, ExpressConfigBody, ProcessConfig, ScheduledTasksConfigBody } from '../api/types';
+import type { DispatchConfigBody, EmpresaScheduledTasksBody, ExpressConfigBody, ProcessConfig } from '../api/types';
 import { queryKeys } from './queryKeys';
 
 const keys = queryKeys.moduleConfig;
@@ -38,7 +38,7 @@ export const useScheduledTasksConfig = ({ enabled = true }: Options = {}) =>
 export const useUpdateScheduledTasksConfig = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: ScheduledTasksConfigBody) => putScheduledTasksConfig(body),
+    mutationFn: (body: EmpresaScheduledTasksBody) => putScheduledTasksConfig(body),
     onSuccess: (saved) => {
       queryClient.setQueryData(keys.detail('scheduled_tasks'), saved);
     },

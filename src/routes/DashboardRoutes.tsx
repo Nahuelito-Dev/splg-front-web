@@ -9,6 +9,7 @@ import { lazyPage } from './lazyPage';
 import { CheckingAuth } from '../common/components/Spinner';
 import { useAppSelector, useSupportSession } from '../hooks';
 import { useSupportEndedEvent } from '../hooks/useSupportEndedEvent';
+import { useOwnedCompany } from '../hooks/useOwnedCompany';
 import { useSupportModeSync } from '../services/queries/supportSessions';
 
 // Cada página se carga recién al entrar (un chunk por ruta).
@@ -64,7 +65,13 @@ const Tires = lazyPage(() => import('../pages/FleetExpense/Tires'), 'Tires');
 const Configuration = lazyPage(() => import('../pages/Configuration/Configuration'), 'Configuration');
 const DispatchSettings = lazyPage(() => import('../pages/Configuration/DispatchSettings'), 'DispatchSettings');
 const AutomaticProcesses = lazyPage(() => import('../pages/Configuration/AutomaticProcesses'), 'AutomaticProcesses');
-const ProcessMonitor = lazyPage(() => import('../pages/Configuration/ProcessMonitor'), 'ProcessMonitor');
+const PlatformMonitoring = lazyPage(() => import('../pages/Platform/PlatformMonitoring'), 'PlatformMonitoring');
+const PlatformScheduledTasks = lazyPage(
+  () => import('../pages/Platform/PlatformScheduledTasks'),
+  'PlatformScheduledTasks',
+);
+const ServiceUsage = lazyPage(() => import('../pages/Platform/ServiceUsage'), 'ServiceUsage');
+const PlatformActivity = lazyPage(() => import('../pages/Platform/PlatformActivity'), 'PlatformActivity');
 const ExpressSettings = lazyPage(() => import('../pages/Configuration/ExpressSettings'), 'ExpressSettings');
 const Refunds = lazyPage(() => import('../pages/Refunds/Refunds'), 'Refunds');
 const ScheduledTasksSettings = lazyPage(
@@ -146,14 +153,16 @@ export const DashboardRoutes = () => {
   useSupportModeSync(isSuperAdminRole);
   useSupportEndedEvent(isSuperAdminRole);
   const { loaded, active } = useSupportSession();
+  const owned = useOwnedCompany();
 
   // El administrador general no ve nada hasta saber si está en modo soporte: si no, el panel mostraría un instante la
   // plataforma (o la empresa) equivocada y pediría datos sin la sesión.
   if (isSuperAdminRole && !loaded) return <CheckingAuth />;
 
   return (
-    // Al entrar o salir del modo soporte se monta todo de nuevo: ninguna pantalla conserva datos del otro lado.
-    <DashboardLayout key={active?.id ?? 'sin-soporte'}>
+    // Al entrar o salir del modo soporte o de la empresa propia se monta todo de nuevo: ninguna pantalla conserva datos
+    // del otro lado.
+    <DashboardLayout key={active?.id ?? (isSuperAdminRole && owned ? `propia:${owned.slug}` : 'sin-soporte')}>
       <Suspense
         fallback={
           <>
@@ -168,11 +177,9 @@ export const DashboardRoutes = () => {
           <Route path="account" element={<Account />} />
           <Route path="users" element={<Users />} />
           <Route path="users/details/:leadId" element={<UserDetails />} />
-          <Route path="settings/process-monitor" element={<ProcessMonitor />} />
           <Route path="notifications" element={<Notifications />} />
           <Route path="admins" element={<Admins />} />
           <Route path="admins/:id" element={<AdminDetails />} />
-          <Route path="audit" element={<Audit />} />
 
           {/* «Accesos de soporte»: sólo el admin de la empresa (la API se lo niega al administrador general) */}
           <Route element={<RequireCompanyAdmin />}>
@@ -186,10 +193,18 @@ export const DashboardRoutes = () => {
             <Route path="distributors/:id" element={<DistributorDetails />} />
             <Route path="distributors/:id/edit" element={<DistributorForm />} />
             <Route path="system" element={<System />} />
+            <Route path="platform/monitoring" element={<PlatformMonitoring />} />
+            <Route path="platform/scheduled-tasks" element={<PlatformScheduledTasks />} />
+            <Route path="platform/service-usage" element={<ServiceUsage />} />
+            <Route path="platform/activity" element={<PlatformActivity />} />
+            {/* El monitoreo pasó a la plataforma: el enlace viejo lleva al nuevo (a un admin, al inicio). */}
+            <Route path="settings/process-monitor" element={<Navigate to="/platform/monitoring" replace />} />
           </Route>
 
           {/* Empresa: el admin de la empresa, y el administrador general sólo en modo soporte (en sólo lectura) */}
           <Route element={<RequireCompanyScope />}>
+            {/* La auditoría de datos es de una empresa: la plataforma tiene la suya en `/platform/activity`. */}
+            <Route path="audit" element={<Audit />} />
             <Route path="customers" element={<Customers />} />
             <Route path="customers/repurchase" element={<Repurchase />} />
             <Route path="customers/details/:id" element={<CustomerDetails />} />

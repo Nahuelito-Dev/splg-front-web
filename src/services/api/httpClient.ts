@@ -3,6 +3,7 @@ import { env } from '../../config/env';
 import { store } from '../../store/store';
 import { logOut } from '../../store/auth';
 import { SUPPORT_SESSION_GONE_CODES, SUPPORT_SESSION_HEADER, supportMode } from './supportMode';
+import { OWNED_COMPANY_GONE_CODE, OWNED_COMPANY_HEADER, ownedCompany } from './ownedCompany';
 import { getCurrentIdToken, logOutFirebase } from '../../firebase/providers';
 import { esErrorDeSesion, SESSION_EXPIRED_MESSAGE } from '../../firebase/sessionErrors';
 import { queryClient } from '../queries/queryClient';
@@ -101,6 +102,14 @@ export const attachAuthHeaders = async (config: InternalAxiosRequestConfig) => {
   // la sesión en el back (no hay más `X-Distributor` para él).
   const supportSession = config.skipSupportSession ? null : supportMode.activeId();
   if (supportSession) config.headers[SUPPORT_SESSION_HEADER] = supportSession;
+  // Empresa propia: el administrador general la opera como su admin con `X-Distributor`. Con una sesión de soporte
+  // activa manda la sesión (la API haría lo mismo); las llamadas de identidad y del modo soporte van sin él.
+  // Sólo la elegida por la cuenta logueada: otro administrador general en el mismo navegador no la hereda.
+  if (!supportSession && !config.skipSupportSession) {
+    const { role, uid } = store.getState().auth;
+    const owned = role === 'super_admin' ? ownedCompany.getFor(uid) : null;
+    if (owned) config.headers[OWNED_COMPANY_HEADER] = owned.slug;
+  }
   return config;
 };
 
@@ -135,6 +144,11 @@ http.interceptors.response.use(undefined, async (error: unknown) => {
     const sentSession: unknown = original?.headers?.[SUPPORT_SESSION_HEADER];
     if (typeof sentSession === 'string' && code && SUPPORT_SESSION_GONE_CODES.has(code)) {
       supportMode.endedByApi(sentSession);
+    }
+    // La empresa del `X-Distributor` dejó de ser propia (la API ignoró el encabezado): se vuelve a la plataforma.
+    const sentOwned: unknown = original?.headers?.[OWNED_COMPANY_HEADER];
+    if (typeof sentOwned === 'string' && status === 403 && code === OWNED_COMPANY_GONE_CODE) {
+      ownedCompany.endedByApi(sentOwned);
     }
     if (status === 401) {
       // Con el token recién renovado, el 401 no es vencimiento (cuenta bloqueada, distribuidora inválida, rol): se muestra el motivo de la API.

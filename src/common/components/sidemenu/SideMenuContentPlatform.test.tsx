@@ -21,12 +21,13 @@ vi.mock('../../../services/queries/photos', async (importOriginal) => ({
 }));
 vi.mock('../../../services/queries/queryClient', () => ({ queryClient: { clear: vi.fn() } }));
 vi.mock('../../../hooks/reduxHooks', () => ({
-  useAppSelector: (pick: (s: { auth: { email: string; role: string } }) => unknown) =>
-    pick({ auth: { email: 'superadmin@splg.com', role: 'super_admin' } }),
+  useAppSelector: (pick: (s: { auth: { email: string; role: string; uid: string } }) => unknown) =>
+    pick({ auth: { email: 'superadmin@splg.com', role: 'super_admin', uid: 'uid-sa' } }),
 }));
 vi.mock('./TenantCard', () => ({ TenantCard: () => null }));
 vi.mock('../LogoSplg', () => ({ LogoSplg: () => null }));
 
+import { ownedCompany } from '../../../services/api/ownedCompany';
 import { supportMode } from '../../../services/api/supportMode';
 import { SideMenuContent } from './SideMenuContent';
 
@@ -40,6 +41,7 @@ const draw = () =>
 beforeEach(() => {
   orders.mockReturnValue({ data: undefined });
   supportMode.reset();
+  ownedCompany.reset();
 });
 
 afterEach(() => {
@@ -55,7 +57,9 @@ describe('SideMenuContent: administrador general', () => {
     expect(screen.queryByRole('link', { name: /Clientes/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /Hojas de ruta/ })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Distribuidoras/ })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Auditoría/ })).toBeInTheDocument();
+    // Fuera de soporte, sólo la auditoría de la plataforma: la de datos es de empresa.
+    expect(screen.getByRole('link', { name: 'Auditoría de plataforma' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Auditoría' })).not.toBeInTheDocument();
     expect(orders).toHaveBeenCalled();
     for (const call of orders.mock.calls as unknown[][]) expect(call[2]).toMatchObject({ enabled: false });
   });
@@ -76,5 +80,29 @@ describe('SideMenuContent: administrador general', () => {
       expect.anything(),
       expect.objectContaining({ enabled: true }),
     );
+  });
+
+  it('en la empresa propia ve el menú de empresa (con su auditoría), nada de plataforma, y cuenta los pendientes', () => {
+    supportMode.update(null);
+    ownedCompany.enter({ id: 'c-own', slug: 'prueba-orixtech', name: 'Distribuidora de prueba' }, 'uid-sa');
+    draw();
+    expect(screen.getByRole('link', { name: /^Pedidos/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Hojas de ruta/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Auditoría' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Distribuidoras/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Auditoría de plataforma' })).not.toBeInTheDocument();
+    expect(orders).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({ enabled: true }),
+    );
+  });
+
+  it('la empresa propia elegida por otra cuenta no cuenta: sigue en la plataforma', () => {
+    supportMode.update(null);
+    ownedCompany.enter({ id: 'c-own', slug: 'prueba-orixtech', name: 'Distribuidora de prueba' }, 'uid-otro');
+    draw();
+    expect(screen.getByRole('link', { name: /Distribuidoras/ })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^Pedidos/ })).not.toBeInTheDocument();
   });
 });

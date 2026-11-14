@@ -20,7 +20,13 @@ export const TenantCard = ({ mini = false }: { mini?: boolean; onNavigate?: () =
   const { data: platform } = usePlatform();
 
   const name = isPlatform ? (platform?.name ?? '…') : (distributor?.name ?? '…');
-  const detail = isPlatform ? 'Plataforma' : mode === 'support' ? 'Modo soporte · sólo lectura' : distributor?.slug;
+  const detail = isPlatform
+    ? 'Plataforma'
+    : mode === 'support'
+      ? 'Modo soporte · sólo lectura'
+      : mode === 'owned'
+        ? 'Empresa propia · de prueba'
+        : distributor?.slug;
 
   return (
     <Tooltip title={mini ? `${name}${detail ? ` · ${detail}` : ''}` : ''} placement="right" arrow>

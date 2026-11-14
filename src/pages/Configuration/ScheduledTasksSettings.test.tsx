@@ -21,11 +21,8 @@ vi.mock('../../services/queries/moduleConfig', () => ({
   useUpdateScheduledTasksConfig: () => state.update,
 }));
 vi.mock('../../services/queries/users', () => ({ useUser: () => ({ data: undefined, isPending: false }) }));
-const confirmed = vi.hoisted(() => ({ value: true }));
-vi.mock('../../utils/notifications', () => ({
-  confirm: () => Promise.resolve(confirmed.value),
-  notify: { success: vi.fn(), error: vi.fn() },
-}));
+vi.mock('../../services/queries/supportSessions', () => ({ usePlatform: () => ({ data: { name: 'OrixTech' } }) }));
+vi.mock('../../utils/notifications', () => ({ notify: { success: vi.fn(), error: vi.fn() } }));
 
 const config = (over: Record<string, unknown> = {}) => ({
   dispatchRetrySeconds: 15,
@@ -62,74 +59,53 @@ const arrives = (data: ReturnType<typeof config>) => {
 afterEach(() => {
   cleanup();
   queryOptions.mockReset();
-  confirmed.value = true;
   state.perms = { needsDistributor: false, canWrite: true, writeHint: undefined };
 });
 
 const save = () => screen.getByRole('button', { name: 'Guardar cambios' });
-const amounts = () => screen.getAllByLabelText('Cada');
+const hour = () => screen.getByLabelText('Hora (0 a 23)');
 
 describe('ScheduledTasksSettings', () => {
-  it('muestra cada intervalo en su unidad legible', () => {
+  it('muestra las cuatro frecuencias como sólo lectura: las fija la plataforma', () => {
     setup();
-    expect(amounts().map((input) => (input as HTMLInputElement).value)).toEqual(['15', '5', '1', '30']);
-    const units = screen.getAllByLabelText('Unidad').map((select) => (select as HTMLSelectElement).value);
-    expect(units).toEqual(['seconds', 'minutes', 'hours', 'minutes']);
-    expect(screen.getByLabelText('Hora (0 a 23)')).toHaveValue(8);
+    expect(screen.getByText(/Las fija OrixTech/)).toBeInTheDocument();
+    expect(screen.getByText('cada 15 segundos')).toBeInTheDocument();
+    expect(screen.getByText('cada 5 minutos')).toBeInTheDocument();
+    expect(screen.getByText('cada 1 hora')).toBeInTheDocument();
+    expect(screen.getByText('cada 30 minutos')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Cada')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Unidad')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('spinbutton')).toHaveLength(1);
+    expect(hour()).toHaveValue(8);
   });
 
-  it('un intervalo que no es múltiplo del tic muestra el motivo y bloquea guardar', async () => {
-    setup();
-    fireEvent.change(amounts()[1], { target: { value: '7' } });
-    expect(await screen.findByText('Tiene que ser múltiplo de 5 minutos')).toBeInTheDocument();
-    await waitFor(() => expect(save()).toBeDisabled());
-  });
-
-  it('los reintentos del despacho no pueden pasar de 5 minutos', async () => {
-    setup();
-    fireEvent.change(screen.getAllByLabelText('Unidad')[0], { target: { value: 'minutes' } });
-    fireEvent.change(amounts()[0], { target: { value: '6' } });
-    expect(await screen.findByText('No puede superar 5 minutos')).toBeInTheDocument();
-    expect(save()).toBeDisabled();
-  });
-
-  it('cambiar la unidad convierte a segundos al guardar y manda todos los campos', async () => {
+  it('guardar manda sólo la hora del aviso de flota', async () => {
     const update = setup();
-    fireEvent.change(amounts()[1], { target: { value: '1' } });
-    fireEvent.change(screen.getAllByLabelText('Unidad')[1], { target: { value: 'hours' } });
+    fireEvent.change(hour(), { target: { value: '9' } });
     await waitFor(() => expect(save()).toBeEnabled());
     fireEvent.click(save());
     await waitFor(() => expect(update.mutate).toHaveBeenCalled());
-    expect(update.mutate.mock.calls[0]?.[0]).toEqual({
-      dispatchRetrySeconds: 15,
-      reservationActivationSeconds: 3600,
-      unpaidReservationExpirySeconds: 3600,
-      unpaidMercadoPagoExpirySeconds: 1800,
-      fleetAlertHour: 8,
-    });
+    expect(update.mutate.mock.calls[0]?.[0]).toEqual({ fleetAlertHour: 9 });
   });
 
   it('la hora del aviso va de 0 a 23 y la ayuda dice hora de Argentina', async () => {
     setup();
     expect(screen.getByText(/hora de Argentina/)).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText('Hora (0 a 23)'), { target: { value: '24' } });
+    fireEvent.change(hour(), { target: { value: '24' } });
     expect(await screen.findByText('Ingresá una hora entre 0 y 23')).toBeInTheDocument();
     expect(save()).toBeDisabled();
   });
 
-  it('restablecer pide confirmación y manda un PUT sin campos', async () => {
-    const update = setup();
-    fireEvent.click(screen.getByRole('button', { name: 'Restablecer valores por defecto' }));
-    await waitFor(() => expect(update.mutate).toHaveBeenCalled());
-    expect(update.mutate.mock.calls[0]?.[0]).toEqual({});
+  it('ya no ofrece restablecer las frecuencias', () => {
+    setup();
+    expect(screen.queryByRole('button', { name: 'Restablecer valores por defecto' })).not.toBeInTheDocument();
   });
 
-  it('si no se confirma el restablecimiento, no manda nada', async () => {
-    confirmed.value = false;
-    const update = setup();
-    fireEvent.click(screen.getByRole('button', { name: 'Restablecer valores por defecto' }));
-    await new Promise((r) => setTimeout(r, 20));
-    expect(update.mutate).not.toHaveBeenCalled();
+  it('sin permiso de escritura la hora queda deshabilitada', () => {
+    state.perms = { needsDistributor: false, canWrite: false, writeHint: 'Sólo lectura' };
+    setup();
+    expect(hour()).toBeDisabled();
+    expect(save()).toBeDisabled();
   });
 
   it('el administrador general sin «Ver como» ve el aviso y no consulta', () => {
@@ -150,13 +126,14 @@ describe('ScheduledTasksSettings', () => {
 
   it('muestra el mensaje del back cuando el guardado falla', async () => {
     const update = setup();
-    fireEvent.change(screen.getByLabelText('Hora (0 a 23)'), { target: { value: '9' } });
+    fireEvent.change(hour(), { target: { value: '9' } });
     await waitFor(() => expect(save()).toBeEnabled());
     fireEvent.click(save());
     await waitFor(() => expect(update.mutate).toHaveBeenCalled());
     const options = update.mutate.mock.calls[0]?.[1] as { onError: (e: unknown) => void };
     act(() => options.onError(new ApiError(400, ['fleetAlertHour: fuera de rango'])));
     expect(await screen.findByText('fleetAlertHour: fuera de rango')).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('fleetAlertHour: fuera de rango');
   });
 
   it('con valores por defecto y sin cambios no deja guardar', async () => {

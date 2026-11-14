@@ -77,6 +77,29 @@ export const useDeleteUser = () => {
 /** Búsqueda puntual por teléfono (soporte: ubicar una cuenta sin saber el nombre). Resuelve `null` si nadie lo tiene. */
 export const useFindUserByPhone = () => useMutation({ mutationFn: getUserByPhone });
 
+/** Los roles de las cuentas que la plataforma puede elegir en sus herramientas (nunca clientes ni choferes). */
+const PLATFORM_ACCOUNT_ROLES: UserRoleFilter[] = ['super_admin', 'admin'];
+
+/**
+ * Cuentas de la plataforma y administradores de empresa que coinciden con el término (`GET /users?role=`, una consulta
+ * por rol). Para elegir a quién en las herramientas de plataforma: nunca aparece un cliente ni un chofer.
+ */
+export const usePlatformAccounts = (term: string, { enabled = true, pageSize = 5 } = {}) => {
+  const params: PageParams = { page: 0, pageSize };
+  const results = useQueries({
+    queries: PLATFORM_ACCOUNT_ROLES.map((role) => ({
+      queryKey: keys.list({ ...params, search: term, tab: role }),
+      queryFn: () => listUsers(params, term, role),
+      enabled,
+    })),
+  });
+  return {
+    accounts: results.flatMap((result) => result.data?.rows ?? []),
+    loading: results.some((result) => result.isFetching),
+    error: results.find((result) => result.error)?.error ?? null,
+  };
+};
+
 /** La cuenta del admin logueado, para "Mi cuenta". */
 export const useMyAccount = (email: string | null) =>
   useQuery({

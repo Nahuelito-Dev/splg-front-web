@@ -8882,7 +8882,7 @@
                         "description": "Sin token o token inválido"
                     },
                     "403": {
-                        "description": "Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`)"
+                        "description": "Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin"
                     }
                 },
                 "security": [
@@ -8916,7 +8916,7 @@
                         "description": "Sin token o token inválido"
                     },
                     "403": {
-                        "description": "Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`)"
+                        "description": "Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin"
                     }
                 },
                 "security": [
@@ -11429,7 +11429,7 @@
                         "description": "Sin token o token inválido"
                     },
                     "403": {
-                        "description": "Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`)"
+                        "description": "Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin"
                     },
                     "404": {
                         "description": "No hay una distribuidora elegida"
@@ -12220,7 +12220,7 @@
         },
         "/api/v1/module-config/scheduled_tasks": {
             "get": {
-                "description": "Intervalo (s) de cada tarea y hora del aviso de vencimientos de flota. Sin configuración, los valores por omisión (los vigentes antes de CU-173).",
+                "description": "Ruta v1 congelada: intervalos (s) de cada tarea y hora del aviso de vencimientos de flota. Sin configuración, los valores por omisión (los vigentes antes de CU-173). Las frecuencias están deprecadas en v1; la escritura nueva de plataforma vive en v2.",
                 "operationId": "ModuleConfigController_getScheduledTasks",
                 "parameters": [],
                 "responses": {
@@ -12255,7 +12255,7 @@
                 ]
             },
             "put": {
-                "description": "Reemplaza la configuración. Cada intervalo es un múltiplo entero del ciclo de base de su tarea (15 s, 5 min, 1 h, 30 min) y de hasta 24 h; la hora del aviso de flota va de 0 a 23. Al guardar se borran las marcas de última ejecución de la distribuidora: los intervalos nuevos rigen desde el ciclo siguiente.",
+                "description": "Ruta v1 congelada: conserva el contrato histórico y acepta las cuatro frecuencias y `fleetAlertHour`. Reemplaza toda la configuración: lo omitido vuelve a su valor por omisión. Las frecuencias están deprecadas en v1; los clientes nuevos las administran con `PUT /v2/platform/companies/{id}/scheduled-tasks`.",
                 "operationId": "ModuleConfigController_putScheduledTasks",
                 "parameters": [],
                 "requestBody": {
@@ -12280,7 +12280,7 @@
                         }
                     },
                     "400": {
-                        "description": "Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\") o cuerpo fuera de los límites (detalle por campo)"
+                        "description": "Intervalo u hora inválidos, o Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\") o cuerpo fuera de los límites (detalle por campo)"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -12294,7 +12294,54 @@
                         "bearer": []
                     }
                 ],
-                "summary": "Cambiar la frecuencia de las tareas programadas",
+                "summary": "Cambiar las tareas programadas de la distribuidora",
+                "tags": [
+                    "Configuración · Parámetros por distribuidora"
+                ]
+            }
+        },
+        "/api/v2/module-config/scheduled_tasks": {
+            "put": {
+                "description": "Ruta v2 para el panel de empresa. Actualiza sólo `fleetAlertHour` y conserva las frecuencias que administra la plataforma en `PUT /v2/platform/companies/{id}/scheduled-tasks`.",
+                "operationId": "ModuleConfigController_putScheduledTasksV2",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/EmpresaScheduledTasksDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ScheduledTasksConfigResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Hora inválida, frecuencia no permitida o Super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\") o cuerpo fuera de los límites (detalle por campo)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la configuración (`configuracion.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Cambiar la hora del aviso de flota de la distribuidora",
                 "tags": [
                     "Configuración · Parámetros por distribuidora"
                 ]
@@ -29885,7 +29932,7 @@
                         "description": "Sin token o token inválido"
                     },
                     "403": {
-                        "description": "Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`)"
+                        "description": "Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin"
                     }
                 },
                 "security": [
@@ -29918,7 +29965,7 @@
                         "description": "Sin token o token inválido"
                     },
                     "403": {
-                        "description": "Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`)"
+                        "description": "Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin"
                     }
                 },
                 "security": [
@@ -29952,7 +29999,7 @@
                         "description": "Sin token o token inválido"
                     },
                     "403": {
-                        "description": "Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`)"
+                        "description": "Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin"
                     }
                 },
                 "security": [
@@ -29998,7 +30045,7 @@
                         "description": "Sin token o token inválido"
                     },
                     "403": {
-                        "description": "Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`)"
+                        "description": "Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin"
                     },
                     "404": {
                         "description": "No existe, o es de otra distribuidora"
@@ -30017,9 +30064,20 @@
         },
         "/api/v2/process-runs/summary": {
             "get": {
-                "description": "Un renglón por proceso con su salud: `ok`, `partial`, `running`, `failed`, `late` (no arrancó en 1,5 veces su período), `stuck` (sigue corriendo pasado el máximo) o `never`. Cliente y chofer reciben 403. De los procesos globales, el admin de una empresa ve sólo la salud (sin contadores ni texto de error); el administrador general ve todo.",
+                "description": "Un renglón por proceso y empresa (y uno por cada proceso global de la plataforma) con su salud: `ok`, `partial`, `running`, `failed`, `late` (no arrancó en 1,5 veces su período), `stuck` (sigue corriendo pasado el máximo) o `never`. Con `distributorId`, sólo los de esa empresa. Sólo el administrador general: el admin de una empresa recibe 403.",
                 "operationId": "ProcessRunController_resumen",
-                "parameters": [],
+                "parameters": [
+                    {
+                        "name": "distributorId",
+                        "required": false,
+                        "in": "query",
+                        "description": "Sólo los procesos de esa empresa (sin las corridas globales de la plataforma)",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "",
@@ -30031,11 +30089,14 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "`distributorId` que no es un UUID"
+                    },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
                     "403": {
-                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la configuración (`configuracion.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`)"
+                        "description": "Requiere rol: super_admin"
                     }
                 },
                 "security": [
@@ -30043,7 +30104,7 @@
                         "bearer": []
                     }
                 ],
-                "summary": "Última corrida de cada proceso automático",
+                "summary": "Última corrida de cada proceso automático, por empresa",
                 "tags": [
                     "Procesos automáticos · Monitoreo"
                 ]
@@ -30051,9 +30112,19 @@
         },
         "/api/v2/process-runs": {
             "get": {
-                "description": "Las más nuevas primero, paginado. Filtros: `process`, `status`, `from` y `to` (instantes ISO 8601 sobre el inicio de la corrida).",
+                "description": "Las más nuevas primero, paginado. Filtros: `distributorId` (una empresa), `process`, `status` (p. ej. `failed` para las fallas), `from` y `to` (instantes ISO 8601 sobre el inicio de la corrida). Los atrasos (`late`) y las corridas trabadas salen del resumen. Sólo el administrador general.",
                 "operationId": "ProcessRunController_listar",
                 "parameters": [
+                    {
+                        "name": "distributorId",
+                        "required": false,
+                        "in": "query",
+                        "description": "Sólo los procesos de esa empresa (sin las corridas globales de la plataforma)",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
                     {
                         "name": "process",
                         "required": false,
@@ -30171,13 +30242,13 @@
                         }
                     },
                     "400": {
-                        "description": "Filtro inválido: `process` o `status` fuera del enum, `from` o `to` que no son fecha ISO 8601, `from` posterior a `to`, `limit` fuera de 1 a 100 u `offset` negativo"
+                        "description": "Filtro inválido: `distributorId` que no es un UUID, `process` o `status` fuera del enum, `from` o `to` que no son fecha ISO 8601, `from` posterior a `to`, `limit` fuera de 1 a 100 u `offset` negativo"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
                     },
                     "403": {
-                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la configuración (`configuracion.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`)"
+                        "description": "Requiere rol: super_admin"
                     }
                 },
                 "security": [
@@ -30185,7 +30256,7 @@
                         "bearer": []
                     }
                 ],
-                "summary": "Historial de corridas",
+                "summary": "Historial de corridas de todas las empresas",
                 "tags": [
                     "Procesos automáticos · Monitoreo"
                 ]
@@ -32810,7 +32881,7 @@
                         "description": "Sin token o token inválido"
                     },
                     "403": {
-                        "description": "Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`)"
+                        "description": "Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin"
                     }
                 },
                 "security": [
@@ -32857,7 +32928,7 @@
                         "description": "Sin token o token inválido"
                     },
                     "403": {
-                        "description": "Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`)"
+                        "description": "Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin"
                     },
                     "404": {
                         "description": "Caso no encontrado"
@@ -32917,7 +32988,7 @@
                         "description": "Sin token o token inválido"
                     },
                     "403": {
-                        "description": "Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`)"
+                        "description": "Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin"
                     },
                     "404": {
                         "description": "Caso no encontrado"
@@ -32963,7 +33034,7 @@
                         "description": "Sin token o token inválido"
                     },
                     "403": {
-                        "description": "Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`)"
+                        "description": "Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin"
                     }
                 },
                 "security": [
@@ -33000,7 +33071,7 @@
                         "description": "Sin token o token inválido"
                     },
                     "403": {
-                        "description": "Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`)"
+                        "description": "Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin"
                     }
                 },
                 "security": [
@@ -33045,7 +33116,7 @@
                         "description": "Sin token o token inválido"
                     },
                     "403": {
-                        "description": "Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`)"
+                        "description": "Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin"
                     }
                 },
                 "security": [
@@ -33082,7 +33153,7 @@
                         "description": "Sin token o token inválido"
                     },
                     "403": {
-                        "description": "Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`)"
+                        "description": "Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin"
                     },
                     "409": {
                         "description": "El recupero está apagado para la distribuidora (parámetro `enabled` en 0, el valor por omisión): no se abre ningún caso ni se manda ningún aviso"
@@ -38126,6 +38197,583 @@
                     }
                 },
                 "summary": "Nombre y contacto de la plataforma",
+                "tags": [
+                    "Platform"
+                ]
+            }
+        },
+        "/api/v2/platform/overview": {
+            "get": {
+                "description": "Empresas por estado; pedidos, ventas, facturación, choferes y clientes sumados de todas las empresas vigentes en el período (`from`/`to`, por omisión el mes en curso); uso y costo del lector del mes; alertas y fallas de los procesos; sesiones de soporte activas y pendientes. Los totales son la suma exacta de las filas de `GET /v2/platform/companies`.",
+                "operationId": "PlatformConsoleController_overview",
+                "parameters": [
+                    {
+                        "name": "from",
+                        "required": false,
+                        "in": "query",
+                        "description": "Desde (día en hora argentina, AAAA-MM-DD). Sin `from`: el primero del mes de `to` (o del mes en curso).",
+                        "schema": {
+                            "example": "2026-11-01",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "required": false,
+                        "in": "query",
+                        "description": "Hasta (día en hora argentina, inclusive, AAAA-MM-DD). Sin `to`: hoy. El período abarca hasta 366 días.",
+                        "schema": {
+                            "example": "2026-11-14",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PlatformOverviewResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Período inválido: fecha que no es AAAA-MM-DD, «desde» posterior a «hasta» o más de 366 días"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Tablero de la plataforma",
+                "tags": [
+                    "Platform"
+                ]
+            }
+        },
+        "/api/v2/platform/companies": {
+            "get": {
+                "description": "Las empresas vigentes, primero las propias de la plataforma y después por nombre, paginadas, con las métricas del período (sin datos personales), última actividad, alertas de procesos y si tienen una sesión de soporte activa o pedidos pendientes. Filtros opcionales por `status` y `ownedByPlatform`. Esta marca indica que el administrador general la opera directo con `X-Distributor`, sin sesión de soporte.",
+                "operationId": "PlatformConsoleController_list",
+                "parameters": [
+                    {
+                        "name": "from",
+                        "required": false,
+                        "in": "query",
+                        "description": "Desde (día en hora argentina, AAAA-MM-DD). Sin `from`: el primero del mes de `to` (o del mes en curso).",
+                        "schema": {
+                            "example": "2026-11-01",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "required": false,
+                        "in": "query",
+                        "description": "Hasta (día en hora argentina, inclusive, AAAA-MM-DD). Sin `to`: hoy. El período abarca hasta 366 días.",
+                        "schema": {
+                            "example": "2026-11-14",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "ownedByPlatform",
+                        "required": false,
+                        "in": "query",
+                        "description": "true: sólo las empresas propias de la plataforma; false: sólo las de clientes",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "active",
+                                "suspended"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "minimum": 1,
+                            "maximum": 100,
+                            "default": 50,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "minimum": 0,
+                            "default": 0,
+                            "type": "number"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CompanyListResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Período inválido: fecha que no es AAAA-MM-DD, «desde» posterior a «hasta» o más de 366 días, `ownedByPlatform` que no es true/false, estado desconocido o paginación fuera de rango (`limit` 1 a 100, `offset` ≥ 0)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Empresas con sus métricas",
+                "tags": [
+                    "Platform"
+                ]
+            }
+        },
+        "/api/v2/platform/companies/{id}": {
+            "get": {
+                "description": "Datos de la empresa como cliente (sin teléfono, datos bancarios ni credenciales), métricas del período, uso del lector del mes con su tope, salud de sus procesos, sus administradores (nombre, correo, rol de personal, último ingreso: son cuentas del panel) y sus últimas 10 sesiones de soporte.",
+                "operationId": "PlatformConsoleController_detail",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "required": false,
+                        "in": "query",
+                        "description": "Desde (día en hora argentina, AAAA-MM-DD). Sin `from`: el primero del mes de `to` (o del mes en curso).",
+                        "schema": {
+                            "example": "2026-11-01",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "required": false,
+                        "in": "query",
+                        "description": "Hasta (día en hora argentina, inclusive, AAAA-MM-DD). Sin `to`: hoy. El período abarca hasta 366 días.",
+                        "schema": {
+                            "example": "2026-11-14",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CompanyDetailResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "El identificador de la empresa no es un UUID o Período inválido: fecha que no es AAAA-MM-DD, «desde» posterior a «hasta» o más de 366 días"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: super_admin"
+                    },
+                    "404": {
+                        "description": "La empresa no existe o está dada de baja"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ficha consolidada de una empresa",
+                "tags": [
+                    "Platform"
+                ]
+            }
+        },
+        "/api/v2/platform/companies/{id}/scheduled-tasks": {
+            "get": {
+                "description": "Las cuatro frecuencias (las fija la plataforma) y la hora del aviso de vencimientos de flota (la fija la empresa, acá sólo se lee).",
+                "operationId": "PlatformConsoleController_scheduledTasks",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ScheduledTasksConfigResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "El identificador de la empresa no es un UUID"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: super_admin"
+                    },
+                    "404": {
+                        "description": "La empresa no existe o está dada de baja"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Frecuencia de las tareas programadas de una empresa",
+                "tags": [
+                    "Platform"
+                ]
+            },
+            "put": {
+                "description": "Actualiza por merge las frecuencias que llegan; la hora del aviso de flota de la empresa se conserva y no se acepta en el cuerpo. Cada intervalo es múltiplo de su ciclo de base (15 s, 5 min, 1 h, 30 min); el reintento del despacho, hasta 5 min, y los demás hasta 24 h. Los intervalos nuevos rigen desde el ciclo siguiente.",
+                "operationId": "PlatformConsoleController_saveScheduledTasks",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PlatformScheduledTasksDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ScheduledTasksConfigResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "El identificador de la empresa no es un UUID, intervalo que no es múltiplo de su ciclo o pasa el tope, o un campo que no es de la plataforma (`fleetAlertHour`)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: super_admin"
+                    },
+                    "404": {
+                        "description": "La empresa no existe o está dada de baja"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Cambiar la frecuencia de las tareas programadas de una empresa",
+                "tags": [
+                    "Platform"
+                ]
+            }
+        },
+        "/api/v2/platform/processes": {
+            "get": {
+                "description": "Por proceso: cuántas empresas hay en cada estado de salud (`ok`, `partial`, `running`, `failed`, `late`, `stuck`, `never`), alertas actuales, corridas fallidas en 24 h y la última corrida. El detalle por empresa y el historial están en `GET /v2/process-runs/summary` y `GET /v2/process-runs`.",
+                "operationId": "PlatformConsoleController_processesSummary",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PlatformProcessesResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Monitoreo agregado de los procesos automáticos",
+                "tags": [
+                    "Platform"
+                ]
+            }
+        },
+        "/api/v2/platform/document-reading-usage": {
+            "get": {
+                "description": "Del mes pedido (`month`, AAAA-MM; por omisión el en curso): lecturas que llegaron al proveedor y su costo en dólares por empresa vigente, con el tope mensual y el porcentaje usado, de mayor a menor costo; más los totales.",
+                "operationId": "PlatformConsoleController_documentReadingUsage",
+                "parameters": [
+                    {
+                        "name": "month",
+                        "required": false,
+                        "in": "query",
+                        "description": "Mes calendario (AAAA-MM, hora argentina). Sin `month`: el mes en curso.",
+                        "schema": {
+                            "example": "2026-11",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DocumentReadingUsageResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Mes que no es AAAA-MM"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Uso y costo del lector de documentos por empresa",
+                "tags": [
+                    "Platform"
+                ]
+            }
+        },
+        "/api/v2/platform/activity": {
+            "get": {
+                "description": "La auditoría propia de la plataforma, las más nuevas primero y paginada: escrituras de los administradores generales, cambios de empresas y de sesiones de soporte (también la aprobación o revocación de una empresa) e ingresos de los administradores generales. Filtros: `from`, `to` (instantes ISO 8601), `actorUserId`, `distributorId`. No incluye el detalle de los cambios ni textos de error.",
+                "operationId": "PlatformConsoleController_activityList",
+                "parameters": [
+                    {
+                        "name": "from",
+                        "required": false,
+                        "in": "query",
+                        "description": "Desde este instante (ISO 8601, inclusive)",
+                        "schema": {
+                            "example": "2026-11-01T00:00:00-03:00",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "required": false,
+                        "in": "query",
+                        "description": "Hasta este instante (ISO 8601, exclusivo)",
+                        "schema": {
+                            "example": "2026-11-15T00:00:00-03:00",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "actorUserId",
+                        "required": false,
+                        "in": "query",
+                        "description": "Quién lo hizo",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "distributorId",
+                        "required": false,
+                        "in": "query",
+                        "description": "Sobre qué empresa",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "minimum": 1,
+                            "maximum": 100,
+                            "default": 50,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "minimum": 0,
+                            "default": 0,
+                            "type": "number"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ActivityListResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Filtro inválido: fecha que no es ISO 8601, «desde» posterior a «hasta», ids que no son UUID o paginación fuera de rango"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Actividad de la plataforma",
+                "tags": [
+                    "Platform"
+                ]
+            }
+        },
+        "/api/v2/platform/companies/{id}/owned-by-platform": {
+            "put": {
+                "description": "Una empresa propia (de prueba) la opera el administrador general directo, con lectura y escritura, mandando su slug o id en `X-Distributor`, sin sesión de soporte; las demás siguen exigiendo el modo soporte. Idempotente. El cambio queda en la auditoría con el administrador general como actor; desmarcarla corta el acceso directo en la request siguiente.",
+                "operationId": "PlatformCompaniesController_marcar",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Distributor UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SetOwnedByPlatformDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PlatformCompanyDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "El id no es un UUID, o falta `ownedByPlatform` o no es booleano"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: super_admin"
+                    },
+                    "404": {
+                        "description": "La empresa no existe o está dada de baja"
+                    },
+                    "409": {
+                        "description": "Sólo se puede marcar una empresa de prueba creada por la plataforma, sin admins, clientes ni pedidos ajenos (`COMPANY_NOT_PLATFORM_OWNED`). Desmarcar siempre está permitido."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Marcar o desmarcar una empresa como propia de la plataforma",
                 "tags": [
                     "Platform"
                 ]
@@ -46921,6 +47569,18 @@
                     }
                 }
             },
+            "EmpresaScheduledTasksDto": {
+                "type": "object",
+                "properties": {
+                    "fleetAlertHour": {
+                        "type": "number",
+                        "description": "Hora del día (0 a 23, hora de Argentina) del aviso de vencimientos de flota",
+                        "example": 8,
+                        "minimum": 0,
+                        "maximum": 23
+                    }
+                }
+            },
             "MercadoPagoCredentialsResponseDto": {
                 "type": "object",
                 "properties": {
@@ -51738,19 +52398,17 @@
                     },
                     "latitude": {
                         "type": "number",
-                        "nullable": true,
                         "example": -27.3671,
                         "minimum": -90,
                         "maximum": 90,
-                        "description": "Latitud del depósito (WGS 84). Va junto con `longitude`; en la edición, las dos en null borran la ubicación."
+                        "description": "Latitud del depósito (WGS 84). Va junto con `longitude`."
                     },
                     "longitude": {
                         "type": "number",
-                        "nullable": true,
                         "example": -55.8961,
                         "minimum": -180,
                         "maximum": 180,
-                        "description": "Longitud del depósito (WGS 84). Va junto con `latitude`; en la edición, las dos en null borran la ubicación."
+                        "description": "Longitud del depósito (WGS 84). Va junto con `latitude`."
                     }
                 },
                 "required": [
@@ -51877,7 +52535,7 @@
                         "example": -27.3671,
                         "minimum": -90,
                         "maximum": 90,
-                        "description": "Latitud del depósito (WGS 84). Va junto con `longitude`; en la edición, las dos en null borran la ubicación."
+                        "description": "Latitud del depósito (WGS 84). Va junto con `longitude`; las dos en null borran la ubicación."
                     },
                     "longitude": {
                         "type": "number",
@@ -51885,7 +52543,7 @@
                         "example": -55.8961,
                         "minimum": -180,
                         "maximum": 180,
-                        "description": "Longitud del depósito (WGS 84). Va junto con `latitude`; en la edición, las dos en null borran la ubicación."
+                        "description": "Longitud del depósito (WGS 84). Va junto con `latitude`; las dos en null borran la ubicación."
                     }
                 }
             },
@@ -67863,6 +68521,1060 @@
                     "name",
                     "legalName",
                     "supportEmail"
+                ]
+            },
+            "PlatformRangeDto": {
+                "type": "object",
+                "properties": {
+                    "from": {
+                        "type": "string",
+                        "example": "2026-11-01",
+                        "description": "Primer día (inclusive)"
+                    },
+                    "to": {
+                        "type": "string",
+                        "example": "2026-11-14",
+                        "description": "Último día (inclusive)"
+                    }
+                },
+                "required": [
+                    "from",
+                    "to"
+                ]
+            },
+            "CompanyCountsDto": {
+                "type": "object",
+                "properties": {
+                    "total": {
+                        "type": "number",
+                        "example": 12,
+                        "description": "Empresas vigentes (sin las dadas de baja)"
+                    },
+                    "active": {
+                        "type": "number",
+                        "example": 9
+                    },
+                    "suspended": {
+                        "type": "number",
+                        "example": 1
+                    }
+                },
+                "required": [
+                    "total",
+                    "active",
+                    "suspended"
+                ]
+            },
+            "CompanyMetricsDto": {
+                "type": "object",
+                "properties": {
+                    "orders": {
+                        "type": "number",
+                        "example": 182,
+                        "description": "Pedidos creados en el período (cualquier estado)"
+                    },
+                    "salesOrders": {
+                        "type": "number",
+                        "example": 150,
+                        "description": "Ventas: pedidos entregados y cobrados en el período (el mismo criterio que `GET /v2/reports/sales-summary` de la empresa)"
+                    },
+                    "revenue": {
+                        "type": "number",
+                        "example": 1234567.5,
+                        "description": "Facturación: suma de los totales de las ventas del período, en pesos con 2 decimales (cuadra con `totalSales` del reporte de la empresa)"
+                    },
+                    "activeDrivers": {
+                        "type": "number",
+                        "example": 7,
+                        "description": "Choferes habilitados y validados (sin los dados de baja)"
+                    },
+                    "customers": {
+                        "type": "number",
+                        "example": 320,
+                        "description": "Clientes vinculados a la empresa (sin los desvinculados)"
+                    }
+                },
+                "required": [
+                    "orders",
+                    "salesOrders",
+                    "revenue",
+                    "activeDrivers",
+                    "customers"
+                ]
+            },
+            "DocumentReadingTotalsDto": {
+                "type": "object",
+                "properties": {
+                    "month": {
+                        "type": "string",
+                        "example": "2026-11",
+                        "description": "Mes calendario (hora argentina)"
+                    },
+                    "readings": {
+                        "type": "number",
+                        "example": 412,
+                        "description": "Lecturas que llegaron al proveedor en el mes"
+                    },
+                    "costUsd": {
+                        "type": "number",
+                        "example": 3.284511,
+                        "description": "Costo en dólares (6 decimales)"
+                    }
+                },
+                "required": [
+                    "month",
+                    "readings",
+                    "costUsd"
+                ]
+            },
+            "ProcessTotalsDto": {
+                "type": "object",
+                "properties": {
+                    "alerts": {
+                        "type": "number",
+                        "example": 2,
+                        "description": "Procesos (por empresa y globales) atrasados, fallidos o trabados ahora"
+                    },
+                    "failuresLast24h": {
+                        "type": "number",
+                        "example": 5,
+                        "description": "Corridas fallidas en las últimas 24 horas"
+                    }
+                },
+                "required": [
+                    "alerts",
+                    "failuresLast24h"
+                ]
+            },
+            "SupportTotalsDto": {
+                "type": "object",
+                "properties": {
+                    "active": {
+                        "type": "number",
+                        "example": 1
+                    },
+                    "pending": {
+                        "type": "number",
+                        "example": 0
+                    }
+                },
+                "required": [
+                    "active",
+                    "pending"
+                ]
+            },
+            "PlatformOverviewResponseDto": {
+                "type": "object",
+                "properties": {
+                    "range": {
+                        "$ref": "#/components/schemas/PlatformRangeDto"
+                    },
+                    "companies": {
+                        "$ref": "#/components/schemas/CompanyCountsDto"
+                    },
+                    "totals": {
+                        "description": "Suma de las métricas de todas las empresas vigentes: cuadra con la suma de `GET /v2/platform/companies`",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/CompanyMetricsDto"
+                            }
+                        ]
+                    },
+                    "documentReading": {
+                        "description": "Del mes en curso",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/DocumentReadingTotalsDto"
+                            }
+                        ]
+                    },
+                    "processes": {
+                        "$ref": "#/components/schemas/ProcessTotalsDto"
+                    },
+                    "supportSessions": {
+                        "$ref": "#/components/schemas/SupportTotalsDto"
+                    },
+                    "generatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "range",
+                    "companies",
+                    "totals",
+                    "documentReading",
+                    "processes",
+                    "supportSessions",
+                    "generatedAt"
+                ]
+            },
+            "CompanyListItemDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Gas del Norte"
+                    },
+                    "slug": {
+                        "type": "string",
+                        "example": "gas-del-norte"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "active",
+                            "suspended"
+                        ]
+                    },
+                    "ownedByPlatform": {
+                        "type": "boolean",
+                        "description": "Empresa propia de la plataforma: el administrador general la opera con `X-Distributor`, sin sesión de soporte"
+                    },
+                    "plan": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": null
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Alta"
+                    },
+                    "lastActivityAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "Última actividad: el pedido más nuevo o la última escritura de su gente en la API (sin las del administrador general)"
+                    },
+                    "metrics": {
+                        "$ref": "#/components/schemas/CompanyMetricsDto"
+                    },
+                    "processAlerts": {
+                        "type": "number",
+                        "example": 0,
+                        "description": "Procesos automáticos de la empresa atrasados, fallidos o trabados ahora"
+                    },
+                    "supportSessionActive": {
+                        "type": "boolean",
+                        "description": "Si hay una sesión de soporte activa sobre la empresa"
+                    },
+                    "supportRequestsPending": {
+                        "type": "number",
+                        "example": 0,
+                        "description": "Pedidos de acceso de soporte pendientes de aprobación"
+                    }
+                },
+                "required": [
+                    "id",
+                    "name",
+                    "slug",
+                    "status",
+                    "ownedByPlatform",
+                    "plan",
+                    "createdAt",
+                    "lastActivityAt",
+                    "metrics",
+                    "processAlerts",
+                    "supportSessionActive",
+                    "supportRequestsPending"
+                ]
+            },
+            "CompanyListResponseDto": {
+                "type": "object",
+                "properties": {
+                    "range": {
+                        "$ref": "#/components/schemas/PlatformRangeDto"
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CompanyListItemDto"
+                        }
+                    },
+                    "total": {
+                        "type": "number",
+                        "example": 12,
+                        "description": "Empresas con ese filtro"
+                    }
+                },
+                "required": [
+                    "range",
+                    "items",
+                    "total"
+                ]
+            },
+            "CompanyProfileDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Gas del Norte"
+                    },
+                    "slug": {
+                        "type": "string",
+                        "example": "gas-del-norte"
+                    },
+                    "legalName": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "Gas del Norte S. A."
+                    },
+                    "taxId": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "30712345678",
+                        "description": "CUIT"
+                    },
+                    "contactEmail": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "contacto@gasdelnorte.com.ar",
+                        "description": "Correo de contacto de la empresa (no de una persona)"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "active",
+                            "suspended"
+                        ]
+                    },
+                    "ownedByPlatform": {
+                        "type": "boolean",
+                        "description": "Empresa propia de la plataforma: el administrador general la opera con `X-Distributor`, sin sesión de soporte"
+                    },
+                    "plan": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "supportEmergencyAllowed": {
+                        "type": "boolean",
+                        "description": "La empresa permite el acceso de soporte de emergencia"
+                    },
+                    "supportAutoApprove": {
+                        "type": "boolean",
+                        "description": "La empresa aprueba sola los pedidos de acceso de soporte"
+                    }
+                },
+                "required": [
+                    "id",
+                    "name",
+                    "slug",
+                    "legalName",
+                    "taxId",
+                    "contactEmail",
+                    "status",
+                    "ownedByPlatform",
+                    "plan",
+                    "createdAt",
+                    "supportEmergencyAllowed",
+                    "supportAutoApprove"
+                ]
+            },
+            "CompanyDocumentReadingDto": {
+                "type": "object",
+                "properties": {
+                    "month": {
+                        "type": "string",
+                        "example": "2026-11",
+                        "description": "Mes calendario (hora argentina)"
+                    },
+                    "readings": {
+                        "type": "number",
+                        "example": 412,
+                        "description": "Lecturas que llegaron al proveedor en el mes"
+                    },
+                    "costUsd": {
+                        "type": "number",
+                        "example": 3.284511,
+                        "description": "Costo en dólares (6 decimales)"
+                    },
+                    "enabled": {
+                        "type": "boolean",
+                        "description": "Si la lectura automática está encendida"
+                    },
+                    "monthlyBudgetUsd": {
+                        "type": "number",
+                        "example": 20,
+                        "description": "Tope de gasto mensual configurado (USD)"
+                    }
+                },
+                "required": [
+                    "month",
+                    "readings",
+                    "costUsd",
+                    "enabled",
+                    "monthlyBudgetUsd"
+                ]
+            },
+            "CompanyProcessDto": {
+                "type": "object",
+                "properties": {
+                    "process": {
+                        "type": "string",
+                        "enum": [
+                            "dispatch_tick",
+                            "fleet_planner_daily",
+                            "fleet_planner_expiry",
+                            "vehicle_usage_feed",
+                            "repurchase_anticipate",
+                            "repurchase_expiry",
+                            "route_batch_build",
+                            "route_batch_expiry",
+                            "cylinder_recovery",
+                            "attendance_open_alert",
+                            "receiver_retention",
+                            "mp_pending_reconciliation",
+                            "mp_cancelled_reconciliation",
+                            "reservations_activate",
+                            "reservations_expire_unpaid",
+                            "orders_expire_mp_unpaid",
+                            "payment_inbox_process",
+                            "payment_inbox_purge",
+                            "s3_orphans_retry",
+                            "driver_settlement_generate",
+                            "driver_settlement_alert",
+                            "coverage_zone_expiry",
+                            "fine_due_alerts",
+                            "finance_reconciliation",
+                            "mp_reconciliation_sync",
+                            "fleet_alerts",
+                            "stock_low_alert",
+                            "stock_reconciliation",
+                            "insurance_alerts",
+                            "import_cleanup",
+                            "process_run_watch",
+                            "process_run_purge",
+                            "document_reading",
+                            "document_reading_proposals",
+                            "route_planning_propose",
+                            "route_planning_close_days",
+                            "support_session_expiry"
+                        ]
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "Recupero de envases"
+                    },
+                    "health": {
+                        "type": "string",
+                        "enum": [
+                            "ok",
+                            "partial",
+                            "running",
+                            "failed",
+                            "late",
+                            "stuck",
+                            "never"
+                        ]
+                    },
+                    "lastRunAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "failuresLast24h": {
+                        "type": "number",
+                        "example": 0,
+                        "description": "Corridas fallidas en las últimas 24 horas"
+                    }
+                },
+                "required": [
+                    "process",
+                    "title",
+                    "health",
+                    "lastRunAt",
+                    "failuresLast24h"
+                ]
+            },
+            "CompanyAdminDto": {
+                "type": "object",
+                "properties": {
+                    "userId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "Lucía Pérez"
+                    },
+                    "email": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "lucia@gasdelnorte.com.ar"
+                    },
+                    "staffRole": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "Administrador",
+                        "description": "Rol de personal (F37); `null` si no tiene uno asignado"
+                    },
+                    "blocked": {
+                        "type": "boolean",
+                        "description": "Si la cuenta está bloqueada"
+                    },
+                    "lastLoginAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "userId",
+                    "name",
+                    "email",
+                    "staffRole",
+                    "blocked",
+                    "lastLoginAt"
+                ]
+            },
+            "CompanySupportSessionDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "kind": {
+                        "type": "string",
+                        "enum": [
+                            "consented",
+                            "emergency"
+                        ]
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "pending",
+                            "rejected",
+                            "expired_request",
+                            "cancelled",
+                            "active",
+                            "ended",
+                            "revoked",
+                            "expired"
+                        ]
+                    },
+                    "requestedByName": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "Soporte Plataforma",
+                        "description": "Nombre del administrador general que la pidió"
+                    },
+                    "reason": {
+                        "type": "string",
+                        "example": "El tablero de despacho no muestra los pedidos de hoy"
+                    },
+                    "requestedMinutes": {
+                        "type": "number",
+                        "example": 60
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "startedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "expiresAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "endedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "endReason": {
+                        "type": "string",
+                        "nullable": true,
+                        "enum": [
+                            "exit",
+                            "revoked_by_company",
+                            "revoked_by_platform",
+                            "expired"
+                        ]
+                    }
+                },
+                "required": [
+                    "id",
+                    "kind",
+                    "status",
+                    "requestedByName",
+                    "reason",
+                    "requestedMinutes",
+                    "createdAt",
+                    "startedAt",
+                    "expiresAt",
+                    "endedAt",
+                    "endReason"
+                ]
+            },
+            "CompanyDetailResponseDto": {
+                "type": "object",
+                "properties": {
+                    "range": {
+                        "$ref": "#/components/schemas/PlatformRangeDto"
+                    },
+                    "company": {
+                        "$ref": "#/components/schemas/CompanyProfileDto"
+                    },
+                    "metrics": {
+                        "$ref": "#/components/schemas/CompanyMetricsDto"
+                    },
+                    "lastActivityAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "documentReading": {
+                        "description": "Del mes en curso",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/CompanyDocumentReadingDto"
+                            }
+                        ]
+                    },
+                    "processes": {
+                        "description": "Sólo los procesos de la empresa (sin los globales)",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CompanyProcessDto"
+                        }
+                    },
+                    "admins": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CompanyAdminDto"
+                        }
+                    },
+                    "supportSessions": {
+                        "description": "Las últimas 10",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CompanySupportSessionDto"
+                        }
+                    }
+                },
+                "required": [
+                    "range",
+                    "company",
+                    "metrics",
+                    "lastActivityAt",
+                    "documentReading",
+                    "processes",
+                    "admins",
+                    "supportSessions"
+                ]
+            },
+            "PlatformScheduledTasksDto": {
+                "type": "object",
+                "properties": {
+                    "dispatchRetrySeconds": {
+                        "type": "number",
+                        "description": "Reintentos del despacho (ofertas vencidas y pedidos sin oferta), en segundos. Múltiplo de 15, hasta 300 s (5 min)",
+                        "example": 15
+                    },
+                    "reservationActivationSeconds": {
+                        "type": "number",
+                        "description": "Activación de reservas con la seña paga, en segundos. Múltiplo de 300, hasta 24 h",
+                        "example": 300
+                    },
+                    "unpaidReservationExpirySeconds": {
+                        "type": "number",
+                        "description": "Vencimiento de reservas sin seña, en segundos. Múltiplo de 3600, hasta 24 h",
+                        "example": 3600
+                    },
+                    "unpaidMercadoPagoExpirySeconds": {
+                        "type": "number",
+                        "description": "Vencimiento de pedidos de MercadoPago sin pagar, en segundos. Múltiplo de 1800, hasta 24 h",
+                        "example": 1800
+                    }
+                }
+            },
+            "PlatformProcessDto": {
+                "type": "object",
+                "properties": {
+                    "process": {
+                        "type": "string",
+                        "enum": [
+                            "dispatch_tick",
+                            "fleet_planner_daily",
+                            "fleet_planner_expiry",
+                            "vehicle_usage_feed",
+                            "repurchase_anticipate",
+                            "repurchase_expiry",
+                            "route_batch_build",
+                            "route_batch_expiry",
+                            "cylinder_recovery",
+                            "attendance_open_alert",
+                            "receiver_retention",
+                            "mp_pending_reconciliation",
+                            "mp_cancelled_reconciliation",
+                            "reservations_activate",
+                            "reservations_expire_unpaid",
+                            "orders_expire_mp_unpaid",
+                            "payment_inbox_process",
+                            "payment_inbox_purge",
+                            "s3_orphans_retry",
+                            "driver_settlement_generate",
+                            "driver_settlement_alert",
+                            "coverage_zone_expiry",
+                            "fine_due_alerts",
+                            "finance_reconciliation",
+                            "mp_reconciliation_sync",
+                            "fleet_alerts",
+                            "stock_low_alert",
+                            "stock_reconciliation",
+                            "insurance_alerts",
+                            "import_cleanup",
+                            "process_run_watch",
+                            "process_run_purge",
+                            "document_reading",
+                            "document_reading_proposals",
+                            "route_planning_propose",
+                            "route_planning_close_days",
+                            "support_session_expiry"
+                        ]
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "Recupero de envases"
+                    },
+                    "module": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "M5"
+                    },
+                    "global": {
+                        "type": "boolean",
+                        "description": "Si tiene corridas globales (una corrida recorre a todas las empresas)"
+                    },
+                    "companies": {
+                        "type": "number",
+                        "example": 9,
+                        "description": "Cuántas empresas tienen corridas propias de este proceso"
+                    },
+                    "expectedEverySeconds": {
+                        "type": "number",
+                        "example": 3600,
+                        "description": "Cada cuánto tiene que correr"
+                    },
+                    "health": {
+                        "type": "object",
+                        "example": {
+                            "ok": 8,
+                            "failed": 1
+                        },
+                        "description": "Cuántas empresas (o la corrida global) hay en cada estado de salud",
+                        "additionalProperties": {
+                            "type": "number"
+                        }
+                    },
+                    "alerts": {
+                        "type": "number",
+                        "example": 1,
+                        "description": "Atrasados, fallidos o trabados ahora"
+                    },
+                    "failuresLast24h": {
+                        "type": "number",
+                        "example": 2,
+                        "description": "Corridas fallidas en las últimas 24 horas"
+                    },
+                    "lastRunAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "process",
+                    "title",
+                    "module",
+                    "global",
+                    "companies",
+                    "expectedEverySeconds",
+                    "health",
+                    "alerts",
+                    "failuresLast24h",
+                    "lastRunAt"
+                ]
+            },
+            "PlatformProcessesResponseDto": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PlatformProcessDto"
+                        }
+                    },
+                    "alerts": {
+                        "type": "number",
+                        "example": 1
+                    },
+                    "generatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "items",
+                    "alerts",
+                    "generatedAt"
+                ]
+            },
+            "DocumentReadingUsageItemDto": {
+                "type": "object",
+                "properties": {
+                    "distributorId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Gas del Norte"
+                    },
+                    "readings": {
+                        "type": "number",
+                        "example": 41
+                    },
+                    "costUsd": {
+                        "type": "number",
+                        "example": 0.318204
+                    },
+                    "monthlyBudgetUsd": {
+                        "type": "number",
+                        "example": 20
+                    },
+                    "enabled": {
+                        "type": "boolean",
+                        "description": "Si la lectura automática está encendida"
+                    },
+                    "budgetUsedPct": {
+                        "type": "number",
+                        "example": 1.6,
+                        "description": "Porcentaje del tope usado (2 decimales)"
+                    }
+                },
+                "required": [
+                    "distributorId",
+                    "name",
+                    "readings",
+                    "costUsd",
+                    "monthlyBudgetUsd",
+                    "enabled",
+                    "budgetUsedPct"
+                ]
+            },
+            "DocumentReadingUsageResponseDto": {
+                "type": "object",
+                "properties": {
+                    "month": {
+                        "type": "string",
+                        "example": "2026-11"
+                    },
+                    "items": {
+                        "description": "Las empresas vigentes, de mayor a menor costo",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DocumentReadingUsageItemDto"
+                        }
+                    },
+                    "totalReadings": {
+                        "type": "number",
+                        "example": 412
+                    },
+                    "totalCostUsd": {
+                        "type": "number",
+                        "example": 3.284511
+                    }
+                },
+                "required": [
+                    "month",
+                    "items",
+                    "totalReadings",
+                    "totalCostUsd"
+                ]
+            },
+            "ActivityItemDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "example": "6f1c…"
+                    },
+                    "at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "kind": {
+                        "type": "string",
+                        "enum": [
+                            "request",
+                            "login"
+                        ],
+                        "description": "Una escritura en la API o un ingreso al panel"
+                    },
+                    "actorUserId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "actorName": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "Soporte Plataforma"
+                    },
+                    "actorRole": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "super_admin"
+                    },
+                    "method": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "PATCH"
+                    },
+                    "resource": {
+                        "type": "string",
+                        "example": "distributor",
+                        "description": "Recurso (primer tramo de la ruta)"
+                    },
+                    "resourceId": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "path": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "/api/distributor/:id",
+                        "description": "Patrón de la ruta (sin valores)"
+                    },
+                    "distributorId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "distributorName": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "Gas del Norte"
+                    },
+                    "result": {
+                        "type": "string",
+                        "enum": [
+                            "success",
+                            "failure"
+                        ]
+                    },
+                    "statusCode": {
+                        "type": "number",
+                        "example": 200
+                    }
+                },
+                "required": [
+                    "id",
+                    "at",
+                    "kind",
+                    "actorUserId",
+                    "actorName",
+                    "actorRole",
+                    "method",
+                    "resource",
+                    "resourceId",
+                    "path",
+                    "distributorId",
+                    "distributorName",
+                    "result",
+                    "statusCode"
+                ]
+            },
+            "ActivityListResponseDto": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ActivityItemDto"
+                        }
+                    },
+                    "total": {
+                        "type": "number",
+                        "example": 57
+                    }
+                },
+                "required": [
+                    "items",
+                    "total"
+                ]
+            },
+            "SetOwnedByPlatformDto": {
+                "type": "object",
+                "properties": {
+                    "ownedByPlatform": {
+                        "type": "boolean",
+                        "description": "true: la empresa pasa a ser propia de la plataforma (el administrador general la opera directo, sin sesión de soporte); false: vuelve a ser una empresa cliente"
+                    }
+                },
+                "required": [
+                    "ownedByPlatform"
+                ]
+            },
+            "PlatformCompanyDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Distribuidora de prueba OrixTech"
+                    },
+                    "slug": {
+                        "type": "string",
+                        "example": "prueba-orixtech"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "active",
+                            "suspended"
+                        ]
+                    },
+                    "ownedByPlatform": {
+                        "type": "boolean",
+                        "description": "Empresa propia de la plataforma: el administrador general la opera con `X-Distributor`, sin sesión de soporte"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "id",
+                    "name",
+                    "slug",
+                    "status",
+                    "ownedByPlatform",
+                    "createdAt"
                 ]
             }
         }

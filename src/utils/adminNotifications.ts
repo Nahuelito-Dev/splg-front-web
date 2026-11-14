@@ -99,7 +99,7 @@ export const notificationTarget = (link: AdminNotification['link'] | undefined):
     case 'car':
       return `/cars/details/${id}`;
     case 'process-run':
-      return '/settings/process-monitor';
+      return '/platform/monitoring';
     case 'document-reading':
       return `/document-readings/${id}`;
     case 'support-session':

@@ -1,6 +1,9 @@
-import type { Distributor } from '../../services/api/types';
+import type { CompanyListItem } from '../../services/api/types';
 import { useDeleteDistributor, useUpdateDistributor } from '../../services/queries/distributors';
 import { confirm, notify } from '../../utils/notifications';
+
+/** Lo mínimo de una empresa para suspenderla, activarla o darla de baja (sale del listado o de la ficha). */
+export type CompanyRef = Pick<CompanyListItem, 'id' | 'name' | 'status'>;
 
 /**
  * Suspender/activar y dar de baja una empresa: la lista y la ficha comparten el mismo
@@ -10,7 +13,7 @@ export const useDistributorActions = (callbacks: { onDeleted?: () => void } = {}
   const updateDistributor = useUpdateDistributor();
   const deleteDistributor = useDeleteDistributor();
 
-  const toggleStatus = async (distributor: Distributor) => {
+  const toggleStatus = async (distributor: CompanyRef) => {
     const suspending = distributor.status === 'active';
     if (suspending) {
       const confirmed = await confirm({
@@ -22,7 +25,7 @@ export const useDistributorActions = (callbacks: { onDeleted?: () => void } = {}
       if (!confirmed) return;
     }
     updateDistributor.mutate(
-      { id: distributor.distributor_id, changes: { status: suspending ? 'suspended' : 'active' } },
+      { id: distributor.id, changes: { status: suspending ? 'suspended' : 'active' } },
       {
         onSuccess: () => notify.success(suspending ? 'Empresa suspendida' : 'Empresa activada'),
         onError: notify.error,
@@ -30,7 +33,7 @@ export const useDistributorActions = (callbacks: { onDeleted?: () => void } = {}
     );
   };
 
-  const remove = async (distributor: Distributor) => {
+  const remove = async (distributor: CompanyRef) => {
     const confirmed = await confirm({
       title: `¿Dar de baja "${distributor.name}"?`,
       text:
@@ -42,7 +45,7 @@ export const useDistributorActions = (callbacks: { onDeleted?: () => void } = {}
     });
     if (!confirmed) return;
 
-    deleteDistributor.mutate(distributor.distributor_id, {
+    deleteDistributor.mutate(distributor.id, {
       onSuccess: () => {
         notify.success('Empresa dada de baja');
         callbacks.onDeleted?.();

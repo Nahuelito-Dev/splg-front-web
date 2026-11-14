@@ -28,6 +28,7 @@ describe('notificationTarget', () => {
   it('F16: el planificador de taller lleva al caso, y un vehículo a su ficha', () => {
     expect(notificationTarget({ entity: 'maintenance-planner', id: 'c1' })).toBe('/fleet/planner?case=c1');
     expect(notificationTarget({ entity: 'car', id: 'v1' })).toBe('/cars/details/v1');
+    expect(notificationTarget({ entity: 'process-run', id: 'r1' })).toBe('/platform/monitoring');
     expect(notificationVisuals('maintenance_escalated').tone).toBe('danger');
   });
 

@@ -1,7 +1,6 @@
 import { PageHeader, PageContainer } from '../../common/components/ui';
 import { EmailTestCard } from './components/EmailTestCard';
 import { NotificationTestCard } from './components/NotificationTestCard';
-import { OrderConfirmationCard } from './components/OrderConfirmationCard';
 import { RolesCard } from './components/RolesCard';
 import { SystemHealthCard } from './components/SystemHealthCard';
 
@@ -22,7 +21,6 @@ export const System = () => (
       <SystemHealthCard />
       <EmailTestCard />
       <NotificationTestCard />
-      <OrderConfirmationCard />
       <RolesCard />
     </div>
   </PageContainer>

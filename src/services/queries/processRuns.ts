@@ -5,11 +5,11 @@ import { queryKeys } from './queryKeys';
 const keys = queryKeys.processRuns;
 const REFRESH_MS = 30_000;
 
-/** El estado de cada proceso se refresca solo: es un tablero de vigilancia. */
-export const useProcessSummary = () =>
+/** El estado de cada proceso se refresca solo: es un tablero de vigilancia. Sin empresa, todas. */
+export const useProcessSummary = (distributorId?: string) =>
   useQuery({
-    queryKey: [...keys.all, 'summary'] as const,
-    queryFn: getProcessSummary,
+    queryKey: [...keys.all, 'summary', distributorId ?? ''] as const,
+    queryFn: () => getProcessSummary(distributorId),
     refetchInterval: REFRESH_MS,
   });
 

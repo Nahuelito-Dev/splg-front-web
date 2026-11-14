@@ -1,12 +1,13 @@
+import { env } from '../../config/env';
 import { http } from './httpClient';
 import type {
+  EmpresaScheduledTasksBody,
   DispatchConfig,
   DispatchConfigBody,
   ProcessConfig,
   ExpressConfig,
   ExpressConfigBody,
   ScheduledTasksConfig,
-  ScheduledTasksConfigBody,
 } from './types';
 
 /** GET /module-config/dispatch: pasos de radio y ventana de aceptación de la oferta (CU-171). */
@@ -22,15 +23,23 @@ export const putDispatchConfig = async (body: Partial<DispatchConfigBody>): Prom
   return data;
 };
 
-/** GET /module-config/scheduled_tasks: intervalo de cada tarea programada (CU-173). */
+/**
+ * GET /module-config/scheduled_tasks: las frecuencias de las tareas programadas (sólo lectura para la empresa: las fija
+ * la plataforma) y la hora del aviso de vencimientos de flota (CU-173).
+ */
 export const getScheduledTasksConfig = async (): Promise<ScheduledTasksConfig> => {
   const { data } = await http.get<ScheduledTasksConfig>('/module-config/scheduled_tasks');
   return data;
 };
 
-/** PUT /module-config/scheduled_tasks: los campos que no se envían toman el valor por omisión (`{}` restablece todo). */
-export const putScheduledTasksConfig = async (body: ScheduledTasksConfigBody): Promise<ScheduledTasksConfig> => {
-  const { data } = await http.put<ScheduledTasksConfig>('/module-config/scheduled_tasks', body);
+/**
+ * PUT /v2/module-config/scheduled_tasks: la empresa cambia sólo la hora del aviso de flota y conserva las frecuencias
+ * (una frecuencia en el cuerpo da 400 `SCHEDULED_TASKS_PLATFORM_ONLY`).
+ */
+export const putScheduledTasksConfig = async (body: EmpresaScheduledTasksBody): Promise<ScheduledTasksConfig> => {
+  const { data } = await http.put<ScheduledTasksConfig>('/module-config/scheduled_tasks', body, {
+    baseURL: env.apiUrlV2,
+  });
   return data;
 };
 
