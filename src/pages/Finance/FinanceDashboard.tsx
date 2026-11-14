@@ -39,7 +39,7 @@ export const FinanceDashboard = () => {
         }
       />
       {isPending ? (
-        <LoadingState label="Cargando el tablero…" />
+        <LoadingState label="Cargando el tablero…" fullPage />
       ) : error || !data ? (
         <ErrorState error={error} resource="El tablero" onRetry={() => void refetch()} />
       ) : (

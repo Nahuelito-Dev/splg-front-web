@@ -101,7 +101,7 @@ export const SupportAccess = () => {
     [],
   );
 
-  if (loadingPermissions) return <LoadingState />;
+  if (loadingPermissions) return <LoadingState fullPage />;
   if (!canView) {
     return (
       <PageContainer>

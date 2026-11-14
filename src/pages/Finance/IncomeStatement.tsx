@@ -173,7 +173,7 @@ export const IncomeStatement = () => {
           {problem}
         </p>
       ) : isPending ? (
-        <LoadingState label="Calculando ingresos y egresos…" />
+        <LoadingState label="Calculando ingresos y egresos…" fullPage />
       ) : error || !data ? (
         <ErrorState error={error} resource="Ingresos y egresos" onRetry={() => void refetch()} />
       ) : (

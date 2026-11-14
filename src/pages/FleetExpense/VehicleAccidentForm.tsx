@@ -109,7 +109,7 @@ const VehicleAccidentFormLoader = ({ id }: { id?: string }) => {
             <ErrorState error={failure.error} resource={failure.resource} onRetry={failure.retry} />
           </Card>
         ) : (
-          <LoadingState />
+          <LoadingState fullPage />
         )}
       </PageContainer>
     );
