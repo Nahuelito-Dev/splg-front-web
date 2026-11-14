@@ -1,4 +1,5 @@
-import { Badge, Card, EmptyState } from '../../../common/components/ui';
+import { Link } from 'react-router-dom';
+import { Badge, Card, CardHeader, EmptyState } from '../../../common/components/ui';
 import type { CompanySupportSession } from '../../../services/api/types';
 import { formatDateTime } from '../../../utils/format';
 import { SUPPORT_SESSION_STATUS, labelOf } from '../../../utils/statusLabels';
@@ -15,9 +16,29 @@ const END_REASON: Record<NonNullable<CompanySupportSession['endReason']>, string
   expired: 'Venció',
 };
 
-/** Las últimas 10 sesiones de soporte sobre la empresa: quién la pidió, por qué y cómo terminó. */
-export const CompanySupportTab = ({ sessions }: { sessions: CompanySupportSession[] }) => (
+interface Props {
+  distributorId: string;
+  sessions: CompanySupportSession[];
+}
+
+/**
+ * Las últimas 10 sesiones de soporte sobre la empresa: quién la pidió, por qué y cómo terminó. «Ver todas» lleva a
+ * «Sesiones de soporte» filtrada por esta empresa.
+ */
+export const CompanySupportTab = ({ distributorId, sessions }: Props) => (
   <Card className="p-2 sm:p-4">
+    <CardHeader
+      title="Últimas sesiones"
+      className="mb-2 px-2 pt-2"
+      action={
+        <Link
+          to={`/platform/support-sessions?company=${encodeURIComponent(distributorId)}`}
+          className="text-sm font-medium text-primary hover:underline"
+        >
+          Ver todas
+        </Link>
+      }
+    />
     {sessions.length === 0 ? (
       <EmptyState title="Sin sesiones de soporte" description="Nadie de la plataforma pidió entrar a esta empresa." />
     ) : (

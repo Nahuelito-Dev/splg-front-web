@@ -108,3 +108,20 @@ export const activityAction = (item: Pick<ActivityItem, 'kind' | 'method' | 'pat
   const verb = (item.method && VERBS[item.method]) ?? 'Operó';
   return `${verb} · ${activityArea(item)}`;
 };
+
+/** Lo que miró el soporte (`SupportAccessEntry`): una consulta por registro, con el método y la ruta que dio la API. */
+interface SupportAccessLike {
+  httpMethod: string;
+  path: string;
+  resource: string | null;
+}
+
+/**
+ * Una consulta del soporte en castellano: «Consultó · Pedidos». Nunca el método ni la ruta de la API; lo que no es una
+ * lectura (no debería pasar: el modo soporte es de sólo lectura) se lee como en la auditoría de plataforma.
+ */
+export const supportAccessAction = (entry: SupportAccessLike): string => {
+  const item = { kind: 'request' as const, path: entry.path, resource: entry.resource ?? '' };
+  if (entry.httpMethod === 'GET' || entry.httpMethod === 'HEAD') return `Consultó · ${activityArea(item)}`;
+  return activityAction({ ...item, method: entry.httpMethod });
+};

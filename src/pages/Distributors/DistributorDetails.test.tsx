@@ -100,6 +100,10 @@ describe('Ficha de la empresa (plataforma)', () => {
     expect(screen.getByText('Nunca ingresó')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('tab', { name: /Soporte/ }));
     expect(screen.getByText('Revisar un pedido trabado')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Ver todas' })).toHaveAttribute(
+      'href',
+      '/platform/support-sessions?company=c-gas',
+    );
   });
 
   it('marcar como propia pide confirmación y manda ownedByPlatform=true', async () => {

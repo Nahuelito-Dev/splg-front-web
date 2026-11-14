@@ -25,19 +25,21 @@ interface ErrorStateProps {
   error: unknown;
   /** Qué no se encontró, para el 404 ("El cliente"). */
   resource?: string;
+  /** Qué se explica en el 404 cuando el texto general («de otra distribuidora») no aplica. */
+  notFoundDescription?: string;
   onRetry?: () => void;
 }
 
 /** Error de una consulta: 404 como "no existe", el resto con el mensaje de la API. */
-export const ErrorState = ({ error, resource = 'El recurso', onRetry }: ErrorStateProps) => {
+export const ErrorState = ({
+  error,
+  resource = 'El recurso',
+  notFoundDescription = 'Puede haberse dado de baja o ser de otra distribuidora.',
+  onRetry,
+}: ErrorStateProps) => {
   const apiError = toApiError(error);
   if (apiError.notFound || apiError.invalidId) {
-    return (
-      <EmptyState
-        title={`${resource} no existe`}
-        description="Puede haberse dado de baja o ser de otra distribuidora."
-      />
-    );
+    return <EmptyState title={`${resource} no existe`} description={notFoundDescription} />;
   }
   return (
     <EmptyState

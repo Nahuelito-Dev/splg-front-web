@@ -72,6 +72,7 @@ const PlatformScheduledTasks = lazyPage(
 );
 const ServiceUsage = lazyPage(() => import('../pages/Platform/ServiceUsage'), 'ServiceUsage');
 const PlatformActivity = lazyPage(() => import('../pages/Platform/PlatformActivity'), 'PlatformActivity');
+const SupportSessions = lazyPage(() => import('../pages/Platform/SupportSessions'), 'SupportSessions');
 const ExpressSettings = lazyPage(() => import('../pages/Configuration/ExpressSettings'), 'ExpressSettings');
 const Refunds = lazyPage(() => import('../pages/Refunds/Refunds'), 'Refunds');
 const ScheduledTasksSettings = lazyPage(
@@ -193,6 +194,7 @@ export const DashboardRoutes = () => {
             <Route path="distributors/:id" element={<DistributorDetails />} />
             <Route path="distributors/:id/edit" element={<DistributorForm />} />
             <Route path="system" element={<System />} />
+            <Route path="platform/support-sessions" element={<SupportSessions />} />
             <Route path="platform/monitoring" element={<PlatformMonitoring />} />
             <Route path="platform/scheduled-tasks" element={<PlatformScheduledTasks />} />
             <Route path="platform/service-usage" element={<ServiceUsage />} />

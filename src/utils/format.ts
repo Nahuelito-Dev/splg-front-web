@@ -9,9 +9,13 @@ const usd = new Intl.NumberFormat('es-AR', {
   maximumFractionDigits: 4,
 });
 const number = new Intl.NumberFormat('es-AR');
-const dateOnly = new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium' });
-const dateTime = new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium', timeStyle: 'short' });
-const timeOnly = new Intl.DateTimeFormat('es-AR', { hour: '2-digit', minute: '2-digit' });
+/** Los instantes se muestran siempre en hora de Buenos Aires, esté donde esté el navegador. */
+const ARGENTINA = 'America/Argentina/Buenos_Aires';
+const dateOnly = new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium', timeZone: ARGENTINA });
+const dateTime = new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium', timeStyle: 'short', timeZone: ARGENTINA });
+const timeOnly = new Intl.DateTimeFormat('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: ARGENTINA });
+/** Un día de calendario no tiene zona: se arma en UTC y se formatea en UTC, así no se corre nunca. */
+const calendarDay = new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium', timeZone: 'UTC' });
 
 type DateInput = string | number | Date | null | undefined;
 
@@ -49,13 +53,13 @@ export const formatDate = (value: DateInput): string => {
   return date ? dateOnly.format(date) : '—';
 };
 
-/** 26 sept 2026, 18:45 */
+/** 26 sept 2026, 18:45 (hora de Buenos Aires) */
 export const formatDateTime = (value: DateInput): string => {
   const date = value === null || value === undefined ? null : toDate(value);
   return date ? dateTime.format(date) : '—';
 };
 
-/** 18:45 */
+/** 18:45 (hora de Buenos Aires) */
 export const formatTime = (value: DateInput): string => {
   const date = value === null || value === undefined ? null : toDate(value);
   return date ? timeOnly.format(date) : '—';
@@ -71,9 +75,9 @@ export const formatDay = (value: string | null | undefined): string => {
   if (!value) return '—';
   const [y, m, d] = value.slice(0, 10).split('-').map(Number);
   if (!y || !m || !d) return value;
-  const day = new Date(y, m - 1, d);
+  const day = new Date(Date.UTC(y, m - 1, d));
   // Un día que no existe (2026-02-30) desbordaría al mes siguiente: no se inventa otra fecha.
-  return day.getMonth() === m - 1 && day.getDate() === d ? dateOnly.format(day) : '—';
+  return day.getUTCMonth() === m - 1 && day.getUTCDate() === d ? calendarDay.format(day) : '—';
 };
 
 /** #CBC4E7: los últimos 6 caracteres de un id (pedido, reclamo, chofer…), como lo muestra todo el panel. */
@@ -100,9 +104,14 @@ export const initialsOf = (name: string): string =>
     .slice(0, 2)
     .toUpperCase();
 
-const longDay = new Intl.DateTimeFormat('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+const longDay = new Intl.DateTimeFormat('es-AR', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  timeZone: ARGENTINA,
+});
 
-/** Sábado 26 de septiembre */
+/** Sábado 26 de septiembre (el día de Buenos Aires de ese instante) */
 export const formatLongDay = (value: Date): string => {
   const text = longDay.format(value);
   return text.charAt(0).toUpperCase() + text.slice(1);
@@ -112,7 +121,6 @@ export const formatLongDay = (value: Date): string => {
 export const percentChange = (current: number, previous: number): number | null =>
   previous > 0 ? Math.round(((current - previous) / previous) * 1000) / 10 : null;
 
-const ARGENTINA = 'America/Argentina/Buenos_Aires';
 const dayKeyAr = new Intl.DateTimeFormat('en-CA', {
   timeZone: ARGENTINA,
   year: 'numeric',

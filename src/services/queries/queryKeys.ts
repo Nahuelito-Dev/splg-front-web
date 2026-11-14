@@ -75,6 +75,7 @@ export const queryKeys = {
   stock: resource('stock'),
   suppliers: resource('suppliers'),
   supportAccess: resource('supportAccess'),
+  supportSessions: resource('supportSessions'),
   platform: resource('platform'),
   platformConsole: resource('platformConsole'),
   timeSlots: resource('timeSlots'),
