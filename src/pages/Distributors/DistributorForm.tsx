@@ -17,7 +17,6 @@ import {
   PageHeader,
 } from '../../common/components/ui';
 import { usePermissions, useReturnPath, useUnsavedChangesGuard } from '../../hooks';
-import { activeDistributor } from '../../services/api/activeDistributor';
 import type { CreateDistributorBody, Distributor, UpdateDistributorBody } from '../../services/api/types';
 import { useCreateDistributor, useDistributor, useUpdateDistributor } from '../../services/queries/distributors';
 import { notify } from '../../utils/notifications';
@@ -169,11 +168,7 @@ const EditDistributorForm = ({ distributor, warning }: { distributor: Distributo
     updateDistributor.mutate(
       { id: distributor.distributor_id, changes },
       {
-        onSuccess: (updated) => {
-          // Si es la empresa que se está viendo "como", el header X-Distributor tiene que seguir su slug.
-          if (activeDistributor.get() === distributor.slug && updated.slug !== distributor.slug) {
-            activeDistributor.set(updated.slug);
-          }
+        onSuccess: () => {
           notify.success('Empresa actualizada');
           guard.release();
           navigate(returnPath, { replace: true });

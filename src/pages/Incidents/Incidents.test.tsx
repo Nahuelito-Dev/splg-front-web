@@ -3,9 +3,10 @@ import { MemoryRouter, useLocation } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Incident } from '../../services/api/types';
 
+const ro = vi.hoisted(() => ({ value: { canOperate: true, operateHint: undefined } as Record<string, unknown> }));
 vi.mock('../../hooks', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
-  usePermissions: () => ({ canOperate: true, operateHint: undefined }),
+  usePermissions: () => ro.value,
 }));
 
 const incident = (id: string, status: Incident['status'], type: Incident['type'], name: string): Incident =>
@@ -119,5 +120,21 @@ describe('Incidents', () => {
     const dialog = screen.getByRole('dialog', { name: 'Resolver incidencia' });
     expect(within(dialog).getByText('Carla Ruiz')).toBeInTheDocument();
     expect(within(dialog).queryByText('Ana Pérez (ficha)')).not.toBeInTheDocument();
+  });
+});
+
+describe('modo soporte (sólo lectura)', () => {
+  it('«Registrar incidencia» queda apagado con el aviso', () => {
+    ro.value = {
+      canOperate: false,
+      operateHint: 'Modo soporte: sólo lectura',
+      canWrite: false,
+      writeHint: 'Modo soporte: sólo lectura',
+    };
+    renderPage();
+    const button = screen.getByRole('button', { name: /Registrar incidencia/ });
+    expect(button).toHaveAttribute('aria-disabled', 'true');
+    expect(button).toHaveAttribute('title', 'Modo soporte: sólo lectura');
+    ro.value = { canOperate: true, operateHint: undefined };
   });
 });

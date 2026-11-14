@@ -101,7 +101,6 @@ export const listOrderPaymentStates = async (ids: string[]): Promise<OrderPaymen
 
 /**
  * GET /orders/:id/status-history: las transiciones y anotaciones reales del pedido, de la más vieja a la más nueva.
- * El super admin necesita «Ver como» (`X-Distributor`): sin distribuidora el back responde 400.
  */
 export const getOrderStatusHistory = async (id: string): Promise<OrderStatusHistoryEntry[]> => {
   const { data } = await http.get<OrderStatusHistoryEntry[]>(`/orders/${id}/status-history`);

@@ -170,3 +170,19 @@ describe('Customers: dados de baja', () => {
     expect(screen.getByText('No diste de baja a ningún cliente')).toBeInTheDocument();
   });
 });
+
+describe('Customers: modo soporte (sólo lectura)', () => {
+  it('«Nuevo cliente» queda apagado con el aviso', () => {
+    perms.value = {
+      canManageCustomerAccounts: false,
+      canWrite: false,
+      writeHint: 'Modo soporte: sólo lectura',
+      operateHint: 'Modo soporte: sólo lectura',
+    };
+    renderPage();
+    const button = screen.getByRole('button', { name: /Nuevo cliente/ });
+    expect(button).toHaveAttribute('aria-disabled', 'true');
+    expect(button).toHaveAttribute('title', 'Modo soporte: sólo lectura');
+    perms.value = { canManageCustomerAccounts: false };
+  });
+});

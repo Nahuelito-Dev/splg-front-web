@@ -14,7 +14,7 @@ export const OrderHistoryCard = ({ orderId }: { orderId: string }) => {
         <p className="text-sm text-muted">Cargando el historial…</p>
       ) : isError && toApiError(error).missingDistributor ? (
         <p role="status" className="text-sm text-muted">
-          Elegí una distribuidora en «Ver como» para ver el historial
+          El historial es de una empresa: lo ve su administrador
         </p>
       ) : isError ? (
         <p role="alert" className="text-sm text-danger">

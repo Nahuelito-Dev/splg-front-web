@@ -41,7 +41,7 @@ const TABS_ID = 'users';
 
 export const Users = () => {
   const navigate = useNavigate();
-  const { canManageCustomerAccounts, isSuperAdmin, needsDistributor } = usePermissions();
+  const { canManageCustomerAccounts, isSuperAdmin, needsDistributor, readOnly } = usePermissions();
   // El rol y la búsqueda viven en la URL: al volver de una ficha o recargar, la lista queda como estaba.
   const [{ role: roleParam, q: search, page: pageParam }, setFilters] = useUrlParams({ role: 'all', q: '', page: '1' });
   const visibleTabs = ROLE_TABS.filter((tab) => tab.id !== 'super_admin' || isSuperAdmin);
@@ -153,6 +153,7 @@ export const Users = () => {
                 onPaginationChange={setPagination}
                 canManageCustomerAccounts={canManageCustomerAccounts}
                 needsDistributor={needsDistributor}
+                readOnly={readOnly}
                 onEdit={setEditing}
                 onToggleBlock={(user) => void handleToggleBlock(user)}
                 onDelete={(user) => void handleDelete(user)}

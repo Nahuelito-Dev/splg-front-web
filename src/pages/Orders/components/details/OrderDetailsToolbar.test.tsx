@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { supportMode } from '../../../../services/api/supportMode';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../../../../services/api/errors';
 import type { Order } from '../../../../services/api/types';
@@ -289,5 +290,39 @@ describe('OrderDetailsToolbar: entrega manual', () => {
     clickMenu('Volver a pendiente');
     await waitFor(() => expect(notifications.confirm).toHaveBeenCalled());
     await waitFor(() => expect(api.updateOrderStatus).toHaveBeenCalledWith('abcdef123456', { status: 'pending' }));
+  });
+});
+
+describe('OrderDetailsToolbar: PDF en modo soporte', () => {
+  const READ_ONLY = 'Modo soporte: sólo lectura';
+  const support = (scope: ('exports' | 'files')[]) => {
+    supportMode.reset();
+    supportMode.update({ id: 's-1', status: 'active', scope, distributorName: 'Gas Norte' } as never);
+    permissions.mockReturnValue({
+      canWrite: false,
+      writeHint: READ_ONLY,
+      canOperate: false,
+      operateHint: READ_ONLY,
+      readOnly: true,
+    });
+  };
+  afterEach(() => supportMode.reset());
+
+  it('sin el alcance «exportes» el remito queda apagado con el motivo del alcance', () => {
+    support([]);
+    renderToolbar('delivered', 'unpaid');
+    fireEvent.click(screen.getByRole('button', { name: 'Más acciones' }));
+    const item = screen.getByRole('menuitem', { name: /Remito \(PDF\)/ });
+    expect(item).toHaveAttribute('aria-disabled', 'true');
+    expect(item).toHaveAttribute('title', expect.stringContaining('no incluye exportes'));
+  });
+
+  it('con el alcance «exportes» el remito se baja aunque sea sólo lectura', async () => {
+    support(['exports']);
+    renderToolbar('delivered', 'unpaid');
+    clickMenu(/Remito \(PDF\)/);
+    await waitFor(() =>
+      expect(pdfApi.downloadPdf).toHaveBeenCalledWith({ kind: 'order-remito', orderId: 'abcdef123456' }),
+    );
   });
 });

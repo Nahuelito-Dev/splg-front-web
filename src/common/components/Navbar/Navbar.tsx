@@ -5,7 +5,7 @@ import { Breadcrumbs } from './components/Breadcrumbs';
 import { NotificationBell } from './components/NotificationBell';
 import { SearchButton } from './components/SearchButton';
 import { ThemeModeToggle } from './components/ThemeModeToggle';
-import { WorkspacesPopover } from './components/WorkspacesPopover';
+import { SupportModeButton } from './components/SupportModeButton';
 
 interface Props {
   /** Sólo se usa en móvil: abre el menú lateral como drawer. */
@@ -15,7 +15,7 @@ interface Props {
 export const Navbar = ({ onOpenMenu }: Props) => {
   const { isSuperAdmin } = usePermissions();
   return (
-    <header className="sticky top-0 z-20 flex h-[60px] items-center gap-2 border-b border-outline bg-surface/85 px-3 backdrop-blur sm:gap-4 sm:px-6 lg:px-7">
+    <header className="flex h-[60px] items-center gap-2 border-b border-outline bg-surface/85 px-3 backdrop-blur sm:gap-4 sm:px-6 lg:px-7">
       <button
         type="button"
         onClick={onOpenMenu}
@@ -28,7 +28,7 @@ export const Navbar = ({ onOpenMenu }: Props) => {
       <div className="flex-1" />
       <div className="flex items-center gap-1.5 sm:gap-2.5">
         <SearchButton />
-        {isSuperAdmin && <WorkspacesPopover />}
+        {isSuperAdmin && <SupportModeButton />}
         <ThemeModeToggle />
         <NotificationBell />
         <AccountMenu />

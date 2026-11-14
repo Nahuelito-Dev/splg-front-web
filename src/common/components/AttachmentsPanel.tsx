@@ -18,6 +18,7 @@ import {
 import { openFileSource, saveFileSource } from '../../utils/fileSource';
 import { formatDateTime } from '../../utils/format';
 import { confirm, notify } from '../../utils/notifications';
+import { useSupportScopeHint } from '../../hooks/useSupportSession';
 
 interface Props {
   ownerType: AttachmentOwnerType;
@@ -46,6 +47,8 @@ export const AttachmentsPanel = ({
 }: Props) => {
   const [label, setLabel] = useState('');
   const [pendingId, setPendingId] = useState<string | null>(null);
+  // Sólo el administrador general tiene una sesión de soporte; sin el alcance «archivos» la API los niega.
+  const fileHint = useSupportScopeHint('files');
   const { data: attachments = [], isPending, error, refetch } = useAttachments(ownerType, ownerId);
   const upload = useUploadAttachment(ownerType, ownerId);
   const remove = useDeleteAttachment(ownerType, ownerId);
@@ -74,6 +77,11 @@ export const AttachmentsPanel = ({
     disposition: 'attachment' | 'inline',
     then: (source: Parameters<typeof openFileSource>[0]) => void,
   ) => {
+    // En modo soporte sin el alcance «archivos» la API responde 403 SUPPORT_SCOPE_REQUIRED: ni se pide.
+    if (fileHint) {
+      notify.warn(fileHint);
+      return;
+    }
     setPendingId(attachmentId);
     fileSource.mutate(
       { attachmentId, disposition },
@@ -170,7 +178,8 @@ export const AttachmentsPanel = ({
                     <IconButton
                       label={`Ver ${name}`}
                       icon={<Eye />}
-                      disabled={busy}
+                      disabled={busy || Boolean(fileHint)}
+                      title={fileHint}
                       onClick={() =>
                         withFile(attachment.attachmentId, 'inline', (source) => {
                           if (!openFileSource(source)) {
@@ -183,7 +192,8 @@ export const AttachmentsPanel = ({
                   <IconButton
                     label={`Descargar ${name}`}
                     icon={<Download />}
-                    disabled={busy}
+                    disabled={busy || Boolean(fileHint)}
+                    title={fileHint}
                     onClick={() =>
                       withFile(attachment.attachmentId, 'attachment', (source) =>
                         saveFileSource(source, attachment.originalName),

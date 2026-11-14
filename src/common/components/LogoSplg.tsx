@@ -1,3 +1,4 @@
+import { usePlatform } from '../../services/queries/supportSessions';
 import { cx } from './ui/cx';
 
 type Size = 'sm' | 'lg';
@@ -20,37 +21,40 @@ const SIZES: Record<Size, { mark: string; flame: string; name: string }> = {
 
 /**
  * La marca del panel: la llama sobre un cuadrado con degradé y el nombre.
- * Es el nombre del sistema, no el de la distribuidora: el panel lo usa
- * cualquier empresa que opere con él.
+ * Es el nombre de la plataforma, no el de la distribuidora: sale de `GET /v2/platform`
+ * (`PLATFORM_NAME` del back), así se cambia en un solo lugar.
  */
-export const LogoSplg = ({ className, size = 'sm', variante = 'claro', subtitle, markOnly = false }: Props) => (
-  <div className={cx('flex select-none items-center gap-2.5', className)}>
-    <span
-      aria-hidden="true"
-      className={cx(
-        'grid shrink-0 place-items-center bg-gradient-to-br from-llama-400 via-llama-500 to-llama-700 shadow-mark',
-        SIZES[size].mark,
-      )}
-    >
-      <svg viewBox="0 0 24 24" className={cx('fill-white', SIZES[size].flame)}>
-        <path d="M12 1.8c1 3.6 5.6 6 5.6 11.6A5.6 5.6 0 0 1 6.4 13.4c0-2.9 1.5-4.8 2.8-6.3.4 1.8 1.2 2.9 2.4 3.4.3-3.2-.3-5.9.4-8.7z" />
-      </svg>
-    </span>
-    <span className={cx('leading-tight', markOnly && 'sr-only')}>
+export const LogoSplg = ({ className, size = 'sm', variante = 'claro', subtitle, markOnly = false }: Props) => {
+  const { data: platform } = usePlatform();
+  return (
+    <div className={cx('flex select-none items-center gap-2.5', className)}>
       <span
+        aria-hidden="true"
         className={cx(
-          'block font-bold tracking-[-0.02em]',
-          SIZES[size].name,
-          variante === 'claro' ? 'text-white' : 'text-ink',
+          'grid shrink-0 place-items-center bg-gradient-to-br from-llama-400 via-llama-500 to-llama-700 shadow-mark',
+          SIZES[size].mark,
         )}
       >
-        SPLG
+        <svg viewBox="0 0 24 24" className={cx('fill-white', SIZES[size].flame)}>
+          <path d="M12 1.8c1 3.6 5.6 6 5.6 11.6A5.6 5.6 0 0 1 6.4 13.4c0-2.9 1.5-4.8 2.8-6.3.4 1.8 1.2 2.9 2.4 3.4.3-3.2-.3-5.9.4-8.7z" />
+        </svg>
       </span>
-      {subtitle && (
-        <span className={cx('block text-[11px] font-medium', variante === 'claro' ? 'text-side-text' : 'text-muted')}>
-          {subtitle}
+      <span className={cx('leading-tight', markOnly && 'sr-only')}>
+        <span
+          className={cx(
+            'block font-bold tracking-[-0.02em]',
+            SIZES[size].name,
+            variante === 'claro' ? 'text-white' : 'text-ink',
+          )}
+        >
+          {platform?.name ?? '\u00a0'}
         </span>
-      )}
-    </span>
-  </div>
-);
+        {subtitle && (
+          <span className={cx('block text-[11px] font-medium', variante === 'claro' ? 'text-side-text' : 'text-muted')}>
+            {subtitle}
+          </span>
+        )}
+      </span>
+    </div>
+  );
+};

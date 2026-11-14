@@ -15,14 +15,14 @@ interface Props {
 
 /** Botón que abre un PDF del back: muestra que está cargando y avisa el error real si falla. */
 export const PdfButton = ({ request, label = 'PDF', variant = 'secondary', size, blockedReason }: Props) => {
-  const { download, pending } = usePdfDownload();
+  const { download, pending, blockedReason: scopeReason } = usePdfDownload();
   return (
     <Button
       variant={variant}
       size={size}
       icon={<FileText />}
       loading={pending}
-      blockedReason={blockedReason}
+      blockedReason={blockedReason ?? scopeReason}
       onClick={() => download(request)}
     >
       {label}

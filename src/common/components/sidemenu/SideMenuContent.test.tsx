@@ -6,10 +6,11 @@ const perms = vi.hoisted(() => ({ data: undefined as unknown }));
 vi.mock('../../../services/queries/permissions', () => ({ useMyPermissions: () => ({ data: perms.data }) }));
 vi.mock('../../../services/queries/orders', () => ({ useOrders: () => ({ data: { total: 0 } }) }));
 vi.mock('../../../services/queries/users', () => ({ useMyAccount: () => ({ data: undefined }) }));
-vi.mock('../../../hooks', async (importOriginal) => ({
-  ...(await importOriginal<Record<string, unknown>>()),
-  useAppSelector: () => ({ email: 'admin@splg.com' }),
+vi.mock('../../../hooks/reduxHooks', () => ({
+  useAppSelector: (pick: (s: { auth: { email: string; role: string } }) => unknown) =>
+    pick({ auth: { email: 'admin@splg.com', role: 'admin' } }),
 }));
+vi.mock('../LogoSplg', () => ({ LogoSplg: () => null }));
 vi.mock('./TenantCard', () => ({ TenantCard: () => null }));
 
 import { SideMenuContent } from './SideMenuContent';

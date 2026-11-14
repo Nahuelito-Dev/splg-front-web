@@ -4,6 +4,7 @@ import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined';
 import type { ReactNode } from 'react';
 import { Card, DetailList, EntityPhoto } from '../../../common/components/ui';
 import type { Delivery } from '../../../services/api/types';
+import { usePermissions } from '../../../hooks';
 import { formatDate } from '../../../utils/format';
 import { DeliveryLocationCard } from './DeliveryLocationCard';
 
@@ -17,6 +18,7 @@ const Row = ({ icon, children }: { icon: ReactNode; children: ReactNode }) => (
 /** Pestaña "Resumen": contacto, antigüedad e identificadores (saldo y calificación van en la portada). */
 export const DeliveryOverview = ({ delivery }: { delivery: Delivery }) => {
   const user = delivery.user;
+  const { canWrite, writeHint } = usePermissions();
   return (
     <div className="space-y-6">
       <Card className="p-6">
@@ -26,6 +28,7 @@ export const DeliveryOverview = ({ delivery }: { delivery: Delivery }) => {
           url={user?.photoUrl}
           subject="de perfil"
           canEdit
+          blockedReason={canWrite ? undefined : writeHint}
           className="mb-5 max-w-md border-b border-outline pb-5"
         />
         <ul className="space-y-3">

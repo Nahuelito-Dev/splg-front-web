@@ -46,7 +46,7 @@ export const UserDetails = () => {
     TABS.map((t) => t.key),
     'account',
   );
-  const { canManageCustomerAccounts, needsDistributor, operateHint } = usePermissions();
+  const { canManageCustomerAccounts, needsDistributor, operateHint, readOnly, writeHint } = usePermissions();
   const { data: user, isPending, error, refetch } = useUser(leadId);
   const [editing, setEditing] = useState(false);
   const blockUser = useBlockUser();
@@ -54,7 +54,12 @@ export const UserDetails = () => {
 
   const canManage = Boolean(user) && (canManageCustomerAccounts || !user?.customer);
   // Sobre la cuenta de un chofer o admin de empresa, el administrador general necesita «Ver como»: la API contesta 400.
-  const blockedReason = user && needsDistributor && isDistributorStaff(user) ? operateHint : undefined;
+  // En modo soporte todo es sólo lectura (la API rechaza la escritura con 403 SUPPORT_READ_ONLY).
+  const blockedReason = readOnly
+    ? writeHint
+    : user && needsDistributor && isDistributorStaff(user)
+      ? operateHint
+      : undefined;
 
   const handleToggleBlock = async () => {
     if (!user) return;

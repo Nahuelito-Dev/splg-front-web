@@ -4,11 +4,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 vi.unmock('./useServerExport');
 
 const mutate = vi.hoisted(() => vi.fn<[unknown, unknown], void>());
-const state = vi.hoisted(() => ({ pending: false, operateHint: undefined as string | undefined }));
+const state = vi.hoisted(() => ({ pending: false, exportHint: undefined as string | undefined }));
 const notify = vi.hoisted(() => ({ info: vi.fn(), success: vi.fn(), error: vi.fn() }));
 const save = vi.hoisted(() => vi.fn());
 vi.mock('../services/queries/exports', () => ({ useDownloadExport: () => ({ mutate, isPending: state.pending }) }));
-vi.mock('./usePermissions', () => ({ usePermissions: () => ({ operateHint: state.operateHint }) }));
+vi.mock('./usePermissions', () => ({ usePermissions: () => ({ exportHint: state.exportHint }) }));
 vi.mock('../utils/notifications', () => ({ notify }));
 vi.mock('../utils/fileSource', () => ({ saveFileSource: save }));
 
@@ -17,7 +17,7 @@ import { useServerExport } from './useServerExport';
 beforeEach(() => {
   vi.clearAllMocks();
   state.pending = false;
-  state.operateHint = undefined;
+  state.exportHint = undefined;
 });
 
 const items = (config?: Parameters<typeof useServerExport>[0]) =>
@@ -61,13 +61,15 @@ describe('useServerExport', () => {
     expect(notify.error).toHaveBeenCalledWith(failure);
   });
 
-  it('bloqueado: usa el motivo de la pantalla, o pide elegir distribuidora, o avisa que ya hay un exporte', () => {
+  it('bloqueado: usa el motivo de la pantalla, o el del modo soporte sin «exportes», o avisa que hay otro exporte', () => {
     expect(items({ resource: 'pedidos', blockedReason: 'Quitá la búsqueda' })[0].blockedReason).toBe(
       'Quitá la búsqueda',
     );
-    state.operateHint = 'Elegí una distribuidora';
-    expect(items({ resource: 'pedidos' })[1].blockedReason).toBe('Elegí una distribuidora');
-    state.operateHint = undefined;
+    state.exportHint = 'Este acceso de soporte no incluye exportes ni PDF: pedí otro con ese alcance';
+    expect(items({ resource: 'pedidos' })[1].blockedReason).toBe(
+      'Este acceso de soporte no incluye exportes ni PDF: pedí otro con ese alcance',
+    );
+    state.exportHint = undefined;
     state.pending = true;
     expect(items({ resource: 'pedidos' })[0].blockedReason).toBe('Ya se está preparando un exporte');
   });

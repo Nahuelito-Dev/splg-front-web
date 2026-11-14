@@ -50,13 +50,15 @@ import { useOrderActions } from './useOrderActions';
  */
 export const OrderDetailsToolbar = ({ order }: { order: Order }) => {
   const actions = useOrderActions(order);
-  const { canWrite, writeHint, canOperate, operateHint } = usePermissions();
+  const { canWrite, writeHint, canOperate, operateHint, readOnly } = usePermissions();
   // La API rechaza con 400 toda escritura sobre un pedido sin distribuidora (administrador general sin «Ver como»).
   const blockedReason = canOperate ? undefined : operateHint;
   const [editing, setEditing] = useState(false);
   const editBlocked = orderEditBlockedReason(order);
   const targets = manualStatusTargets(order.status);
   const pdf = usePdfDownload();
+  // Un PDF no escribe: en modo soporte depende del alcance «exportes», no del sólo lectura.
+  const pdfBlockedReason = readOnly ? pdf.blockedReason : operateHint;
 
   // La primaria es la que avanza el pedido según su estado: confirmar la entrega o, antes, asignar el chofer.
   const assignLabel = order.delivery_id ? 'Reasignar chofer' : 'Asignar chofer';
@@ -129,7 +131,7 @@ export const OrderDetailsToolbar = ({ order }: { order: Order }) => {
       icon: <FileText />,
       disabled: pdf.pending,
       // El back arma el PDF con la distribuidora del pedido: el administrador general tiene que elegirla.
-      blockedReason: operateHint,
+      blockedReason: pdfBlockedReason,
       onClick: () => pdf.download({ kind: 'order-remito', orderId: order.order_id }),
     },
     ...(canIssueReceipt(order)
@@ -138,7 +140,7 @@ export const OrderDetailsToolbar = ({ order }: { order: Order }) => {
             label: 'Recibo (PDF)',
             icon: <Receipt />,
             disabled: pdf.pending,
-            blockedReason: operateHint,
+            blockedReason: pdfBlockedReason,
             onClick: () => pdf.download({ kind: 'order-recibo', orderId: order.order_id }),
           },
         ]
@@ -196,7 +198,6 @@ export const OrderDetailsToolbar = ({ order }: { order: Order }) => {
         onConfirm={actions.assign}
         assigning={actions.pending.assign}
         error={actions.assignError}
-        distributorId={order.distributor_id}
       />
       <CancelOrderModal
         open={actions.modal === 'cancel'}

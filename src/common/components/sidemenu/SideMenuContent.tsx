@@ -1,16 +1,17 @@
 import { useState } from 'react';
 import { Tooltip } from '@mui/material';
 import { ChevronDown, LogOut } from 'lucide-react';
-import { allows, useAppSelector } from '../../../hooks';
+import { useAppSelector } from '../../../hooks';
 import { useOrders } from '../../../services/queries/orders';
-import { useMyPermissions } from '../../../services/queries/permissions';
 import { useMyAccount } from '../../../services/queries/users';
 import { LogoSplg } from '../LogoSplg';
 import { cx } from '../ui/cx';
-import { PersonAvatar } from '../ui/PersonAvatar';
+import { MyAvatar } from '../MyAvatar';
 import { initialsOf } from '../../../utils/format';
 import { NavItemLink } from './NavItemLink';
 import { NAV_SECTIONS } from './navConfig';
+import { isNavItemVisible } from './navScope';
+import { useNavViewer } from './useNavViewer';
 import { TenantCard } from './TenantCard';
 
 const PENDING = { page: 0, pageSize: 1 };
@@ -35,6 +36,7 @@ const writeCollapsedSections = (sections: string[]) => {
 };
 
 interface Props {
+  /** La cuenta es de un administrador general (esté o no en modo soporte): sólo para la etiqueta del pie. */
   isSuperAdmin: boolean;
   fullName: string | null;
   /** Reducido a íconos (sólo escritorio). */
@@ -44,13 +46,17 @@ interface Props {
 }
 
 export const SideMenuContent = ({ isSuperAdmin, fullName, mini = false, onNavigate, onLogout }: Props) => {
-  // Pedidos esperando chofer: el mismo número que muestra Pedidos filtrado por "Pendiente".
-  const { data: pending } = useOrders(PENDING, { status: 'pending' }, { refetchInterval: 30_000 });
+  const viewer = useNavViewer();
+  // Pedidos esperando chofer: el mismo número que muestra Pedidos filtrado por "Pendiente". En la plataforma no hay
+  // pedidos (la API responde 403 SUPPORT_SESSION_REQUIRED): no se pide.
+  const { data: pending } = useOrders(
+    PENDING,
+    { status: 'pending' },
+    { refetchInterval: 30_000, enabled: viewer.mode !== 'platform' },
+  );
   const pendingCount = pending?.total ?? 0;
   const { email } = useAppSelector((state) => state.auth);
   const { data: account } = useMyAccount(email);
-  // Mientras no se saben los permisos (o si no se pudieron leer) no se esconde nada: la API igual decide.
-  const { data: permissions } = useMyPermissions(email);
   const [collapsed, setCollapsed] = useState<string[]>(readCollapsedSections);
 
   const toggleSection = (title: string) => {
@@ -72,11 +78,7 @@ export const SideMenuContent = ({ isSuperAdmin, fullName, mini = false, onNaviga
 
       <nav aria-label="Secciones del panel" className="relative -mx-3.5 flex-1 space-y-1.5 overflow-y-auto px-3.5">
         {NAV_SECTIONS.map((section) => {
-          const items = section.items.filter(
-            (item) =>
-              (!item.superAdminOnly || isSuperAdmin) &&
-              (!item.permission || !permissions || allows(permissions, item.permission)),
-          );
+          const items = section.items.filter((item) => isNavItemVisible(item, viewer));
           if (items.length === 0) return null;
           const isOpen = mini || !collapsed.includes(section.title);
           const panelId = `nav-section-${section.title}`;
@@ -127,10 +129,9 @@ export const SideMenuContent = ({ isSuperAdmin, fullName, mini = false, onNaviga
       >
         {!mini && (
           <>
-            <PersonAvatar
+            <MyAvatar
               name={fullName ?? 'Administrador'}
-              userId={account?.user_id}
-              decorative
+              photoUrl={account?.photoUrl}
               fallback={
                 <span
                   aria-hidden="true"

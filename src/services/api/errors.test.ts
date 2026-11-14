@@ -23,9 +23,17 @@ describe('toApiError', () => {
     expect(toApiError(axiosError(403, { message: 'no' })).forbidden).toBe(true);
   });
 
+  it('el 403 por alcance del modo soporte explica qué falta pedir (también en descargas)', () => {
+    const error = toApiError(axiosError(403, { message: 'Forbidden', code: 'SUPPORT_SCOPE_REQUIRED' }));
+    expect(error.code).toBe('SUPPORT_SCOPE_REQUIRED');
+    expect(error.message).toMatch(/no incluye archivos ni exportes/);
+  });
+
   it('la falta de distribuidora se muestra como pide el panel', () => {
     const message = 'Falta la distribuidora: enviá el header X-Distributor (slug o id)';
-    expect(errorMessage(axiosError(400, { message }))).toBe('Elegí una distribuidora en «Ver como» para operar');
+    expect(errorMessage(axiosError(400, { message }))).toBe(
+      'Esta acción es de una empresa: la hace un administrador de esa empresa',
+    );
     expect(errorMessage(axiosError(403, { message }))).toBe(message);
   });
 

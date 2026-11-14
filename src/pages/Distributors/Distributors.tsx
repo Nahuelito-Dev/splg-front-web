@@ -3,28 +3,20 @@ import { useNavigate } from 'react-router-dom';
 import AddBusinessIcon from '@mui/icons-material/AddBusiness';
 import { Button, Card, ErrorState, PageHeader, TableSkeleton, PageContainer } from '../../common/components/ui';
 import { FROM_LIST_STATE } from '../../hooks';
-import { switchDistributor } from '../../utils/switchDistributor';
-import { activeDistributor } from '../../services/api/activeDistributor';
+import { RequestSupportModal } from '../../common/support/RequestSupportModal';
 import { useDistributors } from '../../services/queries/distributors';
 import { DistributorsTable } from './components/DistributorsTable';
 import { useDistributorActions } from './useDistributorActions';
 
 /**
- * Gestión de distribuidoras (empresas), sólo para el administrador general.
- * "Ver como" setea el header X-Distributor (localStorage) y recarga: así el
- * panel muestra sólo los datos de esa empresa. "Ver todas" vuelve a la vista global.
+ * Gestión de distribuidoras (empresas), sólo para el administrador general en la plataforma. Para ver los datos de
+ * una empresa se pide acceso de soporte (la empresa lo aprueba, es sólo lectura y vence solo).
  */
 export const Distributors = () => {
-  const [viewingSlug, setViewingSlug] = useState(() => activeDistributor.get() ?? '');
+  const [supportFor, setSupportFor] = useState<string | null>(null);
   const { data: distributors, isLoading, isFetching, error, refetch } = useDistributors();
   const navigate = useNavigate();
-  const { toggleStatus, remove } = useDistributorActions({ onViewingChanged: () => setViewingSlug('') });
-
-  const viewAs = (slug: string) => {
-    void switchDistributor(slug || null).then((switched) => {
-      if (switched) setViewingSlug(slug);
-    });
-  };
+  const { toggleStatus, remove } = useDistributorActions();
 
   return (
     <PageContainer>
@@ -38,17 +30,6 @@ export const Distributors = () => {
         }
       />
 
-      <Card className="mb-6 flex flex-wrap items-center justify-between gap-3 p-4">
-        <p className="text-sm text-ink">
-          Viendo: <span className="font-semibold text-primary-strong">{viewingSlug || 'todas las empresas'}</span>
-        </p>
-        {viewingSlug && (
-          <Button variant="secondary" size="sm" onClick={() => viewAs('')}>
-            Ver todas
-          </Button>
-        )}
-      </Card>
-
       <Card>
         {isLoading ? (
           <TableSkeleton columns={4} />
@@ -58,8 +39,7 @@ export const Distributors = () => {
           <DistributorsTable
             rows={distributors ?? []}
             loading={isFetching}
-            viewingSlug={viewingSlug}
-            onViewAs={(distributor) => viewAs(distributor.slug)}
+            onRequestSupport={(distributor) => setSupportFor(distributor.distributor_id)}
             onView={(distributor) =>
               navigate(`/distributors/${distributor.distributor_id}`, { state: FROM_LIST_STATE })
             }
@@ -69,6 +49,11 @@ export const Distributors = () => {
           />
         )}
       </Card>
+      <RequestSupportModal
+        open={supportFor !== null}
+        onClose={() => setSupportFor(null)}
+        distributorId={supportFor ?? undefined}
+      />
     </PageContainer>
   );
 };

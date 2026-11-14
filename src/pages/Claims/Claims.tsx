@@ -40,7 +40,7 @@ export const Claims = () => {
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<Claim | null>(null);
   const [startAction, setStartAction] = useState<PendingAction>(null);
-  const { canOperate } = usePermissions();
+  const { canOperate, canWrite, writeHint } = usePermissions();
 
   const all = useMemo(() => claims ?? [], [claims]);
   const counts = useMemo(() => countClaimsByStatus(all), [all]);
@@ -76,7 +76,11 @@ export const Claims = () => {
         title="Reclamos"
         description="Atención y resolución de reclamos post-venta de los clientes."
         actions={
-          <Button icon={<MessageSquarePlus />} onClick={() => setCreating(true)}>
+          <Button
+            icon={<MessageSquarePlus />}
+            onClick={() => setCreating(true)}
+            blockedReason={canWrite ? undefined : writeHint}
+          >
             Cargar reclamo
           </Button>
         }

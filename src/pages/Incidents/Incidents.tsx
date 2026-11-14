@@ -66,7 +66,7 @@ export const Incidents = () => {
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<Incident | null>(null);
   const [discarding, setDiscarding] = useState<Incident | null>(null);
-  const { canOperate } = usePermissions();
+  const { canOperate, canWrite, writeHint } = usePermissions();
 
   const all = useMemo(() => incidents ?? [], [incidents]);
   const counts = useMemo(() => countIncidentsByStatus(all), [all]);
@@ -108,7 +108,11 @@ export const Incidents = () => {
         title="Incidencias de reparto"
         description="Problemas reportados por los choferes durante la entrega."
         actions={
-          <Button icon={<TriangleAlert />} onClick={() => setCreating(true)}>
+          <Button
+            icon={<TriangleAlert />}
+            onClick={() => setCreating(true)}
+            blockedReason={canWrite ? undefined : writeHint}
+          >
             Registrar incidencia
           </Button>
         }

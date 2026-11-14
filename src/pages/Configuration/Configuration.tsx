@@ -10,7 +10,7 @@ import { SlotAvailabilityPanel } from './components/SlotAvailabilityPanel';
 import { TimeSlotsManager } from './components/TimeSlotsManager';
 
 export const Configuration = () => {
-  const { needsDistributor } = usePermissions();
+  const { needsDistributor, canWrite, writeHint } = usePermissions();
   const { data: distributor } = useCurrentDistributor(!needsDistributor);
   return (
     <PageContainer size="md">
@@ -26,6 +26,7 @@ export const Configuration = () => {
               label="Logo de la empresa"
               fit="contain"
               canEdit
+              blockedReason={canWrite ? undefined : writeHint}
               className="max-w-md"
             />
           </Card>

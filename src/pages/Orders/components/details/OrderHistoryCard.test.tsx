@@ -53,15 +53,15 @@ describe('OrderHistoryCard', () => {
     expect(screen.getByText('Devolución pendiente')).toBeInTheDocument();
   });
 
-  it('el super admin sin «Ver como» recibe el aviso de elegir distribuidora, sin historial inventado', () => {
+  it('sin empresa (400 por falta de distribuidora) lo explica, sin historial inventado', () => {
     state.value = {
       isPending: false,
       isError: true,
-      error: new ApiError(400, ['Elegí una distribuidora en «Ver como» para operar']),
+      error: new ApiError(400, ['Esta acción es de una empresa: la hace un administrador de esa empresa']),
       refetch: vi.fn(),
     };
     render(<OrderHistoryCard orderId="o-1" />);
-    expect(screen.getByText('Elegí una distribuidora en «Ver como» para ver el historial')).toBeInTheDocument();
+    expect(screen.getByText('El historial es de una empresa: lo ve su administrador')).toBeInTheDocument();
     expect(screen.queryByText(/No se pudo cargar/)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Reintentar' })).not.toBeInTheDocument();
     expect(screen.queryByText('Pedido creado')).not.toBeInTheDocument();

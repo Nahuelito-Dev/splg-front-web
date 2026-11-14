@@ -223,7 +223,9 @@ export const useOrderTransferReceipts = (orderId: string | undefined, enabled = 
     enabled: enabled && Boolean(orderId),
     staleTime: 0,
     refetchInterval: (query) => {
-      const expiries = (query.state.data ?? []).map((file) => Date.parse(file.expiresAt)).filter(Number.isFinite);
+      const expiries = (query.state.data ?? [])
+        .map((file) => (file.expiresAt ? Date.parse(file.expiresAt) : NaN))
+        .filter(Number.isFinite);
       if (expiries.length === 0) return false;
       return Math.max(Math.min(...expiries) - Date.now() - RECEIPT_REFRESH_MARGIN_MS, RECEIPT_REFRESH_MIN_MS);
     },
@@ -235,25 +237,23 @@ export const useOrderTransferReceipts = (orderId: string | undefined, enabled = 
  * acepta la API y se deja `search` para que la distribuidora encuentre al
  * resto por nombre, teléfono o patente.
  */
-/** `distributorId`: la empresa del pedido, para el administrador general sin «Ver como». */
 interface ActiveDeliveriesScope {
-  distributorId?: string;
   enabled?: boolean;
 }
 
-export const useActiveDeliveries = (search = '', { distributorId, enabled = true }: ActiveDeliveriesScope = {}) =>
+export const useActiveDeliveries = (search = '', { enabled = true }: ActiveDeliveriesScope = {}) =>
   useQuery({
-    queryKey: queryKeys.deliveries.list({ active: true, search, distributorId: distributorId ?? null }),
-    queryFn: () => listActiveDeliveries({ page: 0, pageSize: 100 }, search, distributorId),
+    queryKey: queryKeys.deliveries.list({ active: true, search }),
+    queryFn: () => listActiveDeliveries({ page: 0, pageSize: 100 }, search),
     placeholderData: keepPreviousData,
     enabled,
   });
 
 /** Los choferes habilitados (estén o no en línea): de ahí salen los que se pueden asignar a mano. */
-export const useEnabledDeliveries = (search = '', { distributorId, enabled = true }: ActiveDeliveriesScope = {}) =>
+export const useEnabledDeliveries = (search = '', { enabled = true }: ActiveDeliveriesScope = {}) =>
   useQuery({
-    queryKey: queryKeys.deliveries.list({ enabled: true, search, distributorId: distributorId ?? null }),
-    queryFn: () => listDeliveries({ page: 0, pageSize: 100 }, search, 'enabled', distributorId),
+    queryKey: queryKeys.deliveries.list({ enabled: true, search }),
+    queryFn: () => listDeliveries({ page: 0, pageSize: 100 }, search, 'enabled'),
     placeholderData: keepPreviousData,
     enabled,
   });

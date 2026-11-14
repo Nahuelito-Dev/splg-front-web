@@ -2,24 +2,23 @@ import axios, { type AxiosResponse, type InternalAxiosRequestConfig } from 'axio
 import { env } from '../../config/env';
 import { store } from '../../store/store';
 import { logOut } from '../../store/auth';
-import { activeDistributor } from './activeDistributor';
+import { SUPPORT_SESSION_GONE_CODES, SUPPORT_SESSION_HEADER, supportMode } from './supportMode';
 import { getCurrentIdToken, logOutFirebase } from '../../firebase/providers';
 import { esErrorDeSesion, SESSION_EXPIRED_MESSAGE } from '../../firebase/sessionErrors';
 import { queryClient } from '../queries/queryClient';
 import { toApiError } from './errors';
 
-// Axios no trae estas opciones: las agregan `skipDistributor` y `public` (ver `attachAuthHeaders`).
+// Axios no trae estas opciones: las agregan `skipSupportSession` y `public` (ver `attachAuthHeaders`).
 declare module 'axios' {
   export interface AxiosRequestConfig {
     /** Marca interna: el pedido ya se reintentó con un token renovado tras un 401. */
     reintentoConTokenNuevo?: boolean;
     /**
-     * Las llamadas de identidad (¿quién es este token?, antes de que haya sesión elegida)
-     * no van con `X-Distributor`: si quedó un slug viejo en localStorage (de una
-     * distribuidora ya borrada, o de una sesión anterior), la API la rechaza con 401 y
-     * tira abajo el login entero. Ver `getAdmin`.
+     * Las llamadas de identidad (¿quién es este token?) y las del propio modo soporte no
+     * van con `X-Support-Session`: una sesión de soporte que terminó no puede tirar abajo
+     * el login ni la consulta que pregunta justamente si terminó. Ver `getAdmin`.
      */
-    skipDistributor?: boolean;
+    skipSupportSession?: boolean;
     /**
      * Endpoint público (p. ej. `/email/password-reset` desde el login, CU-047):
      * no exige que haya una sesión iniciada. Si hay un token guardado igual se
@@ -73,7 +72,6 @@ const cerrarSesion = (errorMessage: string) => {
   void logOutFirebase().catch(() => undefined);
 };
 
-/** Token y `X-Distributor` de cada pedido. Aparte para poder probarlo sin armar un axios entero. */
 /**
  * El ID token de Firebase dura una hora: se pide al SDK en cada llamada (lo renueva solo
  * cuando está por vencer) y se guarda, para que el socket y la próxima carga usen el vigente.
@@ -87,6 +85,7 @@ const vigenteOGuardado = async (force = false): Promise<string | null> => {
   return localStorage.getItem('token');
 };
 
+/** Token y `X-Support-Session` de cada pedido. Aparte para poder probarlo sin armar un axios entero. */
 export const attachAuthHeaders = async (config: InternalAxiosRequestConfig) => {
   // El reintento tras un 401 ya trae el token renovado a la fuerza: no se pisa.
   const token =
@@ -98,11 +97,10 @@ export const attachAuthHeaders = async (config: InternalAxiosRequestConfig) => {
     return Promise.reject(new Error('No hay sesión iniciada'));
   }
   config.headers.Authorization = `Bearer ${token}`;
-  // Un `X-Distributor` puesto a propósito en la llamada (administrador general) manda sobre el de «Ver como».
-  if (!config.skipDistributor && !config.headers['X-Distributor']) {
-    const distributor = activeDistributor.get();
-    if (distributor) config.headers['X-Distributor'] = distributor;
-  }
+  // Modo soporte: mientras el administrador general tenga una sesión activa, todo pedido la lleva. La empresa la fija
+  // la sesión en el back (no hay más `X-Distributor` para él).
+  const supportSession = config.skipSupportSession ? null : supportMode.activeId();
+  if (supportSession) config.headers[SUPPORT_SESSION_HEADER] = supportSession;
   return config;
 };
 
@@ -132,6 +130,11 @@ http.interceptors.response.use(undefined, async (error: unknown) => {
         original.headers.Authorization = `Bearer ${renovado}`;
         return http.request(original);
       }
+    }
+    // La sesión de soporte con la que salió el pedido ya no sirve (revocada, vencida o inexistente): se sale del modo.
+    const sentSession: unknown = original?.headers?.[SUPPORT_SESSION_HEADER];
+    if (typeof sentSession === 'string' && code && SUPPORT_SESSION_GONE_CODES.has(code)) {
+      supportMode.endedByApi(sentSession);
     }
     if (status === 401) {
       // Con el token recién renovado, el 401 no es vencimiento (cuenta bloqueada, distribuidora inválida, rol): se muestra el motivo de la API.

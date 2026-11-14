@@ -37,6 +37,15 @@ describe('OrderTransferReceipts', () => {
     expect(screen.getByText('El cliente todavía no subió el comprobante')).toBeInTheDocument();
   });
 
+  it('en modo soporte sin «Archivos» (url null) muestra el comprobante sin enlace, con candado y aviso', () => {
+    state.query = ok([file({ url: null, expiresAt: null })]);
+    render(<OrderTransferReceipts orderId="o-1" />);
+    expect(screen.getByText('comprobante.jpg')).toBeInTheDocument();
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
+    expect(screen.getByText('Oculto en modo soporte')).toBeInTheDocument();
+  });
+
   it('lista imagen con miniatura y PDF, ambos con enlace firmado en pestaña nueva', () => {
     state.query = ok([
       file(),

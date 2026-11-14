@@ -9,7 +9,7 @@ interface ErrorBody {
   code?: string;
 }
 
-const MISSING_DISTRIBUTOR_MESSAGE = 'Elegí una distribuidora en «Ver como» para operar';
+const MISSING_DISTRIBUTOR_MESSAGE = 'Esta acción es de una empresa: la hace un administrador de esa empresa';
 
 /** Un error de la API ya interpretado: estado HTTP y mensajes legibles. */
 export class ApiError extends Error {
@@ -31,7 +31,7 @@ export class ApiError extends Error {
     return this.status === 400 && this.code === 'INVALID_ID';
   }
 
-  /** 400 por falta de `X-Distributor`: el super admin tiene que elegir una distribuidora en «Ver como». */
+  /** 400 por falta de empresa: el administrador general pidió desde la plataforma algo que es de una empresa. */
   get missingDistributor(): boolean {
     return this.status === 400 && this.messages.includes(MISSING_DISTRIBUTOR_MESSAGE);
   }
@@ -49,7 +49,7 @@ export class ApiError extends Error {
 const isErrorBody = (value: unknown): value is ErrorBody =>
   typeof value === 'object' && value !== null && ('message' in value || 'statusCode' in value);
 
-/** El back pide `X-Distributor` con «Falta la distribuidora…»: en el panel se resuelve eligiendo una empresa. */
+/** El back responde «Falta la distribuidora…» (pensado para el header): en el panel se explica quién lo hace. */
 const MISSING_DISTRIBUTOR = /^Falta la distribuidora/;
 
 /** El límite de pedidos del back (`ThrottlerException: Too Many Requests`) no le dice nada a quien opera el panel. */
@@ -60,7 +60,12 @@ const UNPAID_INCIDENT = /^La incidencia de cobro impago se cierra/;
 const UNPAID_INCIDENT_MESSAGE =
   'Una incidencia de cobro impago se cierra resolviendo el cobro del pedido: usá «Resolver impago» en el pedido';
 
-const friendly = (status: number | null, messages: string[]): string[] => {
+/** 403 de la API en modo soporte cuando el acceso no incluye archivos o exportes. */
+const SCOPE_REQUIRED_MESSAGE =
+  'Este acceso de soporte no incluye archivos ni exportes: para verlos, pedí otro acceso con ese alcance';
+
+const friendly = (status: number | null, messages: string[], code?: string | null): string[] => {
+  if (code === 'SUPPORT_SCOPE_REQUIRED') return [SCOPE_REQUIRED_MESSAGE];
   if (status === 429) return [RATE_LIMITED_MESSAGE];
   if (status === 409) return messages.map((m) => (UNPAID_INCIDENT.test(m) ? UNPAID_INCIDENT_MESSAGE : m));
   return status === 400
@@ -77,7 +82,7 @@ export function toApiError(error: unknown): ApiError {
     if (isErrorBody(body) && body.message) {
       return new ApiError(
         status,
-        friendly(status, Array.isArray(body.message) ? body.message : [body.message]),
+        friendly(status, Array.isArray(body.message) ? body.message : [body.message], body.code),
         body.code ?? null,
       );
     }
@@ -112,7 +117,11 @@ export async function toApiErrorFromBlob(error: unknown): Promise<ApiError> {
     try {
       const body: unknown = JSON.parse(await readBlobAsText(error.response.data));
       if (isErrorBody(body) && body.message) {
-        return new ApiError(status, Array.isArray(body.message) ? body.message : [body.message], body.code ?? null);
+        return new ApiError(
+          status,
+          friendly(status, Array.isArray(body.message) ? body.message : [body.message], body.code),
+          body.code ?? null,
+        );
       }
     } catch {
       // El cuerpo no era JSON legible: sigue con el mensaje genérico de toApiError.

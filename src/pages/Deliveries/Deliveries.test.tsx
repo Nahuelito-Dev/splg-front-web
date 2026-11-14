@@ -9,7 +9,11 @@ const tableProps = vi.hoisted(() => ({ current: {} as Record<string, unknown> })
 
 vi.mock('../../hooks', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
-  usePermissions: () => ({ canWrite: permissions.canOperate, canOperate: permissions.canOperate }),
+  usePermissions: () => ({
+    canWrite: permissions.canOperate,
+    canOperate: permissions.canOperate,
+    writeHint: permissions.canOperate ? undefined : 'Modo soporte: sólo lectura',
+  }),
 }));
 vi.mock('../../services/queries/deliveries', () => ({
   useDeliveries: (_page: unknown, _search: string, tab: string) => deliveriesQuery(tab) as unknown,
@@ -135,5 +139,21 @@ describe('Deliveries: administrador general sin distribuidora elegida', () => {
     const exporte = vi.mocked(useServerExport).mock.lastCall?.[0];
     expect(exporte?.resource).toBe('choferes');
     expect(exporte?.blockedReason).toBeTruthy();
+  });
+});
+
+describe('Deliveries: modo soporte (sólo lectura)', () => {
+  it('«Nuevo chofer» queda apagado con el aviso', () => {
+    permissions.canOperate = false;
+    deliveriesQuery.mockReturnValue({ data: { rows: [] as Delivery[], total: 0 }, isFetching: false });
+    render(
+      <MemoryRouter>
+        <Deliveries />
+      </MemoryRouter>,
+    );
+    const button = screen.getByRole('button', { name: /Nuevo chofer/ });
+    expect(button).toHaveAttribute('aria-disabled', 'true');
+    expect(button).toHaveAttribute('title', 'Modo soporte: sólo lectura');
+    permissions.canOperate = true;
   });
 });

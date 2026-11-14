@@ -19,6 +19,7 @@ import type {
   CylinderVigencia,
   Delivery,
   Distributor,
+  SupportSession,
   DocumentReading,
   FleetExpirationEntry,
   FleetPlan,
@@ -281,6 +282,25 @@ export const INCIDENT_STATUS: LabelMap<Incident['status']> = {
 export const DISTRIBUTOR_STATUS: LabelMap<Distributor['status']> = {
   active: { text: 'Activa', tone: 'success' },
   suspended: { text: 'Suspendida', tone: 'danger' },
+};
+
+/** Estado de un pedido o sesión de soporte (`support_session.status`). */
+export const SUPPORT_SESSION_STATUS: LabelMap<SupportSession['status']> = {
+  pending: { text: 'Pendiente', tone: 'warn' },
+  active: { text: 'Activa', tone: 'accent' },
+  rejected: { text: 'Rechazada', tone: 'neutral' },
+  expired_request: { text: 'Sin respuesta', tone: 'neutral' },
+  cancelled: { text: 'Retirada', tone: 'neutral' },
+  ended: { text: 'Finalizada', tone: 'neutral' },
+  revoked: { text: 'Revocada', tone: 'danger' },
+  expired: { text: 'Vencida', tone: 'neutral' },
+};
+
+/** Lo que un acceso de soporte ve además de lo básico (el alcance pedido). */
+export const SUPPORT_SCOPE: LabelMap<SupportSession['scope'][number]> = {
+  personal_data: { text: 'Datos personales', tone: 'warn' },
+  files: { text: 'Archivos', tone: 'warn' },
+  exports: { text: 'Exportes', tone: 'warn' },
 };
 
 export const AUDIT_RESULT: LabelMap<AsientoDeAuditoria['result']> = {

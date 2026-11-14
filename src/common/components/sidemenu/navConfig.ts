@@ -37,7 +37,7 @@ import {
   IdCard,
   HandCoins,
   House,
-  MapPinHouse,
+  LifeBuoy,
   ListChecks,
   Map as MapIcon,
   MessageSquareWarning,
@@ -69,10 +69,16 @@ export interface NavItem {
   icon: LucideIcon;
   /** Muestra al lado la cantidad de pedidos esperando chofer. */
   showPendingOrders?: boolean;
-  /** Sin esto lo ve cualquier sesión autenticada (admin o super_admin). */
-  superAdminOnly?: boolean;
-  /** Permiso del catálogo que hace falta (`GET /me/permissions`); sin él, el ítem no se muestra. */
+  /**
+   * Alcance de la pantalla (§2 del diseño del modo soporte). Sin esto es de **empresa**: la ven el admin de la empresa y
+   * el administrador general sólo en modo soporte. `platform`: sólo el administrador general fuera del modo soporte.
+   * `both`: existe para los dos, con el contenido de quien mira.
+   */
+  scope?: 'platform' | 'both';
+  /** Permiso F37 que necesita el admin de la empresa para verla. */
   permission?: string;
+  /** Sólo el admin de la empresa (la API se la niega al administrador general aun en modo soporte). */
+  companyAdminOnly?: boolean;
 }
 
 export interface NavSection {
@@ -80,16 +86,12 @@ export interface NavSection {
   items: NavItem[];
 }
 
-/**
- * El menú del panel, agrupado por sección. `SideMenu` filtra `superAdminOnly`
- * según el rol; el resto lo ve cualquiera que haya podido entrar (admin o
- * super_admin: son los únicos roles que pasan `useCheckAuth`).
- */
+/** El menú del panel, agrupado por sección. Quién ve cada ítem lo decide `isNavItemVisible` (navScope). */
 export const NAV_SECTIONS: NavSection[] = [
   {
     title: 'Operación',
     items: [
-      { title: 'Tablero', path: '/home', icon: House },
+      { title: 'Tablero', path: '/home', icon: House, scope: 'both' },
       { title: 'Pedidos', path: '/orders', icon: ReceiptText, showPendingOrders: true },
       { title: 'Tablero de despacho', path: '/orders/dispatch', icon: Columns3 },
       { title: 'Seguimiento en vivo', path: '/tracking', icon: Navigation },
@@ -105,7 +107,6 @@ export const NAV_SECTIONS: NavSection[] = [
       { title: 'Recompra', path: '/customers/repurchase', icon: Repeat },
       { title: 'Reclamos', path: '/claims', icon: MessageSquareWarning },
       { title: 'Incidencias', path: '/incidents', icon: TriangleAlert },
-      { title: 'Direcciones', path: '/addresses', icon: MapPinHouse, superAdminOnly: true },
     ],
   },
   {
@@ -187,12 +188,19 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { title: 'Reportes', path: '/reports', icon: ChartLine },
       { title: 'Lectura de documentos', path: '/document-readings', icon: ScanText },
-      { title: 'Notificaciones', path: '/notifications', icon: Bell },
-      { title: 'Usuarios', path: '/users', icon: UserRound },
-      { title: 'Administradores', path: '/admins', icon: ShieldCheck },
-      { title: 'Auditoría', path: '/audit', icon: FileClock },
-      { title: 'Distribuidoras', path: '/distributors', icon: Building2, superAdminOnly: true },
-      { title: 'Sistema', path: '/system', icon: ServerCog, superAdminOnly: true },
+      { title: 'Notificaciones', path: '/notifications', icon: Bell, scope: 'both' },
+      { title: 'Usuarios', path: '/users', icon: UserRound, scope: 'both' },
+      { title: 'Administradores', path: '/admins', icon: ShieldCheck, scope: 'both' },
+      { title: 'Auditoría', path: '/audit', icon: FileClock, scope: 'both' },
+      {
+        title: 'Accesos de soporte',
+        path: '/support-access',
+        icon: LifeBuoy,
+        permission: 'soporte.ver',
+        companyAdminOnly: true,
+      },
+      { title: 'Distribuidoras', path: '/distributors', icon: Building2, scope: 'platform' },
+      { title: 'Sistema', path: '/system', icon: ServerCog, scope: 'platform' },
     ],
   },
   {
@@ -204,7 +212,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { title: 'Compra express', path: '/settings/express', icon: Zap },
       { title: 'Procesos automáticos', path: '/settings/automatic-processes', icon: Bot },
       { title: 'Tareas programadas', path: '/settings/scheduled-tasks', icon: Timer },
-      { title: 'Monitoreo de procesos', path: '/settings/process-monitor', icon: Activity },
+      { title: 'Monitoreo de procesos', path: '/settings/process-monitor', icon: Activity, scope: 'both' },
     ],
   },
 ];

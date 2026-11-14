@@ -11,7 +11,7 @@ import {
   PersonAvatar,
   SearchInput,
 } from '../../../common/components/ui';
-import { useDebounce, usePermissions } from '../../../hooks';
+import { useDebounce } from '../../../hooks';
 import { errorMessage } from '../../../services/api/errors';
 import { useEnabledDeliveries } from '../../../services/queries/orders';
 import { driverStatus } from '../../../utils/statusLabels';
@@ -21,8 +21,6 @@ interface Props {
   onClose: () => void;
   onConfirm: (deliveryId: string) => void;
   assigning: boolean;
-  /** La empresa del pedido: con ella el administrador general sin «Ver como» lista sólo los choferes de ese pedido. */
-  distributorId?: string;
   /** Asignación en lote: cuántos pedidos van al chofer elegido. */
   count?: number;
   /** Qué pedidos se van a afectar (lote): se listan antes de confirmar. */
@@ -32,25 +30,10 @@ interface Props {
 }
 
 /** Sobreescribe a mano la asignación automática de un pedido. */
-export const AssignDriverModal = ({
-  open,
-  onClose,
-  onConfirm,
-  assigning,
-  distributorId,
-  count = 1,
-  affected,
-  error,
-}: Props) => {
+export const AssignDriverModal = ({ open, onClose, onConfirm, assigning, count = 1, affected, error }: Props) => {
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search.trim());
-  const { needsDistributor } = usePermissions();
-  // Sin empresa conocida, el administrador general vería choferes de todas y la API rechaza los de otra (404).
-  const unscoped = needsDistributor && !distributorId;
-  const { data, isPending } = useEnabledDeliveries(debouncedSearch, {
-    distributorId: needsDistributor ? distributorId : undefined,
-    enabled: open && !unscoped,
-  });
+  const { data, isPending } = useEnabledDeliveries(debouncedSearch, { enabled: open });
   const [selected, setSelected] = useState('');
   // Un rechazo anterior (de otro pedido, de otra apertura o de otra elección) no se vuelve a mostrar.
   const [dismissedError, setDismissedError] = useState<unknown>(null);
@@ -111,12 +94,7 @@ export const AssignDriverModal = ({
         onChange={(e) => setSearch(e.target.value)}
         className="mb-3"
       />
-      {unscoped ? (
-        <EmptyState
-          title="Elegí una distribuidora"
-          description="Para asignar un chofer, elegí la distribuidora del pedido con «Ver como» en la barra superior."
-        />
-      ) : isPending ? (
+      {isPending ? (
         <LoadingState label="Buscando choferes…" />
       ) : !drivers || drivers.rows.length === 0 ? (
         <EmptyState

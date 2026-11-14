@@ -1,5 +1,6 @@
 import { AxiosHeaders, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { SupportSession } from './types';
 
 vi.mock('../../store/store', () => ({ store: { dispatch: vi.fn() } }));
 vi.mock('../../store/auth/thunks', () => ({ startLogOut: vi.fn() }));
@@ -10,10 +11,20 @@ vi.mock('../../firebase/providers', () => ({
   logOutFirebase: () => logOutFirebase(),
 }));
 const clearCache = vi.fn();
+const notifyWarn = vi.fn();
+vi.mock('../../utils/notifications', () => ({
+  notify: {
+    warn: (m: string) => {
+      notifyWarn(m);
+    },
+    info: vi.fn(),
+  },
+}));
 vi.mock('../queries/queryClient', () => ({ queryClient: { clear: () => void clearCache() } }));
 
 const { attachAuthHeaders, http, toPage, toQuery, SESSION_EXPIRED_MESSAGE } = await import('./httpClient');
 const { store } = await import('../../store/store');
+const { supportMode } = await import('./supportMode');
 
 const response = (data: number[], headers: Record<string, string> = {}) =>
   ({ data, headers }) as unknown as AxiosResponse<number[]>;
@@ -32,12 +43,16 @@ describe('paginado', () => {
   });
 });
 
-const config = (skipDistributor?: boolean, isPublic?: boolean): InternalAxiosRequestConfig =>
-  ({ headers: new AxiosHeaders(), skipDistributor, public: isPublic }) as InternalAxiosRequestConfig;
+const config = (skipSupportSession?: boolean, isPublic?: boolean): InternalAxiosRequestConfig =>
+  ({ headers: new AxiosHeaders(), skipSupportSession, public: isPublic }) as InternalAxiosRequestConfig;
+
+const session = (status: SupportSession['status'], id = 'ses-1') =>
+  ({ id, status, distributorName: 'Gas Norte' }) as SupportSession;
 
 describe('attachAuthHeaders', () => {
   beforeEach(() => {
     localStorage.clear();
+    supportMode.reset();
     getCurrentIdToken.mockReset().mockResolvedValue(null);
   });
 
@@ -59,33 +74,34 @@ describe('attachAuthHeaders', () => {
     expect(result.headers.Authorization).toBe('Bearer el-token');
   });
 
-  it('con una distribuidora elegida, la manda en X-Distributor', async () => {
+  it('con una sesión de soporte activa, la manda en X-Support-Session', async () => {
     localStorage.setItem('token', 'el-token');
-    localStorage.setItem('selectedDistributor', 'jeny-gas');
+    supportMode.update(session('active'));
     const result = await attachAuthHeaders(config());
-    expect(result.headers['X-Distributor']).toBe('jeny-gas');
-  });
-
-  it('un X-Distributor puesto en la llamada manda sobre el de «Ver como»', async () => {
-    localStorage.setItem('token', 'el-token');
-    localStorage.setItem('selectedDistributor', 'jeny-gas');
-    const base = config();
-    base.headers.set('X-Distributor', 'otra-empresa');
-    const result = await attachAuthHeaders(base);
-    expect(result.headers['X-Distributor']).toBe('otra-empresa');
-  });
-
-  it('sin distribuidora elegida, no manda el header', async () => {
-    localStorage.setItem('token', 'el-token');
-    const result = await attachAuthHeaders(config());
+    expect(result.headers['X-Support-Session']).toBe('ses-1');
     expect(result.headers['X-Distributor']).toBeUndefined();
   });
 
-  it('skipDistributor la omite aunque haya una elegida (llamadas de identidad, p. ej. el login)', async () => {
+  it('con el pedido pendiente (sin aprobar) todavía no manda el header', async () => {
     localStorage.setItem('token', 'el-token');
-    localStorage.setItem('selectedDistributor', 'slug-borrado-o-viejo');
+    supportMode.update(session('pending'));
+    const result = await attachAuthHeaders(config());
+    expect(result.headers['X-Support-Session']).toBeUndefined();
+  });
+
+  it('sin sesión de soporte no manda el header, ni el viejo X-Distributor de «Ver como»', async () => {
+    localStorage.setItem('token', 'el-token');
+    localStorage.setItem('selectedDistributor', 'jeny-gas');
+    const result = await attachAuthHeaders(config());
+    expect(result.headers['X-Support-Session']).toBeUndefined();
+    expect(result.headers['X-Distributor']).toBeUndefined();
+  });
+
+  it('skipSupportSession la omite aunque haya una activa (identidad y el propio modo soporte)', async () => {
+    localStorage.setItem('token', 'el-token');
+    supportMode.update(session('active'));
     const result = await attachAuthHeaders(config(true));
-    expect(result.headers['X-Distributor']).toBeUndefined();
+    expect(result.headers['X-Support-Session']).toBeUndefined();
     expect(result.headers.Authorization).toBe('Bearer el-token');
   });
 
@@ -257,5 +273,55 @@ describe('401 por token vencido', () => {
     await expect(http.get('/orders', { adapter: fail401 })).rejects.toThrow('401');
     expect(store.dispatch).not.toHaveBeenCalled();
     expect(localStorage.getItem('token')).toBe('viejo');
+  });
+});
+
+describe('modo soporte: la API dice que la sesión terminó', () => {
+  const fail403With =
+    (data: unknown, status = 403) =>
+    (cfg: InternalAxiosRequestConfig) =>
+      Promise.reject(
+        Object.assign(new Error(String(status)), {
+          isAxiosError: true,
+          config: cfg,
+          response: { status, data, headers: {}, config: cfg },
+        }),
+      );
+
+  beforeEach(() => {
+    localStorage.clear();
+    localStorage.setItem('token', 'el-token');
+    getCurrentIdToken.mockReset().mockResolvedValue(null);
+    notifyWarn.mockReset();
+    supportMode.reset();
+    supportMode.update(session('active'));
+    clearCache.mockReset();
+  });
+
+  it.each(['SUPPORT_SESSION_ENDED', 'SUPPORT_SESSION_NOT_FOUND'])(
+    '%s: sale del modo solo, vacía la caché y avisa',
+    async (code) => {
+      await expect(http.get('/orders', { adapter: fail403With({ code, message: 'x' }) })).rejects.toThrow();
+      expect(supportMode.activeId()).toBeNull();
+      expect(clearCache).toHaveBeenCalledTimes(1);
+      expect(notifyWarn).toHaveBeenCalledWith(expect.stringContaining('La sesión de soporte terminó'));
+    },
+  );
+
+  it('un 403 de sólo lectura no saca del modo (la sesión sigue)', async () => {
+    const adapter = fail403With({ code: 'SUPPORT_READ_ONLY', message: 'Estás en modo soporte: es sólo lectura' });
+    await expect(http.patch('/orders/1', {}, { adapter })).rejects.toThrow();
+    expect(supportMode.activeId()).toBe('ses-1');
+    expect(notifyWarn).not.toHaveBeenCalled();
+  });
+
+  it('la respuesta de una sesión vieja no corta la nueva', async () => {
+    const adapter = (cfg: InternalAxiosRequestConfig) => {
+      // Mientras viajaba el pedido, se cerró esa sesión y se abrió otra.
+      supportMode.update(session('active', 'ses-2'));
+      return fail403With({ code: 'SUPPORT_SESSION_ENDED', message: 'x' })(cfg);
+    };
+    await expect(http.get('/orders', { adapter })).rejects.toThrow();
+    expect(supportMode.activeId()).toBe('ses-2');
   });
 });

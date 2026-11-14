@@ -1,0 +1,63 @@
+import { describe, expect, it } from 'vitest';
+import { NAV_SECTIONS } from './navConfig';
+import { isNavItemVisible, type NavViewer } from './navScope';
+
+const visiblePaths = (viewer: NavViewer) =>
+  NAV_SECTIONS.flatMap((section) => section.items.filter((item) => isNavItemVisible(item, viewer)).map((i) => i.path));
+
+const PLATFORM: NavViewer = { mode: 'platform', permissions: 'all' };
+const SUPPORT: NavViewer = { mode: 'support', permissions: 'all' };
+const ADMIN: NavViewer = { mode: 'company', permissions: 'all' };
+
+describe('menú por alcance', () => {
+  it('el administrador general sin sesión ve sólo plataforma y «ambos»: nada de la operación', () => {
+    expect(visiblePaths(PLATFORM).sort()).toEqual(
+      [
+        '/admins',
+        '/audit',
+        '/distributors',
+        '/home',
+        '/notifications',
+        '/settings/process-monitor',
+        '/system',
+        '/users',
+      ].sort(),
+    );
+  });
+
+  it('en modo soporte ve las de empresa y «ambos», no las de plataforma ni «Accesos de soporte»', () => {
+    const paths = visiblePaths(SUPPORT);
+    expect(paths).toEqual(expect.arrayContaining(['/orders', '/customers', '/finance/boxes', '/home', '/audit']));
+    expect(paths).not.toContain('/distributors');
+    expect(paths).not.toContain('/system');
+    expect(paths).not.toContain('/support-access');
+  });
+
+  it('el admin de empresa ve «Accesos de soporte» con soporte.ver, y no las de plataforma', () => {
+    expect(visiblePaths(ADMIN)).toContain('/support-access');
+    expect(visiblePaths(ADMIN)).not.toContain('/distributors');
+    expect(visiblePaths({ mode: 'company', permissions: ['soporte.ver'] })).toContain('/support-access');
+  });
+
+  it('sin soporte.ver no ve «Accesos de soporte»; sin despacho.gestionar, no ve «Hojas de ruta»', () => {
+    const paths = visiblePaths({ mode: 'company', permissions: ['pedidos.ver'] });
+    expect(paths).not.toContain('/support-access');
+    expect(paths).not.toContain('/route-sheets');
+    expect(paths).toContain('/orders');
+  });
+
+  it('mientras no se saben los permisos no esconde nada (la API decide)', () => {
+    expect(visiblePaths({ mode: 'company', permissions: null })).toEqual(
+      expect.arrayContaining(['/support-access', '/route-sheets']),
+    );
+  });
+
+  it('«Hojas de ruta» es de empresa: en la plataforma no, en modo soporte sí', () => {
+    expect(visiblePaths(PLATFORM)).not.toContain('/route-sheets');
+    expect(visiblePaths(SUPPORT)).toContain('/route-sheets');
+  });
+
+  it('«Direcciones» (todas las direcciones de todos los clientes) ya no está en el menú', () => {
+    for (const viewer of [PLATFORM, SUPPORT, ADMIN]) expect(visiblePaths(viewer)).not.toContain('/addresses');
+  });
+});

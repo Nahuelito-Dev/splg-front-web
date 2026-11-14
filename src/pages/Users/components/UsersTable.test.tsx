@@ -34,7 +34,7 @@ const user = (id: string, name: string, customer: boolean, role = customer ? 'cu
     customer: customer ? { id } : null,
   }) as unknown as User;
 
-const renderTable = (canManageCustomerAccounts: boolean) =>
+const renderTable = (canManageCustomerAccounts: boolean, readOnly = false) =>
   render(
     <MemoryRouter>
       <UsersTable
@@ -44,6 +44,7 @@ const renderTable = (canManageCustomerAccounts: boolean) =>
         pagination={{ page: 0, pageSize: 10 }}
         onPaginationChange={vi.fn()}
         canManageCustomerAccounts={canManageCustomerAccounts}
+        readOnly={readOnly}
         onEdit={vi.fn()}
         onToggleBlock={vi.fn()}
         onDelete={vi.fn()}
@@ -52,6 +53,14 @@ const renderTable = (canManageCustomerAccounts: boolean) =>
   );
 
 describe('UsersTable: permisos en la fila de acciones', () => {
+  it('en modo soporte (sólo lectura) ninguna fila tiene editar, bloquear ni dar de baja', () => {
+    renderTable(false, true);
+    expect(screen.getByRole('button', { name: 'Ver Beto Admin' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Editar Beto Admin' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Dar de baja Beto Admin' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Más acciones de Beto Admin' })).toBeNull();
+  });
+
   it('sin permiso sobre cuentas de clientes, la fila de un cliente sólo tiene Ver', () => {
     renderTable(false);
     expect(screen.getByRole('button', { name: 'Ver Ana Cliente' })).toBeInTheDocument();

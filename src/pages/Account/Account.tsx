@@ -10,6 +10,7 @@ import {
   PageContainer,
 } from '../../common/components/ui';
 import { useAppDispatch, useAppSelector } from '../../hooks';
+import { useSupportSession } from '../../hooks/useSupportSession';
 import { startLogOut } from '../../store/auth/thunks';
 import { useMyAccount } from '../../services/queries/users';
 import { roleLabel } from '../Users/roleLabel';
@@ -17,12 +18,19 @@ import { ChangeEmailForm } from './components/ChangeEmailForm';
 import { PasswordResetCard } from './components/PasswordResetCard';
 import { ProfileForm } from './components/ProfileForm';
 
-/** "Mi cuenta": los datos del admin logueado, su correo y su contraseña. */
+/** Lo que se le dice al administrador general que quiere editar su cuenta en modo soporte. */
+export const ACCOUNT_SUPPORT_HINT = 'Salí del modo soporte para editar tu cuenta';
+
+/**
+ * "Mi cuenta": los datos del admin logueado, su correo y su contraseña. En modo soporte todo pedido viaja con la sesión
+ * y el back rechaza las escrituras: foto, perfil, correo y contraseña quedan apagados con el aviso.
+ */
 export const Account = () => {
   const dispatch = useAppDispatch();
   const { email } = useAppSelector((state) => state.auth);
   const { data: user, isPending, error, refetch } = useMyAccount(email);
   const currentEmail = user?.email ?? email ?? '';
+  const inSupport = useSupportSession().active !== null;
 
   return (
     <PageContainer size="sm">
@@ -49,12 +57,28 @@ export const Account = () => {
               </div>
             </div>
           </Card>
+          {inSupport && (
+            <p role="status" className="rounded-lg border border-warn/30 bg-warn-soft px-4 py-3 text-sm text-warn">
+              {ACCOUNT_SUPPORT_HINT}.
+            </p>
+          )}
           <Card className="p-6">
-            <EntityPhoto kind="user" id="me" url={user.photoUrl} subject="de perfil" canEdit className="max-w-md" />
+            <EntityPhoto
+              kind="user"
+              id="me"
+              url={user.photoUrl}
+              subject="de perfil"
+              canEdit
+              blockedReason={inSupport ? ACCOUNT_SUPPORT_HINT : undefined}
+              className="max-w-md"
+            />
           </Card>
-          <ProfileForm user={user} />
-          <ChangeEmailForm currentEmail={currentEmail} onChanged={() => void dispatch(startLogOut())} />
-          <PasswordResetCard email={currentEmail} />
+          {/* Un `fieldset` deshabilitado apaga de una vez los campos y botones de los tres formularios. */}
+          <fieldset disabled={inSupport} title={inSupport ? ACCOUNT_SUPPORT_HINT : undefined} className="space-y-6">
+            <ProfileForm user={user} />
+            <ChangeEmailForm currentEmail={currentEmail} onChanged={() => void dispatch(startLogOut())} />
+            <PasswordResetCard email={currentEmail} />
+          </fieldset>
         </div>
       )}
     </PageContainer>

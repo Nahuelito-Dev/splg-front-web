@@ -20,6 +20,8 @@ interface Props {
   canManageCustomerAccounts: boolean;
   /** Administrador general sin distribuidora elegida: la cuenta de un chofer o admin de empresa no se puede tocar. */
   needsDistributor?: boolean;
+  /** Modo soporte: sin acciones de edición, bloqueo ni baja. */
+  readOnly?: boolean;
   onEdit: (user: User) => void;
   onToggleBlock: (user: User) => void;
   onDelete: (user: User) => void;
@@ -34,6 +36,7 @@ export const UsersTable = ({
   onPaginationChange,
   canManageCustomerAccounts,
   needsDistributor = false,
+  readOnly = false,
   onEdit,
   onToggleBlock,
   onDelete,
@@ -87,7 +90,7 @@ export const UsersTable = ({
         renderCell: ({ row }) => {
           // La cuenta de un cliente sólo la administra el administrador general.
           const canManage =
-            (canManageCustomerAccounts || !row.customer) && !(needsDistributor && isDistributorStaff(row));
+            !readOnly && (canManageCustomerAccounts || !row.customer) && !(needsDistributor && isDistributorStaff(row));
           return (
             <RowActions
               rowLabel={row.full_name ?? 'usuario'}
@@ -112,7 +115,7 @@ export const UsersTable = ({
         },
       },
     ],
-    [navigate, canManageCustomerAccounts, needsDistributor, onEdit, onToggleBlock, onDelete],
+    [navigate, canManageCustomerAccounts, needsDistributor, readOnly, onEdit, onToggleBlock, onDelete],
   );
 
   return (

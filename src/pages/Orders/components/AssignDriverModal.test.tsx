@@ -8,8 +8,7 @@ vi.mock('../../../hooks', () => ({
   useDebounce: <T,>(value: T) => value,
 }));
 vi.mock('../../../services/queries/orders', () => ({
-  useEnabledDeliveries: (search: string, scope: { distributorId?: string; enabled?: boolean }) =>
-    drivers(search, scope) as unknown,
+  useEnabledDeliveries: (search: string, scope: { enabled?: boolean }) => drivers(search, scope) as unknown,
 }));
 
 import { AssignDriverModal } from './AssignDriverModal';
@@ -19,17 +18,8 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-const renderModal = (distributorId?: string, error?: unknown) =>
-  render(
-    <AssignDriverModal
-      open
-      onClose={vi.fn()}
-      onConfirm={vi.fn()}
-      assigning={false}
-      distributorId={distributorId}
-      error={error}
-    />,
-  );
+const renderModal = (error?: unknown) =>
+  render(<AssignDriverModal open onClose={vi.fn()} onConfirm={vi.fn()} assigning={false} error={error} />);
 
 const driver = (id: string, name: string, over: Record<string, unknown> = {}) => ({
   delivery_id: id,
@@ -41,27 +31,11 @@ const driver = (id: string, name: string, over: Record<string, unknown> = {}) =>
 });
 
 describe('AssignDriverModal', () => {
-  it('el administrador general sin empresa conocida no lista choferes de todas: pide «Ver como»', () => {
-    permissions.mockReturnValue({ needsDistributor: true });
-    drivers.mockReturnValue({ data: undefined, isPending: false });
-    renderModal();
-    expect(screen.getByText('Elegí una distribuidora')).toBeInTheDocument();
-    expect(drivers).toHaveBeenLastCalledWith('', { distributorId: undefined, enabled: false });
-  });
-
-  it('con la empresa del pedido, el administrador general lista los choferes de esa empresa', () => {
-    permissions.mockReturnValue({ needsDistributor: true });
-    drivers.mockReturnValue({ data: { rows: [], total: 0 }, isPending: false });
-    renderModal('dist-1');
-    expect(drivers).toHaveBeenLastCalledWith('', { distributorId: 'dist-1', enabled: true });
-    expect(screen.queryByText('Elegí una distribuidora')).not.toBeInTheDocument();
-  });
-
-  it('un administrador de empresa no manda empresa: la API la toma del token', () => {
+  it('lista los choferes de la empresa de la sesión (la API la toma del token o de la sesión de soporte)', () => {
     permissions.mockReturnValue({ needsDistributor: false });
     drivers.mockReturnValue({ data: { rows: [], total: 0 }, isPending: false });
-    renderModal('dist-1');
-    expect(drivers).toHaveBeenLastCalledWith('', { distributorId: undefined, enabled: true });
+    renderModal();
+    expect(drivers).toHaveBeenLastCalledWith('', { enabled: true });
   });
 
   it('lista también a los desconectados, con su estado y los en línea primero', () => {

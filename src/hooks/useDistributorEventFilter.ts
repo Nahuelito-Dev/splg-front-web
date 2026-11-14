@@ -1,24 +1,16 @@
 import { useCallback } from 'react';
-import { useCurrentDistributor } from '../services/queries/distributors';
 import { usePermissions } from './usePermissions';
 
 /**
- * Los eventos de admin del socket traen `distributorId`. El administrador general los recibe de todas las empresas:
- * si está en «Ver como X», se descartan los de otra. Un admin de empresa recibe sólo los suyos (el back lo acota por
- * sala), y el administrador general sin empresa elegida los ve todos.
+ * Los eventos de admin del socket traen `distributorId`. Un admin de empresa recibe sólo los suyos (el back lo acota
+ * por sala). El administrador general hoy todavía los recibe de todas las empresas (la sala de plataforma llega con
+ * E2): el panel descarta todos los de una empresa, porque en la plataforma no ve operación y en modo soporte no hay
+ * tiempo real (D5). Los eventos sin empresa (de plataforma) pasan siempre.
  */
 export const useDistributorEventFilter = () => {
-  const { isSuperAdmin, needsDistributor } = usePermissions();
-  const mustFilter = isSuperAdmin && !needsDistributor;
-  const { data: current } = useCurrentDistributor(mustFilter);
-  const viewingId = mustFilter ? current?.distributor_id : undefined;
-
+  const { isSuperAdminRole } = usePermissions();
   return useCallback(
-    (payload: { distributorId?: string | null } | undefined): boolean => {
-      if (!mustFilter) return true;
-      if (!payload?.distributorId) return true;
-      return Boolean(viewingId) && payload.distributorId === viewingId;
-    },
-    [mustFilter, viewingId],
+    (payload: { distributorId?: string | null } | undefined): boolean => !isSuperAdminRole || !payload?.distributorId,
+    [isSuperAdminRole],
   );
 };

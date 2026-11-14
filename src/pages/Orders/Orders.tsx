@@ -159,8 +159,6 @@ export const Orders = () => {
     );
   };
 
-  const bulkDistributorId = assignable[0]?.distributor_id;
-
   const summary: AnalyticItem[] = ORDER_FLOW.map((flowStatus) => ({
     key: flowStatus,
     label: labelOf(ORDER_STATUS, flowStatus).text,
@@ -354,13 +352,6 @@ export const Orders = () => {
         onConfirm={modal.kind === 'bulk-assign' ? handleBulkAssign : handleAssign}
         assigning={assignDelivery.isPending}
         error={assignDelivery.error}
-        distributorId={
-          modal.kind === 'assign'
-            ? modal.order.distributor_id
-            : modal.kind === 'bulk-assign'
-              ? bulkDistributorId
-              : undefined
-        }
         count={modal.kind === 'bulk-assign' ? assignable.length : 1}
         affected={modal.kind === 'bulk-assign' ? assignable.map(label) : undefined}
       />

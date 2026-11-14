@@ -11,7 +11,7 @@ import {
 import { useAdmins } from '../../../services/queries/admins';
 import { roleLabel } from '../../Users/roleLabel';
 
-/** Los administradores de una empresa: `GET /admin?distributorId=` los trae aunque se esté «viendo como» otra. */
+/** Los administradores de una empresa: `GET /admin?distributorId=` los trae desde la plataforma. */
 export const DistributorAdmins = ({ distributorId }: { distributorId: string }) => {
   const navigate = useNavigate();
   const { data, isPending, error, refetch } = useAdmins(distributorId);

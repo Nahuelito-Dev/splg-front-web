@@ -11,8 +11,7 @@ import type {
 /**
  * POST /email/password-reset (CU-047): pública, no necesita sesión. Siempre
  * devuelve el mismo mensaje exista o no la cuenta, para no revelar correos
- * registrados; por eso no viaja con el token de autenticación (`skipDistributor`
- * también evita que un slug de distribuidora viejo en localStorage la rechace).
+ * registrados; por eso no exige el token de autenticación (`public`).
  */
 export const sendPasswordReset = async (email: string): Promise<Message> => {
   const body: SendPasswordResetBody = { email };
