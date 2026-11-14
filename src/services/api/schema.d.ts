@@ -8310,6 +8310,398 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/route-plans/{date}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Planificación del día
+     * @description Estado del día (cierre, resumen de la última propuesta), las hojas vivas con sus paradas, la columna «Sin asignar» (pedidos del día sin hoja, con el motivo si no pueden ir en una) y los recursos: choferes y vehículos con su disponibilidad y la hoja confirmada que ya tengan.
+     */
+    get: operations['RoutePlansController_dia'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/route-plans/{date}/open': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Abrir la planificación del día
+     * @description Idempotente: si ya estaba abierta (o propuesta, o cerrada) devuelve el día como está. Desde que se abre, los pedidos de ese día quedan retenidos para la hoja (el despacho individual no los ofrece).
+     */
+    post: operations['RoutePlansController_abrir'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/route-plans/{date}/propose': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Proponer (o re-proponer) las hojas del día
+     * @description Reparte los pedidos del día entre los pares chofer–vehículo libres (barrido + inserción + 2-opt/Or-opt + relocate) y crea las hojas en borrador. Re-proponer rehace sólo los borradores del sistema sin ediciones; las confirmadas y las tocadas a mano se conservan con sus pedidos. Con `dryRun: true` devuelve la propuesta sin crear nada.
+     */
+    post: operations['RoutePlansController_proponer'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/route-plans/{date}/close': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Cerrar la planificación del día
+     * @description Los borradores que quedan se descartan (`dissolved`, `day_closed`) y sus pedidos vuelven al despacho del día. Las confirmadas siguen.
+     */
+    post: operations['RoutePlansController_cerrar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/route-plans/{date}/confirm-all': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Confirmar todos los borradores válidos del día
+     * @description Confirma cada borrador que cumple las reglas (sin aceptar paradas fuera de franja) y devuelve los que no pudo, con el motivo y las violaciones.
+     */
+    post: operations['RoutePlansController_confirmarTodas'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/route-plans/{date}/late-orders': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Pedidos tardíos del día
+     * @description Pedidos del día creados después del cierre que no están en ninguna hoja, con la mejor inserción factible en los borradores (hoja, posición y minutos que agrega) o `null`. Con `lateOrderPolicy = 0` no hay sugerencias (`suggestion: null`: van al despacho del día). Es una sugerencia: se inserta con `POST /route-sheets/:id/stops`.
+     */
+    get: operations['RoutePlansController_tardios'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/route-sheets': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Hojas de ruta (paginado)
+     * @description Del día más nuevo al más viejo; filtra por día, estado y chofer.
+     */
+    get: operations['RouteSheetsController_listar'];
+    put?: never;
+    /**
+     * Alta manual de una hoja
+     * @description Crea un borrador del día (abre la planificación si hacía falta) con chofer, vehículo y pedidos opcionales, en el orden dado.
+     */
+    post: operations['RouteSheetsController_crear'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/route-sheets/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Detalle de una hoja
+     * @description Paradas en orden con ETA, franja y carga; totales, capacidad y advertencias.
+     */
+    get: operations['RouteSheetsController_detalle'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Cambiar chofer, vehículo, salida o depósito
+     * @description Sólo en borrador. Recalcula horas y totales.
+     */
+    patch: operations['RouteSheetsController_editar'];
+    trace?: never;
+  };
+  '/api/v2/route-sheets/{id}/stops': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Agregar una parada
+     * @description En la posición pedida o, sin posición, en la inserción más barata que respeta franjas y capacidad.
+     */
+    post: operations['RouteSheetsController_agregar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/route-sheets/{id}/stops/{orderId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Quitar una parada
+     * @description Borrado lógico de la parada (motivo `admin`): el pedido vuelve a «Sin asignar».
+     */
+    delete: operations['RouteSheetsController_quitar'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/route-sheets/{id}/stops/{orderId}/move': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Mover una parada a otra hoja del mismo día
+     * @description Manda la versión de las dos hojas. Sin posición, la inserción más barata en la de destino. Responde las dos hojas.
+     */
+    post: operations['RouteSheetsController_mover'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/route-sheets/{id}/sequence': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Orden manual
+     * @description Exactamente las paradas de la hoja en el orden nuevo; `locked` fija posiciones. Queda `optimizationMethod: manual`.
+     */
+    put: operations['RouteSheetsController_ordenar'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/route-sheets/{id}/optimize': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Re-optimizar el orden
+     * @description Vecino más cercano con franjas + 2-opt / Or-opt, respetando las fijadas. Devuelve cómo estaba y cómo quedó.
+     */
+    post: operations['RouteSheetsController_optimizar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/route-sheets/{id}/confirm': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Confirmar la hoja
+     * @description Exige chofer y vehículo habilitados y sin otra hoja ese día, al menos una parada, la carga dentro de la capacidad y las paradas en franja (o `acceptLateStops`). Le da número a la hoja y congela la ETA prometida. NO asigna los pedidos: siguen pendientes y retenidos hasta que el chofer la inicie.
+     */
+    post: operations['RouteSheetsController_confirmar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/route-sheets/{id}/reopen': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Reabrir una hoja confirmada
+     * @description Vuelve a borrador para editarla. Sólo si no se inició y el día no está cerrado.
+     */
+    post: operations['RouteSheetsController_reabrir'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/route-sheets/{id}/cancel': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Cancelar la hoja
+     * @description Borrador o confirmada que no se inició: queda `dissolved` (`admin`), las paradas salen y los pedidos vuelven al despacho del día.
+     */
+    post: operations['RouteSheetsController_cancelar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/route-sheets/{id}/load-suggestion': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Carga sugerida por garrafa
+     * @description Llenas a cargar y vacías que vuelven del canje, para precargar la carga del camión.
+     */
+    get: operations['RouteSheetsController_cargaSugerida'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/route-sheets/{id}/pdf': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Hoja de ruta en PDF
+     * @description Número, fecha, chofer, patente, salida, paradas en orden (cliente, dirección, teléfono, franja, llegada, garrafas), totales y firma. Un borrador sale marcado como tal.
+     */
+    get: operations['RouteSheetsController_pdf'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/route-planning/settings': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Parámetros de la hoja de ruta
+     * @description Los valores vigentes con su rango y omisión. Los mismos de `GET /module-config/route_planning`.
+     */
+    get: operations['RoutePlanningSettingsController_settings'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Cambiar parámetros de la hoja de ruta
+     * @description Cambia sólo los que vienen; el resto conserva su valor.
+     */
+    patch: operations['RoutePlanningSettingsController_patch'];
+    trace?: never;
+  };
   '/api/v2/repurchase/forecast': {
     parameters: {
       query?: never;
@@ -18407,7 +18799,9 @@ export interface components {
         | 'process_run_watch'
         | 'process_run_purge'
         | 'document_reading'
-        | 'document_reading_proposals';
+        | 'document_reading_proposals'
+        | 'route_planning_propose'
+        | 'route_planning_close_days';
       /** @example Recompra: invitaciones anticipadas */
       title: string;
       /**
@@ -18476,7 +18870,9 @@ export interface components {
         | 'process_run_watch'
         | 'process_run_purge'
         | 'document_reading'
-        | 'document_reading_proposals';
+        | 'document_reading_proposals'
+        | 'route_planning_propose'
+        | 'route_planning_close_days';
       /** @example Recompra: invitaciones anticipadas */
       title: string;
       /**
@@ -19256,6 +19652,446 @@ export interface components {
       accepted: boolean;
       /** @description Pedidos que quedaron asignados al chofer (al aceptar). Un pedido que se canceló o se asignó aparte mientras tanto no cuenta. */
       assignedOrders: number;
+    };
+    RoutePlanSummaryDto: {
+      candidates: number;
+      sheets: number;
+      unassigned: number;
+      method: string;
+      matrixSource: string;
+    };
+    RoutePlanDto: {
+      /** @example 2026-11-14 */
+      date: string;
+      /** @enum {string} */
+      status: 'open' | 'proposed' | 'closed';
+      /**
+       * Format: date-time
+       * @description Cierre de la planificación (D−1 a la hora del parámetro)
+       */
+      cutoffAt: string;
+      /** Format: date-time */
+      proposedAt: string | null;
+      summary: components['schemas']['RoutePlanSummaryDto'] | null;
+      /** Format: date-time */
+      closedAt: string | null;
+    };
+    RouteSheetTotalsDto: {
+      distanceKm: number;
+      /** @description Viaje + servicio + esperas */
+      durationMin: number;
+      /** @description Garrafas llenas a cargar */
+      units: number;
+      /** @description Pico de envases a bordo */
+      peakUnits: number;
+      /** @description Kilos de gas a cargar */
+      weightKg: number;
+    };
+    RouteSheetCapacityDto: {
+      /** @description null: el vehículo no tiene capacidad cargada */
+      kg: number | null;
+      units: number | null;
+    };
+    RouteSheetStopDto: {
+      /** Format: uuid */
+      orderId: string;
+      /** @description Orden en la hoja (1 = primera) */
+      sequence: number;
+      /** @description El administrador fijó la posición: el optimizador no la mueve */
+      locked: boolean;
+      customerName: string | null;
+      customerPhone: string | null;
+      address: string | null;
+      lat: number | null;
+      lng: number | null;
+      /** @example Mañana */
+      slotName: string | null;
+      /** Format: date-time */
+      slotStart: string | null;
+      /** Format: date-time */
+      slotEnd: string | null;
+      /**
+       * Format: date-time
+       * @description Llegada estimada vigente
+       */
+      etaAt: string | null;
+      /**
+       * Format: date-time
+       * @description Llegada prometida (congelada al confirmar)
+       */
+      plannedEtaAt: string | null;
+      /** @description Kilómetros desde la parada anterior */
+      legDistanceKm: number;
+      /** @description Minutos desde la parada anterior */
+      legDurationMin: number | null;
+      /** @description Llegaría después de que cierra su franja */
+      late: boolean;
+      /** @description Garrafas llenas a entregar */
+      units: number;
+      /** @description Kilos de gas a entregar */
+      weightKg: number;
+      /** @description Mercado Pago todavía sin pagar (entra con advertencia) */
+      unpaidOnline: boolean;
+    };
+    RouteSheetWarningDto: {
+      /** @enum {string} */
+      code:
+        | 'late_stops'
+        | 'no_capacity'
+        | 'capacity'
+        | 'straight_line'
+        | 'no_warehouse'
+        | 'unpaid_online'
+        | 'stops_not_plannable';
+      message: string;
+    };
+    RouteSheetDto: {
+      /** Format: uuid */
+      id: string;
+      /** @description Número de hoja: se asigna al confirmar */
+      number: number | null;
+      /** @example 2026-11-14 */
+      planDate: string;
+      /** @enum {string} */
+      status: 'draft' | 'confirmed' | 'assigned' | 'completed' | 'dissolved';
+      /** @description Versión: toda edición la manda y recibe 409 si cambió */
+      version: number;
+      /** Format: uuid */
+      deliveryId: string | null;
+      driverName: string | null;
+      /** Format: uuid */
+      carId: string | null;
+      carPatent: string | null;
+      /** Format: uuid */
+      originWarehouseId: string | null;
+      /** Format: date-time */
+      plannedStartAt: string | null;
+      /** @enum {string|null} */
+      proposedBy: 'system' | 'admin' | null;
+      /** @enum {string|null} */
+      optimizationMethod: 'nn_2opt' | 'manual' | null;
+      /** @enum {string|null} */
+      matrixSource: 'osrm' | 'google' | 'haversine' | null;
+      /** Format: date-time */
+      editedAt: string | null;
+      /** Format: date-time */
+      confirmedAt: string | null;
+      /** Format: date-time */
+      closedAt: string | null;
+      /** @enum {string|null} */
+      closeReason: 'admin' | 'day_closed' | 'exhausted' | 'orders_unavailable' | null;
+      totals: components['schemas']['RouteSheetTotalsDto'];
+      capacity: components['schemas']['RouteSheetCapacityDto'];
+      stops: components['schemas']['RouteSheetStopDto'][];
+      warnings: components['schemas']['RouteSheetWarningDto'][];
+    };
+    UnassignedOrderDto: {
+      /** Format: uuid */
+      orderId: string;
+      customerName: string | null;
+      address: string | null;
+      lat: number | null;
+      lng: number | null;
+      slotName: string | null;
+      /** Format: date-time */
+      slotStart: string | null;
+      /** Format: date-time */
+      slotEnd: string | null;
+      units: number;
+      weightKg: number;
+      /** @description Por qué no puede ir en una hoja (null: se puede agregar) */
+      blockedReason: string | null;
+    };
+    DriverResourceDto: {
+      /** Format: uuid */
+      deliveryId: string;
+      name: string | null;
+      /** @description Habilitado para repartir */
+      available: boolean;
+      /**
+       * Format: uuid
+       * @description Hoja confirmada o en curso de ese día
+       */
+      busySheetId: string | null;
+      /** Format: uuid */
+      usualCarId: string | null;
+    };
+    CarResourceDto: {
+      /** Format: uuid */
+      carId: string;
+      patent: string | null;
+      description: string | null;
+      capacityKg: number | null;
+      capacityUnits: number | null;
+      available: boolean;
+      /** Format: uuid */
+      busySheetId: string | null;
+    };
+    RoutePlanResourcesDto: {
+      drivers: components['schemas']['DriverResourceDto'][];
+      cars: components['schemas']['CarResourceDto'][];
+    };
+    RoutePlanDayDto: {
+      plan: components['schemas']['RoutePlanDto'];
+      /** @description Hojas vivas del día (sin las canceladas) */
+      sheets: components['schemas']['RouteSheetDto'][];
+      /** @description Columna «Sin asignar» */
+      unassigned: components['schemas']['UnassignedOrderDto'][];
+      resources: components['schemas']['RoutePlanResourcesDto'];
+    };
+    ProposeRoutePlanDto: {
+      /**
+       * @description true: calcula la propuesta y la devuelve sin crear hojas
+       * @default false
+       */
+      dryRun: boolean;
+    };
+    ProposedSheetDto: {
+      /**
+       * Format: uuid
+       * @description null en una corrida de prueba
+       */
+      sheetId: string | null;
+      /** Format: uuid */
+      deliveryId: string;
+      /** Format: uuid */
+      carId: string;
+      orderIds: string[];
+      distanceKm: number;
+      durationMin: number;
+      units: number;
+      peakUnits: number;
+      weightKg: number;
+    };
+    ProposalUnassignedDto: {
+      /** Format: uuid */
+      orderId: string;
+      /**
+       * @description `in_route`: mientras se armaba la propuesta, el administrador lo puso en otra hoja
+       * @enum {string}
+       */
+      reason:
+        | 'capacity'
+        | 'window'
+        | 'window_unverified'
+        | 'no_point'
+        | 'no_vehicles'
+        | 'not_plannable'
+        | 'dispatch_offer'
+        | 'in_route';
+    };
+    RoutePlanProposalDto: {
+      dryRun: boolean;
+      candidates: number;
+      /** @enum {string} */
+      matrixSource: 'osrm' | 'haversine';
+      sheets: components['schemas']['ProposedSheetDto'][];
+      unassigned: components['schemas']['ProposalUnassignedDto'][];
+      /** @description Hojas que se conservaron (confirmadas o tocadas a mano) */
+      keptSheetIds: string[];
+    };
+    RouteSheetViolationDto: {
+      /** @enum {string} */
+      code:
+        | 'driver_missing'
+        | 'car_missing'
+        | 'no_stops'
+        | 'driver_unavailable'
+        | 'car_unavailable'
+        | 'driver_taken'
+        | 'car_taken'
+        | 'capacity_kg'
+        | 'capacity_units'
+        | 'late_stops'
+        | 'stops_not_plannable';
+      message: string;
+      orderIds?: string[];
+    };
+    ConfirmAllFailureDto: {
+      /** Format: uuid */
+      sheetId: string;
+      message: string;
+      violations: components['schemas']['RouteSheetViolationDto'][];
+    };
+    ConfirmAllResponseDto: {
+      confirmed: string[];
+      failed: components['schemas']['ConfirmAllFailureDto'][];
+    };
+    LateOrderSuggestionDto: {
+      /** Format: uuid */
+      sheetId: string;
+      /** @description Posición sugerida (1 = primera) */
+      position: number;
+      /** @description Minutos que se corre el fin de la hoja */
+      addedMinutes: number;
+    };
+    LateOrderDto: {
+      /** Format: uuid */
+      orderId: string;
+      customerName: string | null;
+      address: string | null;
+      lat: number | null;
+      lng: number | null;
+      slotName: string | null;
+      /** Format: date-time */
+      slotStart: string | null;
+      /** Format: date-time */
+      slotEnd: string | null;
+      units: number;
+      weightKg: number;
+      /** @description Por qué no puede ir en una hoja (null: se puede agregar) */
+      blockedReason: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      suggestion: components['schemas']['LateOrderSuggestionDto'] | null;
+    };
+    CreateRouteSheetDto: {
+      /** @example 2026-11-14 */
+      planDate: string;
+      /**
+       * Format: uuid
+       * @description Chofer (`delivery_id`)
+       */
+      deliveryId?: string;
+      /** Format: uuid */
+      carId?: string;
+      /** @description Pedidos del día, en el orden de entrega */
+      orderIds?: string[];
+    };
+    RouteSheetPageDto: {
+      items: components['schemas']['RouteSheetDto'][];
+      total: number;
+      limit: number;
+      offset: number;
+    };
+    UpdateRouteSheetDto: {
+      /** @description Versión de la hoja que vio quien edita */
+      version: number;
+      /** Format: uuid */
+      deliveryId?: string;
+      /** Format: uuid */
+      carId?: string;
+      /**
+       * Format: date-time
+       * @description Hora de salida prevista
+       */
+      plannedStartAt?: string;
+      /**
+       * Format: uuid
+       * @description Depósito de salida
+       */
+      originWarehouseId?: string;
+    };
+    AddRouteSheetStopDto: {
+      /** @description Versión de la hoja que vio quien edita */
+      version: number;
+      /** Format: uuid */
+      orderId: string;
+      /** @description Posición (1 = primera). Sin posición: la inserción más barata que respeta franjas y capacidad */
+      position?: number;
+      /**
+       * @description Fija la posición: el optimizador no la mueve
+       * @default false
+       */
+      lock: boolean;
+      /**
+       * @description Acepta que la parada quede fuera de franja (en la posición pedida o, sin posición, donde menos se atrasa) en vez de responder 409. La capacidad del vehículo no se puede saltear
+       * @default false
+       */
+      acceptLateStops: boolean;
+    };
+    VersionRouteSheetDto: {
+      /** @description Versión de la hoja que vio quien edita */
+      version: number;
+    };
+    MoveRouteSheetStopDto: {
+      /** @description Versión de la hoja que vio quien edita */
+      version: number;
+      /** Format: uuid */
+      targetSheetId: string;
+      /** @description Versión de la hoja de destino */
+      targetVersion: number;
+      /** @description Posición en la hoja de destino (sin ella: la más barata) */
+      position?: number;
+      /**
+       * @description Acepta que la parada (u otras de la hoja de destino) quede fuera de franja; sin esto, 409 ROUTE_STOP_NOT_FEASIBLE
+       * @default false
+       */
+      acceptLateStops: boolean;
+    };
+    RouteSheetMoveResponseDto: {
+      source: components['schemas']['RouteSheetDto'];
+      target: components['schemas']['RouteSheetDto'];
+    };
+    SetRouteSheetSequenceDto: {
+      /** @description Versión de la hoja que vio quien edita */
+      version: number;
+      /** @description Exactamente las paradas de la hoja, en el orden nuevo */
+      orderIds: string[];
+      /** @description Paradas cuya posición queda fija (reemplaza a las fijadas antes; sin el campo se conservan) */
+      locked?: string[];
+    };
+    RouteOrderSummaryDto: {
+      durationMin: number;
+      distanceKm: number;
+      lateStops: number;
+    };
+    RouteSheetOptimizeResponseDto: {
+      before: components['schemas']['RouteOrderSummaryDto'];
+      after: components['schemas']['RouteOrderSummaryDto'];
+      sheet: components['schemas']['RouteSheetDto'];
+    };
+    ConfirmRouteSheetDto: {
+      /** @description Versión de la hoja que vio quien edita */
+      version: number;
+      /**
+       * @description Confirma aunque haya paradas que llegan fuera de su franja (quedan advertidas)
+       * @default false
+       */
+      acceptLateStops: boolean;
+    };
+    RouteSheetNotConfirmableDto: {
+      /** @example 409 */
+      statusCode: number;
+      message: string;
+      /** @example ROUTE_SHEET_NOT_CONFIRMABLE */
+      code: string;
+      violations: components['schemas']['RouteSheetViolationDto'][];
+    };
+    LoadSuggestionItemDto: {
+      /** Format: uuid */
+      gasCylinderId: string;
+      type: string | null;
+      /** @description Llenas a cargar */
+      fullUnits: number;
+      /** @description Vacías que vuelven del canje */
+      emptyUnitsBack: number;
+    };
+    LoadSuggestionDto: {
+      /** Format: uuid */
+      sheetId: string;
+      items: components['schemas']['LoadSuggestionItemDto'][];
+    };
+    PatchRoutePlanningSettingsDto: {
+      /** @description 1 enciende la hoja de ruta */
+      enabled?: number;
+      /** @description Hora del cierre del día anterior */
+      cutoffHour?: number;
+      cutoffMinute?: number;
+      /** @description Al cierre, el sistema arma la propuesta solo */
+      autoPropose?: number;
+      maxStopsPerSheet?: number;
+      /** @description Minutos por parada */
+      serviceMinutes?: number;
+      /** @description Multiplica los tiempos de OSRM */
+      trafficFactor?: number;
+      etaWindowMinutes?: number;
+      etaRecalcMinSeconds?: number;
+      etaRecalcMinMeters?: number;
+      etaNotifyShiftMinutes?: number;
+      /** @description 0: el tardío va a M1; 1: se sugiere la hoja */
+      lateOrderPolicy?: number;
+      notStartedAlertMinutes?: number;
     };
     RepurchaseCustomerRefDto: {
       /**
@@ -38548,7 +39384,7 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Si el chofer no puede recibir pedidos por su carga de camión (sin carga con el control activo, carga sin salir o ya devuelta), `orders` viene vacío, `openLoadRequired` es true y `message` dice por qué ("Abrí tu carga para recibir pedidos"). La app también lo sabe por `GET /truck-loads/mine`. */
+      /** @description Pedidos pendientes sin chofer de la distribuidora. No incluye las paradas de un recorrido que se está ofreciendo (M4) ni las de una hoja de ruta en borrador o confirmada (F34): vuelven al listado si se sacan de la hoja o la hoja se cancela. Si el chofer no puede recibir pedidos por su carga de camión (sin carga con el control activo, carga sin salir o ya devuelta), `orders` viene vacío, `openLoadRequired` es true y `message` dice por qué ("Abrí tu carga para recibir pedidos"). La app también lo sabe por `GET /truck-loads/mine`. */
       200: {
         headers: {
           [name: string]: unknown;
@@ -38966,7 +39802,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Aceptar (`accepted`) un pedido de Mercado Pago cuyo pago todavía no está aprobado (salvo una reserva con la seña paga), o, siendo chofer, tener ya otro pedido aceptado esperando (CU-013: nunca dos encolados; repetir la aceptación del mismo pedido no cuenta) */
+      /** @description Aceptar (`accepted`) un pedido de Mercado Pago cuyo pago todavía no está aprobado (salvo una reserva con la seña paga), o, siendo chofer, tener ya otro pedido aceptado esperando (CU-013: nunca dos encolados; repetir la aceptación del mismo pedido no cuenta), o aceptar un pedido que es parada de un recorrido que se está ofreciendo (M4), o aceptar o asignar un pedido que es parada de una hoja de ruta en borrador o confirmada (`code: ORDER_IN_ROUTE_SHEET`: lo lleva el chofer de la hoja; hay que sacarlo de la hoja primero) */
       409: {
         headers: {
           [name: string]: unknown;
@@ -39530,7 +40366,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description El pedido se paga con Mercado Pago y el pago todavía no está aprobado */
+      /** @description El pedido se paga con Mercado Pago y el pago todavía no está aprobado, o es parada de una hoja de ruta en borrador o confirmada (`code: ORDER_IN_ROUTE_SHEET`): no se asigna ni se reasigna por fuera de la hoja */
       409: {
         headers: {
           [name: string]: unknown;
@@ -46266,7 +47102,9 @@ export interface operations {
           | 'process_run_watch'
           | 'process_run_purge'
           | 'document_reading'
-          | 'document_reading_proposals';
+          | 'document_reading_proposals'
+          | 'route_planning_propose'
+          | 'route_planning_close_days';
         status?: 'running' | 'ok' | 'partial' | 'failed' | 'skipped';
         /** @description Corridas que arrancaron desde este instante (ISO 8601; un día suelto es 00:00 UTC) */
         from?: string;
@@ -49527,6 +50365,1200 @@ export interface operations {
       };
       /** @description La oferta no está vigente */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RoutePlansController_dia: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Día de reparto (YYYY-MM-DD, hora argentina) */
+        date: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RoutePlanDayDto'];
+        };
+      };
+      /** @description Falta la distribuidora (super admin sin X-Distributor) o la fecha no tiene el formato AAAA-MM-DD */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El día no tiene planificación abierta (ROUTE_PLAN_NOT_FOUND) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RoutePlansController_abrir: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Día de reparto (YYYY-MM-DD, hora argentina) */
+        date: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RoutePlanDayDto'];
+        };
+      };
+      /** @description Falta la distribuidora (super admin sin X-Distributor) o la fecha no tiene el formato AAAA-MM-DD */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El día ya pasó (ROUTE_PLAN_DATE_PAST) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RoutePlansController_proponer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Día de reparto (YYYY-MM-DD, hora argentina) */
+        date: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ProposeRoutePlanDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RoutePlanProposalDto'];
+        };
+      };
+      /** @description Falta la distribuidora (super admin sin X-Distributor) o la fecha no tiene el formato AAAA-MM-DD */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Hoja de ruta apagada (ROUTE_PLANNING_DISABLED), día cerrado (ROUTE_PLAN_CLOSED), día pasado (ROUTE_PLAN_DATE_PAST) o ya se está proponiendo (ROUTE_PLAN_BUSY) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RoutePlansController_cerrar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Día de reparto (YYYY-MM-DD, hora argentina) */
+        date: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RoutePlanDayDto'];
+        };
+      };
+      /** @description Falta la distribuidora (super admin sin X-Distributor) o la fecha no tiene el formato AAAA-MM-DD */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El día no tiene planificación (ROUTE_PLAN_NOT_FOUND) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya estaba cerrada (ROUTE_PLAN_CLOSED) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RoutePlansController_confirmarTodas: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Día de reparto (YYYY-MM-DD, hora argentina) */
+        date: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ConfirmAllResponseDto'];
+        };
+      };
+      /** @description Falta la distribuidora (super admin sin X-Distributor) o la fecha no tiene el formato AAAA-MM-DD */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El día no tiene planificación (ROUTE_PLAN_NOT_FOUND) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RoutePlansController_tardios: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Día de reparto (YYYY-MM-DD, hora argentina) */
+        date: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['LateOrderDto'][];
+        };
+      };
+      /** @description Falta la distribuidora (super admin sin X-Distributor) o la fecha no tiene el formato AAAA-MM-DD */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El día no tiene planificación (ROUTE_PLAN_NOT_FOUND) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RouteSheetsController_listar: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+        page?: number;
+        /** @description Texto a buscar */
+        term?: string;
+        date?: string;
+        status?: 'draft' | 'confirmed' | 'assigned' | 'completed' | 'dissolved';
+        deliveryId?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RouteSheetPageDto'];
+        };
+      };
+      /** @description Cuerpo inválido, id que no es UUID o falta la distribuidora (super admin sin X-Distributor) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RouteSheetsController_crear: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateRouteSheetDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RouteSheetDto'];
+        };
+      };
+      /** @description Cuerpo inválido, id que no es UUID o falta la distribuidora (super admin sin X-Distributor) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Chofer, vehículo o pedido inexistente o de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Día pasado o cerrado, pedido ya en otra hoja o lote (ORDER_ALREADY_IN_ROUTE), pedido que no es de ese día o no está pendiente (ORDER_NOT_PLANNABLE), o más paradas que el máximo */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RouteSheetsController_detalle: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RouteSheetDto'];
+        };
+      };
+      /** @description Cuerpo inválido, id que no es UUID o falta la distribuidora (super admin sin X-Distributor) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La hoja no existe o es de otra distribuidora (ROUTE_SHEET_NOT_FOUND) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RouteSheetsController_editar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateRouteSheetDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RouteSheetDto'];
+        };
+      };
+      /** @description Cuerpo inválido, id que no es UUID o falta la distribuidora (super admin sin X-Distributor) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La hoja no existe o es de otra distribuidora (ROUTE_SHEET_NOT_FOUND); o chofer, vehículo o depósito de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Otro administrador cambió la hoja (ROUTE_SHEET_VERSION_CONFLICT), la hoja no está en borrador (ROUTE_SHEET_NOT_EDITABLE) o se está editando en otra sesión (ROUTE_SHEET_BUSY); o el chofer o el vehículo ya tienen otra hoja confirmada ese día */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RouteSheetsController_agregar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AddRouteSheetStopDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RouteSheetDto'];
+        };
+      };
+      /** @description Cuerpo inválido, id que no es UUID o falta la distribuidora (super admin sin X-Distributor) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La hoja no existe o es de otra distribuidora (ROUTE_SHEET_NOT_FOUND); o el pedido no existe o es de otra distribuidora (ORDER_NOT_FOUND) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Otro administrador cambió la hoja (ROUTE_SHEET_VERSION_CONFLICT), la hoja no está en borrador (ROUTE_SHEET_NOT_EDITABLE) o se está editando en otra sesión (ROUTE_SHEET_BUSY); pedido ya en otra hoja o lote, que no es de ese día o no está pendiente, o que no entra (ROUTE_STOP_NOT_FEASIBLE): en la posición pedida o en ninguna, por franja (salvo acceptLateStops), capacidad del vehículo o máximo de paradas */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RouteSheetsController_quitar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+        orderId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['VersionRouteSheetDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RouteSheetDto'];
+        };
+      };
+      /** @description Cuerpo inválido, id que no es UUID o falta la distribuidora (super admin sin X-Distributor) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La hoja no existe o es de otra distribuidora (ROUTE_SHEET_NOT_FOUND); o el pedido no es parada de la hoja (ROUTE_STOP_NOT_FOUND) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Otro administrador cambió la hoja (ROUTE_SHEET_VERSION_CONFLICT), la hoja no está en borrador (ROUTE_SHEET_NOT_EDITABLE) o se está editando en otra sesión (ROUTE_SHEET_BUSY) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RouteSheetsController_mover: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+        orderId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MoveRouteSheetStopDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RouteSheetMoveResponseDto'];
+        };
+      };
+      /** @description Cuerpo inválido, id que no es UUID o falta la distribuidora (super admin sin X-Distributor); o la hoja de destino es la misma (ROUTE_SHEET_SAME_TARGET) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La hoja no existe o es de otra distribuidora (ROUTE_SHEET_NOT_FOUND) (cualquiera de las dos); o el pedido no es parada de la hoja */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Otro administrador cambió la hoja (ROUTE_SHEET_VERSION_CONFLICT), la hoja no está en borrador (ROUTE_SHEET_NOT_EDITABLE) o se está editando en otra sesión (ROUTE_SHEET_BUSY) (cualquiera de las dos); hojas de días distintos (ROUTE_SHEET_OTHER_DAY) o no entra en la de destino (ROUTE_STOP_NOT_FEASIBLE: franja salvo acceptLateStops, capacidad o máximo de paradas) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RouteSheetsController_ordenar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SetRouteSheetSequenceDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RouteSheetDto'];
+        };
+      };
+      /** @description Cuerpo inválido, id que no es UUID o falta la distribuidora (super admin sin X-Distributor); o no son exactamente las paradas de la hoja (ROUTE_SHEET_SEQUENCE_INVALID) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La hoja no existe o es de otra distribuidora (ROUTE_SHEET_NOT_FOUND) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Otro administrador cambió la hoja (ROUTE_SHEET_VERSION_CONFLICT), la hoja no está en borrador (ROUTE_SHEET_NOT_EDITABLE) o se está editando en otra sesión (ROUTE_SHEET_BUSY) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RouteSheetsController_optimizar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['VersionRouteSheetDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RouteSheetOptimizeResponseDto'];
+        };
+      };
+      /** @description Cuerpo inválido, id que no es UUID o falta la distribuidora (super admin sin X-Distributor) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La hoja no existe o es de otra distribuidora (ROUTE_SHEET_NOT_FOUND) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Otro administrador cambió la hoja (ROUTE_SHEET_VERSION_CONFLICT), la hoja no está en borrador (ROUTE_SHEET_NOT_EDITABLE) o se está editando en otra sesión (ROUTE_SHEET_BUSY) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RouteSheetsController_confirmar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ConfirmRouteSheetDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RouteSheetDto'];
+        };
+      };
+      /** @description Cuerpo inválido, id que no es UUID o falta la distribuidora (super admin sin X-Distributor) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La hoja no existe o es de otra distribuidora (ROUTE_SHEET_NOT_FOUND) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Otro administrador cambió la hoja (ROUTE_SHEET_VERSION_CONFLICT), la hoja no está en borrador (ROUTE_SHEET_NOT_EDITABLE) o se está editando en otra sesión (ROUTE_SHEET_BUSY); o no cumple las reglas (ROUTE_SHEET_NOT_CONFIRMABLE, con `violations[]`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RouteSheetNotConfirmableDto'];
+        };
+      };
+    };
+  };
+  RouteSheetsController_reabrir: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['VersionRouteSheetDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RouteSheetDto'];
+        };
+      };
+      /** @description Cuerpo inválido, id que no es UUID o falta la distribuidora (super admin sin X-Distributor) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La hoja no existe o es de otra distribuidora (ROUTE_SHEET_NOT_FOUND) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Otro administrador cambió la hoja (ROUTE_SHEET_VERSION_CONFLICT), la hoja no está en borrador (ROUTE_SHEET_NOT_EDITABLE) o se está editando en otra sesión (ROUTE_SHEET_BUSY); no está confirmada o ya se inició; o el día está cerrado (ROUTE_PLAN_CLOSED) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RouteSheetsController_cancelar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['VersionRouteSheetDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RouteSheetDto'];
+        };
+      };
+      /** @description Cuerpo inválido, id que no es UUID o falta la distribuidora (super admin sin X-Distributor) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La hoja no existe o es de otra distribuidora (ROUTE_SHEET_NOT_FOUND) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Otro administrador cambió la hoja (ROUTE_SHEET_VERSION_CONFLICT), la hoja no está en borrador (ROUTE_SHEET_NOT_EDITABLE) o se está editando en otra sesión (ROUTE_SHEET_BUSY); o ya se inició o está cerrada */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RouteSheetsController_cargaSugerida: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['LoadSuggestionDto'];
+        };
+      };
+      /** @description Cuerpo inválido, id que no es UUID o falta la distribuidora (super admin sin X-Distributor) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La hoja no existe o es de otra distribuidora (ROUTE_SHEET_NOT_FOUND) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RouteSheetsController_pdf: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description El PDF (A4) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/pdf': string;
+        };
+      };
+      /** @description Cuerpo inválido, id que no es UUID o falta la distribuidora (super admin sin X-Distributor) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La hoja no existe o es de otra distribuidora (ROUTE_SHEET_NOT_FOUND) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RoutePlanningSettingsController_settings: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProcessConfigResponseDto'];
+        };
+      };
+      /** @description Falta la distribuidora (super admin sin X-Distributor) o la fecha no tiene el formato AAAA-MM-DD */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RoutePlanningSettingsController_patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PatchRoutePlanningSettingsDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProcessConfigResponseDto'];
+        };
+      };
+      /** @description Valor fuera de rango o falta la distribuidora */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`) */
+      403: {
         headers: {
           [name: string]: unknown;
         };

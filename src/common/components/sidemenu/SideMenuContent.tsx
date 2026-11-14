@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Tooltip } from '@mui/material';
 import { ChevronDown, LogOut } from 'lucide-react';
-import { useAppSelector } from '../../../hooks';
+import { allows, useAppSelector } from '../../../hooks';
 import { useOrders } from '../../../services/queries/orders';
+import { useMyPermissions } from '../../../services/queries/permissions';
 import { useMyAccount } from '../../../services/queries/users';
 import { LogoSplg } from '../LogoSplg';
 import { cx } from '../ui/cx';
@@ -48,6 +49,8 @@ export const SideMenuContent = ({ isSuperAdmin, fullName, mini = false, onNaviga
   const pendingCount = pending?.total ?? 0;
   const { email } = useAppSelector((state) => state.auth);
   const { data: account } = useMyAccount(email);
+  // Mientras no se saben los permisos (o si no se pudieron leer) no se esconde nada: la API igual decide.
+  const { data: permissions } = useMyPermissions(email);
   const [collapsed, setCollapsed] = useState<string[]>(readCollapsedSections);
 
   const toggleSection = (title: string) => {
@@ -69,7 +72,11 @@ export const SideMenuContent = ({ isSuperAdmin, fullName, mini = false, onNaviga
 
       <nav aria-label="Secciones del panel" className="relative -mx-3.5 flex-1 space-y-1.5 overflow-y-auto px-3.5">
         {NAV_SECTIONS.map((section) => {
-          const items = section.items.filter((item) => !item.superAdminOnly || isSuperAdmin);
+          const items = section.items.filter(
+            (item) =>
+              (!item.superAdminOnly || isSuperAdmin) &&
+              (!item.permission || !permissions || allows(permissions, item.permission)),
+          );
           if (items.length === 0) return null;
           const isOpen = mini || !collapsed.includes(section.title);
           const panelId = `nav-section-${section.title}`;

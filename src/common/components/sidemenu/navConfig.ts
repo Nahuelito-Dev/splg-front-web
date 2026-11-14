@@ -58,6 +58,7 @@ import {
   Tags,
   Wallet,
   type LucideIcon,
+  Waypoints,
   Wrench,
   Route as RouteIcon,
 } from 'lucide-react';
@@ -70,6 +71,8 @@ export interface NavItem {
   showPendingOrders?: boolean;
   /** Sin esto lo ve cualquier sesión autenticada (admin o super_admin). */
   superAdminOnly?: boolean;
+  /** Permiso del catálogo que hace falta (`GET /me/permissions`); sin él, el ítem no se muestra. */
+  permission?: string;
 }
 
 export interface NavSection {
@@ -91,6 +94,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { title: 'Tablero de despacho', path: '/orders/dispatch', icon: Columns3 },
       { title: 'Seguimiento en vivo', path: '/tracking', icon: Navigation },
       { title: 'Recorridos', path: '/route-batches', icon: RouteIcon },
+      { title: 'Hojas de ruta', path: '/route-sheets', icon: Waypoints, permission: 'despacho.gestionar' },
       { title: 'Reservas', path: '/reservations', icon: CalendarDays },
     ],
   },
