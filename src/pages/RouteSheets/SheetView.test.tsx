@@ -56,6 +56,7 @@ const notifications = vi.hoisted(() => ({
 }));
 vi.mock('../../utils/notifications', () => notifications);
 
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { SheetView } from './SheetView';
 
 const draw = (current: RouteSheet = sheet()) =>
@@ -246,5 +247,36 @@ describe('SheetView: acciones de la hoja', () => {
       planDate: '2026-11-14',
       number: 12,
     });
+  });
+});
+
+describe('SheetView: aviso de depósito sin ubicar', () => {
+  const withWarnings = (warnings: RouteSheet['warnings']) => {
+    const current = sheet({ warnings });
+    state.detail = current;
+    return render(
+      <MemoryRouter initialEntries={['/route-sheets']}>
+        <Routes>
+          <Route
+            path="/route-sheets"
+            element={<SheetView day={planDay({ sheets: [current] })} sheetId={current.id} canWrite onPick={vi.fn()} />}
+          />
+          <Route path="/stock/warehouses" element={<p>pantalla de galpones</p>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+  };
+
+  it('«Sin depósito de salida ubicado» lleva a Galpones para ubicarlo', () => {
+    withWarnings([{ code: 'no_warehouse', message: 'Sin depósito de salida ubicado' }]);
+    expect(screen.getByText(/Sin depósito de salida ubicado/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('link', { name: 'Ubicar el depósito' }));
+    expect(screen.getByText('pantalla de galpones')).toBeInTheDocument();
+  });
+
+  it('los demás avisos no llevan el link', () => {
+    withWarnings([{ code: 'late_stops', message: 'Hay paradas fuera de su franja' }]);
+    expect(screen.getByText(/Hay paradas fuera de su franja/)).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Ubicar el depósito' })).not.toBeInTheDocument();
   });
 });

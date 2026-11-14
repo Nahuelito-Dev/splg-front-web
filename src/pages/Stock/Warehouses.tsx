@@ -16,11 +16,14 @@ import {
   PageContainer,
 } from '../../common/components/ui';
 import { usePermissions } from '../../hooks';
-import type { Warehouse } from '../../services/api/types';
+import type { WarehouseV2 as Warehouse } from '../../services/api/types';
 import { useDeleteWarehouse, useUpdateWarehouse, useWarehouses } from '../../services/queries/stock';
 import { confirm, notify } from '../../utils/notifications';
 import { WAREHOUSE_KIND, labelOf } from '../../utils/statusLabels';
 import { WarehouseFormModal } from './components/WarehouseFormModal';
+
+/** Tiene punto de salida para las hojas de ruta. */
+const isLocated = (row: Warehouse) => row.latitude != null && row.longitude != null;
 
 /** Galpones (depósitos) de la distribuidora: alta, edición, baja lógica y cuál es el predeterminado. */
 export const Warehouses = () => {
@@ -75,6 +78,10 @@ export const Warehouses = () => {
         ]
       : [];
 
+  const locationBadge = (row: Warehouse) => (
+    <Badge label={isLocated(row) ? { text: 'Ubicado', tone: 'neutral' } : { text: 'Sin ubicar', tone: 'warn' }} />
+  );
+
   const statusBadges = (row: Warehouse) => (
     <span className="flex flex-wrap gap-1.5">
       {row.isDefault && <Badge label={{ text: 'Predeterminado', tone: 'primary' }} />}
@@ -100,11 +107,16 @@ export const Warehouses = () => {
     },
     {
       field: 'address',
-      headerName: 'Dirección',
+      headerName: 'Dirección y ubicación',
       flex: 1,
-      minWidth: 160,
+      minWidth: 220,
       sortable: false,
-      renderCell: ({ row }) => <span className="truncate text-muted">{row.address ?? '—'}</span>,
+      renderCell: ({ row }) => (
+        <span className="flex min-w-0 items-center gap-2">
+          {locationBadge(row)}
+          <span className="truncate text-muted">{row.address ?? '—'}</span>
+        </span>
+      ),
     },
     {
       field: 'status',
@@ -174,6 +186,7 @@ export const Warehouses = () => {
                 <div className="flex flex-wrap items-center gap-2 text-sm">
                   <Badge label={labelOf(WAREHOUSE_KIND, row.kind)} />
                   {statusBadges(row)}
+                  {locationBadge(row)}
                 </div>
                 {row.address && <p className="text-sm text-muted">{row.address}</p>}
                 <div className="flex flex-wrap gap-2">

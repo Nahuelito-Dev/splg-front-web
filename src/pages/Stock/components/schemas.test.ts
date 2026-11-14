@@ -43,7 +43,7 @@ describe('transferSchema', () => {
 });
 
 describe('warehouseSchema', () => {
-  const w = { name: 'Norte', code: 'NORTE', kind: 'depot', address: '', isDefault: false };
+  const w = { name: 'Norte', code: 'NORTE', kind: 'depot', address: '', isDefault: false, latitude: '', longitude: '' };
   it('acepta un galpón', () => expect(warehouseSchema.safeParse(w).success).toBe(true));
   it('el código: hasta 12 y sin espacios', () => {
     expect(warehouseSchema.safeParse({ ...w, code: 'A'.repeat(13) }).success).toBe(false);
@@ -52,12 +52,21 @@ describe('warehouseSchema', () => {
 });
 
 describe('cuerpo del galpón', () => {
-  const w = { name: 'Norte', code: 'NORTE', kind: 'depot' as const, address: '', isDefault: false };
+  const w = {
+    name: 'Norte',
+    code: 'NORTE',
+    kind: 'depot' as const,
+    address: '',
+    isDefault: false,
+    latitude: '',
+    longitude: '',
+  };
+  const current = { isDefault: false, latitude: null, longitude: null };
   it('al editar, la dirección vacía se manda como null para borrarla', () =>
-    expect(warehouseUpdateBody(w, { isDefault: false })).toHaveProperty('address', null));
+    expect(warehouseUpdateBody(w, current)).toHaveProperty('address', null));
   it('al crear, la dirección vacía no se manda', () => expect(warehouseCreateBody(w).address).toBeUndefined());
   it('la marca de predeterminado sólo viaja si cambia', () => {
-    expect(warehouseUpdateBody(w, { isDefault: false })).not.toHaveProperty('isDefault');
-    expect(warehouseUpdateBody({ ...w, isDefault: true }, { isDefault: false })).toHaveProperty('isDefault', true);
+    expect(warehouseUpdateBody(w, current)).not.toHaveProperty('isDefault');
+    expect(warehouseUpdateBody({ ...w, isDefault: true }, current)).toHaveProperty('isDefault', true);
   });
 });

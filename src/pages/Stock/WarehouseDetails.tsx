@@ -113,6 +113,18 @@ export const WarehouseDetails = () => {
                 { label: 'Código', value: warehouse.code, mono: true },
                 { label: 'Tipo', value: labelOf(WAREHOUSE_KIND, warehouse.kind).text },
                 { label: 'Dirección', value: warehouse.address, wide: true },
+                {
+                  label: 'Ubicación',
+                  value:
+                    warehouse.latitude != null && warehouse.longitude != null ? (
+                      <span className="font-mono">
+                        {warehouse.latitude.toFixed(6)}, {warehouse.longitude.toFixed(6)}
+                      </span>
+                    ) : (
+                      'Sin ubicar: las hojas de ruta salen del centro de las paradas'
+                    ),
+                  wide: true,
+                },
                 { label: 'Creado', value: formatDateTime(warehouse.createdAt) },
                 {
                   label: 'Conteo inicial',

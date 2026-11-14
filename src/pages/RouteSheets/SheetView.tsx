@@ -1,5 +1,6 @@
 import { Pencil, Route as RouteIcon, TriangleAlert } from 'lucide-react';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Badge, Button, Card, EmptyState } from '../../common/components/ui';
 import type { RouteOrderSummary, RoutePlanDay, RouteSheetStop } from '../../services/api/types';
 import { useRouteSheet, useSetRouteSheetSequence, useRemoveRouteSheetStop } from '../../services/queries/routeSheets';
@@ -121,7 +122,17 @@ export const SheetView = ({ day, sheetId, canWrite, onPick }: Props) => {
           {sheet.warnings.map((w) => (
             <li key={w.code} className="flex items-start gap-2">
               <TriangleAlert aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
-              {w.message}
+              <span>
+                {w.message}
+                {w.code === 'no_warehouse' && (
+                  <>
+                    {' · '}
+                    <Link className="font-semibold underline" to="/stock/warehouses">
+                      Ubicar el depósito
+                    </Link>
+                  </>
+                )}
+              </span>
             </li>
           ))}
         </ul>

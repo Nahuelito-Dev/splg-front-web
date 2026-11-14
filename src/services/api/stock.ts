@@ -1,3 +1,4 @@
+import { env } from '../../config/env';
 import { idempotencyHeaders } from './idempotency';
 import { http } from './httpClient';
 import type {
@@ -5,7 +6,7 @@ import type {
   CreateInitialCountBody,
   CreateReconciliationAdjustmentBody,
   CreateTransferBody,
-  CreateWarehouseBody,
+  CreateWarehouseV2Body,
   Message,
   ReapplyDeliveriesResult,
   ReverseBatchBody,
@@ -19,10 +20,10 @@ import type {
   StockReconciliation,
   StockSummary,
   StockThreshold,
-  UpdateWarehouseBody,
+  UpdateWarehouseV2Body,
   UpsertThresholdsBody,
-  Warehouse,
-  WarehouseDetail,
+  WarehouseV2,
+  WarehouseV2Detail,
 } from './types';
 
 /** Una página del back de stock: `page` desde 1. */
@@ -33,31 +34,33 @@ export interface ListParams {
 
 const paging = ({ page, pageSize }: ListParams) => ({ page: page + 1, limit: pageSize });
 
-/** GET /warehouses: los galpones; los inactivos sólo con `includeInactive`. */
-export const listWarehouses = async (includeInactive = false): Promise<Warehouse[]> => {
-  const { data } = await http.get<Warehouse[]>('/warehouses', { params: { includeInactive } });
+/** GET /v2/warehouses: los galpones con su ubicación; los inactivos sólo con `includeInactive`. */
+export const listWarehouses = async (includeInactive = false): Promise<WarehouseV2[]> => {
+  const { data } = await http.get<WarehouseV2[]>('/warehouses', { params: { includeInactive }, baseURL: env.apiUrlV2 });
   return data;
 };
 
-/** GET /warehouses/:id: la ficha con los saldos por garrafa y condición. */
-export const getWarehouse = async (id: string): Promise<WarehouseDetail> => {
-  const { data } = await http.get<WarehouseDetail>(`/warehouses/${id}`);
+/** GET /v2/warehouses/:id: la ficha con la ubicación y los saldos por garrafa y condición. */
+export const getWarehouse = async (id: string): Promise<WarehouseV2Detail> => {
+  const { data } = await http.get<WarehouseV2Detail>(`/warehouses/${id}`, { baseURL: env.apiUrlV2 });
   return data;
 };
 
-/** POST /warehouses */
-export const createWarehouse = async (body: CreateWarehouseBody): Promise<Warehouse> => {
-  const { data } = await http.post<Warehouse>('/warehouses', body);
+/** POST /v2/warehouses: `latitude` y `longitude` van las dos o ninguna. */
+export const createWarehouse = async (body: CreateWarehouseV2Body): Promise<WarehouseV2> => {
+  const { data } = await http.post<WarehouseV2>('/warehouses', body, { baseURL: env.apiUrlV2 });
   return data;
 };
 
-/** `address: null` borra la dirección (el back acepta null en el PATCH aunque el Swagger no lo declare). */
-export type WarehousePatch = Partial<Omit<UpdateWarehouseBody, 'address'>> & { address?: string | null };
+/**
+ * `address: null` borra la dirección (el back acepta null en el PATCH aunque el Swagger no lo declare); `latitude` y
+ * `longitude` en null, las dos juntas, borran la ubicación.
+ */
+export type WarehousePatch = Partial<Omit<UpdateWarehouseV2Body, 'address'>> & { address?: string | null };
 
-/** PATCH /warehouses/:id: editar, marcar predeterminado (`isDefault`) o dar de alta/baja (`isActive`). */
-/** El Swagger marca `kind` como requerido por su valor por defecto; el PATCH lo acepta opcional. */
-export const updateWarehouse = async (id: string, body: WarehousePatch): Promise<Warehouse> => {
-  const { data } = await http.patch<Warehouse>(`/warehouses/${id}`, body);
+/** PATCH /v2/warehouses/:id: editar (también la ubicación), marcar predeterminado (`isDefault`) o dar de alta/baja (`isActive`). */
+export const updateWarehouse = async (id: string, body: WarehousePatch): Promise<WarehouseV2> => {
+  const { data } = await http.patch<WarehouseV2>(`/warehouses/${id}`, body, { baseURL: env.apiUrlV2 });
   return data;
 };
 

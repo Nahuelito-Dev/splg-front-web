@@ -4103,6 +4103,48 @@ export interface paths {
     patch: operations['WarehouseController_update'];
     trace?: never;
   };
+  '/api/v2/warehouses': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Listar los depósitos de la distribuidora, con su ubicación */
+    get: operations['WarehouseController_findAllV2'];
+    put?: never;
+    /**
+     * Crear un depósito, con su ubicación
+     * @description La ubicación (`latitude` y `longitude`, juntas o ninguna) es el punto de salida de las hojas de ruta: sin ella la hoja avisa `no_warehouse` y sale del centro de las paradas. No se geocodifica la dirección.
+     */
+    post: operations['WarehouseController_createV2'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/warehouses/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Ver un depósito con su ubicación y sus saldos */
+    get: operations['WarehouseController_findOneV2'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Editar un depósito (también su ubicación) o cambiar el predeterminado
+     * @description La ubicación (`latitude` y `longitude`, juntas o ninguna) es el punto de salida de las hojas de ruta: sin ella la hoja avisa `no_warehouse` y sale del centro de las paradas. No se geocodifica la dirección. Las dos en null borran la ubicación; si no vienen, no se toca.
+     */
+    patch: operations['WarehouseController_updateV2'];
+    trace?: never;
+  };
   '/api/v1/stock': {
     parameters: {
       query?: never;
@@ -15094,6 +15136,126 @@ export interface components {
       kind?: 'depot' | 'branch';
       /** @description false lo deja fuera de las listas de operación; no se puede con el predeterminado */
       isActive?: boolean;
+    };
+    WarehouseV2ResponseDto: {
+      /** Format: uuid */
+      warehouseId: string;
+      /**
+       * Format: uuid
+       * @description Ubicación de stock del depósito
+       */
+      locationId: string;
+      name: string;
+      code: string;
+      /** @enum {string} */
+      kind: 'depot' | 'branch';
+      address: string | null;
+      isDefault: boolean;
+      isActive: boolean;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+      /**
+       * @description Latitud del depósito; null si no está ubicado (la hoja de ruta avisa `no_warehouse`)
+       * @example -27.3671
+       */
+      latitude: number | null;
+      /**
+       * @description Longitud del depósito; null si no está ubicado
+       * @example -55.8961
+       */
+      longitude: number | null;
+    };
+    CreateWarehouseV2Dto: {
+      /** @example Depósito central */
+      name: string;
+      /**
+       * @description Código corto, único entre los depósitos vigentes. Se guarda en mayúsculas.
+       * @example CENTRAL
+       */
+      code: string;
+      /**
+       * @default depot
+       * @enum {string}
+       */
+      kind: 'depot' | 'branch';
+      /** @example Av. Siempreviva 742 */
+      address?: string;
+      /** @description Lo deja como predeterminado (el que usa la entrega cuando el camión no tiene stock). El primero que se crea lo es siempre. */
+      isDefault?: boolean;
+      /**
+       * @description Latitud del depósito (WGS 84). Va junto con `longitude`; en la edición, las dos en null borran la ubicación.
+       * @example -27.3671
+       */
+      latitude?: number | null;
+      /**
+       * @description Longitud del depósito (WGS 84). Va junto con `latitude`; en la edición, las dos en null borran la ubicación.
+       * @example -55.8961
+       */
+      longitude?: number | null;
+    };
+    WarehouseV2DetailDto: {
+      /** Format: uuid */
+      warehouseId: string;
+      /**
+       * Format: uuid
+       * @description Ubicación de stock del depósito
+       */
+      locationId: string;
+      name: string;
+      code: string;
+      /** @enum {string} */
+      kind: 'depot' | 'branch';
+      address: string | null;
+      isDefault: boolean;
+      isActive: boolean;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+      /**
+       * @description Latitud del depósito; null si no está ubicado (la hoja de ruta avisa `no_warehouse`)
+       * @example -27.3671
+       */
+      latitude: number | null;
+      /**
+       * @description Longitud del depósito; null si no está ubicado
+       * @example -55.8961
+       */
+      longitude: number | null;
+      /** @description Saldos del depósito (sólo los positivos) */
+      balances: components['schemas']['StockBalanceDto'][];
+    };
+    UpdateWarehouseV2Dto: {
+      /** @example Depósito central */
+      name?: string;
+      /**
+       * @description Código corto, único entre los depósitos vigentes. Se guarda en mayúsculas.
+       * @example CENTRAL
+       */
+      code?: string;
+      /** @example Av. Siempreviva 742 */
+      address?: string;
+      /** @description Lo deja como predeterminado (el que usa la entrega cuando el camión no tiene stock). El primero que se crea lo es siempre. */
+      isDefault?: boolean;
+      /**
+       * @description Sólo cambia si se envía; si falta, conserva el tipo actual
+       * @enum {string}
+       */
+      kind?: 'depot' | 'branch';
+      /** @description false lo deja fuera de las listas de operación; no se puede con el predeterminado */
+      isActive?: boolean;
+      /**
+       * @description Latitud del depósito (WGS 84). Va junto con `longitude`; en la edición, las dos en null borran la ubicación.
+       * @example -27.3671
+       */
+      latitude?: number | null;
+      /**
+       * @description Longitud del depósito (WGS 84). Va junto con `latitude`; en la edición, las dos en null borran la ubicación.
+       * @example -55.8961
+       */
+      longitude?: number | null;
     };
     ConditionTotalsDto: {
       full: number;
@@ -36897,6 +37059,211 @@ export interface operations {
         };
       };
       /** @description Datos o identificador inválidos, o falta la distribuidora */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el stock (`stock.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Código repetido, o se intenta sacar la marca / desactivar el predeterminado */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  WarehouseController_findAllV2: {
+    parameters: {
+      query?: {
+        /** @description true incluye los depósitos inactivos (default: sólo los activos) */
+        includeInactive?: boolean;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['WarehouseV2ResponseDto'][];
+        };
+      };
+      /** @description Filtros inválidos o falta la distribuidora */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  WarehouseController_createV2: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateWarehouseV2Dto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['WarehouseV2ResponseDto'];
+        };
+      };
+      /** @description Datos inválidos: latitud o longitud fuera de rango, una sola de las dos, o falta la distribuidora */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el stock (`stock.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya hay un depósito vigente con ese código */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  WarehouseController_findOneV2: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Depósito UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['WarehouseV2DetailDto'];
+        };
+      };
+      /** @description El identificador no es válido o falta la distribuidora */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  WarehouseController_updateV2: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Depósito UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateWarehouseV2Dto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['WarehouseV2ResponseDto'];
+        };
+      };
+      /** @description Datos o identificador inválidos (latitud o longitud fuera de rango, una sola de las dos), o falta la distribuidora */
       400: {
         headers: {
           [name: string]: unknown;
