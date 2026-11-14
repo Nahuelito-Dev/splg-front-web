@@ -17,6 +17,7 @@ import {
   formatMinutes,
   hhmm,
   isEditable,
+  isTracked,
   loadText,
   move,
   returnAtOf,
@@ -26,6 +27,7 @@ import {
 } from './routeSheetLabels';
 import { SheetActions } from './SheetActions';
 import { SheetFormModal } from './SheetFormModal';
+import { SheetTracking } from './SheetTracking';
 import { StopList } from './StopList';
 import { StopTargetModal } from './StopTargetModal';
 
@@ -38,7 +40,10 @@ interface Props {
 
 const MOVED = 'Orden guardado: las horas se recalcularon';
 
-/** El detalle de una hoja: mapa, paradas con su hora estimada y todo lo que se le puede hacer. */
+/**
+ * El detalle de una hoja: mapa, paradas con su hora estimada y todo lo que se le puede hacer. Desde que se inicia,
+ * el seguimiento en la calle (`SheetTracking`).
+ */
 export const SheetView = ({ day, sheetId, canWrite, onPick }: Props) => {
   const detail = useRouteSheet(sheetId || undefined);
   const warehouses = useWarehouses();
@@ -138,75 +143,93 @@ export const SheetView = ({ day, sheetId, canWrite, onPick }: Props) => {
         </ul>
       )}
       {optimized && <OptimizeResult {...optimized} onClose={() => setOptimized(null)} />}
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
-        <Card className="h-fit overflow-hidden lg:sticky lg:top-4">
-          <div className="flex items-center justify-between gap-2 border-b border-outline-soft px-4 py-3 text-sm">
-            <b className="font-semibold text-ink">{sheetTitle(sheet)}</b>
-            <span className="font-mono text-xs text-muted">
-              {formatKm(sheet.totals.distanceKm)} · {formatMinutes(sheet.totals.durationMin)}
-            </span>
-          </div>
-          <RouteSheetMap stops={sheet.stops} selectedId={selectedId} onSelect={setSelectedId} />
-          <div className="flex flex-wrap gap-4 px-4 py-3 text-xs text-muted">
-            <span className="inline-flex items-center gap-1.5">
-              <i className="h-2.5 w-2.5 rounded-full bg-primary" />
-              Parada
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <i className="h-2.5 w-2.5 rounded-full bg-ink" />
-              Fijada
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <i className="h-2.5 w-2.5 rounded-full bg-danger" />
-              Fuera de franja
-            </span>
-            {sheet.matrixSource === 'haversine' && <span>Distancias en línea recta</span>}
-          </div>
-        </Card>
-        <Card className="overflow-hidden">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-outline-soft px-4 py-3">
-            <div className="min-w-0">
-              <b className="block text-sm font-semibold text-ink">
-                {vehicleOf(sheet)} · {driverOf(sheet)}
-              </b>
-              <span className="text-[12.5px] text-muted">
-                Salida {hhmm(sheet.plannedStartAt)}
-                {depot ? ` desde ${depot.name}` : ' desde el depósito predeterminado'} · regreso{' '}
-                {hhmm(returnAtOf(sheet))}
-              </span>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge label={SHEET_STATUS[sheet.status]} />
-              {editable && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  icon={<Pencil className="h-3.5 w-3.5" />}
-                  onClick={() => setEditing(true)}
-                >
-                  Editar hoja
-                </Button>
-              )}
-            </div>
-          </div>
-          <StopList
-            sheet={sheet}
-            editable={editable}
-            busy={busy}
-            selectedId={selectedId}
-            onSelect={setSelectedId}
-            onReorder={reorder}
-            onToggleLock={toggleLock}
-            onMove={setMoving}
-            onRemove={(stop) => void removeStop(stop)}
-          />
-          <div className="flex flex-wrap items-center justify-between gap-2 bg-surface-sunken px-4 py-3">
-            <span className="text-[12.5px] text-muted">{loadText(sheet)}</span>
+      {isTracked(sheet.status) ? (
+        <>
+          <SheetTracking day={day} sheet={sheet} canWrite={canWrite} />
+          <div className="flex justify-end">
             <SheetActions sheet={sheet} canWrite={canWrite} onOptimized={setOptimized} />
           </div>
-        </Card>
-      </div>
-      <LoadSuggestionCard sheetId={sheet.id} />
+        </>
+      ) : (
+        <>
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+            <Card className="h-fit overflow-hidden lg:sticky lg:top-4">
+              <div className="flex items-center justify-between gap-2 border-b border-outline-soft px-4 py-3 text-sm">
+                <b className="font-semibold text-ink">{sheetTitle(sheet)}</b>
+                <span className="font-mono text-xs text-muted">
+                  {formatKm(sheet.totals.distanceKm)} · {formatMinutes(sheet.totals.durationMin)}
+                </span>
+              </div>
+              <RouteSheetMap stops={sheet.stops} selectedId={selectedId} onSelect={setSelectedId} />
+              <div className="flex flex-wrap gap-4 px-4 py-3 text-xs text-muted">
+                <span className="inline-flex items-center gap-1.5">
+                  <i className="h-2.5 w-2.5 rounded-full bg-primary" />
+                  Parada
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <i className="h-2.5 w-2.5 rounded-full bg-ink" />
+                  Fijada
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <i className="h-2.5 w-2.5 rounded-full bg-danger" />
+                  Fuera de franja
+                </span>
+                {sheet.matrixSource === 'haversine' && <span>Distancias en línea recta</span>}
+              </div>
+            </Card>
+            <Card className="overflow-hidden">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-outline-soft px-4 py-3">
+                <div className="min-w-0">
+                  <b className="block text-sm font-semibold text-ink">
+                    {vehicleOf(sheet)} · {driverOf(sheet)}
+                  </b>
+                  <span className="text-[12.5px] text-muted">
+                    Salida {hhmm(sheet.plannedStartAt)}
+                    {depot ? ` desde ${depot.name}` : ' desde el depósito predeterminado'} · regreso{' '}
+                    {hhmm(returnAtOf(sheet))}
+                  </span>
+                  {sheet.status === 'confirmed' && (
+                    <span className="block text-[12.5px] text-ink-2" data-testid="assigned-at">
+                      {sheet.assignedAt
+                        ? `Pedidos asignados al chofer a las ${hhmm(sheet.assignedAt)}: espera la carga para iniciar el viaje`
+                        : 'Los pedidos se le asignan al chofer al empezar el día del reparto'}
+                    </span>
+                  )}
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge label={SHEET_STATUS[sheet.status]} />
+                  {editable && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      icon={<Pencil className="h-3.5 w-3.5" />}
+                      onClick={() => setEditing(true)}
+                    >
+                      Editar hoja
+                    </Button>
+                  )}
+                </div>
+              </div>
+              <StopList
+                sheet={sheet}
+                editable={editable}
+                busy={busy}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+                onReorder={reorder}
+                onToggleLock={toggleLock}
+                onMove={setMoving}
+                onRemove={(stop) => void removeStop(stop)}
+              />
+              <div className="flex flex-wrap items-center justify-between gap-2 bg-surface-sunken px-4 py-3">
+                <span className="text-[12.5px] text-muted">{loadText(sheet)}</span>
+                <SheetActions sheet={sheet} canWrite={canWrite} onOptimized={setOptimized} />
+              </div>
+            </Card>
+          </div>
+          <LoadSuggestionCard sheetId={sheet.id} />
+        </>
+      )}
       {moving && (
         <StopTargetModal day={day} target={{ kind: 'move', sheet, stop: moving }} onClose={() => setMoving(null)} />
       )}

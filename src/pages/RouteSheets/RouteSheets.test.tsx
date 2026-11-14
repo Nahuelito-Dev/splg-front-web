@@ -35,6 +35,10 @@ vi.mock('../../services/queries/routeSheets', async (importOriginal) => ({
   useCreateRouteSheet: () => mutation(),
   useAddRouteSheetStop: () => mutation(),
   useMoveRouteSheetStop: () => mutation(),
+  useStartRouteSheet: () => mutation(),
+  useRouteSheetExecutions: () => [],
+  useRescheduleAwaitingOrder: () => mutation(),
+  useCancelAwaitingOrder: () => mutation(),
 }));
 const notifications = vi.hoisted(() => ({
   confirm: vi.fn(),

@@ -4,6 +4,7 @@ import { EmptyState, KpiCard } from '../../common/components/ui';
 import type { RoutePlanDay } from '../../services/api/types';
 import { formatDateTime } from '../../utils/format';
 import { formatKm } from './routeSheetLabels';
+import { AwaitingAdminCard } from './AwaitingAdmin';
 import { DissolvedSheets } from './DissolvedSheets';
 import { ResourcesCard } from './ResourcesCard';
 import { SheetCard } from './SheetCard';
@@ -13,11 +14,13 @@ import { UnassignedList } from './UnassignedList';
 interface Props {
   day: RoutePlanDay;
   canWrite: boolean;
+  /** Decidir sobre los pedidos que esperan al admin: vale aunque el día ya esté cerrado (el día del reparto lo está). */
+  canDecide?: boolean;
   onOpen: (sheetId: string) => void;
 }
 
 /** El día de un vistazo: lo que propuso el sistema, lo que quedó afuera y con qué choferes y vehículos se cuenta. */
-export const PlanView = ({ day, canWrite, onOpen }: Props) => {
+export const PlanView = ({ day, canWrite, canDecide = canWrite, onOpen }: Props) => {
   const [target, setTarget] = useState<StopTarget | null>(null);
   const { plan, sheets, unassigned } = day;
   const inSheets = sheets.reduce((sum, s) => sum + s.stops.length, 0);
@@ -70,6 +73,7 @@ export const PlanView = ({ day, canWrite, onOpen }: Props) => {
           ))}
         </div>
       )}
+      <AwaitingAdminCard sheets={sheets} canWrite={canDecide} onOpen={onOpen} />
       <UnassignedList day={day} canWrite={canWrite} onPlace={setTarget} />
       {plan.summary && plan.summary.unassigned > 0 && unassigned.length === 0 && (
         <p className="flex items-center gap-2 text-xs text-muted">

@@ -1,19 +1,26 @@
-import { CircleCheck, FileDown, RotateCcw, Wand2, X } from 'lucide-react';
+import { CircleCheck, FileDown, Play, RotateCcw, Wand2, X } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '../../common/components/ui';
 import { usePdfDownload } from '../../hooks';
-import { RouteSheetNotConfirmableError } from '../../services/api/routeSheets';
-import type { RouteOrderSummary, RouteSheet, RouteSheetViolation } from '../../services/api/types';
+import { RouteSheetNotConfirmableError, RouteSheetShortagesError } from '../../services/api/routeSheets';
+import type {
+  RouteOrderSummary,
+  RouteSheet,
+  RouteSheetViolation,
+  StartRouteSheetShortage,
+} from '../../services/api/types';
 import {
   useCancelRouteSheet,
   useConfirmRouteSheet,
   useOptimizeRouteSheet,
   useReopenRouteSheet,
+  useStartRouteSheet,
 } from '../../services/queries/routeSheets';
 import { confirm, notify } from '../../utils/notifications';
 import { ConfirmViolationsDialog } from './ConfirmViolationsDialog';
 import { notifySheetError } from './routeSheetErrors';
-import { sheetTitle } from './routeSheetLabels';
+import { driverOf, isPlanToday, sheetTitle } from './routeSheetLabels';
+import { ShortagesDialog } from './ShortagesDialog';
 
 interface Props {
   sheet: RouteSheet;
@@ -21,17 +28,25 @@ interface Props {
   onOptimized: (result: { before: RouteOrderSummary; after: RouteOrderSummary }) => void;
 }
 
-/** Lo que se le hace a la hoja entera: optimizar, confirmar o reabrir, cancelar y bajar el PDF. */
+/** Lo que se le hace a la hoja entera: optimizar, confirmar o reabrir, iniciarla en nombre del chofer, cancelar y bajar el PDF. */
 export const SheetActions = ({ sheet, canWrite, onOptimized }: Props) => {
   const optimize = useOptimizeRouteSheet();
   const confirmSheet = useConfirmRouteSheet();
   const reopen = useReopenRouteSheet();
   const cancel = useCancelRouteSheet();
+  const start = useStartRouteSheet();
   const pdf = usePdfDownload();
   const [violations, setViolations] = useState<RouteSheetViolation[] | null>(null);
+  const [shortages, setShortages] = useState<StartRouteSheetShortage[] | null>(null);
   const draft = sheet.status === 'draft';
   const live = draft || sheet.status === 'confirmed';
-  const pending = optimize.isPending || confirmSheet.isPending || reopen.isPending || cancel.isPending;
+  const pending =
+    optimize.isPending || confirmSheet.isPending || reopen.isPending || cancel.isPending || start.isPending;
+  const startBlocked = !sheet.deliveryId
+    ? 'La hoja no tiene chofer'
+    : !isPlanToday(sheet.planDate)
+      ? 'Sólo se inicia el día del reparto'
+      : undefined;
 
   const handleOptimize = () =>
     optimize.mutate(sheet, {
@@ -63,6 +78,42 @@ export const SheetActions = ({ sheet, canWrite, onOptimized }: Props) => {
         },
       },
     );
+
+  const startSheet = (acknowledgeShortages?: boolean) =>
+    start.mutate(
+      { sheetId: sheet.id, acknowledgeShortages },
+      {
+        onSuccess: (result) => {
+          setShortages(null);
+          if (result.alreadyStarted) {
+            notify.info('La hoja ya estaba iniciada');
+            return;
+          }
+          notify.success(
+            `${sheetTitle(sheet)} en viaje: se les avisó a ${result.notifiedCustomers} cliente(s) que su pedido está en camino`,
+          );
+          if (result.droppedOrderIds.length > 0) {
+            notify.warn(`${result.droppedOrderIds.length} pedido(s) ya no estaban disponibles y salieron de la hoja`);
+          }
+        },
+        onError: (error) => {
+          if (error instanceof RouteSheetShortagesError) setShortages(error.shortages);
+          else {
+            setShortages(null);
+            notifySheetError(error);
+          }
+        },
+      },
+    );
+
+  const handleStart = async () => {
+    const ok = await confirm({
+      title: `¿Iniciar el viaje de ${sheetTitle(sheet)} en nombre de ${driverOf(sheet)}?`,
+      text: 'Hace falta que el chofer tenga en uso el vehículo de la hoja y que la carga del camión ya haya salido del depósito. A todos los clientes de la hoja se les avisa que su pedido está en camino, con la franja estimada.',
+      confirmText: 'Iniciar viaje',
+    });
+    if (ok) startSheet();
+  };
 
   const handleCancel = async () => {
     const ok = await confirm({
@@ -131,6 +182,18 @@ export const SheetActions = ({ sheet, canWrite, onOptimized }: Props) => {
           Reabrir
         </Button>
       )}
+      {sheet.status === 'confirmed' && canWrite && (
+        <Button
+          size="sm"
+          icon={<Play className="h-3.5 w-3.5" />}
+          loading={start.isPending}
+          disabled={pending}
+          blockedReason={startBlocked}
+          onClick={() => void handleStart()}
+        >
+          Iniciar viaje en nombre del chofer
+        </Button>
+      )}
       {draft && canWrite && (
         <Button
           size="sm"
@@ -141,6 +204,15 @@ export const SheetActions = ({ sheet, canWrite, onOptimized }: Props) => {
         >
           Confirmar hoja
         </Button>
+      )}
+      {shortages && (
+        <ShortagesDialog
+          sheet={sheet}
+          shortages={shortages}
+          starting={start.isPending}
+          onStartAnyway={() => startSheet(true)}
+          onClose={() => setShortages(null)}
+        />
       )}
       {violations && (
         <ConfirmViolationsDialog

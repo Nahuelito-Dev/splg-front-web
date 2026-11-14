@@ -206,6 +206,56 @@ export interface DriverLocationPayload {
 }
 
 /**
+ * Eventos de la hoja de ruta en curso que el back emite a la sala de la distribuidora (HOJA-DE-RUTA.md, «Eventos de
+ * socket»). Todos traen `sheetId`; el panel vuelve a pedir el seguimiento, salvo `eta-updated`, que trae las horas.
+ */
+export const ROUTE_SHEET_SOCKET_EVENTS = {
+  ASSIGNED: 'route-sheet:assigned',
+  STARTED: 'route-sheet:started',
+  WAIT_EXPIRED: 'route-sheet:wait-expired',
+  STOP_PROGRESS: 'route-sheet:stop-progress',
+  STOP_FAILED: 'route-sheet:stop-failed',
+  UPDATED: 'route-sheet:updated',
+  ETA_UPDATED: 'route-sheet:eta-updated',
+  STOP_LATE: 'route-sheet:stop-late',
+  CLOSED: 'route-sheet:closed',
+} as const;
+
+/** Lo mínimo que traen todos los eventos de la hoja. */
+export interface RouteSheetEventPayload {
+  sheetId: string;
+  orderId?: string;
+}
+
+/** Posición del chofer durante toda la hoja en curso, al ritmo del recálculo de la hora estimada. */
+export const ROUTE_SHEET_DRIVER_LOCATION_EVENT = 'route-sheet:driver-location';
+
+/** Payload de ROUTE_SHEET_DRIVER_LOCATION_EVENT. */
+export interface RouteSheetDriverLocationPayload {
+  sheetId: string;
+  driverUserId: string;
+  lat: number;
+  lng: number;
+  at: string;
+}
+
+/** Un pedido se reprogramó para otro día (segundo intento fallido o cierre a mano). */
+export const ORDER_RESCHEDULED_EVENT = 'order:rescheduled';
+
+/** Payload de ORDER_RESCHEDULED_EVENT. */
+export interface OrderRescheduledPayload {
+  orderId: string;
+  scheduledDate: string | null;
+}
+
+/** Payload de `route-sheet:eta-updated`: las horas nuevas de lo que falta, sin recargar. */
+export interface RouteSheetEtaUpdatedPayload {
+  sheetId: string;
+  source: 'gps' | 'last_stop' | 'warehouse' | 'none';
+  stops: { orderId: string; etaAt: string; late: boolean }[];
+}
+
+/**
  * Hook de bajo nivel para manejar una única conexión de socket.io.
  * No conecta solo: el consumidor (típicamente el SocketProvider) decide
  * cuándo llamar a `connect`, por ejemplo una vez que hay sesión iniciada.

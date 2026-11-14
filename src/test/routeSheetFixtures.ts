@@ -1,4 +1,11 @@
-import type { RoutePlanDay, RouteSheet, RouteSheetStop, UnassignedOrder } from '../services/api/types';
+import type {
+  RoutePlanDay,
+  RouteSheet,
+  RouteSheetExecution,
+  RouteSheetExecutionStop,
+  RouteSheetStop,
+  UnassignedOrder,
+} from '../services/api/types';
 
 /** Un uuid v4 de prueba distinto por número (los formularios validan uuid). */
 export const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
@@ -43,6 +50,8 @@ export const sheet = (over: Partial<RouteSheet> = {}): RouteSheet => ({
   matrixSource: 'osrm',
   editedAt: null,
   confirmedAt: null,
+  assignedAt: null,
+  startedAt: null,
   closedAt: null,
   closeReason: null,
   totals: { distanceKm: 8.4, durationMin: 95, units: 3, peakUnits: 3, weightKg: 30 },
@@ -95,5 +104,69 @@ export const planDay = (over: Partial<RoutePlanDay> = {}): RoutePlanDay => ({
       },
     ],
   },
+  ...over,
+});
+
+/** Una parada del seguimiento (hoja en curso), por omisión pendiente. */
+export const liveStop = (n: number, over: Partial<RouteSheetExecutionStop> = {}): RouteSheetExecutionStop => ({
+  orderId: uuid(100 + n),
+  sequence: n,
+  progress: 'pending',
+  removedReason: null,
+  removedNote: null,
+  removedAt: null,
+  arrivedAt: null,
+  waitExpiresAt: null,
+  failedAttempts: 0,
+  lastFailedAt: null,
+  lastFailureNote: null,
+  awaitingAdmin: false,
+  rescheduledTo: null,
+  customerName: `Cliente ${n}`,
+  customerPhone: null,
+  address: `Calle ${n}`,
+  lat: -27.38 - n / 1000,
+  lng: -55.93,
+  slotName: 'Mañana',
+  slotStart: '2026-11-14T11:00:00.000Z',
+  slotEnd: '2026-11-14T15:00:00.000Z',
+  etaAt: `2026-11-14T1${n}:10:00.000Z`,
+  plannedEtaAt: `2026-11-14T1${n}:00:00.000Z`,
+  notifiedWindowStart: null,
+  notifiedWindowEnd: null,
+  late: false,
+  units: 1,
+  weightKg: 10,
+  unpaidOnline: false,
+  items: [],
+  ...over,
+});
+
+/** El seguimiento de una hoja en curso: la 1 entregada, la 2 en camino y la 3 pendiente. */
+export const execution = (over: Partial<RouteSheetExecution> = {}): RouteSheetExecution => ({
+  id: uuid(1),
+  number: 7,
+  planDate: '2026-11-14',
+  status: 'assigned',
+  version: 5,
+  deliveryId: uuid(10),
+  driverName: 'Ana Chofer',
+  carId: uuid(20),
+  carPatent: 'AB123CD',
+  truckLoadId: null,
+  plannedStartAt: '2026-11-14T10:30:00.000Z',
+  assignedAt: '2026-11-14T03:00:00.000Z',
+  startedAt: '2026-11-14T10:35:00.000Z',
+  closedAt: null,
+  closeNote: null,
+  currentOrderId: uuid(102),
+  nextOrderId: uuid(102),
+  progress: { total: 3, delivered: 1, failed: 0, removed: 0, pending: 2 },
+  driverLocation: { lat: -27.381, lng: -55.931, at: '2026-11-14T12:00:00.000Z' },
+  stops: [
+    liveStop(1, { progress: 'delivered', arrivedAt: '2026-11-14T11:02:00.000Z' }),
+    liveStop(2, { progress: 'on_the_way' }),
+    liveStop(3),
+  ],
   ...over,
 });

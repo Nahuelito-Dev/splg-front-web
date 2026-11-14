@@ -4,9 +4,13 @@ import { ApiError, toApiError } from './errors';
 import { http } from './httpClient';
 import type {
   AddRouteSheetStopBody,
+  CloseRouteSheet,
+  CloseRouteSheetBody,
   ConfirmAll,
   ConfirmRouteSheetBody,
+  CreateRoutePlanningHolidayBody,
   CreateRouteSheetBody,
+  FailedStopBody,
   LateOrder,
   LoadSuggestion,
   MoveRouteSheetStopBody,
@@ -14,13 +18,19 @@ import type {
   ProcessConfig,
   RoutePlanDay,
   RoutePlanProposal,
+  RoutePlanningHoliday,
   RouteSheet,
+  RouteSheetExecution,
   RouteSheetMove,
   RouteSheetNotConfirmable,
   RouteSheetOptimize,
   RouteSheetPage,
+  RouteSheetStopAction,
   RouteSheetViolation,
   SetRouteSheetSequenceBody,
+  StartRouteSheet,
+  StartRouteSheetBody,
+  StartRouteSheetShortage,
   UpdateRouteSheetBody,
 } from './types';
 
@@ -35,6 +45,11 @@ export const ROUTE_SHEET_CODES = {
   planNotFound: 'ROUTE_PLAN_NOT_FOUND',
   planningDisabled: 'ROUTE_PLANNING_DISABLED',
   stopNotFeasible: 'ROUTE_STOP_NOT_FEASIBLE',
+  shortages: 'ROUTE_SHEET_SHORTAGES',
+  notInProgress: 'ROUTE_SHEET_NOT_IN_PROGRESS',
+  stopNotPending: 'ROUTE_STOP_NOT_PENDING',
+  holidayPast: 'ROUTE_HOLIDAY_DATE_PAST',
+  holidayExists: 'ROUTE_HOLIDAY_ALREADY_EXISTS',
 } as const;
 
 /** 409 de confirmar con las reglas que no se cumplen: el panel las muestra una por una. */
@@ -58,6 +73,31 @@ const isNotConfirmableBody = (value: unknown): value is RouteSheetNotConfirmable
 const withViolations = (error: unknown): unknown => {
   if (isAxiosError(error) && error.response?.status === 409 && isNotConfirmableBody(error.response.data)) {
     return new RouteSheetNotConfirmableError(toApiError(error).messages, error.response.data.violations);
+  }
+  return error;
+};
+
+/** 409 de iniciar porque al camión le faltan garrafas: el panel muestra cuáles y deja salir igual (D-04). */
+export class RouteSheetShortagesError extends ApiError {
+  constructor(
+    messages: string[],
+    readonly shortages: StartRouteSheetShortage[],
+  ) {
+    super(409, messages, ROUTE_SHEET_CODES.shortages);
+    this.name = 'RouteSheetShortagesError';
+  }
+}
+
+const isShortagesBody = (value: unknown): value is { shortages: StartRouteSheetShortage[] } =>
+  typeof value === 'object' &&
+  value !== null &&
+  (value as { code?: unknown }).code === ROUTE_SHEET_CODES.shortages &&
+  Array.isArray((value as { shortages?: unknown }).shortages);
+
+/** Un 409 de iniciar trae `shortages[]`, que `toApiError` no guarda: se conservan en un error propio. */
+const withShortages = (error: unknown): unknown => {
+  if (isAxiosError(error) && error.response?.status === 409 && isShortagesBody(error.response.data)) {
+    return new RouteSheetShortagesError(toApiError(error).messages, error.response.data.shortages);
   }
   return error;
 };
@@ -217,4 +257,60 @@ export const cancelRouteSheet = async (id: string, version: number): Promise<Rou
 export const getLoadSuggestion = async (id: string): Promise<LoadSuggestion> => {
   const { data } = await http.get<LoadSuggestion>(`/route-sheets/${encodeURIComponent(id)}/load-suggestion`, v2);
   return data;
+};
+
+/** GET /v2/route-sheets/:id/execution: el seguimiento de la hoja (avance, horas vigentes y posición del chofer). Sólo lee. */
+export const getRouteSheetExecution = async (id: string): Promise<RouteSheetExecution> => {
+  const { data } = await http.get<RouteSheetExecution>(`/route-sheets/${encodeURIComponent(id)}/execution`, v2);
+  return data;
+};
+
+/**
+ * POST /v2/route-sheets/:id/start: el admin la inicia en nombre del chofer. Si al camión le faltan garrafas responde
+ * 409 con `shortages` (ver `RouteSheetShortagesError`); con `acknowledgeShortages` sale igual.
+ */
+export const startRouteSheet = async (id: string, body: StartRouteSheetBody): Promise<StartRouteSheet> => {
+  try {
+    const { data } = await http.post<StartRouteSheet>(`/route-sheets/${encodeURIComponent(id)}/start`, body, v2);
+    return data;
+  } catch (error) {
+    throw withShortages(error);
+  }
+};
+
+/** POST /v2/route-sheets/:id/stops/:orderId/failed: la parada no se entregó; el pedido vuelve al despacho. */
+export const failRouteSheetStop = async (
+  id: string,
+  orderId: string,
+  body: FailedStopBody,
+): Promise<RouteSheetStopAction> => {
+  const { data } = await http.post<RouteSheetStopAction>(
+    `/route-sheets/${encodeURIComponent(id)}/stops/${encodeURIComponent(orderId)}/failed`,
+    body,
+    v2,
+  );
+  return data;
+};
+
+/** POST /v2/route-sheets/:id/close: cierre a mano; lo pendiente sale y vuelve al despacho. */
+export const closeRouteSheet = async (id: string, body: CloseRouteSheetBody): Promise<CloseRouteSheet> => {
+  const { data } = await http.post<CloseRouteSheet>(`/route-sheets/${encodeURIComponent(id)}/close`, body, v2);
+  return data;
+};
+
+/** GET /v2/route-planning/holidays: los feriados vigentes desde `from` (por omisión, hoy). */
+export const listRoutePlanningHolidays = async (params: { from?: string; to?: string } = {}) => {
+  const { data } = await http.get<RoutePlanningHoliday[]>('/route-planning/holidays', { ...v2, params });
+  return data;
+};
+
+/** POST /v2/route-planning/holidays: ese día no se reparte. 409 si es pasado o ya está cargado. */
+export const createRoutePlanningHoliday = async (body: CreateRoutePlanningHolidayBody) => {
+  const { data } = await http.post<RoutePlanningHoliday>('/route-planning/holidays', body, v2);
+  return data;
+};
+
+/** DELETE /v2/route-planning/holidays/:id: baja lógica, el día vuelve a ser hábil. */
+export const deleteRoutePlanningHoliday = async (id: string): Promise<void> => {
+  await http.delete(`/route-planning/holidays/${encodeURIComponent(id)}`, v2);
 };

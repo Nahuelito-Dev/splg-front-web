@@ -1,9 +1,14 @@
 import type {
+  CloseRouteSheet,
+  FailedStopBody,
   ProposalUnassigned,
   RoutePlan,
   RoutePlanDay,
   RouteSheet,
+  RouteSheetExecution,
+  RouteSheetExecutionStop,
   RouteSheetStop,
+  RouteSheetStopAction,
   RouteSheetViolation,
 } from '../../services/api/types';
 import { argentinaDay } from '../../utils/format';
@@ -80,7 +85,7 @@ export const formatMinutes = (minutes: number) => {
 /** Mañana 08:00–12:00 */
 export const slotOf = (item: { slotName: string | null; slotStart: string | null; slotEnd: string | null }) => {
   const range = item.slotStart && item.slotEnd ? `${hhmm(item.slotStart)}–${hhmm(item.slotEnd)}` : '';
-  return [item.slotName, range].filter(Boolean).join(' ') || 'Sin franja';
+  return [item.slotName, range].filter(Boolean).join(' ') || 'Sin franja fija';
 };
 
 /** El regreso al depósito: la salida más la duración total. */
@@ -124,7 +129,7 @@ export const customerIndex = (day: RoutePlanDay | undefined): Map<string, string
   return index;
 };
 
-export const stopName = (stop: RouteSheetStop) => stop.customerName ?? 'Cliente';
+export const stopName = (stop: Pick<RouteSheetStop, 'customerName'>) => stop.customerName ?? 'Cliente';
 
 /** Mueve un elemento de `from` a `to`; con índices fuera de rango devuelve la misma lista. */
 export const move = <T>(list: T[], from: number, to: number): T[] => {
@@ -133,4 +138,108 @@ export const move = <T>(list: T[], from: number, to: number): T[] => {
   const [item] = next.splice(from, 1);
   next.splice(to, 0, item);
   return next;
+};
+
+/** La hoja se sigue en la calle desde que se inicia: en reparto o ya cerrada. */
+export const isTracked = (status: RouteSheet['status']) => status === 'assigned' || status === 'completed';
+
+/** Sólo se inicia una hoja el día del reparto (hora argentina); el back lo vuelve a controlar. */
+export const isPlanToday = (planDate: string, now: Date = new Date()) => argentinaDay(now) === planDate;
+
+export const STOP_PROGRESS: Record<RouteSheetExecutionStop['progress'], Label> = {
+  pending: { text: 'Pendiente', tone: 'neutral' },
+  on_the_way: { text: 'En camino', tone: 'info' },
+  delivered: { text: 'Entregada', tone: 'success' },
+  failed: { text: 'No entregada', tone: 'danger' },
+  removed: { text: 'Fuera de la hoja', tone: 'neutral' },
+};
+
+/** Por qué una parada salió de la hoja en la calle (los códigos del back, en castellano). */
+export const REMOVED_REASON: Record<NonNullable<RouteSheetExecutionStop['removedReason']>, string> = {
+  cancelled: 'El pedido se canceló',
+  moved: 'Pasó a otra hoja',
+  reassigned: 'Se asignó a otro chofer',
+  failed_delivery: 'No se pudo entregar',
+  admin: 'La sacó un administrador',
+  unavailable: 'Ya no estaba disponible al iniciar',
+  sheet_closed: 'Quedó pendiente al cerrar la hoja',
+  rescheduled: 'No se entregó en el segundo intento',
+  needs_reschedule: 'Salió de la hoja por fuera del recorrido',
+};
+
+/** Los motivos de «No entregado» (los mismos que ve el chofer en la app). */
+export const FAILED_REASON: Record<FailedStopBody['reason'], string> = {
+  customer_absent: 'El cliente no estaba',
+  rejected: 'Rechazó el pedido',
+  wrong_address: 'La dirección no es correcta',
+  no_access: 'No se pudo llegar',
+  other: 'Otro',
+};
+
+/** La parada sigue en la hoja (pendiente, en camino o entregada) o ya salió. */
+export const isActiveStop = (stop: RouteSheetExecutionStop) => stop.sequence !== null;
+
+/** Pendiente o en camino: lo que todavía se puede marcar como no entregado. */
+export const isOpenStop = (stop: RouteSheetExecutionStop) =>
+  stop.progress === 'pending' || stop.progress === 'on_the_way';
+
+/** Minutos de atraso de la hora vigente contra la prometida al confirmar (negativo si viene adelantada). */
+export const delayMinutes = (stop: Pick<RouteSheetExecutionStop, 'etaAt' | 'plannedEtaAt'>): number | null =>
+  stop.etaAt && stop.plannedEtaAt
+    ? Math.round((new Date(stop.etaAt).getTime() - new Date(stop.plannedEtaAt).getTime()) / 60_000)
+    : null;
+
+/** Lunes a domingo con su bit en `workingDays` (lunes 1 … domingo 64). */
+export const WEEK_DAYS = [
+  { bit: 1, label: 'Lunes', short: 'Lu' },
+  { bit: 2, label: 'Martes', short: 'Ma' },
+  { bit: 4, label: 'Miércoles', short: 'Mi' },
+  { bit: 8, label: 'Jueves', short: 'Ju' },
+  { bit: 16, label: 'Viernes', short: 'Vi' },
+  { bit: 32, label: 'Sábado', short: 'Sá' },
+  { bit: 64, label: 'Domingo', short: 'Do' },
+] as const;
+
+/** Prende o apaga un día en la máscara de `workingDays`. */
+export const toggleWorkingDay = (mask: number, bit: number, on: boolean) => (on ? mask | bit : mask & ~bit);
+
+/** El día del pedido para mostrar: «lunes 16/11». */
+export const dayLabel = (date: string) => {
+  const [y, m, d] = date.split('-').map(Number);
+  const weekday = new Intl.DateTimeFormat('es-AR', { weekday: 'long', timeZone: 'UTC' }).format(
+    new Date(Date.UTC(y, m - 1, d)),
+  );
+  return `${weekday} ${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}`;
+};
+
+/** «3 de 8 entregadas» */
+export const progressText = ({ progress }: RouteSheetExecution) =>
+  `${progress.delivered} de ${progress.total} entregada${progress.total === 1 ? '' : 's'}`;
+
+/**
+ * Qué pasó con el pedido: en el primer intento pasa al final del recorrido (con la franja nueva que se le avisó al
+ * cliente); en el segundo, el sistema lo reprograma solo para el próximo día hábil, o queda esperando al admin.
+ */
+export const failedOutcomeText = (name: string, result: RouteSheetStopAction): string => {
+  if (result.outcome === 'rescheduled') {
+    return result.rescheduledTo
+      ? `${name}: segundo intento sin entregar. Se reprogramó para el ${dayLabel(result.rescheduledTo)}, sin franja fija`
+      : `${name}: segundo intento sin entregar. No se pudo reprogramar: quedó esperando que decidas`;
+  }
+  const window =
+    result.newWindowStart && result.newWindowEnd
+      ? ` Al cliente se le avisó la franja nueva: ${hhmm(result.newWindowStart)}–${hhmm(result.newWindowEnd)}`
+      : '';
+  return `${name}: pasó al final del recorrido.${window}`;
+};
+
+/** El aviso del cierre a mano: cuántos pedidos se reprogramaron solos y cuántos quedaron esperando al admin. */
+export const closedText = (result: CloseRouteSheet): string => {
+  const moved = result.rescheduled.filter((r) => r.scheduledDate).length;
+  const waiting = result.rescheduled.length - moved;
+  const parts = [
+    moved > 0 && `${moved} pedido(s) se reprogramaron para el próximo día hábil`,
+    waiting > 0 && `${waiting} quedaron esperando tu decisión`,
+  ].filter(Boolean);
+  return parts.length > 0 ? `Hoja cerrada: ${parts.join(' y ')}` : 'Hoja cerrada';
 };
