@@ -86,6 +86,13 @@ afterEach(() => {
 });
 
 describe('RouteSheets', () => {
+  it('no tiene «Vista del chofer» y un enlace viejo a esa vista cae en la planificación', () => {
+    renderPage(<RouteSheets />, { url: '/route-sheets?view=driver' });
+    expect(screen.queryByRole('tab', { name: 'Vista del chofer' })).not.toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Planificación del día' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByText('Sin asignar (2)')).toBeInTheDocument();
+  });
+
   it('muestra el día con el chip de módulo inteligente, la explicación, las hojas y lo que quedó sin hoja', () => {
     renderPage(<RouteSheets />, { url: '/route-sheets' });
     expect(screen.getByRole('heading', { level: 1, name: 'Hojas de ruta' })).toBeInTheDocument();

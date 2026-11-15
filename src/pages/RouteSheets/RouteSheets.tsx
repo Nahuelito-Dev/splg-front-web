@@ -39,7 +39,6 @@ import { formatDay } from '../../utils/format';
 import { confirm, notify } from '../../utils/notifications';
 import { ConfirmAllResultDialog } from './ConfirmAllResultDialog';
 import { DaySummary } from './DaySummary';
-import { DriverView } from './DriverView';
 import { HolidaysModal } from './HolidaysModal';
 import { PlanView } from './PlanView';
 import { ProposalDialog } from './ProposalDialog';
@@ -48,7 +47,7 @@ import { RouteSheetSettingsModal } from './RouteSheetSettingsModal';
 import { SheetFormModal } from './SheetFormModal';
 import { SheetView } from './SheetView';
 
-type View = 'plan' | 'sheet' | 'driver';
+type View = 'plan' | 'sheet';
 
 const DISPATCH_PERMISSION = 'despacho.gestionar';
 const NO_PERMISSION = 'Hace falta el permiso «Gestionar el despacho»';
@@ -56,7 +55,6 @@ const NO_PERMISSION = 'Hace falta el permiso «Gestionar el despacho»';
 const TABS = [
   { id: 'plan', label: 'Planificación del día' },
   { id: 'sheet', label: 'Detalle de la hoja' },
-  { id: 'driver', label: 'Vista del chofer' },
 ];
 
 const Chip = ({ icon, text, className }: { icon: ReactNode; text: string; className: string }) => (
@@ -83,7 +81,7 @@ export const RouteSheets = () => {
   const forbidden = despacho.known && !despacho.allowed;
   const canWrite = permissions.canWrite && despacho.allowed;
   const writeHint = permissions.writeHint ?? (despacho.allowed ? undefined : NO_PERMISSION);
-  const [{ date: dateParam, view, sheet: sheetParam }, setParams] = useUrlParams({
+  const [{ date: dateParam, view: viewParam, sheet: sheetParam }, setParams] = useUrlParams({
     date: tomorrow(),
     view: 'plan',
     sheet: '',
@@ -108,6 +106,8 @@ export const RouteSheets = () => {
   const drafts = data?.sheets.filter((s) => s.status === 'draft') ?? [];
   const sheetId = data?.sheets.some((s) => s.id === sheetParam) ? sheetParam : (data?.sheets[0]?.id ?? '');
 
+  // Un enlace viejo a una vista que ya no existe (la del chofer) cae en la planificación.
+  const view: View = viewParam === 'sheet' ? 'sheet' : 'plan';
   const openSheet = (id: string) => setParams({ view: 'sheet', sheet: id });
 
   const preview = () =>
@@ -284,7 +284,6 @@ export const RouteSheets = () => {
                 <PlanView day={data} canWrite={canWrite && !closed} canDecide={canWrite} onOpen={openSheet} />
               )}
               {view === 'sheet' && <SheetView day={data} sheetId={sheetId} canWrite={canWrite} onPick={openSheet} />}
-              {view === 'driver' && <DriverView day={data} sheetId={sheetId} onPick={openSheet} />}
             </div>
           </Card>
         </>
