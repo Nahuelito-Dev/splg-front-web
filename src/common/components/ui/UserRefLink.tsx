@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import { formatShortId } from '../../../utils/format';
 import { cx } from './cx';
-import { PersonAvatar } from './PersonAvatar';
 
 interface Props {
   userId: string;
