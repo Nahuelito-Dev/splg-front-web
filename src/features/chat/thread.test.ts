@@ -3,6 +3,7 @@ import { msg } from '../../test/chatFixtures';
 import {
   decideIncoming,
   dropConfirmed,
+  lastCounterpartSeq,
   lastIncomingSeq,
   mergeMessages,
   refreshKnown,
@@ -60,6 +61,8 @@ describe('mensajes de la bandeja en el núcleo del hilo', () => {
     body: 'hola',
     templateKey: null,
     systemCode: null,
+    automated: false,
+    senderLabel: null,
     payload: null,
     replyTo: null,
     editedAt: null,
@@ -91,5 +94,29 @@ describe('mensajes de la bandeja en el núcleo del hilo', () => {
 
   it('una versión de un mensaje que el hilo no tiene no se agrega', () => {
     expect(replaceMessage([base], { ...base, seq: 9 })).toEqual([base]);
+  });
+});
+
+describe('el último mensaje del cliente o del chofer (sugerencias)', () => {
+  it('no cuentan la empresa, el sistema ni el asistente', () => {
+    expect(
+      lastCounterpartSeq([
+        msg(1, { party: 'customer' }),
+        msg(2, { party: 'company', isMine: true }),
+        msg(3, { party: 'system', kind: 'system' }),
+      ]),
+    ).toBe(1);
+    expect(lastCounterpartSeq([msg(1, { party: 'company' }), msg(4, { party: 'driver' })])).toBe(4);
+    expect(lastCounterpartSeq([msg(1, { party: 'company' })])).toBe(0);
+    expect(lastCounterpartSeq([])).toBe(0);
+    // Como el back: ni borrados, ni retirados, ni sin texto; vale el anterior.
+    expect(
+      lastCounterpartSeq([
+        msg(1, { party: 'customer' }),
+        { ...msg(2, { party: 'customer', body: 'retirado' }), deleted: true },
+        msg(3, { party: 'driver', redacted: true }),
+      ]),
+    ).toBe(1);
+    expect(lastCounterpartSeq([msg(1, { party: 'customer', kind: 'quoted_excerpt' })])).toBe(0);
   });
 });

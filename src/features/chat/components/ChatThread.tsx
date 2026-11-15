@@ -8,7 +8,7 @@ import { useThread, type ThreadSource } from '../../../services/queries/chatThre
 import type { SendExtras } from '../../../services/queries/chatThread';
 import { errorMessage, toApiError } from '../../../services/api/errors';
 import { notify } from '../../../utils/notifications';
-import { lastSeqOf, type ChatMessage, type PendingMessage } from '../thread';
+import { lastCounterpartSeq, lastSeqOf, type ChatMessage, type PendingMessage } from '../thread';
 import { useTyping } from '../typing';
 import { useConversationRoom } from '../useConversationRoom';
 import { Composer, type ComposerBanner, type QuickReply } from './Composer';
@@ -41,6 +41,11 @@ export interface ChatThreadProps {
   empty: ReactNode;
   /** Cambia cuando hay que releer lo que se ve (p. ej. se abrió un ticket que cita mensajes). */
   reloadKey?: string | number;
+  /**
+   * Sugerencias de respuesta arriba del compositor (bandeja). Recibe el número del último mensaje del cliente o del
+   * chofer (cambia cuando escribe otro) y `pick`, que pega un texto en el compositor para editarlo: nunca lo envía.
+   */
+  renderSuggestions?: (args: { lastCounterpartSeq: number; pick: (text: string) => void }) => ReactNode;
 }
 
 const useVisible = () => {
@@ -69,6 +74,7 @@ export const ChatThread = ({
   reloadKey,
   allowReply = false,
   variables,
+  renderSuggestions,
 }: ChatThreadProps) => {
   const { conversationId } = source;
   const { thread, isPending, error, refetch, loadOlder, loadingOlder, olderError, send, edit, retry, discard, reload } =
@@ -196,6 +202,10 @@ export const ChatThread = ({
     [discard],
   );
 
+  // Una sugerencia elegida se suma donde está el cursor: no pisa lo que ya se escribió.
+  const [insert, setInsert] = useState<{ text: string; nonce: number } | null>(null);
+  const pickSuggestion = useCallback((text: string) => setInsert({ text, nonce: Date.now() }), []);
+
   const partyName = ctx.partyName;
   const banner: ComposerBanner | null = editing
     ? { kind: 'edit', title: 'Editando tu mensaje', preview: editing.body ?? '' }
@@ -240,11 +250,16 @@ export const ChatThread = ({
           quickReplies={quickReplies}
           allowInternal={allowInternal}
           draft={draft}
+          insert={insert}
           banner={banner}
           onCancelBanner={cancelBanner}
           focusKey={focusKey}
           editText={editText}
           variables={variables}
+          suggestions={renderSuggestions?.({
+            lastCounterpartSeq: lastCounterpartSeq(thread.messages),
+            pick: pickSuggestion,
+          })}
         />
       ) : (
         readOnlyNotice

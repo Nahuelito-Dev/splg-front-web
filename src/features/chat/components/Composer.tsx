@@ -1,9 +1,10 @@
 import { Check, CornerUpLeft, Lock, PencilLine, SendHorizontal, X } from 'lucide-react';
-import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { cx } from '../../../common/components/ui';
 import { MESSAGE_MAX } from '../../../services/api/supportChat';
 import type { MessageTemplate } from '../../../services/api/types';
 import type { SendExtras } from '../../../services/queries/chatThread';
+import { insertAt } from '../insertText';
 import { fillVariables } from '../variables';
 
 /** Un «escribiendo…» cada 3 segundos como mucho (el servidor descarta los que vengan antes). */
@@ -62,6 +63,11 @@ interface Props {
   allowInternal?: boolean;
   /** Texto a cargar en el compositor (p. ej. lo de un envío descartado). */
   draft?: { text: string; nonce: number } | null;
+  /**
+   * Texto a sumar donde está el cursor (una sugerencia elegida): no pisa lo escrito y queda en el borrador. El foco
+   * vuelve al campo con el cursor al final de lo insertado.
+   */
+  insert?: { text: string; nonce: number } | null;
   /** Respuesta a un mensaje o edición en curso: se muestra arriba y se cancela con Esc o con la cruz. */
   banner?: ComposerBanner | null;
   onCancelBanner?: () => void;
@@ -78,6 +84,8 @@ interface Props {
    * una `{{…}}` literal.
    */
   variables?: Readonly<Record<string, string | null>>;
+  /** Arriba del campo, debajo de la cita: las sugerencias de respuesta (bandeja). Sin nada, no ocupa lugar. */
+  suggestions?: ReactNode;
 }
 
 /**
@@ -92,11 +100,13 @@ export const Composer = ({
   quickReplies,
   allowInternal,
   draft,
+  insert,
   banner,
   onCancelBanner,
   focusKey,
   editText,
   variables,
+  suggestions,
 }: Props) => {
   const [text, setTextState] = useState(() => readDraft(draftKey));
   const editing = banner?.kind === 'edit';
@@ -128,6 +138,34 @@ export const Composer = ({
   }, [draft, draftKey]);
 
   useEffect(() => setTextState(readDraft(draftKey)), [draftKey]);
+
+  // Lo último escrito, para insertar sin que el efecto dependa de cada tecla.
+  const textRef = useRef(text);
+  textRef.current = text;
+  // Dónde dejó el cursor la persona (al hacer clic en un chip el campo pierde el foco). Sin tocarlo, va al final.
+  const selection = useRef<{ start: number; end: number } | null>(null);
+  useEffect(() => {
+    selection.current = null;
+  }, [draftKey]);
+  useEffect(() => {
+    if (!insert) return;
+    const el = area.current;
+    const current = textRef.current;
+    const { text: next, caret } = insertAt(
+      current,
+      insert.text,
+      selection.current?.start ?? current.length,
+      selection.current?.end ?? current.length,
+    );
+    selection.current = { start: caret, end: caret };
+    setTextState(next);
+    writeDraft(draftKey, next);
+    if (el) {
+      el.focus();
+      // El valor nuevo llega con el próximo render: el cursor se ubica después.
+      window.requestAnimationFrame(() => el.setSelectionRange(caret, caret));
+    }
+  }, [insert, draftKey]);
 
   // Entra a editar: el texto del mensaje (sin tocar el borrador guardado). Sale: vuelve el borrador que había.
   useEffect(() => {
@@ -300,6 +338,7 @@ export const Composer = ({
           )}
         </ul>
       )}
+      {!editing && suggestions}
       {allowInternal && (
         <div className="mb-2 inline-flex rounded-lg border border-outline p-0.5 text-xs" role="group" aria-label="Tipo">
           <button
@@ -331,6 +370,12 @@ export const Composer = ({
           rows={1}
           onChange={(event) => onChange(event.target.value)}
           onKeyDown={onKeyDown}
+          onSelect={(event) =>
+            (selection.current = {
+              start: event.currentTarget.selectionStart,
+              end: event.currentTarget.selectionEnd,
+            })
+          }
           aria-label="Mensaje"
           aria-describedby={missing.length ? `${countId} ${countId}-vars` : countId}
           aria-invalid={missing.length > 0 || undefined}

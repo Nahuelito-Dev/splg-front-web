@@ -43,6 +43,7 @@ import { AssignModal } from './AssignModal';
 import { ClaimFromChatModal } from './ClaimFromChatModal';
 import { ConversationContext } from './ConversationContext';
 import { hasConversationContext } from './hasConversationContext';
+import { ReplySuggestions } from './ReplySuggestions';
 
 interface Props {
   id: string;
@@ -287,6 +288,9 @@ export const ConversationPanel = ({ id, myUserId, companyName, access }: Props) 
           variables={variables}
           empty={<p className="px-4 py-10 text-center text-sm text-muted">Todavía no hay mensajes.</p>}
           reloadKey={conversation.linkedClaimId ?? undefined}
+          renderSuggestions={({ lastCounterpartSeq, pick }) => (
+            <ReplySuggestions conversationId={id} lastCounterpartSeq={lastCounterpartSeq} onPick={pick} />
+          )}
         />
       </Card>
       {withContext && (

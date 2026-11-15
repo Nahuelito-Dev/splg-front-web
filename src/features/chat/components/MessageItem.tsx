@@ -7,6 +7,7 @@ import { formatDateTime, formatTime } from '../../../utils/format';
 import { claimOfSystem, isOutOfHoursReply, systemText, ticketOfSystem } from '../messageText';
 import { messageDomId, useCanEditNow } from '../messageActions';
 import type { ChatMessage } from '../thread';
+import { AutomatedMark } from './AutomatedMark';
 import { MessageText } from './MessageText';
 import { QuotedExcerpt } from './QuotedExcerpt';
 
@@ -90,7 +91,9 @@ const ReplyQuote = ({ message, ctx, onPrimary }: { message: ChatMessage; ctx: Me
 const MessageItemView = ({ message, first, ctx }: Props) => {
   const variant = ctx.variant ?? 'support';
   const editableNow = useCanEditNow(message);
-  if (SYSTEM_KINDS.has(message.kind)) {
+  // Lo que manda el asistente (aunque sea un aviso de sistema, como el de recibido) va en burbuja, firmado y marcado.
+  const automated = Boolean(message.automated);
+  if (SYSTEM_KINDS.has(message.kind) && !automated) {
     const ticket = ticketOfSystem(message);
     const claimId = claimOfSystem(message);
     return (
@@ -129,12 +132,16 @@ const MessageItemView = ({ message, first, ctx }: Props) => {
   // Sólo la bandeja (y sólo para el personal) trae el usuario de quien escribió: su foto de perfil.
   const senderUserId = (message.sender as { userId?: string } | null | undefined)?.userId ?? null;
   const internal = message.visibility === 'internal';
-  const auto = message.kind === 'auto_reply';
+  const auto = automated || message.kind === 'auto_reply';
+  // La marca «Respuesta automática»: la bandeja (siempre) y lo que la API marque como automático.
+  const marked = automated || (auto && variant === 'inbox');
   const deleted = Boolean(message.deleted);
   const selectable = ctx.selection && !auto;
   const checked = ctx.selection?.selected.has(message.seq) ?? false;
   const other = ctx.counterpartName ?? ctx.platformName;
-  const author = auto ? (ctx.autoName ?? ctx.platformName) : (message.sender?.displayName ?? (mine ? 'Vos' : other));
+  const author = auto
+    ? (message.senderLabel ?? ctx.autoName ?? ctx.platformName)
+    : (message.sender?.displayName ?? (mine ? 'Vos' : other));
   const onPrimary = mine && !internal && !deleted;
   const replyable = ctx.onReply && !deleted && !auto && message.body !== null;
   const editable = ctx.onEdit && mine && editableNow;
@@ -174,9 +181,10 @@ const MessageItemView = ({ message, first, ctx }: Props) => {
         ))}
       <div className={cx('flex max-w-[85%] flex-col sm:max-w-[70%]', mine ? 'items-end' : 'items-start')}>
         {first && (
-          <span className="mb-0.5 flex items-center gap-1 px-1 text-[11px] font-medium text-muted">
+          <span className="mb-0.5 flex flex-wrap items-center gap-1 px-1 text-[11px] font-medium text-muted">
             {internal && <Lock aria-hidden="true" className="h-3 w-3" />}
-            {internal ? `Nota interna · ${author}` : auto && variant === 'inbox' ? `${author} · automática` : author}
+            {internal ? `Nota interna · ${author}` : author}
+            {marked && <AutomatedMark />}
           </span>
         )}
         <div

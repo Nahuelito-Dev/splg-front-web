@@ -12,6 +12,7 @@ import {
   getBusinessHours,
   getChatSettings,
   getConversation,
+  getConversationSuggestions,
   listCompanyTemplates,
   listConversationMessages,
   listConversations,
@@ -49,13 +50,15 @@ export const inboxKeys = {
   settings: () => [...root, 'settings'] as const,
   hours: () => [...root, 'hours'] as const,
   templates: (params: object = {}) => [...root, 'templates', params] as const,
+  /** Por el último mensaje de la persona que tiene el hilo: uno nuevo del cliente o del chofer pide otras. */
+  suggestions: (conversationId: string, lastSeq: number) => [...root, 'suggestions', conversationId, lastSeq] as const,
 };
 
 /** Relee listas, fichas y contadores de la bandeja (los hilos se ponen al día por `seq`, no se releen). */
 export const invalidateInbox = (queryClient: QueryClient) =>
   queryClient.invalidateQueries({
     queryKey: root,
-    predicate: (query) => !['settings', 'hours', 'templates'].includes(String(query.queryKey[1])),
+    predicate: (query) => !['settings', 'hours', 'templates', 'suggestions'].includes(String(query.queryKey[1])),
   });
 
 /** Cada cuánto se relee el contador aunque el socket esté callado (red caída sin aviso). */
@@ -183,6 +186,21 @@ export const useInboxThread = (conversationId: string): ThreadBinding => {
   );
 };
 
+/**
+ * Las sugerencias de respuesta para quien atiende: se piden de nuevo cuando llega otro mensaje del cliente o del chofer
+ * (`lastSeq`). Mientras llegan las nuevas quedan las de antes de la misma conversación (no salta el compositor).
+ */
+export const useConversationSuggestions = (conversationId: string, lastSeq: number, enabled = true) =>
+  useQuery({
+    queryKey: inboxKeys.suggestions(conversationId, lastSeq),
+    queryFn: () => getConversationSuggestions(conversationId),
+    enabled,
+    staleTime: 60_000,
+    retry: false,
+    placeholderData: (previous, previousQuery) =>
+      previousQuery?.queryKey[2] === conversationId ? previous : undefined,
+  });
+
 // ── Configuración ─────────────────────────────────────────────────────────────
 
 /** Configuración de la bandeja (también `openNow` / `nextOpenAt` para el indicador «Fuera de horario»). */
@@ -227,7 +245,12 @@ const useTemplateMutation = <V, R>(fn: (vars: V) => Promise<R>) => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: fn,
-    onSettled: () => queryClient.invalidateQueries({ queryKey: [...root, 'templates'] }),
+    // Las sugerencias salen de las respuestas guardadas: un cambio también las vuelve a pedir.
+    onSettled: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: [...root, 'templates'] }),
+        queryClient.invalidateQueries({ queryKey: [...root, 'suggestions'] }),
+      ]),
   });
 };
 

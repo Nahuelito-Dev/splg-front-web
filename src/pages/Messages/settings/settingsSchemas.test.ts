@@ -65,6 +65,8 @@ describe('respuestas automáticas y guardadas', () => {
     expect(unknownVariables('Hola {{cliente.apellido}}')).toEqual(['cliente.apellido']);
     const auto = autoRepliesSchema.safeParse({
       customerChatEnabled: true,
+      assistantName: '',
+      handoffMessage: '',
       outOfHoursEnabled: true,
       outOfHoursMessage: 'Volvemos {{horario.vuelta}}',
       ackEnabled: false,
@@ -77,6 +79,8 @@ describe('respuestas automáticas y guardadas', () => {
   it('el objetivo de primera respuesta va de 5 a 1440 minutos', () => {
     const base = {
       customerChatEnabled: true,
+      assistantName: '',
+      handoffMessage: '',
       outOfHoursEnabled: false,
       outOfHoursMessage: '',
       ackEnabled: false,
@@ -85,6 +89,84 @@ describe('respuestas automáticas y guardadas', () => {
     expect(autoRepliesSchema.safeParse({ ...base, firstResponseTargetMinutes: 4 }).success).toBe(false);
     expect(autoRepliesSchema.safeParse({ ...base, firstResponseTargetMinutes: 1441 }).success).toBe(false);
     expect(autoRepliesSchema.safeParse({ ...base, firstResponseTargetMinutes: 30 }).success).toBe(true);
+  });
+
+  it('el nombre del asistente: vacío o de 2 a 60 caracteres, en una línea y sólo con {{empresa.nombre}}', () => {
+    const base = {
+      customerChatEnabled: true,
+      handoffMessage: '',
+      outOfHoursEnabled: false,
+      outOfHoursMessage: '',
+      ackEnabled: false,
+      ackMessage: '',
+      firstResponseTargetMinutes: 30,
+    };
+    const name = (assistantName: string) => issues(autoRepliesSchema.safeParse({ ...base, assistantName }));
+    expect(name('')).toEqual([]);
+    expect(name('  Gasito  ')).toEqual([]);
+    expect(name('Asistente de {{empresa.nombre}}')).toEqual([]);
+    expect(name('G')).toEqual(['assistantName: El nombre tiene que tener entre 2 y 60 caracteres']);
+    expect(name('a'.repeat(61))).toEqual(['assistantName: El nombre tiene que tener entre 2 y 60 caracteres']);
+    // Como el back: un emoji es un carácter (60 con emojis entra).
+    expect(name('🔥'.repeat(60))).toEqual([]);
+    expect(name('Gas\tito')).toEqual(['assistantName: El nombre va en una sola línea']);
+    expect(name('Gas\u2028ito')).toEqual(['assistantName: El nombre va en una sola línea']);
+    expect(name('Hola {{cliente.nombre}}')).toEqual([
+      'assistantName: En el nombre sólo va {{empresa.nombre}} (no {{cliente.nombre}})',
+    ]);
+  });
+
+  it('el mensaje al pasar a una persona: hasta 500 y con las variables de siempre', () => {
+    const base = {
+      customerChatEnabled: true,
+      assistantName: '',
+      outOfHoursEnabled: false,
+      outOfHoursMessage: '',
+      ackEnabled: false,
+      ackMessage: '',
+      firstResponseTargetMinutes: 30,
+    };
+    const handoff = (handoffMessage: string) => issues(autoRepliesSchema.safeParse({ ...base, handoffMessage }));
+    expect(handoff('Te paso con {{empresa.nombre}}, {{cliente.nombre}}')).toEqual([]);
+    expect(handoff('x'.repeat(501))).toEqual(['handoffMessage: Hasta 500 caracteres']);
+    expect(handoff('Te paso con {{equipo.nombre}}')[0]).toMatch(/^handoffMessage: Variable desconocida/);
+  });
+
+  it('las variables se reconocen como en el back (sin llaves adentro)', () => {
+    expect(unknownVariables('Hola {{a{b}}')).toEqual([]);
+    expect(unknownVariables('Hola {{ cliente.nombre }} y {{x}}')).toEqual(['x']);
+  });
+
+  it('un texto con su interruptor apagado no se valida (no traba «Guardar»)', () => {
+    const base = {
+      customerChatEnabled: true,
+      assistantName: '',
+      handoffMessage: '',
+      outOfHoursMessage: 'Volvemos {{horario.vuelta}}',
+      ackMessage: 'x'.repeat(501),
+      firstResponseTargetMinutes: 30,
+    };
+    expect(issues(autoRepliesSchema.safeParse({ ...base, outOfHoursEnabled: false, ackEnabled: false }))).toEqual([]);
+    expect(issues(autoRepliesSchema.safeParse({ ...base, outOfHoursEnabled: true, ackEnabled: true }))).toEqual([
+      'outOfHoursMessage: Variable desconocida: {{horario.vuelta}}. Usá {{cliente.nombre}}, {{pedido.numero}}, {{empresa.nombre}}, {{horario.proximo}}',
+      'ackMessage: Hasta 500 caracteres',
+    ]);
+  });
+
+  it('el tope de los textos cuenta emojis como un carácter', () => {
+    const base = {
+      customerChatEnabled: true,
+      assistantName: '',
+      outOfHoursEnabled: false,
+      outOfHoursMessage: '',
+      ackEnabled: false,
+      ackMessage: '',
+      firstResponseTargetMinutes: 30,
+    };
+    expect(issues(autoRepliesSchema.safeParse({ ...base, handoffMessage: '🔥'.repeat(500) }))).toEqual([]);
+    expect(issues(autoRepliesSchema.safeParse({ ...base, handoffMessage: '🔥'.repeat(501) }))).toEqual([
+      'handoffMessage: Hasta 500 caracteres',
+    ]);
   });
 
   it('la clave de una respuesta guardada: minúsculas, números y guiones bajos; sale del título', () => {

@@ -1,5 +1,8 @@
 import { z } from 'zod';
 import {
+  ASSISTANT_NAME_MAX,
+  ASSISTANT_NAME_MIN,
+  ASSISTANT_NAME_VARIABLES,
   AUTO_MESSAGE_MAX,
   FIRST_RESPONSE_MAX,
   FIRST_RESPONSE_MIN,
@@ -19,7 +22,8 @@ import {
  */
 const HOUR = /^([01]\d|2[0-3]):([0-5]\d)$/;
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
-const VARIABLE = /\{\{\s*([^}]*?)\s*\}\}/g;
+/** La misma que el back (`variablesDe` en `domain/bandeja.ts`). */
+const VARIABLE = /\{\{\s*([^{}]*?)\s*\}\}/g;
 
 const minutesOf = (hour: string) => {
   const [h, m] = hour.split(':').map(Number);
@@ -105,15 +109,62 @@ export const businessHoursSchema = z
 
 export type BusinessHoursValues = z.infer<typeof businessHoursSchema>;
 
-const optionalText = z.string().max(AUTO_MESSAGE_MAX, `Hasta ${AUTO_MESSAGE_MAX} caracteres`);
+/** Largo en caracteres como lo cuenta el back (un emoji o una letra con tilde combinada es uno, no dos). */
+export const charCount = (text: string): number => [...text].length;
+
+/** Controles y separadores de línea o de párrafo: el nombre del asistente va en una sola línea. */
+const LINE_BREAK_OR_CONTROL = /[\p{Cc}\p{Zl}\p{Zp}]/u;
+
+const tooLong = (text: string) => charCount(text.trim()) > AUTO_MESSAGE_MAX;
+
+const lengthRule = (text: string, ctx: z.RefinementCtx, path: string) => {
+  if (tooLong(text)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: [path], message: `Hasta ${AUTO_MESSAGE_MAX} caracteres` });
+  }
+};
+
+const optionalText = z.string().refine((text) => !tooLong(text), `Hasta ${AUTO_MESSAGE_MAX} caracteres`);
+
+/**
+ * El nombre del asistente (`assertNombreDelAsistente` del back): vacío vuelve al de omisión; si no, recortado, de 2 a
+ * 60 caracteres, en una línea y sin otra variable que `{{empresa.nombre}}`.
+ */
+const assistantName = z.string().superRefine((raw, ctx) => {
+  const name = raw.trim();
+  if (!name) return;
+  const length = charCount(name);
+  if (length < ASSISTANT_NAME_MIN || length > ASSISTANT_NAME_MAX) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `El nombre tiene que tener entre ${ASSISTANT_NAME_MIN} y ${ASSISTANT_NAME_MAX} caracteres`,
+    });
+    return;
+  }
+  if (LINE_BREAK_OR_CONTROL.test(name)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'El nombre va en una sola línea' });
+    return;
+  }
+  const other = [...name.matchAll(VARIABLE)]
+    .map((match) => match[1])
+    .filter((variable) => !(ASSISTANT_NAME_VARIABLES as readonly string[]).includes(variable));
+  if (other.length) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `En el nombre sólo va {{empresa.nombre}} (no {{${other[0]}}})`,
+    });
+  }
+});
 
 export const autoRepliesSchema = z
   .object({
     customerChatEnabled: z.boolean(),
+    assistantName,
+    handoffMessage: optionalText,
     outOfHoursEnabled: z.boolean(),
-    outOfHoursMessage: optionalText,
+    // Con su interruptor apagado no se muestran ni se mandan: no se validan (no pueden trabar «Guardar»).
+    outOfHoursMessage: z.string(),
     ackEnabled: z.boolean(),
-    ackMessage: optionalText,
+    ackMessage: z.string(),
     firstResponseTargetMinutes: z
       .number({ invalid_type_error: 'Poné los minutos' })
       .int('Minutos enteros')
@@ -121,8 +172,15 @@ export const autoRepliesSchema = z
       .max(FIRST_RESPONSE_MAX, `Hasta ${FIRST_RESPONSE_MAX} minutos (un día)`),
   })
   .superRefine((values, ctx) => {
-    variablesRule(values.outOfHoursMessage, ctx, 'outOfHoursMessage');
-    variablesRule(values.ackMessage, ctx, 'ackMessage');
+    if (values.outOfHoursEnabled) {
+      lengthRule(values.outOfHoursMessage, ctx, 'outOfHoursMessage');
+      variablesRule(values.outOfHoursMessage, ctx, 'outOfHoursMessage');
+    }
+    if (values.ackEnabled) {
+      lengthRule(values.ackMessage, ctx, 'ackMessage');
+      variablesRule(values.ackMessage, ctx, 'ackMessage');
+    }
+    variablesRule(values.handoffMessage, ctx, 'handoffMessage');
   });
 
 export type AutoRepliesValues = z.infer<typeof autoRepliesSchema>;

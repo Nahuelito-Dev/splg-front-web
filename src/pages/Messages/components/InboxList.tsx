@@ -40,6 +40,15 @@ const ChannelIcon = ({ channel }: { channel: InboxChannel }) =>
     <UserRound aria-hidden="true" className="h-3 w-3" />
   );
 
+/**
+ * Quién dijo lo último, cuando no es la persona: el equipo, o el asistente (lo único del sistema que trae texto son
+ * las respuestas automáticas; los avisos sin texto son «Aviso del sistema»).
+ */
+const PREVIEW_PREFIX: Partial<Record<NonNullable<InboxConversation['lastMessage']>['party'], string>> = {
+  company: 'Equipo: ',
+  system: 'Asistente: ',
+};
+
 const Row = ({ conversation, selected, now }: { conversation: InboxConversation; selected: boolean; now: number }) => {
   const name = counterpartName(conversation);
   const last = conversation.lastMessage;
@@ -50,7 +59,7 @@ const Row = ({ conversation, selected, now }: { conversation: InboxConversation;
       ? last.party === 'system'
         ? 'Aviso del sistema'
         : 'Mensaje eliminado'
-      : `${last.party === 'company' ? 'Equipo: ' : ''}${last.preview}`
+      : `${PREVIEW_PREFIX[last.party] ?? ''}${last.preview}`
     : 'Sin mensajes';
   return (
     <Link

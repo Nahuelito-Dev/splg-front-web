@@ -10734,6 +10734,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/conversations/{id}/suggestions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Sugerencias de respuesta
+     * @description Hasta 3 respuestas guardadas de la empresa (activas y de este canal) parecidas al último mensaje del cliente o del chofer, sin IA: búsqueda de texto en castellano, sin tildes. Con las variables ya completadas para esta conversación. No manda nada: el panel las ofrece para pegar y editar. Lista vacía si nada se parece o si la persona todavía no escribió.
+     */
+    get: operations['CompanyInboxController_sugerir'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v2/conversations/{id}/messages': {
     parameters: {
       query?: never;
@@ -10887,12 +10907,12 @@ export interface paths {
     };
     /**
      * Parámetros de la bandeja
-     * @description Con los textos que se mandan de verdad (`effective*`) y si la empresa atiende ahora.
+     * @description Con los textos que se mandan de verdad (`effective*`), el nombre del asistente con el de la empresa puesto y si la empresa atiende ahora.
      */
     get: operations['CompanyChatConfigController_leer'];
     /**
      * Cambiar los parámetros de la bandeja
-     * @description Lo que no viene queda como estaba.
+     * @description Lo que no viene queda como estaba; `null` en un texto o en el nombre del asistente vuelve al de omisión. Queda en la auditoría.
      */
     put: operations['CompanyChatConfigController_actualizar'];
     post?: never;
@@ -25009,7 +25029,14 @@ export interface components {
         | 'driver_changed'
         | 'claim_created'
         | null;
-      /** @description `claim_created`: `{ claimId }`; respuesta fuera de horario: `{ until }` (fin del período cerrado) */
+      /** @description Lo mandó el asistente (fuera de horario, aviso de recibido): mostrarlo con la marca «Respuesta automática» */
+      automated: boolean;
+      /**
+       * @description Con `automated`, el nombre con que firmó el asistente al mandarlo (cambiarlo después no reescribe el historial; los anteriores a guardarlo, el vigente); `null` en los demás
+       * @example Asistente de Gas del Sur
+       */
+      senderLabel: string | null;
+      /** @description `claim_created`: `{ claimId }`; respuesta fuera de horario: `{ until, senderLabel }` (fin del período cerrado y firma); aviso de recibido: `{ senderLabel }` */
       payload: {
         [key: string]: unknown;
       } | null;
@@ -25048,6 +25075,25 @@ export interface components {
       /** @description La conversación general de cada chofer, en el orden pedido */
       conversationIds: string[];
     };
+    InboxSuggestionDto: {
+      /** Format: uuid */
+      templateId: string;
+      /** @example medios_de_pago */
+      key: string;
+      /** @example Medios de pago */
+      title: string;
+      /**
+       * @description El texto listo para editar en el compositor (no se manda solo)
+       * @example Hola Ana, podés pagar en efectivo o con Mercado Pago.
+       */
+      body: string;
+    };
+    InboxSuggestionsResponseDto: {
+      /** @description El `seq` del mensaje del cliente o del chofer con que se buscó; `null` si todavía no escribió nada */
+      basedOnSeq: number | null;
+      /** @description Hasta 3, de la más parecida a la menos. Vacía si ninguna se parece. */
+      items: components['schemas']['InboxSuggestionDto'][];
+    };
     InboxMessageListResponseDto: {
       /** @description En orden de `seq` */
       items: components['schemas']['InboxMessageDto'][];
@@ -25081,6 +25127,17 @@ export interface components {
     };
     ChatSettingsResponseDto: {
       customerChatEnabled: boolean;
+      /** @description Nombre del asistente tal como se guardó (puede tener `{{empresa.nombre}}`); `null`: el de omisión */
+      assistantName: string | null;
+      /**
+       * @description El nombre con que se firman las respuestas automáticas, con el nombre de la empresa puesto (`senderLabel` de los mensajes)
+       * @example Asistente de Gas del Sur
+       */
+      effectiveAssistantName: string;
+      /** @description Lo que dice el asistente al pasar la conversación a una persona; `null`: el de omisión */
+      handoffMessage: string | null;
+      /** @description El texto de derivación que se usa (el propio o el de omisión), con sus variables sin completar */
+      effectiveHandoffMessage: string;
       outOfHoursEnabled: boolean;
       outOfHoursMessage: string | null;
       /** @description El texto que se manda (el propio o el de omisión) */
@@ -25100,6 +25157,13 @@ export interface components {
     UpdateChatSettingsDto: {
       /** @description Apagado: los clientes no pueden abrir ni escribir (C3); los choferes sí. */
       customerChatEnabled?: boolean;
+      /**
+       * @description Nombre del asistente, con el que se firman las respuestas automáticas: de 2 a 60 caracteres (contados como letras, no en UTF-16) en una sola línea (sin saltos ni separadores de línea, U+2028/U+2029). Sólo admite `{{empresa.nombre}}` (otra → 400 `TEMPLATE_VARIABLE_UNKNOWN`); `null`: «Asistente de {{empresa.nombre}}».
+       * @example Asistente de {{empresa.nombre}}
+       */
+      assistantName?: string | null;
+      /** @description Lo que dice el asistente al pasar la conversación a una persona, con variables; `null`: «Te paso con alguien del equipo de {{empresa.nombre}}. Te va a responder a la brevedad.» */
+      handoffMessage?: string | null;
       /** @description Responder automáticamente al cliente fuera de horario (una vez por período cerrado) */
       outOfHoursEnabled?: boolean;
       /** @description Texto de la respuesta fuera de horario, con variables; `null`: «Ahora estamos fuera de horario. Te respondemos {{horario.proximo}}.» */
@@ -62898,6 +62962,55 @@ export interface operations {
       };
     };
   };
+  CompanyInboxController_sugerir: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InboxSuggestionsResponseDto'];
+        };
+      };
+      /** @description Id que no es uuid */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para atender los mensajes de los clientes (`mensajes.clientes`) ni para atender los mensajes de los choferes (`mensajes.choferes`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe, es de otra empresa o de un canal que quien pide no atiende */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   CompanyInboxController_mensajes: {
     parameters: {
       query?: {
@@ -63437,7 +63550,7 @@ export interface operations {
           'application/json': components['schemas']['ChatSettingsResponseDto'];
         };
       };
-      /** @description Valor fuera de rango, texto vacío o de más de 500, o variable desconocida (`TEMPLATE_VARIABLE_UNKNOWN`) */
+      /** @description Valor fuera de rango, texto vacío o de más de 500, nombre del asistente de menos de 2 o más de 60 caracteres o en más de una línea, o variable desconocida o que no corresponde (`TEMPLATE_VARIABLE_UNKNOWN`) */
       400: {
         headers: {
           [name: string]: unknown;

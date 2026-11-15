@@ -3,12 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { Button, Card, EmptyState, PageContainer, PageHeader } from '../../common/components/ui';
 import { MESSAGES_PATH } from '../../features/chat/routes';
 import { useInboxAccess } from '../../features/chat/useInboxAccess';
-import { AutoRepliesCard } from './settings/AutoRepliesCard';
+import { AssistantCard } from './settings/AssistantCard';
 import { BusinessHoursCard } from './settings/BusinessHoursCard';
 import { TemplatesCard } from './settings/TemplatesCard';
 
 /**
- * «Mensajes y horario» (§15.2, Configuración): horario de atención con días sin atención, respuestas automáticas y
+ * «Mensajes y horario» (§15.2, Configuración): horario de atención con días sin atención, el asistente y
  * respuestas guardadas. Edita quien tiene `mensajes.configurar`; quien atiende la bandeja la puede leer.
  */
 export const MessagesSettings = () => {
@@ -44,7 +44,7 @@ export const MessagesSettings = () => {
         }
       />
       <BusinessHoursCard canEdit={canEdit} />
-      <AutoRepliesCard canEdit={canEdit} />
+      <AssistantCard canEdit={canEdit} />
       <TemplatesCard canEdit={canEdit} />
     </PageContainer>
   );

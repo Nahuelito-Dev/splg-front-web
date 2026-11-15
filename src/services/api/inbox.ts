@@ -14,6 +14,7 @@ import type {
   InboxList,
   InboxMessage,
   InboxMessageList,
+  InboxSuggestions,
   OpenConversation,
   OpenStaffConversationBody,
   SendStaffMessageBody,
@@ -50,6 +51,21 @@ export const TEMPLATE_BODY_MAX = 1000;
 export const AUTO_MESSAGE_MAX = 500;
 export const FIRST_RESPONSE_MIN = 5;
 export const FIRST_RESPONSE_MAX = 1440;
+/** Nombre del asistente (`UpdateChatSettingsDto.assistantName`): de 2 a 60 caracteres, en una línea. */
+export const ASSISTANT_NAME_MIN = 2;
+export const ASSISTANT_NAME_MAX = 60;
+/** La única variable que admite el nombre del asistente (es una firma: no depende de la conversación). */
+export const ASSISTANT_NAME_VARIABLES = ['empresa.nombre'] as const;
+/**
+ * Los textos de omisión del back (`domain/bandeja.ts`). La API los devuelve en `effective*` mientras la empresa no
+ * escribió uno propio; con uno propio guardado, son lo que vuelve si se borra (vista previa y ayuda del campo).
+ */
+export const DEFAULT_ASSISTANT_NAME = 'Asistente de {{empresa.nombre}}';
+export const DEFAULT_HANDOFF_MESSAGE =
+  'Te paso con alguien del equipo de {{empresa.nombre}}. Te va a responder a la brevedad.';
+export const DEFAULT_OUT_OF_HOURS_MESSAGE = 'Ahora estamos fuera de horario. Te respondemos {{horario.proximo}}.';
+export const DEFAULT_ACK_MESSAGE =
+  'Recibimos tu mensaje. Alguien del equipo de {{empresa.nombre}} te va a atender a la brevedad.';
 /** Motivo de un día sin atención (`ChatHolidayDto.reason`). */
 export const HOLIDAY_REASON_MIN = 2;
 export const HOLIDAY_REASON_MAX = 120;
@@ -128,6 +144,15 @@ export const editConversationMessage = async (
     { body },
     V2,
   );
+  return data;
+};
+
+/**
+ * GET /v2/conversations/:id/suggestions: hasta 3 respuestas guardadas parecidas al último mensaje del cliente o del
+ * chofer (`basedOnSeq`), con las variables ya completadas. Vacía si nada se parece. No manda nada.
+ */
+export const getConversationSuggestions = async (conversationId: string): Promise<InboxSuggestions> => {
+  const { data } = await http.get<InboxSuggestions>(`/conversations/${id(conversationId)}/suggestions`, V2);
   return data;
 };
 

@@ -23,6 +23,7 @@ const api = vi.hoisted(() => ({
   createClaimFromConversation: vi.fn(),
   getChatSettings: vi.fn(),
   listCompanyTemplates: vi.fn(() => Promise.resolve({ items: [] })),
+  getConversationSuggestions: vi.fn(),
 }));
 const confirmMock = vi.hoisted(() => vi.fn(() => Promise.resolve(true)));
 
@@ -58,6 +59,7 @@ vi.mock('../../features/chat/inbox/BroadcastDriversModal', () => ({
   BroadcastDriversModal: ({ open }: { open: boolean }) => (open ? <p>modal de aviso</p> : null),
 }));
 
+import { useInboxBridge } from '../../features/chat/useInboxBridge';
 import { inboxKeys } from '../../services/queries/inbox';
 import { Messages } from './Messages';
 
@@ -69,6 +71,10 @@ const list = (items: InboxConversation[], counts = { unassigned: 2, mine: 1, ope
 
 const SETTINGS = {
   customerChatEnabled: true,
+  assistantName: null,
+  effectiveAssistantName: 'Asistente de Gas Norte',
+  handoffMessage: null,
+  effectiveHandoffMessage: 'Te paso',
   outOfHoursEnabled: true,
   outOfHoursMessage: null,
   effectiveOutOfHoursMessage: 'Fuera',
@@ -88,6 +94,7 @@ beforeEach(() => {
   api.getConversation.mockResolvedValue(inboxConversation());
   api.listConversationMessages.mockResolvedValue({ items: [inboxMsg(1)], hasMore: false });
   api.getChatSettings.mockResolvedValue(SETTINGS);
+  api.getConversationSuggestions.mockResolvedValue({ basedOnSeq: 1, items: [] });
 });
 afterEach(cleanup);
 
@@ -339,5 +346,187 @@ describe('Mensajes: una conversación', () => {
     api.getConversation.mockRejectedValue(new ApiError(404, ['No existe']));
     show('/messages/conv-x');
     expect(await screen.findByText('La conversación no existe')).toBeInTheDocument();
+  });
+});
+
+const SUGGESTION = {
+  templateId: 'tpl-pago',
+  key: 'medios_de_pago',
+  title: 'Medios de pago',
+  body: 'Hola Lucía, podés pagar en efectivo o con Mercado Pago.',
+};
+
+const Bridge = () => {
+  useInboxBridge(true);
+  return null;
+};
+
+describe('Mensajes: sugerencias de respuesta', () => {
+  const showLive = () => {
+    const socket = fakeSocket();
+    render(
+      <ChatProviders client={newQueryClient()} socket={socket.value} url="/messages/conv-1">
+        <Bridge />
+        <Routes>
+          <Route path="/messages/:id" element={<Messages />} />
+        </Routes>
+      </ChatProviders>,
+    );
+    return socket;
+  };
+
+  it('las muestra arriba del compositor; un clic pega el texto para editar y no envía nada', async () => {
+    api.getConversationSuggestions.mockResolvedValue({ basedOnSeq: 1, items: [SUGGESTION] });
+    showLive();
+    const group = await screen.findByRole('group', { name: 'Respuestas sugeridas' });
+    const chip = within(group).getByRole('button', { name: /Usar «Medios de pago» en el mensaje/ });
+    expect(api.getConversationSuggestions).toHaveBeenCalledWith('conv-1');
+    fireEvent.click(chip);
+    const composer = screen.getByRole('textbox', { name: 'Mensaje' });
+    expect(composer).toHaveValue(SUGGESTION.body);
+    expect(composer).toHaveFocus();
+    expect(api.sendConversationMessage).not.toHaveBeenCalled();
+  });
+
+  it('con algo escrito, la sugerencia se suma donde está el cursor y el borrador queda combinado', async () => {
+    sessionStorage.setItem('chatDraft:conv-1', 'Ramón,');
+    api.getConversationSuggestions.mockResolvedValue({ basedOnSeq: 1, items: [SUGGESTION] });
+    showLive();
+    const composer = await screen.findByRole('textbox', { name: 'Mensaje' });
+    expect(composer).toHaveValue('Ramón,');
+    fireEvent.click(await screen.findByRole('button', { name: /Usar «Medios de pago»/ }));
+    const combined = `Ramón, ${SUGGESTION.body}`;
+    expect(composer).toHaveValue(combined);
+    expect(sessionStorage.getItem('chatDraft:conv-1')).toBe(combined);
+    expect(api.sendConversationMessage).not.toHaveBeenCalled();
+    sessionStorage.clear();
+  });
+
+  it('si se borra el último mensaje del cliente y no hay otro, las sugerencias se ocultan', async () => {
+    api.getConversationSuggestions.mockResolvedValue({ basedOnSeq: 1, items: [SUGGESTION] });
+    const socket = showLive();
+    await screen.findByRole('group', { name: 'Respuestas sugeridas' });
+    act(() =>
+      socket.fire('chat:message-deleted', {
+        conversationId: 'conv-1',
+        distributorId: 'd-1',
+        seq: 1,
+        message: inboxMsg(1, { body: null, deleted: true, deletedAt: '2026-11-15T13:06:00.000Z' }),
+      }),
+    );
+    expect(await screen.findByText('Mensaje eliminado')).toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Respuestas sugeridas' })).not.toBeInTheDocument();
+    expect(api.getConversationSuggestions).toHaveBeenCalledTimes(1);
+  });
+
+  it('sin sugerencias no ocupan lugar', async () => {
+    showLive();
+    expect(await screen.findByRole('textbox', { name: 'Mensaje' })).toBeInTheDocument();
+    await waitFor(() => expect(api.getConversationSuggestions).toHaveBeenCalled());
+    expect(screen.queryByRole('group', { name: 'Respuestas sugeridas' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Sugeridas')).not.toBeInTheDocument();
+  });
+
+  it('se piden de nuevo cuando escribe el cliente, no cuando escribe la empresa', async () => {
+    api.getConversationSuggestions.mockResolvedValue({ basedOnSeq: 1, items: [SUGGESTION] });
+    const socket = showLive();
+    await screen.findByRole('group', { name: 'Respuestas sugeridas' });
+    expect(api.getConversationSuggestions).toHaveBeenCalledTimes(1);
+    act(() =>
+      socket.fire('chat:message', {
+        conversationId: 'conv-1',
+        distributorId: 'd-1',
+        seq: 2,
+        message: inboxMsg(2, { party: 'company', isMine: false, sender: { displayName: 'Beto' }, body: 'ya va' }),
+      }),
+    );
+    expect(await screen.findByText('ya va')).toBeInTheDocument();
+    expect(api.getConversationSuggestions).toHaveBeenCalledTimes(1);
+    api.getConversationSuggestions.mockResolvedValue({
+      basedOnSeq: 3,
+      items: [{ ...SUGGESTION, templateId: 'tpl-horario', title: 'Horario', body: 'Atendemos de 9 a 18.' }],
+    });
+    act(() =>
+      socket.fire('chat:message', {
+        conversationId: 'conv-1',
+        distributorId: 'd-1',
+        seq: 3,
+        message: inboxMsg(3, { body: '¿a qué hora abren?' }),
+      }),
+    );
+    expect(await screen.findByRole('button', { name: /Usar «Horario»/ })).toBeInTheDocument();
+    expect(api.getConversationSuggestions).toHaveBeenCalledTimes(2);
+    expect(screen.queryByRole('button', { name: /Usar «Medios de pago»/ })).not.toBeInTheDocument();
+  });
+
+  it('si fallan, lo dice y se puede reintentar', async () => {
+    api.getConversationSuggestions.mockRejectedValueOnce(new Error('caído'));
+    showLive();
+    expect(await screen.findByText('No se pudieron traer las respuestas sugeridas.')).toBeInTheDocument();
+    api.getConversationSuggestions.mockResolvedValue({ basedOnSeq: 1, items: [SUGGESTION] });
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
+    expect(await screen.findByRole('group', { name: 'Respuestas sugeridas' })).toBeInTheDocument();
+  });
+
+  it('una conversación cerrada (sin compositor) no las pide', async () => {
+    api.getConversation.mockResolvedValue(inboxConversation({ status: 'closed', canWrite: false }));
+    showLive();
+    expect(await screen.findByText(/La conversación está cerrada/)).toBeInTheDocument();
+    expect(api.getConversationSuggestions).not.toHaveBeenCalled();
+  });
+});
+
+describe('Mensajes: lo que manda el asistente', () => {
+  it('en la lista, el último mensaje del asistente se ve con su firma corta; un aviso sin texto, como aviso', async () => {
+    api.listConversations.mockResolvedValue(
+      list([
+        inboxConversation({
+          lastMessage: { seq: 2, preview: 'Recibimos tu mensaje.', at: '2026-11-15T13:02:00.000Z', party: 'system' },
+        }),
+        inboxConversation({
+          id: 'conv-2',
+          lastMessage: { seq: 3, preview: null, at: '2026-11-15T13:03:00.000Z', party: 'system' },
+        }),
+      ]),
+    );
+    show();
+    expect(await screen.findByText('Asistente: Recibimos tu mensaje.')).toBeInTheDocument();
+    expect(screen.getByText('Aviso del sistema')).toBeInTheDocument();
+  });
+
+  it('va firmado con el nombre del asistente y con la marca «Respuesta automática»; los avisos del sistema no', async () => {
+    api.listConversationMessages.mockResolvedValue({
+      items: [
+        inboxMsg(1),
+        inboxMsg(2, {
+          party: 'system',
+          sender: null,
+          kind: 'system',
+          systemCode: 'received_ack',
+          body: 'Recibimos tu mensaje.',
+          automated: true,
+          senderLabel: 'Gasito de Gas Norte',
+        }),
+        inboxMsg(3, {
+          party: 'system',
+          sender: null,
+          kind: 'system',
+          systemCode: 'claim_created',
+          body: null,
+          payload: { claimId: 'cl-1' },
+        }),
+      ],
+      hasMore: false,
+    });
+    show('/messages/conv-1');
+    const log = await screen.findByRole('log', { name: 'Mensajes' });
+    const ack = (await within(log).findByText('Recibimos tu mensaje.')).closest('li') as HTMLElement;
+    expect(within(ack).getByText('Gasito de Gas Norte')).toBeInTheDocument();
+    expect(within(ack).getByText('Respuesta automática')).toBeInTheDocument();
+    const claim = within(log)
+      .getByText(/Se creó un reclamo/)
+      .closest('li') as HTMLElement;
+    expect(within(claim).queryByText('Respuesta automática')).not.toBeInTheDocument();
+    expect(within(log).getAllByText('Respuesta automática')).toHaveLength(1);
   });
 });

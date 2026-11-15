@@ -42214,6 +42214,55 @@
                 ]
             }
         },
+        "/api/v2/conversations/{id}/suggestions": {
+            "get": {
+                "description": "Hasta 3 respuestas guardadas de la empresa (activas y de este canal) parecidas al último mensaje del cliente o del chofer, sin IA: búsqueda de texto en castellano, sin tildes. Con las variables ya completadas para esta conversación. No manda nada: el panel las ofrece para pegar y editar. Lista vacía si nada se parece o si la persona todavía no escribió.",
+                "operationId": "CompanyInboxController_sugerir",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InboxSuggestionsResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Id que no es uuid"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para atender los mensajes de los clientes (`mensajes.clientes`) ni para atender los mensajes de los choferes (`mensajes.choferes`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`)"
+                    },
+                    "404": {
+                        "description": "No existe, es de otra empresa o de un canal que quien pide no atiende"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Sugerencias de respuesta",
+                "tags": [
+                    "Inbox (company)"
+                ]
+            }
+        },
         "/api/v2/conversations/{id}/messages": {
             "get": {
                 "description": "Por número: `afterSeq` (los posteriores, para reconectar) o `beforeSeq` (los anteriores); sin ninguno, los últimos. Siempre en orden de `seq`.",
@@ -42729,7 +42778,7 @@
         },
         "/api/v2/chat/settings": {
             "get": {
-                "description": "Con los textos que se mandan de verdad (`effective*`) y si la empresa atiende ahora.",
+                "description": "Con los textos que se mandan de verdad (`effective*`), el nombre del asistente con el de la empresa puesto y si la empresa atiende ahora.",
                 "operationId": "CompanyChatConfigController_leer",
                 "parameters": [],
                 "responses": {
@@ -42761,7 +42810,7 @@
                 ]
             },
             "put": {
-                "description": "Lo que no viene queda como estaba.",
+                "description": "Lo que no viene queda como estaba; `null` en un texto o en el nombre del asistente vuelve al de omisión. Queda en la auditoría.",
                 "operationId": "CompanyChatConfigController_actualizar",
                 "parameters": [],
                 "requestBody": {
@@ -42786,7 +42835,7 @@
                         }
                     },
                     "400": {
-                        "description": "Valor fuera de rango, texto vacío o de más de 500, o variable desconocida (`TEMPLATE_VARIABLE_UNKNOWN`)"
+                        "description": "Valor fuera de rango, texto vacío o de más de 500, nombre del asistente de menos de 2 o más de 60 caracteres o en más de una línea, o variable desconocida o que no corresponde (`TEMPLATE_VARIABLE_UNKNOWN`)"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -78436,11 +78485,21 @@
                         ],
                         "nullable": true
                     },
+                    "automated": {
+                        "type": "boolean",
+                        "description": "Lo mandó el asistente (fuera de horario, aviso de recibido): mostrarlo con la marca «Respuesta automática»"
+                    },
+                    "senderLabel": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "Asistente de Gas del Sur",
+                        "description": "Con `automated`, el nombre con que firmó el asistente al mandarlo (cambiarlo después no reescribe el historial; los anteriores a guardarlo, el vigente); `null` en los demás"
+                    },
                     "payload": {
                         "type": "object",
                         "additionalProperties": true,
                         "nullable": true,
-                        "description": "`claim_created`: `{ claimId }`; respuesta fuera de horario: `{ until }` (fin del período cerrado)"
+                        "description": "`claim_created`: `{ claimId }`; respuesta fuera de horario: `{ until, senderLabel }` (fin del período cerrado y firma); aviso de recibido: `{ senderLabel }`"
                     },
                     "replyTo": {
                         "nullable": true,
@@ -78486,6 +78545,8 @@
                     "body",
                     "templateKey",
                     "systemCode",
+                    "automated",
+                    "senderLabel",
                     "payload",
                     "replyTo",
                     "editedAt",
@@ -78560,6 +78621,56 @@
                 "required": [
                     "sent",
                     "conversationIds"
+                ]
+            },
+            "InboxSuggestionDto": {
+                "type": "object",
+                "properties": {
+                    "templateId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "key": {
+                        "type": "string",
+                        "example": "medios_de_pago"
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "Medios de pago"
+                    },
+                    "body": {
+                        "type": "string",
+                        "example": "Hola Ana, podés pagar en efectivo o con Mercado Pago.",
+                        "description": "El texto listo para editar en el compositor (no se manda solo)"
+                    }
+                },
+                "required": [
+                    "templateId",
+                    "key",
+                    "title",
+                    "body"
+                ]
+            },
+            "InboxSuggestionsResponseDto": {
+                "type": "object",
+                "properties": {
+                    "basedOnSeq": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "El `seq` del mensaje del cliente o del chofer con que se buscó; `null` si todavía no escribió nada"
+                    },
+                    "items": {
+                        "maxItems": 3,
+                        "description": "Hasta 3, de la más parecida a la menos. Vacía si ninguna se parece.",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/InboxSuggestionDto"
+                        }
+                    }
+                },
+                "required": [
+                    "basedOnSeq",
+                    "items"
                 ]
             },
             "InboxMessageListResponseDto": {
@@ -78654,6 +78765,25 @@
                     "customerChatEnabled": {
                         "type": "boolean"
                     },
+                    "assistantName": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Nombre del asistente tal como se guardó (puede tener `{{empresa.nombre}}`); `null`: el de omisión"
+                    },
+                    "effectiveAssistantName": {
+                        "type": "string",
+                        "example": "Asistente de Gas del Sur",
+                        "description": "El nombre con que se firman las respuestas automáticas, con el nombre de la empresa puesto (`senderLabel` de los mensajes)"
+                    },
+                    "handoffMessage": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Lo que dice el asistente al pasar la conversación a una persona; `null`: el de omisión"
+                    },
+                    "effectiveHandoffMessage": {
+                        "type": "string",
+                        "description": "El texto de derivación que se usa (el propio o el de omisión), con sus variables sin completar"
+                    },
                     "outOfHoursEnabled": {
                         "type": "boolean"
                     },
@@ -78691,6 +78821,10 @@
                 },
                 "required": [
                     "customerChatEnabled",
+                    "assistantName",
+                    "effectiveAssistantName",
+                    "handoffMessage",
+                    "effectiveHandoffMessage",
                     "outOfHoursEnabled",
                     "outOfHoursMessage",
                     "effectiveOutOfHoursMessage",
@@ -78708,6 +78842,20 @@
                     "customerChatEnabled": {
                         "type": "boolean",
                         "description": "Apagado: los clientes no pueden abrir ni escribir (C3); los choferes sí."
+                    },
+                    "assistantName": {
+                        "type": "string",
+                        "nullable": true,
+                        "minLength": 2,
+                        "maxLength": 60,
+                        "example": "Asistente de {{empresa.nombre}}",
+                        "description": "Nombre del asistente, con el que se firman las respuestas automáticas: de 2 a 60 caracteres (contados como letras, no en UTF-16) en una sola línea (sin saltos ni separadores de línea, U+2028/U+2029). Sólo admite `{{empresa.nombre}}` (otra → 400 `TEMPLATE_VARIABLE_UNKNOWN`); `null`: «Asistente de {{empresa.nombre}}»."
+                    },
+                    "handoffMessage": {
+                        "type": "string",
+                        "nullable": true,
+                        "maxLength": 500,
+                        "description": "Lo que dice el asistente al pasar la conversación a una persona, con variables; `null`: «Te paso con alguien del equipo de {{empresa.nombre}}. Te va a responder a la brevedad.»"
                     },
                     "outOfHoursEnabled": {
                         "type": "boolean",

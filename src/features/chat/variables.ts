@@ -1,5 +1,5 @@
 /** Las variables `{{…}}` de las respuestas guardadas de la bandeja (las completa el back con `templateId`). */
-const VARIABLE = /\{\{\s*([^}]*?)\s*\}\}/g;
+const VARIABLE = /\{\{\s*([^{}]*?)\s*\}\}/g;
 
 /** Completa las variables conocidas; devuelve las que quedaron sin valor (o que no existen). */
 export const fillVariables = (

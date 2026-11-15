@@ -6,7 +6,9 @@ import type { InboxMessage, MessageDto } from '../../services/api/types';
  * trae queda opcional.
  */
 export type ChatMessage = MessageDto &
-  Partial<Pick<InboxMessage, 'replyTo' | 'editedAt' | 'canEdit' | 'deleted' | 'deletedAt'>>;
+  Partial<
+    Pick<InboxMessage, 'replyTo' | 'editedAt' | 'canEdit' | 'deleted' | 'deletedAt' | 'automated' | 'senderLabel'>
+  >;
 
 /** Una página de mensajes, sea de la API que sea. */
 export interface ThreadPage {
@@ -131,3 +133,18 @@ export const replaceMessage = (
  */
 export const refreshKnown = (messages: ChatMessage[], fresh: ChatMessage[]): ChatMessage[] =>
   fresh.reduce((acc, message) => replaceMessage(acc, message, 'api'), messages);
+
+/**
+ * El número del último mensaje del cliente o del chofer (bandeja): con ese mensaje busca la API las sugerencias de
+ * respuesta (`basedOnSeq`). Los de la empresa, los del sistema, los del asistente y los borrados o retirados no
+ * cuentan. Sin ninguno, 0.
+ */
+export const lastCounterpartSeq = (messages: ChatMessage[]): number => {
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const m = messages[i];
+    // Como el back (`ULTIMO_MENSAJE_DE_LA_PERSONA`): un texto con cuerpo, ni borrado ni retirado; si no, el anterior.
+    const person = m.party === 'customer' || m.party === 'driver';
+    if (person && m.kind === 'text' && m.body !== null && !m.deleted && !m.redacted) return m.seq;
+  }
+  return 0;
+};

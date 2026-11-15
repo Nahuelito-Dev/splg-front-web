@@ -20,6 +20,7 @@ const api = vi.hoisted(() => ({
 const confirmMock = vi.hoisted(() => vi.fn(() => Promise.resolve(true)));
 
 vi.mock('../../features/chat/useInboxAccess', () => ({ useInboxAccess: () => access.value }));
+vi.mock('../../common/components/useCompanyDisplayName', () => ({ useCompanyDisplayName: () => 'Gas Norte' }));
 vi.mock('../../services/api/inbox', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   ...api,
@@ -40,6 +41,10 @@ const HOURS = {
 };
 const SETTINGS = {
   customerChatEnabled: true,
+  assistantName: null,
+  effectiveAssistantName: 'Asistente de Gas Norte',
+  handoffMessage: null,
+  effectiveHandoffMessage: 'Te paso con alguien del equipo de {{empresa.nombre}}. Te va a responder a la brevedad.',
   outOfHoursEnabled: true,
   outOfHoursMessage: null,
   effectiveOutOfHoursMessage: 'Ahora estamos fuera de horario. Te respondemos {{horario.proximo}}.',
@@ -113,6 +118,154 @@ describe('Mensajes y horario: el horario', () => {
   });
 });
 
+describe('Mensajes y horario: el asistente', () => {
+  it('la tarjeta se llama «Asistente» y guarda el nombre y el mensaje al pasar a una persona', async () => {
+    api.updateChatSettings.mockResolvedValue(SETTINGS);
+    show();
+    const name = await screen.findByLabelText('Nombre del asistente');
+    expect(screen.getByRole('heading', { name: 'Asistente' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Respuestas automáticas' })).not.toBeInTheDocument();
+    expect(name).toHaveAttribute('placeholder', 'Asistente de {{empresa.nombre}}');
+    const handoff = screen.getByLabelText('Mensaje al pasar a una persona');
+    expect(handoff).toHaveAttribute('placeholder', SETTINGS.effectiveHandoffMessage);
+    fireEvent.change(name, { target: { value: '  Gasito de {{empresa.nombre}} ' } });
+    expect(screen.getByText('28/60')).toBeInTheDocument();
+    fireEvent.change(handoff, { target: { value: 'Ya te atiende alguien, {{cliente.nombre}}.' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    await waitFor(() =>
+      expect(api.updateChatSettings).toHaveBeenCalledWith(
+        expect.objectContaining({
+          assistantName: 'Gasito de {{empresa.nombre}}',
+          handoffMessage: 'Ya te atiende alguien, {{cliente.nombre}}.',
+        }),
+      ),
+    );
+  });
+
+  it('«Volver al texto de siempre» vacía el campo y manda `null`', async () => {
+    const custom = {
+      ...SETTINGS,
+      assistantName: 'Gasito',
+      effectiveAssistantName: 'Gasito',
+      handoffMessage: 'Te paso',
+      effectiveHandoffMessage: 'Te paso',
+    };
+    api.getChatSettings.mockResolvedValue(custom);
+    api.updateChatSettings.mockResolvedValue(custom);
+    show();
+    expect(await screen.findByDisplayValue('Gasito')).toBeInTheDocument();
+    // Con uno propio guardado, la ayuda del campo muestra el de omisión (no el propio).
+    expect(screen.getByLabelText('Mensaje al pasar a una persona')).toHaveAttribute(
+      'placeholder',
+      'Te paso con alguien del equipo de {{empresa.nombre}}. Te va a responder a la brevedad.',
+    );
+    const resets = screen.getAllByRole('button', { name: 'Volver al texto de siempre' });
+    expect(resets).toHaveLength(2);
+    resets.forEach((button) => fireEvent.click(button));
+    expect(screen.getByLabelText('Nombre del asistente')).toHaveValue('');
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    await waitFor(() =>
+      expect(api.updateChatSettings).toHaveBeenCalledWith(
+        expect.objectContaining({ assistantName: null, handoffMessage: null }),
+      ),
+    );
+  });
+
+  it('«Volver al texto de siempre» deja el foco en el campo y lo anuncia', async () => {
+    api.getChatSettings.mockResolvedValue({ ...SETTINGS, assistantName: 'Gasito', effectiveAssistantName: 'Gasito' });
+    show();
+    const name = await screen.findByDisplayValue('Gasito');
+    fireEvent.click(screen.getByRole('button', { name: 'Volver al texto de siempre' }));
+    await waitFor(() => expect(name).toHaveFocus());
+    expect(screen.getByText('Se usará el texto de siempre')).toHaveAttribute('aria-live', 'polite');
+  });
+
+  it('el contador y el tope cuentan emojis como uno; sin `maxLength` nativo (UTF-16)', async () => {
+    show();
+    const handoff = await screen.findByLabelText('Mensaje al pasar a una persona');
+    expect(handoff).not.toHaveAttribute('maxlength');
+    expect(screen.getByLabelText('Nombre del asistente')).not.toHaveAttribute('maxlength');
+    fireEvent.change(handoff, { target: { value: '🔥'.repeat(500) } });
+    expect(screen.getByText('500/500')).toBeInTheDocument();
+    fireEvent.change(handoff, { target: { value: '🔥'.repeat(501) } });
+    expect(screen.getByText('501/500')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    expect(await screen.findByText('Hasta 500 caracteres')).toBeInTheDocument();
+    expect(api.updateChatSettings).not.toHaveBeenCalled();
+  });
+
+  it('un texto inválido con su interruptor apagado no traba «Guardar» y no se manda', async () => {
+    api.updateChatSettings.mockResolvedValue(SETTINGS);
+    show();
+    fireEvent.change(await screen.findByLabelText('Texto fuera de horario'), {
+      target: { value: 'Volvemos {{horario.vuelta}}' },
+    });
+    fireEvent.click(screen.getByRole('switch', { name: 'Responder fuera de horario' }));
+    expect(screen.queryByLabelText('Texto fuera de horario')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    await waitFor(() => expect(api.updateChatSettings).toHaveBeenCalledTimes(1));
+    const call: unknown = api.updateChatSettings.mock.lastCall;
+    expect(call).toHaveProperty([0, 'outOfHoursEnabled'], false);
+    expect(call).not.toHaveProperty([0, 'outOfHoursMessage']);
+    expect(call).not.toHaveProperty([0, 'ackMessage']);
+  });
+
+  it('un nombre con otra variable que {{empresa.nombre}} no se manda', async () => {
+    show();
+    fireEvent.change(await screen.findByLabelText('Nombre del asistente'), {
+      target: { value: 'Hola {{cliente.nombre}}' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    expect(
+      await screen.findByText('En el nombre sólo va {{empresa.nombre}} (no {{cliente.nombre}})'),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Nombre del asistente')).toHaveAttribute('aria-invalid', 'true');
+    expect(api.updateChatSettings).not.toHaveBeenCalled();
+  });
+
+  it('la vista previa muestra cada mensaje firmado, marcado y con las variables de ejemplo, mientras se escribe', async () => {
+    show();
+    const preview = await screen.findByRole('region', { name: 'Vista previa: así lo ve el cliente' });
+    // Sin cambios, firma con el nombre que da la API.
+    expect(within(preview).getAllByText('Asistente de Gas Norte')).toHaveLength(3);
+    expect(within(preview).getAllByText('Respuesta automática')).toHaveLength(3);
+    expect(
+      within(preview).getByText('Te paso con alguien del equipo de Gas Norte. Te va a responder a la brevedad.'),
+    ).toBeInTheDocument();
+    // El aviso de recibido está apagado: se ve, marcado como apagado.
+    expect(within(preview).getByText(/Al escribir en horario/)).toHaveTextContent('apagado');
+    fireEvent.change(screen.getByLabelText('Nombre del asistente'), {
+      target: { value: 'Gasito de {{empresa.nombre}}' },
+    });
+    fireEvent.change(screen.getByLabelText('Mensaje al pasar a una persona'), {
+      target: { value: '{{cliente.nombre}}, te paso con el pedido {{pedido.numero}}' },
+    });
+    expect(within(preview).getAllByText('Gasito de Gas Norte')).toHaveLength(3);
+    expect(within(preview).getByText('Ana, te paso con el pedido 1024')).toBeInTheDocument();
+    expect(within(preview).queryByText(/\{\{/)).not.toBeInTheDocument();
+  });
+
+  it('sin `mensajes.configurar` se ve la vista previa pero no se edita el asistente', async () => {
+    access.value = { customers: true, drivers: false, configure: false, claims: false, any: true };
+    show();
+    expect(await screen.findByLabelText('Nombre del asistente')).toBeDisabled();
+    expect(screen.getByLabelText('Mensaje al pasar a una persona')).toBeDisabled();
+    expect(screen.getByRole('region', { name: 'Vista previa: así lo ve el cliente' })).toBeInTheDocument();
+  });
+
+  it('un 400 de la API al guardar se avisa', async () => {
+    const { notify } = await import('../../utils/notifications');
+    vi.mocked(notify.success).mockClear();
+    vi.mocked(notify.error).mockClear();
+    api.updateChatSettings.mockRejectedValue(new Error('Variable desconocida'));
+    show();
+    fireEvent.change(await screen.findByLabelText('Nombre del asistente'), { target: { value: 'Gasito' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    await waitFor(() => expect(notify.error).toHaveBeenCalled());
+    expect(notify.success).not.toHaveBeenCalled();
+  });
+});
+
 describe('Mensajes y horario: respuestas automáticas', () => {
   it('vacío vuelve al texto de siempre (`null`); una variable desconocida no se manda', async () => {
     api.updateChatSettings.mockResolvedValue(SETTINGS);
@@ -129,10 +282,11 @@ describe('Mensajes y horario: respuestas automáticas', () => {
     await waitFor(() =>
       expect(api.updateChatSettings).toHaveBeenCalledWith({
         customerChatEnabled: false,
+        assistantName: null,
+        handoffMessage: null,
         outOfHoursEnabled: true,
         outOfHoursMessage: null,
         ackEnabled: false,
-        ackMessage: null,
         firstResponseTargetMinutes: 30,
       }),
     );
