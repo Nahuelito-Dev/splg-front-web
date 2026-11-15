@@ -1,7 +1,17 @@
 import { ArrowLeft, Hand, Lock, LockOpen, MessageSquareWarning, PanelRightOpen, UserRoundCog } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Badge, Button, Card, Drawer, ErrorState, MoreActionsMenu } from '../../../common/components/ui';
+import {
+  Badge,
+  Button,
+  Card,
+  cx,
+  Drawer,
+  ErrorState,
+  MoreActionsMenu,
+  PersonAvatar,
+  UserRefLink,
+} from '../../../common/components/ui';
 import { useSocketContext } from '../../../context/useSocketContext';
 import { AlertsToggle } from '../../../features/chat/components/AlertsToggle';
 import { ChatThread } from '../../../features/chat/components/ChatThread';
@@ -32,6 +42,7 @@ import { confirm, notify } from '../../../utils/notifications';
 import { AssignModal } from './AssignModal';
 import { ClaimFromChatModal } from './ClaimFromChatModal';
 import { ConversationContext } from './ConversationContext';
+import { hasConversationContext } from './hasConversationContext';
 
 interface Props {
   id: string;
@@ -92,6 +103,8 @@ export const ConversationPanel = ({ id, myUserId, companyName, access }: Props) 
       </Card>
     );
   }
+  const person = conversation.customer ?? conversation.driver;
+  const withContext = hasConversationContext(conversation);
 
   const open = conversation.status === 'open';
   // Lo que completa las variables de una respuesta guardada retocada (sin valor: no se envía, se pide completarla).
@@ -169,7 +182,7 @@ export const ConversationPanel = ({ id, myUserId, companyName, access }: Props) 
   ];
 
   return (
-    <div className="grid min-h-0 flex-1 gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
+    <div className={cx('grid min-h-0 flex-1 gap-4', withContext && 'xl:grid-cols-[minmax(0,1fr)_280px]')}>
       <Card className="flex min-h-0 flex-col overflow-hidden p-0">
         <header className="flex flex-wrap items-center gap-2 border-b border-outline px-3 py-2">
           <Link
@@ -179,9 +192,20 @@ export const ConversationPanel = ({ id, myUserId, companyName, access }: Props) 
           >
             <ArrowLeft className="h-4 w-4" />
           </Link>
+          <PersonAvatar
+            name={name}
+            userId={person?.id ?? null}
+            size="md"
+            decorative
+            className="h-9 w-9 shrink-0 text-xs"
+          />
           <div className="min-w-0 flex-1">
             <h2 className="flex min-w-0 items-center gap-2 text-sm font-semibold text-ink">
-              <span className="truncate">{name}</span>
+              {person ? (
+                <UserRefLink userId={person.id} name={name} className="truncate" />
+              ) : (
+                <span className="truncate">{name}</span>
+              )}
               <Badge label={CHANNEL_LABEL[conversation.channel]} />
               {!open && <Badge label={{ text: 'Cerrada', tone: 'neutral' }} />}
             </h2>
@@ -225,16 +249,18 @@ export const ConversationPanel = ({ id, myUserId, companyName, access }: Props) 
               Crear reclamo
             </Button>
           )}
-          <Button
-            size="sm"
-            variant="ghost"
-            icon={<PanelRightOpen />}
-            onClick={() => setContextOpen(true)}
-            className="xl:hidden"
-            aria-label="Ver contexto"
-          >
-            <span className="hidden sm:inline">Contexto</span>
-          </Button>
+          {withContext && (
+            <Button
+              size="sm"
+              variant="ghost"
+              icon={<PanelRightOpen />}
+              onClick={() => setContextOpen(true)}
+              className="xl:hidden"
+              aria-label="Ver el pedido y el reclamo"
+            >
+              <span className="hidden sm:inline">Pedido y reclamo</span>
+            </Button>
+          )}
           <MoreActionsMenu actions={more} label="Más acciones" />
         </header>
         <ChatThread
@@ -263,12 +289,16 @@ export const ConversationPanel = ({ id, myUserId, companyName, access }: Props) 
           reloadKey={conversation.linkedClaimId ?? undefined}
         />
       </Card>
-      <aside className="hidden min-h-0 overflow-y-auto xl:block" aria-label="Contexto de la conversación">
-        <ConversationContext conversation={conversation} />
-      </aside>
-      <Drawer open={contextOpen} onClose={() => setContextOpen(false)} title="Contexto de la conversación">
-        <ConversationContext conversation={conversation} />
-      </Drawer>
+      {withContext && (
+        <>
+          <aside className="hidden min-h-0 overflow-y-auto xl:block" aria-label="Pedido y reclamo de la conversación">
+            <ConversationContext conversation={conversation} />
+          </aside>
+          <Drawer open={contextOpen} onClose={() => setContextOpen(false)} title="Pedido y reclamo">
+            <ConversationContext conversation={conversation} />
+          </Drawer>
+        </>
+      )}
       <AssignModal
         conversation={assigning ? conversation : null}
         myUserId={myUserId}
