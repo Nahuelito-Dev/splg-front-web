@@ -5,6 +5,7 @@ import brand from './brand.json';
 import { dataGridComponents } from './components/dataGrid';
 import { overlayComponents } from './components/overlays';
 import type { ResolvedThemeMode } from './themeMode';
+import type { ThemeTokens } from '../services/api/types';
 
 const { llama, gas, tinta, status, dark } = brand;
 const font = 'Geist, "Helvetica Neue", Arial, sans-serif';
@@ -13,15 +14,26 @@ const font = 'Geist, "Helvetica Neue", Arial, sans-serif';
  * Tema de MUI con la misma paleta que Tailwind (brand.json). MUI se usa para
  * la grilla de datos, los íconos y algunos controles; el resto va con
  * Tailwind. `createAppTheme` arma un tema por modo: los dos leen de
- * `brand.json` (claro de la raíz, oscuro de `brand.json#/dark`).
+ * `brand.json` (claro de la raíz, oscuro de `brand.json#/dark`). Con `company` (los tokens del tema de la empresa del
+ * contexto) el principal y el secundario salen de ahí, como en Tailwind.
  */
-export const createAppTheme = (mode: ResolvedThemeMode) =>
-  createTheme(
+export const createAppTheme = (mode: ResolvedThemeMode, company: ThemeTokens | null = null) => {
+  const tokens = company?.[mode];
+  return createTheme(
     {
       palette: {
         mode,
-        primary: { main: llama['600'], dark: llama['700'], light: llama['400'], contrastText: '#FFFFFF' },
-        secondary: { main: gas['400'], dark: gas['500'], light: gas['200'], contrastText: tinta['900'] },
+        primary: tokens
+          ? {
+              main: tokens.primary,
+              dark: tokens.primaryHover,
+              light: tokens.primarySoft,
+              contrastText: tokens.onPrimary,
+            }
+          : { main: llama['600'], dark: llama['700'], light: llama['400'], contrastText: '#FFFFFF' },
+        secondary: tokens
+          ? { main: tokens.accent, contrastText: tinta['900'] }
+          : { main: gas['400'], dark: gas['500'], light: gas['200'], contrastText: tinta['900'] },
         success: { main: mode === 'dark' ? dark.status.success : status.success },
         error: { main: mode === 'dark' ? dark.status.danger : status.danger },
         warning: { main: mode === 'dark' ? dark.status.warn : status.warn },
@@ -60,3 +72,4 @@ export const createAppTheme = (mode: ResolvedThemeMode) =>
     esES,
     esESGrid,
   );
+};

@@ -10127,6 +10127,74 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/company/theme': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * El tema de la distribuidora
+     * @description Colores elegidos, nombre para mostrar, nombre y logo (URL firmada) de la distribuidora, tokens derivados en claro y oscuro, el contraste medido de cada par y la versión. Sin tema propio devuelve el por omisión (`isDefault: true`) con el nombre real. Lo puede leer cualquier administrador de la empresa: el encabezado del panel lo usa en todas las pantallas.
+     */
+    get: operations['CompanyThemeController_obtener'];
+    /**
+     * Cambiar el tema de la distribuidora
+     * @description Reemplaza el tema: lo que no viene queda sin valor (acento derivado del principal, nombre de la distribuidora). Valida el contraste WCAG AA y, si un color no cumple, no lo ajusta: responde 400 `THEME_CONTRAST_INSUFFICIENT` con una sugerencia. Sube la versión. Queda en la auditoría. En modo soporte, 403 `SUPPORT_READ_ONLY`.
+     */
+    put: operations['CompanyThemeController_guardar'];
+    post?: never;
+    /**
+     * Restablecer el tema por omisión
+     * @description Baja lógica del tema propio: la empresa vuelve al tema por omisión con su nombre real (el logo no se toca). Sube la versión. Idempotente. En modo soporte, 403 `SUPPORT_READ_ONLY`.
+     */
+    delete: operations['CompanyThemeController_restablecer'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/company/theme/preview': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Vista previa del tema, sin guardar
+     * @description Mismo cuerpo que el `PUT`: devuelve los tokens y el contraste que quedarían, o el mismo 400 de contraste. No escribe nada (se permite en modo soporte).
+     */
+    post: operations['CompanyThemeController_vistaPrevia'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/platform/companies/{id}/theme': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * El tema de una empresa (sólo lectura)
+     * @description El mismo contenido que `GET /v2/company/theme` de esa empresa: colores, nombre para mostrar, logo firmado, tokens, contraste y versión (o el tema por omisión con `isDefault: true`). La plataforma no edita el tema de una empresa: lo cambia la empresa desde Configuración → Apariencia.
+     */
+    get: operations['PlatformCompaniesController_tema'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -23017,6 +23085,121 @@ export interface components {
       ownedByPlatform: boolean;
       /** Format: date-time */
       createdAt: string;
+    };
+    CompanyThemeDto: {
+      /**
+       * @description Color principal en `#RRGGBB` (se acepta en minúsculas y se guarda en mayúsculas). Tiene que contrastar 4,5:1 con el texto de los botones (blanco o tinta, el que cumpla) y 3:1 con el blanco y el fondo del panel
+       * @example #1D4ED8
+       */
+      primaryColor: string;
+      /**
+       * @description Color de acento en `#RRGGBB`; sin valor se deriva del principal. Tiene que contrastar 3:1 con el blanco y el fondo del panel
+       * @example #B27A00
+       */
+      accentColor?: string | null;
+      /**
+       * @description Nombre que se muestra en el encabezado del panel; sin valor (o vacío), el nombre de la distribuidora
+       * @example Nahuel Gas
+       */
+      displayName?: string | null;
+    };
+    CompanyThemeResponseDto: {
+      /** @example #1D4ED8 */
+      primaryColor: string;
+      /** @description El acento elegido, o null si se deriva del principal */
+      accentColor: string | null;
+      /** @description El nombre para mostrar elegido, o null si no hay */
+      displayName: string | null;
+      /**
+       * @description El nombre de la distribuidora (el que se muestra si no hay `displayName`)
+       * @example Distribuidora Demo
+       */
+      companyName: string;
+      /** @description Logo de la distribuidora: URL firmada de corta vigencia, o null si no subió. Se cambia con `PUT /distributor/{id}/logo` */
+      logoUrl: string | null;
+      tokens: components['schemas']['ThemeTokensDto'];
+      contrast: components['schemas']['ThemeContrastDto'][];
+      /**
+       * @description Sube en cada cambio (también al restablecer); 0 si la empresa nunca configuró su tema. Sirve para saber si lo guardado sigue vigente
+       * @example 3
+       */
+      version: number;
+      /** @description true si la empresa usa el tema por omisión (nunca lo configuró o lo restableció) */
+      isDefault: boolean;
+      /** Format: date-time */
+      updatedAt: string | null;
+    };
+    ThemeContrastDto: {
+      /**
+       * @description Par medido: `<frente>/<fondo>` con los nombres de los roles
+       * @example onPrimary/primary
+       */
+      pair: string;
+      /** @enum {string} */
+      mode: 'light' | 'dark';
+      /**
+       * @description Relación medida (x:1)
+       * @example 6.7
+       */
+      ratio: number;
+      /**
+       * @description Mínimo de WCAG AA para el par
+       * @example 4.5
+       */
+      required: number;
+      ok: boolean;
+    };
+    ThemeContrastErrorDto: {
+      /** @example 400 */
+      statusCode: number;
+      /** @example El color principal no contrasta lo suficiente con el blanco (1,54:1; hace falta 3:1). Probá con #B48700 */
+      message: string;
+      /** @example Solicitud inválida */
+      error: string;
+      /** @example THEME_CONTRAST_INSUFFICIENT */
+      code: string;
+      /** @enum {string} */
+      field: 'primaryColor' | 'accentColor';
+      /** @example primary/surface */
+      pair: string;
+      /** @example 1.54 */
+      ratio: number;
+      /** @example 3 */
+      required: number;
+      /**
+       * @description El mismo tono con la luminosidad corregida, que sí cumple
+       * @example #B48700
+       */
+      suggestion: string;
+    };
+    ThemeModeTokensDto: {
+      /** @example #1D4ED8 */
+      primary: string;
+      /** @example #103DC7 */
+      primaryHover: string;
+      /** @example #0832BC */
+      primaryStrong: string;
+      /** @example #F0F5FF */
+      primarySoft: string;
+      /**
+       * @description Blanco o tinta (#0B1220)
+       * @example #FFFFFF
+       */
+      onPrimary: string;
+      /** @example #956CD7 */
+      accent: string;
+      /** @example #F6F3FF */
+      accentSoft: string;
+      /** @example #1D4ED8 */
+      gradientFrom: string;
+      /** @example #0D39C3 */
+      gradientTo: string;
+      /** @example #052AB6 */
+      gradientEdge: string;
+    };
+    ThemeTokensDto: {
+      light: components['schemas']['ThemeModeTokensDto'];
+      dark: components['schemas']['ThemeModeTokensDto'];
     };
   };
   responses: never;
@@ -57459,6 +57642,255 @@ export interface operations {
       };
       /** @description Sólo se puede marcar una empresa de prueba creada por la plataforma, sin admins, clientes ni pedidos ajenos (`COMPANY_NOT_PLATFORM_OWNED`). Desmarcar siempre está permitido. */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyThemeController_obtener: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CompanyThemeResponseDto'];
+        };
+      };
+      /** @description Falta la distribuidora: super admin sin sesión de soporte ni empresa propia (`MISSING_DISTRIBUTOR`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La distribuidora está dada de baja */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyThemeController_guardar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CompanyThemeDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CompanyThemeResponseDto'];
+        };
+      };
+      /** @description Formato inválido (p. ej. «Color principal: tiene que ser un color #RRGGBB», «Nombre para mostrar: tiene que tener entre 2 y 60 caracteres»), un color que no cumple el contraste WCAG AA (`THEME_CONTRAST_INSUFFICIENT`, con el campo, el par que falla, la relación medida, el mínimo y una sugerencia del mismo tono que sí cumple) o Falta la distribuidora: super admin sin sesión de soporte ni empresa propia (`MISSING_DISTRIBUTOR`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ThemeContrastErrorDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la configuración (`configuracion.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La distribuidora está dada de baja */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyThemeController_restablecer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Restablecido */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Falta la distribuidora: super admin sin sesión de soporte ni empresa propia (`MISSING_DISTRIBUTOR`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la configuración (`configuracion.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La distribuidora está dada de baja */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyThemeController_vistaPrevia: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CompanyThemeDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CompanyThemeResponseDto'];
+        };
+      };
+      /** @description Formato inválido (p. ej. «Color principal: tiene que ser un color #RRGGBB», «Nombre para mostrar: tiene que tener entre 2 y 60 caracteres»), un color que no cumple el contraste WCAG AA (`THEME_CONTRAST_INSUFFICIENT`, con el campo, el par que falla, la relación medida, el mínimo y una sugerencia del mismo tono que sí cumple) o Falta la distribuidora: super admin sin sesión de soporte ni empresa propia (`MISSING_DISTRIBUTOR`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ThemeContrastErrorDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la configuración (`configuracion.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La distribuidora está dada de baja */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformCompaniesController_tema: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Distributor UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CompanyThemeResponseDto'];
+        };
+      };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La empresa no existe o está dada de baja */
+      404: {
         headers: {
           [name: string]: unknown;
         };

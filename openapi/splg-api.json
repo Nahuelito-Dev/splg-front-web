@@ -39660,6 +39660,239 @@
                     "Platform"
                 ]
             }
+        },
+        "/api/v2/company/theme": {
+            "get": {
+                "description": "Colores elegidos, nombre para mostrar, nombre y logo (URL firmada) de la distribuidora, tokens derivados en claro y oscuro, el contraste medido de cada par y la versión. Sin tema propio devuelve el por omisión (`isDefault: true`) con el nombre real. Lo puede leer cualquier administrador de la empresa: el encabezado del panel lo usa en todas las pantallas.",
+                "operationId": "CompanyThemeController_obtener",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CompanyThemeResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta la distribuidora: super admin sin sesión de soporte ni empresa propia (`MISSING_DISTRIBUTOR`)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin"
+                    },
+                    "404": {
+                        "description": "La distribuidora está dada de baja"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "El tema de la distribuidora",
+                "tags": [
+                    "Configuración · Apariencia"
+                ]
+            },
+            "put": {
+                "description": "Reemplaza el tema: lo que no viene queda sin valor (acento derivado del principal, nombre de la distribuidora). Valida el contraste WCAG AA y, si un color no cumple, no lo ajusta: responde 400 `THEME_CONTRAST_INSUFFICIENT` con una sugerencia. Sube la versión. Queda en la auditoría. En modo soporte, 403 `SUPPORT_READ_ONLY`.",
+                "operationId": "CompanyThemeController_guardar",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CompanyThemeDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CompanyThemeResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Formato inválido (p. ej. «Color principal: tiene que ser un color #RRGGBB», «Nombre para mostrar: tiene que tener entre 2 y 60 caracteres»), un color que no cumple el contraste WCAG AA (`THEME_CONTRAST_INSUFFICIENT`, con el campo, el par que falla, la relación medida, el mínimo y una sugerencia del mismo tono que sí cumple) o Falta la distribuidora: super admin sin sesión de soporte ni empresa propia (`MISSING_DISTRIBUTOR`)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ThemeContrastErrorDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la configuración (`configuracion.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`)"
+                    },
+                    "404": {
+                        "description": "La distribuidora está dada de baja"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Cambiar el tema de la distribuidora",
+                "tags": [
+                    "Configuración · Apariencia"
+                ]
+            },
+            "delete": {
+                "description": "Baja lógica del tema propio: la empresa vuelve al tema por omisión con su nombre real (el logo no se toca). Sube la versión. Idempotente. En modo soporte, 403 `SUPPORT_READ_ONLY`.",
+                "operationId": "CompanyThemeController_restablecer",
+                "parameters": [],
+                "responses": {
+                    "204": {
+                        "description": "Restablecido"
+                    },
+                    "400": {
+                        "description": "Falta la distribuidora: super admin sin sesión de soporte ni empresa propia (`MISSING_DISTRIBUTOR`)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la configuración (`configuracion.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`)"
+                    },
+                    "404": {
+                        "description": "La distribuidora está dada de baja"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Restablecer el tema por omisión",
+                "tags": [
+                    "Configuración · Apariencia"
+                ]
+            }
+        },
+        "/api/v2/company/theme/preview": {
+            "post": {
+                "description": "Mismo cuerpo que el `PUT`: devuelve los tokens y el contraste que quedarían, o el mismo 400 de contraste. No escribe nada (se permite en modo soporte).",
+                "operationId": "CompanyThemeController_vistaPrevia",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CompanyThemeDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CompanyThemeResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Formato inválido (p. ej. «Color principal: tiene que ser un color #RRGGBB», «Nombre para mostrar: tiene que tener entre 2 y 60 caracteres»), un color que no cumple el contraste WCAG AA (`THEME_CONTRAST_INSUFFICIENT`, con el campo, el par que falla, la relación medida, el mínimo y una sugerencia del mismo tono que sí cumple) o Falta la distribuidora: super admin sin sesión de soporte ni empresa propia (`MISSING_DISTRIBUTOR`)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ThemeContrastErrorDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la configuración (`configuracion.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`)"
+                    },
+                    "404": {
+                        "description": "La distribuidora está dada de baja"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Vista previa del tema, sin guardar",
+                "tags": [
+                    "Configuración · Apariencia"
+                ]
+            }
+        },
+        "/api/v2/platform/companies/{id}/theme": {
+            "get": {
+                "description": "El mismo contenido que `GET /v2/company/theme` de esa empresa: colores, nombre para mostrar, logo firmado, tokens, contraste y versión (o el tema por omisión con `isDefault: true`). La plataforma no edita el tema de una empresa: lo cambia la empresa desde Configuración → Apariencia.",
+                "operationId": "PlatformCompaniesController_tema",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Distributor UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CompanyThemeResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "El id no es un UUID"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: super_admin"
+                    },
+                    "404": {
+                        "description": "La empresa no existe o está dada de baja"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "El tema de una empresa (sólo lectura)",
+                "tags": [
+                    "Platform"
+                ]
+            }
         }
     },
     "info": {
@@ -71237,6 +71470,265 @@
                     "status",
                     "ownedByPlatform",
                     "createdAt"
+                ]
+            },
+            "CompanyThemeDto": {
+                "type": "object",
+                "properties": {
+                    "primaryColor": {
+                        "type": "string",
+                        "description": "Color principal en `#RRGGBB` (se acepta en minúsculas y se guarda en mayúsculas). Tiene que contrastar 4,5:1 con el texto de los botones (blanco o tinta, el que cumpla) y 3:1 con el blanco y el fondo del panel",
+                        "example": "#1D4ED8",
+                        "pattern": "^#[0-9A-Fa-f]{6}$"
+                    },
+                    "accentColor": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Color de acento en `#RRGGBB`; sin valor se deriva del principal. Tiene que contrastar 3:1 con el blanco y el fondo del panel",
+                        "example": "#B27A00",
+                        "pattern": "^#[0-9A-Fa-f]{6}$"
+                    },
+                    "displayName": {
+                        "type": "string",
+                        "nullable": true,
+                        "minLength": 2,
+                        "maxLength": 60,
+                        "description": "Nombre que se muestra en el encabezado del panel; sin valor (o vacío), el nombre de la distribuidora",
+                        "example": "Nahuel Gas"
+                    }
+                },
+                "required": [
+                    "primaryColor"
+                ]
+            },
+            "CompanyThemeResponseDto": {
+                "type": "object",
+                "properties": {
+                    "primaryColor": {
+                        "type": "string",
+                        "example": "#1D4ED8"
+                    },
+                    "accentColor": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "El acento elegido, o null si se deriva del principal"
+                    },
+                    "displayName": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "El nombre para mostrar elegido, o null si no hay"
+                    },
+                    "companyName": {
+                        "type": "string",
+                        "example": "Distribuidora Demo",
+                        "description": "El nombre de la distribuidora (el que se muestra si no hay `displayName`)"
+                    },
+                    "logoUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Logo de la distribuidora: URL firmada de corta vigencia, o null si no subió. Se cambia con `PUT /distributor/{id}/logo`"
+                    },
+                    "tokens": {
+                        "$ref": "#/components/schemas/ThemeTokensDto"
+                    },
+                    "contrast": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ThemeContrastDto"
+                        }
+                    },
+                    "version": {
+                        "type": "number",
+                        "example": 3,
+                        "description": "Sube en cada cambio (también al restablecer); 0 si la empresa nunca configuró su tema. Sirve para saber si lo guardado sigue vigente"
+                    },
+                    "isDefault": {
+                        "type": "boolean",
+                        "description": "true si la empresa usa el tema por omisión (nunca lo configuró o lo restableció)"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "primaryColor",
+                    "accentColor",
+                    "displayName",
+                    "companyName",
+                    "logoUrl",
+                    "tokens",
+                    "contrast",
+                    "version",
+                    "isDefault",
+                    "updatedAt"
+                ]
+            },
+            "ThemeContrastDto": {
+                "type": "object",
+                "properties": {
+                    "pair": {
+                        "type": "string",
+                        "example": "onPrimary/primary",
+                        "description": "Par medido: `<frente>/<fondo>` con los nombres de los roles"
+                    },
+                    "mode": {
+                        "type": "string",
+                        "enum": [
+                            "light",
+                            "dark"
+                        ]
+                    },
+                    "ratio": {
+                        "type": "number",
+                        "example": 6.7,
+                        "description": "Relación medida (x:1)"
+                    },
+                    "required": {
+                        "type": "number",
+                        "example": 4.5,
+                        "description": "Mínimo de WCAG AA para el par"
+                    },
+                    "ok": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "pair",
+                    "mode",
+                    "ratio",
+                    "required",
+                    "ok"
+                ]
+            },
+            "ThemeContrastErrorDto": {
+                "type": "object",
+                "properties": {
+                    "statusCode": {
+                        "type": "number",
+                        "example": 400
+                    },
+                    "message": {
+                        "type": "string",
+                        "example": "El color principal no contrasta lo suficiente con el blanco (1,54:1; hace falta 3:1). Probá con #B48700"
+                    },
+                    "error": {
+                        "type": "string",
+                        "example": "Solicitud inválida"
+                    },
+                    "code": {
+                        "type": "string",
+                        "example": "THEME_CONTRAST_INSUFFICIENT"
+                    },
+                    "field": {
+                        "type": "string",
+                        "enum": [
+                            "primaryColor",
+                            "accentColor"
+                        ]
+                    },
+                    "pair": {
+                        "type": "string",
+                        "example": "primary/surface"
+                    },
+                    "ratio": {
+                        "type": "number",
+                        "example": 1.54
+                    },
+                    "required": {
+                        "type": "number",
+                        "example": 3
+                    },
+                    "suggestion": {
+                        "type": "string",
+                        "example": "#B48700",
+                        "description": "El mismo tono con la luminosidad corregida, que sí cumple"
+                    }
+                },
+                "required": [
+                    "statusCode",
+                    "message",
+                    "error",
+                    "code",
+                    "field",
+                    "pair",
+                    "ratio",
+                    "required",
+                    "suggestion"
+                ]
+            },
+            "ThemeModeTokensDto": {
+                "type": "object",
+                "properties": {
+                    "primary": {
+                        "type": "string",
+                        "example": "#1D4ED8"
+                    },
+                    "primaryHover": {
+                        "type": "string",
+                        "example": "#103DC7"
+                    },
+                    "primaryStrong": {
+                        "type": "string",
+                        "example": "#0832BC"
+                    },
+                    "primarySoft": {
+                        "type": "string",
+                        "example": "#F0F5FF"
+                    },
+                    "onPrimary": {
+                        "type": "string",
+                        "example": "#FFFFFF",
+                        "description": "Blanco o tinta (#0B1220)"
+                    },
+                    "accent": {
+                        "type": "string",
+                        "example": "#956CD7"
+                    },
+                    "accentSoft": {
+                        "type": "string",
+                        "example": "#F6F3FF"
+                    },
+                    "gradientFrom": {
+                        "type": "string",
+                        "example": "#1D4ED8"
+                    },
+                    "gradientTo": {
+                        "type": "string",
+                        "example": "#0D39C3"
+                    },
+                    "gradientEdge": {
+                        "type": "string",
+                        "example": "#052AB6"
+                    }
+                },
+                "required": [
+                    "primary",
+                    "primaryHover",
+                    "primaryStrong",
+                    "primarySoft",
+                    "onPrimary",
+                    "accent",
+                    "accentSoft",
+                    "gradientFrom",
+                    "gradientTo",
+                    "gradientEdge"
+                ]
+            },
+            "ThemeTokensDto": {
+                "type": "object",
+                "properties": {
+                    "light": {
+                        "$ref": "#/components/schemas/ThemeModeTokensDto"
+                    },
+                    "dark": {
+                        "$ref": "#/components/schemas/ThemeModeTokensDto"
+                    }
+                },
+                "required": [
+                    "light",
+                    "dark"
                 ]
             }
         }

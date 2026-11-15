@@ -26,6 +26,7 @@ vi.mock('../../../hooks/reduxHooks', () => ({
 }));
 vi.mock('./TenantCard', () => ({ TenantCard: () => null }));
 vi.mock('../LogoSplg', () => ({ LogoSplg: () => null }));
+vi.mock('../CompanyBrand', () => ({ CompanyBrand: () => null, PoweredByPlatform: () => null }));
 
 import { ownedCompany } from '../../../services/api/ownedCompany';
 import { supportMode } from '../../../services/api/supportMode';
