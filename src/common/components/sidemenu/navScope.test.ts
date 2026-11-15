@@ -11,6 +11,13 @@ const ADMIN: NavViewer = { mode: 'company', permissions: 'all' };
 const OWNED: NavViewer = { mode: 'owned', permissions: 'all' };
 
 describe('menú por alcance', () => {
+  it('«Ayuda» (chat con la plataforma y tickets) es del admin de la empresa con soporte.ver', () => {
+    expect(visiblePaths({ mode: 'company', permissions: ['soporte.ver'] })).toContain('/support');
+    expect(visiblePaths({ mode: 'company', permissions: [] })).not.toContain('/support');
+    expect(visiblePaths(SUPPORT)).not.toContain('/support');
+    expect(visiblePaths(PLATFORM)).not.toContain('/support');
+  });
+
   it('el administrador general sin sesión ve sólo plataforma y «ambos»: nada de la operación', () => {
     expect(visiblePaths(PLATFORM).sort()).toEqual(
       [
@@ -19,10 +26,12 @@ describe('menú por alcance', () => {
         '/home',
         '/notifications',
         '/platform/activity',
+        '/platform/chats',
         '/platform/monitoring',
         '/platform/scheduled-tasks',
         '/platform/service-usage',
         '/platform/support-sessions',
+        '/platform/tickets',
         '/system',
         '/users',
       ].sort(),
@@ -30,9 +39,11 @@ describe('menú por alcance', () => {
   });
 
   it('el menú de plataforma va primero y en el orden del diseño', () => {
-    expect(visiblePaths(PLATFORM).slice(0, 8)).toEqual([
+    expect(visiblePaths(PLATFORM).slice(0, 10)).toEqual([
       '/home',
       '/distributors',
+      '/platform/chats',
+      '/platform/tickets',
       '/platform/support-sessions',
       '/platform/monitoring',
       '/platform/scheduled-tasks',

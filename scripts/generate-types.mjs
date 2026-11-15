@@ -39,13 +39,25 @@ for (let cambio = true; cambio;) {
 
 const alias = (nombre) =>
   deEntrada.has(nombre) ? nombre.replace(/Dto$/, 'Body') : nombre.replace(/ResponseDto$|Dto$/, '');
+// Un esquema nuevo no le cambia el significado a un alias que el panel ya usa: ante un choque (MessageDto y
+// MessageResponseDto dan los dos `Message`), el alias corto queda para el que ya lo tenía en types.ts.
+const previos = new Map();
+try {
+  for (const [, a, n] of readFileSync('src/services/api/types.ts', 'utf8').matchAll(/export type (\w+) = S\['(\w+)'\];/g))
+    previos.set(n, a);
+} catch {
+  // primera generación: no hay alias previos
+}
 const usados = new Map();
-const lineas = esquemas.map((n) => {
+const nombres = new Map();
+const yaTenian = esquemas.filter((n) => previos.get(n) === alias(n));
+for (const n of [...yaTenian, ...esquemas.filter((n) => !yaTenian.includes(n))]) {
   let a = alias(n);
   if (usados.has(a)) a = n; // choque: se deja el nombre original
   usados.set(a, n);
-  return `export type ${a} = S['${n}'];`;
-});
+  nombres.set(n, a);
+}
+const lineas = esquemas.map((n) => `export type ${nombres.get(n)} = S['${n}'];`);
 
 writeFileSync(
   'src/services/api/types.ts',

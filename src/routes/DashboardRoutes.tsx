@@ -148,6 +148,15 @@ const PurchaseReceiptDetails = lazyPage(
 const AverageCosts = lazyPage(() => import('../pages/Purchases/AverageCosts'), 'AverageCosts');
 const TruckLoads = lazyPage(() => import('../pages/TruckLoads/TruckLoads'), 'TruckLoads');
 const TruckLoadDetails = lazyPage(() => import('../pages/TruckLoads/TruckLoadDetails'), 'TruckLoadDetails');
+const SupportHelp = lazyPage(() => import('../pages/Support/SupportHelp'), 'SupportHelp');
+const CompanyTicketDetail = lazyPage(() => import('../pages/Support/CompanyTicketDetail'), 'CompanyTicketDetail');
+const CompanyChatArchive = lazyPage(() => import('../pages/Support/CompanyChatArchive'), 'CompanyChatArchive');
+const PlatformChats = lazyPage(() => import('../pages/Platform/Support/PlatformChats'), 'PlatformChats');
+const PlatformTickets = lazyPage(() => import('../pages/Platform/Support/PlatformTickets'), 'PlatformTickets');
+const PlatformTicketDetail = lazyPage(
+  () => import('../pages/Platform/Support/PlatformTicketDetail'),
+  'PlatformTicketDetail',
+);
 
 export const DashboardRoutes = () => {
   const role = useAppSelector((state) => state.auth.role);
@@ -186,6 +195,10 @@ export const DashboardRoutes = () => {
           {/* «Accesos de soporte»: sólo el admin de la empresa (la API se lo niega al administrador general) */}
           <Route element={<RequireCompanyAdmin />}>
             <Route path="support-access" element={<SupportAccess />} />
+            {/* «Ayuda»: el chat con la plataforma y los tickets de la empresa (núcleo, también suspendida) */}
+            <Route path="support" element={<SupportHelp />} />
+            <Route path="support/tickets/:id" element={<CompanyTicketDetail />} />
+            <Route path="support/chats/:id" element={<CompanyChatArchive />} />
           </Route>
 
           {/* Plataforma: sólo el administrador general fuera del modo soporte */}
@@ -196,6 +209,10 @@ export const DashboardRoutes = () => {
             <Route path="distributors/:id/edit" element={<DistributorForm />} />
             <Route path="system" element={<System />} />
             <Route path="platform/support-sessions" element={<SupportSessions />} />
+            <Route path="platform/chats" element={<PlatformChats />} />
+            <Route path="platform/chats/:id" element={<PlatformChats />} />
+            <Route path="platform/tickets" element={<PlatformTickets />} />
+            <Route path="platform/tickets/:id" element={<PlatformTicketDetail />} />
             <Route path="platform/monitoring" element={<PlatformMonitoring />} />
             <Route path="platform/scheduled-tasks" element={<PlatformScheduledTasks />} />
             <Route path="platform/service-usage" element={<ServiceUsage />} />

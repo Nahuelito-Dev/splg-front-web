@@ -11,7 +11,7 @@ const SOCKET_NAMESPACE = '/admin';
 
 export const SocketProvider = ({ children }: { children: ReactNode }) => {
   const { status, uid, role } = useAppSelector((state) => state.auth);
-  const { isOnline, connect, disconnect, subscribe } = useSocket(SOCKET_NAMESPACE);
+  const { isOnline, connect, disconnect, subscribe, emit, request } = useSocket(SOCKET_NAMESPACE);
 
   useEffect(() => {
     if (status !== 'authenticated' || !uid) {
@@ -29,5 +29,5 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     return () => disconnect();
   }, [status, uid, role, connect, disconnect]);
 
-  return <SocketContext.Provider value={{ isOnline, subscribe }}>{children}</SocketContext.Provider>;
+  return <SocketContext.Provider value={{ isOnline, subscribe, emit, request }}>{children}</SocketContext.Provider>;
 };

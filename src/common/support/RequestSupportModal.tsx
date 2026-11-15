@@ -27,6 +27,9 @@ interface Props {
   onClose: () => void;
   /** La empresa ya elegida (desde su ficha). */
   distributorId?: string;
+  /** Precarga la referencia (el número de un ticket) y el motivo. */
+  ticketRef?: string;
+  reason?: string;
 }
 
 /**
@@ -34,7 +37,7 @@ interface Props {
  * apruebe. Emergencia: se abre al instante y la empresa recibe un aviso (si su política lo permite; si no, la API
  * responde 403 y se muestra acá).
  */
-export const RequestSupportModal = ({ open, onClose, distributorId }: Props) => {
+export const RequestSupportModal = ({ open, onClose, distributorId, ticketRef, reason: initialReason }: Props) => {
   const navigate = useNavigate();
   const request = useRequestSupportSession();
   const { data: distributors, isPending: loadingCompanies, error: companiesError } = useDistributors(open);
@@ -49,10 +52,10 @@ export const RequestSupportModal = ({ open, onClose, distributorId }: Props) => 
 
   useEffect(() => {
     if (open) {
-      reset(emptySupportRequest(distributorId));
+      reset({ ...emptySupportRequest(distributorId), ticketRef: ticketRef ?? '', reason: initialReason ?? '' });
       setServerError(null);
     }
-  }, [open, distributorId, reset]);
+  }, [open, distributorId, ticketRef, initialReason, reset]);
 
   // Con la empresa elegida de antemano: el `<select>` recién tiene esa opción cuando llega la lista.
   const { setValue } = methods;

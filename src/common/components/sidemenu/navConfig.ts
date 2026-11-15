@@ -39,6 +39,9 @@ import {
   HandCoins,
   House,
   LifeBuoy,
+  MessageCircleQuestion,
+  MessagesSquare,
+  Ticket,
   ListChecks,
   Map as MapIcon,
   MessageSquareWarning,
@@ -81,6 +84,8 @@ export interface NavItem {
   permission?: string;
   /** Sólo el admin de la empresa (la API se la niega al administrador general aun en modo soporte). */
   companyAdminOnly?: boolean;
+  /** Insignia con lo sin leer del chat con la plataforma: todo (empresa), los chats o los tickets (plataforma). */
+  supportBadge?: 'all' | 'chats' | 'tickets';
 }
 
 export interface NavSection {
@@ -108,6 +113,14 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { title: 'Tablero', path: '/home', icon: House, scope: 'platform' },
       { title: 'Distribuidoras', path: '/distributors', icon: Building2, scope: 'platform' },
+      {
+        title: 'Chat con empresas',
+        path: '/platform/chats',
+        icon: MessagesSquare,
+        scope: 'platform',
+        supportBadge: 'chats',
+      },
+      { title: 'Tickets', path: '/platform/tickets', icon: Ticket, scope: 'platform', supportBadge: 'tickets' },
       { title: 'Sesiones de soporte', path: '/platform/support-sessions', icon: Headset, scope: 'platform' },
       { title: 'Monitoreo', path: '/platform/monitoring', icon: Activity, scope: 'platform' },
       { title: 'Tareas programadas', path: '/platform/scheduled-tasks', icon: Timer, scope: 'platform' },
@@ -208,6 +221,14 @@ export const NAV_SECTIONS: NavSection[] = [
       { title: 'Usuarios', path: '/users', icon: UserRound, scope: 'both' },
       { title: 'Administradores', path: '/admins', icon: ShieldCheck, scope: 'both' },
       { title: 'Auditoría', path: '/audit', icon: FileClock },
+      {
+        title: 'Ayuda',
+        path: '/support',
+        icon: MessageCircleQuestion,
+        permission: 'soporte.ver',
+        companyAdminOnly: true,
+        supportBadge: 'all',
+      },
       {
         title: 'Accesos de soporte',
         path: '/support-access',

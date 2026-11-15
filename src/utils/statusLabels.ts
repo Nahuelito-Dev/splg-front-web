@@ -20,6 +20,7 @@ import type {
   Delivery,
   Distributor,
   SupportSession,
+  Ticket,
   DocumentReading,
   FleetExpirationEntry,
   FleetPlan,
@@ -301,6 +302,31 @@ export const SUPPORT_SCOPE: LabelMap<SupportSession['scope'][number]> = {
   personal_data: { text: 'Datos personales', tone: 'warn' },
   files: { text: 'Archivos', tone: 'warn' },
   exports: { text: 'Exportes', tone: 'warn' },
+};
+
+/** Estado de un ticket de soporte (C1b, §4.2.2 del diseño de comunicación). */
+export const TICKET_STATUS: LabelMap<Ticket['status']> = {
+  new: { text: 'Nuevo', tone: 'info' },
+  open: { text: 'En curso', tone: 'primary' },
+  waiting_company: { text: 'Esperando a la empresa', tone: 'warn' },
+  resolved: { text: 'Resuelto', tone: 'success' },
+  closed: { text: 'Cerrado', tone: 'neutral' },
+};
+
+export const TICKET_PRIORITY: LabelMap<Ticket['priority']> = {
+  low: { text: 'Baja', tone: 'neutral' },
+  normal: { text: 'Normal', tone: 'info' },
+  high: { text: 'Alta', tone: 'warn' },
+  urgent: { text: 'Urgente', tone: 'danger' },
+};
+
+export const TICKET_CATEGORY: LabelMap<Ticket['category']> = {
+  billing: { text: 'Facturación', tone: 'neutral' },
+  technical: { text: 'Técnico', tone: 'neutral' },
+  module: { text: 'Módulos', tone: 'neutral' },
+  data: { text: 'Datos', tone: 'neutral' },
+  account: { text: 'Cuenta', tone: 'neutral' },
+  other: { text: 'Otro', tone: 'neutral' },
 };
 
 export const AUDIT_RESULT: LabelMap<AsientoDeAuditoria['result']> = {
