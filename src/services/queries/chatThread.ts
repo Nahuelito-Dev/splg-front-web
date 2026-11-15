@@ -14,6 +14,7 @@ import { errorMessage, toApiError } from '../api/errors';
 import { MESSAGES_PAGE, MESSAGES_PAGE_MAX, type MessagesQuery } from '../api/supportChat';
 import type { MessageDto, MessageList } from '../api/types';
 import { chatKeys } from './supportChat';
+import { newUuid } from '../../utils/uuid';
 
 /** Lo que se manda al escribir: el texto, el id que genera el panel y, en un ticket de la plataforma, la visibilidad. */
 export interface OutgoingMessage {
@@ -306,7 +307,7 @@ export const useThread = (source: ThreadSource) => {
   const sendMessage = useCallback(
     (body: string, visibility?: 'all' | 'internal') => {
       const pending: PendingMessage = {
-        clientMessageId: crypto.randomUUID(),
+        clientMessageId: newUuid(),
         body,
         status: 'sending',
         visibility,

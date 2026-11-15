@@ -1,5 +1,6 @@
 /** Clave de idempotencia (UUID v4). */
-export const newIdempotencyKey = (): string => crypto.randomUUID();
+export const newIdempotencyKey = (): string => newUuid();
+import { newUuid } from '../../utils/uuid';
 
 /** Cabeceras de un pedido que mueve stock. */
 export const idempotencyHeaders = (key: string) => ({ 'Idempotency-Key': key });
