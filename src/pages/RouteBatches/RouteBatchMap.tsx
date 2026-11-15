@@ -3,6 +3,7 @@ import 'leaflet/dist/leaflet.css';
 import { useMemo } from 'react';
 import { MapContainer, Marker, Polyline, TileLayer, useMap } from 'react-leaflet';
 import '../Tracking/leafletIconFix';
+import { useChartPalette } from '../../theme/useChartPalette';
 
 type Point = { position: [number, number]; sequence: number };
 
@@ -26,25 +27,32 @@ const FitRoute = ({ points }: { points: Point[] }) => {
 };
 
 /** El recorrido sobre el mapa: cada parada numerada en su orden de entrega, unidas en línea recta. */
-export const RouteBatchMap = ({ points, label }: { points: Point[]; label: string }) => (
-  <div role="img" aria-label={label} className="h-64 overflow-hidden rounded-lg border border-outline">
-    <MapContainer
-      center={points[0]?.position ?? DEFAULT_CENTER}
-      zoom={13}
-      scrollWheelZoom={false}
-      style={{ height: '100%', width: '100%' }}
-    >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      <FitRoute points={points} />
-      {points.length > 1 && (
-        <Polyline positions={points.map((p) => p.position)} pathOptions={{ weight: 3, dashArray: '6 6' }} />
-      )}
-      {points.map((p) => (
-        <Marker key={p.sequence} position={p.position} icon={numbered(p.sequence)} />
-      ))}
-    </MapContainer>
-  </div>
-);
+export const RouteBatchMap = ({ points, label }: { points: Point[]; label: string }) => {
+  // El recorrido con el principal del tema (como en la hoja de ruta), no con el azul por omisión de Leaflet.
+  const palette = useChartPalette();
+  return (
+    <div role="img" aria-label={label} className="h-64 overflow-hidden rounded-lg border border-outline">
+      <MapContainer
+        center={points[0]?.position ?? DEFAULT_CENTER}
+        zoom={13}
+        scrollWheelZoom={false}
+        style={{ height: '100%', width: '100%' }}
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        <FitRoute points={points} />
+        {points.length > 1 && (
+          <Polyline
+            positions={points.map((p) => p.position)}
+            pathOptions={{ color: palette.primary, weight: 3, dashArray: '6 6' }}
+          />
+        )}
+        {points.map((p) => (
+          <Marker key={p.sequence} position={p.position} icon={numbered(p.sequence)} />
+        ))}
+      </MapContainer>
+    </div>
+  );
+};

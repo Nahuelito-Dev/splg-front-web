@@ -1,9 +1,10 @@
 import type { ThemeModeTokens, ThemeTokens } from '../services/api/types';
 import { isHexToken } from './themeTokens';
-import { colorOnDarkSurface, onColor } from './colorContrast';
+import { onColor } from './colorContrast';
 
 /**
- * Tema de la distribuidora del contexto (company, support, owned). Los colores de una empresa entran como **datos**
+ * Tema de la distribuidora del contexto (company, support, owned): marca, menú lateral y superficies (las oscuras y el
+ * menú en el tono de su principal; el contraste lo garantiza el back). Los colores de una empresa entran como **datos**
  * (los tokens que calcula y valida el back, `GET /v2/company/theme`, revalidados al recibirlos con `sanitizeTokens`) y sólo acá, dentro de `src/theme`: los componentes
  * siguen usando roles (`bg-primary`, `text-on-primary`…), que son variables CSS (`tailwind.config.js`).
  *
@@ -27,9 +28,20 @@ const VARIABLES: Record<keyof ThemeModeTokens, string> = {
   gradientFrom: 'primary-from',
   gradientTo: 'primary-to',
   gradientEdge: 'primary-edge',
+  canvas: 'bg',
+  surface: 'surface',
+  surfaceHover: 'surface-hover',
+  surfaceSunken: 'surface-sunken',
+  surfaceMuted: 'surface-muted',
+  outline: 'outline',
+  outlineSoft: 'outline-soft',
+  side: 'side',
+  sideRaised: 'side-raised',
+  sideLine: 'side-line',
+  sideText: 'side-text',
+  sideMuted: 'side-muted',
+  sideAccent: 'side-accent',
 };
-
-const SIDE_SURFACE = '#0B0F16';
 
 /** '#RRGGBB' → 'R G B' (canales para `rgb(var(--c-x) / <alpha-value>)`), o `null` si no es un color. */
 export const hexToChannels = (hex: string): string | null => {
@@ -38,21 +50,18 @@ export const hexToChannels = (hex: string): string | null => {
   return `${(n >> 16) & 255} ${(n >> 8) & 255} ${n & 255}`;
 };
 
-const declarations = (tokens: ThemeModeTokens, sideAccent: string): string =>
+const declarations = (tokens: ThemeModeTokens): string =>
   (Object.keys(VARIABLES) as Array<keyof ThemeModeTokens>)
     .map((key) => {
       const channels = hexToChannels(tokens[key]);
       return channels ? `--c-${VARIABLES[key]}: ${channels};` : '';
     })
-    .concat(
-      `--c-on-accent: ${hexToChannels(onColor(tokens.accent))};`,
-      `--c-side-accent: ${hexToChannels(sideAccent)};`,
-    )
+    .concat(`--c-on-accent: ${hexToChannels(onColor(tokens.accent))};`)
     .join(' ');
 
 /** La hoja de estilos de un tema: `:root:root` le gana a la base de Tailwind sin `!important`. */
 export const companyThemeCss = (tokens: ThemeTokens): string =>
-  `:root:root { ${declarations(tokens.light, colorOnDarkSurface(tokens.dark.primary, SIDE_SURFACE, 4.5))} }\n:root:root.dark { ${declarations(tokens.dark, colorOnDarkSurface(tokens.dark.primary, SIDE_SURFACE, 4.5))} }`;
+  `:root:root { ${declarations(tokens.light)} }\n:root:root.dark { ${declarations(tokens.dark)} }`;
 
 type Listener = () => void;
 const listeners = new Set<Listener>();

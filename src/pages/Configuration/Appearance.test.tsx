@@ -1,10 +1,11 @@
 import '@testing-library/jest-dom/vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { AxiosError, AxiosHeaders } from 'axios';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { mutation, ok } from '../../test/pageTest';
 import { Appearance } from './Appearance';
+import { BRASA_TOKENS } from '../../theme/themeTokens';
 
 const state = vi.hoisted(() => ({
   perms: { needsDistributor: false, canWrite: true, writeHint: undefined as string | undefined },
@@ -36,6 +37,9 @@ vi.mock('../../utils/notifications', () => ({
 }));
 
 const modo = (primary: string) => ({
+  ...BRASA_TOKENS.dark,
+  side: '#100A20',
+  sideText: '#A19FB0',
   primary,
   primaryHover: primary,
   primaryStrong: primary,
@@ -115,6 +119,27 @@ describe('Apariencia', () => {
     expect(screen.getByLabelText('Vista previa en modo oscuro')).toBeInTheDocument();
     expect(screen.getByText('Texto de los botones sobre el color principal')).toBeInTheDocument();
     expect(screen.getByText('6,7:1 / 4,5:1')).toBeInTheDocument();
+  });
+
+  it('sin tema propio (isDefault) la vista previa muestra Brasa, que es lo que pinta el panel', () => {
+    setup(theme({ isDefault: true }));
+    const menus = screen.getAllByLabelText('Menú lateral');
+    expect(menus).toHaveLength(2);
+    for (const menu of menus) {
+      // brand.sidebar.bg (#0B0F16) y brand.sidebar.text (#98A2B3), no los tokens teñidos de la API.
+      expect(menu).toHaveStyle({ background: 'rgb(11, 15, 22)' });
+      expect(within(menu).getByText('Clientes')).toHaveStyle({ color: 'rgb(152, 162, 179)' });
+    }
+  });
+
+  it('la vista previa muestra el menú lateral con los tokens del tema, en claro y en oscuro', () => {
+    setup();
+    const menus = screen.getAllByLabelText('Menú lateral');
+    expect(menus).toHaveLength(2);
+    for (const menu of menus) {
+      expect(menu).toHaveStyle({ background: 'rgb(16, 10, 32)' });
+      expect(within(menu).getByText('Clientes')).toHaveStyle({ color: 'rgb(161, 159, 176)' });
+    }
   });
 
   it('pide la vista previa al back con lo que se escribe y guarda el cuerpo normalizado', async () => {

@@ -10,11 +10,11 @@ export const CheckingAuth = () => {
       </div>
 
       <div className="relative h-16 w-16" role="status" aria-label="Cargando">
-        <div className="absolute inset-0 rounded-full border-4 border-tinta-800" />
+        <div className="absolute inset-0 rounded-full border-4 border-side-line" />
         <div className="absolute inset-0 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
 
-      <p className="animate-pulse text-sm font-medium uppercase tracking-widest text-tinta-400">Cargando sistema...</p>
+      <p className="animate-pulse text-sm font-medium uppercase tracking-widest text-side-text">Cargando sistema...</p>
     </div>
   );
 };

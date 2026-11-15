@@ -46,6 +46,9 @@ describe('PoweredByPlatform', () => {
   it('«con tecnología de» y el nombre de la plataforma de la API', () => {
     render(<PoweredByPlatform />);
     expect(screen.getByText(/con tecnología de/)).toHaveTextContent('con tecnología de OrixTech');
+    // El secundario del menú (4,5:1 sobre el fondo), no el texto del menú al 70 % (≈ 4,2:1).
+    expect(screen.getByText(/con tecnología de/)).toHaveClass('text-side-muted');
+    expect(screen.getByText(/con tecnología de/).className).not.toMatch(/side-text\//);
   });
 
   it('sin el nombre de la plataforma no muestra nada', () => {

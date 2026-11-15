@@ -39,6 +39,8 @@ export const ticketSummary = (over: Partial<TicketSummary> = {}): TicketSummary 
 
 export const ticket = (over: Partial<Ticket> = {}): Ticket => ({
   ...ticketSummary(),
+  counterpartLastReadSeq: 0,
+  lastReadSeq: 0,
   distributorId: 'd-1',
   distributorName: 'Gas Norte',
   category: 'billing',

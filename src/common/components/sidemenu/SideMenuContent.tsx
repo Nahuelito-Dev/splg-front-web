@@ -104,7 +104,7 @@ export const SideMenuContent = ({ isSuperAdmin, fullName, mini = false, onNaviga
                   onClick={() => toggleSection(section.title)}
                   aria-expanded={isOpen}
                   aria-controls={panelId}
-                  className="flex w-full items-center justify-between rounded-[9px] px-2.5 pb-1.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-side-text/70 transition-colors hover:text-side-text"
+                  className="flex w-full items-center justify-between rounded-[9px] px-2.5 pb-1.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-side-muted transition-colors hover:text-side-text"
                 >
                   {section.title}
                   <ChevronDown
@@ -147,7 +147,7 @@ export const SideMenuContent = ({ isSuperAdmin, fullName, mini = false, onNaviga
               fallback={
                 <span
                   aria-hidden="true"
-                  className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-full bg-gradient-to-br from-tinta-600 to-tinta-800 text-[11px] font-semibold text-white"
+                  className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-full bg-gradient-to-br from-side-line to-side-raised text-[11px] font-semibold text-white"
                 >
                   {initialsOf(fullName ?? 'A')}
                 </span>

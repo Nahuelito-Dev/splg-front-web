@@ -30450,6 +30450,55 @@
                 ]
             }
         },
+        "/api/v2/process-runs/{runId}": {
+            "get": {
+                "description": "Tiempos, disparo y quién la pidió, instancia, contadores, resumen por empresa (`companies`), error saneado con su huella (`errorFingerprint`), la traza (`traceId`, para abrir `GET /v2/platform/traces/{traceId}`) y los avisos de la bandeja que salieron de esa misma traza. Sólo el administrador general.",
+                "operationId": "ProcessRunController_detalle",
+                "parameters": [
+                    {
+                        "name": "runId",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProcessRunDetailResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "`runId` que no es un UUID (`INVALID_ID`)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: super_admin"
+                    },
+                    "404": {
+                        "description": "No existe esa corrida o ya se depuró por antigüedad (`PROCESS_RUN_NOT_FOUND`)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Detalle de una corrida",
+                "tags": [
+                    "Procesos automáticos · Monitoreo"
+                ]
+            }
+        },
         "/api/v1/reports/sales-by-driver": {
             "get": {
                 "description": "Días en hora argentina (America/Argentina/Buenos_Aires); `to` es inclusivo. Cuenta pedidos entregados en el rango, por fecha de entrega (el listado de pedidos filtra por fecha de creación). Suma el total del pedido (con recargos) de los pedidos entregados. Cuenta sólo lo COBRADO: `paymentStatus: paid` (cualquier medio); el efectivo pendiente de confirmar, las transferencias sin confirmar o no recibidas, los impagos y las pérdidas no suman (ver `GET /reports/collections`).",
@@ -39597,7 +39646,7 @@
         },
         "/api/v2/company/tickets": {
             "get": {
-                "description": "Los movidos más recientemente primero. Filtro `status`.",
+                "description": "Por defecto, los movidos más recientemente primero. Filtros: `status` (uno o varios, separados por coma) y `q` (número `T-000123`/`123` o parte del asunto). Orden: `sort` (`createdAt`, `updatedAt`, `lastMessageAt`) y `order` (`asc`, `desc`). Sólo los de mi empresa.",
                 "operationId": "CompanyTicketsController_listar",
                 "parameters": [
                     {
@@ -39625,14 +39674,58 @@
                         "name": "status",
                         "required": false,
                         "in": "query",
+                        "description": "Uno o varios estados, separados por coma (`new,open,waiting_company`) o repitiendo el parámetro (`status=new&status=open`). Sin él, todos.",
                         "schema": {
+                            "example": "new,open,waiting_company",
+                            "type": "array",
+                            "items": {
+                                "type": "string",
+                                "enum": [
+                                    "new",
+                                    "open",
+                                    "waiting_company",
+                                    "resolved",
+                                    "closed"
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        "name": "q",
+                        "required": false,
+                        "in": "query",
+                        "description": "Número (`T-000123` o `123`) o parte del asunto",
+                        "schema": {
+                            "maxLength": 120,
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "required": false,
+                        "in": "query",
+                        "description": "Campo por el que se ordena: alta, último movimiento del ticket o último mensaje del hilo que quien pide puede ver (la empresa no cuenta las notas internas). Empate: por número.",
+                        "schema": {
+                            "default": "updatedAt",
                             "type": "string",
                             "enum": [
-                                "new",
-                                "open",
-                                "waiting_company",
-                                "resolved",
-                                "closed"
+                                "createdAt",
+                                "updatedAt",
+                                "lastMessageAt"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "order",
+                        "required": false,
+                        "in": "query",
+                        "description": "Sentido del orden: `desc`, los más recientes primero",
+                        "schema": {
+                            "default": "desc",
+                            "type": "string",
+                            "enum": [
+                                "asc",
+                                "desc"
                             ]
                         }
                     }
@@ -39649,7 +39742,7 @@
                         }
                     },
                     "400": {
-                        "description": "Estado desconocido o paginación fuera de rango"
+                        "description": "Estado desconocido o vacío, `q` de más de 120 caracteres, `sort`/`order` desconocidos o paginación fuera de rango"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -40744,7 +40837,7 @@
         },
         "/api/v2/platform/tickets": {
             "get": {
-                "description": "Los movidos más recientemente primero. Filtros: `status`, `priority`, `distributorId`, `assigned` (`me`, `none` o un id), `overdue` (objetivo de primera respuesta vencido), `fromChat` y `q` (número o asunto). `counts` no depende de los filtros.",
+                "description": "Por defecto, los movidos más recientemente primero (`sort` y `order` lo cambian). Filtros: `status` (uno o varios, separados por coma), `priority`, `distributorId`, `assigned` (`me`, `none` o un id), `overdue` (objetivo de primera respuesta vencido), `fromChat` y `q` (número o asunto). `counts` no depende de los filtros.",
                 "operationId": "PlatformTicketsController_listar",
                 "parameters": [
                     {
@@ -40772,14 +40865,58 @@
                         "name": "status",
                         "required": false,
                         "in": "query",
+                        "description": "Uno o varios estados, separados por coma (`new,open,waiting_company`) o repitiendo el parámetro (`status=new&status=open`). Sin él, todos.",
                         "schema": {
+                            "example": "new,open,waiting_company",
+                            "type": "array",
+                            "items": {
+                                "type": "string",
+                                "enum": [
+                                    "new",
+                                    "open",
+                                    "waiting_company",
+                                    "resolved",
+                                    "closed"
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        "name": "q",
+                        "required": false,
+                        "in": "query",
+                        "description": "Número (`T-000123` o `123`) o parte del asunto",
+                        "schema": {
+                            "maxLength": 120,
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "required": false,
+                        "in": "query",
+                        "description": "Campo por el que se ordena: alta, último movimiento del ticket o último mensaje del hilo que quien pide puede ver (la empresa no cuenta las notas internas). Empate: por número.",
+                        "schema": {
+                            "default": "updatedAt",
                             "type": "string",
                             "enum": [
-                                "new",
-                                "open",
-                                "waiting_company",
-                                "resolved",
-                                "closed"
+                                "createdAt",
+                                "updatedAt",
+                                "lastMessageAt"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "order",
+                        "required": false,
+                        "in": "query",
+                        "description": "Sentido del orden: `desc`, los más recientes primero",
+                        "schema": {
+                            "default": "desc",
+                            "type": "string",
+                            "enum": [
+                                "asc",
+                                "desc"
                             ]
                         }
                     },
@@ -40833,16 +40970,6 @@
                         "schema": {
                             "type": "boolean"
                         }
-                    },
-                    {
-                        "name": "q",
-                        "required": false,
-                        "in": "query",
-                        "description": "Número (`T-000123` o `123`) o parte del asunto",
-                        "schema": {
-                            "maxLength": 120,
-                            "type": "string"
-                        }
                     }
                 ],
                 "responses": {
@@ -40857,7 +40984,7 @@
                         }
                     },
                     "400": {
-                        "description": "Filtro inválido o paginación fuera de rango"
+                        "description": "Filtro inválido (estado, prioridad, `assigned`, `q` de más de 120 caracteres), `sort`/`order` desconocidos o paginación fuera de rango"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -40986,7 +41113,7 @@
                 "x-permission": "plataforma.tickets.ver"
             },
             "patch": {
-                "description": "El estado sigue la máquina del ticket (`new → open | waiting_company`, `open → waiting_company | resolved`, `waiting_company → open | resolved | closed`, `resolved → open | closed`). Asignar un ticket nuevo lo pasa a `open`. Cambiar la prioridad sin primera respuesta recalcula el vencimiento.",
+                "description": "El estado sigue la máquina del ticket (`new → open | waiting_company`, `open → waiting_company | resolved`, `waiting_company → open | resolved`, `resolved → open`). `closed` no se acepta a mano (400 `TICKET_INVALID_TRANSITION`): el ticket se cierra solo a los 7 días (plazo configurable) o cuando la empresa confirma la resolución. Asignar un ticket nuevo lo pasa a `open`. Cambiar la prioridad sin primera respuesta recalcula el vencimiento.",
                 "operationId": "PlatformTicketsController_actualizar",
                 "parameters": [
                     {
@@ -41020,7 +41147,7 @@
                         }
                     },
                     "400": {
-                        "description": "Sin cambios, valor desconocido, transición inválida (`TICKET_INVALID_TRANSITION`) o asignado que no es del equipo de la plataforma (`TICKET_ASSIGNEE_INVALID`)"
+                        "description": "Sin cambios, valor desconocido, transición inválida o pedido de `closed` (`TICKET_INVALID_TRANSITION`) o asignado que no es del equipo de la plataforma (`TICKET_ASSIGNEE_INVALID`)"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -41629,6 +41756,40 @@
                     }
                 ],
                 "summary": "Contador de la ayuda de la plataforma",
+                "tags": [
+                    "Platform chat (company)"
+                ]
+            }
+        },
+        "/api/v2/company/support/status": {
+            "get": {
+                "description": "Si se atiende ahora según el horario, cuándo vuelve a abrir y si hay alguien del equipo conectado (D-C26). Es el mismo para todas las empresas y no dice quién está. Cuando cambia llega `support:status` con este mismo cuerpo por el socket del panel.",
+                "operationId": "CompanySupportSummaryController_estado",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CompanySupportStatusDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los accesos de soporte (`soporte.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Estado del soporte de la plataforma",
                 "tags": [
                     "Platform chat (company)"
                 ]
@@ -42561,6 +42722,55 @@
                 "summary": "Módulos en uso de una distribuidora, sin iniciar sesión",
                 "tags": [
                     "Gas Cylinders"
+                ]
+            }
+        },
+        "/api/v2/platform/traces/{traceId}": {
+            "get": {
+                "description": "Todo lo que quedó con ese `traceId` (el `X-Request-Id` que devuelve cada respuesta, el de un webhook o el `traceId` de una corrida): asientos de auditoría de las escrituras, corridas de procesos automáticos y avisos de la bandeja, lo más viejo primero. Sin datos personales ni el detalle de los cambios. Sólo el administrador general.",
+                "operationId": "TrazasController_traza",
+                "parameters": [
+                    {
+                        "name": "traceId",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TraceResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "`traceId` de más de 64 caracteres o con caracteres fuera de letras, números, `-` y `_` (`INVALID_TRACE_ID`)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: super_admin"
+                    },
+                    "404": {
+                        "description": "No hay nada registrado con esa traza o ya se depuró (`TRACE_NOT_FOUND`)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Línea de tiempo de una traza",
+                "tags": [
+                    "Plataforma · Monitoreo"
                 ]
             }
         }
@@ -51551,6 +51761,68 @@
                     "gradientEdge": {
                         "type": "string",
                         "example": "#052AB6"
+                    },
+                    "canvas": {
+                        "type": "string",
+                        "example": "#0B0F16",
+                        "description": "Fondo del panel. En claro, el neutro; en oscuro, un oscuro del tono del principal (neutro si el principal es casi gris)"
+                    },
+                    "surface": {
+                        "type": "string",
+                        "example": "#131A25",
+                        "description": "Tarjetas, tablas y diálogos. En oscuro, del tono del principal y nunca más claro que el neutro"
+                    },
+                    "surfaceHover": {
+                        "type": "string",
+                        "example": "#1B2330"
+                    },
+                    "surfaceSunken": {
+                        "type": "string",
+                        "example": "#171E29"
+                    },
+                    "surfaceMuted": {
+                        "type": "string",
+                        "example": "#212A38"
+                    },
+                    "outline": {
+                        "type": "string",
+                        "example": "#2E3847",
+                        "description": "Bordes"
+                    },
+                    "outlineSoft": {
+                        "type": "string",
+                        "example": "#202836",
+                        "description": "Bordes suaves"
+                    },
+                    "side": {
+                        "type": "string",
+                        "example": "#100A20",
+                        "description": "Fondo del menú lateral: siempre oscuro (igual en los dos modos), del tono del principal"
+                    },
+                    "sideRaised": {
+                        "type": "string",
+                        "example": "#19142B",
+                        "description": "Tarjetas y realces dentro del menú"
+                    },
+                    "sideLine": {
+                        "type": "string",
+                        "example": "#1F1931",
+                        "description": "Divisores del menú"
+                    },
+                    "sideText": {
+                        "type": "string",
+                        "example": "#A19FB0",
+                        "description": "Texto del menú: 4,5:1 sobre `side` y `sideRaised`"
+                    },
+                    "sideMuted": {
+                        "type": "string",
+                        "example": "#858293",
+                        "description": "Títulos de sección y texto secundario del menú: 4,5:1 sobre `side` y `sideRaised`"
+                    },
+                    "sideAccent": {
+                        "type": "string",
+                        "example": "#9162FF",
+                        "description": "Íconos activos, iniciales y foco del menú: 4,5:1 sobre `side` y `sideRaised`"
                     }
                 },
                 "required": [
@@ -51563,7 +51835,20 @@
                     "accentSoft",
                     "gradientFrom",
                     "gradientTo",
-                    "gradientEdge"
+                    "gradientEdge",
+                    "canvas",
+                    "surface",
+                    "surfaceHover",
+                    "surfaceSunken",
+                    "surfaceMuted",
+                    "outline",
+                    "outlineSoft",
+                    "side",
+                    "sideRaised",
+                    "sideLine",
+                    "sideText",
+                    "sideMuted",
+                    "sideAccent"
                 ]
             },
             "ThemeTokensDto": {
@@ -66099,6 +66384,226 @@
                     "total"
                 ]
             },
+            "ProcessRunNotificationDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "kind": {
+                        "type": "string",
+                        "example": "process_circuit_open"
+                    },
+                    "distributorId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true,
+                        "description": "`null`: aviso a la bandeja de la plataforma"
+                    },
+                    "createdAt": {
+                        "format": "date-time",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
+                    "kind",
+                    "distributorId",
+                    "createdAt"
+                ]
+            },
+            "ProcessRunDetailResponseDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "example": "9d8e7f60-1b2c-4d3e-8f4a-5b6c7d8e9f01"
+                    },
+                    "process": {
+                        "type": "string",
+                        "enum": [
+                            "dispatch_tick",
+                            "fleet_planner_daily",
+                            "fleet_planner_expiry",
+                            "vehicle_usage_feed",
+                            "repurchase_anticipate",
+                            "repurchase_expiry",
+                            "route_batch_build",
+                            "route_batch_expiry",
+                            "cylinder_recovery",
+                            "attendance_open_alert",
+                            "receiver_retention",
+                            "mp_pending_reconciliation",
+                            "mp_cancelled_reconciliation",
+                            "reservations_activate",
+                            "reservations_expire_unpaid",
+                            "orders_expire_mp_unpaid",
+                            "payment_inbox_process",
+                            "payment_inbox_purge",
+                            "s3_orphans_retry",
+                            "driver_settlement_generate",
+                            "driver_settlement_alert",
+                            "coverage_zone_expiry",
+                            "fine_due_alerts",
+                            "finance_reconciliation",
+                            "mp_reconciliation_sync",
+                            "fleet_alerts",
+                            "stock_low_alert",
+                            "stock_reconciliation",
+                            "insurance_alerts",
+                            "import_cleanup",
+                            "process_run_watch",
+                            "process_run_purge",
+                            "document_reading",
+                            "document_reading_proposals",
+                            "route_planning_propose",
+                            "route_planning_close_days",
+                            "route_sheet_watch",
+                            "support_session_expiry",
+                            "support_housekeeping"
+                        ]
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "Recompra: invitaciones anticipadas"
+                    },
+                    "distributorId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true,
+                        "description": "Distribuidora de la corrida; `null` si fue un barrido global"
+                    },
+                    "startedAt": {
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "finishedAt": {
+                        "format": "date-time",
+                        "type": "string",
+                        "nullable": true,
+                        "description": "`null` mientras corre"
+                    },
+                    "durationMs": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": 1840
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "running",
+                            "ok",
+                            "partial",
+                            "failed",
+                            "skipped"
+                        ]
+                    },
+                    "counters": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "number"
+                        },
+                        "example": {
+                            "processed": 3,
+                            "errors": 0
+                        },
+                        "description": "Lo que generó la corrida (casos, avisos, ofertas...), según el proceso"
+                    },
+                    "error": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "trigger": {
+                        "type": "string",
+                        "enum": [
+                            "cron",
+                            "manual",
+                            "webhook"
+                        ]
+                    },
+                    "module": {
+                        "type": "string",
+                        "nullable": true,
+                        "enum": [
+                            "M1",
+                            "M2",
+                            "M3",
+                            "M4",
+                            "M5",
+                            "M6"
+                        ],
+                        "description": "Módulo inteligente; `null` si es una tarea programada común"
+                    },
+                    "requestedBy": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true,
+                        "description": "Quién la pidió; sólo en las corridas `manual`"
+                    },
+                    "instance": {
+                        "type": "string",
+                        "example": "orix:4121",
+                        "description": "`host:pid` de la instancia que la corrió"
+                    },
+                    "companies": {
+                        "type": "object",
+                        "nullable": true,
+                        "additionalProperties": {
+                            "type": "number"
+                        },
+                        "example": {
+                            "ok": 7,
+                            "failed": 1,
+                            "timeout": 0,
+                            "locked": 0,
+                            "circuit_open": 0,
+                            "paused": 0,
+                            "skipped": 3
+                        },
+                        "description": "Cuántas empresas terminaron en cada estado; `null` si el proceso no recorre empresas"
+                    },
+                    "errorFingerprint": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "a91f03c2d4e5b6f7",
+                        "description": "Huella del error (16 hexadecimales): la misma para el mismo error en otras corridas"
+                    },
+                    "traceId": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "prueba-o1",
+                        "description": "Traza de la corrida: el `X-Request-Id` del request que la disparó o su propio id si nació del cron. Se abre con `GET /v2/platform/traces/{traceId}`"
+                    },
+                    "notifications": {
+                        "description": "Avisos de la bandeja con la misma traza",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ProcessRunNotificationDto"
+                        }
+                    }
+                },
+                "required": [
+                    "id",
+                    "process",
+                    "title",
+                    "distributorId",
+                    "startedAt",
+                    "finishedAt",
+                    "durationMs",
+                    "status",
+                    "counters",
+                    "error",
+                    "trigger",
+                    "module",
+                    "requestedBy",
+                    "instance",
+                    "companies",
+                    "errorFingerprint",
+                    "traceId",
+                    "notifications"
+                ]
+            },
             "VentasPorChoferDto": {
                 "type": "object",
                 "properties": {
@@ -73580,6 +74085,14 @@
                             "$ref": "#/components/schemas/SupportSessionRefDto"
                         }
                     },
+                    "counterpartLastReadSeq": {
+                        "type": "number",
+                        "description": "Hasta qué mensaje del hilo leyó la otra punta (el «leído», como en `ConversationDto`); 0 si todavía nada"
+                    },
+                    "lastReadSeq": {
+                        "type": "number",
+                        "description": "Hasta qué mensaje del hilo leyó quien pide (para el separador «sin leer»); 0 si nunca lo abrió"
+                    },
                     "createdAt": {
                         "type": "string",
                         "format": "date-time"
@@ -73606,6 +74119,8 @@
                     "closedAt",
                     "satisfaction",
                     "supportSessions",
+                    "counterpartLastReadSeq",
+                    "lastReadSeq",
                     "createdAt"
                 ]
             },
@@ -74444,7 +74959,7 @@
                             "resolved",
                             "closed"
                         ],
-                        "description": "Según la máquina del ticket; una transición inválida es 400 `TICKET_INVALID_TRANSITION`."
+                        "description": "Según la máquina del ticket; una transición inválida es 400 `TICKET_INVALID_TRANSITION`. `closed` nunca se acepta a mano (400 `TICKET_INVALID_TRANSITION`): el ticket se cierra solo a los 7 días (plazo configurable, resuelto o esperando a la empresa) o cuando la empresa confirma la resolución."
                     },
                     "priority": {
                         "type": "string",
@@ -74456,7 +74971,7 @@
                         ]
                     },
                     "assignedTo": {
-                        "type": "object",
+                        "type": "string",
                         "format": "uuid",
                         "nullable": true,
                         "description": "Un administrador general activo; `null` lo desasigna."
@@ -74771,6 +75286,30 @@
                     "chatUnread",
                     "ticketsUnread",
                     "total"
+                ]
+            },
+            "CompanySupportStatusDto": {
+                "type": "object",
+                "properties": {
+                    "openNow": {
+                        "type": "boolean",
+                        "description": "Si ahora es horario de atención (sin horario cargado, siempre `true`)"
+                    },
+                    "nextOpenAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "Cuándo vuelve a abrir; `null` si está abierto o si no hay horario cargado"
+                    },
+                    "teamOnline": {
+                        "type": "boolean",
+                        "description": "Si hay al menos una persona del equipo de soporte conectada al panel. El panel muestra «En línea» con `openNow && teamOnline`"
+                    }
+                },
+                "required": [
+                    "openNow",
+                    "nextOpenAt",
+                    "teamOnline"
                 ]
             },
             "PlatformSupportSummaryDto": {
@@ -76137,6 +76676,88 @@
                     "modules",
                     "acceptingOrders",
                     "message"
+                ]
+            },
+            "TraceLinkDto": {
+                "type": "object",
+                "properties": {
+                    "entity": {
+                        "type": "string",
+                        "example": "process-run",
+                        "description": "Tipo de lo enlazado: `process-run`, `admin-notification` o el recurso del asiento (`orders`, `users`…)"
+                    },
+                    "id": {
+                        "type": "string",
+                        "example": "6b1e2a40-9c3d-4e5f-8a7b-1c2d3e4f5a6b"
+                    }
+                },
+                "required": [
+                    "entity",
+                    "id"
+                ]
+            },
+            "TraceItemDto": {
+                "type": "object",
+                "properties": {
+                    "at": {
+                        "format": "date-time",
+                        "type": "string",
+                        "description": "Cuándo pasó"
+                    },
+                    "kind": {
+                        "type": "string",
+                        "enum": [
+                            "audit",
+                            "process_run",
+                            "notification"
+                        ]
+                    },
+                    "summary": {
+                        "type": "string",
+                        "example": "Bandeja de avisos de pago: procesamiento — ok (webhook, 412 ms)",
+                        "description": "Resumen sin datos personales: método, ruta patrón y código; proceso, estado y duración; o tipo de aviso"
+                    },
+                    "distributorId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true,
+                        "description": "Empresa del hecho; `null` si es de la plataforma"
+                    },
+                    "link": {
+                        "nullable": true,
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/TraceLinkDto"
+                            }
+                        ]
+                    }
+                },
+                "required": [
+                    "at",
+                    "kind",
+                    "summary",
+                    "distributorId",
+                    "link"
+                ]
+            },
+            "TraceResponseDto": {
+                "type": "object",
+                "properties": {
+                    "traceId": {
+                        "type": "string",
+                        "example": "prueba-o1"
+                    },
+                    "items": {
+                        "description": "Línea de tiempo, lo más viejo primero",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TraceItemDto"
+                        }
+                    }
+                },
+                "required": [
+                    "traceId",
+                    "items"
                 ]
             }
         }

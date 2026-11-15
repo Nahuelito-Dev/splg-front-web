@@ -6,7 +6,17 @@ export const HEX_TOKEN = /^#[0-9A-Fa-f]{6}$/;
 
 export const isHexToken = (value: unknown): value is string => typeof value === 'string' && HEX_TOKEN.test(value);
 
-const { llama, gas, primaryGradient, dark } = brand;
+const { llama, gas, tinta, canvas, sidebar, primaryGradient, dark } = brand;
+
+/** El menú lateral de Brasa: oscuro y el mismo en los dos modos. */
+const BRASA_SIDE = {
+  side: sidebar.bg,
+  sideRaised: sidebar.raised,
+  sideLine: sidebar.line,
+  sideText: sidebar.text,
+  sideMuted: sidebar.muted,
+  sideAccent: sidebar.accent,
+};
 
 /** Brasa, rol por rol: lo que toma un token que no llegó o no es un color válido. */
 export const BRASA_TOKENS: ThemeTokens = {
@@ -21,6 +31,14 @@ export const BRASA_TOKENS: ThemeTokens = {
     gradientFrom: primaryGradient.from,
     gradientTo: primaryGradient.to,
     gradientEdge: primaryGradient.border,
+    canvas,
+    surface: '#FFFFFF',
+    surfaceHover: tinta['50'],
+    surfaceSunken: tinta['25'],
+    surfaceMuted: tinta['100'],
+    outline: tinta['200'],
+    outlineSoft: tinta['100'],
+    ...BRASA_SIDE,
   },
   dark: {
     primary: llama['600'],
@@ -33,6 +51,14 @@ export const BRASA_TOKENS: ThemeTokens = {
     gradientFrom: primaryGradient.from,
     gradientTo: primaryGradient.to,
     gradientEdge: primaryGradient.border,
+    canvas: dark.canvas,
+    surface: dark.surface,
+    surfaceHover: dark.surfaceHover,
+    surfaceSunken: dark.surfaceSunken,
+    surfaceMuted: dark.surfaceMuted,
+    outline: dark.outline,
+    outlineSoft: dark.outlineSoft,
+    ...BRASA_SIDE,
   },
 };
 

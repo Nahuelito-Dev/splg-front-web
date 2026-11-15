@@ -42,6 +42,7 @@ import {
   type AppearanceFormValues,
 } from './appearanceRules';
 import { THEME_PRESETS } from '../../theme/themePresets';
+import { BRASA_TOKENS } from '../../theme/themeTokens';
 
 const NO_PERMISSION_HINT = 'Tu rol no tiene permiso para cambiar la configuración';
 
@@ -184,6 +185,8 @@ const AppearanceForm = ({ theme, canWrite, writeHint }: FormProps) => {
   };
 
   const name = values.displayName?.trim() || theme.companyName;
+  // Sin tema propio el panel pinta Brasa con sus variables (no aplica tokens): la vista previa muestra eso mismo.
+  const previewTokens = shown.isDefault ? BRASA_TOKENS : shown.tokens;
   const disabled = !canWrite;
 
   return (
@@ -220,7 +223,7 @@ const AppearanceForm = ({ theme, canWrite, writeHint }: FormProps) => {
       <Card className="p-6">
         <CardHeader
           title="Colores"
-          subtitle="Botones, enlaces y resaltados. Los colores de estado (error, éxito, aviso) no cambian."
+          subtitle="Botones, enlaces, resaltados, el menú lateral y los fondos del modo oscuro (en el tono del color principal). Los colores de estado (error, éxito, aviso) no cambian."
         />
         <div className="mb-5">
           <h3 className="text-sm font-semibold text-ink">Paletas preestablecidas</h3>
@@ -303,8 +306,8 @@ const AppearanceForm = ({ theme, canWrite, writeHint }: FormProps) => {
           subtitle={contrastIssue ? 'Muestra el último tema válido.' : 'Así se ve en modo claro y oscuro.'}
         />
         <div className="grid gap-4 md:grid-cols-2">
-          <ThemePreview tokens={shown.tokens.light} mode="light" name={name} logoUrl={shown.logoUrl} />
-          <ThemePreview tokens={shown.tokens.dark} mode="dark" name={name} logoUrl={shown.logoUrl} />
+          <ThemePreview tokens={previewTokens.light} mode="light" name={name} logoUrl={shown.logoUrl} />
+          <ThemePreview tokens={previewTokens.dark} mode="dark" name={name} logoUrl={shown.logoUrl} />
         </div>
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           {(['light', 'dark'] as const).map((mode) => (

@@ -7344,6 +7344,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/process-runs/{runId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Detalle de una corrida
+     * @description Tiempos, disparo y quién la pidió, instancia, contadores, resumen por empresa (`companies`), error saneado con su huella (`errorFingerprint`), la traza (`traceId`, para abrir `GET /v2/platform/traces/{traceId}`) y los avisos de la bandeja que salieron de esa misma traza. Sólo el administrador general.
+     */
+    get: operations['ProcessRunController_detalle'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/reports/sales-by-driver': {
     parameters: {
       query?: never;
@@ -10120,7 +10140,7 @@ export interface paths {
     };
     /**
      * Tickets de mi empresa
-     * @description Los movidos más recientemente primero. Filtro `status`.
+     * @description Por defecto, los movidos más recientemente primero. Filtros: `status` (uno o varios, separados por coma) y `q` (número `T-000123`/`123` o parte del asunto). Orden: `sort` (`createdAt`, `updatedAt`, `lastMessageAt`) y `order` (`asc`, `desc`). Sólo los de mi empresa.
      */
     get: operations['CompanyTicketsController_listar'];
     put?: never;
@@ -10407,7 +10427,7 @@ export interface paths {
     };
     /**
      * Cola de tickets
-     * @description Los movidos más recientemente primero. Filtros: `status`, `priority`, `distributorId`, `assigned` (`me`, `none` o un id), `overdue` (objetivo de primera respuesta vencido), `fromChat` y `q` (número o asunto). `counts` no depende de los filtros.
+     * @description Por defecto, los movidos más recientemente primero (`sort` y `order` lo cambian). Filtros: `status` (uno o varios, separados por coma), `priority`, `distributorId`, `assigned` (`me`, `none` o un id), `overdue` (objetivo de primera respuesta vencido), `fromChat` y `q` (número o asunto). `counts` no depende de los filtros.
      */
     get: operations['PlatformTicketsController_listar'];
     put?: never;
@@ -10438,7 +10458,7 @@ export interface paths {
     head?: never;
     /**
      * Cambiar estado, prioridad, asignación o categoría
-     * @description El estado sigue la máquina del ticket (`new → open | waiting_company`, `open → waiting_company | resolved`, `waiting_company → open | resolved | closed`, `resolved → open | closed`). Asignar un ticket nuevo lo pasa a `open`. Cambiar la prioridad sin primera respuesta recalcula el vencimiento.
+     * @description El estado sigue la máquina del ticket (`new → open | waiting_company`, `open → waiting_company | resolved`, `waiting_company → open | resolved`, `resolved → open`). `closed` no se acepta a mano (400 `TICKET_INVALID_TRANSITION`): el ticket se cierra solo a los 7 días (plazo configurable) o cuando la empresa confirma la resolución. Asignar un ticket nuevo lo pasa a `open`. Cambiar la prioridad sin primera respuesta recalcula el vencimiento.
      */
     patch: operations['PlatformTicketsController_actualizar'];
     trace?: never;
@@ -10582,6 +10602,26 @@ export interface paths {
      * @description Mensajes sin leer en el chat abierto y tickets con algo sin leer, para quien pide (la lectura es de cada persona). No cuenta mensajes de sistema ni los propios.
      */
     get: operations['CompanySupportSummaryController_resumenDeLaEmpresa'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/company/support/status': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Estado del soporte de la plataforma
+     * @description Si se atiende ahora según el horario, cuándo vuelve a abrir y si hay alguien del equipo conectado (D-C26). Es el mismo para todas las empresas y no dice quién está. Cuando cambia llega `support:status` con este mismo cuerpo por el socket del panel.
+     */
+    get: operations['CompanySupportSummaryController_estado'];
     put?: never;
     post?: never;
     delete?: never;
@@ -10906,6 +10946,26 @@ export interface paths {
      * @description Público. Los módulos habilitados y encendidos de la distribuidora (para que la app esconda lo que no está), si toma pedidos y, si no, el texto para mostrar. Una distribuidora suspendida responde 200 con `acceptingOrders: false` y sin módulos.
      */
     get: operations['PublicFeaturesController_features'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/platform/traces/{traceId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Línea de tiempo de una traza
+     * @description Todo lo que quedó con ese `traceId` (el `X-Request-Id` que devuelve cada respuesta, el de un webhook o el `traceId` de una corrida): asientos de auditoría de las escrituras, corridas de procesos automáticos y avisos de la bandeja, lo más viejo primero. Sin datos personales ni el detalle de los cambios. Sólo el administrador general.
+     */
+    get: operations['TrazasController_traza'];
     put?: never;
     post?: never;
     delete?: never;
@@ -14566,6 +14626,62 @@ export interface components {
       gradientTo: string;
       /** @example #052AB6 */
       gradientEdge: string;
+      /**
+       * @description Fondo del panel. En claro, el neutro; en oscuro, un oscuro del tono del principal (neutro si el principal es casi gris)
+       * @example #0B0F16
+       */
+      canvas: string;
+      /**
+       * @description Tarjetas, tablas y diálogos. En oscuro, del tono del principal y nunca más claro que el neutro
+       * @example #131A25
+       */
+      surface: string;
+      /** @example #1B2330 */
+      surfaceHover: string;
+      /** @example #171E29 */
+      surfaceSunken: string;
+      /** @example #212A38 */
+      surfaceMuted: string;
+      /**
+       * @description Bordes
+       * @example #2E3847
+       */
+      outline: string;
+      /**
+       * @description Bordes suaves
+       * @example #202836
+       */
+      outlineSoft: string;
+      /**
+       * @description Fondo del menú lateral: siempre oscuro (igual en los dos modos), del tono del principal
+       * @example #100A20
+       */
+      side: string;
+      /**
+       * @description Tarjetas y realces dentro del menú
+       * @example #19142B
+       */
+      sideRaised: string;
+      /**
+       * @description Divisores del menú
+       * @example #1F1931
+       */
+      sideLine: string;
+      /**
+       * @description Texto del menú: 4,5:1 sobre `side` y `sideRaised`
+       * @example #A19FB0
+       */
+      sideText: string;
+      /**
+       * @description Títulos de sección y texto secundario del menú: 4,5:1 sobre `side` y `sideRaised`
+       * @example #858293
+       */
+      sideMuted: string;
+      /**
+       * @description Íconos activos, iniciales y foco del menú: 4,5:1 sobre `side` y `sideRaised`
+       * @example #9162FF
+       */
+      sideAccent: string;
     };
     ThemeTokensDto: {
       light: components['schemas']['ThemeModeTokensDto'];
@@ -20722,6 +20838,137 @@ export interface components {
       /** @example 42 */
       total: number;
     };
+    ProcessRunNotificationDto: {
+      /** Format: uuid */
+      id: string;
+      /** @example process_circuit_open */
+      kind: string;
+      /**
+       * Format: uuid
+       * @description `null`: aviso a la bandeja de la plataforma
+       */
+      distributorId: string | null;
+      /** Format: date-time */
+      createdAt: string;
+    };
+    ProcessRunDetailResponseDto: {
+      /** @example 9d8e7f60-1b2c-4d3e-8f4a-5b6c7d8e9f01 */
+      id: string;
+      /** @enum {string} */
+      process:
+        | 'dispatch_tick'
+        | 'fleet_planner_daily'
+        | 'fleet_planner_expiry'
+        | 'vehicle_usage_feed'
+        | 'repurchase_anticipate'
+        | 'repurchase_expiry'
+        | 'route_batch_build'
+        | 'route_batch_expiry'
+        | 'cylinder_recovery'
+        | 'attendance_open_alert'
+        | 'receiver_retention'
+        | 'mp_pending_reconciliation'
+        | 'mp_cancelled_reconciliation'
+        | 'reservations_activate'
+        | 'reservations_expire_unpaid'
+        | 'orders_expire_mp_unpaid'
+        | 'payment_inbox_process'
+        | 'payment_inbox_purge'
+        | 's3_orphans_retry'
+        | 'driver_settlement_generate'
+        | 'driver_settlement_alert'
+        | 'coverage_zone_expiry'
+        | 'fine_due_alerts'
+        | 'finance_reconciliation'
+        | 'mp_reconciliation_sync'
+        | 'fleet_alerts'
+        | 'stock_low_alert'
+        | 'stock_reconciliation'
+        | 'insurance_alerts'
+        | 'import_cleanup'
+        | 'process_run_watch'
+        | 'process_run_purge'
+        | 'document_reading'
+        | 'document_reading_proposals'
+        | 'route_planning_propose'
+        | 'route_planning_close_days'
+        | 'route_sheet_watch'
+        | 'support_session_expiry'
+        | 'support_housekeeping';
+      /** @example Recompra: invitaciones anticipadas */
+      title: string;
+      /**
+       * Format: uuid
+       * @description Distribuidora de la corrida; `null` si fue un barrido global
+       */
+      distributorId: string | null;
+      /** Format: date-time */
+      startedAt: string;
+      /**
+       * Format: date-time
+       * @description `null` mientras corre
+       */
+      finishedAt: string | null;
+      /** @example 1840 */
+      durationMs: number | null;
+      /** @enum {string} */
+      status: 'running' | 'ok' | 'partial' | 'failed' | 'skipped';
+      /**
+       * @description Lo que generó la corrida (casos, avisos, ofertas...), según el proceso
+       * @example {
+       *       "processed": 3,
+       *       "errors": 0
+       *     }
+       */
+      counters: {
+        [key: string]: number;
+      };
+      error: string | null;
+      /** @enum {string} */
+      trigger: 'cron' | 'manual' | 'webhook';
+      /**
+       * @description Módulo inteligente; `null` si es una tarea programada común
+       * @enum {string|null}
+       */
+      module: 'M1' | 'M2' | 'M3' | 'M4' | 'M5' | 'M6' | null;
+      /**
+       * Format: uuid
+       * @description Quién la pidió; sólo en las corridas `manual`
+       */
+      requestedBy: string | null;
+      /**
+       * @description `host:pid` de la instancia que la corrió
+       * @example orix:4121
+       */
+      instance: string;
+      /**
+       * @description Cuántas empresas terminaron en cada estado; `null` si el proceso no recorre empresas
+       * @example {
+       *       "ok": 7,
+       *       "failed": 1,
+       *       "timeout": 0,
+       *       "locked": 0,
+       *       "circuit_open": 0,
+       *       "paused": 0,
+       *       "skipped": 3
+       *     }
+       */
+      companies: {
+        [key: string]: number;
+      } | null;
+      /**
+       * @description Huella del error (16 hexadecimales): la misma para el mismo error en otras corridas
+       * @example a91f03c2d4e5b6f7
+       */
+      errorFingerprint: string | null;
+      /**
+       * @description Traza de la corrida: el `X-Request-Id` del request que la disparó o su propio id si nació del cron. Se abre con `GET /v2/platform/traces/{traceId}`
+       * @example prueba-o1
+       */
+      traceId: string | null;
+      /** @description Avisos de la bandeja con la misma traza */
+      notifications: components['schemas']['ProcessRunNotificationDto'][];
+    };
     VentasPorChoferDto: {
       /**
        * Format: uuid
@@ -23480,6 +23727,10 @@ export interface components {
       satisfaction: number | null;
       /** @description Sesiones de soporte pedidas con este número de ticket */
       supportSessions: components['schemas']['SupportSessionRefDto'][];
+      /** @description Hasta qué mensaje del hilo leyó la otra punta (el «leído», como en `ConversationDto`); 0 si todavía nada */
+      counterpartLastReadSeq: number;
+      /** @description Hasta qué mensaje del hilo leyó quien pide (para el separador «sin leer»); 0 si nunca lo abrió */
+      lastReadSeq: number;
       /** Format: date-time */
       createdAt: string;
     };
@@ -23746,7 +23997,7 @@ export interface components {
     };
     UpdateTicketDto: {
       /**
-       * @description Según la máquina del ticket; una transición inválida es 400 `TICKET_INVALID_TRANSITION`.
+       * @description Según la máquina del ticket; una transición inválida es 400 `TICKET_INVALID_TRANSITION`. `closed` nunca se acepta a mano (400 `TICKET_INVALID_TRANSITION`): el ticket se cierra solo a los 7 días (plazo configurable, resuelto o esperando a la empresa) o cuando la empresa confirma la resolución.
        * @enum {string}
        */
       status?: 'new' | 'open' | 'waiting_company' | 'resolved' | 'closed';
@@ -23756,7 +24007,7 @@ export interface components {
        * Format: uuid
        * @description Un administrador general activo; `null` lo desasigna.
        */
-      assignedTo?: Record<string, never> | null;
+      assignedTo?: string | null;
       /** @enum {string} */
       category?: 'billing' | 'technical' | 'module' | 'data' | 'account' | 'other';
     };
@@ -23850,6 +24101,17 @@ export interface components {
       ticketsUnread: number;
       /** @description Lo que muestra la insignia: `chatUnread + ticketsUnread` */
       total: number;
+    };
+    CompanySupportStatusDto: {
+      /** @description Si ahora es horario de atención (sin horario cargado, siempre `true`) */
+      openNow: boolean;
+      /**
+       * Format: date-time
+       * @description Cuándo vuelve a abrir; `null` si está abierto o si no hay horario cargado
+       */
+      nextOpenAt: string | null;
+      /** @description Si hay al menos una persona del equipo de soporte conectada al panel. El panel muestra «En línea» con `openNow && teamOnline` */
+      teamOnline: boolean;
     };
     PlatformSupportSummaryDto: {
       /** @description Chats abiertos con algo sin leer para quien pide */
@@ -24521,6 +24783,41 @@ export interface components {
        * @example null
        */
       message: string | null;
+    };
+    TraceLinkDto: {
+      /**
+       * @description Tipo de lo enlazado: `process-run`, `admin-notification` o el recurso del asiento (`orders`, `users`…)
+       * @example process-run
+       */
+      entity: string;
+      /** @example 6b1e2a40-9c3d-4e5f-8a7b-1c2d3e4f5a6b */
+      id: string;
+    };
+    TraceItemDto: {
+      /**
+       * Format: date-time
+       * @description Cuándo pasó
+       */
+      at: string;
+      /** @enum {string} */
+      kind: 'audit' | 'process_run' | 'notification';
+      /**
+       * @description Resumen sin datos personales: método, ruta patrón y código; proceso, estado y duración; o tipo de aviso
+       * @example Bandeja de avisos de pago: procesamiento — ok (webhook, 412 ms)
+       */
+      summary: string;
+      /**
+       * Format: uuid
+       * @description Empresa del hecho; `null` si es de la plataforma
+       */
+      distributorId: string | null;
+      link: components['schemas']['TraceLinkDto'] | null;
+    };
+    TraceResponseDto: {
+      /** @example prueba-o1 */
+      traceId: string;
+      /** @description Línea de tiempo, lo más viejo primero */
+      items: components['schemas']['TraceItemDto'][];
     };
   };
   responses: never;
@@ -51012,6 +51309,55 @@ export interface operations {
       };
     };
   };
+  ProcessRunController_detalle: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        runId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProcessRunDetailResponseDto'];
+        };
+      };
+      /** @description `runId` que no es un UUID (`INVALID_ID`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe esa corrida o ya se depuró por antigüedad (`PROCESS_RUN_NOT_FOUND`) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   ReportsController_getSalesByDriver: {
     parameters: {
       query?: {
@@ -59027,7 +59373,14 @@ export interface operations {
       query?: {
         limit?: number;
         offset?: number;
-        status?: 'new' | 'open' | 'waiting_company' | 'resolved' | 'closed';
+        /** @description Uno o varios estados, separados por coma (`new,open,waiting_company`) o repitiendo el parámetro (`status=new&status=open`). Sin él, todos. */
+        status?: ('new' | 'open' | 'waiting_company' | 'resolved' | 'closed')[];
+        /** @description Número (`T-000123` o `123`) o parte del asunto */
+        q?: string;
+        /** @description Campo por el que se ordena: alta, último movimiento del ticket o último mensaje del hilo que quien pide puede ver (la empresa no cuenta las notas internas). Empate: por número. */
+        sort?: 'createdAt' | 'updatedAt' | 'lastMessageAt';
+        /** @description Sentido del orden: `desc`, los más recientes primero */
+        order?: 'asc' | 'desc';
       };
       header?: never;
       path?: never;
@@ -59043,7 +59396,7 @@ export interface operations {
           'application/json': components['schemas']['TicketListResponseDto'];
         };
       };
-      /** @description Estado desconocido o paginación fuera de rango */
+      /** @description Estado desconocido o vacío, `q` de más de 120 caracteres, `sort`/`order` desconocidos o paginación fuera de rango */
       400: {
         headers: {
           [name: string]: unknown;
@@ -60072,7 +60425,14 @@ export interface operations {
       query?: {
         limit?: number;
         offset?: number;
-        status?: 'new' | 'open' | 'waiting_company' | 'resolved' | 'closed';
+        /** @description Uno o varios estados, separados por coma (`new,open,waiting_company`) o repitiendo el parámetro (`status=new&status=open`). Sin él, todos. */
+        status?: ('new' | 'open' | 'waiting_company' | 'resolved' | 'closed')[];
+        /** @description Número (`T-000123` o `123`) o parte del asunto */
+        q?: string;
+        /** @description Campo por el que se ordena: alta, último movimiento del ticket o último mensaje del hilo que quien pide puede ver (la empresa no cuenta las notas internas). Empate: por número. */
+        sort?: 'createdAt' | 'updatedAt' | 'lastMessageAt';
+        /** @description Sentido del orden: `desc`, los más recientes primero */
+        order?: 'asc' | 'desc';
         priority?: 'low' | 'normal' | 'high' | 'urgent';
         /** @description La empresa */
         distributorId?: string;
@@ -60082,8 +60442,6 @@ export interface operations {
         overdue?: boolean;
         /** @description Sólo los abiertos desde un chat */
         fromChat?: boolean;
-        /** @description Número (`T-000123` o `123`) o parte del asunto */
-        q?: string;
       };
       header?: never;
       path?: never;
@@ -60099,7 +60457,7 @@ export interface operations {
           'application/json': components['schemas']['PlatformTicketListResponseDto'];
         };
       };
-      /** @description Filtro inválido o paginación fuera de rango */
+      /** @description Filtro inválido (estado, prioridad, `assigned`, `q` de más de 120 caracteres), `sort`/`order` desconocidos o paginación fuera de rango */
       400: {
         headers: {
           [name: string]: unknown;
@@ -60254,7 +60612,7 @@ export interface operations {
           'application/json': components['schemas']['TicketDto'];
         };
       };
-      /** @description Sin cambios, valor desconocido, transición inválida (`TICKET_INVALID_TRANSITION`) o asignado que no es del equipo de la plataforma (`TICKET_ASSIGNEE_INVALID`) */
+      /** @description Sin cambios, valor desconocido, transición inválida o pedido de `closed` (`TICKET_INVALID_TRANSITION`) o asignado que no es del equipo de la plataforma (`TICKET_ASSIGNEE_INVALID`) */
       400: {
         headers: {
           [name: string]: unknown;
@@ -60827,6 +61185,39 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['CompanySupportSummaryDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los accesos de soporte (`soporte.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanySupportSummaryController_estado: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CompanySupportStatusDto'];
         };
       };
       /** @description Sin token o token inválido */
@@ -61601,6 +61992,55 @@ export interface operations {
       };
       /** @description Demasiados pedidos seguidos */
       429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TrazasController_traza: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        traceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TraceResponseDto'];
+        };
+      };
+      /** @description `traceId` de más de 64 caracteres o con caracteres fuera de letras, números, `-` y `_` (`INVALID_TRACE_ID`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No hay nada registrado con esa traza o ya se depuró (`TRACE_NOT_FOUND`) */
+      404: {
         headers: {
           [name: string]: unknown;
         };

@@ -41,8 +41,10 @@
   "sidebar": {
     "bg": "#0B0F16",
     "raised": "#121824",
-    "line": "rgba(255,255,255,0.06)",
-    "text": "#98A2B3"
+    "line": "#1A1E25",
+    "text": "#98A2B3",
+    "muted": "#848C9D",
+    "accent": "#FF8A3D"
   },
   "status": {
     "success": "#067647",
