@@ -38,6 +38,7 @@ import type {
 import { clearIntent } from '../api/idempotency';
 import { runIntent } from './intent';
 import { queryKeys } from './queryKeys';
+import { newUuid } from '../../utils/uuid';
 
 /** Un movimiento de stock cambia saldos, vendible, cargas, órdenes y costos: se refresca todo lo que lo muestra. */
 export const invalidateStockViews = (queryClient: QueryClient) =>
@@ -246,7 +247,7 @@ export const useReapplyDeliveries = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async () => {
-      const scope = `reapply:${crypto.randomUUID()}`;
+      const scope = `reapply:${newUuid()}`;
       try {
         return await runIntent(queryClient, scope, {}, (key) => reapplyDeliveries(key));
       } finally {

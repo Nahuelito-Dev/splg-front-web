@@ -7,6 +7,7 @@ import { formatCurrency, formatShortId } from '../../../utils/format';
 import { notify } from '../../../utils/notifications';
 import { CashBoxField } from './CashBoxField';
 import { useOrderCashBoxes } from './useOrderCashBoxes';
+import { newUuid } from '../../../utils/uuid';
 
 type Resolution = ResolveUnpaidBody['resolution'];
 
@@ -41,7 +42,7 @@ export const ResolveUnpaidModal = ({ open, onClose, order }: Props) => {
   const [note, setNote] = useState('');
   const [touched, setTouched] = useState(false);
   const [cashBoxId, setCashBoxId] = useState('');
-  const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
+  const [idempotencyKey, setIdempotencyKey] = useState(() => newUuid());
   const cashBoxes = useOrderCashBoxes(open && resolution === 'paid');
 
   useEffect(() => {
@@ -50,7 +51,7 @@ export const ResolveUnpaidModal = ({ open, onClose, order }: Props) => {
       setNote('');
       setTouched(false);
       setCashBoxId('');
-      setIdempotencyKey(crypto.randomUUID());
+      setIdempotencyKey(newUuid());
     }
   }, [open]);
 
@@ -130,7 +131,7 @@ export const ResolveUnpaidModal = ({ open, onClose, order }: Props) => {
                   checked={resolution === option.value}
                   onChange={() => {
                     setResolution(option.value);
-                    setIdempotencyKey(crypto.randomUUID());
+                    setIdempotencyKey(newUuid());
                   }}
                 />
                 <span className="min-w-0">
@@ -152,7 +153,7 @@ export const ResolveUnpaidModal = ({ open, onClose, order }: Props) => {
             value={cashBoxId}
             onChange={(id) => {
               setCashBoxId(id);
-              setIdempotencyKey(crypto.randomUUID());
+              setIdempotencyKey(newUuid());
             }}
             error={boxError}
           />
@@ -166,7 +167,7 @@ export const ResolveUnpaidModal = ({ open, onClose, order }: Props) => {
           error={noteError}
           onChange={(e) => {
             setNote(e.target.value);
-            setIdempotencyKey(crypto.randomUUID());
+            setIdempotencyKey(newUuid());
           }}
         />
       </div>
