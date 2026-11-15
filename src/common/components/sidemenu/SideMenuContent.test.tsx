@@ -13,6 +13,8 @@ vi.mock('../../../hooks/reduxHooks', () => ({
 vi.mock('../LogoSplg', () => ({ LogoSplg: () => null }));
 vi.mock('../CompanyBrand', () => ({ CompanyBrand: () => null, PoweredByPlatform: () => null }));
 vi.mock('./TenantCard', () => ({ TenantCard: () => null }));
+// La insignia del chat con la plataforma lee su contador con React Query: se prueba aparte.
+vi.mock('../../../features/chat/components/SupportNavBadge', () => ({ SupportNavBadge: () => null }));
 
 import { SideMenuContent } from './SideMenuContent';
 

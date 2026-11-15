@@ -2981,6 +2981,54 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/company/theme': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * El tema de la distribuidora
+     * @description Colores elegidos, nombre para mostrar, nombre y logo (URL firmada) de la distribuidora, tokens derivados en claro y oscuro, el contraste medido de cada par y la versión. Sin tema propio devuelve el por omisión (`isDefault: true`) con el nombre real. Lo puede leer cualquier administrador de la empresa: el encabezado del panel lo usa en todas las pantallas.
+     */
+    get: operations['CompanyThemeController_obtener'];
+    /**
+     * Cambiar el tema de la distribuidora
+     * @description Reemplaza el tema: lo que no viene queda sin valor (acento derivado del principal, nombre de la distribuidora). Valida el contraste WCAG AA y, si un color no cumple, no lo ajusta: responde 400 `THEME_CONTRAST_INSUFFICIENT` con una sugerencia. Sube la versión. Queda en la auditoría. En modo soporte, 403 `SUPPORT_READ_ONLY`.
+     */
+    put: operations['CompanyThemeController_guardar'];
+    post?: never;
+    /**
+     * Restablecer el tema por omisión
+     * @description Baja lógica del tema propio: la empresa vuelve al tema por omisión con su nombre real (el logo no se toca). Sube la versión. Idempotente. En modo soporte, 403 `SUPPORT_READ_ONLY`.
+     */
+    delete: operations['CompanyThemeController_restablecer'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/company/theme/preview': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Vista previa del tema, sin guardar
+     * @description Mismo cuerpo que el `PUT`: devuelve los tokens y el contraste que quedarían, o el mismo 400 de contraste. No escribe nada (se permite en modo soporte).
+     */
+    post: operations['CompanyThemeController_vistaPrevia'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/fleet/fuel-loads': {
     parameters: {
       query?: never;
@@ -9943,6 +9991,625 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/company/platform-chat': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * El chat abierto con la plataforma
+     * @description Con los tickets que salieron de él (`ticketsFromHere`). `conversation: null` si no hay uno abierto: el próximo mensaje lo crea.
+     */
+    get: operations['CompanyPlatformChatController_abierto'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/company/platform-chat/history': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Chats cerrados con la plataforma
+     * @description Los más recientes primero, paginado.
+     */
+    get: operations['CompanyPlatformChatController_historial'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/company/platform-chat/messages': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Escribirle a la plataforma
+     * @description En el chat abierto o en uno nuevo. Reintentar con el mismo `clientMessageId` devuelve el mensaje ya guardado (200). Fuera del horario de la plataforma, el sistema responde una vez ofreciendo pasarlo a un ticket.
+     */
+    post: operations['CompanyPlatformChatController_enviar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/company/platform-chat/{conversationId}/messages': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Mensajes de un chat con la plataforma
+     * @description Por número: `afterSeq` (los posteriores, para reconectar) o `beforeSeq` (los anteriores); sin ninguno, los últimos. Siempre en orden de `seq`.
+     */
+    get: operations['CompanyPlatformChatController_mensajes'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/company/platform-chat/{conversationId}/read': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Marcar leído hasta un mensaje
+     * @description La lectura es de cada persona; la plataforma ve como «leído» lo máximo que leyó alguien de la empresa. Nunca baja.
+     */
+    post: operations['CompanyPlatformChatController_leer'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/company/platform-chat/{conversationId}/tickets': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Abrir un ticket desde el chat
+     * @description Con los mensajes `fromSeq`–`toSeq` del chat como contexto (se copian: el chat queda igual). El hilo del ticket arranca con esa cita; en el chat queda el aviso `ticket_opened` y los mensajes citados muestran el ticket (`citedInTickets`). Hasta 5 tickets por hora por empresa.
+     */
+    post: operations['CompanyPlatformChatController_abrirTicket'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/company/tickets': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Tickets de mi empresa
+     * @description Los movidos más recientemente primero. Filtro `status`.
+     */
+    get: operations['CompanyTicketsController_listar'];
+    put?: never;
+    /**
+     * Abrir un ticket
+     * @description Queda `new` hasta que la plataforma lo tome. Reintentar con el mismo `firstMessage.clientMessageId` devuelve el ticket ya creado (200). Hasta 5 tickets por hora por empresa.
+     */
+    post: operations['CompanyTicketsController_crear'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/company/tickets/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Ficha de un ticket
+     * @description Con su chat de origen (si salió de uno) y las sesiones de soporte pedidas con su número.
+     */
+    get: operations['CompanyTicketsController_ficha'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/company/tickets/{id}/messages': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Hilo del ticket
+     * @description Sin las notas internas de la plataforma. Por número: `afterSeq` o `beforeSeq`.
+     */
+    get: operations['CompanyTicketsController_mensajes'];
+    put?: never;
+    /**
+     * Responder en el ticket
+     * @description Si el ticket esperaba a la empresa o estaba resuelto, vuelve a `open`. Reintentar con el mismo `clientMessageId` devuelve el mensaje ya guardado (200).
+     */
+    post: operations['CompanyTicketsController_responder'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/company/tickets/{id}/excerpts': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Llevar más mensajes del chat al ticket
+     * @description Copia `fromSeq`–`toSeq` de un chat de mi empresa al hilo del ticket (el chat queda igual).
+     */
+    post: operations['CompanyTicketsController_citar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/company/tickets/{id}/read': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Marcar leído el hilo del ticket hasta un mensaje */
+    post: operations['CompanyTicketsController_leer'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/company/tickets/{id}/confirm': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Confirmar un ticket resuelto
+     * @description Lo cierra. Se puede calificar la atención de 1 a 5.
+     */
+    post: operations['CompanyTicketsController_confirmar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/platform/chats': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Chats con las empresas
+     * @description Por defecto los abiertos, con el último mensaje más reciente primero. Filtros: `status`, `assigned` (`me`, `none` o el id de un miembro) y `distributorId`. `counts`: abiertos sin atender y los que atiendo.
+     */
+    get: operations['PlatformChatsController_listar'];
+    put?: never;
+    /**
+     * Escribirle a una empresa
+     * @description En su chat abierto o en uno nuevo, que queda atendido por quien escribe. Reintentar con el mismo `clientMessageId` devuelve el mensaje ya guardado (200).
+     */
+    post: operations['PlatformChatsController_escribir'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/platform/chats/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Un chat con una empresa */
+    get: operations['PlatformChatsController_ficha'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/platform/chats/{id}/messages': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Mensajes de un chat
+     * @description Por número: `afterSeq` o `beforeSeq`; sin ninguno, los últimos.
+     */
+    get: operations['PlatformChatsController_mensajes'];
+    put?: never;
+    /**
+     * Responder en un chat
+     * @description La primera respuesta queda registrada para medir la espera. Reintentar con el mismo `clientMessageId` devuelve el mensaje ya guardado (200).
+     */
+    post: operations['PlatformChatsController_responder'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/platform/chats/{id}/read': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Marcar leído un chat hasta un mensaje */
+    post: operations['PlatformChatsController_leer'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/platform/chats/{id}/take': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Tomar un chat
+     * @description Quien lo toma lo atiende; la empresa ve su nombre de pila. Tomar uno propio no cambia nada.
+     */
+    post: operations['PlatformChatsController_tomar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/platform/chats/{id}/release': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Soltar un chat
+     * @description Vuelve a la cola sin nadie atendiendo.
+     */
+    post: operations['PlatformChatsController_soltar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/platform/chats/{id}/close': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Cerrar un chat
+     * @description No cierra los tickets que salieron de él. El próximo mensaje de cualquiera de las dos puntas abre otro.
+     */
+    post: operations['PlatformChatsController_cerrar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/platform/chats/{id}/tickets': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Abrir un ticket desde un chat
+     * @description Con los mensajes `fromSeq`–`toSeq` como contexto (se copian). Queda esperando a la empresa; con `assignToMe`, asignado a quien lo abre.
+     */
+    post: operations['PlatformChatsController_abrirTicket'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/platform/tickets': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Cola de tickets
+     * @description Los movidos más recientemente primero. Filtros: `status`, `priority`, `distributorId`, `assigned` (`me`, `none` o un id), `overdue` (objetivo de primera respuesta vencido), `fromChat` y `q` (número o asunto). `counts` no depende de los filtros.
+     */
+    get: operations['PlatformTicketsController_listar'];
+    put?: never;
+    /**
+     * Abrirle un ticket a una empresa
+     * @description Queda esperando a la empresa y asignado a quien lo abre; la empresa recibe el aviso en su bandeja y por correo. Reintentar con el mismo `firstMessage.clientMessageId` devuelve el ticket ya creado (200).
+     */
+    post: operations['PlatformTicketsController_crear'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/platform/tickets/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Ficha de un ticket */
+    get: operations['PlatformTicketsController_ficha'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Cambiar estado, prioridad, asignación o categoría
+     * @description El estado sigue la máquina del ticket (`new → open | waiting_company`, `open → waiting_company | resolved`, `waiting_company → open | resolved | closed`, `resolved → open | closed`). Asignar un ticket nuevo lo pasa a `open`. Cambiar la prioridad sin primera respuesta recalcula el vencimiento.
+     */
+    patch: operations['PlatformTicketsController_actualizar'];
+    trace?: never;
+  };
+  '/api/v2/platform/tickets/{id}/messages': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Hilo del ticket
+     * @description Con las notas internas (`visibility: internal`).
+     */
+    get: operations['PlatformTicketsController_mensajes'];
+    put?: never;
+    /**
+     * Responder en el ticket o dejar una nota interna
+     * @description Una respuesta (`visibility: all`) deja el ticket esperando a la empresa, registra la primera respuesta y lo asigna a quien responde si no tenía a nadie; la empresa recibe aviso. Una nota interna no cambia nada y la empresa no la ve.
+     */
+    post: operations['PlatformTicketsController_responder'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/platform/tickets/{id}/excerpts': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Llevar más mensajes del chat de la empresa al ticket
+     * @description Sólo un chat de la misma empresa que el ticket (otro es 404).
+     */
+    post: operations['PlatformTicketsController_citar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/platform/tickets/{id}/read': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Marcar leído el hilo del ticket hasta un mensaje */
+    post: operations['PlatformTicketsController_leer'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/platform/support-settings': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Configuración del soporte
+     * @description Sin configuración guardada, los valores por defecto.
+     */
+    get: operations['PlatformSupportConfigController_leer'];
+    /**
+     * Cambiar la configuración del soporte
+     * @description Lo que no viene queda como estaba.
+     */
+    put: operations['PlatformSupportConfigController_actualizar'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/platform/ticket-templates': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Respuestas guardadas del soporte */
+    get: operations['PlatformSupportConfigController_listarPlantillas'];
+    put?: never;
+    /**
+     * Nueva respuesta guardada
+     * @description La de alcance `auto_reply` y clave `fuera_de_horario` es la que el chat manda fuera de horario.
+     */
+    post: operations['PlatformSupportConfigController_crearPlantilla'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/platform/ticket-templates/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Dar de baja una respuesta guardada
+     * @description Baja lógica: deja de ofrecerse y su clave queda libre.
+     */
+    delete: operations['PlatformSupportConfigController_bajaDePlantilla'];
+    options?: never;
+    head?: never;
+    /** Editar una respuesta guardada */
+    patch: operations['PlatformSupportConfigController_editarPlantilla'];
+    trace?: never;
+  };
+  '/api/v2/company/support/summary': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Contador de la ayuda de la plataforma
+     * @description Mensajes sin leer en el chat abierto y tickets con algo sin leer, para quien pide (la lectura es de cada persona). No cuenta mensajes de sistema ni los propios.
+     */
+    get: operations['CompanySupportSummaryController_resumenDeLaEmpresa'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/platform/support/summary': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Contadores del soporte
+     * @description Chats abiertos y tickets no cerrados con algo sin leer para quien pide, y los que nadie atiende.
+     */
+    get: operations['PlatformSupportSummaryController_resumenDeLaPlataforma'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v2/platform': {
     parameters: {
       query?: never;
@@ -10107,6 +10774,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/platform/companies/{id}/theme': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * El tema de una empresa (sólo lectura)
+     * @description El mismo contenido que `GET /v2/company/theme` de esa empresa: colores, nombre para mostrar, logo firmado, tokens, contraste y versión (o el tema por omisión con `isDefault: true`). La plataforma no edita el tema de una empresa: lo cambia la empresa desde Configuración → Apariencia.
+     */
+    get: operations['PlatformCompaniesController_tema'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v2/platform/companies/{id}/owned-by-platform': {
     parameters: {
       query?: never;
@@ -10127,7 +10814,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v2/company/theme': {
+  '/api/v2/platform/companies/{id}/modules': {
     parameters: {
       query?: never;
       header?: never;
@@ -10135,27 +10822,19 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * El tema de la distribuidora
-     * @description Colores elegidos, nombre para mostrar, nombre y logo (URL firmada) de la distribuidora, tokens derivados en claro y oscuro, el contraste medido de cada par y la versión. Sin tema propio devuelve el por omisión (`isDefault: true`) con el nombre real. Lo puede leer cualquier administrador de la empresa: el encabezado del panel lo usa en todas las pantallas.
+     * Módulos de una empresa
+     * @description Todos los módulos del catálogo para la empresa: si los trae su plan (`inPlan`, según la foto del plan que se le asignó), la excepción vigente de la plataforma (`override`), si quedan habilitados (`enabled`), el interruptor de la propia empresa (`companySwitch`), si están en uso (`effective`) y lo que quedaría en curso al apagarlos (`impact`).
      */
-    get: operations['CompanyThemeController_obtener'];
-    /**
-     * Cambiar el tema de la distribuidora
-     * @description Reemplaza el tema: lo que no viene queda sin valor (acento derivado del principal, nombre de la distribuidora). Valida el contraste WCAG AA y, si un color no cumple, no lo ajusta: responde 400 `THEME_CONTRAST_INSUFFICIENT` con una sugerencia. Sube la versión. Queda en la auditoría. En modo soporte, 403 `SUPPORT_READ_ONLY`.
-     */
-    put: operations['CompanyThemeController_guardar'];
+    get: operations['PlatformModulesController_list'];
+    put?: never;
     post?: never;
-    /**
-     * Restablecer el tema por omisión
-     * @description Baja lógica del tema propio: la empresa vuelve al tema por omisión con su nombre real (el logo no se toca). Sube la versión. Idempotente. En modo soporte, 403 `SUPPORT_READ_ONLY`.
-     */
-    delete: operations['CompanyThemeController_restablecer'];
+    delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  '/api/v2/company/theme/preview': {
+  '/api/v2/platform/companies/{id}/modules/{key}': {
     parameters: {
       query?: never;
       header?: never;
@@ -10163,19 +10842,19 @@ export interface paths {
       cookie?: never;
     };
     get?: never;
-    put?: never;
     /**
-     * Vista previa del tema, sin guardar
-     * @description Mismo cuerpo que el `PUT`: devuelve los tokens y el contraste que quedarían, o el mismo 400 de contraste. No escribe nada (se permite en modo soporte).
+     * Habilitar o deshabilitar un módulo a una empresa
+     * @description Excepción de la plataforma sobre el plan de la empresa: `enabled: true` lo habilita aunque el plan no lo traiga, `false` lo deshabilita aunque lo traiga y `null` vuelve a lo del plan. Con `expiresAt`, la excepción deja de regir sola. Idempotente. Apagar no borra nada: deja de crear lo nuevo y lo que está en curso termina (`impact` dice cuánto queda). Rige en la request siguiente (la caché del acceso se invalida); la empresa recibe un aviso en su bandeja y el cambio queda en la auditoría con el administrador general como actor. Otra empresa no cambia.
      */
-    post: operations['CompanyThemeController_vistaPrevia'];
+    put: operations['PlatformModulesController_set'];
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  '/api/v2/platform/companies/{id}/theme': {
+  '/api/v2/company/modules': {
     parameters: {
       query?: never;
       header?: never;
@@ -10183,10 +10862,50 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * El tema de una empresa (sólo lectura)
-     * @description El mismo contenido que `GET /v2/company/theme` de esa empresa: colores, nombre para mostrar, logo firmado, tokens, contraste y versión (o el tema por omisión con `isDefault: true`). La plataforma no edita el tema de una empresa: lo cambia la empresa desde Configuración → Apariencia.
+     * Los módulos de mi empresa
+     * @description Cada módulo del catálogo con si la plataforma se lo habilitó a la empresa (`enabled`) y si está en uso (`effective`: habilitado y encendido por la empresa). Cualquier administrador de la empresa lo puede ver.
      */
-    get: operations['PlatformCompaniesController_tema'];
+    get: operations['CompanyModulesController_list'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/me/features': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Módulos en uso en mi distribuidora
+     * @description Los módulos habilitados y encendidos de la distribuidora de la sesión (la del perfil del admin o del chofer, la de `X-Distributor` del cliente) y el nivel de acceso. Las apps lo leen al iniciar y al volver a primer plano para esconder lo que no está; igual el back es la autoridad (`MODULE_DISABLED`).
+     */
+    get: operations['MeFeaturesController_features'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/public/distributors/{slug}/features': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Módulos en uso de una distribuidora, sin iniciar sesión
+     * @description Público. Los módulos habilitados y encendidos de la distribuidora (para que la app esconda lo que no está), si toma pedidos y, si no, el texto para mostrar. Una distribuidora suspendida responde 200 con `acceptingOrders: false` y sin módulos.
+     */
+    get: operations['PublicFeaturesController_features'];
     put?: never;
     post?: never;
     delete?: never;
@@ -13799,6 +14518,121 @@ export interface components {
        * @example secreto-del-webhook
        */
       webhookSecret: string;
+    };
+    ThemeContrastErrorDto: {
+      /** @example 400 */
+      statusCode: number;
+      /** @example El color principal no contrasta lo suficiente con el blanco (1,54:1; hace falta 3:1). Probá con #B48700 */
+      message: string;
+      /** @example Solicitud inválida */
+      error: string;
+      /** @example THEME_CONTRAST_INSUFFICIENT */
+      code: string;
+      /** @enum {string} */
+      field: 'primaryColor' | 'accentColor';
+      /** @example primary/surface */
+      pair: string;
+      /** @example 1.54 */
+      ratio: number;
+      /** @example 3 */
+      required: number;
+      /**
+       * @description El mismo tono con la luminosidad corregida, que sí cumple
+       * @example #B48700
+       */
+      suggestion: string;
+    };
+    ThemeModeTokensDto: {
+      /** @example #1D4ED8 */
+      primary: string;
+      /** @example #103DC7 */
+      primaryHover: string;
+      /** @example #0832BC */
+      primaryStrong: string;
+      /** @example #F0F5FF */
+      primarySoft: string;
+      /**
+       * @description Blanco o tinta (#0B1220)
+       * @example #FFFFFF
+       */
+      onPrimary: string;
+      /** @example #956CD7 */
+      accent: string;
+      /** @example #F6F3FF */
+      accentSoft: string;
+      /** @example #1D4ED8 */
+      gradientFrom: string;
+      /** @example #0D39C3 */
+      gradientTo: string;
+      /** @example #052AB6 */
+      gradientEdge: string;
+    };
+    ThemeTokensDto: {
+      light: components['schemas']['ThemeModeTokensDto'];
+      dark: components['schemas']['ThemeModeTokensDto'];
+    };
+    ThemeContrastDto: {
+      /**
+       * @description Par medido: `<frente>/<fondo>` con los nombres de los roles
+       * @example onPrimary/primary
+       */
+      pair: string;
+      /** @enum {string} */
+      mode: 'light' | 'dark';
+      /**
+       * @description Relación medida (x:1)
+       * @example 6.7
+       */
+      ratio: number;
+      /**
+       * @description Mínimo de WCAG AA para el par
+       * @example 4.5
+       */
+      required: number;
+      ok: boolean;
+    };
+    CompanyThemeResponseDto: {
+      /** @example #1D4ED8 */
+      primaryColor: string;
+      /** @description El acento elegido, o null si se deriva del principal */
+      accentColor: string | null;
+      /** @description El nombre para mostrar elegido, o null si no hay */
+      displayName: string | null;
+      /**
+       * @description El nombre de la distribuidora (el que se muestra si no hay `displayName`)
+       * @example Distribuidora Demo
+       */
+      companyName: string;
+      /** @description Logo de la distribuidora: URL firmada de corta vigencia, o null si no subió. Se cambia con `PUT /distributor/{id}/logo` */
+      logoUrl: string | null;
+      tokens: components['schemas']['ThemeTokensDto'];
+      contrast: components['schemas']['ThemeContrastDto'][];
+      /**
+       * @description Sube en cada cambio (también al restablecer); 0 si la empresa nunca configuró su tema. Sirve para saber si lo guardado sigue vigente
+       * @example 3
+       */
+      version: number;
+      /** @description true si la empresa usa el tema por omisión (nunca lo configuró o lo restableció) */
+      isDefault: boolean;
+      /** Format: date-time */
+      updatedAt: string | null;
+    };
+    CompanyThemeDto: {
+      /**
+       * @description Color principal en `#RRGGBB` (se acepta en minúsculas y se guarda en mayúsculas). Tiene que contrastar 4,5:1 con el texto de los botones (blanco o tinta, el que cumpla) y 3:1 con el blanco y el fondo del panel
+       * @example #1D4ED8
+       */
+      primaryColor: string;
+      /**
+       * @description Color de acento en `#RRGGBB`; sin valor se deriva del principal. Tiene que contrastar 3:1 con el blanco y el fondo del panel
+       * @example #B27A00
+       */
+      accentColor?: string | null;
+      /**
+       * @description Nombre que se muestra en el encabezado del panel; sin valor (o vacío), el nombre de la distribuidora
+       * @example Nahuel Gas
+       */
+      displayName?: string | null;
     };
     CreateFuelLoadDto: {
       /**
@@ -19766,7 +20600,8 @@ export interface components {
         | 'route_planning_propose'
         | 'route_planning_close_days'
         | 'route_sheet_watch'
-        | 'support_session_expiry';
+        | 'support_session_expiry'
+        | 'support_housekeeping';
       /** @example Recompra: invitaciones anticipadas */
       title: string;
       /**
@@ -19839,7 +20674,8 @@ export interface components {
         | 'route_planning_propose'
         | 'route_planning_close_days'
         | 'route_sheet_watch'
-        | 'support_session_expiry';
+        | 'support_session_expiry'
+        | 'support_housekeeping';
       /** @example Recompra: invitaciones anticipadas */
       title: string;
       /**
@@ -22561,6 +23397,472 @@ export interface components {
       /** @description Por qué se rechaza */
       note?: string;
     };
+    CounterpartDto: {
+      /** @enum {string} */
+      party: 'platform' | 'company' | 'system';
+      /** @example Soporte OrixTech */
+      displayName: string;
+      photoUrl: string | null;
+    };
+    AssignedToDto: {
+      /** Format: uuid */
+      userId: string;
+      fullName: string;
+    };
+    AttendedByDto: {
+      /** @example Lucía */
+      displayName: string;
+    };
+    LastMessageDto: {
+      seq: number;
+      preview: string | null;
+      /** Format: date-time */
+      at: string;
+      /** @enum {string} */
+      party: 'platform' | 'company' | 'system';
+    };
+    TicketOriginDto: {
+      /**
+       * Format: uuid
+       * @description El chat de origen
+       */
+      conversationId: string;
+      fromSeq: number;
+      toSeq: number;
+    };
+    SupportSessionRefDto: {
+      /** Format: uuid */
+      id: string;
+      /** @example pending */
+      status: string;
+    };
+    TicketDto: {
+      /** Format: uuid */
+      id: string;
+      /** @example T-000123 */
+      number: string;
+      subject: string;
+      /** @enum {string} */
+      status: 'new' | 'open' | 'waiting_company' | 'resolved' | 'closed';
+      /** @enum {string} */
+      priority: 'low' | 'normal' | 'high' | 'urgent';
+      /** Format: date-time */
+      updatedAt: string;
+      /** @description Mensajes del hilo sin leer para quien pide (sin los de sistema ni los propios) */
+      unreadCount: number;
+      /** @description El último mensaje del hilo que quien pide puede ver */
+      lastMessage: components['schemas']['LastMessageDto'] | null;
+      /** Format: uuid */
+      distributorId: string;
+      distributorName: string;
+      /** @enum {string} */
+      category: 'billing' | 'technical' | 'module' | 'data' | 'account' | 'other';
+      /**
+       * Format: uuid
+       * @description El hilo propio del ticket
+       */
+      conversationId: string;
+      origin: components['schemas']['TicketOriginDto'] | null;
+      /** @enum {string} */
+      openedBy: 'company' | 'platform';
+      /** @description Sólo para la plataforma */
+      assignedTo?: components['schemas']['AssignedToDto'] | null;
+      /** @description Sólo para la empresa */
+      attendedBy?: components['schemas']['AttendedByDto'] | null;
+      /** Format: date-time */
+      firstResponseDueAt: string | null;
+      /** Format: date-time */
+      firstResponseAt: string | null;
+      /** Format: date-time */
+      resolvedAt: string | null;
+      /** Format: date-time */
+      closedAt: string | null;
+      satisfaction: number | null;
+      /** @description Sesiones de soporte pedidas con este número de ticket */
+      supportSessions: components['schemas']['SupportSessionRefDto'][];
+      /** Format: date-time */
+      createdAt: string;
+    };
+    TicketSummaryDto: {
+      /** Format: uuid */
+      id: string;
+      /** @example T-000123 */
+      number: string;
+      subject: string;
+      /** @enum {string} */
+      status: 'new' | 'open' | 'waiting_company' | 'resolved' | 'closed';
+      /** @enum {string} */
+      priority: 'low' | 'normal' | 'high' | 'urgent';
+      /** Format: date-time */
+      updatedAt: string;
+      /** @description Mensajes del hilo sin leer para quien pide (sin los de sistema ni los propios) */
+      unreadCount: number;
+      /** @description El último mensaje del hilo que quien pide puede ver */
+      lastMessage: components['schemas']['LastMessageDto'] | null;
+    };
+    ConversationDto: {
+      /** Format: uuid */
+      id: string;
+      /** Format: uuid */
+      distributorId: string;
+      distributorName: string;
+      /** @enum {string} */
+      channel: 'platform_chat' | 'platform_ticket';
+      /** @enum {string} */
+      subjectType: 'general' | 'ticket';
+      counterpart: components['schemas']['CounterpartDto'];
+      /** @enum {string} */
+      status: 'open' | 'closed';
+      /** @description Ya evaluado por el back: abierta (y, en el hilo de un ticket, ticket no cerrado) */
+      canWrite: boolean;
+      /** @description Sólo para la plataforma: quién atiende el chat */
+      assignedTo?: components['schemas']['AssignedToDto'] | null;
+      /** @description Sólo para la empresa: quién de la plataforma la atiende */
+      attendedBy?: components['schemas']['AttendedByDto'] | null;
+      lastMessage: components['schemas']['LastMessageDto'] | null;
+      /** @description Sin leer para quien pide */
+      unreadCount: number;
+      /** @description Hasta dónde leyó la otra punta (el «leído») */
+      counterpartLastReadSeq: number;
+      /** @description Sólo en el hilo de un ticket: su ticket */
+      ticket?: components['schemas']['TicketDto'];
+      /** @description Sólo en el chat: los tickets que salieron de él */
+      ticketsFromHere?: components['schemas']['TicketSummaryDto'][];
+      /** @enum {string|null} */
+      closedReason: 'manual' | 'inactivity' | 'ticket_closed' | null;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    CompanyPlatformChatResponseDto: {
+      /** @description El chat abierto, o `null` si no hay */
+      conversation: components['schemas']['ConversationDto'] | null;
+    };
+    ConversationListResponseDto: {
+      items: components['schemas']['ConversationDto'][];
+      total: number;
+    };
+    SendMessageDto: {
+      /**
+       * Format: uuid
+       * @description Lo genera quien escribe. El mismo id repetido devuelve el mensaje ya guardado (200) en vez de duplicarlo.
+       */
+      clientMessageId: string;
+      /** @example ¿Dónde cargo el logo de la empresa? */
+      body: string;
+    };
+    SenderDto: {
+      /** @description Para la plataforma, el nombre completo; para la empresa, el nombre de pila de quien la atiende */
+      displayName: string;
+    };
+    CitedTicketDto: {
+      /** Format: uuid */
+      ticketId: string;
+      /** @example T-000123 */
+      number: string;
+    };
+    MessageDto: {
+      /** Format: uuid */
+      id: string;
+      /** Format: uuid */
+      conversationId: string;
+      seq: number;
+      /** @description Sólo en los de la propia punta */
+      clientMessageId: string | null;
+      /** @enum {string} */
+      party: 'platform' | 'company' | 'system';
+      sender: components['schemas']['SenderDto'] | null;
+      /** @description Lo escribió la punta de quien pide */
+      isMine: boolean;
+      /** @enum {string} */
+      kind: 'text' | 'system' | 'auto_reply' | 'quoted_excerpt';
+      /** @description `quoted_excerpt`: `{ sourceConversationId, fromSeq, toSeq, items: [{ seq, party, body, at }] }`. `system` `ticket_opened`/`ticket_created`: `{ ticketId, number, subject }`; `ticket_status_changed`: `{ ticketId, number, from, to }` */
+      payload: {
+        [key: string]: unknown;
+      } | null;
+      /** @description Sólo en el chat: los tickets que citan este mensaje */
+      citedInTickets: components['schemas']['CitedTicketDto'][];
+      /** @description Nulo si se redactó */
+      body: string | null;
+      bodyFiltered: boolean;
+      templateKey: string | null;
+      /** @enum {string|null} */
+      systemCode:
+        | 'conversation_opened'
+        | 'ticket_opened'
+        | 'ticket_created'
+        | 'ticket_status_changed'
+        | 'closed_inactivity'
+        | 'closed_manual'
+        | 'assigned'
+        | 'received_ack'
+        | null;
+      /**
+       * @description `internal` sólo llega a la plataforma
+       * @enum {string}
+       */
+      visibility: 'all' | 'internal';
+      redacted: boolean;
+      /** Format: date-time */
+      createdAt: string;
+    };
+    MessageListResponseDto: {
+      /** @description En orden de `seq` */
+      items: components['schemas']['MessageDto'][];
+      /** @description Hay más en la dirección pedida */
+      hasMore: boolean;
+    };
+    ReadUpToDto: {
+      /** @example 12 */
+      seq: number;
+    };
+    OpenTicketFromChatDto: {
+      /** @enum {string} */
+      category: 'billing' | 'technical' | 'module' | 'data' | 'account' | 'other';
+      /** @enum {string} */
+      priority: 'low' | 'normal' | 'high' | 'urgent';
+      subject: string;
+      /** @example 3 */
+      fromSeq: number;
+      /** @example 7 */
+      toSeq: number;
+      /** @description Primer mensaje propio del hilo del ticket, después de la cita. */
+      note?: string;
+    };
+    TicketListResponseDto: {
+      items: components['schemas']['TicketSummaryDto'][];
+      total: number;
+    };
+    CreateCompanyTicketDto: {
+      /** @enum {string} */
+      category: 'billing' | 'technical' | 'module' | 'data' | 'account' | 'other';
+      /**
+       * @description La empresa la propone; la plataforma la puede ajustar.
+       * @enum {string}
+       */
+      priority: 'low' | 'normal' | 'high' | 'urgent';
+      /** @example Factura de octubre duplicada */
+      subject: string;
+      /** @description Primer mensaje del hilo. Reintentar con el mismo `clientMessageId` devuelve el ticket ya creado (200). */
+      firstMessage: components['schemas']['SendMessageDto'];
+    };
+    AddExcerptDto: {
+      /**
+       * Format: uuid
+       * @description Un chat de la misma empresa que el ticket
+       */
+      sourceConversationId: string;
+      fromSeq: number;
+      toSeq: number;
+    };
+    ConfirmTicketDto: {
+      /** @description Calificación */
+      satisfaction?: number;
+    };
+    PlatformChatCountsDto: {
+      /** @description Abiertos sin nadie atendiendo */
+      waiting: number;
+      /** @description Abiertos que atiendo yo */
+      mine: number;
+    };
+    PlatformChatListResponseDto: {
+      items: components['schemas']['ConversationDto'][];
+      total: number;
+      counts: components['schemas']['PlatformChatCountsDto'];
+    };
+    StartPlatformChatDto: {
+      /**
+       * Format: uuid
+       * @description La empresa
+       */
+      distributorId: string;
+      firstMessage: components['schemas']['SendMessageDto'];
+    };
+    PlatformOpenTicketFromChatDto: {
+      /** @enum {string} */
+      category: 'billing' | 'technical' | 'module' | 'data' | 'account' | 'other';
+      /** @enum {string} */
+      priority: 'low' | 'normal' | 'high' | 'urgent';
+      subject: string;
+      /** @example 3 */
+      fromSeq: number;
+      /** @example 7 */
+      toSeq: number;
+      /** @description Primer mensaje propio del hilo del ticket, después de la cita. */
+      note?: string;
+      /**
+       * @description Queda asignado a quien lo abre.
+       * @default false
+       */
+      assignToMe: boolean;
+    };
+    PlatformTicketCountsDto: {
+      new: number;
+      open: number;
+      waitingCompany: number;
+      /** @description Abiertos asignados a mí */
+      mine: number;
+      /** @description Sin primera respuesta y con el objetivo vencido */
+      overdue: number;
+    };
+    PlatformTicketListResponseDto: {
+      items: components['schemas']['TicketDto'][];
+      total: number;
+      counts: components['schemas']['PlatformTicketCountsDto'];
+    };
+    CreatePlatformTicketDto: {
+      /** @enum {string} */
+      category: 'billing' | 'technical' | 'module' | 'data' | 'account' | 'other';
+      /**
+       * @description La empresa la propone; la plataforma la puede ajustar.
+       * @enum {string}
+       */
+      priority: 'low' | 'normal' | 'high' | 'urgent';
+      /** @example Factura de octubre duplicada */
+      subject: string;
+      /** @description Primer mensaje del hilo. Reintentar con el mismo `clientMessageId` devuelve el ticket ya creado (200). */
+      firstMessage: components['schemas']['SendMessageDto'];
+      /**
+       * Format: uuid
+       * @description La empresa
+       */
+      distributorId: string;
+    };
+    PlatformTicketMessageDto: {
+      /**
+       * Format: uuid
+       * @description Lo genera quien escribe. El mismo id repetido devuelve el mensaje ya guardado (200) en vez de duplicarlo.
+       */
+      clientMessageId: string;
+      /** @example ¿Dónde cargo el logo de la empresa? */
+      body: string;
+      /**
+       * @description `internal`: nota interna, la empresa no la ve (ni por la API ni por el socket).
+       * @default all
+       * @enum {string}
+       */
+      visibility: 'all' | 'internal';
+    };
+    UpdateTicketDto: {
+      /**
+       * @description Según la máquina del ticket; una transición inválida es 400 `TICKET_INVALID_TRANSITION`.
+       * @enum {string}
+       */
+      status?: 'new' | 'open' | 'waiting_company' | 'resolved' | 'closed';
+      /** @enum {string} */
+      priority?: 'low' | 'normal' | 'high' | 'urgent';
+      /**
+       * Format: uuid
+       * @description Un administrador general activo; `null` lo desasigna.
+       */
+      assignedTo?: Record<string, never> | null;
+      /** @enum {string} */
+      category?: 'billing' | 'technical' | 'module' | 'data' | 'account' | 'other';
+    };
+    ChatHoursDto: {
+      /** @description 0 = domingo */
+      weekday: number;
+      /** @example 09:00 */
+      opensAt: string;
+      /** @example 18:00 */
+      closesAt: string;
+    };
+    SupportSettingsResponseDto: {
+      timezone: string;
+      chatHours: components['schemas']['ChatHoursDto'][];
+      chatAckEnabled: boolean;
+      /** @description Nulo: el texto de siempre */
+      chatAckMessage: string | null;
+      chatInactivityHours: number;
+      resolvedCloseDays: number;
+      waitingCloseDays: number;
+      waitingWarnDays: number;
+      targetUrgentMinutes: number;
+      targetHighMinutes: number;
+      targetNormalMinutes: number;
+      targetLowMinutes: number;
+      /** @description Si en este momento se atiende el chat */
+      openNow: boolean;
+      /** Format: date-time */
+      updatedAt: string | null;
+    };
+    UpdateSupportSettingsDto: {
+      /** @example America/Argentina/Buenos_Aires */
+      timezone?: string;
+      /** @description Franjas de atención del chat (sin solaparse en el mismo día). Vacía: se atiende siempre. */
+      chatHours?: components['schemas']['ChatHoursDto'][];
+      /** @description Aviso automático al primer mensaje de la empresa en un chat abierto dentro del horario (una vez por apertura) */
+      chatAckEnabled?: boolean;
+      /** @description Texto del aviso; `null` vuelve al de siempre («Recibimos tu mensaje. Alguien del equipo de <plataforma> te va a atender a la brevedad.») */
+      chatAckMessage?: string | null;
+      /** @description Horas sin mensajes para cerrar el chat */
+      chatInactivityHours?: number;
+      resolvedCloseDays?: number;
+      waitingCloseDays?: number;
+      /** @description Tiene que ser menor que los días para cerrarlo */
+      waitingWarnDays?: number;
+      targetUrgentMinutes?: number;
+      targetHighMinutes?: number;
+      targetNormalMinutes?: number;
+      targetLowMinutes?: number;
+    };
+    MessageTemplateResponseDto: {
+      /** Format: uuid */
+      id: string;
+      /** @enum {string} */
+      scope: 'platform_reply' | 'auto_reply';
+      key: string;
+      title: string;
+      body: string;
+      active: boolean;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    MessageTemplateListResponseDto: {
+      items: components['schemas']['MessageTemplateResponseDto'][];
+    };
+    CreateMessageTemplateDto: {
+      /**
+       * @description `platform_reply`: respuesta rápida del soporte. `auto_reply`: la automática del chat (clave `fuera_de_horario`).
+       * @enum {string}
+       */
+      scope: 'platform_reply' | 'auto_reply';
+      /** @example como_cargar_logo */
+      key: string;
+      /** @example Cargar el logo */
+      title: string;
+      body: string;
+      /** @default true */
+      active: boolean;
+    };
+    UpdateMessageTemplateDto: {
+      /** @example Cargar el logo */
+      title?: string;
+      body?: string;
+      /** @default true */
+      active: boolean;
+    };
+    CompanySupportSummaryDto: {
+      /** @description Mensajes sin leer (para quien pide) en el chat abierto con la plataforma */
+      chatUnread: number;
+      /** @description Tickets con al menos un mensaje sin leer */
+      ticketsUnread: number;
+      /** @description Lo que muestra la insignia: `chatUnread + ticketsUnread` */
+      total: number;
+    };
+    PlatformSupportSummaryDto: {
+      /** @description Chats abiertos con algo sin leer para quien pide */
+      chatsUnread: number;
+      /** @description Chats abiertos que nadie atiende */
+      chatsUnassigned: number;
+      /** @description Tickets no cerrados con algo sin leer para quien pide */
+      ticketsUnread: number;
+      /** @description Tickets no cerrados sin asignar */
+      ticketsUnassigned: number;
+      /** @description Lo que muestra la insignia: `chatsUnread + ticketsUnread` */
+      total: number;
+    };
     PlatformResponseDto: {
       /**
        * @description Nombre comercial de la plataforma
@@ -22816,7 +24118,8 @@ export interface components {
         | 'route_planning_propose'
         | 'route_planning_close_days'
         | 'route_sheet_watch'
-        | 'support_session_expiry';
+        | 'support_session_expiry'
+        | 'support_housekeeping';
       /** @example Recupero de envases */
       title: string;
       /** @enum {string} */
@@ -22949,7 +24252,8 @@ export interface components {
         | 'route_planning_propose'
         | 'route_planning_close_days'
         | 'route_sheet_watch'
-        | 'support_session_expiry';
+        | 'support_session_expiry'
+        | 'support_housekeeping';
       /** @example Recupero de envases */
       title: string;
       /** @example M5 */
@@ -23086,120 +24390,137 @@ export interface components {
       /** Format: date-time */
       createdAt: string;
     };
-    CompanyThemeDto: {
-      /**
-       * @description Color principal en `#RRGGBB` (se acepta en minúsculas y se guarda en mayúsculas). Tiene que contrastar 4,5:1 con el texto de los botones (blanco o tinta, el que cumpla) y 3:1 con el blanco y el fondo del panel
-       * @example #1D4ED8
-       */
-      primaryColor: string;
-      /**
-       * @description Color de acento en `#RRGGBB`; sin valor se deriva del principal. Tiene que contrastar 3:1 con el blanco y el fondo del panel
-       * @example #B27A00
-       */
-      accentColor?: string | null;
-      /**
-       * @description Nombre que se muestra en el encabezado del panel; sin valor (o vacío), el nombre de la distribuidora
-       * @example Nahuel Gas
-       */
-      displayName?: string | null;
+    CompanyModuleOverrideDto: {
+      enabled: boolean;
+      reason: string;
+      /** Format: date-time */
+      expiresAt: string | null;
     };
-    CompanyThemeResponseDto: {
-      /** @example #1D4ED8 */
-      primaryColor: string;
-      /** @description El acento elegido, o null si se deriva del principal */
-      accentColor: string | null;
-      /** @description El nombre para mostrar elegido, o null si no hay */
-      displayName: string | null;
+    CompanyModuleImpactDto: {
       /**
-       * @description El nombre de la distribuidora (el que se muestra si no hay `displayName`)
-       * @example Distribuidora Demo
-       */
-      companyName: string;
-      /** @description Logo de la distribuidora: URL firmada de corta vigencia, o null si no subió. Se cambia con `PUT /distributor/{id}/logo` */
-      logoUrl: string | null;
-      tokens: components['schemas']['ThemeTokensDto'];
-      contrast: components['schemas']['ThemeContrastDto'][];
-      /**
-       * @description Sube en cada cambio (también al restablecer); 0 si la empresa nunca configuró su tema. Sirve para saber si lo guardado sigue vigente
+       * @description Cuántas cosas del módulo quedan en curso (lecturas en cola, hojas sin terminar, invitaciones vigentes…)
        * @example 3
        */
-      version: number;
-      /** @description true si la empresa usa el tema por omisión (nunca lo configuró o lo restableció) */
-      isDefault: boolean;
-      /** Format: date-time */
-      updatedAt: string | null;
+      pending: number;
+      /** @example 3 documentos esperando lectura. Los documentos que esperan lectura no se leen y quedan pendientes; subir documentos sigue funcionando. */
+      description: string;
     };
-    ThemeContrastDto: {
+    CompanyModuleDto: {
       /**
-       * @description Par medido: `<frente>/<fondo>` con los nombres de los roles
-       * @example onPrimary/primary
+       * @example document_reading
+       * @enum {string}
        */
-      pair: string;
-      /** @enum {string} */
-      mode: 'light' | 'dark';
-      /**
-       * @description Relación medida (x:1)
-       * @example 6.7
-       */
-      ratio: number;
-      /**
-       * @description Mínimo de WCAG AA para el par
-       * @example 4.5
-       */
-      required: number;
-      ok: boolean;
+      key:
+        | 'document_reading'
+        | 'route_planning'
+        | 'route_batching'
+        | 'repurchase'
+        | 'cylinder_recovery'
+        | 'fleet_planner'
+        | 'whatsapp'
+        | 'mercadopago'
+        | 'express';
+      /** @example Lector de documentos */
+      label: string;
+      /** @description Lo trae el plan de la empresa (su foto) */
+      inPlan: boolean;
+      /** @description La excepción vigente de la plataforma sobre el plan, o null si rige el plan */
+      override: components['schemas']['CompanyModuleOverrideDto'] | null;
+      /** @description Habilitado por la plataforma (excepción vigente o, si no hay, el plan) */
+      enabled: boolean;
+      /** @description El interruptor de la propia empresa (null: el módulo no tiene interruptor de la empresa) */
+      companySwitch: boolean | null;
+      /** @description En uso de verdad: habilitado, encendido por la empresa y la empresa activa */
+      effective: boolean;
+      impact: components['schemas']['CompanyModuleImpactDto'];
     };
-    ThemeContrastErrorDto: {
-      /** @example 400 */
-      statusCode: number;
-      /** @example El color principal no contrasta lo suficiente con el blanco (1,54:1; hace falta 3:1). Probá con #B48700 */
-      message: string;
-      /** @example Solicitud inválida */
-      error: string;
-      /** @example THEME_CONTRAST_INSUFFICIENT */
-      code: string;
-      /** @enum {string} */
-      field: 'primaryColor' | 'accentColor';
-      /** @example primary/surface */
-      pair: string;
-      /** @example 1.54 */
-      ratio: number;
-      /** @example 3 */
-      required: number;
+    SetCompanyModuleDto: {
+      /** @description true: se habilita aunque el plan no lo traiga; false: se deshabilita aunque lo traiga; null: vuelve a lo que diga el plan. Obligatorio (null también se manda). */
+      enabled: boolean | null;
       /**
-       * @description El mismo tono con la luminosidad corregida, que sí cumple
-       * @example #B48700
+       * @description Por qué la plataforma cambia el módulo. Queda en la fila y en la auditoría.
+       * @example La empresa pidió probar el lector durante dos semanas
        */
-      suggestion: string;
-    };
-    ThemeModeTokensDto: {
-      /** @example #1D4ED8 */
-      primary: string;
-      /** @example #103DC7 */
-      primaryHover: string;
-      /** @example #0832BC */
-      primaryStrong: string;
-      /** @example #F0F5FF */
-      primarySoft: string;
+      reason: string;
       /**
-       * @description Blanco o tinta (#0B1220)
-       * @example #FFFFFF
+       * Format: date-time
+       * @description Hasta cuándo rige la excepción (ISO 8601, futura). Sin fecha, rige hasta que se cambie. No va con `enabled: null`.
        */
-      onPrimary: string;
-      /** @example #956CD7 */
-      accent: string;
-      /** @example #F6F3FF */
-      accentSoft: string;
-      /** @example #1D4ED8 */
-      gradientFrom: string;
-      /** @example #0D39C3 */
-      gradientTo: string;
-      /** @example #052AB6 */
-      gradientEdge: string;
+      expiresAt?: string | null;
     };
-    ThemeTokensDto: {
-      light: components['schemas']['ThemeModeTokensDto'];
-      dark: components['schemas']['ThemeModeTokensDto'];
+    OwnModuleDto: {
+      /**
+       * @example repurchase
+       * @enum {string}
+       */
+      key:
+        | 'document_reading'
+        | 'route_planning'
+        | 'route_batching'
+        | 'repurchase'
+        | 'cylinder_recovery'
+        | 'fleet_planner'
+        | 'whatsapp'
+        | 'mercadopago'
+        | 'express';
+      /** @example Recompra anticipada */
+      label: string;
+      /** @description La plataforma se lo habilitó a la empresa */
+      enabled: boolean;
+      /** @description Habilitado y encendido por la empresa */
+      effective: boolean;
+    };
+    FeaturesDto: {
+      /**
+       * @description Los módulos en uso (habilitados y encendidos)
+       * @example [
+       *       "mercadopago",
+       *       "express"
+       *     ]
+       */
+      modules: (
+        | 'document_reading'
+        | 'route_planning'
+        | 'route_batching'
+        | 'repurchase'
+        | 'cylinder_recovery'
+        | 'fleet_planner'
+        | 'whatsapp'
+        | 'mercadopago'
+        | 'express'
+      )[];
+      /**
+       * @description Nivel de acceso de la empresa: full (normal) o blocked (suspendida); warning y restricted llegan con los estados de la suscripción
+       * @enum {string}
+       */
+      access: 'full' | 'warning' | 'restricted' | 'blocked';
+    };
+    PublicFeaturesDto: {
+      /**
+       * @description Los módulos en uso (habilitados y encendidos)
+       * @example [
+       *       "mercadopago",
+       *       "express"
+       *     ]
+       */
+      modules: (
+        | 'document_reading'
+        | 'route_planning'
+        | 'route_batching'
+        | 'repurchase'
+        | 'cylinder_recovery'
+        | 'fleet_planner'
+        | 'whatsapp'
+        | 'mercadopago'
+        | 'express'
+      )[];
+      /** @description Si la distribuidora toma pedidos hoy */
+      acceptingOrders: boolean;
+      /**
+       * @description Texto para mostrar cuando no toma pedidos
+       * @example null
+       */
+      message: string | null;
     };
   };
   responses: never;
@@ -23245,7 +24566,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las lecturas de documentos (`lectura.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las lecturas de documentos (`lectura.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Lector de documentos» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -23323,7 +24644,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las lecturas de documentos (`lectura.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las lecturas de documentos (`lectura.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Lector de documentos» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -23363,7 +24684,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las lecturas de documentos (`lectura.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las lecturas de documentos (`lectura.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Lector de documentos» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -23406,7 +24727,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las lecturas de documentos (`lectura.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las lecturas de documentos (`lectura.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Lector de documentos» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -23460,7 +24781,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para decidir las lecturas de documentos (`lectura.decidir`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para decidir las lecturas de documentos (`lectura.decidir`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Lector de documentos» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -23528,7 +24849,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para decidir las lecturas de documentos (`lectura.decidir`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para decidir las lecturas de documentos (`lectura.decidir`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Lector de documentos» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -23596,7 +24917,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para decidir las lecturas de documentos (`lectura.decidir`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para decidir las lecturas de documentos (`lectura.decidir`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Lector de documentos» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -29342,7 +30663,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Planificador de taller» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -29384,7 +30705,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Planificador de taller» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -29424,7 +30745,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Planificador de taller» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -29468,7 +30789,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Planificador de taller» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -29508,7 +30829,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Planificador de taller» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -29551,7 +30872,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Planificador de taller» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -29605,7 +30926,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Planificador de taller» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -29666,7 +30987,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Planificador de taller» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -29734,7 +31055,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Planificador de taller» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -29798,7 +31119,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Planificador de taller» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -29845,7 +31166,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: delivery */
+      /** @description Requiere rol: delivery. La función «Planificador de taller» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -29881,7 +31202,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: delivery */
+      /** @description Requiere rol: delivery. La función «Planificador de taller» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -29927,7 +31248,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: delivery */
+      /** @description Requiere rol: delivery. La función «Planificador de taller» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -29963,7 +31284,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: delivery */
+      /** @description Requiere rol: delivery. La función «Planificador de taller» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -30031,7 +31352,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: delivery */
+      /** @description Requiere rol: delivery. La función «Planificador de taller» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -33685,7 +35006,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la configuración (`configuracion.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la configuración (`configuracion.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Compra express» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -33729,7 +35050,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la configuración (`configuracion.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la configuración (`configuracion.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Compra express» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -34204,7 +35525,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la configuración (`configuracion.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la configuración (`configuracion.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). El proceso es de un módulo que la plataforma no le habilitó a la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -34265,7 +35586,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la configuración (`configuracion.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la configuración (`configuracion.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). El proceso es de un módulo que la plataforma no le habilitó a la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -34425,6 +35746,205 @@ export interface operations {
         content?: never;
       };
       /** @description La distribuidora no tiene una cuenta propia activa */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyThemeController_obtener: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CompanyThemeResponseDto'];
+        };
+      };
+      /** @description Falta la distribuidora: super admin sin sesión de soporte ni empresa propia (`MISSING_DISTRIBUTOR`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La distribuidora está dada de baja */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyThemeController_guardar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CompanyThemeDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CompanyThemeResponseDto'];
+        };
+      };
+      /** @description Formato inválido (p. ej. «Color principal: tiene que ser un color #RRGGBB», «Nombre para mostrar: tiene que tener entre 2 y 60 caracteres»), un color que no cumple el contraste WCAG AA (`THEME_CONTRAST_INSUFFICIENT`, con el campo, el par que falla, la relación medida, el mínimo y una sugerencia del mismo tono que sí cumple) o Falta la distribuidora: super admin sin sesión de soporte ni empresa propia (`MISSING_DISTRIBUTOR`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ThemeContrastErrorDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la configuración (`configuracion.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La distribuidora está dada de baja */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyThemeController_restablecer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Restablecido */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Falta la distribuidora: super admin sin sesión de soporte ni empresa propia (`MISSING_DISTRIBUTOR`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la configuración (`configuracion.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La distribuidora está dada de baja */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyThemeController_vistaPrevia: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CompanyThemeDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CompanyThemeResponseDto'];
+        };
+      };
+      /** @description Formato inválido (p. ej. «Color principal: tiene que ser un color #RRGGBB», «Nombre para mostrar: tiene que tener entre 2 y 60 caracteres»), un color que no cumple el contraste WCAG AA (`THEME_CONTRAST_INSUFFICIENT`, con el campo, el par que falla, la relación medida, el mínimo y una sugerencia del mismo tono que sí cumple) o Falta la distribuidora: super admin sin sesión de soporte ni empresa propia (`MISSING_DISTRIBUTOR`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ThemeContrastErrorDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la configuración (`configuracion.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La distribuidora está dada de baja */
       404: {
         headers: {
           [name: string]: unknown;
@@ -41291,7 +42811,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: customer */
+      /** @description Requiere rol: customer. La función «Compra express» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -41342,7 +42862,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: customer */
+      /** @description Requiere rol: customer. La función «Compra express» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -49445,7 +50965,8 @@ export interface operations {
           | 'route_planning_propose'
           | 'route_planning_close_days'
           | 'route_sheet_watch'
-          | 'support_session_expiry';
+          | 'support_session_expiry'
+          | 'support_housekeeping';
         status?: 'running' | 'ok' | 'partial' | 'failed' | 'skipped';
         /** @description Corridas que arrancaron desde este instante (ISO 8601; un día suelto es 00:00 UTC) */
         from?: string;
@@ -51605,7 +53126,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
+      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin. La función «Recupero de envases» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -51648,7 +53169,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
+      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin. La función «Recupero de envases» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -51702,7 +53223,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
+      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin. La función «Recupero de envases» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -51763,7 +53284,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
+      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin. La función «Recupero de envases» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -51803,7 +53324,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
+      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin. La función «Recupero de envases» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -51847,7 +53368,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
+      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin. La función «Recupero de envases» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -51887,7 +53408,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
+      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin. La función «Recupero de envases» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -52256,7 +53777,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Agrupación por recorrido» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -52296,7 +53817,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Agrupación por recorrido» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -52340,7 +53861,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Agrupación por recorrido» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -52380,7 +53901,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Agrupación por recorrido» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -52430,7 +53951,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Agrupación por recorrido» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -52480,7 +54001,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Agrupación por recorrido» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -52747,7 +54268,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Hoja de ruta» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -52797,7 +54318,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Hoja de ruta» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -52851,7 +54372,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Hoja de ruta» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -52901,7 +54422,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Hoja de ruta» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -52958,7 +54479,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Hoja de ruta» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -53008,7 +54529,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Hoja de ruta» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -53064,7 +54585,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Hoja de ruta» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -53108,7 +54629,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Hoja de ruta» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -53164,7 +54685,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Hoja de ruta» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -53217,7 +54738,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Hoja de ruta» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -53277,7 +54798,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Hoja de ruta» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -53338,7 +54859,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Hoja de ruta» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -53399,7 +54920,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Hoja de ruta» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -53459,7 +54980,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Hoja de ruta» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -53519,7 +55040,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Hoja de ruta» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -53579,7 +55100,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Hoja de ruta» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -53641,7 +55162,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Hoja de ruta» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -53701,7 +55222,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Hoja de ruta» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -53757,7 +55278,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Hoja de ruta» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -53807,7 +55328,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Hoja de ruta» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -53860,7 +55381,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Hoja de ruta» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -54084,7 +55605,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Hoja de ruta» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -54128,7 +55649,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Hoja de ruta» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -54270,7 +55791,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: delivery */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o la función «Hoja de ruta» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -54624,7 +56145,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Hoja de ruta» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -54668,7 +56189,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Hoja de ruta» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -54716,7 +56237,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Hoja de ruta» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -54768,7 +56289,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los reportes (`reportes.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los reportes (`reportes.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Recompra anticipada» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -54811,7 +56332,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los reportes (`reportes.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los reportes (`reportes.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Recompra anticipada» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -54868,7 +56389,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los reportes (`reportes.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los reportes (`reportes.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Recompra anticipada» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -54913,7 +56434,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los reportes (`reportes.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los reportes (`reportes.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Recompra anticipada» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -54957,7 +56478,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los reportes (`reportes.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los reportes (`reportes.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Recompra anticipada» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -55004,7 +56525,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: customer */
+      /** @description Requiere rol: customer. La función «Recompra anticipada» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -55037,7 +56558,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: customer */
+      /** @description Requiere rol: customer. La función «Recompra anticipada» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -55081,7 +56602,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Requiere rol: customer */
+      /** @description Requiere rol: customer. La función «Recompra anticipada» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -55943,7 +57464,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las finanzas (`finanzas.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar las finanzas (`finanzas.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Cobro con Mercado Pago» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -57191,6 +58712,2172 @@ export interface operations {
       };
     };
   };
+  CompanyPlatformChatController_abierto: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CompanyPlatformChatResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los accesos de soporte (`soporte.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyPlatformChatController_historial: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ConversationListResponseDto'];
+        };
+      };
+      /** @description Paginación fuera de rango */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los accesos de soporte (`soporte.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyPlatformChatController_enviar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SendMessageDto'];
+      };
+    };
+    responses: {
+      /** @description Reintento: ya estaba */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MessageDto'];
+        };
+      };
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MessageDto'];
+        };
+      };
+      /** @description Texto vacío o de más de 2000 caracteres, o id que no es UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los accesos de soporte (`soporte.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Más de 30 mensajes por minuto (`CHAT_RATE_LIMITED`) */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyPlatformChatController_mensajes: {
+    parameters: {
+      query?: {
+        /** @description Los posteriores a este número (reconexión). */
+        afterSeq?: number;
+        /** @description Los anteriores a este número (historial hacia atrás). Sin ninguno de los dos, los últimos. */
+        beforeSeq?: number;
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        conversationId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MessageListResponseDto'];
+        };
+      };
+      /** @description Id que no es UUID, `afterSeq` y `beforeSeq` juntos o `limit` fuera de 1–100 */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los accesos de soporte (`soporte.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra empresa */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyPlatformChatController_leer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        conversationId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ReadUpToDto'];
+      };
+    };
+    responses: {
+      /** @description Listo */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Id que no es UUID o número negativo */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los accesos de soporte (`soporte.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra empresa */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyPlatformChatController_abrirTicket: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        conversationId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OpenTicketFromChatDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TicketDto'];
+        };
+      };
+      /** @description Datos inválidos, o rango fuera del chat, invertido o de más de 200 mensajes (`TICKET_EXCERPT_INVALID`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los accesos de soporte (`soporte.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El chat no existe o es de otra empresa */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Más de 5 tickets en una hora (`TICKET_RATE_LIMITED`) */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyTicketsController_listar: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+        status?: 'new' | 'open' | 'waiting_company' | 'resolved' | 'closed';
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TicketListResponseDto'];
+        };
+      };
+      /** @description Estado desconocido o paginación fuera de rango */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los accesos de soporte (`soporte.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyTicketsController_crear: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateCompanyTicketDto'];
+      };
+    };
+    responses: {
+      /** @description Reintento: ya estaba */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TicketDto'];
+        };
+      };
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TicketDto'];
+        };
+      };
+      /** @description Categoría o prioridad desconocida, asunto fuera de 5–120 caracteres o primer mensaje inválido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los accesos de soporte (`soporte.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Más de 5 tickets en una hora (`TICKET_RATE_LIMITED`) */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyTicketsController_ficha: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TicketDto'];
+        };
+      };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los accesos de soporte (`soporte.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra empresa */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyTicketsController_mensajes: {
+    parameters: {
+      query?: {
+        /** @description Los posteriores a este número (reconexión). */
+        afterSeq?: number;
+        /** @description Los anteriores a este número (historial hacia atrás). Sin ninguno de los dos, los últimos. */
+        beforeSeq?: number;
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MessageListResponseDto'];
+        };
+      };
+      /** @description Id que no es UUID, `afterSeq` y `beforeSeq` juntos o `limit` fuera de 1–100 */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los accesos de soporte (`soporte.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra empresa */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyTicketsController_responder: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SendMessageDto'];
+      };
+    };
+    responses: {
+      /** @description Reintento: ya estaba */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MessageDto'];
+        };
+      };
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MessageDto'];
+        };
+      };
+      /** @description Texto vacío o de más de 2000 caracteres */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los accesos de soporte (`soporte.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra empresa */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El ticket está cerrado (`TICKET_CLOSED`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Más de 30 mensajes por minuto (`CHAT_RATE_LIMITED`) */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyTicketsController_citar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AddExcerptDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MessageDto'];
+        };
+      };
+      /** @description Datos inválidos o rango fuera del chat, invertido o de más de 200 mensajes (`TICKET_EXCERPT_INVALID`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los accesos de soporte (`soporte.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El ticket o el chat no existen o son de otra empresa */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El ticket está cerrado (`TICKET_CLOSED`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyTicketsController_leer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ReadUpToDto'];
+      };
+    };
+    responses: {
+      /** @description Listo */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Id que no es UUID o número negativo */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los accesos de soporte (`soporte.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra empresa */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyTicketsController_confirmar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ConfirmTicketDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TicketDto'];
+        };
+      };
+      /** @description Calificación fuera de 1–5 */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los accesos de soporte (`soporte.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra empresa */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El ticket no está resuelto (`TICKET_NOT_RESOLVED`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformChatsController_listar: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+        status?: 'open' | 'closed';
+        /** @description `me` (los míos), `none` (sin atender) o el id de un miembro */
+        assigned?: string;
+        /** @description La empresa */
+        distributorId?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PlatformChatListResponseDto'];
+        };
+      };
+      /** @description Estado desconocido, `assigned` o `distributorId` mal formados, paginación fuera de rango */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformChatsController_escribir: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['StartPlatformChatDto'];
+      };
+    };
+    responses: {
+      /** @description Reintento: ya estaba */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MessageDto'];
+        };
+      };
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MessageDto'];
+        };
+      };
+      /** @description Empresa que no es UUID o mensaje inválido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La empresa no existe o está dada de baja */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Más de 30 mensajes por minuto (`CHAT_RATE_LIMITED`) */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformChatsController_ficha: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ConversationDto'];
+        };
+      };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe ese chat */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformChatsController_mensajes: {
+    parameters: {
+      query?: {
+        /** @description Los posteriores a este número (reconexión). */
+        afterSeq?: number;
+        /** @description Los anteriores a este número (historial hacia atrás). Sin ninguno de los dos, los últimos. */
+        beforeSeq?: number;
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MessageListResponseDto'];
+        };
+      };
+      /** @description Id que no es UUID, `afterSeq` y `beforeSeq` juntos o `limit` fuera de 1–100 */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe ese chat */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformChatsController_responder: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SendMessageDto'];
+      };
+    };
+    responses: {
+      /** @description Reintento: ya estaba */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MessageDto'];
+        };
+      };
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MessageDto'];
+        };
+      };
+      /** @description Id que no es UUID o mensaje inválido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe ese chat */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El chat está cerrado (`CONVERSATION_CLOSED`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Más de 30 mensajes por minuto (`CHAT_RATE_LIMITED`) */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformChatsController_leer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ReadUpToDto'];
+      };
+    };
+    responses: {
+      /** @description Listo */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Id que no es UUID o número negativo */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe ese chat */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformChatsController_tomar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ConversationDto'];
+        };
+      };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe ese chat */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Cerrado (`CONVERSATION_CLOSED`) o ya lo atiende otra persona (`CONVERSATION_ALREADY_TAKEN`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformChatsController_soltar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ConversationDto'];
+        };
+      };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe ese chat */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Cerrado (`CONVERSATION_CLOSED`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformChatsController_cerrar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ConversationDto'];
+        };
+      };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe ese chat */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya estaba cerrado (`CONVERSATION_CLOSED`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformChatsController_abrirTicket: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PlatformOpenTicketFromChatDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TicketDto'];
+        };
+      };
+      /** @description Datos inválidos, o rango fuera del chat, invertido o de más de 200 mensajes (`TICKET_EXCERPT_INVALID`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe ese chat */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformTicketsController_listar: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+        status?: 'new' | 'open' | 'waiting_company' | 'resolved' | 'closed';
+        priority?: 'low' | 'normal' | 'high' | 'urgent';
+        /** @description La empresa */
+        distributorId?: string;
+        /** @description `me` (los míos), `none` (sin asignar) o el id de un miembro */
+        assigned?: string;
+        /** @description Sólo los que pasaron su objetivo de primera respuesta sin respuesta */
+        overdue?: boolean;
+        /** @description Sólo los abiertos desde un chat */
+        fromChat?: boolean;
+        /** @description Número (`T-000123` o `123`) o parte del asunto */
+        q?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PlatformTicketListResponseDto'];
+        };
+      };
+      /** @description Filtro inválido o paginación fuera de rango */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformTicketsController_crear: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreatePlatformTicketDto'];
+      };
+    };
+    responses: {
+      /** @description Reintento: ya estaba */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TicketDto'];
+        };
+      };
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TicketDto'];
+        };
+      };
+      /** @description Datos inválidos */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La empresa no existe o está dada de baja */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformTicketsController_ficha: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TicketDto'];
+        };
+      };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe ese ticket */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformTicketsController_actualizar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateTicketDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TicketDto'];
+        };
+      };
+      /** @description Sin cambios, valor desconocido, transición inválida (`TICKET_INVALID_TRANSITION`) o asignado que no es del equipo de la plataforma (`TICKET_ASSIGNEE_INVALID`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe ese ticket */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El ticket está cerrado (`TICKET_CLOSED`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformTicketsController_mensajes: {
+    parameters: {
+      query?: {
+        /** @description Los posteriores a este número (reconexión). */
+        afterSeq?: number;
+        /** @description Los anteriores a este número (historial hacia atrás). Sin ninguno de los dos, los últimos. */
+        beforeSeq?: number;
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MessageListResponseDto'];
+        };
+      };
+      /** @description Id que no es UUID, `afterSeq` y `beforeSeq` juntos o `limit` fuera de 1–100 */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe ese ticket */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformTicketsController_responder: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PlatformTicketMessageDto'];
+      };
+    };
+    responses: {
+      /** @description Reintento: ya estaba */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MessageDto'];
+        };
+      };
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MessageDto'];
+        };
+      };
+      /** @description Texto o visibilidad inválidos */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe ese ticket */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El ticket está cerrado (`TICKET_CLOSED`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Más de 30 mensajes por minuto (`CHAT_RATE_LIMITED`) */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformTicketsController_citar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AddExcerptDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MessageDto'];
+        };
+      };
+      /** @description Datos inválidos o rango fuera del chat, invertido o de más de 200 mensajes (`TICKET_EXCERPT_INVALID`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El ticket no existe, o el chat no es de la empresa del ticket */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El ticket está cerrado (`TICKET_CLOSED`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformTicketsController_leer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ReadUpToDto'];
+      };
+    };
+    responses: {
+      /** @description Listo */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Id que no es UUID o número negativo */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe ese ticket */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformSupportConfigController_leer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SupportSettingsResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformSupportConfigController_actualizar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateSupportSettingsDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SupportSettingsResponseDto'];
+        };
+      };
+      /** @description Valor fuera de rango, zona horaria desconocida, franjas solapadas o aviso que no llega antes del cierre */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformSupportConfigController_listarPlantillas: {
+    parameters: {
+      query?: {
+        scope?: 'platform_reply' | 'auto_reply';
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MessageTemplateListResponseDto'];
+        };
+      };
+      /** @description Alcance desconocido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformSupportConfigController_crearPlantilla: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateMessageTemplateDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MessageTemplateResponseDto'];
+        };
+      };
+      /** @description Datos inválidos */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya hay una con esa clave (`MESSAGE_TEMPLATE_KEY_TAKEN`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformSupportConfigController_bajaDePlantilla: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Dada de baja */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformSupportConfigController_editarPlantilla: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateMessageTemplateDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MessageTemplateResponseDto'];
+        };
+      };
+      /** @description Id que no es UUID o datos inválidos */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanySupportSummaryController_resumenDeLaEmpresa: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CompanySupportSummaryDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los accesos de soporte (`soporte.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformSupportSummaryController_resumenDeLaPlataforma: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PlatformSupportSummaryDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   PlatformController_datos: {
     parameters: {
       query?: never;
@@ -57588,6 +61275,56 @@ export interface operations {
       };
     };
   };
+  PlatformCompaniesController_tema: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Distributor UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CompanyThemeResponseDto'];
+        };
+      };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La empresa no existe o está dada de baja */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   PlatformCompaniesController_marcar: {
     parameters: {
       query?: never;
@@ -57649,206 +61386,7 @@ export interface operations {
       };
     };
   };
-  CompanyThemeController_obtener: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['CompanyThemeResponseDto'];
-        };
-      };
-      /** @description Falta la distribuidora: super admin sin sesión de soporte ni empresa propia (`MISSING_DISTRIBUTOR`) */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La distribuidora está dada de baja */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  CompanyThemeController_guardar: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CompanyThemeDto'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['CompanyThemeResponseDto'];
-        };
-      };
-      /** @description Formato inválido (p. ej. «Color principal: tiene que ser un color #RRGGBB», «Nombre para mostrar: tiene que tener entre 2 y 60 caracteres»), un color que no cumple el contraste WCAG AA (`THEME_CONTRAST_INSUFFICIENT`, con el campo, el par que falla, la relación medida, el mínimo y una sugerencia del mismo tono que sí cumple) o Falta la distribuidora: super admin sin sesión de soporte ni empresa propia (`MISSING_DISTRIBUTOR`) */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ThemeContrastErrorDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la configuración (`configuracion.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La distribuidora está dada de baja */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  CompanyThemeController_restablecer: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Restablecido */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Falta la distribuidora: super admin sin sesión de soporte ni empresa propia (`MISSING_DISTRIBUTOR`) */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la configuración (`configuracion.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La distribuidora está dada de baja */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  CompanyThemeController_vistaPrevia: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CompanyThemeDto'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['CompanyThemeResponseDto'];
-        };
-      };
-      /** @description Formato inválido (p. ej. «Color principal: tiene que ser un color #RRGGBB», «Nombre para mostrar: tiene que tener entre 2 y 60 caracteres»), un color que no cumple el contraste WCAG AA (`THEME_CONTRAST_INSUFFICIENT`, con el campo, el par que falla, la relación medida, el mínimo y una sugerencia del mismo tono que sí cumple) o Falta la distribuidora: super admin sin sesión de soporte ni empresa propia (`MISSING_DISTRIBUTOR`) */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ThemeContrastErrorDto'];
-        };
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la configuración (`configuracion.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La distribuidora está dada de baja */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  PlatformCompaniesController_tema: {
+  PlatformModulesController_list: {
     parameters: {
       query?: never;
       header?: never;
@@ -57865,10 +61403,10 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['CompanyThemeResponseDto'];
+          'application/json': components['schemas']['CompanyModuleDto'][];
         };
       };
-      /** @description El id no es un UUID */
+      /** @description El identificador de la empresa no es un UUID */
       400: {
         headers: {
           [name: string]: unknown;
@@ -57889,8 +61427,180 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La empresa no existe o está dada de baja */
+      /** @description La empresa no existe o está dada de baja (`COMPANY_NOT_FOUND`) */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformModulesController_set: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Distributor UUID */
+        id: string;
+        key:
+          | 'document_reading'
+          | 'route_planning'
+          | 'route_batching'
+          | 'repurchase'
+          | 'cylinder_recovery'
+          | 'fleet_planner'
+          | 'whatsapp'
+          | 'mercadopago'
+          | 'express';
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SetCompanyModuleDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CompanyModuleDto'];
+        };
+      };
+      /** @description El identificador de la empresa no es un UUID; módulo que no existe (`MODULE_UNKNOWN`); falta `enabled` o no es booleano ni null; motivo de menos de 10 o más de 300 caracteres; vencimiento que no es una fecha ISO 8601, que ya pasó o que acompaña a `enabled: null` */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La empresa no existe o está dada de baja (`COMPANY_NOT_FOUND`) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyModulesController_list: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['OwnModuleDto'][];
+        };
+      };
+      /** @description Falta la distribuidora: enviá el header X-Distributor (slug o id) (`MISSING_DISTRIBUTOR`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MeFeaturesController_features: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FeaturesDto'];
+        };
+      };
+      /** @description Cliente sin `X-Distributor`: Falta la distribuidora: enviá el header X-Distributor (slug o id) (`MISSING_DISTRIBUTOR`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PublicFeaturesController_features: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        slug: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PublicFeaturesDto'];
+        };
+      };
+      /** @description La distribuidora no existe o está dada de baja */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Demasiados pedidos seguidos */
+      429: {
         headers: {
           [name: string]: unknown;
         };

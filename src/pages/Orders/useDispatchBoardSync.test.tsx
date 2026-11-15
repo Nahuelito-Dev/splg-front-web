@@ -26,7 +26,9 @@ const setup = (isOnline: boolean) => {
   const invalidate = vi.spyOn(queryClient, 'invalidateQueries').mockResolvedValue();
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      <SocketContext.Provider value={{ isOnline: net.online, subscribe: subscribe as never }}>
+      <SocketContext.Provider
+        value={{ isOnline: net.online, subscribe: subscribe as never, emit: vi.fn(), request: vi.fn() }}
+      >
         {children}
       </SocketContext.Provider>
     </QueryClientProvider>

@@ -255,6 +255,9 @@ export interface RouteSheetEtaUpdatedPayload {
   stops: { orderId: string; etaAt: string; late: boolean }[];
 }
 
+/** Cuánto se espera la respuesta (ack) del servidor a un evento emitido por el panel. */
+export const ACK_TIMEOUT_MS = 8000;
+
 /**
  * Hook de bajo nivel para manejar una única conexión de socket.io.
  * No conecta solo: el consumidor (típicamente el SocketProvider) decide
@@ -320,6 +323,22 @@ export const useSocket = (namespace = '/') => {
     setIsOnline(false);
   }, []);
 
+  /**
+   * Emite un evento y espera la respuesta (ack) del servidor, con tope de tiempo. Sin conexión rechaza enseguida: quien
+   * llama lo reintenta al reconectar.
+   */
+  const request = useCallback(async <T = unknown>(event: string, payload: unknown): Promise<T> => {
+    const socket = socketRef.current;
+    if (!socket?.connected) throw new Error('Sin conexión en vivo');
+    return (await socket.timeout(ACK_TIMEOUT_MS).emitWithAck(event, payload)) as T;
+  }, []);
+
+  /** Emite un evento sin esperar respuesta (p. ej. «escribiendo…»). Sin conexión no hace nada. */
+  const emit = useCallback((event: string, payload: unknown) => {
+    const socket = socketRef.current;
+    if (socket?.connected) socket.emit(event, payload);
+  }, []);
+
   const subscribe = useCallback(<T = unknown>(event: string, handler: (payload: T) => void) => {
     const socket = socketRef.current;
     if (!socket) return () => {};
@@ -347,5 +366,5 @@ export const useSocket = (namespace = '/') => {
     };
   }, []);
 
-  return { isOnline, connect, disconnect, subscribe };
+  return { isOnline, connect, disconnect, subscribe, emit, request };
 };

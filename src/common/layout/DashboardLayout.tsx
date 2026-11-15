@@ -5,6 +5,7 @@ import { cx } from '../components/ui/cx';
 import { CompanySupportStrip } from '../support/CompanySupportStrip';
 import { OwnedCompanyBanner } from '../support/OwnedCompanyBanner';
 import { SupportBanner } from '../support/SupportBanner';
+import { SupportChatHost } from '../../features/chat/SupportChatHost';
 
 interface Props {
   children: ReactNode;
@@ -40,6 +41,7 @@ export const DashboardLayout = ({ children }: Props) => {
           <CompanySupportStrip />
           <main className="flex-1">{children}</main>
         </div>
+        <SupportChatHost />
       </div>
     </CrumbProvider>
   );

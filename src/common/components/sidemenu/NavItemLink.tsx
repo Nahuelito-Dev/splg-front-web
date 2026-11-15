@@ -1,6 +1,7 @@
 import { Tooltip } from '@mui/material';
 import { NavLink, useLocation } from 'react-router-dom';
 import { cx } from '../ui/cx';
+import { SupportNavBadge } from '../../../features/chat/components/SupportNavBadge';
 import { NAV_SECTIONS, type NavItem } from './navConfig';
 
 const linkClass = (mini: boolean) => {
@@ -71,6 +72,7 @@ export const NavItemLink = ({ item, mini, pendingCount, onNavigate }: Props) => 
                   {pendingCount}
                 </span>
               )}
+              {item.supportBadge && <SupportNavBadge which={item.supportBadge} mini={mini} active={isActive} />}
             </>
           )}
         </NavLink>

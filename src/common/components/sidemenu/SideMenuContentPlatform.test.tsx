@@ -25,6 +25,8 @@ vi.mock('../../../hooks/reduxHooks', () => ({
     pick({ auth: { email: 'superadmin@splg.com', role: 'super_admin', uid: 'uid-sa' } }),
 }));
 vi.mock('./TenantCard', () => ({ TenantCard: () => null }));
+// La insignia del chat con la plataforma lee su contador con React Query: se prueba aparte.
+vi.mock('../../../features/chat/components/SupportNavBadge', () => ({ SupportNavBadge: () => null }));
 vi.mock('../LogoSplg', () => ({ LogoSplg: () => null }));
 vi.mock('../CompanyBrand', () => ({ CompanyBrand: () => null, PoweredByPlatform: () => null }));
 
