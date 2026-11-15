@@ -128,24 +128,25 @@ const NO_SON_PLATA: Excepcion[] = [
     motivo: 'suma de conteos por estado',
   },
   {
-    ruta: 'src/pages/RouteSheets/PlanView.tsx',
-    fragmento: '.reduce((sum, s) => sum + s.total',
-    motivo: 'kilómetros de las hojas del día (KPI), no plata',
-  },
-  {
-    ruta: 'src/pages/RouteSheets/PlanView.tsx',
+    ruta: 'src/pages/RouteSheets/DaySummary.tsx',
     fragmento: '+ s.total',
-    motivo: 'kilómetros de las hojas del día (KPI), no plata',
+    motivo: 'kilómetros estimados de las hojas del día (resumen), no plata',
   },
   {
-    ruta: 'src/pages/RouteSheets/PlanView.tsx',
-    fragmento: '.reduce((sum, s) => sum + s.total',
-    motivo: 'garrafas de las hojas del día (KPI), no plata',
+    ruta: 'src/pages/RouteSheets/DaySummary.tsx',
+    fragmento:
+      '.reduce((sum, p) => sum + (p?.distanceMeters ?? 0), 0) / 1000 : sheets.reduce((sum, s) => sum + s.total',
+    motivo: 'kilómetros por calles o estimados de las hojas del día (resumen), no plata',
   },
   {
-    ruta: 'src/pages/RouteSheets/PlanView.tsx',
-    fragmento: '+ s.total',
-    motivo: 'garrafas de las hojas del día (KPI), no plata',
+    ruta: 'src/pages/RouteSheets/StopOrderDrawer.tsx',
+    fragmento: '+ (item.emptiesExpected',
+    motivo: 'envases vacíos a retirar del pedido: cantidad, no plata',
+  },
+  {
+    ruta: 'src/pages/RouteSheets/StopOrderDrawer.tsx',
+    fragmento: '.reduce((sum, item) => sum + (item.emptiesExpected',
+    motivo: 'envases vacíos a retirar del pedido: cantidad, no plata',
   },
   {
     ruta: 'src/pages/RouteSheets/routeSheetLabels.ts',

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { renderHook } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { execution, planDay, sheet, uuid } from '../../test/routeSheetFixtures';
@@ -14,6 +14,7 @@ const api = vi.hoisted(() => ({
   startRouteSheet: vi.fn(),
   failRouteSheetStop: vi.fn(),
   closeRouteSheet: vi.fn(),
+  getRouteSheetPath: vi.fn(),
 }));
 const orders = vi.hoisted(() => ({ updateOrder: vi.fn(), cancelOrder: vi.fn() }));
 vi.mock('../api/orders', async (importOriginal) => ({
@@ -38,6 +39,8 @@ import {
   useMoveRouteSheetStop,
   useProposeRoutePlan,
   useRescheduleAwaitingOrder,
+  useCachedRouteSheetPaths,
+  useRouteSheetPath,
   useSetRouteSheetSequence,
   useStartRouteSheet,
   withEtas,
@@ -197,6 +200,29 @@ describe('hooks de hojas de ruta', () => {
     await expect(closed.result.current.mutateAsync({ sheetId: uuid(1), reason: 'Se rompió' })).rejects.toBeTruthy();
     expect(api.closeRouteSheet).toHaveBeenCalledWith(uuid(1), { reason: 'Se rompió' });
     expect(closed.invalidate).not.toHaveBeenCalled();
+  });
+
+  it('el recorrido por calles cuelga del detalle de la hoja y un 502 no se reintenta (cuida el cupo diario)', async () => {
+    expect(routeSheetKeys.path(uuid(1)).slice(0, 3)).toEqual([...routeSheetKeys.detail(uuid(1))]);
+    api.getRouteSheetPath.mockRejectedValue(
+      new ApiError(502, ['Ningún servicio de mapas respondió'], 'ROUTE_PROVIDER_FAILED'),
+    );
+    const { result } = setup(() => useRouteSheetPath(uuid(1)));
+    await waitFor(() => expect(result.current.isError).toBe(true), { timeout: 500 });
+    expect(api.getRouteSheetPath).toHaveBeenCalledTimes(1);
+    expect(api.getRouteSheetPath).toHaveBeenCalledWith(uuid(1));
+  });
+
+  it('el resumen sólo lee los recorridos que ya están en caché: no consulta al proveedor', () => {
+    const client = new QueryClient();
+    const cached = { sheetId: uuid(1), provider: 'google', distanceMeters: 1000 };
+    client.setQueryData(routeSheetKeys.path(uuid(1)), cached);
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    );
+    const { result } = renderHook(() => useCachedRouteSheetPaths([uuid(1), uuid(2)]), { wrapper });
+    expect(result.current).toEqual([cached, null]);
+    expect(api.getRouteSheetPath).not.toHaveBeenCalled();
   });
 
   it('el seguimiento cuelga del detalle de la hoja: invalidar la hoja lo refresca', () => {

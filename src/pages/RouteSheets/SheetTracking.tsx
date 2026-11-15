@@ -24,6 +24,7 @@ import {
   closedText,
   dayLabel,
   delayMinutes,
+  emptiesText,
   driverOf,
   hhmm,
   isActiveStop,
@@ -36,6 +37,8 @@ import {
 } from './routeSheetLabels';
 import { closeSheetReasonError } from './routeSheetSchemas';
 import { LIVE_POLL_MS, LIVE_REFRESH_MS, useRouteSheetLive } from './useRouteSheetLive';
+import { StopOrderDrawer } from './StopOrderDrawer';
+import { useScrollToSelected } from './useScrollToSelected';
 
 interface Props {
   day: RoutePlanDay;
@@ -70,6 +73,11 @@ const WaitChip = ({ until }: { until: string }) =>
 const StopFacts = ({ stop }: { stop: RouteSheetExecutionStop }) => (
   <div className="mt-1 flex flex-wrap gap-1">
     <Badge label={STOP_PROGRESS[stop.progress]} />
+    {stop.emptiesExpected > 0 && (
+      <span className="rounded-md bg-accent-soft px-1.5 text-[11px] text-on-accent" data-testid="empties-tag">
+        {emptiesText(stop.emptiesExpected)}
+      </span>
+    )}
     <span className="rounded-md border border-outline-soft bg-surface-sunken px-1.5 text-[11px] text-muted">
       {stop.units} garrafa(s) · {slotOf(stop)}
     </span>
@@ -134,6 +142,13 @@ export const SheetTracking = ({ day, sheet, canWrite }: Props) => {
   const remove = useRemoveRouteSheetStop();
   const close = useCloseRouteSheet();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [openOrderId, setOpenOrderId] = useState<string | null>(null);
+  const rowRef = useScrollToSelected(selectedId);
+  /** Tocar una parada (en el mapa o en la lista) la elige y abre su pedido al costado. */
+  const openStop = (orderId: string) => {
+    setSelectedId(orderId);
+    setOpenOrderId(orderId);
+  };
   const [failing, setFailing] = useState<RouteSheetExecutionStop | null>(null);
   const [adding, setAdding] = useState(false);
   const [closing, setClosing] = useState(false);
@@ -258,11 +273,13 @@ export const SheetTracking = ({ day, sheet, canWrite }: Props) => {
         </dl>
       </Card>
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
-        <Card className="h-fit overflow-hidden lg:sticky lg:top-4">
+        {/* Fijo debajo de la barra superior (60 px, también pegada arriba) mientras se baja la lista. */}
+        <Card className="h-fit overflow-hidden lg:sticky lg:top-[76px]">
           <RouteSheetMap
+            sheetId={sheet.id}
             stops={active}
             selectedId={selectedId}
-            onSelect={setSelectedId}
+            onSelect={openStop}
             driver={live ? execution.driverLocation : null}
           />
           <div className="flex flex-wrap gap-4 px-4 py-3 text-xs text-muted">
@@ -281,6 +298,10 @@ export const SheetTracking = ({ day, sheet, canWrite }: Props) => {
             <span className="inline-flex items-center gap-1.5">
               <i className="h-2.5 w-2.5 rounded-full bg-danger" />
               Fuera de franja
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <i className="h-2.5 w-2.5 rounded-full bg-muted" />
+              No entregada
             </span>
             {live && (
               <span data-testid="driver-location">
@@ -302,9 +323,10 @@ export const SheetTracking = ({ day, sheet, canWrite }: Props) => {
                 return (
                   <li
                     key={stop.orderId}
-                    onClick={() => setSelectedId(stop.orderId)}
+                    ref={rowRef(stop.orderId)}
+                    onClick={() => openStop(stop.orderId)}
                     className={cx(
-                      'grid grid-cols-[28px_minmax(0,1fr)_auto] items-start gap-x-2.5 gap-y-1.5 border-b border-outline-soft px-3 py-2.5 sm:px-4',
+                      'grid scroll-mt-20 scroll-mb-4 grid-cols-[28px_minmax(0,1fr)_auto] items-start gap-x-2.5 gap-y-1.5 border-b border-outline-soft px-3 py-2.5 sm:px-4',
                       selectedId === stop.orderId ? 'bg-primary-soft' : 'bg-surface',
                     )}
                   >
@@ -323,7 +345,17 @@ export const SheetTracking = ({ day, sheet, canWrite }: Props) => {
                       {stop.sequence}
                     </span>
                     <div className="min-w-0">
-                      <b className="block truncate text-[13px] font-semibold text-ink">{name}</b>
+                      <button
+                        type="button"
+                        title="Ver el pedido"
+                        className="block max-w-full rounded text-left hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          openStop(stop.orderId);
+                        }}
+                      >
+                        <b className="block truncate text-[13px] font-semibold text-ink">{name}</b>
+                      </button>
                       <span className="block truncate text-xs text-muted">{stop.address ?? 'Sin dirección'}</span>
                       <StopFacts stop={stop} />
                     </div>
@@ -401,6 +433,7 @@ export const SheetTracking = ({ day, sheet, canWrite }: Props) => {
           )}
         </Card>
       </div>
+      <StopOrderDrawer orderId={openOrderId} onClose={() => setOpenOrderId(null)} />
       {failing && <FailedStopModal sheetId={sheet.id} stop={failing} onClose={() => setFailing(null)} />}
       {adding && <LiveStopModal day={day} sheet={sheet} execution={execution} onClose={() => setAdding(false)} />}
       <ReasonModal

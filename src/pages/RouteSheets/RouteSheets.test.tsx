@@ -27,6 +27,8 @@ vi.mock('../../services/queries/routeSheets', async (importOriginal) => ({
   useRoutePlanDay: (...args: unknown[]) => state.day(...args) as unknown,
   useRoutePlanningSettings: () => ok(undefined, { data: undefined }),
   useLateOrders: () => ok([]),
+  useCachedRouteSheetPaths: (ids: string[]) => ids.map(() => null),
+  useLoadSuggestions: () => ({ data: [], isPending: false, isError: false }),
   useDissolvedRouteSheets: () => ok({ items: [], total: 0, limit: 50, offset: 0 }),
   useOpenRoutePlanDay: () => state.open,
   useProposeRoutePlan: () => state.propose,

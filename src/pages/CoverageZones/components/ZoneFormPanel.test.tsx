@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { ApiError } from '../../../services/api/errors';
 
 const mocks = vi.hoisted(() => ({
   create: vi.fn(),
@@ -9,6 +10,10 @@ const zones = [
   { coverage_zone_id: 'z1', name: 'Centro', priority: 0, isActive: true },
   { coverage_zone_id: 'z2', name: 'Norte', priority: 1, isActive: true },
 ];
+const notifications = vi.hoisted(() => ({
+  notify: { success: vi.fn(), error: vi.fn<[unknown], void>(), info: vi.fn(), warn: vi.fn() },
+}));
+vi.mock('../../../utils/notifications', () => notifications);
 vi.mock('../../../services/queries/coverageZones', () => ({
   useCoverageZones: () => ({ refetch: () => Promise.resolve({ data: { rows: zones } }) }),
   useCreateCoverageZone: () => ({ mutate: mocks.create, isPending: false }),
@@ -65,6 +70,49 @@ describe('ZoneFormPanel: nombre y prioridad entre zonas activas', () => {
     fireEvent.change(screen.getByLabelText(/^Nombre/), { target: { value: 'Sur' } });
     fireEvent.click(screen.getByRole('button', { name: 'Crear zona' }));
     await waitFor(() => expect(mocks.create).toHaveBeenCalledOnce());
+  });
+});
+
+describe('ZoneFormPanel: borde de la zona', () => {
+  const BOWTIE = [
+    [0, 0],
+    [1, 1],
+    [1, 0],
+    [0, 1],
+  ];
+  const drawWith = (polygon: number[][]) =>
+    render(
+      <ZoneFormPanel
+        zone={null}
+        polygon={polygon}
+        zones={zones as CoverageZone[]}
+        onSaved={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+
+  it('si los lados se cruzan lo avisa y no lo envía', async () => {
+    drawWith(BOWTIE);
+    expect(screen.getByRole('alert')).toHaveTextContent('Los lados de la zona se cruzan entre sí');
+    fireEvent.change(screen.getByLabelText(/^Nombre/), { target: { value: 'Sur' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Crear zona' }));
+    await waitFor(() => expect(notifications.notify.error).toHaveBeenCalled());
+    expect((notifications.notify.error.mock.calls[0][0] as Error).message).toMatch(/se cruzan entre sí/);
+    expect(mocks.create).not.toHaveBeenCalled();
+  });
+
+  it('el 400 de PostGIS por autointersección se dice en castellano', async () => {
+    mocks.create.mockImplementation((_: unknown, options: { onError: (e: unknown) => void }) =>
+      options.onError(new ApiError(400, ['El polígono no es válido: Self-intersection at or near point -55.9 -27.3'])),
+    );
+    drawWith(POLYGON);
+    fireEvent.change(screen.getByLabelText(/^Nombre/), { target: { value: 'Sur' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Crear zona' }));
+    await waitFor(() => expect(notifications.notify.error).toHaveBeenCalled());
+    const shown = notifications.notify.error.mock.calls[0][0] as Error;
+    expect(shown.message).toBe(
+      'Los lados de la zona se cruzan entre sí: mové los vértices para que el borde no se corte.',
+    );
   });
 });
 

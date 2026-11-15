@@ -2,7 +2,8 @@ import { ArrowDown, ArrowRightLeft, ArrowUp, GripVertical, Lock, LockOpen, Trash
 import { useState, type DragEvent } from 'react';
 import { cx } from '../../common/components/ui';
 import type { RouteSheet, RouteSheetStop } from '../../services/api/types';
-import { formatKm, hhmm, slotOf, stopName } from './routeSheetLabels';
+import { emptiesText, formatKm, hhmm, slotOf, stopName } from './routeSheetLabels';
+import { useScrollToSelected } from './useScrollToSelected';
 
 interface Props {
   sheet: RouteSheet;
@@ -36,6 +37,7 @@ export const StopList = ({
   const [overId, setOverId] = useState<string | null>(null);
   const { stops } = sheet;
   const canEdit = editable && !busy;
+  const rowRef = useScrollToSelected(selectedId);
 
   const handleDrop = (event: DragEvent, targetId: string) => {
     event.preventDefault();
@@ -58,6 +60,7 @@ export const StopList = ({
         return (
           <li
             key={stop.orderId}
+            ref={rowRef(stop.orderId)}
             draggable={canEdit}
             onDragStart={(event) => {
               setDragId(stop.orderId);
@@ -75,7 +78,7 @@ export const StopList = ({
             onDrop={(event) => handleDrop(event, stop.orderId)}
             onClick={() => onSelect(stop.orderId)}
             className={cx(
-              'grid grid-cols-[28px_minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-1.5 border-b border-outline-soft px-3 py-2.5 sm:grid-cols-[18px_28px_minmax(0,1fr)_auto] sm:px-4',
+              'grid scroll-mt-20 scroll-mb-4 grid-cols-[28px_minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-1.5 border-b border-outline-soft px-3 py-2.5 sm:grid-cols-[18px_28px_minmax(0,1fr)_auto] sm:px-4',
               selectedId === stop.orderId ? 'bg-primary-soft' : 'bg-surface',
               dragId === stop.orderId && 'opacity-40',
               overId === stop.orderId && dragId !== stop.orderId && 'shadow-[inset_0_2px_0] shadow-primary',
@@ -94,7 +97,17 @@ export const StopList = ({
               {stop.sequence}
             </span>
             <div className="min-w-0 sm:row-span-2">
-              <b className="block truncate text-[13px] font-semibold text-ink">{name}</b>
+              <button
+                type="button"
+                title="Ver el pedido"
+                className="block max-w-full rounded text-left hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onSelect(stop.orderId);
+                }}
+              >
+                <b className="block truncate text-[13px] font-semibold text-ink">{name}</b>
+              </button>
               <span className="block truncate text-xs text-muted">{stop.address ?? 'Sin dirección'}</span>
               <div className="mt-1 flex flex-wrap gap-1">
                 <span className="rounded-md border border-outline-soft bg-surface-sunken px-1.5 text-[11px] text-muted">
@@ -103,6 +116,14 @@ export const StopList = ({
                 {i > 0 && (
                   <span className="rounded-md border border-outline-soft px-1.5 text-[11px] text-muted">
                     +{formatKm(stop.legDistanceKm)}
+                  </span>
+                )}
+                {stop.emptiesExpected > 0 && (
+                  <span
+                    className="rounded-md bg-accent-soft px-1.5 text-[11px] text-on-accent"
+                    data-testid="empties-tag"
+                  >
+                    {emptiesText(stop.emptiesExpected)}
                   </span>
                 )}
                 {stop.locked && (

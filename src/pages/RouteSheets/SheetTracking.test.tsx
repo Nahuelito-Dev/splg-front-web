@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../../services/api/errors';
 import { failed, loading, mutation, ok } from '../../test/pageTest';
@@ -44,10 +45,28 @@ vi.mock('./AwaitingAdmin', () => ({
   AwaitingOrderActions: ({ stop, canWrite }: { stop: { orderId: string }; canWrite: boolean }) =>
     canWrite ? <span data-testid={`decide-${stop.orderId}`}>decidir</span> : null,
 }));
+/** Para probar que la hoja no pide los pedidos de a uno: los envases vienen en la parada. */
+const ordersApi = vi.hoisted(() => ({ getOrder: vi.fn() }));
+vi.mock('../../services/api/orders', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  ...ordersApi,
+}));
+vi.mock('./StopOrderDrawer', () => ({
+  StopOrderDrawer: ({ orderId }: { orderId: string | null }) =>
+    orderId ? <aside aria-label="Pedido de la parada">{orderId}</aside> : null,
+}));
 vi.mock('./RouteSheetMap', () => ({
-  RouteSheetMap: (props: { stops: unknown[]; driver?: unknown }) => {
+  RouteSheetMap: (props: { stops: { orderId: string }[]; driver?: unknown; onSelect: (id: string) => void }) => {
     state.map(props);
-    return <div role="img" aria-label="Mapa del recorrido" />;
+    return (
+      <div role="img" aria-label="Mapa del recorrido">
+        {props.stops.map((s) => (
+          <button key={s.orderId} type="button" onClick={() => props.onSelect(s.orderId)}>
+            mapa {s.orderId}
+          </button>
+        ))}
+      </div>
+    );
   },
 }));
 const notifications = vi.hoisted(() => ({
@@ -90,6 +109,40 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+});
+
+describe('SheetTracking: mapa y lista', () => {
+  it('el mapa queda fijo debajo de la barra y tocar una parada en el mapa lleva la lista hasta ella', () => {
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    state.execution = ok(execution({ stops: [liveStop(1), liveStop(2), liveStop(3)] }));
+    draw();
+    expect(screen.getByRole('img', { name: 'Mapa del recorrido' }).closest('.lg\\:sticky')).toHaveClass(
+      'lg:top-[76px]',
+    );
+    fireEvent.click(screen.getByRole('button', { name: `mapa ${uuid(103)}` }));
+    const row = within(screen.getByRole('list', { name: 'Avance de las paradas' })).getAllByRole('listitem')[2];
+    expect(row).toHaveClass('bg-primary-soft');
+    expect(scroll.mock.instances[scroll.mock.instances.length - 1]).toBe(row);
+  });
+});
+
+describe('SheetTracking: pedido de la parada y envases', () => {
+  it('tocar una parada abre su pedido y dice cuántos envases retira', () => {
+    state.execution = ok(execution({ stops: [liveStop(1), liveStop(2, { emptiesExpected: 1 })] }));
+    const current = inProgress;
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <SheetTracking day={planDay({ sheets: [current], unassigned: [unassigned(1)] })} sheet={current} canWrite />
+      </QueryClientProvider>,
+    );
+    const rows = within(screen.getByRole('list', { name: 'Avance de las paradas' })).getAllByRole('listitem');
+    expect(within(rows[1]).getByTestId('empties-tag')).toHaveTextContent('Retira 1 envase');
+    expect(within(rows[0]).queryByTestId('empties-tag')).not.toBeInTheDocument();
+    fireEvent.click(within(rows[1]).getByRole('button', { name: 'Cliente 2' }));
+    expect(screen.getByRole('complementary', { name: 'Pedido de la parada' })).toHaveTextContent(uuid(102));
+    expect(ordersApi.getOrder).not.toHaveBeenCalled();
+  });
 });
 
 describe('SheetTracking: estado y avance', () => {

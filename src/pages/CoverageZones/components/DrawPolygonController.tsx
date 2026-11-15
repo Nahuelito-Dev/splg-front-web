@@ -1,49 +1,66 @@
-import { useEffect, useRef } from 'react';
-import { useMap } from 'react-leaflet';
-import type { LatLng, Layer, Polygon } from 'leaflet';
-import { latLngsToGeoJsonRing } from '../coverageZoneUtils';
+import { Polygon, Polyline } from '@vis.gl/react-google-maps';
+import { HtmlMarker } from '../../../common/components/map/HtmlMarker';
+import type { LatLng } from '../../../common/components/map/latLng';
+import { PointPin } from '../../../common/components/map/PointPin';
+import { useMapTheme } from '../../../theme/mapTheme';
+import { MIN_POLYGON_VERTICES, verticesToGeoJsonRing } from '../coverageZoneUtils';
 
-const ringFromLayer = (layer: Polygon): number[][] => {
-  const [ring] = layer.getLatLngs() as LatLng[][];
-  return latLngsToGeoJsonRing(ring.map((point): [number, number] => [point.lat, point.lng]));
-};
+/** El trazo de una zona nueva: los vértices marcados y si ya se cerró. */
+export interface PolygonDraft {
+  points: LatLng[];
+  closed: boolean;
+}
 
 interface Props {
-  /** El polígono nuevo se reporta acá cada vez que cambia (al terminar el trazo y en cada ajuste de vértice). */
+  draft: PolygonDraft;
+  /** Cerrar el trazo tocando el primer vértice. */
+  onClose: () => void;
+  /** Cada ajuste de un vértice del polígono ya cerrado. */
   onChange: (ring: number[][]) => void;
 }
 
 /**
- * Mientras está montado, habilita el modo "dibujar polígono" de Geoman. Al
- * terminar el trazo deja el polígono con sus vértices editables (arrastrables)
- * para que el usuario los ajuste antes de guardar. Al desmontarse (se guardó
- * o se canceló) saca el polígono en construcción del mapa.
+ * La zona que se está dibujando. Abierta: los vértices unidos por una línea (el primero, con 3 o más, cierra la zona
+ * al tocarlo). Cerrada: un polígono con los vértices arrastrables para ajustarla antes de guardar. Reemplaza la
+ * librería Drawing de Google, que está discontinuada.
  */
-export const DrawPolygonController = ({ onChange }: Props) => {
-  const map = useMap();
-  const layerRef = useRef<Polygon | null>(null);
-  const onChangeRef = useRef(onChange);
-  onChangeRef.current = onChange;
+export const DrawPolygonController = ({ draft, onClose, onChange }: Props) => {
+  const theme = useMapTheme();
+  const { points, closed } = draft;
 
-  useEffect(() => {
-    const handleCreate = (event: { layer: Layer }) => {
-      const layer = event.layer as Polygon;
-      layerRef.current = layer;
-      layer.pm.enable({ allowSelfIntersection: false });
-      onChangeRef.current(ringFromLayer(layer));
-      layer.on('pm:edit', () => onChangeRef.current(ringFromLayer(layer)));
-    };
+  if (closed) {
+    return (
+      <Polygon
+        defaultPaths={points}
+        strokeColor={theme.primary}
+        strokeWeight={3}
+        fillColor={theme.primary}
+        fillOpacity={0.18}
+        editable
+        draggable={false}
+        zIndex={4}
+        onPathsChanged={([ring]) =>
+          onChange(verticesToGeoJsonRing(ring.map((point) => ({ lat: point.lat(), lng: point.lng() }))))
+        }
+      />
+    );
+  }
 
-    map.pm.enableDraw('Polygon', { allowSelfIntersection: false, finishOn: 'dblclick', tooltips: false });
-    map.on('pm:create', handleCreate);
-
-    return () => {
-      map.off('pm:create', handleCreate);
-      map.pm.disableDraw('Polygon');
-      layerRef.current?.remove();
-      layerRef.current = null;
-    };
-  }, [map]);
-
-  return null;
+  const canClose = points.length >= MIN_POLYGON_VERTICES;
+  return (
+    <>
+      {points.length > 1 && <Polyline path={points} strokeColor={theme.primary} strokeWeight={3} zIndex={4} />}
+      {points.map((point, index) => (
+        <HtmlMarker
+          key={`${point.lat},${point.lng},${index}`}
+          position={point}
+          title={index === 0 && canClose ? 'Cerrar la zona' : `Vértice ${index + 1}`}
+          onClick={index === 0 && canClose ? onClose : undefined}
+          zIndex={index === 0 ? 6 : 5}
+        >
+          <PointPin size={index === 0 && canClose ? 'md' : 'sm'} />
+        </HtmlMarker>
+      ))}
+    </>
+  );
 };

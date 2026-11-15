@@ -7,6 +7,6 @@ export default defineConfig({
     environment: 'jsdom',
     globalSetup: ['./src/test/globalSetup.ts'],
     setupFiles: ['./src/test/setup.ts'],
-    env: { VITE_APP_API_URL: 'http://localhost:3100/api' },
+    env: { VITE_APP_API_URL: 'http://localhost:3100/api', VITE_GOOGLE_MAPS_API_KEY: 'clave-de-prueba' },
   },
 });

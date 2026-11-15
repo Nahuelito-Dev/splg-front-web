@@ -1,16 +1,20 @@
-import { MapContainer, Marker, TileLayer } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-import '../../../Tracking/leafletIconFix';
+import { HtmlMarker } from '../../../../common/components/map/HtmlMarker';
+import { KeepInView } from '../../../../common/components/map/KeepInView';
+import { toLatLng } from '../../../../common/components/map/latLng';
+import { MapCanvas } from '../../../../common/components/map/MapCanvas';
+import { PlacePin } from '../../../../common/components/map/PlacePin';
 
-/** Mini mapa del punto de entrega: sin zoom con la rueda para no secuestrar el scroll de la página. */
+/** Mini mapa del punto de entrega: la rueda no hace zoom sin Ctrl para no secuestrar el scroll de la página. */
 export const OrderMiniMap = ({ position, label }: { position: [number, number]; label: string }) => (
-  <div role="img" aria-label={label} className="h-44 overflow-hidden rounded-lg border border-outline">
-    <MapContainer center={position} zoom={15} scrollWheelZoom={false} style={{ height: '100%', width: '100%' }}>
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      <Marker position={position} />
-    </MapContainer>
-  </div>
+  <MapCanvas
+    label={label}
+    className="h-44 rounded-lg border border-outline"
+    defaultCenter={toLatLng(position)}
+    defaultZoom={15}
+  >
+    <HtmlMarker position={toLatLng(position)} title="Punto de entrega" anchor="bottom">
+      <PlacePin />
+    </HtmlMarker>
+    <KeepInView point={toLatLng(position)} />
+  </MapCanvas>
 );

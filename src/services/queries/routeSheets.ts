@@ -18,6 +18,7 @@ import {
   getRoutePlanningSettings,
   getRouteSheet,
   getRouteSheetExecution,
+  getRouteSheetPath,
   listRoutePlanningHolidays,
   listRouteSheets,
   moveRouteSheetStop,
@@ -60,6 +61,8 @@ export const routeSheetKeys = {
   loadSuggestion: (id: string) => [...sheets.detail(id), 'load-suggestion'] as const,
   /** Cuelga del detalle: lo que invalida la hoja también refresca su seguimiento. */
   execution: (id: string) => [...sheets.detail(id), 'execution'] as const,
+  /** También cuelga del detalle: al cambiar las paradas se vuelve a pedir (el back no consulta a Google si no cambiaron). */
+  path: (id: string) => [...sheets.detail(id), 'path'] as const,
   dissolved: (date: string) => sheets.list({ date, status: 'dissolved' }),
 };
 
@@ -102,6 +105,32 @@ export const useRouteSheetExecution = (
     queryFn: () => getRouteSheetExecution(id ?? ''),
     enabled: enabled && !!id,
     refetchInterval,
+  });
+
+/**
+ * El recorrido por calles de la hoja para el mapa. Sin reintentos: un 429/502/503 se muestra y el mapa une las paradas
+ * en línea recta (reintentar gastaría el cupo diario del proveedor).
+ */
+export const useRouteSheetPath = (id: string | undefined) =>
+  useQuery({
+    queryKey: routeSheetKeys.path(id ?? ''),
+    queryFn: () => getRouteSheetPath(id ?? ''),
+    enabled: !!id,
+    retry: false,
+  });
+
+/**
+ * Los recorridos por calles de varias hojas, **sólo los que ya están en caché** (los pidió el mapa de cada hoja): no
+ * consulta al back, así que no gasta el cupo diario del proveedor. Devuelve `null` para las que todavía no se trazaron.
+ */
+export const useCachedRouteSheetPaths = (ids: string[]) =>
+  useQueries({
+    queries: ids.map((id) => ({
+      queryKey: routeSheetKeys.path(id),
+      queryFn: () => getRouteSheetPath(id),
+      enabled: false,
+    })),
+    combine: (results) => results.map((result) => result.data ?? null),
   });
 
 export const useLoadSuggestion = (id: string | undefined) =>

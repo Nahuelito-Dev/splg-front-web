@@ -1,22 +1,21 @@
 import { TriangleAlert } from 'lucide-react';
-import { Badge, cx } from '../../common/components/ui';
+import { Badge } from '../../common/components/ui';
 import type { RouteSheet } from '../../services/api/types';
 import {
   SHEET_STATUS,
   driverOf,
+  emptiesText,
   formatKm,
   formatMinutes,
   hhmm,
-  loadPercent,
-  loadText,
   returnAtOf,
   sheetTitle,
   vehicleOf,
 } from './routeSheetLabels';
+import { LoadBar } from './LoadBar';
 
 /** Una hoja del día en la grilla: carga contra capacidad, paradas, recorrido, duración y regreso. */
 export const SheetCard = ({ sheet, onOpen }: { sheet: RouteSheet; onOpen: () => void }) => {
-  const pct = loadPercent(sheet);
   return (
     <button
       type="button"
@@ -36,18 +35,7 @@ export const SheetCard = ({ sheet, onOpen }: { sheet: RouteSheet; onOpen: () => 
       <p className="text-[12.5px] text-ink-2">
         {vehicleOf(sheet)} · {driverOf(sheet)}
       </p>
-      <div className="grid gap-1.5 text-xs text-muted">
-        <div className="flex justify-between gap-2">
-          <span>Carga</span>
-          <span className="font-mono text-ink-2">{loadText(sheet)}</span>
-        </div>
-        <div className="h-1.5 overflow-hidden rounded-full bg-surface-muted">
-          <div
-            className={cx('h-full rounded-full', pct !== null && pct > 85 ? 'bg-warn' : 'bg-primary')}
-            style={{ width: `${Math.min(100, pct ?? 0)}%` }}
-          />
-        </div>
-      </div>
+      <LoadBar sheet={sheet} />
       <dl className="grid grid-cols-2 gap-2 border-t border-outline-soft pt-3 text-xs">
         <div>
           <dt className="text-muted">Paradas</dt>
@@ -66,6 +54,11 @@ export const SheetCard = ({ sheet, onOpen }: { sheet: RouteSheet; onOpen: () => 
           <dd className="font-mono text-sm font-semibold text-ink">{hhmm(returnAtOf(sheet))}</dd>
         </div>
       </dl>
+      {sheet.totals.emptiesExpected > 0 && (
+        <p className="text-xs text-ink-2" data-testid="sheet-empties">
+          {emptiesText(sheet.totals.emptiesExpected)} en la hoja
+        </p>
+      )}
       {sheet.warnings.length > 0 && (
         <p className="flex items-start gap-1.5 text-xs text-warn">
           <TriangleAlert aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0" />

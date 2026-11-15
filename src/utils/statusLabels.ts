@@ -600,6 +600,19 @@ export const paymentStatusLabel = (
     : labelOf(PAYMENT_STATUS, status);
 
 /**
+ * Si el pedido está pagado, dicho para una etiqueta suelta al lado del estado del pedido: «Pendiente» solo se
+ * confundiría con el estado del pedido, así que el pendiente es «Sin pagar» y el cobrado, «Pagado».
+ */
+export const paidLabel = (
+  status: NonNullable<Order['paymentStatus']>,
+  method?: Order['paymentMethodDetail'],
+): Label => {
+  if (status === 'pending') return { text: 'Sin pagar', tone: 'warn' };
+  if (status === 'paid') return { text: 'Pagado', tone: 'success' };
+  return paymentStatusLabel(status, method);
+};
+
+/**
  * El texto del filtro «Cobro» para un estado: `failed` es «Rechazado» en MercadoPago y «No recibida» en una
  * transferencia, y el filtro trae los dos.
  */

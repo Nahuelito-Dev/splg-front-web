@@ -7087,7 +7087,10 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** Admin ve todos los reclamos */
+    /**
+     * Admin ve todos los reclamos
+     * @description De la distribuidora del que pregunta, del más nuevo al más viejo. `orderId` filtra los de un pedido (uno de otra distribuidora da la lista vacía).
+     */
     get: operations['ClaimsController_findAll'];
     put?: never;
     /** Cliente crea un reclamo */
@@ -8774,6 +8777,26 @@ export interface paths {
      * @description Borrador o confirmada cuyo viaje no se inició: queda `dissolved` (`admin`), las paradas salen y los pedidos (liberados del chofer si ya se le habían asignado) vuelven al despacho del día.
      */
     post: operations['RouteSheetsController_cancelar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/route-sheets/{id}/path': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Recorrido por calles de la hoja
+     * @description Para el mapa del detalle: depósito → paradas activas en el orden vigente → depósito, por calles, con la polilínea codificada y un tramo por parada (más la vuelta). Las paradas sin coordenadas se saltean y vienen en `skippedOrderIds`; sin paradas con coordenadas (o sin depósito ubicado y con una sola parada) responde 200 con el recorrido vacío (`provider: null`). El depósito es el mismo que usa el cálculo de horarios de la hoja: el de la hoja; si la hoja no tiene, el predeterminado de la distribuidora. Si el de la hoja está dado de baja o sin ubicación no se reemplaza por otro (los horarios tampoco salen de otro depósito): `warehouse: null` y el recorrido va de la primera a la última parada. Lo calcula el servidor con la Routes API de Google y su propia clave (de a 25 paradas intermedias por consulta, unidas), y si Google falla o no hay clave, con OSRM. Se guarda por hoja y firma de sus paradas y coordenadas: mientras la hoja no cambie no se vuelve a consultar al proveedor (un día; el de OSRM, 10 minutos, para volver a Google en cuanto responda). Cada consulta a Google cuenta contra un cupo diario por distribuidora (500, `ROUTE_SHEET_PATH_DAILY_LIMIT_PER_DISTRIBUTOR`); OSRM y lo guardado no cuentan.
+     */
+    get: operations['RouteSheetsController_recorrido'];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -22321,6 +22344,11 @@ export interface components {
       peakUnits: number;
       /** @description Kilos de gas a cargar */
       weightKg: number;
+      /**
+       * @description Envases vacíos a retirar en toda la hoja (suma de `emptiesExpected` de las paradas activas)
+       * @example 4
+       */
+      emptiesExpected: number;
     };
     RouteSheetCapacityDto: {
       /** @description null: el vehículo no tiene capacidad cargada */
@@ -22363,6 +22391,11 @@ export interface components {
       late: boolean;
       /** @description Garrafas llenas a entregar */
       units: number;
+      /**
+       * @description Envases vacíos a retirar en la parada: por renglón, cantidad menos los envases cobrados (el mismo `emptiesExpected` del pedido)
+       * @example 1
+       */
+      emptiesExpected: number;
       /** @description Kilos de gas a entregar */
       weightKg: number;
       /** @description Mercado Pago todavía sin pagar (entra con advertencia) */
@@ -22483,6 +22516,11 @@ export interface components {
       /** @description Columna «Sin asignar» */
       unassigned: components['schemas']['UnassignedOrderDto'][];
       resources: components['schemas']['RoutePlanResourcesDto'];
+      /**
+       * @description Envases vacíos a retirar en el día: suma de `totals.emptiesExpected` de las hojas de `sheets`
+       * @example 12
+       */
+      emptiesExpected: number;
     };
     ProposeRoutePlanDto: {
       /**
@@ -22703,6 +22741,66 @@ export interface components {
       code: string;
       violations: components['schemas']['RouteSheetViolationDto'][];
     };
+    RouteSheetPathLegDto: {
+      /**
+       * Format: uuid
+       * @description Pedido al que llega el tramo; `null` en la vuelta al depósito
+       */
+      orderId: string | null;
+      /**
+       * @description Metros por calles del tramo
+       * @example 1830
+       */
+      distanceMeters: number;
+      /**
+       * @description Segundos estimados del tramo
+       * @example 240
+       */
+      durationSeconds: number;
+    };
+    RouteSheetPathWarehouseDto: {
+      /** Format: uuid */
+      warehouseId: string | null;
+      /** @example -27.3671 */
+      lat: number;
+      /** @example -55.8961 */
+      lng: number;
+    };
+    RouteSheetPathDto: {
+      /** Format: uuid */
+      sheetId: string;
+      /**
+       * @description Versión de la hoja que se trazó (la misma de `GET /v2/route-sheets/:id`)
+       * @example 7
+       */
+      version: number;
+      /**
+       * @description Quién calculó el recorrido (`osrm` si el servidor no tiene clave de Google o Google falló); `null` si no hay nada que trazar
+       * @enum {string|null}
+       */
+      provider: 'google' | 'osrm' | null;
+      /**
+       * @description Metros por calles de todo el recorrido
+       * @example 18450
+       */
+      distanceMeters: number;
+      /**
+       * @description Segundos de manejo estimados (sin el tiempo en cada parada)
+       * @example 2310
+       */
+      durationSeconds: number;
+      /**
+       * @description Polilínea codificada (formato de Google, precisión 5) del recorrido entero; vacía si no hay nada que trazar
+       * @example _p~iF~ps|U_ulLnnqC_mqNvxq`@
+       */
+      encodedPolyline: string;
+      /** @description Un tramo por cada punto después del primero: depósito → 1.ª parada, …, última parada → depósito */
+      legs: components['schemas']['RouteSheetPathLegDto'][];
+      /** @description Paradas que no entran en el recorrido porque su dirección no tiene coordenadas */
+      skippedOrderIds: string[];
+      /** @description Depósito de salida y vuelta: el de la hoja o, si la hoja no tiene, el predeterminado de la distribuidora (el mismo que usa el cálculo de horarios). `null` si ese depósito está dado de baja o sin ubicación (no se reemplaza por otro): el recorrido va de la primera a la última parada */
+      warehouse: components['schemas']['RouteSheetPathWarehouseDto'] | null;
+    };
     LoadSuggestionItemDto: {
       /** Format: uuid */
       gasCylinderId: string;
@@ -22846,6 +22944,11 @@ export interface components {
       /** @description Pendiente o en camino y va a llegar después de su franja */
       late: boolean;
       units: number;
+      /**
+       * @description Envases vacíos a retirar en la parada: por renglón, cantidad menos los envases cobrados (el mismo `emptiesExpected` del pedido)
+       * @example 1
+       */
+      emptiesExpected: number;
       weightKg: number;
       unpaidOnline: boolean;
       items: components['schemas']['RouteSheetItemDto'][];
@@ -51644,7 +51747,10 @@ export interface operations {
   };
   ClaimsController_findAll: {
     parameters: {
-      query?: never;
+      query?: {
+        /** @description Sólo los reclamos de ese pedido (de la distribuidora del que pregunta: un pedido ajeno da la lista vacía) */
+        orderId?: string;
+      };
       header?: never;
       path?: never;
       cookie?: never;
@@ -51658,6 +51764,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['ClaimResponseDto'][];
         };
+      };
+      /** @description `orderId` no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Sin token o token inválido */
       401: {
@@ -56791,6 +56904,76 @@ export interface operations {
       };
       /** @description Otro administrador cambió la hoja (ROUTE_SHEET_VERSION_CONFLICT), la hoja no está en borrador (ROUTE_SHEET_NOT_EDITABLE) o se está editando en otra sesión (ROUTE_SHEET_BUSY); o ya se inició o está cerrada */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RouteSheetsController_recorrido: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RouteSheetPathDto'];
+        };
+      };
+      /** @description Cuerpo inválido, id que no es UUID o falta la distribuidora (super admin sin X-Distributor) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Hoja de ruta» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La hoja no existe o es de otra distribuidora (ROUTE_SHEET_NOT_FOUND) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La distribuidora llegó al máximo de recorridos del día (ROUTE_PATH_DAILY_LIMIT) */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ningún servicio de mapas respondió (ROUTE_PROVIDER_FAILED) */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No hay servicio de mapas configurado (ROUTE_PROVIDER_UNAVAILABLE) */
+      503: {
         headers: {
           [name: string]: unknown;
         };

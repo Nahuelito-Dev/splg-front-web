@@ -9,7 +9,15 @@ import {
 } from '../../../services/queries/coverageZones';
 import { DEFAULT_ZONE_COLOR } from '../../../theme/zoneColors';
 import { notify } from '../../../utils/notifications';
-import { hasEnoughVertices, MIN_POLYGON_VERTICES, toDateInputValue, vigenciaChanges } from '../coverageZoneUtils';
+import {
+  hasEnoughVertices,
+  MIN_POLYGON_VERTICES,
+  ringSelfIntersects,
+  SELF_INTERSECTION_MESSAGE,
+  toDateInputValue,
+  vigenciaChanges,
+  zoneSaveError,
+} from '../coverageZoneUtils';
 import {
   findZoneConflict,
   nextZonePriority,
@@ -52,6 +60,7 @@ export const ZoneFormPanel = ({ zone, polygon, zones, onSaved, onCancel }: Props
   const updateZone = useUpdateCoverageZone();
   const saving = createZone.isPending || updateZone.isPending;
   const canSubmit = hasEnoughVertices(polygon);
+  const crossed = ringSelfIntersects(polygon);
 
   const methods = useForm<ZoneFormValues>({
     resolver: zodResolver(zoneSchema),
@@ -64,6 +73,10 @@ export const ZoneFormPanel = ({ zone, polygon, zones, onSaved, onCancel }: Props
   const onSubmit = async (values: ZoneFormValues) => {
     if (!canSubmit) {
       notify.error(new Error(`Dibujá el polígono en el mapa (mínimo ${MIN_POLYGON_VERTICES} vértices)`));
+      return;
+    }
+    if (crossed) {
+      notify.error(new Error(SELF_INTERSECTION_MESSAGE));
       return;
     }
     // Con las zonas de ahora; si no se pueden traer, decide el back.
@@ -88,7 +101,7 @@ export const ZoneFormPanel = ({ zone, polygon, zones, onSaved, onCancel }: Props
         notify.success(zone ? 'Zona actualizada' : 'Zona creada');
         onSaved();
       },
-      onError: notify.error,
+      onError: (error: unknown) => notify.error(zoneSaveError(error)),
     };
     if (zone) {
       updateZone.mutate(
@@ -105,6 +118,11 @@ export const ZoneFormPanel = ({ zone, polygon, zones, onSaved, onCancel }: Props
 
   return (
     <Form methods={methods} onSubmit={onSubmit} className="space-y-4">
+      {crossed && (
+        <p role="alert" className="rounded-lg border border-danger/40 bg-danger-soft px-3 py-2 text-xs text-danger">
+          {SELF_INTERSECTION_MESSAGE}
+        </p>
+      )}
       <FormInput name="name" label="Nombre" required />
       <FormInput name="label" label="Etiqueta (opcional)" placeholder="Zona centro" />
 

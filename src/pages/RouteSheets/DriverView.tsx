@@ -1,8 +1,10 @@
 import { Navigation, Route as RouteIcon } from 'lucide-react';
+import { useState } from 'react';
 import { Button, EmptyState, cx } from '../../common/components/ui';
 import type { RoutePlanDay } from '../../services/api/types';
 import { formatDay } from '../../utils/format';
-import { formatKm, hhmm, sheetTitle, slotOf, stopName, vehicleOf } from './routeSheetLabels';
+import { emptiesText, formatKm, hhmm, sheetTitle, slotOf, stopName, vehicleOf } from './routeSheetLabels';
+import { StopOrderDrawer } from './StopOrderDrawer';
 
 interface Props {
   day: RoutePlanDay;
@@ -15,6 +17,7 @@ interface Props {
  * estimada). Es una maqueta con los datos reales; la app del chofer la recibe cuando inicia la hoja.
  */
 export const DriverView = ({ day, sheetId, onPick }: Props) => {
+  const [openOrderId, setOpenOrderId] = useState<string | null>(null);
   const sheet = day.sheets.find((s) => s.id === sheetId);
   if (!sheet) {
     return (
@@ -62,28 +65,40 @@ export const DriverView = ({ day, sheetId, onPick }: Props) => {
               className="flex max-h-[470px] flex-col gap-2 overflow-auto px-3 pb-3.5 pt-2"
             >
               {sheet.stops.map((stop, i) => (
-                <li
-                  key={stop.orderId}
-                  className={cx(
-                    'grid grid-cols-[24px_minmax(0,1fr)_auto] items-center gap-2 rounded-xl border px-2.5 py-2 text-[12.5px]',
-                    i === 0 ? 'border-primary bg-primary-soft' : 'border-outline',
-                  )}
-                >
-                  <span
+                <li key={stop.orderId}>
+                  <button
+                    type="button"
+                    title="Ver el pedido"
+                    onClick={() => setOpenOrderId(stop.orderId)}
                     className={cx(
-                      'grid h-6 w-6 place-items-center rounded-full text-[11px] font-semibold',
-                      stop.late ? 'bg-danger text-white' : 'bg-primary text-on-primary',
+                      'grid w-full grid-cols-[24px_minmax(0,1fr)_auto] items-center gap-2 rounded-xl border px-2.5 py-2 text-left text-[12.5px] hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
+                      i === 0 ? 'border-primary bg-primary-soft' : 'border-outline',
                     )}
                   >
-                    {stop.sequence}
-                  </span>
-                  <div className="min-w-0">
-                    <b className="block truncate font-semibold text-ink">{stopName(stop)}</b>
-                    <small className="block truncate text-muted">
-                      {stop.address ?? 'Sin dirección'} · {stop.units} garrafa(s) · {slotOf(stop)}
-                    </small>
-                  </div>
-                  <b className="font-mono text-ink">{hhmm(stop.plannedEtaAt ?? stop.etaAt)}</b>
+                    <span
+                      className={cx(
+                        'grid h-6 w-6 place-items-center rounded-full text-[11px] font-semibold',
+                        stop.late ? 'bg-danger text-white' : 'bg-primary text-on-primary',
+                      )}
+                    >
+                      {stop.sequence}
+                    </span>
+                    <div className="min-w-0">
+                      <b className="block truncate font-semibold text-ink">{stopName(stop)}</b>
+                      <small className="block truncate text-muted">
+                        {stop.address ?? 'Sin dirección'} · {stop.units} garrafa(s) · {slotOf(stop)}
+                      </small>
+                      {stop.emptiesExpected > 0 && (
+                        <small
+                          className="mt-0.5 inline-block rounded-md bg-accent-soft px-1.5 text-[11px] text-on-accent"
+                          data-testid="empties-tag"
+                        >
+                          {emptiesText(stop.emptiesExpected)}
+                        </small>
+                      )}
+                    </div>
+                    <b className="font-mono text-ink">{hhmm(stop.plannedEtaAt ?? stop.etaAt)}</b>
+                  </button>
                 </li>
               ))}
             </ol>
@@ -99,6 +114,7 @@ export const DriverView = ({ day, sheetId, onPick }: Props) => {
           inicia la hoja en su app.
         </figcaption>
       </figure>
+      <StopOrderDrawer orderId={openOrderId} onClose={() => setOpenOrderId(null)} />
     </div>
   );
 };

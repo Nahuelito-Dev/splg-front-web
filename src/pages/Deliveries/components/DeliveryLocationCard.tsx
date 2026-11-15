@@ -1,8 +1,9 @@
-import { MapContainer, Marker, TileLayer } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
+import { HtmlMarker } from '../../../common/components/map/HtmlMarker';
+import { KeepInView } from '../../../common/components/map/KeepInView';
+import { MapCanvas } from '../../../common/components/map/MapCanvas';
+import { PlacePin } from '../../../common/components/map/PlacePin';
 import { Card, CardHeader } from '../../../common/components/ui';
 import type { Delivery } from '../../../services/api/types';
-import '../../Tracking/leafletIconFix';
 import { parseLatLng } from '../deliveryLocation';
 
 /**
@@ -20,20 +21,17 @@ export const DeliveryLocationCard = ({ delivery }: { delivery: Delivery }) => {
         <p className="mt-0.5 text-sm text-muted">{address || 'La app del chofer no informó una dirección.'}</p>
       </div>
       {point ? (
-        <div className="h-56 border-t border-outline" data-testid="delivery-location-map">
-          <MapContainer
-            center={[point.lat, point.lng]}
-            zoom={15}
-            scrollWheelZoom={false}
-            style={{ height: '100%', width: '100%' }}
-          >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            <Marker position={[point.lat, point.lng]} />
-          </MapContainer>
-        </div>
+        <MapCanvas
+          label="Mapa de la última ubicación del chofer"
+          className="h-56 border-t border-outline"
+          defaultCenter={point}
+          defaultZoom={15}
+        >
+          <HtmlMarker position={point} title="Última ubicación del chofer" anchor="bottom">
+            <PlacePin />
+          </HtmlMarker>
+          <KeepInView point={point} />
+        </MapCanvas>
       ) : (
         <p className="border-t border-outline p-4 text-sm text-muted">Todavía no se registró una posición.</p>
       )}

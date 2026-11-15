@@ -7,6 +7,12 @@ export const listClaims = async (): Promise<Claim[]> => {
   return data;
 };
 
+/** GET /claims?orderId=: los reclamos de un pedido (uno de otra distribuidora da la lista vacía). */
+export const listOrderClaims = async (orderId: string): Promise<Claim[]> => {
+  const { data } = await http.get<Claim[]>('/claims', { params: { orderId } });
+  return data;
+};
+
 /** GET /claims/:id: un reclamo con su pedido y su cliente (404 si no existe o es de otra distribuidora). */
 export const getClaim = async (id: string): Promise<Claim> => {
   const { data } = await http.get<Claim>(`/claims/${id}`);

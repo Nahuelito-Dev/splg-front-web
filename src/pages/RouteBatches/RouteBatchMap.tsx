@@ -1,58 +1,25 @@
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import { Polyline } from '@vis.gl/react-google-maps';
 import { useMemo } from 'react';
-import { MapContainer, Marker, Polyline, TileLayer, useMap } from 'react-leaflet';
-import '../Tracking/leafletIconFix';
-import { useChartPalette } from '../../theme/useChartPalette';
+import { HtmlMarker } from '../../common/components/map/HtmlMarker';
+import { dashedLine, toLatLng } from '../../common/components/map/latLng';
+import { MapCanvas } from '../../common/components/map/MapCanvas';
+import { StopPin } from '../../common/components/map/StopPin';
+import { useMapTheme } from '../../theme/mapTheme';
 
 type Point = { position: [number, number]; sequence: number };
 
-/** Posadas, Misiones: donde opera la distribuidora. */
-const DEFAULT_CENTER: [number, number] = [-27.3671, -55.8961];
-
-const numbered = (sequence: number) =>
-  L.divIcon({
-    className: '',
-    html: `<span class="flex h-7 w-7 items-center justify-center rounded-full border-2 border-surface bg-primary text-xs font-semibold text-on-primary shadow-control">${sequence}</span>`,
-    iconSize: [28, 28],
-    iconAnchor: [14, 14],
-  });
-
-const FitRoute = ({ points }: { points: Point[] }) => {
-  const map = useMap();
-  useMemo(() => {
-    if (points.length > 0) map.fitBounds(L.latLngBounds(points.map((p) => p.position)), { padding: [32, 32] });
-  }, [map, points]);
-  return null;
-};
-
 /** El recorrido sobre el mapa: cada parada numerada en su orden de entrega, unidas en línea recta. */
 export const RouteBatchMap = ({ points, label }: { points: Point[]; label: string }) => {
-  // El recorrido con el principal del tema (como en la hoja de ruta), no con el azul por omisión de Leaflet.
-  const palette = useChartPalette();
+  const theme = useMapTheme();
+  const path = useMemo(() => points.map((p) => toLatLng(p.position)), [points]);
   return (
-    <div role="img" aria-label={label} className="h-64 overflow-hidden rounded-lg border border-outline">
-      <MapContainer
-        center={points[0]?.position ?? DEFAULT_CENTER}
-        zoom={13}
-        scrollWheelZoom={false}
-        style={{ height: '100%', width: '100%' }}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        <FitRoute points={points} />
-        {points.length > 1 && (
-          <Polyline
-            positions={points.map((p) => p.position)}
-            pathOptions={{ color: palette.primary, weight: 3, dashArray: '6 6' }}
-          />
-        )}
-        {points.map((p) => (
-          <Marker key={p.sequence} position={p.position} icon={numbered(p.sequence)} />
-        ))}
-      </MapContainer>
-    </div>
+    <MapCanvas label={label} className="h-64 rounded-lg border border-outline" fitPoints={path} maxFitZoom={15}>
+      {path.length > 1 && <Polyline path={path} zIndex={1} {...dashedLine(theme.primary)} />}
+      {points.map((p) => (
+        <HtmlMarker key={p.sequence} position={toLatLng(p.position)} title={`Parada ${p.sequence}`} zIndex={10}>
+          <StopPin sequence={p.sequence} />
+        </HtmlMarker>
+      ))}
+    </MapCanvas>
   );
 };

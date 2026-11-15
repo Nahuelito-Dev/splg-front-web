@@ -25,6 +25,7 @@ import type {
   RouteSheetNotConfirmable,
   RouteSheetOptimize,
   RouteSheetPage,
+  RouteSheetPath,
   RouteSheetStopAction,
   RouteSheetViolation,
   SetRouteSheetSequenceBody,
@@ -50,6 +51,9 @@ export const ROUTE_SHEET_CODES = {
   stopNotPending: 'ROUTE_STOP_NOT_PENDING',
   holidayPast: 'ROUTE_HOLIDAY_DATE_PAST',
   holidayExists: 'ROUTE_HOLIDAY_ALREADY_EXISTS',
+  pathDailyLimit: 'ROUTE_PATH_DAILY_LIMIT',
+  providerFailed: 'ROUTE_PROVIDER_FAILED',
+  providerUnavailable: 'ROUTE_PROVIDER_UNAVAILABLE',
 } as const;
 
 /** 409 de confirmar con las reglas que no se cumplen: el panel las muestra una por una. */
@@ -177,6 +181,15 @@ export const getRouteSheet = async (id: string): Promise<RouteSheet> => {
 /** POST /v2/route-sheets: un borrador a mano (abre el día si hace falta). */
 export const createRouteSheet = async (body: CreateRouteSheetBody): Promise<RouteSheet> => {
   const { data } = await http.post<RouteSheet>('/route-sheets', body, v2);
+  return data;
+};
+
+/**
+ * GET /v2/route-sheets/:id/path: el recorrido por calles (galpón → paradas → galpón) con la polilínea codificada.
+ * 429 `ROUTE_PATH_DAILY_LIMIT`, 502 `ROUTE_PROVIDER_FAILED`, 503 `ROUTE_PROVIDER_UNAVAILABLE`.
+ */
+export const getRouteSheetPath = async (id: string): Promise<RouteSheetPath> => {
+  const { data } = await http.get<RouteSheetPath>(`/route-sheets/${encodeURIComponent(id)}/path`, v2);
   return data;
 };
 

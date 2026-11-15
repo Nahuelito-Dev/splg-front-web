@@ -1,24 +1,30 @@
-import { CircleMarker, MapContainer, TileLayer } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-// Import de efecto: además de los tipos (`Map.pm`, `Polygon.pm`), esto parchea
-// los prototipos de Leaflet en tiempo de ejecución. Sin él, `map.pm` es `undefined`.
-import '@geoman-io/leaflet-geoman-free';
-import '@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css';
+import { useMemo, useRef, useState } from 'react';
+import { HtmlMarker } from '../../../common/components/map/HtmlMarker';
+import type { LatLng } from '../../../common/components/map/latLng';
+import { MapCanvas } from '../../../common/components/map/MapCanvas';
+import { PointPin } from '../../../common/components/map/PointPin';
 import type { CoverageZone } from '../../../services/api/types';
-import { useChartPalette } from '../../../theme/useChartPalette';
-import { DrawPolygonController } from './DrawPolygonController';
-import { FitZonesBounds } from './FitZonesBounds';
-import { PickPointController } from './PickPointController';
-import { ZonePolygon } from './ZonePolygon';
+import {
+  MIN_POLYGON_VERTICES,
+  verticesToGeoJsonRing,
+  withoutRepeatedVertices,
+  zoneVertices,
+} from '../coverageZoneUtils';
 import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from '../mapDefaults';
+import { DrawPolygonController, type PolygonDraft } from './DrawPolygonController';
+import { ZonePolygon } from './ZonePolygon';
 
 export type MapMode = 'idle' | 'draw' | 'edit' | 'pick';
 
 const HINTS: Record<Exclude<MapMode, 'idle'>, string> = {
-  draw: 'Hacé clic para marcar los vértices · doble clic para terminar (mínimo 3 puntos)',
+  draw: 'Hacé clic para marcar los vértices · doble clic o clic en el primero para terminar (mínimo 3 puntos)',
   edit: 'Arrastrá los vértices para ajustar la zona',
   pick: 'Hacé clic en el mapa para elegir el punto a probar',
 };
+
+const EMPTY_DRAFT: PolygonDraft = { points: [], closed: false };
+
+const CLOSED_HINT = 'Arrastrá los vértices para ajustar la zona antes de guardarla';
 
 interface Props {
   zones: CoverageZone[];
@@ -31,9 +37,8 @@ interface Props {
 }
 
 /**
- * Mapa Leaflet con las zonas de cobertura. Según `mode`, delega en Geoman el
- * dibujo de una zona nueva, la edición de vértices de la seleccionada, o la
- * elección de un punto para "Probar un punto".
+ * Las zonas de cobertura sobre Google Maps. Según `mode`: dibujar una zona nueva (clic por vértice), editar los vértices
+ * de la seleccionada, o elegir un punto para «Probar un punto».
  */
 export const ZoneMap = ({
   zones,
@@ -44,52 +49,81 @@ export const ZoneMap = ({
   onPickPoint,
   pickedPoint,
 }: Props) => {
-  const palette = useChartPalette();
+  const [draft, setDraft] = useState<PolygonDraft>(EMPTY_DRAFT);
+  const [draftMode, setDraftMode] = useState(mode);
+  // Al salir de «dibujar» (se guardó o se canceló) el trazo se descarta: se ajusta en el render, sin un efecto.
+  if (draftMode !== mode) {
+    setDraftMode(mode);
+    setDraft(EMPTY_DRAFT);
+  }
+  // El doble clic llega desde Google Maps justo después de los dos clics que suman vértices: se lee el último trazo.
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
+
+  const fitPoints = useMemo(() => zones.flatMap((zone) => zoneVertices(zone.area.coordinates[0])), [zones]);
+  // Se encuadra cuando cambian las zonas que hay, no cuando se guarda un ajuste de una de ellas.
+  const fitKey = zones.map((zone) => zone.coverage_zone_id).join(',');
+
+  const addVertex = (point: LatLng) => setDraft((d) => (d.closed ? d : { ...d, points: [...d.points, point] }));
+
+  const close = () => {
+    const current = draftRef.current;
+    if (current.closed) return;
+    const points = withoutRepeatedVertices(current.points);
+    if (points.length < MIN_POLYGON_VERTICES) {
+      setDraft({ points, closed: false });
+      return;
+    }
+    setDraft({ points, closed: true });
+    onPolygonChange(verticesToGeoJsonRing(points));
+  };
+
+  const hint = mode === 'draw' && draft.closed ? CLOSED_HINT : mode === 'idle' ? null : HINTS[mode];
+
   return (
-    <div className="relative isolate h-[560px] w-full" role="group" aria-label="Mapa de zonas de cobertura">
-      <MapContainer
-        center={DEFAULT_MAP_CENTER}
-        zoom={DEFAULT_MAP_ZOOM}
-        scrollWheelZoom
-        style={{ height: '100%', width: '100%' }}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+    <MapCanvas
+      label="Mapa de zonas de cobertura"
+      className="h-[560px] w-full"
+      defaultCenter={DEFAULT_MAP_CENTER}
+      defaultZoom={DEFAULT_MAP_ZOOM}
+      gestures="greedy"
+      fitPoints={fitPoints}
+      fitKey={fitKey}
+      cursor={(mode === 'draw' && !draft.closed) || mode === 'pick' ? 'crosshair' : undefined}
+      disableDoubleClickZoom={mode === 'draw'}
+      onClick={mode === 'draw' ? addVertex : mode === 'pick' ? onPickPoint : undefined}
+      onDoubleClick={mode === 'draw' ? close : undefined}
+      overlay={
+        hint && (
+          /* bg-side: el aviso queda oscuro sobre el mapa en los dos temas. */
+          <div
+            data-testid="zone-map-hint"
+            className="pointer-events-none absolute left-1/2 top-3 z-10 w-max max-w-[90%] -translate-x-1/2 rounded-full bg-side/90 px-3 py-1.5 text-center text-xs text-white"
+          >
+            {hint}
+          </div>
+        )
+      }
+    >
+      {zones.map((zone) => (
+        <ZonePolygon
+          // Al terminar de editar (guardada, cancelada o tras un error) se monta de nuevo: vuelve a la forma guardada.
+          key={`${zone.coverage_zone_id}:${mode === 'edit' && zone.coverage_zone_id === selectedZoneId ? 'edit' : 'view'}`}
+          zone={zone}
+          highlighted={zone.coverage_zone_id === selectedZoneId}
+          editable={mode === 'edit' && zone.coverage_zone_id === selectedZoneId}
+          onChange={onPolygonChange}
+          onSelect={mode === 'idle' ? () => onSelectZone(zone) : undefined}
         />
+      ))}
 
-        <FitZonesBounds zones={zones} />
+      {mode === 'draw' && <DrawPolygonController draft={draft} onClose={close} onChange={onPolygonChange} />}
 
-        {mode === 'draw' && <DrawPolygonController onChange={onPolygonChange} />}
-        {mode === 'pick' && <PickPointController onPick={onPickPoint} />}
-
-        {zones.map((zone) => (
-          <ZonePolygon
-            key={zone.coverage_zone_id}
-            zone={zone}
-            highlighted={zone.coverage_zone_id === selectedZoneId}
-            editable={mode === 'edit' && zone.coverage_zone_id === selectedZoneId}
-            onChange={onPolygonChange}
-            onSelect={mode === 'idle' ? () => onSelectZone(zone) : undefined}
-          />
-        ))}
-
-        {pickedPoint && (
-          <CircleMarker
-            center={[pickedPoint.lat, pickedPoint.lng]}
-            radius={7}
-            pathOptions={{ color: palette.ink, fillOpacity: 1 }}
-          />
-        )}
-      </MapContainer>
-
-      {mode !== 'idle' && (
-        /* bg-side (no bg-ink): flota sobre las teselas del mapa, siempre claras, así que el
-         aviso se queda siempre oscuro sin importar el tema del panel. */
-        <div className="absolute left-1/2 top-3 z-[1000] -translate-x-1/2 rounded-full bg-side/90 px-3 py-1.5 text-xs text-white">
-          {HINTS[mode]}
-        </div>
+      {pickedPoint && (
+        <HtmlMarker position={pickedPoint} title="Punto a probar" zIndex={20}>
+          <PointPin />
+        </HtmlMarker>
       )}
-    </div>
+    </MapCanvas>
   );
 };

@@ -1,9 +1,8 @@
-import { ClipboardList, Package, Route as RouteIcon, Sparkles, TriangleAlert } from 'lucide-react';
+import { Route as RouteIcon, Sparkles, TriangleAlert } from 'lucide-react';
 import { useState } from 'react';
-import { EmptyState, KpiCard } from '../../common/components/ui';
+import { EmptyState } from '../../common/components/ui';
 import type { RoutePlanDay } from '../../services/api/types';
 import { formatDateTime } from '../../utils/format';
-import { formatKm } from './routeSheetLabels';
 import { AwaitingAdminCard } from './AwaitingAdmin';
 import { DissolvedSheets } from './DissolvedSheets';
 import { ResourcesCard } from './ResourcesCard';
@@ -23,11 +22,6 @@ interface Props {
 export const PlanView = ({ day, canWrite, canDecide = canWrite, onOpen }: Props) => {
   const [target, setTarget] = useState<StopTarget | null>(null);
   const { plan, sheets, unassigned } = day;
-  const inSheets = sheets.reduce((sum, s) => sum + s.stops.length, 0);
-  const km = sheets.reduce((sum, s) => sum + s.totals.distanceKm, 0);
-  const units = sheets.reduce((sum, s) => sum + s.totals.units, 0);
-  const confirmed = sheets.filter((s) => s.status !== 'draft').length;
-  const blocked = unassigned.filter((o) => o.blockedReason).length;
 
   return (
     <div className="space-y-5">
@@ -41,23 +35,6 @@ export const PlanView = ({ day, canWrite, canDecide = canWrite, onOpen }: Props)
         {plan.proposedAt && ` · última propuesta: ${formatDateTime(plan.proposedAt)}`}
         {plan.closedAt && ` · cerrado: ${formatDateTime(plan.closedAt)}`}
       </p>
-      <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 xl:grid-cols-4">
-        <KpiCard
-          title="Pedidos programados"
-          icon={ClipboardList}
-          value={String(inSheets + unassigned.length)}
-          hint={`${inSheets} en hojas · ${unassigned.length} sin asignar`}
-        />
-        <KpiCard title="Hojas" icon={RouteIcon} value={String(sheets.length)} hint={`${confirmed} confirmadas`} />
-        <KpiCard title="Kilómetros estimados" icon={RouteIcon} value={formatKm(km)} hint="con regreso al depósito" />
-        <KpiCard
-          title="Garrafas a repartir"
-          icon={Package}
-          value={String(units)}
-          hint={blocked ? `${blocked} pedido(s) sin poder ir en una hoja` : 'en las hojas del día'}
-          pill={blocked ? { text: 'Revisar sin asignar', trend: 'warn' } : undefined}
-        />
-      </div>
       {sheets.length === 0 ? (
         <div className="rounded-card border border-dashed border-outline p-6">
           <EmptyState

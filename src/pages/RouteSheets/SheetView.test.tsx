@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../../services/api/errors';
 import { RouteSheetNotConfirmableError, RouteSheetShortagesError } from '../../services/api/routeSheets';
@@ -52,9 +53,33 @@ vi.mock('./SheetTracking', () => ({
     <section aria-label="Seguimiento">{current.id}</section>
   ),
 }));
+/** Para probar que la hoja no pide los pedidos de a uno: los envases vienen en la parada. */
+const ordersApi = vi.hoisted(() => ({ getOrder: vi.fn() }));
+vi.mock('../../services/api/orders', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  ...ordersApi,
+}));
+vi.mock('./StopOrderDrawer', () => ({
+  StopOrderDrawer: ({ orderId }: { orderId: string | null }) =>
+    orderId ? <aside aria-label="Pedido de la parada">{orderId}</aside> : null,
+}));
 vi.mock('./RouteSheetMap', () => ({
-  RouteSheetMap: ({ stops }: { stops: unknown[] }) => (
-    <div role="img" aria-label="Mapa del recorrido" data-n={stops.length} />
+  RouteSheetMap: ({
+    stops,
+    sheetId,
+    onSelect,
+  }: {
+    stops: { orderId: string; customerName: string | null }[];
+    sheetId: string;
+    onSelect: (id: string) => void;
+  }) => (
+    <div role="group" aria-label="Mapa del recorrido" data-n={stops.length} data-sheet={sheetId}>
+      {stops.map((s) => (
+        <button key={s.orderId} type="button" onClick={() => onSelect(s.orderId)}>
+          En el mapa: {s.customerName}
+        </button>
+      ))}
+    </div>
   ),
 }));
 const notifications = vi.hoisted(() => ({
@@ -95,6 +120,53 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+});
+
+describe('SheetView: mapa', () => {
+  it('el mapa es el de la hoja, fijo debajo de la barra en escritorio, y arriba dice la jornada (no otros km)', () => {
+    draw(sheet({ plannedStartAt: '2026-11-14T10:30:00.000Z', totals: { ...sheet().totals, durationMin: 587 } }));
+    const map = screen.getByRole('group', { name: 'Mapa del recorrido' });
+    expect(map).toHaveAttribute('data-sheet', sheet().id);
+    expect(map.closest('.lg\\:sticky')).toHaveClass('lg:top-[76px]');
+    expect(screen.getByTestId('sheet-workday')).toHaveTextContent('Jornada 07:30–17:17');
+    expect(screen.getByTestId('sheet-workday')).not.toHaveTextContent('km');
+  });
+
+  it('tocar una parada en el mapa la resalta en la lista y la lista va hasta ella', () => {
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    draw(sheet({ stops: [stop(1), stop(2), stop(3)] }));
+    fireEvent.click(screen.getByRole('button', { name: 'En el mapa: Cliente 3' }));
+    const row = within(screen.getByRole('list', { name: 'Paradas de la hoja' })).getAllByRole('listitem')[2];
+    expect(row).toHaveClass('bg-primary-soft');
+    expect(scroll.mock.instances[scroll.mock.instances.length - 1]).toBe(row);
+    expect(scroll).toHaveBeenLastCalledWith({ block: 'nearest', behavior: 'smooth' });
+  });
+});
+
+describe('SheetView: pedido de la parada, carga y envases', () => {
+  it('tocar una parada en la lista o en el mapa abre su pedido al costado', () => {
+    draw(sheet({ stops: [stop(1), stop(2)] }));
+    expect(screen.queryByRole('complementary', { name: 'Pedido de la parada' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Cliente 2' }));
+    expect(screen.getByRole('complementary', { name: 'Pedido de la parada' })).toHaveTextContent(stop(2).orderId);
+    fireEvent.click(screen.getByRole('button', { name: 'En el mapa: Cliente 1' }));
+    expect(screen.getByRole('complementary', { name: 'Pedido de la parada' })).toHaveTextContent(stop(1).orderId);
+  });
+
+  it('la parada dice cuántos envases retira (de la propia parada, sin pedir los pedidos); la hoja, la carga', () => {
+    const current = sheet({ stops: [stop(1, { emptiesExpected: 2 }), stop(2)] });
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <SheetView day={planDay({ sheets: [current] })} sheetId={current.id} canWrite onPick={vi.fn()} />
+      </QueryClientProvider>,
+    );
+    const rows = within(screen.getByRole('list', { name: 'Paradas de la hoja' })).getAllByRole('listitem');
+    expect(within(rows[0]).getByTestId('empties-tag')).toHaveTextContent('Retira 2 envases');
+    expect(within(rows[1]).queryByTestId('empties-tag')).not.toBeInTheDocument();
+    expect(screen.getByRole('meter', { name: 'Carga del vehículo' })).toBeInTheDocument();
+    expect(ordersApi.getOrder).not.toHaveBeenCalled();
+  });
 });
 
 describe('SheetView: paradas', () => {

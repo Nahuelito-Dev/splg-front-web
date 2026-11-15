@@ -16,6 +16,8 @@ interface Props {
   badges?: ReactNode;
   /** Ruta de la ficha completa: suma el enlace «Abrir ficha completa» (conserva la lista al volver). */
   fullPageTo?: string;
+  /** Texto del enlace a la ficha completa, si no alcanza con «Abrir ficha completa». */
+  fullPageLabel?: string;
   /** El detalle fresco todavía no llegó y no hay nada de la fila para mostrar. */
   loading?: boolean;
   /** Falló la carga del detalle y no hay nada de la fila para mostrar. */
@@ -40,6 +42,7 @@ export const RecordDrawer = ({
   description,
   badges,
   fullPageTo,
+  fullPageLabel = 'Abrir ficha completa',
   loading = false,
   error,
   onRetry,
@@ -65,7 +68,7 @@ export const RecordDrawer = ({
               onClick={onClose}
               className="inline-flex items-center gap-1.5 rounded-md text-sm font-semibold text-primary-strong hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
-              Abrir ficha completa
+              {fullPageLabel}
               <ExternalLink aria-hidden="true" className="h-3.5 w-3.5" />
             </Link>
           )}

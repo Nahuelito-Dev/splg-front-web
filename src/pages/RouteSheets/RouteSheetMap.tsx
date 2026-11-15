@@ -1,39 +1,17 @@
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import { useEffect, useMemo } from 'react';
-import { MapContainer, Marker, Polyline, TileLayer, useMap } from 'react-leaflet';
+import { Polyline } from '@vis.gl/react-google-maps';
+import { useMemo } from 'react';
+import { DriverPin } from '../../common/components/map/DriverPin';
+import { HtmlMarker } from '../../common/components/map/HtmlMarker';
+import { KeepInView } from '../../common/components/map/KeepInView';
+import { dashedLine, pointsKey, type LatLng } from '../../common/components/map/latLng';
+import { MapCanvas } from '../../common/components/map/MapCanvas';
+import { StopPin, type StopTone } from '../../common/components/map/StopPin';
+import { WarehousePin } from '../../common/components/map/WarehousePin';
 import type { RouteSheetExecutionStop } from '../../services/api/types';
-import { useChartPalette } from '../../theme/useChartPalette';
-import '../Tracking/leafletIconFix';
+import { useRouteSheetPath } from '../../services/queries/routeSheets';
+import { useMapTheme } from '../../theme/mapTheme';
+import { RoutePathStatus } from './RoutePathStatus';
 import { hhmm, stopName } from './routeSheetLabels';
-
-/** Posadas, Misiones: donde opera la distribuidora. */
-const DEFAULT_CENTER: [number, number] = [-27.3671, -55.8961];
-
-const TONE = {
-  normal: 'bg-primary text-on-primary',
-  late: 'bg-danger text-white',
-  locked: 'bg-ink text-surface',
-  current: 'bg-info text-white',
-  done: 'bg-success text-white',
-};
-
-type Tone = keyof typeof TONE;
-
-const numbered = (sequence: number, tone: Tone, selected: boolean) =>
-  L.divIcon({
-    className: '',
-    html: `<span class="flex ${selected ? 'h-9 w-9 ring-4 ring-primary/40' : 'h-7 w-7'} items-center justify-center rounded-full border-2 border-surface ${TONE[tone]} text-xs font-semibold shadow-control">${sequence}</span>`,
-    iconSize: selected ? [36, 36] : [28, 28],
-    iconAnchor: selected ? [18, 18] : [14, 14],
-  });
-
-const driverIcon = L.divIcon({
-  className: '',
-  html: '<span class="block h-5 w-5 rounded-full border-[3px] border-surface bg-info shadow-control ring-4 ring-info-soft"></span>',
-  iconSize: [20, 20],
-  iconAnchor: [10, 10],
-});
 
 /** Lo que el mapa necesita de una parada: sirve la del plan y la del seguimiento. */
 export interface MapStop {
@@ -50,22 +28,16 @@ export interface MapStop {
 type Located = MapStop & { lat: number; lng: number; sequence: number };
 const located = (stop: MapStop): stop is Located => stop.lat !== null && stop.lng !== null && stop.sequence !== null;
 
-const toneOf = (stop: MapStop): Tone => {
+const toneOf = (stop: MapStop): StopTone => {
   if (stop.progress === 'delivered') return 'done';
+  if (stop.progress === 'failed') return 'failed';
   if (stop.progress === 'on_the_way') return 'current';
   if (stop.late) return 'late';
   return stop.locked ? 'locked' : 'normal';
 };
 
-const FitRoute = ({ points }: { points: [number, number][] }) => {
-  const map = useMap();
-  useEffect(() => {
-    if (points.length > 0) map.fitBounds(L.latLngBounds(points), { padding: [32, 32], maxZoom: 15 });
-  }, [map, points]);
-  return null;
-};
-
 interface Props {
+  sheetId: string;
   stops: MapStop[];
   selectedId: string | null;
   onSelect: (orderId: string) => void;
@@ -74,47 +46,80 @@ interface Props {
 }
 
 /**
- * El recorrido de la hoja sobre el mapa: cada parada numerada en su orden, unidas en línea recta. En la calle, las
- * entregadas en verde, la que está en camino resaltada y el chofer en su última posición. Las que salieron no van.
+ * El recorrido de la hoja sobre Google Maps: del galpón a cada parada numerada en su orden y de vuelta, por calles
+ * (`GET /route-sheets/:id/path`). Mientras se traza, o si el servicio de mapas no responde, las paradas van unidas en
+ * línea punteada. En la calle, las entregadas en verde, la que está en camino resaltada y el chofer en vivo.
  */
-export const RouteSheetMap = ({ stops, selectedId, onSelect, driver }: Props) => {
-  const palette = useChartPalette();
+export const RouteSheetMap = ({ sheetId, stops, selectedId, onSelect, driver }: Props) => {
+  const theme = useMapTheme();
+  const query = useRouteSheetPath(sheetId);
+  // Si la recarga falla, lo que quedó de antes es de otro orden de paradas: no se dibuja (el aviso dice «línea recta»).
+  const fresh = query.isError ? undefined : query.data;
   const points = useMemo(() => stops.filter(located), [stops]);
-  const positions = useMemo(() => points.map((s): [number, number] => [s.lat, s.lng]), [points]);
+  const warehouse = fresh?.warehouse ?? null;
+  const streets = fresh?.encodedPolyline || null;
+
+  const fitPoints = useMemo(
+    (): LatLng[] => [...(warehouse ? [warehouse] : []), ...points.map(({ lat, lng }) => ({ lat, lng }))],
+    [warehouse, points],
+  );
+  const straight = useMemo(
+    (): LatLng[] => (warehouse ? [warehouse, ...fitPoints.slice(1), warehouse] : fitPoints),
+    [warehouse, fitPoints],
+  );
+  const selected = points.find((stop) => stop.orderId === selectedId) ?? null;
+  // Se encuadra al cargar y cuando cambia qué paradas hay, no cuando sólo cambia su orden.
+  const fitKey = useMemo(() => pointsKey(fitPoints).split('|').sort().join('|'), [fitPoints]);
+
   return (
-    <div role="img" aria-label="Mapa del recorrido" className="h-72 overflow-hidden sm:h-96">
-      <MapContainer
-        center={positions[0] ?? DEFAULT_CENTER}
-        zoom={13}
-        scrollWheelZoom={false}
-        style={{ height: '100%', width: '100%' }}
+    <div>
+      <MapCanvas
+        label="Mapa del recorrido"
+        className="h-72 sm:h-96 lg:h-[min(36rem,calc(100vh-13rem))]"
+        fitPoints={fitPoints}
+        fitKey={fitKey}
+        fitScope={sheetId}
+        maxFitZoom={15}
       >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        <FitRoute points={positions} />
-        {positions.length > 1 && (
-          <Polyline positions={positions} pathOptions={{ color: palette.primary, weight: 3, dashArray: '6 6' }} />
+        {streets ? (
+          <>
+            <Polyline encodedPath={streets} strokeColor={theme.halo} strokeWeight={8} strokeOpacity={0.9} zIndex={1} />
+            <Polyline encodedPath={streets} strokeColor={theme.primary} strokeWeight={4} strokeOpacity={1} zIndex={2} />
+          </>
+        ) : (
+          straight.length > 1 && <Polyline path={straight} zIndex={1} {...dashedLine(theme.primary)} />
+        )}
+        {warehouse && (
+          <HtmlMarker position={warehouse} title="Galpón: salida y vuelta" zIndex={5}>
+            <WarehousePin />
+          </HtmlMarker>
         )}
         {points.map((stop) => (
-          <Marker
+          <HtmlMarker
             key={stop.orderId}
-            position={[stop.lat, stop.lng]}
+            position={stop}
             title={`${stop.sequence}. ${stopName(stop)}`}
-            icon={numbered(stop.sequence, toneOf(stop), stop.orderId === selectedId)}
-            eventHandlers={{ click: () => onSelect(stop.orderId) }}
-          />
+            onClick={() => onSelect(stop.orderId)}
+            zIndex={stop.orderId === selectedId ? 20 : 10}
+          >
+            <StopPin sequence={stop.sequence} tone={toneOf(stop)} selected={stop.orderId === selectedId} />
+          </HtmlMarker>
         ))}
         {driver && (
-          <Marker
-            position={[driver.lat, driver.lng]}
-            title={driver.at ? `Chofer · ${hhmm(driver.at)}` : 'Chofer'}
-            icon={driverIcon}
-            zIndexOffset={1000}
-          />
+          <HtmlMarker
+            position={driver}
+            title={driver.at ? `Chofer · posición de las ${hhmm(driver.at)}` : 'Chofer'}
+            zIndex={30}
+          >
+            <DriverPin />
+          </HtmlMarker>
         )}
-      </MapContainer>
+        <KeepInView point={selected} />
+      </MapCanvas>
+      <RoutePathStatus
+        path={{ data: fresh, isPending: query.isPending, isError: query.isError, error: query.error }}
+        stops={stops}
+      />
     </div>
   );
 };

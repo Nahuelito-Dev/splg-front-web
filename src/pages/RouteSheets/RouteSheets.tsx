@@ -38,6 +38,7 @@ import {
 import { formatDay } from '../../utils/format';
 import { confirm, notify } from '../../utils/notifications';
 import { ConfirmAllResultDialog } from './ConfirmAllResultDialog';
+import { DaySummary } from './DaySummary';
 import { DriverView } from './DriverView';
 import { HolidaysModal } from './HolidaysModal';
 import { PlanView } from './PlanView';
@@ -268,22 +269,25 @@ export const RouteSheets = () => {
           <ErrorState error={day.error} resource="El día" onRetry={() => void day.refetch()} />
         </Card>
       ) : (
-        <Card>
-          <Tabs
-            items={TABS}
-            value={view}
-            onChange={(id) => setParams({ view: id as View })}
-            label="Vistas de la hoja de ruta"
-            idPrefix="route-sheets"
-          />
-          <div {...tabPanelProps('route-sheets', view)} className="p-4 md:p-5">
-            {view === 'plan' && (
-              <PlanView day={data} canWrite={canWrite && !closed} canDecide={canWrite} onOpen={openSheet} />
-            )}
-            {view === 'sheet' && <SheetView day={data} sheetId={sheetId} canWrite={canWrite} onPick={openSheet} />}
-            {view === 'driver' && <DriverView day={data} sheetId={sheetId} onPick={openSheet} />}
-          </div>
-        </Card>
+        <>
+          <DaySummary day={data} />
+          <Card>
+            <Tabs
+              items={TABS}
+              value={view}
+              onChange={(id) => setParams({ view: id as View })}
+              label="Vistas de la hoja de ruta"
+              idPrefix="route-sheets"
+            />
+            <div {...tabPanelProps('route-sheets', view)} className="p-4 md:p-5">
+              {view === 'plan' && (
+                <PlanView day={data} canWrite={canWrite && !closed} canDecide={canWrite} onOpen={openSheet} />
+              )}
+              {view === 'sheet' && <SheetView day={data} sheetId={sheetId} canWrite={canWrite} onPick={openSheet} />}
+              {view === 'driver' && <DriverView day={data} sheetId={sheetId} onPick={openSheet} />}
+            </div>
+          </Card>
+        </>
       )}
       {proposal && (
         <ProposalDialog

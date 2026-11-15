@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { LatLngTuple } from 'leaflet';
+import type { LatLngTuple } from '../../../../common/components/map/latLng';
 import { Button, Modal } from '../../../../common/components/ui';
 import type { Customer } from '../../../../services/api/types';
 import { useUpdateCustomerLocation } from '../../../../services/queries/customers';

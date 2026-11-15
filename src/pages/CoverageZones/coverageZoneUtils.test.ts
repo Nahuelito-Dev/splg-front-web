@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ringSelfIntersects,
+  withoutRepeatedVertices,
+  zoneSaveError,
   countVertices,
   formatSurcharge,
   formatValidity,
@@ -171,5 +174,84 @@ describe('countVertices', () => {
     ).toBe(3);
     expect(countVertices([])).toBe(0);
     expect(countVertices(undefined)).toBe(0);
+  });
+});
+
+describe('vértices al cerrar un trazo', () => {
+  const at = (lat: number, lng: number) => ({ lat, lng });
+  it('saca los vértices a menos de 1 m del anterior (el doble clic) y el último si cae sobre el primero', () => {
+    const points = [
+      at(-27.4, -55.9),
+      at(-27.41, -55.9),
+      at(-27.410001, -55.900001),
+      at(-27.41, -55.89),
+      at(-27.400003, -55.9),
+    ];
+    expect(withoutRepeatedVertices(points)).toEqual([at(-27.4, -55.9), at(-27.41, -55.9), at(-27.41, -55.89)]);
+  });
+  it('deja los que están a más de 1 m', () => {
+    const points = [at(-27.4, -55.9), at(-27.40002, -55.9), at(-27.41, -55.89)];
+    expect(withoutRepeatedVertices(points)).toHaveLength(3);
+  });
+});
+
+describe('ringSelfIntersects', () => {
+  it('un moño se corta; un cuadrado (abierto o cerrado) y un triángulo no', () => {
+    expect(
+      ringSelfIntersects([
+        [0, 0],
+        [1, 1],
+        [1, 0],
+        [0, 1],
+      ]),
+    ).toBe(true);
+    expect(
+      ringSelfIntersects([
+        [0, 0],
+        [1, 0],
+        [1, 1],
+        [0, 1],
+      ]),
+    ).toBe(false);
+    expect(
+      ringSelfIntersects([
+        [0, 0],
+        [1, 0],
+        [1, 1],
+        [0, 1],
+        [0, 0],
+      ]),
+    ).toBe(false);
+    expect(
+      ringSelfIntersects([
+        [0, 0],
+        [1, 0],
+        [1, 1],
+      ]),
+    ).toBe(false);
+    expect(ringSelfIntersects(null)).toBe(false);
+  });
+  it('un lado que toca a otro no vecino también cuenta', () => {
+    expect(
+      ringSelfIntersects([
+        [0, 0],
+        [2, 0],
+        [2, 2],
+        [1, 0],
+        [0, 2],
+      ]),
+    ).toBe(true);
+  });
+});
+
+describe('zoneSaveError', () => {
+  it('traduce el error de PostGIS y deja pasar los demás', () => {
+    const postgis = new Error('El polígono no es válido: Self-intersection at or near point 1 2');
+    expect((zoneSaveError(postgis) as Error).message).toMatch(/^Los lados de la zona se cruzan/);
+    expect((zoneSaveError(new Error('El polígono no es válido: Too few points')) as Error).message).toMatch(
+      /^El borde de la zona no es válido/,
+    );
+    const other = new Error('Ya existe una zona con ese nombre');
+    expect(zoneSaveError(other)).toBe(other);
   });
 });

@@ -29470,8 +29470,20 @@
                 ]
             },
             "get": {
+                "description": "De la distribuidora del que pregunta, del más nuevo al más viejo. `orderId` filtra los de un pedido (uno de otra distribuidora da la lista vacía).",
                 "operationId": "ClaimsController_findAll",
-                "parameters": [],
+                "parameters": [
+                    {
+                        "name": "orderId",
+                        "required": false,
+                        "in": "query",
+                        "description": "Sólo los reclamos de ese pedido (de la distribuidora del que pregunta: un pedido ajeno da la lista vacía)",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "",
@@ -29485,6 +29497,9 @@
                                 }
                             }
                         }
+                    },
+                    "400": {
+                        "description": "`orderId` no es un UUID"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -35388,6 +35403,65 @@
                     }
                 ],
                 "summary": "Cancelar la hoja",
+                "tags": [
+                    "Route sheets (v2)"
+                ]
+            }
+        },
+        "/api/v2/route-sheets/{id}/path": {
+            "get": {
+                "description": "Para el mapa del detalle: depósito → paradas activas en el orden vigente → depósito, por calles, con la polilínea codificada y un tramo por parada (más la vuelta). Las paradas sin coordenadas se saltean y vienen en `skippedOrderIds`; sin paradas con coordenadas (o sin depósito ubicado y con una sola parada) responde 200 con el recorrido vacío (`provider: null`). El depósito es el mismo que usa el cálculo de horarios de la hoja: el de la hoja; si la hoja no tiene, el predeterminado de la distribuidora. Si el de la hoja está dado de baja o sin ubicación no se reemplaza por otro (los horarios tampoco salen de otro depósito): `warehouse: null` y el recorrido va de la primera a la última parada. Lo calcula el servidor con la Routes API de Google y su propia clave (de a 25 paradas intermedias por consulta, unidas), y si Google falla o no hay clave, con OSRM. Se guarda por hoja y firma de sus paradas y coordenadas: mientras la hoja no cambie no se vuelve a consultar al proveedor (un día; el de OSRM, 10 minutos, para volver a Google en cuanto responda). Cada consulta a Google cuenta contra un cupo diario por distribuidora (500, `ROUTE_SHEET_PATH_DAILY_LIMIT_PER_DISTRIBUTOR`); OSRM y lo guardado no cuentan.",
+                "operationId": "RouteSheetsController_recorrido",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RouteSheetPathDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Cuerpo inválido, id que no es UUID o falta la distribuidora (super admin sin X-Distributor)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Hoja de ruta» no está habilitada para la distribuidora (`MODULE_DISABLED`)"
+                    },
+                    "404": {
+                        "description": "La hoja no existe o es de otra distribuidora (ROUTE_SHEET_NOT_FOUND)"
+                    },
+                    "429": {
+                        "description": "La distribuidora llegó al máximo de recorridos del día (ROUTE_PATH_DAILY_LIMIT)"
+                    },
+                    "502": {
+                        "description": "Ningún servicio de mapas respondió (ROUTE_PROVIDER_FAILED)"
+                    },
+                    "503": {
+                        "description": "No hay servicio de mapas configurado (ROUTE_PROVIDER_UNAVAILABLE)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Recorrido por calles de la hoja",
                 "tags": [
                     "Route sheets (v2)"
                 ]
@@ -71205,6 +71279,11 @@
                     "weightKg": {
                         "type": "number",
                         "description": "Kilos de gas a cargar"
+                    },
+                    "emptiesExpected": {
+                        "type": "number",
+                        "example": 4,
+                        "description": "Envases vacíos a retirar en toda la hoja (suma de `emptiesExpected` de las paradas activas)"
                     }
                 },
                 "required": [
@@ -71212,7 +71291,8 @@
                     "durationMin",
                     "units",
                     "peakUnits",
-                    "weightKg"
+                    "weightKg",
+                    "emptiesExpected"
                 ]
             },
             "RouteSheetCapacityDto": {
@@ -71312,6 +71392,11 @@
                         "type": "number",
                         "description": "Garrafas llenas a entregar"
                     },
+                    "emptiesExpected": {
+                        "type": "number",
+                        "example": 1,
+                        "description": "Envases vacíos a retirar en la parada: por renglón, cantidad menos los envases cobrados (el mismo `emptiesExpected` del pedido)"
+                    },
                     "weightKg": {
                         "type": "number",
                         "description": "Kilos de gas a entregar"
@@ -71339,6 +71424,7 @@
                     "legDurationMin",
                     "late",
                     "units",
+                    "emptiesExpected",
                     "weightKg",
                     "unpaidOnline"
                 ]
@@ -71716,13 +71802,19 @@
                     },
                     "resources": {
                         "$ref": "#/components/schemas/RoutePlanResourcesDto"
+                    },
+                    "emptiesExpected": {
+                        "type": "number",
+                        "example": 12,
+                        "description": "Envases vacíos a retirar en el día: suma de `totals.emptiesExpected` de las hojas de `sheets`"
                     }
                 },
                 "required": [
                     "plan",
                     "sheets",
                     "unassigned",
-                    "resources"
+                    "resources",
+                    "emptiesExpected"
                 ]
             },
             "ProposeRoutePlanDto": {
@@ -72327,6 +72419,128 @@
                     "violations"
                 ]
             },
+            "RouteSheetPathLegDto": {
+                "type": "object",
+                "properties": {
+                    "orderId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true,
+                        "description": "Pedido al que llega el tramo; `null` en la vuelta al depósito"
+                    },
+                    "distanceMeters": {
+                        "type": "number",
+                        "example": 1830,
+                        "description": "Metros por calles del tramo"
+                    },
+                    "durationSeconds": {
+                        "type": "number",
+                        "example": 240,
+                        "description": "Segundos estimados del tramo"
+                    }
+                },
+                "required": [
+                    "orderId",
+                    "distanceMeters",
+                    "durationSeconds"
+                ]
+            },
+            "RouteSheetPathWarehouseDto": {
+                "type": "object",
+                "properties": {
+                    "warehouseId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "lat": {
+                        "type": "number",
+                        "example": -27.3671
+                    },
+                    "lng": {
+                        "type": "number",
+                        "example": -55.8961
+                    }
+                },
+                "required": [
+                    "warehouseId",
+                    "lat",
+                    "lng"
+                ]
+            },
+            "RouteSheetPathDto": {
+                "type": "object",
+                "properties": {
+                    "sheetId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "version": {
+                        "type": "number",
+                        "example": 7,
+                        "description": "Versión de la hoja que se trazó (la misma de `GET /v2/route-sheets/:id`)"
+                    },
+                    "provider": {
+                        "type": "string",
+                        "enum": [
+                            "google",
+                            "osrm"
+                        ],
+                        "nullable": true,
+                        "description": "Quién calculó el recorrido (`osrm` si el servidor no tiene clave de Google o Google falló); `null` si no hay nada que trazar"
+                    },
+                    "distanceMeters": {
+                        "type": "number",
+                        "example": 18450,
+                        "description": "Metros por calles de todo el recorrido"
+                    },
+                    "durationSeconds": {
+                        "type": "number",
+                        "example": 2310,
+                        "description": "Segundos de manejo estimados (sin el tiempo en cada parada)"
+                    },
+                    "encodedPolyline": {
+                        "type": "string",
+                        "example": "_p~iF~ps|U_ulLnnqC_mqNvxq`@",
+                        "description": "Polilínea codificada (formato de Google, precisión 5) del recorrido entero; vacía si no hay nada que trazar"
+                    },
+                    "legs": {
+                        "description": "Un tramo por cada punto después del primero: depósito → 1.ª parada, …, última parada → depósito",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RouteSheetPathLegDto"
+                        }
+                    },
+                    "skippedOrderIds": {
+                        "description": "Paradas que no entran en el recorrido porque su dirección no tiene coordenadas",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    "warehouse": {
+                        "nullable": true,
+                        "description": "Depósito de salida y vuelta: el de la hoja o, si la hoja no tiene, el predeterminado de la distribuidora (el mismo que usa el cálculo de horarios). `null` si ese depósito está dado de baja o sin ubicación (no se reemplaza por otro): el recorrido va de la primera a la última parada",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/RouteSheetPathWarehouseDto"
+                            }
+                        ]
+                    }
+                },
+                "required": [
+                    "sheetId",
+                    "version",
+                    "provider",
+                    "distanceMeters",
+                    "durationSeconds",
+                    "encodedPolyline",
+                    "legs",
+                    "skippedOrderIds",
+                    "warehouse"
+                ]
+            },
             "LoadSuggestionItemDto": {
                 "type": "object",
                 "properties": {
@@ -72664,6 +72878,11 @@
                     "units": {
                         "type": "number"
                     },
+                    "emptiesExpected": {
+                        "type": "number",
+                        "example": 1,
+                        "description": "Envases vacíos a retirar en la parada: por renglón, cantidad menos los envases cobrados (el mismo `emptiesExpected` del pedido)"
+                    },
                     "weightKg": {
                         "type": "number"
                     },
@@ -72705,6 +72924,7 @@
                     "notifiedWindowEnd",
                     "late",
                     "units",
+                    "emptiesExpected",
                     "weightKg",
                     "unpaidOnline",
                     "items"

@@ -41,3 +41,13 @@ vi.mock('../services/queries/peoplePhotos', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   usePersonPhoto: vi.fn(() => ({ data: null, refetch: vi.fn() })),
 }));
+
+/**
+ * jsdom no tiene Google Maps: los mapas se dibujan con `googleMapsMock` (el mapa, sus líneas y polígonos como `div` con
+ * sus datos) y los marcadores HTML en el lugar. El kit del mapa (`MapCanvas`) se prueba con estos mismos dobles.
+ */
+vi.mock('@vis.gl/react-google-maps', async () => ({
+  ...(await import('./googleMapsMock')),
+  ...(await import('./googleMapsHandlers')),
+}));
+vi.mock('../common/components/map/HtmlMarker', () => import('./htmlMarkerMock'));

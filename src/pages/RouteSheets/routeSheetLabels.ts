@@ -129,6 +129,9 @@ export const customerIndex = (day: RoutePlanDay | undefined): Map<string, string
   return index;
 };
 
+/** «Retira 1 envase», «Retira 3 envases»: las vacías del canje que el chofer trae de vuelta. */
+export const emptiesText = (n: number) => `Retira ${n} ${n === 1 ? 'envase' : 'envases'}`;
+
 export const stopName = (stop: Pick<RouteSheetStop, 'customerName'>) => stop.customerName ?? 'Cliente';
 
 /** Mueve un elemento de `from` a `to`; con índices fuera de rango devuelve la misma lista. */

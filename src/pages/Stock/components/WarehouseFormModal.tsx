@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { LatLngTuple } from 'leaflet';
+import type { LatLngTuple } from '../../../common/components/map/latLng';
 import { MapPinOff } from 'lucide-react';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';

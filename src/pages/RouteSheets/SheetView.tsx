@@ -6,6 +6,7 @@ import type { RouteOrderSummary, RoutePlanDay, RouteSheetStop } from '../../serv
 import { useRouteSheet, useSetRouteSheetSequence, useRemoveRouteSheetStop } from '../../services/queries/routeSheets';
 import { useWarehouses } from '../../services/queries/stock';
 import { confirm, notify } from '../../utils/notifications';
+import { LoadBar } from './LoadBar';
 import { LoadSuggestionCard } from './LoadSuggestionCard';
 import { OptimizeResult } from './OptimizeResult';
 import { RouteSheetMap } from './RouteSheetMap';
@@ -13,12 +14,9 @@ import { notifySheetError } from './routeSheetErrors';
 import {
   SHEET_STATUS,
   driverOf,
-  formatKm,
-  formatMinutes,
   hhmm,
   isEditable,
   isTracked,
-  loadText,
   move,
   returnAtOf,
   sheetTitle,
@@ -29,6 +27,7 @@ import { SheetActions } from './SheetActions';
 import { SheetFormModal } from './SheetFormModal';
 import { SheetTracking } from './SheetTracking';
 import { StopList } from './StopList';
+import { StopOrderDrawer } from './StopOrderDrawer';
 import { StopTargetModal } from './StopTargetModal';
 
 interface Props {
@@ -50,6 +49,7 @@ export const SheetView = ({ day, sheetId, canWrite, onPick }: Props) => {
   const sequence = useSetRouteSheetSequence();
   const remove = useRemoveRouteSheetStop();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [openOrderId, setOpenOrderId] = useState<string | null>(null);
   const [moving, setMoving] = useState<RouteSheetStop | null>(null);
   const [editing, setEditing] = useState(false);
   const [optimized, setOptimized] = useState<{ before: RouteOrderSummary; after: RouteOrderSummary } | null>(null);
@@ -66,6 +66,11 @@ export const SheetView = ({ day, sheetId, canWrite, onPick }: Props) => {
   }
 
   const editable = canWrite && isEditable(sheet);
+  /** Tocar una parada (en el mapa o en la lista) la elige y abre su pedido al costado. */
+  const openStop = (orderId: string) => {
+    setSelectedId(orderId);
+    setOpenOrderId(orderId);
+  };
   const depot = warehouses.data?.find((w) => w.warehouseId === sheet.originWarehouseId);
   const busy = sequence.isPending || remove.isPending;
   const lockedIds = sheet.stops.filter((s) => s.locked).map((s) => s.orderId);
@@ -153,15 +158,20 @@ export const SheetView = ({ day, sheetId, canWrite, onPick }: Props) => {
       ) : (
         <>
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
-            <Card className="h-fit overflow-hidden lg:sticky lg:top-4">
+            {/* Fijo debajo de la barra superior (60 px, también pegada arriba) mientras se baja la lista. */}
+            <Card className="h-fit overflow-hidden lg:sticky lg:top-[76px]">
               <div className="flex items-center justify-between gap-2 border-b border-outline-soft px-4 py-3 text-sm">
                 <b className="font-semibold text-ink">{sheetTitle(sheet)}</b>
-                <span className="font-mono text-xs text-muted">
-                  {formatKm(sheet.totals.distanceKm)} · {formatMinutes(sheet.totals.durationMin)}
+                <span className="font-mono text-xs text-muted" data-testid="sheet-workday">
+                  Jornada {hhmm(sheet.plannedStartAt)}–{hhmm(returnAtOf(sheet))}
                 </span>
               </div>
-              <RouteSheetMap stops={sheet.stops} selectedId={selectedId} onSelect={setSelectedId} />
+              <RouteSheetMap sheetId={sheet.id} stops={sheet.stops} selectedId={selectedId} onSelect={openStop} />
               <div className="flex flex-wrap gap-4 px-4 py-3 text-xs text-muted">
+                <span className="inline-flex items-center gap-1.5">
+                  <i className="h-2.5 w-2.5 rounded-sm bg-ink" />
+                  Galpón
+                </span>
                 <span className="inline-flex items-center gap-1.5">
                   <i className="h-2.5 w-2.5 rounded-full bg-primary" />
                   Parada
@@ -215,14 +225,14 @@ export const SheetView = ({ day, sheetId, canWrite, onPick }: Props) => {
                 editable={editable}
                 busy={busy}
                 selectedId={selectedId}
-                onSelect={setSelectedId}
+                onSelect={openStop}
                 onReorder={reorder}
                 onToggleLock={toggleLock}
                 onMove={setMoving}
                 onRemove={(stop) => void removeStop(stop)}
               />
               <div className="flex flex-wrap items-center justify-between gap-2 bg-surface-sunken px-4 py-3">
-                <span className="text-[12.5px] text-muted">{loadText(sheet)}</span>
+                <LoadBar sheet={sheet} className="min-w-[10rem] flex-1" />
                 <SheetActions sheet={sheet} canWrite={canWrite} onOptimized={setOptimized} />
               </div>
             </Card>
@@ -234,6 +244,7 @@ export const SheetView = ({ day, sheetId, canWrite, onPick }: Props) => {
         <StopTargetModal day={day} target={{ kind: 'move', sheet, stop: moving }} onClose={() => setMoving(null)} />
       )}
       {editing && <SheetFormModal day={day} sheet={sheet} onClose={() => setEditing(false)} />}
+      <StopOrderDrawer orderId={openOrderId} onClose={() => setOpenOrderId(null)} />
     </div>
   );
 };
