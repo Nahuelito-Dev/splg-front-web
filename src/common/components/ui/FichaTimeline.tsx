@@ -33,7 +33,7 @@ const TONE_DOT: Record<Tone, string> = {
   success: 'border-success bg-success ring-4 ring-success/20',
   danger: 'border-danger bg-danger ring-4 ring-danger/20',
   primary: 'border-primary bg-primary ring-4 ring-primary/20',
-  accent: 'border-gas-600 bg-gas-600 ring-4 ring-gas-600/20',
+  accent: 'border-accent bg-accent ring-4 ring-accent/20',
 };
 
 const STATE_TEXT: Record<FichaTimelineState, string> = {

@@ -1,20 +1,13 @@
-import brand from '../../../theme/brand.json';
 import { useChartPalette } from '../../../theme/useChartPalette';
 
 /**
  * Colores de las series de los gráficos, con buen contraste contra la tarjeta en los dos temas.
- * Los primeros son de tonos bien distintos (naranja, azul, verde); los naranjas parecidos van al final.
+ * Los primeros son de tonos bien distintos; los colores de estado no se usan
+ * para series de identidad, así no compiten con gráficos de estados.
  */
 export const useSeriesColors = (): string[] => {
-  const { isDark } = useChartPalette();
-  return [
-    brand.llama['500'],
-    isDark ? brand.dark.status.info : brand.status.info,
-    isDark ? brand.dark.status.success : brand.status.success,
-    isDark ? brand.dark.status.warn : brand.status.warn,
-    brand.gas['500'],
-    isDark ? brand.dark.muted : brand.tinta['400'],
-  ];
+  const palette = useChartPalette();
+  return [palette.primary, palette.accent, palette.muted, palette.info, palette.success, palette.warn];
 };
 
 /** Estilo del cuadro flotante (tooltip) de recharts. */
@@ -24,7 +17,7 @@ export const useTooltipStyle = () => {
     borderRadius: 10,
     border: `1px solid ${palette.tooltipBorder}`,
     backgroundColor: palette.tooltipBg,
-    color: palette.isDark ? brand.dark.ink : brand.tinta['900'],
+    color: palette.ink,
     fontSize: 12,
   };
 };

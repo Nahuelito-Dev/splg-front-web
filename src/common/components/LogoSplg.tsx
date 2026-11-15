@@ -31,7 +31,7 @@ export const LogoSplg = ({ className, size = 'sm', variante = 'claro', subtitle,
       <span
         aria-hidden="true"
         className={cx(
-          'grid shrink-0 place-items-center bg-gradient-to-br from-llama-400 via-llama-500 to-llama-700 shadow-mark',
+          'grid shrink-0 place-items-center bg-gradient-to-br from-primary-from via-primary to-primary-to shadow-mark',
           SIZES[size].mark,
         )}
       >

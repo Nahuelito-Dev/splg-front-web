@@ -54,7 +54,7 @@ export const StockCard = () => {
                 </b>
                 <span className="mt-1 block h-[5px] w-20 overflow-hidden rounded-full bg-surface-muted">
                   <span
-                    className="block h-full rounded-full bg-gradient-to-r from-llama-300 to-llama-500"
+                    className="block h-full rounded-full bg-gradient-to-r from-primary-from to-primary-to"
                     style={{ width: `${(product.stock / max) * 100}%` }}
                   />
                 </span>

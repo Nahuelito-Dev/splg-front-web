@@ -6,6 +6,7 @@ import { dataGridComponents } from './components/dataGrid';
 import { overlayComponents } from './components/overlays';
 import type { ResolvedThemeMode } from './themeMode';
 import type { ThemeTokens } from '../services/api/types';
+import { onColor } from './colorContrast';
 
 const { llama, gas, tinta, status, dark } = brand;
 const font = 'Geist, "Helvetica Neue", Arial, sans-serif';
@@ -32,7 +33,7 @@ export const createAppTheme = (mode: ResolvedThemeMode, company: ThemeTokens | n
             }
           : { main: llama['600'], dark: llama['700'], light: llama['400'], contrastText: '#FFFFFF' },
         secondary: tokens
-          ? { main: tokens.accent, contrastText: tinta['900'] }
+          ? { main: tokens.accent, contrastText: onColor(tokens.accent) }
           : { main: gas['400'], dark: gas['500'], light: gas['200'], contrastText: tinta['900'] },
         success: { main: mode === 'dark' ? dark.status.success : status.success },
         error: { main: mode === 'dark' ? dark.status.danger : status.danger },

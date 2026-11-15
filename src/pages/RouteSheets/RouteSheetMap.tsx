@@ -3,7 +3,7 @@ import 'leaflet/dist/leaflet.css';
 import { useEffect, useMemo } from 'react';
 import { MapContainer, Marker, Polyline, TileLayer, useMap } from 'react-leaflet';
 import type { RouteSheetExecutionStop } from '../../services/api/types';
-import brand from '../../theme/brand.json';
+import { useChartPalette } from '../../theme/useChartPalette';
 import '../Tracking/leafletIconFix';
 import { hhmm, stopName } from './routeSheetLabels';
 
@@ -78,6 +78,7 @@ interface Props {
  * entregadas en verde, la que está en camino resaltada y el chofer en su última posición. Las que salieron no van.
  */
 export const RouteSheetMap = ({ stops, selectedId, onSelect, driver }: Props) => {
+  const palette = useChartPalette();
   const points = useMemo(() => stops.filter(located), [stops]);
   const positions = useMemo(() => points.map((s): [number, number] => [s.lat, s.lng]), [points]);
   return (
@@ -94,7 +95,7 @@ export const RouteSheetMap = ({ stops, selectedId, onSelect, driver }: Props) =>
         />
         <FitRoute points={positions} />
         {positions.length > 1 && (
-          <Polyline positions={positions} pathOptions={{ color: brand.llama['500'], weight: 3, dashArray: '6 6' }} />
+          <Polyline positions={positions} pathOptions={{ color: palette.primary, weight: 3, dashArray: '6 6' }} />
         )}
         {points.map((stop) => (
           <Marker

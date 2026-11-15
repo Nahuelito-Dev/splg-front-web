@@ -168,7 +168,7 @@ export const SideMenuContent = ({ isSuperAdmin, fullName, mini = false, onNaviga
             type="button"
             onClick={onLogout}
             aria-label="Cerrar sesión"
-            className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-side-text transition-colors hover:bg-white/[0.06] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-llama-400"
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-side-text transition-colors hover:bg-white/[0.06] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-side-accent"
           >
             <LogOut aria-hidden="true" className="h-4 w-4" />
           </button>

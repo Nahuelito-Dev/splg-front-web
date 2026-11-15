@@ -176,7 +176,7 @@ export const NotificationsDrawer = ({
                         <span
                           role="img"
                           aria-label="Sin leer"
-                          className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-llama-500"
+                          className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary"
                         />
                       )}
                     </button>

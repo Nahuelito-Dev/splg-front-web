@@ -388,7 +388,7 @@ export const NotificationBell = () => {
           {unreadCount > 0 && (
             <span
               aria-hidden="true"
-              className="absolute right-[7px] top-[6px] h-2 w-2 rounded-full border-2 border-surface bg-llama-500"
+              className="absolute right-[7px] top-[6px] h-2 w-2 rounded-full border-2 border-surface bg-primary"
             />
           )}
         </button>

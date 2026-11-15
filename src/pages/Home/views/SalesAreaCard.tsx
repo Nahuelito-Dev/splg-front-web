@@ -3,7 +3,6 @@ import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YA
 import { TableroWidget } from '../../../common/components/ui';
 import { cx } from '../../../common/components/ui/cx';
 import { useSalesEvolution, useSalesSummary } from '../../../services/queries/reports';
-import brand from '../../../theme/brand.json';
 import { useChartPalette } from '../../../theme/useChartPalette';
 import { formatCurrency, formatNumber, percentChange } from '../../../utils/format';
 import { dayKey, dayRange, fillMonths, monthStart, splitWindows, type SalesPoint } from '../lib/series';
@@ -116,8 +115,8 @@ export const SalesAreaCard = () => {
           <AreaChart data={points} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
             <defs>
               <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stopColor={brand.llama['500']} stopOpacity={0.32} />
-                <stop offset="1" stopColor={brand.llama['500']} stopOpacity={0} />
+                <stop offset="0" stopColor={palette.primary} stopOpacity={0.32} />
+                <stop offset="1" stopColor={palette.primary} stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 4" stroke={palette.grid} vertical={false} />
@@ -144,7 +143,7 @@ export const SalesAreaCard = () => {
                 borderRadius: 10,
                 border: `1px solid ${palette.tooltipBorder}`,
                 backgroundColor: palette.tooltipBg,
-                color: palette.isDark ? brand.dark.ink : brand.tinta['900'],
+                color: palette.ink,
                 fontSize: 12,
                 boxShadow: '0 8px 24px -8px rgba(16,24,40,.18)',
               }}
@@ -152,7 +151,7 @@ export const SalesAreaCard = () => {
             <Area
               type="monotone"
               dataKey="sales"
-              stroke={brand.llama['500']}
+              stroke={palette.primary}
               strokeWidth={2.2}
               fill={`url(#${gradientId})`}
               activeDot={{ r: 4 }}

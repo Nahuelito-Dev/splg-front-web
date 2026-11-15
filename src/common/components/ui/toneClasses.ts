@@ -19,7 +19,7 @@ export const TONE_FILLED_CLASSES: Record<Tone, string> = {
   success: 'bg-success text-bg',
   danger: 'bg-danger text-bg',
   primary: 'bg-primary-to text-on-primary',
-  accent: 'bg-gas-400 text-tinta-900',
+  accent: 'bg-accent text-on-accent',
 };
 
 /** Color de texto/trazo de cada tono (anillos y marcas que se pintan con `currentColor`). */

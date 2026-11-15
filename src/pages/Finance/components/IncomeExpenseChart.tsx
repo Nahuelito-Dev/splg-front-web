@@ -1,5 +1,4 @@
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import brand from '../../../theme/brand.json';
 import { formatAxis, useTooltipStyle } from '../../../common/components/ui/chartColors';
 import { useChartPalette } from '../../../theme/useChartPalette';
 import { formatCurrency } from '../../../utils/format';
@@ -14,7 +13,6 @@ interface Props {
 export const IncomeExpenseChart = ({ data, groupBy }: Props) => {
   const palette = useChartPalette();
   const tooltipStyle = useTooltipStyle();
-  const status = palette.isDark ? brand.dark.status : brand.status;
   const rows = data.map((p) => ({ ...p, label: periodLabel(p.period, groupBy) }));
 
   return (
@@ -43,8 +41,8 @@ export const IncomeExpenseChart = ({ data, groupBy }: Props) => {
             cursor={{ fill: palette.cursor }}
           />
           <Legend iconType="circle" wrapperStyle={{ fontSize: 12, color: palette.axisStrong, paddingTop: 8 }} />
-          <Bar dataKey="income" name="Ingresos" fill={status.success} radius={[4, 4, 0, 0]} maxBarSize={28} />
-          <Bar dataKey="expense" name="Egresos" fill={status.danger} radius={[4, 4, 0, 0]} maxBarSize={28} />
+          <Bar dataKey="income" name="Ingresos" fill={palette.success} radius={[4, 4, 0, 0]} maxBarSize={28} />
+          <Bar dataKey="expense" name="Egresos" fill={palette.danger} radius={[4, 4, 0, 0]} maxBarSize={28} />
         </BarChart>
       </ResponsiveContainer>
     </div>
