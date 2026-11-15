@@ -10288,7 +10288,7 @@ export interface paths {
     };
     /**
      * Chats con las empresas
-     * @description Por defecto los abiertos, con el último mensaje más reciente primero. Filtros: `status`, `assigned` (`me`, `none` o el id de un miembro) y `distributorId`. `counts`: abiertos sin atender y los que atiendo.
+     * @description Por defecto los abiertos, con el último mensaje más reciente primero. Filtros: `status`, `assigned` (`me`, `none` o el id de un miembro), `distributorId` y `awaiting` (`true`: sólo los que el asistente con IA pasó a una persona; `false`: los demás). Con `assigned=none`, primero los que esperan a una persona (el que espera hace más, primero). `counts`: abiertos sin atender y los que atiendo.
      */
     get: operations['PlatformChatsController_listar'];
     put?: never;
@@ -10561,7 +10561,7 @@ export interface paths {
     get: operations['PlatformSupportConfigController_leer'];
     /**
      * Cambiar la configuración del soporte
-     * @description Lo que no viene queda como estaba.
+     * @description Lo que no viene queda como estaba. Incluye el asistente con IA del soporte (`assistantAiEnabled`) y sus topes, que valen también para el chat de cada empresa con sus clientes.
      */
     put: operations['PlatformSupportConfigController_actualizar'];
     post?: never;
@@ -10682,7 +10682,7 @@ export interface paths {
     };
     /**
      * La bandeja: conversaciones con clientes y choferes
-     * @description Sólo los canales que atiende quien pide. Ordenadas por el último mensaje. `counts` son las abiertas de esos canales: sin asignar, asignadas a quien pide y todas.
+     * @description Sólo los canales que atiende quien pide. Ordenadas por el último mensaje; con `assigned=none`, primero las que esperan a una persona (el asistente con IA las derivó; la que espera hace más, primero). `awaiting=true` deja sólo las que esperan. `counts` son las abiertas de esos canales: sin asignar, asignadas a quien pide y todas.
      */
     get: operations['CompanyInboxController_listar'];
     put?: never;
@@ -10912,7 +10912,7 @@ export interface paths {
     get: operations['CompanyChatConfigController_leer'];
     /**
      * Cambiar los parámetros de la bandeja
-     * @description Lo que no viene queda como estaba; `null` en un texto o en el nombre del asistente vuelve al de omisión. Queda en la auditoría.
+     * @description Lo que no viene queda como estaba; `null` en un texto o en el nombre del asistente vuelve al de omisión. `assistantAiEnabled` prende o apaga el asistente con IA. Queda en la auditoría.
      */
     put: operations['CompanyChatConfigController_actualizar'];
     post?: never;
@@ -21345,7 +21345,8 @@ export interface components {
         | 'route_planning_close_days'
         | 'route_sheet_watch'
         | 'support_session_expiry'
-        | 'support_housekeeping';
+        | 'support_housekeeping'
+        | 'assistant_ai_sweep';
       /** @example Recompra: invitaciones anticipadas */
       title: string;
       /**
@@ -21419,7 +21420,8 @@ export interface components {
         | 'route_planning_close_days'
         | 'route_sheet_watch'
         | 'support_session_expiry'
-        | 'support_housekeeping';
+        | 'support_housekeeping'
+        | 'assistant_ai_sweep';
       /** @example Recompra: invitaciones anticipadas */
       title: string;
       /**
@@ -21522,7 +21524,8 @@ export interface components {
         | 'route_planning_close_days'
         | 'route_sheet_watch'
         | 'support_session_expiry'
-        | 'support_housekeeping';
+        | 'support_housekeeping'
+        | 'assistant_ai_sweep';
       /** @example Recompra: invitaciones anticipadas */
       title: string;
       /**
@@ -24476,6 +24479,11 @@ export interface components {
       canWrite: boolean;
       /** @description Sólo para la plataforma: quién atiende el chat */
       assignedTo?: components['schemas']['AssignedToDto'] | null;
+      /**
+       * Format: date-time
+       * @description Sólo para la plataforma, en el chat: desde cuándo espera a una persona porque el asistente con IA se lo pasó; `null` si no espera. Se limpia cuando alguien lo toma.
+       */
+      awaitingHumanSince?: string | null;
       /** @description Sólo para la empresa: quién de la plataforma la atiende */
       attendedBy?: components['schemas']['AttendedByDto'] | null;
       lastMessage: components['schemas']['LastMessageDto'] | null;
@@ -24730,12 +24738,32 @@ export interface components {
       /** @example 18:00 */
       closesAt: string;
     };
+    AssistantCostEstimateDto: {
+      /**
+       * @description Con el reparto de un chat (95 % entrada, 5 % salida), a los precios de Claude Haiku 5.5. La caché lo puede bajar.
+       * @example 0.24
+       */
+      min: number;
+      /**
+       * @description Si todo fuera salida (peor caso)
+       * @example 1
+       */
+      max: number;
+    };
     SupportSettingsResponseDto: {
       timezone: string;
       chatHours: components['schemas']['ChatHoursDto'][];
       chatAckEnabled: boolean;
       /** @description Nulo: el texto de siempre */
       chatAckMessage: string | null;
+      /** @description El asistente con IA contesta en el chat del soporte */
+      assistantAiEnabled: boolean;
+      /** @description Tope de respuestas del asistente con IA por conversación */
+      assistantRepliesPerConversation: number;
+      /** @description Tope de tokens por mes del asistente con IA, por empresa y para el soporte */
+      assistantMonthlyTokenLimit: number;
+      /** @description Lo que costaría por mes (por empresa, y el soporte aparte) consumir todo `assistantMonthlyTokenLimit`, en dólares. Lo calcula el back; el panel lo muestra tal cual. */
+      assistantMonthlyCostEstimateUsd: components['schemas']['AssistantCostEstimateDto'];
       chatInactivityHours: number;
       resolvedCloseDays: number;
       waitingCloseDays: number;
@@ -24758,6 +24786,12 @@ export interface components {
       chatAckEnabled?: boolean;
       /** @description Texto del aviso; `null` vuelve al de siempre («Recibimos tu mensaje. Alguien del equipo de <plataforma> te va a atender a la brevedad.») */
       chatAckMessage?: string | null;
+      /** @description El asistente con IA contesta a las empresas en el chat del soporte, con la base de conocimiento de la plataforma */
+      assistantAiEnabled?: boolean;
+      /** @description Tope de respuestas del asistente con IA por conversación (en el soporte y en el chat de cada empresa con sus clientes); al llegar, pasa la conversación a una persona */
+      assistantRepliesPerConversation?: number;
+      /** @description Tope de tokens por mes del asistente con IA, para cada empresa y para el soporte (entrada, salida y caché). Al llegar, sólo las respuestas automáticas fijas y pasar a una persona. */
+      assistantMonthlyTokenLimit?: number;
       /** @description Horas sin mensajes para cerrar el chat */
       chatInactivityHours?: number;
       resolvedCloseDays?: number;
@@ -24908,6 +24942,11 @@ export interface components {
        * @description Sólo para el personal: la primera respuesta de la empresa al cliente o al chofer
        */
       firstResponseAt?: string | null;
+      /**
+       * Format: date-time
+       * @description Sólo para el personal: desde cuándo espera a una persona porque el asistente con IA se la pasó (C3); `null` si no espera. Se limpia cuando alguien la toma.
+       */
+      awaitingHumanSince?: string | null;
       /** @description Sólo para el personal: minutos hábiles (horario de atención, sin días sin atención) entre el primer mensaje del cliente o del chofer y la primera respuesta; `null` si todavía no hubo las dos cosas */
       firstResponseBusinessMinutes?: number | null;
       lastMessage: components['schemas']['InboxLastMessageDto'] | null;
@@ -25127,6 +25166,10 @@ export interface components {
     };
     ChatSettingsResponseDto: {
       customerChatEnabled: boolean;
+      /** @description El asistente con IA contesta a los clientes (interruptor de la empresa, apagado por omisión) */
+      assistantAiEnabled: boolean;
+      /** @description La empresa puede prender el asistente con IA (la plataforma le habilitó la función). Si es `false`, el asistente no contesta aunque `assistantAiEnabled` esté prendido. */
+      assistantAiAvailable: boolean;
       /** @description Nombre del asistente tal como se guardó (puede tener `{{empresa.nombre}}`); `null`: el de omisión */
       assistantName: string | null;
       /**
@@ -25162,6 +25205,8 @@ export interface components {
        * @example Asistente de {{empresa.nombre}}
        */
       assistantName?: string | null;
+      /** @description El asistente con IA contesta a los clientes en el chat (y pasa la conversación a una persona cuando no puede resolver). Prenderlo sin la función habilitada para la empresa → 403 `MODULE_DISABLED`; apagarlo siempre se puede. */
+      assistantAiEnabled?: boolean;
       /** @description Lo que dice el asistente al pasar la conversación a una persona, con variables; `null`: «Te paso con alguien del equipo de {{empresa.nombre}}. Te va a responder a la brevedad.» */
       handoffMessage?: string | null;
       /** @description Responder automáticamente al cliente fuera de horario (una vez por período cerrado) */
@@ -25539,7 +25584,8 @@ export interface components {
         | 'route_planning_close_days'
         | 'route_sheet_watch'
         | 'support_session_expiry'
-        | 'support_housekeeping';
+        | 'support_housekeeping'
+        | 'assistant_ai_sweep';
       /** @example Recupero de envases */
       title: string;
       /** @enum {string} */
@@ -25673,7 +25719,8 @@ export interface components {
         | 'route_planning_close_days'
         | 'route_sheet_watch'
         | 'support_session_expiry'
-        | 'support_housekeeping';
+        | 'support_housekeeping'
+        | 'assistant_ai_sweep';
       /** @example Recupero de envases */
       title: string;
       /** @example M5 */
@@ -52647,7 +52694,8 @@ export interface operations {
           | 'route_planning_close_days'
           | 'route_sheet_watch'
           | 'support_session_expiry'
-          | 'support_housekeeping';
+          | 'support_housekeeping'
+          | 'assistant_ai_sweep';
         status?: 'running' | 'ok' | 'partial' | 'failed' | 'skipped';
         /** @description Corridas que arrancaron desde este instante (ISO 8601; un día suelto es 00:00 UTC) */
         from?: string;
@@ -61309,6 +61357,8 @@ export interface operations {
         assigned?: string;
         /** @description La empresa */
         distributorId?: string;
+        /** @description `true`: sólo los que esperan a una persona (el asistente con IA los derivó); `false`: sólo los que no. Con `assigned=none`, los que esperan van primero (el que espera hace más, primero). */
+        awaiting?: boolean;
       };
       header?: never;
       path?: never;
@@ -61324,7 +61374,7 @@ export interface operations {
           'application/json': components['schemas']['PlatformChatListResponseDto'];
         };
       };
-      /** @description Estado desconocido, `assigned` o `distributorId` mal formados, paginación fuera de rango */
+      /** @description Estado desconocido, `assigned` o `distributorId` mal formados, `awaiting` que no es `true`/`false`, paginación fuera de rango */
       400: {
         headers: {
           [name: string]: unknown;
@@ -62407,7 +62457,7 @@ export interface operations {
           'application/json': components['schemas']['SupportSettingsResponseDto'];
         };
       };
-      /** @description Valor fuera de rango, zona horaria desconocida, franjas solapadas o aviso que no llega antes del cierre */
+      /** @description Valor fuera de rango (también los topes del asistente con IA: 1–50 respuestas por conversación, 10.000–1.000.000.000 tokens por mes), zona horaria desconocida, franjas solapadas o aviso que no llega antes del cierre */
       400: {
         headers: {
           [name: string]: unknown;
@@ -62734,6 +62784,8 @@ export interface operations {
         status?: 'open' | 'closed';
         /** @description `me` (las mías), `none` (sin asignar) o el id de alguien del personal */
         assigned?: string;
+        /** @description `true`: sólo las que esperan a una persona (el asistente con IA las derivó); `false`: sólo las que no. Con `assigned=none`, las que esperan van primero (la que espera hace más, primero). */
+        awaiting?: boolean;
         /** @description Usuario del cliente */
         customerId?: string;
         /** @description Usuario del chofer */
@@ -62758,7 +62810,7 @@ export interface operations {
           'application/json': components['schemas']['InboxListResponseDto'];
         };
       };
-      /** @description Filtro inválido: canal, estado, `assigned` (`me`, `none` o uuid), ids, `q` de menos de 3 caracteres, fecha o paginación */
+      /** @description Filtro inválido: canal, estado, `assigned` (`me`, `none` o uuid), ids, `awaiting` que no es `true`/`false`, `q` de menos de 3 caracteres, fecha o paginación */
       400: {
         headers: {
           [name: string]: unknown;

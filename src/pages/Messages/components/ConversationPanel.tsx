@@ -1,6 +1,6 @@
 import { ArrowLeft, Hand, Lock, LockOpen, MessageSquareWarning, PanelRightOpen, UserRoundCog } from 'lucide-react';
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   Badge,
   Button,
@@ -14,6 +14,7 @@ import {
 } from '../../../common/components/ui';
 import { useSocketContext } from '../../../context/useSocketContext';
 import { AlertsToggle } from '../../../features/chat/components/AlertsToggle';
+import { AwaitingHumanMark } from '../../../features/chat/components/AwaitingHumanMark';
 import { ChatThread } from '../../../features/chat/components/ChatThread';
 import { LiveIndicator } from '../../../features/chat/components/LiveIndicator';
 import { ThreadSkeleton } from '../../../features/chat/components/ThreadSkeleton';
@@ -27,6 +28,7 @@ import {
 } from '../../../features/chat/inbox/inboxLabels';
 import { claimHref, MESSAGES_PATH } from '../../../features/chat/routes';
 import type { InboxAccess } from '../../../features/chat/useInboxAccess';
+import { useMinuteClock } from '../../../hooks/useMinuteClock';
 import { toApiError } from '../../../services/api/errors';
 import type { InboxConversation } from '../../../services/api/types';
 import {
@@ -84,6 +86,9 @@ export const ConversationPanel = ({ id, myUserId, companyName, access }: Props) 
   const [assigning, setAssigning] = useState(false);
   const [claiming, setClaiming] = useState(false);
   const [contextOpen, setContextOpen] = useState(false);
+  const now = useMinuteClock();
+  // Volver a la lista con sus filtros (pestaña, canal, «Esperando…»).
+  const { search } = useLocation();
 
   if (query.error && !conversation) {
     return (
@@ -187,7 +192,7 @@ export const ConversationPanel = ({ id, myUserId, companyName, access }: Props) 
       <Card className="flex min-h-0 flex-col overflow-hidden p-0">
         <header className="flex flex-wrap items-center gap-2 border-b border-outline px-3 py-2">
           <Link
-            to={MESSAGES_PATH}
+            to={{ pathname: MESSAGES_PATH, search }}
             className="rounded-lg p-1 text-ink-2 hover:bg-surface-hover lg:hidden"
             aria-label="Volver a las conversaciones"
           >
@@ -213,6 +218,9 @@ export const ConversationPanel = ({ id, myUserId, companyName, access }: Props) 
             <p className="truncate text-xs text-muted">
               {subjectLabel(conversation)} · {statusLine(conversation, myUserId)}
             </p>
+            {open && conversation.awaitingHumanSince && (
+              <AwaitingHumanMark since={conversation.awaitingHumanSince} now={now} className="mt-0.5" />
+            )}
           </div>
           <LiveIndicator online={isOnline} />
           <AlertsToggle />

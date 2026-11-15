@@ -30372,7 +30372,8 @@
                                 "route_planning_close_days",
                                 "route_sheet_watch",
                                 "support_session_expiry",
-                                "support_housekeeping"
+                                "support_housekeeping",
+                                "assistant_ai_sweep"
                             ]
                         }
                     },
@@ -40279,7 +40280,7 @@
         },
         "/api/v2/platform/chats": {
             "get": {
-                "description": "Por defecto los abiertos, con el último mensaje más reciente primero. Filtros: `status`, `assigned` (`me`, `none` o el id de un miembro) y `distributorId`. `counts`: abiertos sin atender y los que atiendo.",
+                "description": "Por defecto los abiertos, con el último mensaje más reciente primero. Filtros: `status`, `assigned` (`me`, `none` o el id de un miembro), `distributorId` y `awaiting` (`true`: sólo los que el asistente con IA pasó a una persona; `false`: los demás). Con `assigned=none`, primero los que esperan a una persona (el que espera hace más, primero). `counts`: abiertos sin atender y los que atiendo.",
                 "operationId": "PlatformChatsController_listar",
                 "parameters": [
                     {
@@ -40334,6 +40335,15 @@
                             "format": "uuid",
                             "type": "string"
                         }
+                    },
+                    {
+                        "name": "awaiting",
+                        "required": false,
+                        "in": "query",
+                        "description": "`true`: sólo los que esperan a una persona (el asistente con IA los derivó); `false`: sólo los que no. Con `assigned=none`, los que esperan van primero (el que espera hace más, primero).",
+                        "schema": {
+                            "type": "boolean"
+                        }
                     }
                 ],
                 "responses": {
@@ -40348,7 +40358,7 @@
                         }
                     },
                     "400": {
-                        "description": "Estado desconocido, `assigned` o `distributorId` mal formados, paginación fuera de rango"
+                        "description": "Estado desconocido, `assigned` o `distributorId` mal formados, `awaiting` que no es `true`/`false`, paginación fuera de rango"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -41556,7 +41566,7 @@
                 "x-permission": "plataforma.tickets.ver"
             },
             "put": {
-                "description": "Lo que no viene queda como estaba.",
+                "description": "Lo que no viene queda como estaba. Incluye el asistente con IA del soporte (`assistantAiEnabled`) y sus topes, que valen también para el chat de cada empresa con sus clientes.",
                 "operationId": "PlatformSupportConfigController_actualizar",
                 "parameters": [],
                 "requestBody": {
@@ -41581,7 +41591,7 @@
                         }
                     },
                     "400": {
-                        "description": "Valor fuera de rango, zona horaria desconocida, franjas solapadas o aviso que no llega antes del cierre"
+                        "description": "Valor fuera de rango (también los topes del asistente con IA: 1–50 respuestas por conversación, 10.000–1.000.000.000 tokens por mes), zona horaria desconocida, franjas solapadas o aviso que no llega antes del cierre"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -41907,7 +41917,7 @@
         },
         "/api/v2/conversations": {
             "get": {
-                "description": "Sólo los canales que atiende quien pide. Ordenadas por el último mensaje. `counts` son las abiertas de esos canales: sin asignar, asignadas a quien pide y todas.",
+                "description": "Sólo los canales que atiende quien pide. Ordenadas por el último mensaje; con `assigned=none`, primero las que esperan a una persona (el asistente con IA las derivó; la que espera hace más, primero). `awaiting=true` deja sólo las que esperan. `counts` son las abiertas de esos canales: sin asignar, asignadas a quien pide y todas.",
                 "operationId": "CompanyInboxController_listar",
                 "parameters": [
                     {
@@ -41964,6 +41974,15 @@
                         "description": "`me` (las mías), `none` (sin asignar) o el id de alguien del personal",
                         "schema": {
                             "type": "string"
+                        }
+                    },
+                    {
+                        "name": "awaiting",
+                        "required": false,
+                        "in": "query",
+                        "description": "`true`: sólo las que esperan a una persona (el asistente con IA las derivó); `false`: sólo las que no. Con `assigned=none`, las que esperan van primero (la que espera hace más, primero).",
+                        "schema": {
+                            "type": "boolean"
                         }
                     },
                     {
@@ -42029,7 +42048,7 @@
                         }
                     },
                     "400": {
-                        "description": "Filtro inválido: canal, estado, `assigned` (`me`, `none` o uuid), ids, `q` de menos de 3 caracteres, fecha o paginación"
+                        "description": "Filtro inválido: canal, estado, `assigned` (`me`, `none` o uuid), ids, `awaiting` que no es `true`/`false`, `q` de menos de 3 caracteres, fecha o paginación"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -42810,7 +42829,7 @@
                 ]
             },
             "put": {
-                "description": "Lo que no viene queda como estaba; `null` en un texto o en el nombre del asistente vuelve al de omisión. Queda en la auditoría.",
+                "description": "Lo que no viene queda como estaba; `null` en un texto o en el nombre del asistente vuelve al de omisión. `assistantAiEnabled` prende o apaga el asistente con IA. Queda en la auditoría.",
                 "operationId": "CompanyChatConfigController_actualizar",
                 "parameters": [],
                 "requestBody": {
@@ -68623,7 +68642,8 @@
                             "route_planning_close_days",
                             "route_sheet_watch",
                             "support_session_expiry",
-                            "support_housekeeping"
+                            "support_housekeeping",
+                            "assistant_ai_sweep"
                         ]
                     },
                     "title": {
@@ -68743,7 +68763,8 @@
                             "route_planning_close_days",
                             "route_sheet_watch",
                             "support_session_expiry",
-                            "support_housekeeping"
+                            "support_housekeeping",
+                            "assistant_ai_sweep"
                         ]
                     },
                     "title": {
@@ -68939,7 +68960,8 @@
                             "route_planning_close_days",
                             "route_sheet_watch",
                             "support_session_expiry",
-                            "support_housekeeping"
+                            "support_housekeeping",
+                            "assistant_ai_sweep"
                         ]
                     },
                     "title": {
@@ -76868,6 +76890,12 @@
                             }
                         ]
                     },
+                    "awaitingHumanSince": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "Sólo para la plataforma, en el chat: desde cuándo espera a una persona porque el asistente con IA se lo pasó; `null` si no espera. Se limpia cuando alguien lo toma."
+                    },
                     "attendedBy": {
                         "nullable": true,
                         "description": "Sólo para la empresa: quién de la plataforma la atiende",
@@ -77650,6 +77678,25 @@
                     "closesAt"
                 ]
             },
+            "AssistantCostEstimateDto": {
+                "type": "object",
+                "properties": {
+                    "min": {
+                        "type": "number",
+                        "example": 0.24,
+                        "description": "Con el reparto de un chat (95 % entrada, 5 % salida), a los precios de Claude Haiku 5.5. La caché lo puede bajar."
+                    },
+                    "max": {
+                        "type": "number",
+                        "example": 1,
+                        "description": "Si todo fuera salida (peor caso)"
+                    }
+                },
+                "required": [
+                    "min",
+                    "max"
+                ]
+            },
             "SupportSettingsResponseDto": {
                 "type": "object",
                 "properties": {
@@ -77669,6 +77716,30 @@
                         "type": "string",
                         "nullable": true,
                         "description": "Nulo: el texto de siempre"
+                    },
+                    "assistantAiEnabled": {
+                        "type": "boolean",
+                        "description": "El asistente con IA contesta en el chat del soporte"
+                    },
+                    "assistantRepliesPerConversation": {
+                        "type": "number",
+                        "minimum": 1,
+                        "maximum": 50,
+                        "description": "Tope de respuestas del asistente con IA por conversación"
+                    },
+                    "assistantMonthlyTokenLimit": {
+                        "type": "number",
+                        "minimum": 10000,
+                        "maximum": 1000000000,
+                        "description": "Tope de tokens por mes del asistente con IA, por empresa y para el soporte"
+                    },
+                    "assistantMonthlyCostEstimateUsd": {
+                        "description": "Lo que costaría por mes (por empresa, y el soporte aparte) consumir todo `assistantMonthlyTokenLimit`, en dólares. Lo calcula el back; el panel lo muestra tal cual.",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/AssistantCostEstimateDto"
+                            }
+                        ]
                     },
                     "chatInactivityHours": {
                         "type": "number"
@@ -77709,6 +77780,10 @@
                     "chatHours",
                     "chatAckEnabled",
                     "chatAckMessage",
+                    "assistantAiEnabled",
+                    "assistantRepliesPerConversation",
+                    "assistantMonthlyTokenLimit",
+                    "assistantMonthlyCostEstimateUsd",
                     "chatInactivityHours",
                     "resolvedCloseDays",
                     "waitingCloseDays",
@@ -77744,6 +77819,22 @@
                         "nullable": true,
                         "maxLength": 500,
                         "description": "Texto del aviso; `null` vuelve al de siempre («Recibimos tu mensaje. Alguien del equipo de <plataforma> te va a atender a la brevedad.»)"
+                    },
+                    "assistantAiEnabled": {
+                        "type": "boolean",
+                        "description": "El asistente con IA contesta a las empresas en el chat del soporte, con la base de conocimiento de la plataforma"
+                    },
+                    "assistantRepliesPerConversation": {
+                        "type": "number",
+                        "minimum": 1,
+                        "maximum": 50,
+                        "description": "Tope de respuestas del asistente con IA por conversación (en el soporte y en el chat de cada empresa con sus clientes); al llegar, pasa la conversación a una persona"
+                    },
+                    "assistantMonthlyTokenLimit": {
+                        "type": "number",
+                        "minimum": 10000,
+                        "maximum": 1000000000,
+                        "description": "Tope de tokens por mes del asistente con IA, para cada empresa y para el soporte (entrada, salida y caché). Al llegar, sólo las respuestas automáticas fijas y pasar a una persona."
                     },
                     "chatInactivityHours": {
                         "type": "number",
@@ -78180,6 +78271,12 @@
                         "format": "date-time",
                         "nullable": true,
                         "description": "Sólo para el personal: la primera respuesta de la empresa al cliente o al chofer"
+                    },
+                    "awaitingHumanSince": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "Sólo para el personal: desde cuándo espera a una persona porque el asistente con IA se la pasó (C3); `null` si no espera. Se limpia cuando alguien la toma."
                     },
                     "firstResponseBusinessMinutes": {
                         "type": "number",
@@ -78765,6 +78862,14 @@
                     "customerChatEnabled": {
                         "type": "boolean"
                     },
+                    "assistantAiEnabled": {
+                        "type": "boolean",
+                        "description": "El asistente con IA contesta a los clientes (interruptor de la empresa, apagado por omisión)"
+                    },
+                    "assistantAiAvailable": {
+                        "type": "boolean",
+                        "description": "La empresa puede prender el asistente con IA (la plataforma le habilitó la función). Si es `false`, el asistente no contesta aunque `assistantAiEnabled` esté prendido."
+                    },
                     "assistantName": {
                         "type": "string",
                         "nullable": true,
@@ -78821,6 +78926,8 @@
                 },
                 "required": [
                     "customerChatEnabled",
+                    "assistantAiEnabled",
+                    "assistantAiAvailable",
                     "assistantName",
                     "effectiveAssistantName",
                     "handoffMessage",
@@ -78850,6 +78957,10 @@
                         "maxLength": 60,
                         "example": "Asistente de {{empresa.nombre}}",
                         "description": "Nombre del asistente, con el que se firman las respuestas automáticas: de 2 a 60 caracteres (contados como letras, no en UTF-16) en una sola línea (sin saltos ni separadores de línea, U+2028/U+2029). Sólo admite `{{empresa.nombre}}` (otra → 400 `TEMPLATE_VARIABLE_UNKNOWN`); `null`: «Asistente de {{empresa.nombre}}»."
+                    },
+                    "assistantAiEnabled": {
+                        "type": "boolean",
+                        "description": "El asistente con IA contesta a los clientes en el chat (y pasa la conversación a una persona cuando no puede resolver). Prenderlo sin la función habilitada para la empresa → 403 `MODULE_DISABLED`; apagarlo siempre se puede."
                     },
                     "handoffMessage": {
                         "type": "string",
@@ -79647,7 +79758,8 @@
                             "route_planning_close_days",
                             "route_sheet_watch",
                             "support_session_expiry",
-                            "support_housekeeping"
+                            "support_housekeeping",
+                            "assistant_ai_sweep"
                         ]
                     },
                     "title": {
@@ -79938,7 +80050,8 @@
                             "route_planning_close_days",
                             "route_sheet_watch",
                             "support_session_expiry",
-                            "support_housekeeping"
+                            "support_housekeeping",
+                            "assistant_ai_sweep"
                         ]
                     },
                     "title": {

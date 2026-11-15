@@ -20,3 +20,6 @@ export const tabQuery = (tab: InboxTab): Pick<InboxQuery, 'assigned' | 'status'>
       : tab === 'all'
         ? { status: 'open' }
         : { status: 'closed' };
+
+/** El filtro «Esperando a alguien del equipo» va en «Sin asignar» y «Todas»: en «Mías» no hay (asignar limpia la marca). */
+export const awaitingFilterApplies = (tab: InboxTab): boolean => tab === 'unassigned' || tab === 'all';

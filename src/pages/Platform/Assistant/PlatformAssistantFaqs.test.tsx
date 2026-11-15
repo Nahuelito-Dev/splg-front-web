@@ -41,6 +41,8 @@ vi.mock('../../../utils/notifications', () => ({
   notify: { success: state.success, error: state.error },
 }));
 
+vi.mock('./SupportAssistantCard', () => ({ SupportAssistantCard: () => <p>Tarjeta del asistente del soporte</p> }));
+
 import { PlatformAssistantFaqs } from './PlatformAssistantFaqs';
 
 const faq = (over: Record<string, unknown> = {}) => ({
@@ -122,6 +124,11 @@ describe('PlatformAssistantFaqs: pestañas', () => {
     );
     expect(screen.queryByRole('switch')).not.toBeInTheDocument();
     expect(document.body).not.toHaveTextContent(/plantilla/i);
+  });
+
+  it('arriba de las pestañas, la tarjeta del asistente del soporte (interruptor y topes)', () => {
+    draw();
+    expect(screen.getByText('Tarjeta del asistente del soporte')).toBeInTheDocument();
   });
 
   it('cambiar de pestaña muestra el catálogo de ejemplo y limpia la búsqueda', () => {

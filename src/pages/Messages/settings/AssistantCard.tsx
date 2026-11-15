@@ -4,9 +4,11 @@ import { Controller, useForm } from 'react-hook-form';
 import { Button, Card, CardHeader, ErrorState, Form, FormInput, Skeleton, Switch } from '../../../common/components/ui';
 import { useCompanyDisplayName } from '../../../common/components/useCompanyDisplayName';
 import { ASSISTANT_NAME_MAX, AUTO_MESSAGE_MAX, TEMPLATE_VARIABLES } from '../../../services/api/inbox';
+import { toApiError } from '../../../services/api/errors';
 import type { ChatSettings } from '../../../services/api/types';
 import { useChatSettings, useUpdateChatSettings } from '../../../services/queries/inbox';
 import { notify } from '../../../utils/notifications';
+import { AssistantAiToggle } from './AssistantAiToggle';
 import { AssistantPreview } from './AssistantPreview';
 import { AssistantTextField } from './AssistantTextField';
 import { defaultTexts } from './assistantTexts';
@@ -14,6 +16,7 @@ import { autoRepliesSchema, type AutoRepliesValues } from './settingsSchemas';
 
 const toValues = (s: ChatSettings): AutoRepliesValues => ({
   customerChatEnabled: s.customerChatEnabled,
+  assistantAiEnabled: s.assistantAiEnabled,
   assistantName: s.assistantName ?? '',
   handoffMessage: s.handoffMessage ?? '',
   outOfHoursEnabled: s.outOfHoursEnabled,
@@ -46,6 +49,9 @@ const ToggleRow = ({
   </div>
 );
 
+/** Lo que el asistente con IA reemplaza mientras contesta solo: se ve, se edita, pero no sale. */
+const PausedNote = () => <p className="text-xs font-medium text-warn">En pausa mientras el asistente contesta solo</p>;
+
 const MESSAGE_HELP = `Podés usar ${TEMPLATE_VARIABLES.map((v) => `{{${v}}}`).join(' · ')}. Vacío: el texto de siempre.`;
 const NAME_HELP =
   'Firma las respuestas automáticas. Podés usar {{empresa.nombre}}. Vacío: «Asistente de» y la empresa.';
@@ -54,25 +60,35 @@ const SettingsForm = ({
   settings,
   canEdit,
   companyName,
+  onStale,
 }: {
   settings: ChatSettings;
   canEdit: boolean;
   companyName: string;
+  /** Relee la configuración (p. ej. si el asistente dejó de estar disponible mientras se miraba). */
+  onStale: () => void;
 }) => {
   const update = useUpdateChatSettings();
   const methods = useForm<AutoRepliesValues>({
     resolver: zodResolver(autoRepliesSchema),
     defaultValues: toValues(settings),
   });
-  const { control, reset, watch, formState } = methods;
+  const { control, reset, resetField, watch, formState } = methods;
   // Todo lo escrito, para la vista previa (se redibuja con cada tecla: es un formulario chico).
   const values = watch();
   const defaults = defaultTexts(settings);
 
-  const onSubmit = (v: AutoRepliesValues) =>
+  // Con el asistente contestando solo, el aviso de recibido y el fuera de horario no salen (siguen editables).
+  const aiAnswering = settings.assistantAiAvailable && values.assistantAiEnabled;
+
+  const onSubmit = (v: AutoRepliesValues) => {
+    // El interruptor sólo viaja si se tocó: sin la función no se ve, y un `true` guardado no se vuelve a mandar.
+    const sendsAi = Boolean(formState.dirtyFields.assistantAiEnabled);
+    const turnsAiOn = sendsAi && v.assistantAiEnabled;
     update.mutate(
       {
         customerChatEnabled: v.customerChatEnabled,
+        ...(sendsAi ? { assistantAiEnabled: v.assistantAiEnabled } : {}),
         assistantName: orNull(v.assistantName),
         handoffMessage: orNull(v.handoffMessage),
         outOfHoursEnabled: v.outOfHoursEnabled,
@@ -82,12 +98,29 @@ const SettingsForm = ({
         ...(v.ackEnabled ? { ackMessage: orNull(v.ackMessage) } : {}),
         firstResponseTargetMinutes: v.firstResponseTargetMinutes,
       },
-      { onSuccess: () => notify.success('Asistente guardado'), onError: (error) => notify.error(error) },
+      {
+        onSuccess: () => notify.success('Asistente guardado'),
+        onError: (error) => {
+          // Sólo es «ya no se puede prender» si se pidió prenderlo; otro 403 (p. ej. el chat apagado) es el de siempre.
+          if (!turnsAiOn || !toApiError(error).moduleDisabled) {
+            notify.error(error);
+            return;
+          }
+          // Dejó de estar disponible mientras se miraba: el interruptor vuelve a lo guardado y se esconde al releer.
+          notify.warn(
+            'El asistente ya no se puede prender. No se guardó nada: volvé a guardar el resto de los cambios.',
+          );
+          resetField('assistantAiEnabled');
+          onStale();
+        },
+      },
     );
+  };
 
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
       <Form methods={methods} onSubmit={onSubmit} className="grid content-start gap-5">
+        {settings.assistantAiAvailable && <AssistantAiToggle disabled={!canEdit} />}
         <div className="grid gap-1">
           <Controller
             control={control}
@@ -129,6 +162,7 @@ const SettingsForm = ({
               />
             )}
           />
+          {aiAnswering && <PausedNote />}
           {values.ackEnabled && (
             <AssistantTextField
               name="ackMessage"
@@ -155,6 +189,7 @@ const SettingsForm = ({
               />
             )}
           />
+          {aiAnswering && <PausedNote />}
           {values.outOfHoursEnabled && (
             <AssistantTextField
               name="outOfHoursMessage"
@@ -240,6 +275,7 @@ export const AssistantCard = ({ canEdit }: { canEdit: boolean }) => {
           settings={data}
           canEdit={canEdit}
           companyName={companyName}
+          onStale={() => void refetch()}
         />
       )}
     </Card>

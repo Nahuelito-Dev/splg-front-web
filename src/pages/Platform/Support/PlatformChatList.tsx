@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
 import { cx, EmptyState, ErrorState, Skeleton, Tabs } from '../../../common/components/ui';
+import { AwaitingHumanMark } from '../../../features/chat/components/AwaitingHumanMark';
 import { platformChatHref } from '../../../features/chat/routes';
+import { useMinuteClock } from '../../../hooks/useMinuteClock';
 import type { Conversation } from '../../../services/api/types';
 import { usePlatformChats } from '../../../services/queries/supportChat';
 import { formatElapsed } from '../../../utils/format';
@@ -18,7 +20,7 @@ interface Props {
 
 const isTab = (value: string): value is ChatInboxTab => value === 'waiting' || value === 'mine' || value === 'all';
 
-const ChatRow = ({ chat, selected }: { chat: Conversation; selected: boolean }) => {
+const ChatRow = ({ chat, selected, now }: { chat: Conversation; selected: boolean; now: number }) => {
   const last = chat.lastMessage;
   return (
     <Link
@@ -43,8 +45,11 @@ const ChatRow = ({ chat, selected }: { chat: Conversation; selected: boolean }) 
       </span>
       <span className="text-[11px] text-muted">
         {chat.assignedTo ? `Atiende ${chat.assignedTo.fullName}` : 'Sin atender'}
-        {last ? ` · ${formatElapsed(last.at, Date.now())}` : ''}
+        {last ? ` · ${formatElapsed(last.at, now)}` : ''}
       </span>
+      {chat.awaitingHumanSince && (
+        <AwaitingHumanMark since={chat.awaitingHumanSince} now={now} className="justify-self-start" />
+      )}
     </Link>
   );
 };
@@ -52,6 +57,8 @@ const ChatRow = ({ chat, selected }: { chat: Conversation; selected: boolean }) 
 /** La bandeja de chats abiertos con las empresas: Esperando (nadie atiende) / Míos / Todos. */
 export const PlatformChatList = ({ tab, onTab, selectedId }: Props) => {
   const { data, error, isPending, refetch } = usePlatformChats({ assigned: ASSIGNED[tab], limit: PAGE, offset: 0 });
+  const now = useMinuteClock();
+  // En «Esperando» (`assigned=none`) el back pone primero los que el asistente pasó a una persona.
   const items = data?.items ?? [];
   return (
     <div className="flex min-h-0 flex-col">
@@ -88,7 +95,7 @@ export const PlatformChatList = ({ tab, onTab, selectedId }: Props) => {
           <ul aria-label="Chats abiertos">
             {items.map((chat) => (
               <li key={chat.id}>
-                <ChatRow chat={chat} selected={chat.id === selectedId} />
+                <ChatRow chat={chat} selected={chat.id === selectedId} now={now} />
               </li>
             ))}
             {data && data.total > items.length && (

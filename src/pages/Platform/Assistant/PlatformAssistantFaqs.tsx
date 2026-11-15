@@ -13,6 +13,7 @@ import {
 import { notify } from '../../../utils/notifications';
 import { KnowledgeBaseNotice } from '../../Assistant/components/KnowledgeBaseNotice';
 import { KeyedFaqPanel } from './KeyedFaqPanel';
+import { SupportAssistantCard } from './SupportAssistantCard';
 
 const TABS_ID = 'assistant-tabs';
 type Tab = 'orixtech' | 'examples';
@@ -100,7 +101,10 @@ const ExampleFaqsTab = () => {
   );
 };
 
-/** Asistente de la plataforma: las preguntas de OrixTech y el catálogo de preguntas de ejemplo, en pestañas. */
+/**
+ * Asistente de la plataforma: el interruptor y los topes del asistente con IA del soporte, y en pestañas las preguntas
+ * de OrixTech y el catálogo de preguntas de ejemplo.
+ */
 export const PlatformAssistantFaqs = () => {
   const [params, setParams] = useUrlParams({ tab: 'orixtech', q: '' });
   const tab: Tab = params.tab === 'examples' ? 'examples' : 'orixtech';
@@ -108,8 +112,9 @@ export const PlatformAssistantFaqs = () => {
     <PageContainer size="md" stack>
       <PageHeader
         title="Asistente"
-        description="Las preguntas con las que responde el asistente del soporte y las de ejemplo que copian las distribuidoras."
+        description="Si el asistente del soporte contesta solo, sus topes, las preguntas con las que responde y las de ejemplo que copian las distribuidoras."
       />
+      <SupportAssistantCard />
       <div className="-mx-4 md:mx-0">
         <Tabs
           idPrefix={TABS_ID}

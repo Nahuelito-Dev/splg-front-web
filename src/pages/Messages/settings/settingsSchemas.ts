@@ -158,6 +158,7 @@ const assistantName = z.string().superRefine((raw, ctx) => {
 export const autoRepliesSchema = z
   .object({
     customerChatEnabled: z.boolean(),
+    assistantAiEnabled: z.boolean(),
     assistantName,
     handoffMessage: optionalText,
     outOfHoursEnabled: z.boolean(),

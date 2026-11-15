@@ -80,6 +80,8 @@ export interface InboxQuery {
   customerId?: string;
   driverId?: string;
   orderId?: string;
+  /** `true`: sólo las que el asistente pasó a una persona (`awaitingHumanSince`). */
+  awaiting?: boolean;
   q?: string;
   limit?: number;
   offset?: number;

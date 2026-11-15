@@ -65,6 +65,7 @@ describe('respuestas automáticas y guardadas', () => {
     expect(unknownVariables('Hola {{cliente.apellido}}')).toEqual(['cliente.apellido']);
     const auto = autoRepliesSchema.safeParse({
       customerChatEnabled: true,
+      assistantAiEnabled: false,
       assistantName: '',
       handoffMessage: '',
       outOfHoursEnabled: true,
@@ -79,6 +80,7 @@ describe('respuestas automáticas y guardadas', () => {
   it('el objetivo de primera respuesta va de 5 a 1440 minutos', () => {
     const base = {
       customerChatEnabled: true,
+      assistantAiEnabled: false,
       assistantName: '',
       handoffMessage: '',
       outOfHoursEnabled: false,
@@ -94,6 +96,7 @@ describe('respuestas automáticas y guardadas', () => {
   it('el nombre del asistente: vacío o de 2 a 60 caracteres, en una línea y sólo con {{empresa.nombre}}', () => {
     const base = {
       customerChatEnabled: true,
+      assistantAiEnabled: false,
       handoffMessage: '',
       outOfHoursEnabled: false,
       outOfHoursMessage: '',
@@ -119,6 +122,7 @@ describe('respuestas automáticas y guardadas', () => {
   it('el mensaje al pasar a una persona: hasta 500 y con las variables de siempre', () => {
     const base = {
       customerChatEnabled: true,
+      assistantAiEnabled: false,
       assistantName: '',
       outOfHoursEnabled: false,
       outOfHoursMessage: '',
@@ -140,6 +144,7 @@ describe('respuestas automáticas y guardadas', () => {
   it('un texto con su interruptor apagado no se valida (no traba «Guardar»)', () => {
     const base = {
       customerChatEnabled: true,
+      assistantAiEnabled: false,
       assistantName: '',
       handoffMessage: '',
       outOfHoursMessage: 'Volvemos {{horario.vuelta}}',
@@ -153,9 +158,26 @@ describe('respuestas automáticas y guardadas', () => {
     ]);
   });
 
+  it('el interruptor del asistente que contesta solo es un booleano (como el DTO: `null` o texto dan 400)', () => {
+    const base = {
+      customerChatEnabled: true,
+      assistantName: '',
+      handoffMessage: '',
+      outOfHoursEnabled: false,
+      outOfHoursMessage: '',
+      ackEnabled: false,
+      ackMessage: '',
+      firstResponseTargetMinutes: 30,
+    };
+    expect(autoRepliesSchema.safeParse({ ...base, assistantAiEnabled: true }).success).toBe(true);
+    expect(autoRepliesSchema.safeParse({ ...base, assistantAiEnabled: null }).success).toBe(false);
+    expect(autoRepliesSchema.safeParse({ ...base, assistantAiEnabled: 'true' }).success).toBe(false);
+  });
+
   it('el tope de los textos cuenta emojis como un carácter', () => {
     const base = {
       customerChatEnabled: true,
+      assistantAiEnabled: false,
       assistantName: '',
       outOfHoursEnabled: false,
       outOfHoursMessage: '',

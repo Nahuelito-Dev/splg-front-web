@@ -4,11 +4,13 @@ import { Button, Card, CardHeader, ErrorState } from '../../../common/components
 import { ThreadSkeleton } from '../../../features/chat/components/ThreadSkeleton';
 import { useSocketContext } from '../../../context/useSocketContext';
 import { AlertsToggle } from '../../../features/chat/components/AlertsToggle';
+import { AwaitingHumanMark } from '../../../features/chat/components/AwaitingHumanMark';
 import { ChatThread } from '../../../features/chat/components/ChatThread';
 import { LiveIndicator } from '../../../features/chat/components/LiveIndicator';
 import { TicketCards } from '../../../features/chat/components/TicketCards';
 import { useChatTicketing } from '../../../features/chat/components/useChatTicketing';
 import { PLATFORM_CHATS_PATH, platformTicketHref } from '../../../features/chat/routes';
+import { useMinuteClock } from '../../../hooks/useMinuteClock';
 import { toApiError } from '../../../services/api/errors';
 import type { PlatformChatAction } from '../../../services/api/supportChat';
 import { usePlatformChatThread } from '../../../services/queries/chatSources';
@@ -30,6 +32,7 @@ export const PlatformChatPanel = ({ id, myUserId }: { id: string; myUserId: stri
   const action = usePlatformChatAction();
   const quickReplies = useQuickReplies(true);
   const binding = usePlatformChatThread(id);
+  const now = useMinuteClock();
   const conversation = chat.data;
   const tickets = conversation?.ticketsFromHere ?? [];
   const ticketing = useChatTicketing({
@@ -94,6 +97,9 @@ export const PlatformChatPanel = ({ id, myUserId }: { id: string; myUserId: stri
                   ? `Atiende ${mine ? 'vos' : conversation.assignedTo.fullName}`
                   : 'Nadie lo está atendiendo'}
             </p>
+            {open && conversation.awaitingHumanSince && (
+              <AwaitingHumanMark since={conversation.awaitingHumanSince} now={now} className="mt-0.5" />
+            )}
           </div>
           <LiveIndicator online={isOnline} />
           <AlertsToggle />

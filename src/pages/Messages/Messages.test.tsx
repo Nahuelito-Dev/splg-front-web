@@ -530,3 +530,139 @@ describe('Mensajes: lo que manda el asistente', () => {
     expect(within(log).getAllByText('Respuesta automática')).toHaveLength(1);
   });
 });
+
+describe('Mensajes: esperando a alguien del equipo', () => {
+  const since = new Date(Date.now() - 12 * 60_000).toISOString();
+  const waiting = inboxConversation({
+    id: 'conv-2',
+    counterpart: { party: 'customer', displayName: 'Rita Gómez' },
+    customer: { id: 'u-rita', displayName: 'Rita Gómez' },
+    awaitingHumanSince: since,
+  });
+  const showWithBridge = (url: string) => {
+    const socket = fakeSocket();
+    render(
+      <ChatProviders client={newQueryClient()} socket={socket.value} url={url}>
+        <Bridge />
+        <Routes>
+          <Route path="/messages" element={<Messages />} />
+          <Route path="/messages/:id" element={<Messages />} />
+        </Routes>
+      </ChatProviders>,
+    );
+    return socket;
+  };
+
+  it('la marca con desde cuándo, en el orden en que la da la API', async () => {
+    api.listConversations.mockResolvedValue(list([inboxConversation(), waiting]));
+    show();
+    const rows = await screen.findAllByRole('link', { name: /Lucía Benítez|Rita Gómez/ });
+    expect(within(rows[0]).getByText('Lucía Benítez')).toBeInTheDocument();
+    expect(within(rows[0]).queryByText('Esperando a alguien del equipo')).not.toBeInTheDocument();
+    expect(within(rows[1]).getByText('Esperando a alguien del equipo')).toBeInTheDocument();
+    expect(within(rows[1]).getByText(/hace 12m/)).toHaveAttribute('datetime', since);
+  });
+
+  it('el filtro le pide al back sólo las que esperan (`awaiting=true`) y lo dice si no hay', async () => {
+    show();
+    await screen.findByRole('link', { name: /Lucía Benítez/ });
+    const filter = screen.getByRole('button', { name: 'Esperando a alguien del equipo' });
+    expect(filter).toHaveAttribute('aria-pressed', 'false');
+    expect(api.listConversations).toHaveBeenLastCalledWith(expect.not.objectContaining({ awaiting: true }));
+    api.listConversations.mockResolvedValue(list([waiting]));
+    fireEvent.click(filter);
+    await waitFor(() =>
+      expect(api.listConversations).toHaveBeenLastCalledWith({
+        assigned: 'none',
+        status: 'open',
+        awaiting: true,
+        limit: 50,
+        offset: 0,
+      }),
+    );
+    expect(filter).toHaveAttribute('aria-pressed', 'true');
+    expect(await screen.findByRole('link', { name: /Rita Gómez/ })).toBeInTheDocument();
+    api.listConversations.mockResolvedValue(list([]));
+    fireEvent.click(screen.getByRole('tab', { name: /Todas/ }));
+    await waitFor(() =>
+      expect(api.listConversations).toHaveBeenLastCalledWith({ status: 'open', awaiting: true, limit: 50, offset: 0 }),
+    );
+    expect(await screen.findByText('Nadie espera a alguien del equipo')).toBeInTheDocument();
+  });
+
+  it('en «Mías» y en «Cerradas» no hay filtro ni se pide `awaiting`, aunque venga en la URL', async () => {
+    show('/messages?tab=mine&esperando=1');
+    await screen.findByRole('link', { name: /Lucía Benítez/ });
+    expect(screen.queryByRole('button', { name: 'Esperando a alguien del equipo' })).not.toBeInTheDocument();
+    expect(api.listConversations).toHaveBeenLastCalledWith({ assigned: 'me', status: 'open', limit: 50, offset: 0 });
+    fireEvent.click(screen.getByRole('tab', { name: /Cerradas/ }));
+    await waitFor(() =>
+      expect(api.listConversations).toHaveBeenLastCalledWith({ status: 'closed', limit: 50, offset: 0 }),
+    );
+    expect(screen.queryByRole('button', { name: 'Esperando a alguien del equipo' })).not.toBeInTheDocument();
+  });
+
+  it('abrir una conversación conserva la pestaña y el filtro, y «volver» también', async () => {
+    api.listConversations.mockResolvedValue(list([waiting]));
+    api.getConversation.mockResolvedValue(waiting);
+    show('/messages?tab=all&esperando=1');
+    const row = await screen.findByRole('link', { name: /Rita Gómez/ });
+    expect(row).toHaveAttribute('href', '/messages/conv-2?tab=all&esperando=1');
+    fireEvent.click(row);
+    const back = await screen.findByRole('link', { name: 'Volver a las conversaciones' });
+    expect(back).toHaveAttribute('href', '/messages?tab=all&esperando=1');
+    expect(screen.getByRole('tab', { name: /Todas/ })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('button', { name: 'Esperando a alguien del equipo' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+  });
+
+  it('en la conversación abierta, la marca va arriba; al tomarla o escribir, el evento la saca', async () => {
+    api.listConversations.mockResolvedValue(list([waiting]));
+    api.getConversation.mockResolvedValue(waiting);
+    const socket = showWithBridge('/messages/conv-2');
+    const header = (await screen.findByRole('heading', { name: /Rita Gómez/ })).closest('header') as HTMLElement;
+    expect(await within(header).findByText('Esperando a alguien del equipo')).toBeInTheDocument();
+    const row = within(screen.getByRole('list', { name: 'Conversaciones' })).getByRole('link', { name: /Rita Gómez/ });
+    expect(within(row).getByText('Esperando a alguien del equipo')).toBeInTheDocument();
+    const taken = { ...waiting, awaitingHumanSince: null, assignedTo: { userId: 'u-2', fullName: 'Beto Despacho' } };
+    api.listConversations.mockResolvedValue(list([taken]));
+    api.getConversation.mockResolvedValue(taken);
+    act(() =>
+      socket.fire('chat:conversation', {
+        conversationId: 'conv-2',
+        distributorId: 'd-1',
+        change: 'assignment',
+        conversation: taken,
+      }),
+    );
+    await waitFor(() => expect(screen.queryByText('Esperando a alguien del equipo', { selector: 'span' })).toBeNull());
+    expect(within(header).queryByText('Esperando a alguien del equipo')).not.toBeInTheDocument();
+  });
+
+  it('en el hilo, la respuesta del asistente con IA se ve como cualquier respuesta automática: firma y marca, sin el modelo', async () => {
+    api.listConversationMessages.mockResolvedValue({
+      items: [
+        inboxMsg(1, { body: '¿Hasta qué hora toman pedidos?' }),
+        inboxMsg(2, {
+          party: 'system',
+          sender: null,
+          kind: 'auto_reply',
+          templateKey: 'asistente_ia',
+          body: 'Tomamos pedidos hasta las 18.',
+          automated: true,
+          senderLabel: 'Gasito de Gas Norte',
+          payload: { ai: { model: 'claude-haiku-5-5' } },
+        }),
+      ],
+      hasMore: false,
+    });
+    show('/messages/conv-1');
+    const log = await screen.findByRole('log', { name: 'Mensajes' });
+    const reply = (await within(log).findByText('Tomamos pedidos hasta las 18.')).closest('li') as HTMLElement;
+    expect(within(reply).getByText('Gasito de Gas Norte')).toBeInTheDocument();
+    expect(within(reply).getByText('Respuesta automática')).toBeInTheDocument();
+    expect(screen.queryByText(/haiku|claude/i)).not.toBeInTheDocument();
+  });
+});

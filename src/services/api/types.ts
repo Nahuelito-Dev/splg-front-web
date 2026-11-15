@@ -36,6 +36,7 @@ export type AssignCylindersBody = S['AssignCylindersDto'];
 export type AssignStaffRoleBody = S['AssignStaffRoleDto'];
 export type AssignVehicleBody = S['AssignVehicleDto'];
 export type AssignedTo = S['AssignedToDto'];
+export type AssistantCostEstimate = S['AssistantCostEstimateDto'];
 export type AssistantFaqList = S['AssistantFaqListResponseDto'];
 export type AssistantFaq = S['AssistantFaqResponseDto'];
 export type AssistantFaqTemplateList = S['AssistantFaqTemplateListResponseDto'];

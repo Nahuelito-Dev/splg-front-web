@@ -24,6 +24,7 @@ import type {
   SupportSettings,
   Ticket,
   TicketList,
+  UpdateSupportSettingsBody,
   UpdateTicketBody,
 } from './types';
 
@@ -232,6 +233,21 @@ export const getSupportSettings = async (): Promise<SupportSettings> => {
   const { data } = await http.get<SupportSettings>('/platform/support-settings', V2);
   return data;
 };
+
+/**
+ * PUT /v2/platform/support-settings: lo que no viene queda como estaba y devuelve todo. Incluye el asistente con IA del
+ * soporte y sus topes (respuestas por conversación 1–50; tokens por mes 10.000–1.000.000.000).
+ */
+export const updateSupportSettings = async (body: UpdateSupportSettingsBody): Promise<SupportSettings> => {
+  const { data } = await http.put<SupportSettings>('/platform/support-settings', body, V2);
+  return data;
+};
+
+/** Topes del asistente con IA (`UpdateSupportSettingsDto`). */
+export const ASSISTANT_REPLIES_MIN = 1;
+export const ASSISTANT_REPLIES_MAX = 50;
+export const ASSISTANT_TOKENS_MIN = 10_000;
+export const ASSISTANT_TOKENS_MAX = 1_000_000_000;
 
 /** GET /v2/platform/ticket-templates?scope=platform_reply: las respuestas rápidas del soporte. */
 export const listQuickReplies = async (): Promise<MessageTemplateList> => {

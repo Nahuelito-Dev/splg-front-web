@@ -1,13 +1,16 @@
 import { HardHat, MessageSquareText, UserRound } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { cx, EmptyState, ErrorState, PersonAvatar, SearchInput, Skeleton, Tabs } from '../../../common/components/ui';
 import { useDebounce } from '../../../hooks/useDebounce';
+import { useMinuteClock } from '../../../hooks/useMinuteClock';
+import { AWAITING_HUMAN_LABEL } from '../../../features/chat/awaitingHuman';
+import { AwaitingHumanMark } from '../../../features/chat/components/AwaitingHumanMark';
 import { counterpartName, subjectLabel } from '../../../features/chat/inbox/inboxLabels';
 import { messageHref } from '../../../features/chat/routes';
 import { INBOX_SEARCH_MAX, INBOX_SEARCH_MIN, type InboxChannel, type InboxQuery } from '../../../services/api/inbox';
 import type { InboxConversation } from '../../../services/api/types';
-import { tabQuery, type InboxFilter, type InboxTab, isInboxTab } from '../inboxTabs';
+import { awaitingFilterApplies, tabQuery, type InboxFilter, type InboxTab, isInboxTab } from '../inboxTabs';
 import { useInboxConversations } from '../../../services/queries/inbox';
 import { formatElapsed } from '../../../utils/format';
 
@@ -30,6 +33,9 @@ interface Props {
   onFilter: (filter: InboxFilter) => void;
   /** Atiende los dos canales: se ofrecen los filtros Clientes / Choferes. */
   bothChannels: boolean;
+  /** Sólo las que el asistente pasó a una persona (de las que trae la página). */
+  awaitingOnly: boolean;
+  onAwaitingOnly: (awaitingOnly: boolean) => void;
   selectedId: string | undefined;
 }
 
@@ -49,7 +55,15 @@ const PREVIEW_PREFIX: Partial<Record<NonNullable<InboxConversation['lastMessage'
   system: 'Asistente: ',
 };
 
-const Row = ({ conversation, selected, now }: { conversation: InboxConversation; selected: boolean; now: number }) => {
+interface RowProps {
+  conversation: InboxConversation;
+  selected: boolean;
+  now: number;
+  /** Los filtros de la bandeja (`?tab=…&esperando=1`): abrir una conversación no los pierde. */
+  search: string;
+}
+
+const Row = ({ conversation, selected, now, search }: RowProps) => {
   const name = counterpartName(conversation);
   const last = conversation.lastMessage;
   const unread = conversation.unreadCount;
@@ -63,7 +77,7 @@ const Row = ({ conversation, selected, now }: { conversation: InboxConversation;
     : 'Sin mensajes';
   return (
     <Link
-      to={messageHref(conversation.id)}
+      to={{ pathname: messageHref(conversation.id), search }}
       aria-current={selected ? 'page' : undefined}
       className={cx(
         'flex gap-3 border-b border-outline-soft px-3 py-2.5 transition-colors hover:bg-surface-hover focus-visible:bg-surface-hover focus-visible:outline-none',
@@ -109,28 +123,33 @@ const Row = ({ conversation, selected, now }: { conversation: InboxConversation;
             <span className="font-medium text-warn">· Sin asignar</span>
           )}
         </span>
+        {!closed && conversation.awaitingHumanSince && (
+          <AwaitingHumanMark since={conversation.awaitingHumanSince} now={now} className="justify-self-start" />
+        )}
       </span>
     </Link>
   );
 };
 
-/** Un «ahora» que avanza cada minuto, para «hace 5m» sin redibujar en cada render. */
-const useMinuteClock = () => {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 60_000);
-    return () => window.clearInterval(timer);
-  }, []);
-  return now;
-};
-
 /** La lista de la bandeja: Sin asignar / Mías / Todas, Clientes / Choferes y búsqueda (nombre o último mensaje). */
-export const InboxList = ({ tab, onTab, filter, onFilter, bothChannels, selectedId }: Props) => {
+export const InboxList = ({
+  tab,
+  onTab,
+  filter,
+  onFilter,
+  bothChannels,
+  awaitingOnly,
+  onAwaitingOnly,
+  selectedId,
+}: Props) => {
   const [term, setTerm] = useState('');
   const debounced = useDebounce(term.trim(), 350);
   const q = debounced.length >= INBOX_SEARCH_MIN ? debounced.slice(0, INBOX_SEARCH_MAX) : undefined;
+  // «Mías» nunca tiene (asignar limpia la marca) y las cerradas ya no esperan: ahí el filtro no va.
+  const onlyAwaiting = awaitingOnly && awaitingFilterApplies(tab);
   const params: InboxQuery = {
     ...tabQuery(tab),
+    ...(onlyAwaiting ? { awaiting: true } : {}),
     ...(filter !== 'all' ? { channel: filter } : {}),
     ...(q ? { q } : {}),
     limit: PAGE,
@@ -139,6 +158,7 @@ export const InboxList = ({ tab, onTab, filter, onFilter, bothChannels, selected
   const { data, error, isPending, refetch, isFetching } = useInboxConversations(params);
   const now = useMinuteClock();
   const items = data?.items ?? [];
+  const { search } = useLocation();
   const short = term.trim().length > 0 && term.trim().length < INBOX_SEARCH_MIN;
 
   return (
@@ -164,6 +184,21 @@ export const InboxList = ({ tab, onTab, filter, onFilter, bothChannels, selected
           onChange={(event) => setTerm(event.target.value)}
         />
         {short && <p className="text-[11px] text-muted">Escribí al menos {INBOX_SEARCH_MIN} letras para buscar.</p>}
+        {awaitingFilterApplies(tab) && (
+          <button
+            type="button"
+            aria-pressed={onlyAwaiting}
+            onClick={() => onAwaitingOnly(!onlyAwaiting)}
+            className={cx(
+              'justify-self-start rounded-full border px-3 py-1 text-xs font-medium transition-colors',
+              onlyAwaiting
+                ? 'border-primary-edge bg-primary-soft text-primary'
+                : 'border-outline text-ink-2 hover:bg-surface-hover',
+            )}
+          >
+            {AWAITING_HUMAN_LABEL}
+          </button>
+        )}
         {bothChannels && (
           <div className="flex gap-1" role="group" aria-label="Filtrar por canal">
             {(
@@ -209,6 +244,12 @@ export const InboxList = ({ tab, onTab, filter, onFilter, bothChannels, selected
         ) : items.length === 0 ? (
           q ? (
             <EmptyState icon={MessageSquareText} title="Sin resultados" description={`Nada coincide con «${q}».`} />
+          ) : onlyAwaiting ? (
+            <EmptyState
+              icon={MessageSquareText}
+              title="Nadie espera a alguien del equipo"
+              description="Cuando el asistente le pase una conversación a una persona, aparece acá."
+            />
           ) : (
             <EmptyState icon={MessageSquareText} title={EMPTY[tab].title} description={EMPTY[tab].description} />
           )
@@ -216,7 +257,7 @@ export const InboxList = ({ tab, onTab, filter, onFilter, bothChannels, selected
           <ul aria-label="Conversaciones">
             {items.map((conversation) => (
               <li key={conversation.id}>
-                <Row conversation={conversation} selected={conversation.id === selectedId} now={now} />
+                <Row conversation={conversation} selected={conversation.id === selectedId} now={now} search={search} />
               </li>
             ))}
             {data && data.total > items.length && (

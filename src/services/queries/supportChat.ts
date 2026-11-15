@@ -26,6 +26,7 @@ import {
   openTicketFromPlatformChat,
   startPlatformChat,
   updatePlatformTicket,
+  updateSupportSettings,
   type ListQuery,
   type PlatformChatAction,
   type PlatformChatsQuery,
@@ -42,6 +43,7 @@ import type {
   PlatformOpenTicketFromChatBody,
   StartPlatformChatBody,
   Ticket,
+  UpdateSupportSettingsBody,
   UpdateTicketBody,
 } from '../api/types';
 import { queryKeys } from './queryKeys';
@@ -282,6 +284,17 @@ export const useQuickReplies = (enabled: boolean) =>
 /** El horario de atención de la plataforma (`openNow`), para el indicador del chat. */
 export const useSupportSettings = (enabled: boolean) =>
   useQuery({ queryKey: chatKeys.settings(), queryFn: getSupportSettings, enabled, staleTime: 60_000 });
+
+/** Cambia la configuración del soporte (lo que no se manda queda como estaba). */
+export const useUpdateSupportSettings = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: UpdateSupportSettingsBody) => updateSupportSettings(body),
+    onSuccess: (settings) => {
+      queryClient.setQueryData(chatKeys.settings(), settings);
+    },
+  });
+};
 
 /** Tope de mensajes que se leen para armar la línea de tiempo de un ticket. */
 const HISTORY_MAX = 2000;

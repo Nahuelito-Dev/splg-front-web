@@ -41,6 +41,8 @@ const HOURS = {
 };
 const SETTINGS = {
   customerChatEnabled: true,
+  assistantAiEnabled: false,
+  assistantAiAvailable: false,
   assistantName: null,
   effectiveAssistantName: 'Asistente de Gas Norte',
   handoffMessage: null,
@@ -290,6 +292,129 @@ describe('Mensajes y horario: respuestas automáticas', () => {
         firstResponseTargetMinutes: 30,
       }),
     );
+  });
+});
+
+describe('Mensajes y horario: el asistente que contesta solo', () => {
+  const AVAILABLE = { ...SETTINGS, assistantAiAvailable: true };
+
+  it('sin la función, el interruptor no aparece y no se explica por qué; tampoco se manda', async () => {
+    api.updateChatSettings.mockResolvedValue(SETTINGS);
+    show();
+    const name = await screen.findByLabelText('Nombre del asistente');
+    expect(screen.queryByRole('switch', { name: 'El asistente contesta solo' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/módulo|plan\b|no incluid|habilit/i)).not.toBeInTheDocument();
+    fireEvent.change(name, { target: { value: 'Gasito' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    await waitFor(() => expect(api.updateChatSettings).toHaveBeenCalledTimes(1));
+    expect(api.updateChatSettings.mock.lastCall).not.toHaveProperty([0, 'assistantAiEnabled']);
+  });
+
+  it('con la función, explica qué hace, enlaza las preguntas frecuentes y guarda el interruptor', async () => {
+    api.getChatSettings.mockResolvedValue(AVAILABLE);
+    api.updateChatSettings.mockResolvedValue({ ...AVAILABLE, assistantAiEnabled: true });
+    show();
+    const toggle = await screen.findByRole('switch', { name: 'El asistente contesta solo' });
+    expect(toggle).toHaveAttribute('aria-checked', 'false');
+    const help = screen.getByText(/contesta las preguntas frecuentes y el estado del pedido/);
+    expect(toggle).toHaveAttribute('aria-describedby', help.parentElement?.id);
+    expect(screen.getByText(/le pasa la conversación a una persona/)).toBeInTheDocument();
+    expect(screen.getByText(/marcadas como respuesta automática/)).toBeInTheDocument();
+    expect(screen.getByText(/reemplaza el aviso de recibido y la respuesta fuera de horario/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Asistente del chat' })).toHaveAttribute('href', '/settings/assistant');
+    fireEvent.click(toggle);
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    await waitFor(() =>
+      expect(api.updateChatSettings).toHaveBeenCalledWith(expect.objectContaining({ assistantAiEnabled: true })),
+    );
+  });
+
+  it('sin `mensajes.configurar` se ve pero no se cambia', async () => {
+    access.value = { customers: true, drivers: false, configure: false, claims: false, any: true };
+    api.getChatSettings.mockResolvedValue({ ...AVAILABLE, assistantAiEnabled: true });
+    show();
+    const toggle = await screen.findByRole('switch', { name: 'El asistente contesta solo' });
+    expect(toggle).toBeDisabled();
+    expect(toggle).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('si deja de estar disponible mientras se mira (403 al prenderlo), lo avisa, esconde el interruptor y no pierde lo escrito', async () => {
+    const { notify } = await import('../../utils/notifications');
+    vi.mocked(notify.warn).mockClear();
+    vi.mocked(notify.error).mockClear();
+    const { ApiError } = await import('../../services/api/errors');
+    api.getChatSettings.mockResolvedValueOnce(AVAILABLE).mockResolvedValue(SETTINGS);
+    api.updateChatSettings.mockRejectedValue(
+      new ApiError(403, ['Esta función no está disponible para tu empresa'], 'MODULE_DISABLED'),
+    );
+    show();
+    fireEvent.click(await screen.findByRole('switch', { name: 'El asistente contesta solo' }));
+    fireEvent.change(screen.getByLabelText('Nombre del asistente'), { target: { value: 'Gasito' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    await waitFor(() => expect(notify.warn).toHaveBeenCalledWith(expect.stringMatching(/ya no se puede prender/)));
+    expect(api.updateChatSettings.mock.lastCall).toHaveProperty([0, 'assistantAiEnabled'], true);
+    expect(notify.error).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(screen.queryByRole('switch', { name: 'El asistente contesta solo' })).not.toBeInTheDocument(),
+    );
+    expect(api.getChatSettings).toHaveBeenCalledTimes(2);
+    // Lo escrito en otro campo sigue y se puede volver a guardar (ya sin el interruptor).
+    expect(screen.getByLabelText('Nombre del asistente')).toHaveValue('Gasito');
+    const save = screen.getByRole('button', { name: 'Guardar' });
+    expect(save).toBeEnabled();
+    api.updateChatSettings.mockResolvedValue(SETTINGS);
+    fireEvent.click(save);
+    await waitFor(() => expect(api.updateChatSettings).toHaveBeenCalledTimes(2));
+    expect(api.updateChatSettings.mock.lastCall).toHaveProperty([0, 'assistantName'], 'Gasito');
+    expect(api.updateChatSettings.mock.lastCall).not.toHaveProperty([0, 'assistantAiEnabled']);
+  });
+
+  it('un 403 `MODULE_DISABLED` sin haber tocado el interruptor (el chat apagado) es el error de siempre', async () => {
+    const { notify } = await import('../../utils/notifications');
+    vi.mocked(notify.warn).mockClear();
+    vi.mocked(notify.error).mockClear();
+    const { ApiError } = await import('../../services/api/errors');
+    api.getChatSettings.mockResolvedValue(AVAILABLE);
+    const denied = new ApiError(403, ['Esta función no está disponible para tu empresa'], 'MODULE_DISABLED');
+    api.updateChatSettings.mockRejectedValue(denied);
+    show();
+    await screen.findByRole('switch', { name: 'El asistente contesta solo' });
+    fireEvent.change(screen.getByLabelText('Nombre del asistente'), { target: { value: 'Gasito' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    await waitFor(() => expect(notify.error).toHaveBeenCalledWith(denied));
+    expect(notify.warn).not.toHaveBeenCalled();
+    expect(api.getChatSettings).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('switch', { name: 'El asistente contesta solo' })).toBeInTheDocument();
+  });
+
+  it('el interruptor sólo viaja si se tocó: guardado prendido y sin tocarlo, no se manda', async () => {
+    api.getChatSettings.mockResolvedValue({ ...AVAILABLE, assistantAiEnabled: true });
+    api.updateChatSettings.mockResolvedValue({ ...AVAILABLE, assistantAiEnabled: true });
+    show();
+    await screen.findByRole('switch', { name: 'El asistente contesta solo' });
+    fireEvent.change(screen.getByLabelText('Nombre del asistente'), { target: { value: 'Gasito' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    await waitFor(() => expect(api.updateChatSettings).toHaveBeenCalledTimes(1));
+    expect(api.updateChatSettings.mock.lastCall).not.toHaveProperty([0, 'assistantAiEnabled']);
+  });
+
+  it('con el asistente prendido, el aviso de recibido y el fuera de horario dicen «En pausa…» y siguen editables', async () => {
+    api.getChatSettings.mockResolvedValue({ ...AVAILABLE, assistantAiEnabled: true, ackEnabled: true });
+    show();
+    const toggle = await screen.findByRole('switch', { name: 'El asistente contesta solo' });
+    expect(screen.getAllByText('En pausa mientras el asistente contesta solo')).toHaveLength(2);
+    expect(screen.getByLabelText('Texto del aviso')).toBeEnabled();
+    expect(screen.getByLabelText('Texto fuera de horario')).toBeEnabled();
+    expect(screen.getByRole('switch', { name: 'Responder fuera de horario' })).toBeEnabled();
+    fireEvent.click(toggle);
+    expect(screen.queryByText('En pausa mientras el asistente contesta solo')).not.toBeInTheDocument();
+  });
+
+  it('sin la función no hay «En pausa…» aunque lo guardado diga prendido', async () => {
+    api.getChatSettings.mockResolvedValue({ ...SETTINGS, assistantAiEnabled: true });
+    show();
+    await screen.findByLabelText('Nombre del asistente');
+    expect(screen.queryByText('En pausa mientras el asistente contesta solo')).not.toBeInTheDocument();
   });
 });
 

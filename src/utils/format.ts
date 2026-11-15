@@ -40,6 +40,26 @@ export const formatCurrencyExact = (value: number | string | null | undefined): 
 export const formatUsd = (value: number | null | undefined): string =>
   value === null || value === undefined || !Number.isFinite(value) ? '—' : usd.format(value);
 
+const usdSymbol = new Intl.NumberFormat('es-AR', {
+  style: 'currency',
+  currency: 'USD',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+const usdSymbolSmall = new Intl.NumberFormat('es-AR', {
+  style: 'currency',
+  currency: 'USD',
+  maximumSignificantDigits: 2,
+});
+
+/** US$ 0,24 / US$ 1.190,50: un estimado en dólares; menos de un centavo, con dos cifras (US$ 0,0012) para no mostrar 0. */
+export const formatUsdApprox = (value: number | null | undefined): string =>
+  value === null || value === undefined || !Number.isFinite(value)
+    ? '—'
+    : value > 0 && value < 0.01
+      ? usdSymbolSmall.format(value)
+      : usdSymbol.format(value);
+
 /** 1.234 */
 export const formatNumber = (value: number | null | undefined): string =>
   value === null || value === undefined ? '—' : number.format(value);

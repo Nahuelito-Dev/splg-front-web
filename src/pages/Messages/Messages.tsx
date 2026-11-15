@@ -46,6 +46,7 @@ export const Messages = () => {
   const me = useMyAccount(email).data?.user_id;
   const [tabParam, setTab] = useUrlParam('tab', 'unassigned');
   const [filterParam, setFilter] = useUrlParam('canal', 'all');
+  const [awaitingParam, setAwaiting] = useUrlParam('esperando', '');
   const tab: InboxTab = isInboxTab(tabParam) ? tabParam : 'unassigned';
   const filter: InboxFilter = isInboxFilter(filterParam) ? filterParam : 'all';
   const [broadcasting, setBroadcasting] = useState(false);
@@ -100,6 +101,8 @@ export const Messages = () => {
             filter={access.customers && access.drivers ? filter : 'all'}
             onFilter={setFilter}
             bothChannels={access.customers && access.drivers}
+            awaitingOnly={awaitingParam === '1'}
+            onAwaitingOnly={(only) => setAwaiting(only ? '1' : '')}
             selectedId={id}
           />
         </Card>

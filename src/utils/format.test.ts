@@ -11,9 +11,20 @@ import {
   formatShortId,
   scheduledDayOf,
   formatArgentinaDay,
+  formatUsdApprox,
 } from './format';
 
 describe('format', () => {
+  it('un estimado en dólares: dos decimales; menos de un centavo, con dos cifras', () => {
+    const plain = (text: string) => text.replace(/\s/g, ' ');
+    expect(plain(formatUsdApprox(0.2381))).toBe('US$ 0,24');
+    expect(plain(formatUsdApprox(1))).toBe('US$ 1,00');
+    expect(plain(formatUsdApprox(1190.5))).toBe('US$ 1.190,50');
+    expect(plain(formatUsdApprox(0.00119))).toBe('US$ 0,0012');
+    expect(plain(formatUsdApprox(0))).toBe('US$ 0,00');
+    expect(formatUsdApprox(null)).toBe('—');
+  });
+
   it('moneda en pesos, sin decimales', () => {
     expect(formatCurrency(22600).replace(/\s/g, ' ')).toBe('$ 22.600');
     expect(formatCurrency('48900')).toContain('48.900');

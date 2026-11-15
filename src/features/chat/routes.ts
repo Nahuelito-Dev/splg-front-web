@@ -15,3 +15,5 @@ export const MESSAGES_PATH = '/messages';
 export const MESSAGES_SETTINGS_PATH = '/messages/settings';
 export const messageHref = (conversationId: string) => `${MESSAGES_PATH}/${encodeURIComponent(conversationId)}`;
 export const claimHref = (claimId: string) => `/claims?claim=${encodeURIComponent(claimId)}`;
+/** Las preguntas frecuentes con las que responde el asistente de la empresa («Asistente del chat»). */
+export const ASSISTANT_FAQS_PATH = '/settings/assistant';
