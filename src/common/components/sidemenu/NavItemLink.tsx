@@ -6,16 +6,16 @@ import { NAV_SECTIONS, type NavItem } from './navConfig';
 const linkClass = (mini: boolean) => {
   const base = cx(
     'relative flex items-center rounded-[9px] py-2 text-[13.5px] font-medium transition-colors',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-llama-400 focus-visible:ring-offset-2 focus-visible:ring-offset-side',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-side-accent focus-visible:ring-offset-2 focus-visible:ring-offset-side',
     mini ? 'justify-center px-0' : 'gap-[11px] px-2.5',
   );
   return ({ isActive }: { isActive: boolean }) =>
     cx(
       base,
       isActive
-        ? 'bg-gradient-to-r from-llama-500/[0.16] via-llama-500/[0.06] to-transparent text-white ' +
+        ? 'bg-gradient-to-r from-primary/[0.16] via-primary/[0.06] to-transparent text-white ' +
             'before:absolute before:-left-3.5 before:inset-y-[7px] before:w-[3px] before:rounded-r ' +
-            'before:bg-gradient-to-b before:from-llama-300 before:to-llama-500 [&>svg]:text-llama-400'
+            'before:bg-gradient-to-b before:from-primary-from before:to-primary-to [&>svg]:text-side-accent'
         : 'text-side-text hover:bg-white/[0.05] hover:text-white',
     );
 };
@@ -64,7 +64,7 @@ export const NavItemLink = ({ item, mini, pendingCount, onNavigate }: Props) => 
                   className={cx(
                     'rounded-full px-[7px] py-px text-[11px] font-semibold tabular-nums',
                     mini ? 'absolute right-0.5 top-0.5 min-w-[16px] px-1 text-center text-[10px] leading-4' : 'ml-auto',
-                    isActive || mini ? 'bg-llama-500 text-white' : 'bg-white/[0.08] text-white',
+                    isActive || mini ? 'bg-primary text-on-primary' : 'bg-white/[0.08] text-white',
                   )}
                   aria-label={`${pendingCount} pedidos esperando chofer`}
                 >

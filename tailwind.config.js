@@ -48,6 +48,7 @@ const BRAND_VARS = {
   'primary-edge': primaryGradient.border,
   'on-primary': '#FFFFFF',
   accent: gas['400'],
+  'side-accent': llama['400'],
 };
 
 const LIGHT_VARS = {
@@ -93,7 +94,7 @@ const DARK_VARS = {
   'primary-soft': dark.primarySoft,
   'primary-strong': dark.primaryStrong,
   'accent-soft': dark.accentSoft,
-  'on-accent': dark.onAccent,
+  'on-accent': tinta['900'],
   success: dark.status.success,
   'success-soft': dark.statusSoft.success,
   danger: dark.status.danger,
@@ -152,6 +153,7 @@ export default {
         'surface-sunken': themed('surface-sunken'),
         'surface-muted': themed('surface-muted'),
         side: { DEFAULT: sidebar.bg, raised: sidebar.raised, line: sidebar.line, text: sidebar.text },
+        'side-accent': themed('side-accent'),
         success: { DEFAULT: themed('success'), soft: themed('success-soft') },
         danger: { DEFAULT: themed('danger'), soft: themed('danger-soft') },
         warn: { DEFAULT: themed('warn'), soft: themed('warn-soft') },
@@ -166,8 +168,8 @@ export default {
         card: '0 1px 2px rgba(16, 24, 40, 0.04)',
         control: '0 1px 2px rgba(16, 24, 40, 0.05)',
         primary:
-          'inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 1px 2px rgba(16, 24, 40, 0.12), 0 6px 14px -6px rgba(217, 83, 14, 0.55)',
-        mark: '0 6px 16px -6px rgba(242, 107, 29, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.35)',
+          'inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 1px 2px rgba(16, 24, 40, 0.12), 0 6px 14px -6px rgb(var(--c-primary) / 0.55)',
+        mark: '0 6px 16px -6px rgb(var(--c-primary) / 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.35)',
       },
       borderRadius: {
         card: '14px',

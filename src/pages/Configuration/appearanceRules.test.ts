@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { CompanyTheme } from '../../services/api/types';
 import { appearanceSchema, contrastOf, pairLabel, ratioLabel, toThemeBody, valuesOf } from './appearanceRules';
+import { THEME_PRESETS, valuesOfPreset } from '../../theme/themePresets';
+import { contrast, onColor } from '../../theme/colorContrast';
 
 const base = { primaryColor: '#1d4ed8', customAccent: false, accentColor: '', displayName: '' };
 
@@ -60,5 +62,21 @@ describe('appearanceRules', () => {
       { pair: 'b', mode: 'dark' as const, ratio: 5, required: 3, ok: true },
     ];
     expect(contrastOf(items, 'dark').map((i) => i.pair)).toEqual(['b']);
+  });
+
+  it('las siete paletas cumplen la regla completa del generador del back', () => {
+    expect(THEME_PRESETS).toHaveLength(7);
+    for (const preset of THEME_PRESETS) {
+      expect(appearanceSchema.safeParse(valuesOfPreset(preset)).success, preset.name).toBe(true);
+      expect(
+        contrast(onColor(preset.primaryColor), preset.primaryColor),
+        `${preset.name}: onPrimary`,
+      ).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(preset.primaryColor, '#FFFFFF'), `${preset.name}: principal/blanco`).toBeGreaterThanOrEqual(3);
+      expect(contrast(preset.primaryColor, '#F5F6F8'), `${preset.name}: principal/lienzo`).toBeGreaterThanOrEqual(3);
+      expect(contrast(preset.accentColor, '#FFFFFF'), `${preset.name}: acento/blanco`).toBeGreaterThanOrEqual(3);
+      expect(contrast(preset.accentColor, '#F5F6F8'), `${preset.name}: acento/lienzo`).toBeGreaterThanOrEqual(3);
+    }
+    expect(THEME_PRESETS[0].primaryColor).toBe('#CD4B00');
   });
 });

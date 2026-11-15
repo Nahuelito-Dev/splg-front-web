@@ -51,7 +51,7 @@
     position: absolute;
     inset: -120px -80px auto -80px;
     height: 260px;
-    background: radial-gradient(closest-side, theme('colors.llama.500 / 22%'), transparent 70%);
+    background: radial-gradient(closest-side, rgb(var(--c-primary) / 22%), transparent 70%);
     pointer-events: none;
   }
 }

@@ -21,7 +21,7 @@ export const RouteProgressBar = () => {
       className="pointer-events-none fixed inset-x-0 top-0 z-[1400] h-[3px]"
     >
       <div
-        className="h-full rounded-r-full bg-gradient-to-r from-llama-400 to-llama-600 shadow-[0_0_8px] shadow-llama-500/60 transition-[width] duration-[2500ms] ease-out"
+        className="h-full rounded-r-full bg-gradient-to-r from-primary-from to-primary-to shadow-[0_0_8px] shadow-primary/60 transition-[width] duration-[2500ms] ease-out"
         style={{ width: `${width}%` }}
       />
     </div>

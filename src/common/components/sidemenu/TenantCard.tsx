@@ -35,7 +35,7 @@ export const TenantCard = ({ mini = false }: { mini?: boolean; onNavigate?: () =
       <div className={cx(CARD, mini ? 'justify-center px-0' : 'gap-2.5')}>
         <span
           aria-hidden="true"
-          className="grid h-[26px] w-[26px] shrink-0 place-items-center overflow-hidden rounded-[7px] bg-tinta-800 text-[11px] font-bold text-llama-300"
+          className="grid h-[26px] w-[26px] shrink-0 place-items-center overflow-hidden rounded-[7px] bg-tinta-800 text-[11px] font-bold text-side-accent"
         >
           {isPlatform ? (
             <Layers className="h-3.5 w-3.5" strokeWidth={2} />

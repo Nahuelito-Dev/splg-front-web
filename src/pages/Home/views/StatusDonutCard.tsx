@@ -4,7 +4,6 @@ import { useOrderStatusCounts } from '../../../services/queries/orders';
 import { ORDER_FLOW, ORDER_STATUS } from '../../../utils/statusLabels';
 import { formatNumber } from '../../../utils/format';
 import { useChartPalette } from '../../../theme/useChartPalette';
-import brand from '../../../theme/brand.json';
 import { useStatusColors } from '../lib/useStatusColors';
 
 /** Pedidos por estado en una dona: el total va al centro y la leyenda abajo. */
@@ -50,7 +49,7 @@ export const StatusDonutCard = () => {
                 borderRadius: 10,
                 border: `1px solid ${palette.tooltipBorder}`,
                 backgroundColor: palette.tooltipBg,
-                color: palette.isDark ? brand.dark.ink : brand.tinta['900'],
+                color: palette.ink,
                 fontSize: 12,
               }}
             />

@@ -2,7 +2,14 @@ import { initialsOf } from '../../../utils/format';
 import { cx } from './cx';
 import { AVATAR_SIZES, type AvatarSize } from './avatarSizes';
 
-const TONES = ['bg-llama-500', 'bg-info', 'bg-success', 'bg-gas-600', 'bg-tinta-700', 'bg-danger'] as const;
+const TONES = [
+  'bg-primary text-on-primary',
+  'bg-info text-bg',
+  'bg-success text-bg',
+  'bg-accent text-on-accent',
+  'bg-ink-2 text-bg',
+  'bg-danger text-bg',
+] as const;
 
 /** Mismo nombre, mismo color: el hash de las letras elige el tono. */
 const toneFor = (name: string) => {
@@ -22,7 +29,7 @@ export const Avatar = ({ name, size = 'md', className }: Props) => (
   <span
     aria-hidden="true"
     className={cx(
-      'grid shrink-0 place-items-center rounded-full font-semibold text-white',
+      'grid shrink-0 place-items-center rounded-full font-semibold',
       AVATAR_SIZES[size],
       toneFor(name),
       className,

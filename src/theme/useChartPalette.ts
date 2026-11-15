@@ -1,14 +1,18 @@
 import brand from './brand.json';
+import { useSyncExternalStore } from 'react';
+import { companyThemeStore } from './companyTheme';
 import { useThemeMode } from './useThemeMode';
 
 /**
  * Los gráficos (recharts) no leen clases de Tailwind: sus colores son datos
- * (stroke, fill) que hay que elegir a mano según el tema. Esto arma ese set a
- * partir de `brand.json`, con el mismo criterio en todos los gráficos.
+ * (stroke, fill) que hay que elegir a mano según el tema. Las series de marca
+ * salen de los tokens activos; los tonos de estado mantienen su semántica.
  */
 export const useChartPalette = () => {
   const { resolvedMode } = useThemeMode();
+  const company = useSyncExternalStore(companyThemeStore.subscribe, companyThemeStore.getSnapshot);
   const isDark = resolvedMode === 'dark';
+  const tokens = company?.[resolvedMode];
 
   return {
     isDark,
@@ -23,5 +27,16 @@ export const useChartPalette = () => {
     /** Fondo y borde del tooltip. */
     tooltipBg: isDark ? brand.dark.surface : '#FFFFFF',
     tooltipBorder: isDark ? brand.dark.outline : brand.tinta['200'],
+    /** Roles de identidad: cambian junto con el tema de la distribuidora. */
+    primary: tokens?.primary ?? brand.llama['500'],
+    accent: tokens?.accent ?? brand.gas['500'],
+    primarySoft: tokens?.primarySoft ?? (isDark ? brand.dark.primarySoft : brand.llama['50']),
+    ink: isDark ? brand.dark.ink : brand.tinta['900'],
+    muted: isDark ? brand.dark.muted : brand.tinta['400'],
+    faint: isDark ? brand.dark.faint : brand.tinta['400'],
+    success: isDark ? brand.dark.status.success : brand.status.success,
+    danger: isDark ? brand.dark.status.danger : brand.status.danger,
+    warn: isDark ? brand.dark.status.warn : brand.status.warn,
+    info: isDark ? brand.dark.status.info : brand.status.info,
   };
 };

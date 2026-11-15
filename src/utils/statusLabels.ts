@@ -67,11 +67,11 @@ type LabelMap<K extends string> = Record<K, Label>;
  * trae `out_for_delivery`; `OrderRecordResponseDto` (reportes), `on_the_way`.
  */
 export const ORDER_STATUS: LabelMap<Order['status'] | OrderRecord['status']> = {
-  reserved: { text: 'Reservado', tone: 'accent' },
+  reserved: { text: 'Reservado', tone: 'neutral' },
   pending: { text: 'Pendiente', tone: 'warn' },
   accepted: { text: 'Aceptado', tone: 'info' },
-  out_for_delivery: { text: 'En camino', tone: 'primary' },
-  on_the_way: { text: 'En camino', tone: 'primary' },
+  out_for_delivery: { text: 'En camino', tone: 'info' },
+  on_the_way: { text: 'En camino', tone: 'info' },
   delivered: { text: 'Entregado', tone: 'success' },
   cancelled: { text: 'Cancelado', tone: 'danger' },
 };

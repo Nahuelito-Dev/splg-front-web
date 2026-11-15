@@ -1,5 +1,4 @@
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import brand from '../../../theme/brand.json';
 import { useChartPalette } from '../../../theme/useChartPalette';
 import { formatAxis, useTooltipStyle } from './chartColors';
 
@@ -36,8 +35,8 @@ export const TrendAreaChart = ({
         <AreaChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
           <defs>
             <linearGradient id="trend-fill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={brand.llama['500']} stopOpacity={0.28} />
-              <stop offset="100%" stopColor={brand.llama['500']} stopOpacity={0} />
+              <stop offset="0%" stopColor={palette.primary} stopOpacity={0.28} />
+              <stop offset="100%" stopColor={palette.primary} stopOpacity={0} />
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={palette.grid} />
@@ -66,7 +65,7 @@ export const TrendAreaChart = ({
               type="monotone"
               dataKey="previous"
               name={previousName}
-              stroke={palette.isDark ? brand.dark.muted : brand.tinta['400']}
+              stroke={palette.muted}
               strokeWidth={1.8}
               strokeDasharray="5 4"
               fill="none"
@@ -77,7 +76,7 @@ export const TrendAreaChart = ({
             type="monotone"
             dataKey="value"
             name={seriesName}
-            stroke={brand.llama['500']}
+            stroke={palette.primary}
             strokeWidth={2.2}
             fill="url(#trend-fill)"
             dot={false}

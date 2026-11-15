@@ -5,7 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import '@geoman-io/leaflet-geoman-free';
 import '@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css';
 import type { CoverageZone } from '../../../services/api/types';
-import brand from '../../../theme/brand.json';
+import { useChartPalette } from '../../../theme/useChartPalette';
 import { DrawPolygonController } from './DrawPolygonController';
 import { FitZonesBounds } from './FitZonesBounds';
 import { PickPointController } from './PickPointController';
@@ -43,50 +43,53 @@ export const ZoneMap = ({
   onPolygonChange,
   onPickPoint,
   pickedPoint,
-}: Props) => (
-  <div className="relative isolate h-[560px] w-full" role="group" aria-label="Mapa de zonas de cobertura">
-    <MapContainer
-      center={DEFAULT_MAP_CENTER}
-      zoom={DEFAULT_MAP_ZOOM}
-      scrollWheelZoom
-      style={{ height: '100%', width: '100%' }}
-    >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-
-      <FitZonesBounds zones={zones} />
-
-      {mode === 'draw' && <DrawPolygonController onChange={onPolygonChange} />}
-      {mode === 'pick' && <PickPointController onPick={onPickPoint} />}
-
-      {zones.map((zone) => (
-        <ZonePolygon
-          key={zone.coverage_zone_id}
-          zone={zone}
-          highlighted={zone.coverage_zone_id === selectedZoneId}
-          editable={mode === 'edit' && zone.coverage_zone_id === selectedZoneId}
-          onChange={onPolygonChange}
-          onSelect={mode === 'idle' ? () => onSelectZone(zone) : undefined}
+}: Props) => {
+  const palette = useChartPalette();
+  return (
+    <div className="relative isolate h-[560px] w-full" role="group" aria-label="Mapa de zonas de cobertura">
+      <MapContainer
+        center={DEFAULT_MAP_CENTER}
+        zoom={DEFAULT_MAP_ZOOM}
+        scrollWheelZoom
+        style={{ height: '100%', width: '100%' }}
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-      ))}
 
-      {pickedPoint && (
-        <CircleMarker
-          center={[pickedPoint.lat, pickedPoint.lng]}
-          radius={7}
-          pathOptions={{ color: brand.tinta['900'], fillOpacity: 1 }}
-        />
-      )}
-    </MapContainer>
+        <FitZonesBounds zones={zones} />
 
-    {mode !== 'idle' && (
-      /* bg-side (no bg-ink): flota sobre las teselas del mapa, siempre claras, así que el
+        {mode === 'draw' && <DrawPolygonController onChange={onPolygonChange} />}
+        {mode === 'pick' && <PickPointController onPick={onPickPoint} />}
+
+        {zones.map((zone) => (
+          <ZonePolygon
+            key={zone.coverage_zone_id}
+            zone={zone}
+            highlighted={zone.coverage_zone_id === selectedZoneId}
+            editable={mode === 'edit' && zone.coverage_zone_id === selectedZoneId}
+            onChange={onPolygonChange}
+            onSelect={mode === 'idle' ? () => onSelectZone(zone) : undefined}
+          />
+        ))}
+
+        {pickedPoint && (
+          <CircleMarker
+            center={[pickedPoint.lat, pickedPoint.lng]}
+            radius={7}
+            pathOptions={{ color: palette.ink, fillOpacity: 1 }}
+          />
+        )}
+      </MapContainer>
+
+      {mode !== 'idle' && (
+        /* bg-side (no bg-ink): flota sobre las teselas del mapa, siempre claras, así que el
          aviso se queda siempre oscuro sin importar el tema del panel. */
-      <div className="absolute left-1/2 top-3 z-[1000] -translate-x-1/2 rounded-full bg-side/90 px-3 py-1.5 text-xs text-white">
-        {HINTS[mode]}
-      </div>
-    )}
-  </div>
-);
+        <div className="absolute left-1/2 top-3 z-[1000] -translate-x-1/2 rounded-full bg-side/90 px-3 py-1.5 text-xs text-white">
+          {HINTS[mode]}
+        </div>
+      )}
+    </div>
+  );
+};

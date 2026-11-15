@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import brand from '../../../theme/brand.json';
+import { onColor } from '../../../theme/colorContrast';
+import { BRASA_TOKENS } from '../../../theme/themeTokens';
+import { companyThemeCss } from '../../../theme/companyTheme';
 import type { Tone } from '../../../utils/statusLabels';
 import { TONE_FILLED_CLASSES } from './toneClasses';
 
@@ -33,7 +36,7 @@ const SPEC: Record<Tone, { classes: string; light: [string, string]; dark: [stri
     light: [primaryGradient.to, '#FFFFFF'],
     dark: [primaryGradient.to, '#FFFFFF'],
   },
-  accent: { classes: 'bg-gas-400 text-tinta-900', light: [gas[400], tinta[900]], dark: [gas[400], tinta[900]] },
+  accent: { classes: 'bg-accent text-on-accent', light: [gas[400], tinta[900]], dark: [gas[400], tinta[900]] },
 };
 
 describe('Badge lleno: contraste', () => {
@@ -43,5 +46,15 @@ describe('Badge lleno: contraste', () => {
       const [bg, fg] = SPEC[tone][theme];
       expect(contrast(bg, fg), `${tone} ${theme}`).toBeGreaterThanOrEqual(4.5);
     }
+  });
+
+  it('«accent» usa los roles que entrega el tema activo con un texto calculado', () => {
+    expect(TONE_FILLED_CLASSES.accent).toBe('bg-accent text-on-accent');
+    const tokens = {
+      light: { ...BRASA_TOKENS.light, accent: '#A87900' },
+      dark: { ...BRASA_TOKENS.dark, accent: '#A87900' },
+    };
+    expect(onColor(tokens.light.accent)).toBe('#0B1220');
+    expect(companyThemeCss(tokens)).toContain('--c-on-accent: 11 18 32;');
   });
 });

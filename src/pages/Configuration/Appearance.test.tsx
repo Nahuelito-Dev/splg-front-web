@@ -135,6 +135,24 @@ describe('Apariencia', () => {
     );
   });
 
+  it('aplica una paleta preestablecida a la vista previa y al guardado', async () => {
+    const { preview, save } = setup();
+    fireEvent.click(screen.getByRole('button', { name: 'Violeta' }));
+    await waitFor(() =>
+      expect(preview.mutate).toHaveBeenLastCalledWith(
+        { primaryColor: '#6D28D9', accentColor: '#7B43C5', displayName: 'Nahuel Gas' },
+        expect.anything(),
+      ),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+    await waitFor(() =>
+      expect(save.mutate).toHaveBeenCalledWith(
+        { primaryColor: '#6D28D9', accentColor: '#7B43C5', displayName: 'Nahuel Gas' },
+        expect.anything(),
+      ),
+    );
+  });
+
   it('el 400 de contraste se muestra con «Usar el sugerido», que cambia el color', async () => {
     const { preview } = setup();
     preview.mutate.mockImplementation((_body: unknown, opts?: unknown) =>

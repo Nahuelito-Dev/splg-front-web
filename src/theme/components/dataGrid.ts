@@ -35,7 +35,7 @@ export const dataGridComponents = (mode: ResolvedThemeMode): Components<Theme> =
       styleOverrides: {
         root: {
           color: t.muted,
-          '&.Mui-checked, &.MuiCheckbox-indeterminate': { color: t.primary },
+          '&.Mui-checked, &.MuiCheckbox-indeterminate': { color: 'rgb(var(--c-primary))' },
           '&:hover': { backgroundColor: t.surfaceMuted },
         },
       },

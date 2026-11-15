@@ -38,7 +38,7 @@ export const DriverView = ({ day, sheetId, onPick }: Props) => {
       </div>
       <figure className="mx-auto w-[300px] max-w-full">
         <div className="overflow-hidden rounded-[38px] border-[10px] border-tinta-800 bg-surface shadow-card">
-          <div className="bg-gradient-to-br from-gas-400 to-llama-500 px-4 pb-3.5 pt-5 text-white">
+          <div className="bg-gradient-to-br from-primary-from to-primary-to px-4 pb-3.5 pt-5 text-on-primary">
             <small className="opacity-85">Hoja del {formatDay(sheet.planDate)}</small>
             <h4 className="mt-0.5 text-[17px] font-semibold">{vehicleOf(sheet)}</h4>
             <div className="mt-3 grid grid-cols-3 gap-1.5 text-[11px]">

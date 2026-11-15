@@ -41,6 +41,7 @@ import {
   valuesOf,
   type AppearanceFormValues,
 } from './appearanceRules';
+import { THEME_PRESETS } from '../../theme/themePresets';
 
 const NO_PERMISSION_HINT = 'Tu rol no tiene permiso para cambiar la configuración';
 
@@ -147,6 +148,12 @@ const AppearanceForm = ({ theme, canWrite, writeHint }: FormProps) => {
   const pick = (name: 'primaryColor' | 'accentColor', hex: string) =>
     setValue(name, hex, { shouldDirty: true, shouldValidate: true });
 
+  const choosePreset = (primaryColor: string, accentColor: string) => {
+    setValue('primaryColor', primaryColor, { shouldDirty: true, shouldValidate: true });
+    setValue('customAccent', true, { shouldDirty: true, shouldValidate: true });
+    setValue('accentColor', accentColor, { shouldDirty: true, shouldValidate: true });
+  };
+
   const submit = (form: AppearanceFormValues) => {
     setServerError(null);
     save.mutate(toThemeBody(form), {
@@ -215,6 +222,35 @@ const AppearanceForm = ({ theme, canWrite, writeHint }: FormProps) => {
           title="Colores"
           subtitle="Botones, enlaces y resaltados. Los colores de estado (error, éxito, aviso) no cambian."
         />
+        <div className="mb-5">
+          <h3 className="text-sm font-semibold text-ink">Paletas preestablecidas</h3>
+          <p className="mt-1 text-sm text-muted">
+            Elegí una base y después ajustala con el selector libre si lo necesitás.
+          </p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {THEME_PRESETS.map((preset) => (
+              <button
+                key={preset.name}
+                type="button"
+                disabled={disabled}
+                onClick={() => choosePreset(preset.primaryColor, preset.accentColor)}
+                className="flex items-center gap-2 rounded-[10px] border border-outline bg-surface px-3 py-2 text-left text-sm font-medium text-ink transition-colors hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <span
+                  aria-hidden="true"
+                  className="h-5 w-5 shrink-0 rounded-full border border-black/10"
+                  style={{ backgroundColor: preset.primaryColor }}
+                />
+                <span
+                  aria-hidden="true"
+                  className="h-3 w-3 shrink-0 rounded-full border border-black/10"
+                  style={{ backgroundColor: preset.accentColor }}
+                />
+                <span>{preset.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="grid gap-5 sm:grid-cols-2">
           <ColorField
             name="primaryColor"

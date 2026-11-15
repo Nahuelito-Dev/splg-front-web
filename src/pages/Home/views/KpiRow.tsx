@@ -1,7 +1,7 @@
 import { Banknote, PackageCheck, Receipt, Timer } from 'lucide-react';
 import { KpiCard, type KpiTrend } from '../../../common/components/ui';
 import { useOrderStats } from '../../../services/queries/stats';
-import brand from '../../../theme/brand.json';
+import { useChartPalette } from '../../../theme/useChartPalette';
 import { formatCurrency, formatNumber, percentChange } from '../../../utils/format';
 import { useSalesSummary } from '../../../services/queries/reports';
 import { dayRange, splitWindows } from '../lib/series';
@@ -30,6 +30,7 @@ const pillOf = (change: number | null) =>
  * los últimos 30 días contra los 30 anteriores.
  */
 export const KpiRow = () => {
+  const palette = useChartPalette();
   const { data: stats, isLoading: statsLoading } = useOrderStats();
   const { points, today: todayKey, isLoading: seriesLoading } = useDailySales();
 
@@ -56,11 +57,7 @@ export const KpiRow = () => {
         value={formatCurrency(stats?.sales.today)}
         loading={statsLoading}
         aside={
-          <Sparkline
-            values={last7.map((p) => p.sales)}
-            color={brand.llama['500']}
-            label="Ventas de los últimos 7 días"
-          />
+          <Sparkline values={last7.map((p) => p.sales)} color={palette.primary} label="Ventas de los últimos 7 días" />
         }
         pill={seriesLoading || !today || !yesterday ? undefined : pillOf(percentChange(today.sales, yesterday.sales))}
         hint="vs. ayer"
@@ -95,7 +92,7 @@ export const KpiRow = () => {
         aside={
           <Sparkline
             values={last7.map((p) => p.orders)}
-            color={brand.status.success}
+            color={palette.success}
             label="Entregas de los últimos 7 días"
           />
         }
@@ -110,7 +107,7 @@ export const KpiRow = () => {
         aside={
           <Sparkline
             values={month.current.map((p) => p.sales)}
-            color={brand.gas['500']}
+            color={palette.accent}
             label="Ventas de los últimos 30 días"
           />
         }
