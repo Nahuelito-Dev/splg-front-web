@@ -46,6 +46,7 @@ import { CustomerAddresses } from './components/details/CustomerAddresses';
 import { CustomerClaims } from './components/details/CustomerClaims';
 import { CustomerLocationModal } from './components/details/CustomerLocationModal';
 import { CustomerOrders } from './components/details/CustomerOrders';
+import { MessageButton } from '../../features/chat/inbox/MessageButton';
 import { CustomerRepurchase } from './components/details/CustomerRepurchase';
 import { CustomerSummary } from './components/details/CustomerSummary';
 import { removalConfirmation, removalError } from './customerRemoval';
@@ -202,6 +203,9 @@ export const CustomerDetails = () => {
             <>
               <AuditHistoryLink entity="Customer" recordId={customer.customer_id} />
               <CustomerAccountAction userId={customer.user_id} name={customer.user?.full_name ?? ''} />
+              <MessageButton
+                target={{ kind: 'customer', userId: customer.user_id, name: customer.user?.full_name ?? '' }}
+              />
               {canManageCustomerAccounts && (
                 <Button variant="secondary" size="sm" icon={<PencilLine />} onClick={() => setEditing(true)}>
                   Editar cuenta

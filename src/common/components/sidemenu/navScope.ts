@@ -27,6 +27,8 @@ export const isNavItemVisible = (item: NavItem, viewer: NavViewer): boolean => {
   if (item.module && viewer.modules?.[item.module] === false) return false;
   if (viewer.mode === 'support') return !item.companyAdminOnly;
   // Mientras no se saben los permisos no se esconde nada: la API igual responde 403 si no corresponde.
-  if (!item.permission || viewer.permissions === 'all' || viewer.permissions === null) return true;
-  return viewer.permissions.includes(item.permission);
+  if (viewer.permissions === 'all' || viewer.permissions === null) return true;
+  const granted = viewer.permissions;
+  if (item.anyPermission && !item.anyPermission.some((code) => granted.includes(code))) return false;
+  return !item.permission || granted.includes(item.permission);
 };

@@ -1,8 +1,10 @@
-import { Lock, SendHorizontal } from 'lucide-react';
+import { Check, CornerUpLeft, Lock, PencilLine, SendHorizontal, X } from 'lucide-react';
 import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { cx } from '../../../common/components/ui';
 import { MESSAGE_MAX } from '../../../services/api/supportChat';
 import type { MessageTemplate } from '../../../services/api/types';
+import type { SendExtras } from '../../../services/queries/chatThread';
+import { fillVariables } from '../variables';
 
 /** Un «escribiendo…» cada 3 segundos como mucho (el servidor descarta los que vengan antes). */
 export const TYPING_EVERY_MS = 3000;
@@ -31,33 +33,83 @@ const writeDraft = (key: string | undefined, text: string) => {
   }
 };
 
+/** Una respuesta rápida: de la plataforma o guardada por la empresa (`/` las abre). */
+export type QuickReply = Pick<MessageTemplate, 'id' | 'key' | 'title' | 'body' | 'active'>;
+
+/** Arriba del compositor: a qué mensaje se responde, o qué mensaje se está editando. */
+export interface ComposerBanner {
+  kind: 'reply' | 'edit';
+  /** «Respondés a Lucía» / «Editando tu mensaje». */
+  title: string;
+  /** El texto del mensaje (una línea). */
+  preview: string;
+}
+
 interface Props {
   /** Dónde se guarda el borrador (la conversación). */
   draftKey?: string;
-  onSend: (body: string, visibility?: 'all' | 'internal') => void;
+  /**
+   * Envía. `extras` (sólo si hay algo): la visibilidad en un ticket, o la respuesta guardada elegida si el texto quedó
+   * tal cual (el back completa sus variables).
+   */
+  onSend: (body: string, extras?: SendExtras) => void;
   /** Avisa que se está escribiendo (ya con tope). */
   onTyping?: () => void;
   placeholder?: string;
-  /** Respuestas rápidas de la plataforma: `/` las abre. */
-  quickReplies?: MessageTemplate[];
+  /** Respuestas rápidas: `/` las abre. */
+  quickReplies?: QuickReply[];
   /** Selector «Responder / Nota interna» (sólo en un ticket, del lado de la plataforma). */
   allowInternal?: boolean;
   /** Texto a cargar en el compositor (p. ej. lo de un envío descartado). */
   draft?: { text: string; nonce: number } | null;
+  /** Respuesta a un mensaje o edición en curso: se muestra arriba y se cancela con Esc o con la cruz. */
+  banner?: ComposerBanner | null;
+  onCancelBanner?: () => void;
+  /** Avisa a quien muestra el hilo que hay que enfocar el compositor (p. ej. al elegir «Responder»). */
+  focusKey?: number;
+  /**
+   * El texto a editar (con `banner.kind === 'edit'`). La edición nunca se guarda como borrador: lo que se estaba
+   * escribiendo queda guardado y vuelve al terminar o cancelar la edición.
+   */
+  editText?: { text: string; nonce: number } | null;
+  /**
+   * Los valores de las variables `{{…}}` de las respuestas guardadas (bandeja). Si se envía un texto propio con
+   * variables, se completan acá; si alguna no tiene valor (o no existe), no se envía y se pide completarla: nunca sale
+   * una `{{…}}` literal.
+   */
+  variables?: Readonly<Record<string, string | null>>;
 }
 
 /**
  * El compositor: Enter envía, Shift+Enter hace un salto de línea, crece con el texto y cuenta hasta 2000. No se
  * envía vacío. El texto sale del compositor recién cuando está en el hilo como «enviando» (nunca se pierde).
  */
-export const Composer = ({ draftKey, onSend, onTyping, placeholder, quickReplies, allowInternal, draft }: Props) => {
+export const Composer = ({
+  draftKey,
+  onSend,
+  onTyping,
+  placeholder,
+  quickReplies,
+  allowInternal,
+  draft,
+  banner,
+  onCancelBanner,
+  focusKey,
+  editText,
+  variables,
+}: Props) => {
   const [text, setTextState] = useState(() => readDraft(draftKey));
+  const editing = banner?.kind === 'edit';
+  // Mientras se edita, lo que se escribe no es el borrador de la conversación: no se guarda.
   const setText = (value: string) => {
     setTextState(value);
-    writeDraft(draftKey, value);
+    if (!editing) writeDraft(draftKey, value);
   };
+  const [missing, setMissing] = useState<string[]>([]);
   const [internal, setInternal] = useState(false);
   const [picker, setPicker] = useState(false);
+  // La respuesta guardada elegida: si se envía sin tocarla, va su id y el back completa las variables.
+  const [chosen, setChosen] = useState<QuickReply | null>(null);
   const [active, setActive] = useState(0);
   const area = useRef<HTMLTextAreaElement>(null);
   const countId = useId();
@@ -77,6 +129,20 @@ export const Composer = ({ draftKey, onSend, onTyping, placeholder, quickReplies
 
   useEffect(() => setTextState(readDraft(draftKey)), [draftKey]);
 
+  // Entra a editar: el texto del mensaje (sin tocar el borrador guardado). Sale: vuelve el borrador que había.
+  useEffect(() => {
+    if (editText) setTextState(editText.text);
+  }, [editText]);
+  const wasEditing = useRef(editing);
+  useEffect(() => {
+    if (wasEditing.current && !editing) setTextState(readDraft(draftKey));
+    wasEditing.current = editing;
+  }, [editing, draftKey]);
+
+  useEffect(() => {
+    if (focusKey) area.current?.focus();
+  }, [focusKey]);
+
   useLayoutEffect(() => {
     const el = area.current;
     if (!el) return;
@@ -86,13 +152,29 @@ export const Composer = ({ draftKey, onSend, onTyping, placeholder, quickReplies
 
   const submit = () => {
     if (!canSend) return;
-    onSend(trimmed, allowInternal ? (internal ? 'internal' : 'all') : undefined);
+    const extras: SendExtras = {};
+    if (allowInternal) extras.visibility = internal ? 'internal' : 'all';
+    const untouched = !editing && chosen !== null && trimmed === chosen.body.trim();
+    if (untouched) extras.templateId = chosen.id;
+    let body = trimmed;
+    if (variables && !untouched) {
+      const filled = fillVariables(trimmed, variables);
+      if (filled.missing.length) {
+        setMissing(filled.missing);
+        return;
+      }
+      body = filled.text;
+    }
+    setMissing([]);
+    onSend(body, Object.keys(extras).length ? extras : undefined);
     setText('');
+    setChosen(null);
     setPicker(false);
   };
 
-  const choose = (template: MessageTemplate) => {
+  const choose = (template: QuickReply) => {
     setText(template.body);
+    setChosen(template);
     setPicker(false);
     area.current?.focus();
   };
@@ -125,6 +207,12 @@ export const Composer = ({ draftKey, onSend, onTyping, placeholder, quickReplies
         return;
       }
     }
+    if (event.key === 'Escape' && banner && onCancelBanner) {
+      event.preventDefault();
+      event.stopPropagation();
+      onCancelBanner();
+      return;
+    }
     if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
       event.preventDefault();
       submit();
@@ -133,7 +221,8 @@ export const Composer = ({ draftKey, onSend, onTyping, placeholder, quickReplies
 
   const onChange = (value: string) => {
     setText(value);
-    setPicker(Boolean(quickReplies?.length) && value.startsWith('/'));
+    if (missing.length) setMissing([]);
+    setPicker(!editing && Boolean(quickReplies?.length) && value.startsWith('/'));
     setActive(0);
     const now = Date.now();
     if (onTyping && value.trim() && now - lastTyping.current >= TYPING_EVERY_MS) {
@@ -149,6 +238,34 @@ export const Composer = ({ draftKey, onSend, onTyping, placeholder, quickReplies
 
   return (
     <div className="relative border-t border-outline bg-surface p-2.5">
+      {banner && (
+        <div
+          className={cx(
+            'mb-2 flex items-start gap-2 rounded-lg border-l-[3px] bg-surface-muted px-3 py-1.5',
+            banner.kind === 'edit' ? 'border-warn' : 'border-primary',
+          )}
+        >
+          {banner.kind === 'edit' ? (
+            <PencilLine aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warn" />
+          ) : (
+            <CornerUpLeft aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold text-ink">{banner.title}</p>
+            <p className="truncate text-xs text-muted">{banner.preview}</p>
+          </div>
+          {onCancelBanner && (
+            <button
+              type="button"
+              onClick={onCancelBanner}
+              aria-label={banner.kind === 'edit' ? 'Cancelar la edición' : 'Cancelar la respuesta'}
+              className="rounded p-0.5 text-muted hover:bg-surface-hover hover:text-ink"
+            >
+              <X aria-hidden="true" className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+      )}
       {picker && (
         <ul
           id={listId}
@@ -215,32 +332,49 @@ export const Composer = ({ draftKey, onSend, onTyping, placeholder, quickReplies
           onChange={(event) => onChange(event.target.value)}
           onKeyDown={onKeyDown}
           aria-label="Mensaje"
-          aria-describedby={countId}
+          aria-describedby={missing.length ? `${countId} ${countId}-vars` : countId}
+          aria-invalid={missing.length > 0 || undefined}
           aria-controls={picker ? listId : undefined}
           aria-activedescendant={picker && options.length > 0 ? optionId(active) : undefined}
           placeholder={placeholder ?? 'Escribí un mensaje'}
           className={cx(
             'min-h-[40px] flex-1 resize-none rounded-xl border bg-bg px-3 py-2 text-sm text-ink placeholder:text-faint',
             'focus:outline-none focus:ring-2 focus:ring-primary/40',
-            internal ? 'border-warn/50' : 'border-outline',
+            missing.length ? 'border-danger' : internal ? 'border-warn/50' : 'border-outline',
           )}
         />
         <button
           type="button"
           onClick={submit}
           disabled={!canSend}
-          aria-label={internal ? 'Guardar nota interna' : 'Enviar'}
+          aria-label={editing ? 'Guardar la edición' : internal ? 'Guardar nota interna' : 'Enviar'}
           className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary text-on-primary transition-opacity disabled:opacity-40"
         >
-          <SendHorizontal aria-hidden="true" className="h-4 w-4" />
+          {editing ? (
+            <Check aria-hidden="true" className="h-4 w-4" />
+          ) : (
+            <SendHorizontal aria-hidden="true" className="h-4 w-4" />
+          )}
         </button>
       </div>
+      {missing.length > 0 && (
+        <p id={`${countId}-vars`} role="alert" className="mt-1.5 px-1 text-xs text-danger">
+          Completá las variables antes de enviar:{' '}
+          {missing.map((name) => (
+            <mark key={name} className="mr-1 rounded bg-danger-soft px-1 font-mono text-danger">
+              {`{{${name}}}`}
+            </mark>
+          ))}
+        </p>
+      )}
       <p
         id={countId}
         className={cx('mt-1 flex justify-between px-1 text-[11px]', tooLong ? 'text-danger' : 'text-faint')}
       >
         <span className="hidden sm:inline">
-          Enter envía · Shift+Enter, otra línea{quickReplies ? ' · / respuestas' : ''}
+          {editing ? 'Enter guarda · Esc cancela' : 'Enter envía · Shift+Enter, otra línea'}
+          {!editing && quickReplies ? ' · / respuestas' : ''}
+          {banner?.kind === 'reply' ? ' · Esc cancela la respuesta' : ''}
         </span>
         <span>
           {text.length}/{MESSAGE_MAX}

@@ -3,6 +3,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const perms = vi.hoisted(() => ({ data: undefined as unknown }));
+vi.mock('../../../features/chat/components/InboxNavBadge', () => ({ InboxNavBadge: () => null }));
 vi.mock('../../../services/queries/permissions', () => ({ useMyPermissions: () => ({ data: perms.data }) }));
 const mods = vi.hoisted(() => ({ enabledByKey: null as Record<string, boolean> | null }));
 vi.mock('../../../services/queries/modules', () => ({

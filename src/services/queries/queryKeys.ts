@@ -78,6 +78,7 @@ export const queryKeys = {
   suppliers: resource('suppliers'),
   supportAccess: resource('supportAccess'),
   supportChat: resource('supportChat'),
+  inbox: resource('inbox'),
   supportSessions: resource('supportSessions'),
   platform: resource('platform'),
   platformConsole: resource('platformConsole'),

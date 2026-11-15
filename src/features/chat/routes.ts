@@ -9,3 +9,9 @@ export const PLATFORM_TICKETS_PATH = '/platform/tickets';
 export const platformChatHref = (conversationId: string) =>
   `${PLATFORM_CHATS_PATH}/${encodeURIComponent(conversationId)}`;
 export const platformTicketHref = (ticketId: string) => `${PLATFORM_TICKETS_PATH}/${encodeURIComponent(ticketId)}`;
+
+/** La bandeja de la empresa con clientes y choferes (CH4). */
+export const MESSAGES_PATH = '/messages';
+export const MESSAGES_SETTINGS_PATH = '/messages/settings';
+export const messageHref = (conversationId: string) => `${MESSAGES_PATH}/${encodeURIComponent(conversationId)}`;
+export const claimHref = (claimId: string) => `/claims?claim=${encodeURIComponent(claimId)}`;

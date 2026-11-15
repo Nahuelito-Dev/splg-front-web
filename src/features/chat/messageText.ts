@@ -60,10 +60,41 @@ export const ticketOfSystem = (message: MessageDto): { ticketId: string; number:
   return ticketId ? { ticketId, number: text(payload.number) } : null;
 };
 
-/** El texto de un mensaje de sistema: el back manda la clave y los datos; el texto lo arma el panel. */
-export const systemText = (message: MessageDto, platformName: string): string => {
+/** El reclamo que nombra un mensaje de sistema `claim_created` de la bandeja. */
+export const claimOfSystem = (message: MessageDto): string | null =>
+  message.systemCode === 'claim_created' ? text(message.payload?.claimId) || null : null;
+
+/**
+ * El texto de un mensaje de sistema: el back manda la clave y los datos; el texto lo arma el panel. `inbox`: la
+ * bandeja de la empresa con clientes y choferes (quien mira es la empresa).
+ */
+export const systemText = (
+  message: MessageDto,
+  platformName: string,
+  variant: 'support' | 'inbox' = 'support',
+): string => {
   const payload = message.payload ?? {};
   const number = text(payload.number);
+  if (variant === 'inbox') {
+    switch (message.systemCode) {
+      case 'conversation_opened':
+        return 'Se abrió la conversación';
+      case 'closed_manual':
+        return 'Se cerró la conversación. Queda en lectura; si te vuelven a escribir, se abre otra.';
+      case 'closed_inactivity':
+        return 'Se cerró por inactividad';
+      case 'reopened':
+        return 'Se reabrió la conversación';
+      case 'driver_changed':
+        return 'El pedido pasó a otro chofer: esta conversación queda en lectura';
+      case 'claim_created':
+        return 'Se creó un reclamo desde esta conversación';
+      case 'received_ack':
+        return message.body ?? 'Se le avisó que alguien del equipo lo va a atender a la brevedad';
+      default:
+        return message.body ?? '';
+    }
+  }
   switch (message.systemCode) {
     case 'conversation_opened':
       return 'Se abrió el chat';

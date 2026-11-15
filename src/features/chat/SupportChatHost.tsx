@@ -4,6 +4,9 @@ import { useLocation } from 'react-router-dom';
 import { Drawer, Skeleton } from '../../common/components/ui';
 import { usePlatform } from '../../services/queries/supportSessions';
 import { SUPPORT_PATH } from './routes';
+import { useInboxUnread } from '../../services/queries/inbox';
+import { useInboxAccess } from './useInboxAccess';
+import { useInboxBridge } from './useInboxBridge';
 import { useSupportChatBridge } from './useSupportChatBridge';
 import { useSupportSide, useSupportUnread } from './useSupportSide';
 
@@ -35,8 +38,8 @@ const PanelSkeleton = () => (
 );
 
 /**
- * Lo del chat con la plataforma que vive en todo el panel: el puente del socket (uno solo), el título de la pestaña
- * con lo sin leer y, para la empresa, la burbuja «Ayuda» que abre el chat a un costado (a pantalla completa en el
+ * Lo del chat que vive en todo el panel: los puentes del socket (chat con la plataforma y bandeja de la empresa, uno de
+ * cada uno), el título de la pestaña con lo sin leer de los dos y, para la empresa, la burbuja «Ayuda» que abre el chat a un costado (a pantalla completa en el
  * celular) sin salir de la pantalla. En «Ayuda» no se muestra: ya se está en el chat.
  */
 export const SupportChatHost = () => {
@@ -46,7 +49,10 @@ export const SupportChatHost = () => {
   const { pathname } = useLocation();
   const [open, setOpen] = useState(false);
   useSupportChatBridge(side, side === 'company' ? `Mensaje de ${platformName}` : 'Mensaje de una empresa');
-  useUnreadTitle(side ? unread : 0);
+  const inbox = useInboxAccess();
+  useInboxBridge(inbox.any);
+  const inboxUnread = useInboxUnread(inbox.any).data ?? 0;
+  useUnreadTitle((side ? unread : 0) + (inbox.any ? inboxUnread : 0));
 
   const onSupportPage = pathname === SUPPORT_PATH || pathname.startsWith(`${SUPPORT_PATH}/`);
   useEffect(() => {

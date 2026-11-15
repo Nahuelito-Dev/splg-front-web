@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { List, RefreshCw } from 'lucide-react';
+import { List, Megaphone, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Badge, Button, PageHeader, SearchInput, PageContainer } from '../../common/components/ui';
+import { BroadcastDriversModal } from '../../features/chat/inbox/BroadcastDriversModal';
+import { useInboxAccess } from '../../features/chat/useInboxAccess';
 import { usePermissions } from '../../hooks';
 import type { Order } from '../../services/api/types';
 import { useAssignOrderDelivery, useDispatchBoard } from '../../services/queries/orders';
@@ -27,6 +29,8 @@ export const DispatchBoard = () => {
   const board = useDispatchBoard({ refetchInterval });
   const assignDelivery = useAssignOrderDelivery();
   const [search, setSearch] = useState('');
+  const inbox = useInboxAccess();
+  const [broadcasting, setBroadcasting] = useState(false);
   const [previewingId, setPreviewingId] = useState<string | null>(null);
   const [assigning, setAssigning] = useState<Order | null>(null);
   const [now, setNow] = useState(() => Date.now());
@@ -102,6 +106,11 @@ export const DispatchBoard = () => {
             <Button variant="secondary" icon={<List />} onClick={() => navigate('/orders')}>
               Ver como lista
             </Button>
+            {inbox.drivers && (
+              <Button variant="secondary" icon={<Megaphone />} onClick={() => setBroadcasting(true)}>
+                Avisar a varios choferes
+              </Button>
+            )}
           </>
         }
       />
@@ -156,6 +165,7 @@ export const DispatchBoard = () => {
         assigning={assignDelivery.isPending}
         error={assignDelivery.error}
       />
+      <BroadcastDriversModal open={broadcasting} onClose={() => setBroadcasting(false)} />
     </PageContainer>
   );
 };

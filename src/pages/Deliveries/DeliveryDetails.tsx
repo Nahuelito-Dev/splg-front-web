@@ -1,3 +1,4 @@
+import { MessageButton } from '../../features/chat/inbox/MessageButton';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   AuditHistoryLink,
@@ -46,7 +47,16 @@ export const DeliveryDetails = () => {
     <PageContainer size="md">
       <PageHeader
         title="Ficha del chofer"
-        actions={delivery && <AuditHistoryLink entity="Delivery" recordId={delivery.delivery_id} />}
+        actions={
+          delivery && (
+            <>
+              <AuditHistoryLink entity="Delivery" recordId={delivery.delivery_id} />
+              <MessageButton
+                target={{ kind: 'driver', userId: delivery.user_id, name: delivery.user?.full_name ?? '' }}
+              />
+            </>
+          )
+        }
       />
 
       {isPending ? (

@@ -18,6 +18,7 @@ import {
   ReasonModal,
   type MenuAction,
 } from '../../../../common/components/ui';
+import { MessageButton } from '../../../../features/chat/inbox/MessageButton';
 import { usePdfDownload, usePermissions } from '../../../../hooks';
 import type { Order } from '../../../../services/api/types';
 import { formatDateTime, formatShortId } from '../../../../utils/format';
@@ -174,6 +175,15 @@ export const OrderDetailsToolbar = ({ order }: { order: Order }) => {
         actions={
           <>
             <AuditHistoryLink entity="Order" recordId={order.order_id} />
+            <MessageButton
+              target={{
+                kind: 'order',
+                orderId: order.order_id,
+                label: `pedido ${formatShortId(order.order_id)}`,
+                customerName: order.customer ? (order.customer.full_name ?? 'el cliente') : null,
+                driverName: order.delivery_id ? (order.delivery_name ?? 'el chofer asignado') : null,
+              }}
+            />
             {primary}
             {order.paymentStatus === 'unpaid' && <ResolveUnpaidAction order={order} />}
             <OrderPaymentActions order={order} />

@@ -40,6 +40,10 @@ const DATA: Record<string, Order[]> = {
   delivered: [order('d-000005', 'delivered', 'Eva Luna', { actual_delivery_date: today })],
 };
 
+vi.mock('../../features/chat/useInboxAccess', () => ({
+  useInboxAccess: () => ({ customers: false, drivers: false, configure: false, claims: false, any: false }),
+}));
+vi.mock('../../features/chat/inbox/BroadcastDriversModal', () => ({ BroadcastDriversModal: () => null }));
 vi.mock('../../hooks', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   usePermissions: () => ({

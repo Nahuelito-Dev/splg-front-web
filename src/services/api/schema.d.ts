@@ -10650,6 +10650,407 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/conversations': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * La bandeja: conversaciones con clientes y choferes
+     * @description Sólo los canales que atiende quien pide. Ordenadas por el último mensaje. `counts` son las abiertas de esos canales: sin asignar, asignadas a quien pide y todas.
+     */
+    get: operations['CompanyInboxController_listar'];
+    put?: never;
+    /**
+     * Escribirle a un cliente o a un chofer
+     * @description General (con `customerId` o `driverId`) o por un pedido (`orderId`: el cliente o el chofer salen del pedido). Si ya hay una abierta del mismo tema, se agrega el mensaje (200); si no, se crea (201). El mismo `clientMessageId` repetido devuelve el mensaje ya guardado (200).
+     */
+    post: operations['CompanyInboxController_abrir'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/conversations/broadcast-drivers': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Un mismo mensaje a varios choferes
+     * @description Uno en la conversación general de cada chofer (la abierta o una nueva): nadie ve las respuestas de los otros. Hasta 50. Repetir el `clientBatchId` no duplica.
+     */
+    post: operations['CompanyInboxController_difundir'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/conversations/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Una conversación de la bandeja */
+    get: operations['CompanyInboxController_una'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/conversations/{id}/messages': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Mensajes de una conversación
+     * @description Por número: `afterSeq` (los posteriores, para reconectar) o `beforeSeq` (los anteriores); sin ninguno, los últimos. Siempre en orden de `seq`.
+     */
+    get: operations['CompanyInboxController_mensajes'];
+    put?: never;
+    /**
+     * Responder
+     * @description Texto o una respuesta guardada (`templateId`, el back completa sus variables). `replyToSeq` responde a un mensaje anterior de la misma conversación. Reintentar con el mismo `clientMessageId` devuelve el mensaje ya guardado (200).
+     */
+    post: operations['CompanyInboxController_enviar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/conversations/{id}/messages/{messageId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Editar un mensaje propio
+     * @description Sólo quien lo escribió (no un compañero), sólo texto y hasta 15 minutos después de enviarlo, con la conversación abierta. Queda la marca `editedAt` y el texto anterior en el historial. La otra punta lo recibe por el socket (`chat:message-edited`).
+     */
+    patch: operations['CompanyInboxController_editar'];
+    trace?: never;
+  };
+  '/api/v2/conversations/{id}/assign': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Asignar (o devolver a la cola)
+     * @description A alguien del personal de la empresa que atienda el canal; `userId: null` la devuelve a la cola. Tomarla es asignársela a uno mismo.
+     */
+    post: operations['CompanyInboxController_asignar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/conversations/{id}/close': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Cerrar
+     * @description Queda en lectura. El cliente o el chofer que vuelva a escribir abre otra; la empresa la puede reabrir.
+     */
+    post: operations['CompanyInboxController_cerrar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/conversations/{id}/reopen': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Reabrir
+     * @description Una abierta queda igual.
+     */
+    post: operations['CompanyInboxController_reabrir'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/conversations/{id}/read': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Marcar leído hasta un mensaje
+     * @description La lectura es de cada persona; el cliente o el chofer ven como «leído» lo máximo que leyó alguien de la empresa. Nunca baja.
+     */
+    post: operations['CompanyInboxController_leer'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/conversations/{id}/claim': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Crear un reclamo desde la conversación
+     * @description Sólo en una conversación abierta con un cliente y con `reclamos.gestionar`. El reclamo (que sigue su propia máquina), el vínculo (`linkedClaimId`) y el mensaje de sistema `claim_created` se guardan juntos o nada. En una por pedido, el reclamo va por ese pedido. Repetir el mismo reclamo devuelve el ya creado (200).
+     */
+    post: operations['CompanyInboxController_reclamo'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/chat/settings': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Parámetros de la bandeja
+     * @description Con los textos que se mandan de verdad (`effective*`) y si la empresa atiende ahora.
+     */
+    get: operations['CompanyChatConfigController_leer'];
+    /**
+     * Cambiar los parámetros de la bandeja
+     * @description Lo que no viene queda como estaba.
+     */
+    put: operations['CompanyChatConfigController_actualizar'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/chat/business-hours': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Horario de atención del chat */
+    get: operations['CompanyChatConfigController_horario'];
+    /**
+     * Cambiar el horario de atención del chat
+     * @description Franjas por día de la semana (0 = domingo, sin solaparse) y días sin atención. Lo que no viene queda como estaba.
+     */
+    put: operations['CompanyChatConfigController_actualizarHorario'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/chat/templates': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Respuestas guardadas de la empresa
+     * @description Con `channel`, las de ese canal y las de los dos.
+     */
+    get: operations['CompanyChatConfigController_listarPlantillas'];
+    put?: never;
+    /** Nueva respuesta guardada */
+    post: operations['CompanyChatConfigController_crearPlantilla'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/chat/templates/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Dar de baja una respuesta guardada
+     * @description Baja lógica: los mensajes que la usaron quedan igual.
+     */
+    delete: operations['CompanyChatConfigController_bajaPlantilla'];
+    options?: never;
+    head?: never;
+    /** Cambiar una respuesta guardada */
+    patch: operations['CompanyChatConfigController_actualizarPlantilla'];
+    trace?: never;
+  };
+  '/api/v2/me/conversations': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Mis conversaciones con la empresa
+     * @description El cliente, las suyas con la empresa del `X-Distributor`; el chofer, las suyas con la de su perfil. Por el último mensaje.
+     */
+    get: operations['MyConversationsController_listar'];
+    put?: never;
+    /**
+     * Escribirle a la empresa
+     * @description `general`: el cliente necesita un vínculo vigente o algún pedido con la empresa (si no, 404); el chofer, ser de la empresa. `order`: un pedido propio (el del cliente, o el que lleva el chofer), hasta 30 días después de entregado o cancelado. Con una abierta del mismo tema se agrega el mensaje (200); si no, se crea (201). El mismo `clientMessageId` repetido devuelve el mensaje ya guardado (200).
+     */
+    post: operations['MyConversationsController_abrir'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/me/conversations/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Una conversación mía */
+    get: operations['MyConversationsController_una'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/me/conversations/{id}/messages': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Mensajes de una conversación mía
+     * @description `afterSeq` (reconexión) o `beforeSeq` (historial); sin ninguno, los últimos. En orden de `seq`.
+     */
+    get: operations['MyConversationsController_mensajes'];
+    put?: never;
+    /**
+     * Escribir en una conversación mía
+     * @description `replyToSeq` responde a un mensaje anterior de la misma conversación. Reintentar con el mismo `clientMessageId` devuelve el mensaje ya guardado (200). Fuera del horario de la empresa, al cliente le responde el sistema una vez por período cerrado.
+     */
+    post: operations['MyConversationsController_enviar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/me/conversations/{id}/messages/{messageId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Borrar un mensaje mío (sólo el cliente)
+     * @description D-C23: el cliente borra su texto en una conversación general con la empresa, hasta 15 minutos después de enviarlo. Queda en su lugar con `deleted: true` y sin texto, para las dos puntas (llega `chat:message-deleted`). No se borra si la conversación es por un pedido, si el mensaje forma parte de un reclamo o de un ticket, o si ya respondieron citándolo. Borrar otra vez devuelve lo mismo.
+     */
+    delete: operations['MyConversationsController_borrar'];
+    options?: never;
+    head?: never;
+    /**
+     * Editar un mensaje mío
+     * @description Sólo texto propio, hasta 15 minutos después de enviarlo y con la conversación abierta. Queda la marca `editedAt`; la empresa lo recibe en vivo.
+     */
+    patch: operations['MyConversationsController_editar'];
+    trace?: never;
+  };
+  '/api/v2/me/conversations/{id}/read': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Marcar leído hasta un mensaje
+     * @description La empresa lo ve como «leído». Nunca baja.
+     */
+    post: operations['MyConversationsController_leer'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v2/platform': {
     parameters: {
       query?: never;
@@ -10972,6 +11373,122 @@ export interface paths {
     options?: never;
     head?: never;
     patch?: never;
+    trace?: never;
+  };
+  '/api/v2/company/assistant/faqs': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Preguntas frecuentes del asistente
+     * @description Las vigentes, en el orden en que se cargaron, con la versión de la base (la usa el asistente para saber si su contexto sigue vigente) y el tope de preguntas.
+     */
+    get: operations['CompanyAssistantFaqController_listar'];
+    put?: never;
+    /**
+     * Nueva pregunta frecuente
+     * @description Texto plano. Sube la versión de la base. Queda en la auditoría. Máximo 200 por distribuidora. En modo soporte, 403 `SUPPORT_READ_ONLY`.
+     */
+    post: operations['CompanyAssistantFaqController_crear'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/company/assistant/faqs/from-templates': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Copiar las plantillas de OrixTech
+     * @description Copia a la base las plantillas vigentes de la plataforma que todavía no tiene (por su clave o porque ya hay una pregunta igual), para ajustarlas después. Idempotente: repetirlo no duplica nada ni sube la versión. Todo o nada: si no entran todas bajo el tope, no copia ninguna (409). En modo soporte, 403 `SUPPORT_READ_ONLY`.
+     */
+    post: operations['CompanyAssistantFaqController_copiarPlantillas'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/company/assistant/faqs/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Dar de baja una pregunta frecuente
+     * @description Baja lógica: el asistente deja de usarla y la pregunta queda libre para cargarla de nuevo. Sube la versión de la base. En modo soporte, 403 `SUPPORT_READ_ONLY`.
+     */
+    delete: operations['CompanyAssistantFaqController_darDeBaja'];
+    options?: never;
+    head?: never;
+    /**
+     * Editar una pregunta frecuente
+     * @description Lo que no viene queda como estaba. Si cambia algo, sube la versión de la base. En modo soporte, 403 `SUPPORT_READ_ONLY`.
+     */
+    patch: operations['CompanyAssistantFaqController_actualizar'];
+    trace?: never;
+  };
+  '/api/v2/platform/assistant/faqs': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Preguntas frecuentes de la plataforma
+     * @description Las vigentes, con su clave y si se ofrecen como plantilla, la versión de la base y el tope de preguntas.
+     */
+    get: operations['PlatformAssistantFaqController_listar'];
+    put?: never;
+    /**
+     * Nueva pregunta frecuente de la plataforma
+     * @description Texto plano, con su clave. Por omisión se ofrece como plantilla a las distribuidoras. Sube la versión de la base. Máximo 200.
+     */
+    post: operations['PlatformAssistantFaqController_crear'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/platform/assistant/faqs/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Dar de baja una pregunta frecuente de la plataforma
+     * @description Baja lógica: deja de usarse y de ofrecerse como plantilla; su clave queda libre. Lo ya copiado a las distribuidoras sigue. Sube la versión de la base.
+     */
+    delete: operations['PlatformAssistantFaqController_darDeBaja'];
+    options?: never;
+    head?: never;
+    /**
+     * Editar una pregunta frecuente de la plataforma
+     * @description Lo que no viene queda como estaba; la clave no cambia. Lo ya copiado a las distribuidoras no se toca: cada una ajusta la suya. Si cambia algo, sube la versión de la base.
+     */
+    patch: operations['PlatformAssistantFaqController_actualizar'];
     trace?: never;
   };
 }
@@ -23646,7 +24163,7 @@ export interface components {
     };
     CounterpartDto: {
       /** @enum {string} */
-      party: 'platform' | 'company' | 'system';
+      party: 'platform' | 'company' | 'customer' | 'driver' | 'system';
       /** @example Soporte OrixTech */
       displayName: string;
       photoUrl: string | null;
@@ -23666,7 +24183,7 @@ export interface components {
       /** Format: date-time */
       at: string;
       /** @enum {string} */
-      party: 'platform' | 'company' | 'system';
+      party: 'platform' | 'company' | 'customer' | 'driver' | 'system';
     };
     TicketOriginDto: {
       /**
@@ -23758,9 +24275,9 @@ export interface components {
       distributorId: string;
       distributorName: string;
       /** @enum {string} */
-      channel: 'platform_chat' | 'platform_ticket';
+      channel: 'platform_chat' | 'platform_ticket' | 'staff_customer' | 'staff_driver';
       /** @enum {string} */
-      subjectType: 'general' | 'ticket';
+      subjectType: 'general' | 'ticket' | 'order';
       counterpart: components['schemas']['CounterpartDto'];
       /** @enum {string} */
       status: 'open' | 'closed';
@@ -23780,7 +24297,7 @@ export interface components {
       /** @description Sólo en el chat: los tickets que salieron de él */
       ticketsFromHere?: components['schemas']['TicketSummaryDto'][];
       /** @enum {string|null} */
-      closedReason: 'manual' | 'inactivity' | 'ticket_closed' | null;
+      closedReason: 'manual' | 'inactivity' | 'ticket_closed' | 'driver_changed' | null;
       /** Format: date-time */
       createdAt: string;
       /** Format: date-time */
@@ -23822,7 +24339,7 @@ export interface components {
       /** @description Sólo en los de la propia punta */
       clientMessageId: string | null;
       /** @enum {string} */
-      party: 'platform' | 'company' | 'system';
+      party: 'platform' | 'company' | 'customer' | 'driver' | 'system';
       sender: components['schemas']['SenderDto'] | null;
       /** @description Lo escribió la punta de quien pide */
       isMine: boolean;
@@ -23848,6 +24365,9 @@ export interface components {
         | 'closed_manual'
         | 'assigned'
         | 'received_ack'
+        | 'reopened'
+        | 'driver_changed'
+        | 'claim_created'
         | null;
       /**
        * @description `internal` sólo llega a la plataforma
@@ -24062,7 +24582,7 @@ export interface components {
       /** Format: uuid */
       id: string;
       /** @enum {string} */
-      scope: 'platform_reply' | 'auto_reply';
+      scope: 'platform_reply' | 'auto_reply' | 'staff_reply';
       key: string;
       title: string;
       body: string;
@@ -24078,7 +24598,7 @@ export interface components {
        * @description `platform_reply`: respuesta rápida del soporte. `auto_reply`: la automática del chat (clave `fuera_de_horario`).
        * @enum {string}
        */
-      scope: 'platform_reply' | 'auto_reply';
+      scope: 'platform_reply' | 'auto_reply' | 'staff_reply';
       /** @example como_cargar_logo */
       key: string;
       /** @example Cargar el logo */
@@ -24124,6 +24644,404 @@ export interface components {
       ticketsUnassigned: number;
       /** @description Lo que muestra la insignia: `chatsUnread + ticketsUnread` */
       total: number;
+    };
+    InboxOrderDto: {
+      /** Format: uuid */
+      id: string;
+      /**
+       * @description Número corto del pedido
+       * @example A1B2C3
+       */
+      number: string;
+      /** @example on_the_way */
+      status: string;
+    };
+    InboxCounterpartDto: {
+      /** @enum {string} */
+      party: 'platform' | 'company' | 'customer' | 'driver' | 'system';
+      /**
+       * @description Para el cliente y el chofer, el nombre de la empresa; para el personal, el del cliente o el chofer
+       * @example Gas Norte
+       */
+      displayName: string;
+    };
+    InboxPersonDto: {
+      /**
+       * Format: uuid
+       * @description Usuario
+       */
+      id: string;
+      displayName: string;
+    };
+    InboxAssigneeDto: {
+      /** Format: uuid */
+      userId: string;
+      fullName: string;
+    };
+    InboxLastMessageDto: {
+      seq: number;
+      preview: string | null;
+      /** Format: date-time */
+      at: string;
+      /** @enum {string} */
+      party: 'platform' | 'company' | 'customer' | 'driver' | 'system';
+    };
+    InboxConversationDto: {
+      /** Format: uuid */
+      id: string;
+      /** Format: uuid */
+      distributorId: string;
+      /** @enum {string} */
+      channel: 'staff_customer' | 'staff_driver';
+      /** @enum {string} */
+      subjectType: 'general' | 'order';
+      order: components['schemas']['InboxOrderDto'] | null;
+      counterpart: components['schemas']['InboxCounterpartDto'];
+      /** @description Sólo para el personal (C3) */
+      customer?: components['schemas']['InboxPersonDto'] | null;
+      /** @description Sólo para el personal (C2) */
+      driver?: components['schemas']['InboxPersonDto'] | null;
+      /** @enum {string} */
+      status: 'open' | 'closed';
+      /** @description Ya evaluado por el back: abierta y, para el cliente, con el chat de clientes prendido */
+      canWrite: boolean;
+      /** @description Sólo para el personal: quién la atiende; `null`, en la cola */
+      assignedTo?: components['schemas']['InboxAssigneeDto'] | null;
+      /**
+       * Format: uuid
+       * @description Sólo para el personal: el reclamo creado desde el hilo
+       */
+      linkedClaimId?: string | null;
+      /**
+       * Format: date-time
+       * @description Sólo para el personal: la primera respuesta de la empresa al cliente o al chofer
+       */
+      firstResponseAt?: string | null;
+      /** @description Sólo para el personal: minutos hábiles (horario de atención, sin días sin atención) entre el primer mensaje del cliente o del chofer y la primera respuesta; `null` si todavía no hubo las dos cosas */
+      firstResponseBusinessMinutes?: number | null;
+      lastMessage: components['schemas']['InboxLastMessageDto'] | null;
+      /** @description Sin leer para quien pide */
+      unreadCount: number;
+      /** @description Hasta dónde leyó quien pide (separador «sin leer») */
+      lastReadSeq: number;
+      /** @description Hasta dónde leyó la otra punta (el «leído») */
+      counterpartLastReadSeq: number;
+      /** @enum {string|null} */
+      closedReason: 'manual' | 'inactivity' | 'ticket_closed' | 'driver_changed' | null;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    InboxCountsDto: {
+      /** @description Abiertas sin asignar (de los canales que atiende) */
+      unassigned: number;
+      /** @description Abiertas asignadas a quien pide */
+      mine: number;
+      /** @description Abiertas */
+      open: number;
+    };
+    InboxListResponseDto: {
+      items: components['schemas']['InboxConversationDto'][];
+      total: number;
+      counts: components['schemas']['InboxCountsDto'];
+    };
+    SendStaffMessageDto: {
+      /**
+       * Format: uuid
+       * @description Lo genera quien escribe. El mismo id repetido devuelve el mensaje ya guardado (200) en vez de duplicarlo.
+       */
+      clientMessageId: string;
+      /** @description Responder a un mensaje (D-C25): el `seq` de un mensaje anterior de la MISMA conversación. Uno que no existe ahí → 400 `REPLY_TO_INVALID`. */
+      replyToSeq?: number;
+      /** @description El texto. Obligatorio si no viene `templateId`. */
+      body?: string;
+      /**
+       * Format: uuid
+       * @description Una respuesta guardada activa de la empresa para este canal: el back completa `{{cliente.nombre}}`, `{{pedido.numero}}`, `{{empresa.nombre}}` y `{{horario.proximo}}`. No va junto con `body`.
+       */
+      templateId?: string;
+    };
+    OpenStaffConversationDto: {
+      /**
+       * @description `staff_customer`: con un cliente. `staff_driver`: con un chofer.
+       * @enum {string}
+       */
+      channel: 'staff_customer' | 'staff_driver';
+      /** @enum {string} */
+      subjectType: 'general' | 'order';
+      /**
+       * Format: uuid
+       * @description El usuario del cliente (`staff_customer` general). Con `order` sale del pedido.
+       */
+      customerId?: string;
+      /**
+       * Format: uuid
+       * @description El usuario del chofer (`staff_driver` general). Con `order` sale del pedido (el chofer asignado).
+       */
+      driverId?: string;
+      /**
+       * Format: uuid
+       * @description Obligatorio con `order`; no va con `general`
+       */
+      orderId?: string;
+      firstMessage: components['schemas']['SendStaffMessageDto'];
+    };
+    InboxSenderDto: {
+      /** @description Para el personal, el nombre de quien escribió; para el cliente y el chofer, el de la empresa en los mensajes de la empresa (D-C5) */
+      displayName: string;
+    };
+    InboxReplyToDto: {
+      seq: number;
+      /** @enum {string} */
+      party: 'platform' | 'company' | 'customer' | 'driver' | 'system';
+      /** @description Vista previa (140 caracteres); nula si se redactó */
+      preview: string | null;
+    };
+    InboxMessageDto: {
+      /** Format: uuid */
+      id: string;
+      /** Format: uuid */
+      conversationId: string;
+      seq: number;
+      /** @description Sólo en los propios */
+      clientMessageId: string | null;
+      /** @enum {string} */
+      party: 'platform' | 'company' | 'customer' | 'driver' | 'system';
+      sender: components['schemas']['InboxSenderDto'] | null;
+      /** @description Lo escribió la punta de quien pide */
+      isMine: boolean;
+      /** @description Lo escribió quien pide (la persona, no su equipo) y está en los 15 minutos: se puede editar (por el socket llega siempre `false`: es de la sala, no de una persona) */
+      canEdit: boolean;
+      /** @enum {string} */
+      kind: 'text' | 'system' | 'auto_reply' | 'quoted_excerpt';
+      /** @description Nulo si se redactó o si lo borró su autor */
+      body: string | null;
+      /** @description Respuesta rápida o automática que se usó */
+      templateKey: string | null;
+      /** @enum {string|null} */
+      systemCode:
+        | 'conversation_opened'
+        | 'ticket_opened'
+        | 'ticket_created'
+        | 'ticket_status_changed'
+        | 'closed_inactivity'
+        | 'closed_manual'
+        | 'assigned'
+        | 'received_ack'
+        | 'reopened'
+        | 'driver_changed'
+        | 'claim_created'
+        | null;
+      /** @description `claim_created`: `{ claimId }`; respuesta fuera de horario: `{ until }` (fin del período cerrado) */
+      payload: {
+        [key: string]: unknown;
+      } | null;
+      replyTo: components['schemas']['InboxReplyToDto'] | null;
+      /**
+       * Format: date-time
+       * @description Última edición (marca «editado»)
+       */
+      editedAt: string | null;
+      /** @description Lo borró su autor (D-C23): queda en su lugar, sin texto (`body: null`); «Mensaje eliminado» lo arma el front */
+      deleted: boolean;
+      /** Format: date-time */
+      deletedAt: string | null;
+      redacted: boolean;
+      /** Format: date-time */
+      createdAt: string;
+    };
+    OpenConversationResponseDto: {
+      conversation: components['schemas']['InboxConversationDto'];
+      message: components['schemas']['InboxMessageDto'];
+    };
+    BroadcastDriversDto: {
+      /** @description Usuarios de los choferes, sin repetir. Si alguno no es de la empresa → 404 y no se manda a ninguno. */
+      driverIds: string[];
+      /** @example Hoy cerramos a las 18. */
+      body: string;
+      /**
+       * Format: uuid
+       * @description Lo genera el panel. Repetir el envío con el mismo id no duplica los mensajes.
+       */
+      clientBatchId: string;
+    };
+    BroadcastResponseDto: {
+      /** @description Mensajes escritos (los repetidos no cuentan) */
+      sent: number;
+      /** @description La conversación general de cada chofer, en el orden pedido */
+      conversationIds: string[];
+    };
+    InboxMessageListResponseDto: {
+      /** @description En orden de `seq` */
+      items: components['schemas']['InboxMessageDto'][];
+      /** @description Hay más en la dirección pedida */
+      hasMore: boolean;
+    };
+    EditMessageDto: {
+      body: string;
+    };
+    AssignConversationDto: {
+      /**
+       * Format: uuid
+       * @description Alguien del personal de la empresa que atienda este canal; `null` la devuelve a la cola.
+       */
+      userId: string | null;
+    };
+    CreateClaimFromConversationDto: {
+      /**
+       * Format: uuid
+       * @description El pedido reclamado, del mismo cliente. En una conversación por pedido se usa ése (si viene, tiene que ser el mismo).
+       */
+      orderId?: string;
+      /** @example Pérdida de gas */
+      reason: string;
+      description: string;
+    };
+    ClaimFromConversationResponseDto: {
+      /** Format: uuid */
+      claimId: string;
+      conversation: components['schemas']['InboxConversationDto'];
+    };
+    ChatSettingsResponseDto: {
+      customerChatEnabled: boolean;
+      outOfHoursEnabled: boolean;
+      outOfHoursMessage: string | null;
+      /** @description El texto que se manda (el propio o el de omisión) */
+      effectiveOutOfHoursMessage: string;
+      ackEnabled: boolean;
+      ackMessage: string | null;
+      effectiveAckMessage: string;
+      firstResponseTargetMinutes: number;
+      /** @description Si la empresa atiende ahora (horario y días sin atención) */
+      openNow: boolean;
+      /**
+       * Format: date-time
+       * @description Cuándo vuelve a atender; `null` si atiende ahora
+       */
+      nextOpenAt: string | null;
+    };
+    UpdateChatSettingsDto: {
+      /** @description Apagado: los clientes no pueden abrir ni escribir (C3); los choferes sí. */
+      customerChatEnabled?: boolean;
+      /** @description Responder automáticamente al cliente fuera de horario (una vez por período cerrado) */
+      outOfHoursEnabled?: boolean;
+      /** @description Texto de la respuesta fuera de horario, con variables; `null`: «Ahora estamos fuera de horario. Te respondemos {{horario.proximo}}.» */
+      outOfHoursMessage?: string | null;
+      /** @description Aviso automático al primer mensaje del cliente en horario, si nadie de la empresa escribió todavía */
+      ackEnabled?: boolean;
+      /** @description Texto del aviso, con variables; `null`: «Recibimos tu mensaje. Alguien del equipo de {{empresa.nombre}} te va a atender a la brevedad.» */
+      ackMessage?: string | null;
+      /** @description Objetivo propio de primera respuesta, en minutos hábiles */
+      firstResponseTargetMinutes?: number;
+    };
+    ChatHolidayResponseDto: {
+      /** @example 2026-12-25 */
+      date: string;
+      reason: string;
+    };
+    ChatBusinessHoursResponseDto: {
+      timezone: string;
+      days: components['schemas']['ChatHoursDto'][];
+      holidays: components['schemas']['ChatHolidayResponseDto'][];
+      openNow: boolean;
+      /** Format: date-time */
+      nextOpenAt: string | null;
+    };
+    ChatHolidayDto: {
+      /**
+       * @description Fecha local de la empresa
+       * @example 2026-12-25
+       */
+      date: string;
+      /** @example Navidad */
+      reason: string;
+    };
+    UpdateChatBusinessHoursDto: {
+      /** @example America/Argentina/Buenos_Aires */
+      timezone?: string;
+      /** @description Franjas de atención por día (sin solaparse en el mismo día). Vacía: atiende todo el día. */
+      days?: components['schemas']['ChatHoursDto'][];
+      /** @description Días sin atención (sin repetir la fecha) */
+      holidays?: components['schemas']['ChatHolidayDto'][];
+    };
+    CompanyTemplateResponseDto: {
+      /** Format: uuid */
+      id: string;
+      /** @enum {string|null} */
+      channel: 'staff_customer' | 'staff_driver' | null;
+      key: string;
+      title: string;
+      body: string;
+      active: boolean;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    CompanyTemplateListResponseDto: {
+      items: components['schemas']['CompanyTemplateResponseDto'][];
+    };
+    CreateCompanyTemplateDto: {
+      /**
+       * @description El canal en que se ofrece; sin él, en los dos
+       * @enum {string|null}
+       */
+      channel?: 'staff_customer' | 'staff_driver' | null;
+      /** @example pedido_en_camino */
+      key: string;
+      /** @example Pedido en camino */
+      title: string;
+      /**
+       * @description Variables: `{{cliente.nombre}}`, `{{pedido.numero}}`, `{{empresa.nombre}}`, `{{horario.proximo}}`. Otra → 400 `TEMPLATE_VARIABLE_UNKNOWN`.
+       * @example Hola {{cliente.nombre}}, tu pedido {{pedido.numero}} ya salió.
+       */
+      body: string;
+      /** @default true */
+      active: boolean;
+    };
+    UpdateCompanyTemplateDto: {
+      /**
+       * @description El canal en que se ofrece; sin él, en los dos
+       * @enum {string|null}
+       */
+      channel?: 'staff_customer' | 'staff_driver' | null;
+      /** @example pedido_en_camino */
+      key?: string;
+      /** @example Pedido en camino */
+      title?: string;
+      /**
+       * @description Variables: `{{cliente.nombre}}`, `{{pedido.numero}}`, `{{empresa.nombre}}`, `{{horario.proximo}}`. Otra → 400 `TEMPLATE_VARIABLE_UNKNOWN`.
+       * @example Hola {{cliente.nombre}}, tu pedido {{pedido.numero}} ya salió.
+       */
+      body?: string;
+      active?: boolean;
+    };
+    MyConversationListResponseDto: {
+      items: components['schemas']['InboxConversationDto'][];
+      total: number;
+    };
+    SendInboxMessageDto: {
+      /**
+       * Format: uuid
+       * @description Lo genera quien escribe. El mismo id repetido devuelve el mensaje ya guardado (200) en vez de duplicarlo.
+       */
+      clientMessageId: string;
+      /** @example ¿A qué hora llega el pedido? */
+      body: string;
+      /** @description Responder a un mensaje (D-C25): el `seq` de un mensaje anterior de la MISMA conversación. Uno que no existe ahí → 400 `REPLY_TO_INVALID`. */
+      replyToSeq?: number;
+    };
+    OpenMyConversationDto: {
+      /**
+       * @description `general`: con la empresa (una abierta por persona: si ya hay una, se agrega el mensaje y responde 200). `order`: por un pedido propio (`orderId`).
+       * @enum {string}
+       */
+      subjectType: 'general' | 'order';
+      /**
+       * Format: uuid
+       * @description Obligatorio con `order`; no va con `general`
+       */
+      orderId?: string;
+      firstMessage: components['schemas']['SendInboxMessageDto'];
     };
     PlatformResponseDto: {
       /**
@@ -24681,7 +25599,9 @@ export interface components {
         | 'fleet_planner'
         | 'whatsapp'
         | 'mercadopago'
-        | 'express';
+        | 'express'
+        | 'chat'
+        | 'assistant';
       /** @example Lector de documentos */
       label: string;
       /** @description Lo trae el plan de la empresa (su foto) */
@@ -24724,7 +25644,9 @@ export interface components {
         | 'fleet_planner'
         | 'whatsapp'
         | 'mercadopago'
-        | 'express';
+        | 'express'
+        | 'chat'
+        | 'assistant';
       /** @example Recompra anticipada */
       label: string;
       /** @description La plataforma se lo habilitó a la empresa */
@@ -24750,6 +25672,8 @@ export interface components {
         | 'whatsapp'
         | 'mercadopago'
         | 'express'
+        | 'chat'
+        | 'assistant'
       )[];
       /**
        * @description Nivel de acceso de la empresa: full (normal) o blocked (suspendida); warning y restricted llegan con los estados de la suscripción
@@ -24775,6 +25699,8 @@ export interface components {
         | 'whatsapp'
         | 'mercadopago'
         | 'express'
+        | 'chat'
+        | 'assistant'
       )[];
       /** @description Si la distribuidora toma pedidos hoy */
       acceptingOrders: boolean;
@@ -24818,6 +25744,148 @@ export interface components {
       traceId: string;
       /** @description Línea de tiempo, lo más viejo primero */
       items: components['schemas']['TraceItemDto'][];
+    };
+    AssistantFaqResponseDto: {
+      /** Format: uuid */
+      id: string;
+      /**
+       * @description Clave de la plantilla de OrixTech de la que salió; nula si la escribió la distribuidora.
+       * @example medios_de_pago
+       */
+      key: string | null;
+      question: string;
+      answer: string;
+      /**
+       * @description Orden en la base (1 es la primera); la lista sale ordenada por él
+       * @example 1
+       */
+      position: number;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    AssistantFaqListResponseDto: {
+      items: components['schemas']['AssistantFaqResponseDto'][];
+      /**
+       * @description Versión de la base: sube con cada cambio y nunca baja (0 si nunca se cargó nada). El asistente la usa para saber si su contexto sigue vigente.
+       * @example 3
+       */
+      version: number;
+      /**
+       * @description Tope de preguntas de la base
+       * @example 200
+       */
+      limit: number;
+    };
+    CreateAssistantFaqDto: {
+      /**
+       * @description Texto plano, sin HTML. Única en la base (sin distinguir mayúsculas).
+       * @example ¿Hasta qué hora toman pedidos?
+       */
+      question: string;
+      /**
+       * @description Texto plano, sin HTML.
+       * @example De lunes a sábado, de 8 a 20. Los pedidos fuera de horario se entregan al día siguiente.
+       */
+      answer: string;
+    };
+    CopyAssistantTemplatesResponseDto: {
+      /**
+       * @description Plantillas copiadas ahora
+       * @example 5
+       */
+      copied: number;
+      /**
+       * @description Plantillas que no se copiaron porque la base ya tiene esa clave o esa misma pregunta
+       * @example 0
+       */
+      skipped: number;
+      /**
+       * @description Versión de la base después de copiar
+       * @example 4
+       */
+      version: number;
+    };
+    UpdateAssistantFaqDto: {
+      /**
+       * @description Texto plano, sin HTML. Única en la base (sin distinguir mayúsculas).
+       * @example ¿Hasta qué hora toman pedidos?
+       */
+      question?: string;
+      /**
+       * @description Texto plano, sin HTML.
+       * @example De lunes a sábado, de 8 a 20. Los pedidos fuera de horario se entregan al día siguiente.
+       */
+      answer?: string;
+    };
+    PlatformAssistantFaqResponseDto: {
+      /** Format: uuid */
+      id: string;
+      question: string;
+      answer: string;
+      /**
+       * @description Orden en la base (1 es la primera); la lista sale ordenada por él
+       * @example 1
+       */
+      position: number;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+      /** @example medios_de_pago */
+      key: string;
+      /** @description Si se ofrece como plantilla a las distribuidoras */
+      useAsTemplate: boolean;
+    };
+    PlatformAssistantFaqListResponseDto: {
+      /**
+       * @description Versión de la base: sube con cada cambio y nunca baja (0 si nunca se cargó nada). El asistente la usa para saber si su contexto sigue vigente.
+       * @example 3
+       */
+      version: number;
+      /**
+       * @description Tope de preguntas de la base
+       * @example 200
+       */
+      limit: number;
+      items: components['schemas']['PlatformAssistantFaqResponseDto'][];
+    };
+    CreatePlatformAssistantFaqDto: {
+      /**
+       * @description Texto plano, sin HTML. Única en la base (sin distinguir mayúsculas).
+       * @example ¿Hasta qué hora toman pedidos?
+       */
+      question: string;
+      /**
+       * @description Texto plano, sin HTML.
+       * @example De lunes a sábado, de 8 a 20. Los pedidos fuera de horario se entregan al día siguiente.
+       */
+      answer: string;
+      /**
+       * @description Clave de la pregunta: minúsculas, números y guiones bajos. Única entre las vigentes y no cambia (para cambiarla, se da de baja y se crea otra). Es la que evita duplicar la plantilla al copiarla a una distribuidora.
+       * @example medios_de_pago
+       */
+      key: string;
+      /**
+       * @description Si se ofrece como plantilla a las distribuidoras (`from-templates`). Con `false` queda sólo en la base del soporte de la plataforma.
+       * @default true
+       */
+      useAsTemplate: boolean;
+    };
+    UpdatePlatformAssistantFaqDto: {
+      /**
+       * @description Texto plano, sin HTML. Única en la base (sin distinguir mayúsculas).
+       * @example ¿Hasta qué hora toman pedidos?
+       */
+      question?: string;
+      /**
+       * @description Texto plano, sin HTML.
+       * @example De lunes a sábado, de 8 a 20. Los pedidos fuera de horario se entregan al día siguiente.
+       */
+      answer?: string;
+      /** @description Si se ofrece como plantilla a las distribuidoras. Si no viene, queda como estaba. */
+      useAsTemplate?: boolean;
     };
   };
   responses: never;
@@ -60979,7 +62047,7 @@ export interface operations {
   PlatformSupportConfigController_listarPlantillas: {
     parameters: {
       query?: {
-        scope?: 'platform_reply' | 'auto_reply';
+        scope?: 'platform_reply' | 'auto_reply' | 'staff_reply';
       };
       header?: never;
       path?: never;
@@ -61262,6 +62330,1558 @@ export interface operations {
       };
       /** @description Requiere rol: super_admin */
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyInboxController_listar: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+        /** @description Sin él, los canales que atiende quien pide. Uno que no atiende → 403. */
+        channel?: 'staff_customer' | 'staff_driver';
+        /** @description Sin él, abiertas y cerradas */
+        status?: 'open' | 'closed';
+        /** @description `me` (las mías), `none` (sin asignar) o el id de alguien del personal */
+        assigned?: string;
+        /** @description Usuario del cliente */
+        customerId?: string;
+        /** @description Usuario del chofer */
+        driverId?: string;
+        orderId?: string;
+        /** @description Nombre del cliente o del chofer, o texto del último mensaje */
+        q?: string;
+        /** @description Sólo las que cambiaron después (reconexión) */
+        updatedSince?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InboxListResponseDto'];
+        };
+      };
+      /** @description Filtro inválido: canal, estado, `assigned` (`me`, `none` o uuid), ids, `q` de menos de 3 caracteres, fecha o paginación */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El rol de personal no atiende ese canal (`PERMISSION_DENIED`: los clientes piden `mensajes.clientes`, los choferes `mensajes.choferes`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyInboxController_abrir: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OpenStaffConversationDto'];
+      };
+    };
+    responses: {
+      /** @description Ya había una abierta del mismo tema, o es un reintento */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['OpenConversationResponseDto'];
+        };
+      };
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['OpenConversationResponseDto'];
+        };
+      };
+      /** @description Datos inválidos: canal, ámbito, falta el cliente o el chofer, pedido en una general, texto vacío o de más de 2000, `body` y `templateId` juntos, `replyToSeq` que no existe (`REPLY_TO_INVALID`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El rol de personal no atiende ese canal (`PERMISSION_DENIED`: los clientes piden `mensajes.clientes`, los choferes `mensajes.choferes`); o la empresa apagó el chat con los clientes (`CUSTOMER_CHAT_DISABLED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El cliente, el chofer, el pedido o la respuesta guardada no existen o son de otra empresa */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Pasaron 30 días desde que el pedido se entregó o se canceló (`ORDER_CHAT_WINDOW_CLOSED`), o el pedido no tiene chofer (`ORDER_WITHOUT_DRIVER`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Más de 30 mensajes por minuto (`CHAT_RATE_LIMITED`) */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyInboxController_difundir: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['BroadcastDriversDto'];
+      };
+    };
+    responses: {
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BroadcastResponseDto'];
+        };
+      };
+      /** @description Lista vacía, de más de 50, con repetidos o ids que no son uuid; texto vacío o de más de 2000 */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para atender los mensajes de los choferes (`mensajes.choferes`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Alguno de los choferes no es de la empresa: no se manda a ninguno */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Más de 30 envíos por minuto (`CHAT_RATE_LIMITED`) */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyInboxController_una: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InboxConversationDto'];
+        };
+      };
+      /** @description Id que no es uuid */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para atender los mensajes de los clientes (`mensajes.clientes`) ni para atender los mensajes de los choferes (`mensajes.choferes`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe, es de otra empresa o de un canal que quien pide no atiende */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyInboxController_mensajes: {
+    parameters: {
+      query?: {
+        /** @description Los posteriores a este número (reconexión). */
+        afterSeq?: number;
+        /** @description Los anteriores a este número (historial hacia atrás). Sin ninguno de los dos, los últimos. */
+        beforeSeq?: number;
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InboxMessageListResponseDto'];
+        };
+      };
+      /** @description Id que no es uuid, `afterSeq` y `beforeSeq` juntos o `limit` fuera de 1–100 */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para atender los mensajes de los clientes (`mensajes.clientes`) ni para atender los mensajes de los choferes (`mensajes.choferes`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe, es de otra empresa o de un canal que quien pide no atiende */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyInboxController_enviar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SendStaffMessageDto'];
+      };
+    };
+    responses: {
+      /** @description Reintento: ya estaba */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InboxMessageDto'];
+        };
+      };
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InboxMessageDto'];
+        };
+      };
+      /** @description Texto vacío o de más de 2000, `body` y `templateId` juntos o ninguno, `replyToSeq` que no existe en la conversación (`REPLY_TO_INVALID`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para atender los mensajes de los clientes (`mensajes.clientes`) ni para atender los mensajes de los choferes (`mensajes.choferes`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe, es de otra empresa o de un canal que quien pide no atiende; o la respuesta guardada no existe, está inactiva o es de otro canal */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La conversación está cerrada (`CONVERSATION_CLOSED`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Más de 30 mensajes por minuto (`CHAT_RATE_LIMITED`) */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyInboxController_editar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+        messageId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['EditMessageDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InboxMessageDto'];
+        };
+      };
+      /** @description Ids que no son uuid, texto vacío o de más de 2000 */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El mensaje lo escribió otra persona (`MESSAGE_NOT_OWN`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe, es de otra empresa o de un canal que quien pide no atiende; o el mensaje no es de esa conversación */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Pasaron los 15 minutos (`MESSAGE_EDIT_WINDOW_CLOSED`), no es un texto (`MESSAGE_NOT_EDITABLE`) o la conversación está cerrada (`CONVERSATION_CLOSED`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyInboxController_asignar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AssignConversationDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InboxConversationDto'];
+        };
+      };
+      /** @description Id que no es uuid, o esa persona no atiende este canal (`ASSIGNEE_WITHOUT_PERMISSION`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para atender los mensajes de los clientes (`mensajes.clientes`) ni para atender los mensajes de los choferes (`mensajes.choferes`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe, es de otra empresa o de un canal que quien pide no atiende; o la persona no es del personal de la empresa */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La conversación está cerrada (`CONVERSATION_CLOSED`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyInboxController_cerrar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InboxConversationDto'];
+        };
+      };
+      /** @description Id que no es uuid */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para atender los mensajes de los clientes (`mensajes.clientes`) ni para atender los mensajes de los choferes (`mensajes.choferes`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe, es de otra empresa o de un canal que quien pide no atiende */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya estaba cerrada (`CONVERSATION_CLOSED`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyInboxController_reabrir: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InboxConversationDto'];
+        };
+      };
+      /** @description Id que no es uuid */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para atender los mensajes de los clientes (`mensajes.clientes`) ni para atender los mensajes de los choferes (`mensajes.choferes`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe, es de otra empresa o de un canal que quien pide no atiende */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya hay otra abierta del mismo tema: la general de esa persona o la de ese pedido (`CONVERSATION_NOT_REOPENABLE`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyInboxController_leer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ReadUpToDto'];
+      };
+    };
+    responses: {
+      /** @description Listo */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Id que no es uuid o número negativo */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para atender los mensajes de los clientes (`mensajes.clientes`) ni para atender los mensajes de los choferes (`mensajes.choferes`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe, es de otra empresa o de un canal que quien pide no atiende */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyInboxController_reclamo: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateClaimFromConversationDto'];
+      };
+    };
+    responses: {
+      /** @description Reintento: el mismo reclamo ya estaba creado */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ClaimFromConversationResponseDto'];
+        };
+      };
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ClaimFromConversationResponseDto'];
+        };
+      };
+      /** @description Id que no es uuid, motivo o descripción vacíos o largos, falta el pedido en una general, pedido distinto del de la conversación o de otro cliente */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para atender los mensajes de los clientes (`mensajes.clientes`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe, es de otra empresa o de un canal que quien pide no atiende (una con un chofer tampoco); o el pedido no es de la empresa */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La conversación ya tiene otro reclamo (`CONVERSATION_ALREADY_HAS_CLAIM`) o está cerrada (`CONVERSATION_CLOSED`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyChatConfigController_leer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ChatSettingsResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para atender los mensajes de los clientes (`mensajes.clientes`) ni para atender los mensajes de los choferes (`mensajes.choferes`) ni para configurar los mensajes (`mensajes.configurar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyChatConfigController_actualizar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateChatSettingsDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ChatSettingsResponseDto'];
+        };
+      };
+      /** @description Valor fuera de rango, texto vacío o de más de 500, o variable desconocida (`TEMPLATE_VARIABLE_UNKNOWN`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para configurar los mensajes (`mensajes.configurar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyChatConfigController_horario: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ChatBusinessHoursResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para atender los mensajes de los clientes (`mensajes.clientes`) ni para atender los mensajes de los choferes (`mensajes.choferes`) ni para configurar los mensajes (`mensajes.configurar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyChatConfigController_actualizarHorario: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateChatBusinessHoursDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ChatBusinessHoursResponseDto'];
+        };
+      };
+      /** @description Zona horaria inválida, franjas solapadas o que cierran antes de abrir, fecha inválida o repetida */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para configurar los mensajes (`mensajes.configurar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyChatConfigController_listarPlantillas: {
+    parameters: {
+      query?: {
+        /** @description Las de ese canal y las de los dos */
+        channel?: 'staff_customer' | 'staff_driver';
+        active?: boolean;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CompanyTemplateListResponseDto'];
+        };
+      };
+      /** @description Canal o `active` inválidos */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para atender los mensajes de los clientes (`mensajes.clientes`) ni para atender los mensajes de los choferes (`mensajes.choferes`) ni para configurar los mensajes (`mensajes.configurar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyChatConfigController_crearPlantilla: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateCompanyTemplateDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CompanyTemplateResponseDto'];
+        };
+      };
+      /** @description Clave, título o texto inválidos, o variable desconocida (`TEMPLATE_VARIABLE_UNKNOWN`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para configurar los mensajes (`mensajes.configurar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya hay una vigente con esa clave (`MESSAGE_TEMPLATE_KEY_TAKEN`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyChatConfigController_bajaPlantilla: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Dada de baja */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Id que no es uuid */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para configurar los mensajes (`mensajes.configurar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra empresa */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyChatConfigController_actualizarPlantilla: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateCompanyTemplateDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CompanyTemplateResponseDto'];
+        };
+      };
+      /** @description Id que no es uuid, datos inválidos o variable desconocida (`TEMPLATE_VARIABLE_UNKNOWN`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para configurar los mensajes (`mensajes.configurar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra empresa */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya hay una vigente con esa clave (`MESSAGE_TEMPLATE_KEY_TAKEN`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MyConversationsController_listar: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+        status?: 'open' | 'closed';
+        /** @description Sólo las que cambiaron después (reconexión) */
+        updatedSince?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MyConversationListResponseDto'];
+        };
+      };
+      /** @description Estado, fecha o paginación inválidos; el cliente sin `X-Distributor` (`MISSING_DISTRIBUTOR`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer, delivery. La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MyConversationsController_abrir: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OpenMyConversationDto'];
+      };
+    };
+    responses: {
+      /** @description Ya había una abierta del mismo tema, o es un reintento */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['OpenConversationResponseDto'];
+        };
+      };
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['OpenConversationResponseDto'];
+        };
+      };
+      /** @description Ámbito inválido, pedido en una general o sin pedido en una por pedido, texto vacío o de más de 2000, `replyToSeq` que no existe (`REPLY_TO_INVALID`); el cliente sin `X-Distributor` */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no es de un cliente o un chofer; la empresa apagó el chat con los clientes (`CUSTOMER_CHAT_DISABLED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin vínculo ni pedidos con la empresa, o el pedido no es propio o es de otra empresa */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Pasaron 30 días desde que el pedido se entregó o se canceló (`ORDER_CHAT_WINDOW_CLOSED`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Más de 30 mensajes por minuto, o más de 10 por minuto en una misma conversación (`CHAT_RATE_LIMITED`) */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MyConversationsController_una: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InboxConversationDto'];
+        };
+      };
+      /** @description Id que no es uuid */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer, delivery. La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe, es de otra empresa o de otra persona */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MyConversationsController_mensajes: {
+    parameters: {
+      query?: {
+        /** @description Los posteriores a este número (reconexión). */
+        afterSeq?: number;
+        /** @description Los anteriores a este número (historial hacia atrás). Sin ninguno de los dos, los últimos. */
+        beforeSeq?: number;
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InboxMessageListResponseDto'];
+        };
+      };
+      /** @description Id que no es uuid, `afterSeq` y `beforeSeq` juntos o `limit` fuera de 1–100 */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer, delivery. La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe, es de otra empresa o de otra persona */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MyConversationsController_enviar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SendInboxMessageDto'];
+      };
+    };
+    responses: {
+      /** @description Reintento: ya estaba */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InboxMessageDto'];
+        };
+      };
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InboxMessageDto'];
+        };
+      };
+      /** @description Texto vacío o de más de 2000, `replyToSeq` que no existe en la conversación (`REPLY_TO_INVALID`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no es de un cliente o un chofer; la empresa apagó el chat con los clientes (`CUSTOMER_CHAT_DISABLED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe, es de otra empresa o de otra persona */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La conversación está cerrada (`CONVERSATION_CLOSED`): se abre otra con `POST /v2/me/conversations` */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Más de 30 mensajes por minuto, o más de 10 por minuto en una misma conversación (`CHAT_RATE_LIMITED`) */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MyConversationsController_borrar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+        messageId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Borrado (o ya estaba borrado) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InboxMessageDto'];
+        };
+      };
+      /** @description Ids que no son uuid */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no es de un cliente (un chofer: `MESSAGE_DELETE_NOT_ALLOWED`; el personal y la plataforma, por rol), o el mensaje es de otro (`MESSAGE_NOT_OWN`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe, es de otra empresa o de otra persona; o el mensaje no es de esa conversación */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Pasaron los 15 minutos (`MESSAGE_DELETE_WINDOW_CLOSED`), la conversación es por un pedido (`MESSAGE_IN_ORDER_CONVERSATION`), forma parte de un reclamo o un ticket (`MESSAGE_LINKED_TO_CLAIM`), ya lo citaron en una respuesta (`MESSAGE_ALREADY_QUOTED`), no es un texto (`MESSAGE_NOT_EDITABLE`) o la conversación está cerrada (`CONVERSATION_CLOSED`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MyConversationsController_editar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+        messageId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['EditMessageDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InboxMessageDto'];
+        };
+      };
+      /** @description Ids que no son uuid, texto vacío o de más de 2000 */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no es de un cliente o un chofer, o el mensaje es de la empresa (`MESSAGE_NOT_OWN`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe, es de otra empresa o de otra persona; o el mensaje no es de esa conversación */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Pasaron los 15 minutos (`MESSAGE_EDIT_WINDOW_CLOSED`), no es un texto (`MESSAGE_NOT_EDITABLE`) o la conversación está cerrada (`CONVERSATION_CLOSED`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MyConversationsController_leer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ReadUpToDto'];
+      };
+    };
+    responses: {
+      /** @description Listo */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Id que no es uuid o número negativo */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer, delivery. La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe, es de otra empresa o de otra persona */
+      404: {
         headers: {
           [name: string]: unknown;
         };
@@ -61843,7 +64463,9 @@ export interface operations {
           | 'fleet_planner'
           | 'whatsapp'
           | 'mercadopago'
-          | 'express';
+          | 'express'
+          | 'chat'
+          | 'assistant';
       };
       cookie?: never;
     };
@@ -62041,6 +64663,444 @@ export interface operations {
       };
       /** @description No hay nada registrado con esa traza o ya se depuró (`TRACE_NOT_FOUND`) */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyAssistantFaqController_listar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AssistantFaqListResponseDto'];
+        };
+      };
+      /** @description Falta la distribuidora: super admin sin sesión de soporte ni empresa propia (`MISSING_DISTRIBUTOR`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la base de conocimiento del asistente (`asistente.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Asistente del chat» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyAssistantFaqController_crear: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateAssistantFaqDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AssistantFaqResponseDto'];
+        };
+      };
+      /** @description Datos inválidos (p. ej. «Pregunta: tiene que tener entre 5 y 200 caracteres», «Respuesta: no puede llevar HTML…», un campo que no corresponde) o falta la distribuidora: super admin sin sesión de soporte ni empresa propia (`MISSING_DISTRIBUTOR`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la base de conocimiento del asistente (`asistente.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Asistente del chat» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya hay una pregunta igual en la base (`ASSISTANT_FAQ_DUPLICATE`), o La base ya tiene 200 preguntas, el máximo (`ASSISTANT_FAQ_LIMIT_REACHED`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyAssistantFaqController_copiarPlantillas: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CopyAssistantTemplatesResponseDto'];
+        };
+      };
+      /** @description Falta la distribuidora: super admin sin sesión de soporte ni empresa propia (`MISSING_DISTRIBUTOR`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la base de conocimiento del asistente (`asistente.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Asistente del chat» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Copiarlas superaría el máximo de 200 preguntas (`ASSISTANT_FAQ_LIMIT_REACHED`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyAssistantFaqController_darDeBaja: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Dada de baja */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El id no es un UUID (`INVALID_ID`), o falta la distribuidora: super admin sin sesión de soporte ni empresa propia (`MISSING_DISTRIBUTOR`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la base de conocimiento del asistente (`asistente.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Asistente del chat» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe, ya está dada de baja o es de otra distribuidora (`ASSISTANT_FAQ_NOT_FOUND`) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyAssistantFaqController_actualizar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateAssistantFaqDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AssistantFaqResponseDto'];
+        };
+      };
+      /** @description El id no es un UUID (`INVALID_ID`). Datos inválidos (p. ej. «Pregunta: tiene que tener entre 5 y 200 caracteres», «Respuesta: no puede llevar HTML…», un campo que no corresponde) o falta la distribuidora: super admin sin sesión de soporte ni empresa propia (`MISSING_DISTRIBUTOR`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la base de conocimiento del asistente (`asistente.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Asistente del chat» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe, ya está dada de baja o es de otra distribuidora (`ASSISTANT_FAQ_NOT_FOUND`) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya hay una pregunta igual en la base (`ASSISTANT_FAQ_DUPLICATE`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformAssistantFaqController_listar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PlatformAssistantFaqListResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformAssistantFaqController_crear: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreatePlatformAssistantFaqDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PlatformAssistantFaqResponseDto'];
+        };
+      };
+      /** @description Datos inválidos (p. ej. «Pregunta: tiene que tener entre 5 y 200 caracteres», «Respuesta: no puede llevar HTML…», «Clave: no tiene un formato válido», un campo que no corresponde) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya hay una pregunta igual en la base (`ASSISTANT_FAQ_DUPLICATE`), ya hay una con esa clave (`ASSISTANT_FAQ_KEY_TAKEN`) o la base ya tiene 200 preguntas (`ASSISTANT_FAQ_LIMIT_REACHED`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformAssistantFaqController_darDeBaja: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Dada de baja */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El id no es un UUID (`INVALID_ID`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe, ya está dada de baja o no es de la base de la plataforma (`ASSISTANT_FAQ_NOT_FOUND`) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformAssistantFaqController_actualizar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdatePlatformAssistantFaqDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PlatformAssistantFaqResponseDto'];
+        };
+      };
+      /** @description El id no es un UUID (`INVALID_ID`). Datos inválidos (p. ej. «Pregunta: tiene que tener entre 5 y 200 caracteres», «Respuesta: no puede llevar HTML…», «Clave: no tiene un formato válido», un campo que no corresponde) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe, ya está dada de baja o no es de la base de la plataforma (`ASSISTANT_FAQ_NOT_FOUND`) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya hay una pregunta igual en la base (`ASSISTANT_FAQ_DUPLICATE`) */
+      409: {
         headers: {
           [name: string]: unknown;
         };

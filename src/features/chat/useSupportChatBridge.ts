@@ -15,6 +15,9 @@ import {
 } from './socketEvents';
 import { typingStore } from './typing';
 
+/** Los canales de la bandeja de la empresa con clientes y choferes: los atiende `useInboxBridge`. */
+const isInboxChannel = (channel: string | undefined) => channel === 'staff_customer' || channel === 'staff_driver';
+
 /** Varios avisos seguidos (un mensaje trae `chat:message` y `chat:inbox`) releen las listas una sola vez. */
 const LISTS_DEBOUNCE_MS = 300;
 
@@ -66,12 +69,15 @@ export const useSupportChatBridge = (side: ChatSide | null, alertTitle: string) 
     };
     const offs = [
       subscribe<ChatMessageEvent>(CHAT_EVENTS.MESSAGE, ({ message }) => {
+        // Los de la bandeja (clientes y choferes) no traen `visibility`: son de `useInboxBridge`.
+        if (!message || !('visibility' in message)) return;
         applyIncomingMessage(queryClient, message);
         if (!message.isMine) typingStore.clear(message.conversationId);
         alertIncoming(message, titleRef.current);
         refreshLists();
       }),
       subscribe<ChatConversationEvent>(CHAT_EVENTS.CONVERSATION, ({ conversationId, conversation }) => {
+        if (isInboxChannel(conversation?.channel)) return;
         // La ficha llega con el `unreadCount` de la sala (0): se conserva el de quien mira.
         queryClient.setQueryData<Conversation>(
           chatKeys.platformChat(conversationId),
@@ -81,13 +87,17 @@ export const useSupportChatBridge = (side: ChatSide | null, alertTitle: string) 
         refreshLists();
       }),
       subscribe<ChatReadEvent>(CHAT_EVENTS.READ, ({ conversationId, party, lastReadSeq }) => {
+        if (party === 'customer' || party === 'driver') return;
         if (party !== side) applyCounterpartRead(queryClient, conversationId, lastReadSeq);
         refreshLists();
       }),
       subscribe<ChatTypingEvent>(CHAT_EVENTS.TYPING, ({ conversationId, party, until }) => {
+        if (party === 'customer' || party === 'driver') return;
         if (party !== side) typingStore.set(conversationId, party, until);
       }),
-      subscribe(CHAT_EVENTS.INBOX, refreshLists),
+      subscribe<{ channel?: string }>(CHAT_EVENTS.INBOX, (event) => {
+        if (!isInboxChannel(event?.channel)) refreshLists();
+      }),
       subscribe<TicketEvent>(CHAT_EVENTS.TICKET_CREATED, (event) => {
         applyTicket(queryClient, side, event);
         refreshLists();

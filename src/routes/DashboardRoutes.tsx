@@ -151,6 +151,8 @@ const AverageCosts = lazyPage(() => import('../pages/Purchases/AverageCosts'), '
 const TruckLoads = lazyPage(() => import('../pages/TruckLoads/TruckLoads'), 'TruckLoads');
 const TruckLoadDetails = lazyPage(() => import('../pages/TruckLoads/TruckLoadDetails'), 'TruckLoadDetails');
 const SupportHelp = lazyPage(() => import('../pages/Support/SupportHelp'), 'SupportHelp');
+const Messages = lazyPage(() => import('../pages/Messages/Messages'), 'Messages');
+const MessagesSettings = lazyPage(() => import('../pages/Messages/MessagesSettings'), 'MessagesSettings');
 const CompanyTicketDetail = lazyPage(() => import('../pages/Support/CompanyTicketDetail'), 'CompanyTicketDetail');
 const CompanyChatArchive = lazyPage(() => import('../pages/Support/CompanyChatArchive'), 'CompanyChatArchive');
 const PlatformChats = lazyPage(() => import('../pages/Platform/Support/PlatformChats'), 'PlatformChats');
@@ -201,6 +203,12 @@ export const DashboardRoutes = () => {
             <Route path="support" element={<SupportHelp />} />
             <Route path="support/tickets/:id" element={<CompanyTicketDetail />} />
             <Route path="support/chats/:id" element={<CompanyChatArchive />} />
+            {/* «Mensajes»: la bandeja de la empresa con clientes y choferes (módulo `chat`, CH4) */}
+            <Route element={<RequireModule module="chat" />}>
+              <Route path="messages" element={<Messages />} />
+              <Route path="messages/settings" element={<MessagesSettings />} />
+              <Route path="messages/:id" element={<Messages />} />
+            </Route>
           </Route>
 
           {/* Plataforma: sólo el administrador general fuera del modo soporte */}

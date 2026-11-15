@@ -8,6 +8,10 @@ import { chatKeys } from '../../services/queries/supportChat';
 export type RoomAck = { ok: true } | { ok: false; code: string; message: string };
 
 export const JOIN_EVENT = 'chat:join';
+
+/** Las conversaciones cuya sala está abierta ahora en esta pestaña (para no avisar dos veces el mismo mensaje). */
+const openRooms = new Set<string>();
+export const isRoomOpen = (conversationId: string) => openRooms.has(conversationId);
 export const LEAVE_EVENT = 'chat:leave';
 
 /**
@@ -28,6 +32,7 @@ export const useConversationRoom = (conversationId: string | null) => {
       .then((ack) => {
         if (!active) return;
         setJoined(ack.ok);
+        if (ack.ok) openRooms.add(conversationId);
         if (ack.ok) void catchUpThread(queryClient, chatKeys.thread(conversationId));
       })
       .catch(() => {
@@ -35,6 +40,7 @@ export const useConversationRoom = (conversationId: string | null) => {
       });
     return () => {
       active = false;
+      openRooms.delete(conversationId);
       setJoined(false);
       forgetEarly(queryClient, conversationId);
       request<RoomAck>(LEAVE_EVENT, { conversationId }).catch(() => undefined);

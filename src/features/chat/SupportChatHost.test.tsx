@@ -3,6 +3,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ChatProviders } from '../../test/ChatProviders';
 import { fakeSocket, newQueryClient } from '../../test/chatFixtures';
 
+vi.mock('./useInboxAccess', () => ({
+  useInboxAccess: () => ({ customers: false, drivers: false, configure: false, claims: false, any: false }),
+}));
 vi.mock('./useSupportSide', () => ({ useSupportSide: () => 'company', useSupportUnread: () => 3 }));
 vi.mock('../../services/queries/supportSessions', () => ({ usePlatform: () => ({ data: { name: 'OrixTech' } }) }));
 vi.mock('../../pages/Support/CompanyChatPanel', () => ({ CompanyChatPanel: () => <p>el chat</p> }));

@@ -3,6 +3,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const orders = vi.hoisted(() => vi.fn());
+vi.mock('../../../features/chat/components/InboxNavBadge', () => ({ InboxNavBadge: () => null }));
 vi.mock('../../../services/queries/orders', () => ({
   useOrders: (...args: unknown[]) => orders(...args) as unknown,
 }));

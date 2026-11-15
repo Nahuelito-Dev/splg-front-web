@@ -17,6 +17,7 @@ const notifications = vi.hoisted(() => ({
   confirm: vi.fn(() => Promise.resolve(true)),
   notify: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
 }));
+vi.mock('../../../../features/chat/inbox/MessageButton', () => ({ MessageButton: () => null }));
 vi.mock('../../../../hooks', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   usePermissions: permissions,

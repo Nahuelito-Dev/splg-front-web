@@ -42,6 +42,7 @@ import {
   LifeBuoy,
   MessageCircleQuestion,
   MessagesSquare,
+  MessageSquareText,
   Ticket,
   ListChecks,
   Map as MapIcon,
@@ -84,6 +85,10 @@ export interface NavItem {
   scope?: 'platform' | 'both';
   /** Permiso F37 que necesita el admin de la empresa para verla. */
   permission?: string;
+  /** Alcanza con uno de estos permisos F37 (p. ej. «Mensajes»: clientes o choferes). */
+  anyPermission?: string[];
+  /** Insignia con lo sin leer de la bandeja de la empresa (clientes y choferes). */
+  inboxBadge?: boolean;
   /** Sólo el admin de la empresa (la API se la niega al administrador general aun en modo soporte). */
   companyAdminOnly?: boolean;
   /**
@@ -150,6 +155,15 @@ export const NAV_SECTIONS: NavSection[] = [
       { title: 'Recompra', path: '/customers/repurchase', icon: Repeat, module: 'repurchase' },
       { title: 'Reclamos', path: '/claims', icon: MessageSquareWarning },
       { title: 'Incidencias', path: '/incidents', icon: TriangleAlert },
+      {
+        title: 'Mensajes',
+        path: '/messages',
+        icon: MessageSquareText,
+        module: 'chat',
+        anyPermission: ['mensajes.clientes', 'mensajes.choferes'],
+        companyAdminOnly: true,
+        inboxBadge: true,
+      },
     ],
   },
   {
@@ -267,6 +281,14 @@ export const NAV_SECTIONS: NavSection[] = [
       { title: 'Compra express', path: '/settings/express', icon: Zap, module: 'express' },
       { title: 'Procesos automáticos', path: '/settings/automatic-processes', icon: Bot },
       { title: 'Tareas programadas', path: '/settings/scheduled-tasks', icon: Timer },
+      {
+        title: 'Mensajes y horario',
+        path: '/messages/settings',
+        icon: CalendarClock,
+        module: 'chat',
+        permission: 'mensajes.configurar',
+        companyAdminOnly: true,
+      },
     ],
   },
 ];

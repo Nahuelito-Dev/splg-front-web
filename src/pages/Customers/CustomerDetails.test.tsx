@@ -35,6 +35,7 @@ const claim = (id: string, customerId: string) =>
     createdAt: '2026-10-01T10:00:00Z',
   }) as unknown as Claim;
 
+vi.mock('../../features/chat/inbox/MessageButton', () => ({ MessageButton: () => null }));
 vi.mock('../../utils/notifications', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   confirm: removal.confirm,

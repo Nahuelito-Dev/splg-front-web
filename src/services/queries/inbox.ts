@@ -1,0 +1,242 @@
+import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import { useMemo } from 'react';
+import { toChatMessage } from '../../features/chat/thread';
+import {
+  assignConversation,
+  broadcastDrivers,
+  closeConversation,
+  createClaimFromConversation,
+  createCompanyTemplate,
+  deleteCompanyTemplate,
+  editConversationMessage,
+  getBusinessHours,
+  getChatSettings,
+  getConversation,
+  listCompanyTemplates,
+  listConversationMessages,
+  listConversations,
+  openConversation,
+  readConversation,
+  reopenConversation,
+  sendConversationMessage,
+  updateBusinessHours,
+  updateChatSettings,
+  updateCompanyTemplate,
+  type InboxChannel,
+  type InboxQuery,
+} from '../api/inbox';
+import type {
+  BroadcastDriversBody,
+  CreateClaimFromConversationBody,
+  CreateCompanyTemplateBody,
+  InboxConversation,
+  OpenStaffConversationBody,
+  UpdateChatBusinessHoursBody,
+  UpdateChatSettingsBody,
+  UpdateCompanyTemplateBody,
+} from '../api/types';
+import type { ThreadBinding } from './chatSources';
+import { queryKeys } from './queryKeys';
+
+const root = queryKeys.inbox.all;
+
+/** Claves de la bandeja. Los hilos viven en `chatKeys.thread` (los maneja `useThread`, igual que el chat de soporte). */
+export const inboxKeys = {
+  all: root,
+  list: (params: InboxQuery) => [...root, 'list', params] as const,
+  detail: (conversationId: string) => [...root, 'detail', conversationId] as const,
+  unread: () => [...root, 'unread'] as const,
+  settings: () => [...root, 'settings'] as const,
+  hours: () => [...root, 'hours'] as const,
+  templates: (params: object = {}) => [...root, 'templates', params] as const,
+};
+
+/** Relee listas, fichas y contadores de la bandeja (los hilos se ponen al día por `seq`, no se releen). */
+export const invalidateInbox = (queryClient: QueryClient) =>
+  queryClient.invalidateQueries({
+    queryKey: root,
+    predicate: (query) => !['settings', 'hours', 'templates'].includes(String(query.queryKey[1])),
+  });
+
+/** Cada cuánto se relee el contador aunque el socket esté callado (red caída sin aviso). */
+export const INBOX_POLL_MS = 60_000;
+/** Cuántas conversaciones abiertas se suman para la insignia (la API acepta hasta 100 por página). */
+const UNREAD_PAGE = 100;
+
+export const useInboxConversations = (params: InboxQuery, enabled = true) =>
+  useQuery({
+    queryKey: inboxKeys.list(params),
+    queryFn: () => listConversations(params),
+    enabled,
+    placeholderData: keepPreviousData,
+  });
+
+export const useInboxConversation = (conversationId: string | undefined) =>
+  useQuery({
+    queryKey: inboxKeys.detail(conversationId ?? ''),
+    queryFn: () => getConversation(conversationId ?? ''),
+    enabled: Boolean(conversationId),
+    retry: false,
+  });
+
+/**
+ * Lo sin leer de la bandeja, para la insignia del menú: la suma de `unreadCount` de las abiertas de los canales que
+ * atiende quien mira. La API no tiene un resumen propio (anotado en la entrega): se pide una página de 100.
+ */
+export const useInboxUnread = (enabled: boolean) =>
+  useQuery({
+    queryKey: inboxKeys.unread(),
+    queryFn: async () => {
+      const page = await listConversations({ status: 'open', limit: UNREAD_PAGE, offset: 0 });
+      return page.items.reduce((sum, c) => sum + c.unreadCount, 0);
+    },
+    enabled,
+    refetchInterval: INBOX_POLL_MS,
+  });
+
+/** Deja la ficha que devolvió la API en su caché y relee el resto de la bandeja. */
+const useConversationMutation = <V>(fn: (vars: V) => Promise<InboxConversation>) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: (conversation) => {
+      queryClient.setQueryData(inboxKeys.detail(conversation.id), conversation);
+    },
+    onSettled: () => invalidateInbox(queryClient),
+  });
+};
+
+export const useAssignConversation = () =>
+  useConversationMutation(({ id, userId }: { id: string; userId: string | null }) => assignConversation(id, userId));
+
+export const useCloseConversation = () => useConversationMutation((id: string) => closeConversation(id));
+
+export const useReopenConversation = () => useConversationMutation((id: string) => reopenConversation(id));
+
+export const useClaimFromConversation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: CreateClaimFromConversationBody }) =>
+      createClaimFromConversation(id, body),
+    onSuccess: ({ conversation }) => {
+      queryClient.setQueryData(inboxKeys.detail(conversation.id), conversation);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.claims.all });
+    },
+    onSettled: () => invalidateInbox(queryClient),
+  });
+};
+
+/** Escribirle a un cliente o a un chofer desde su ficha, la del pedido o la bandeja. */
+export const useOpenConversation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: OpenStaffConversationBody) => openConversation(body),
+    onSuccess: ({ conversation }) => {
+      queryClient.setQueryData(inboxKeys.detail(conversation.id), conversation);
+    },
+    onSettled: () => invalidateInbox(queryClient),
+  });
+};
+
+export const useBroadcastDrivers = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: BroadcastDriversBody) => broadcastDrivers(body),
+    onSettled: () => invalidateInbox(queryClient),
+  });
+};
+
+/**
+ * El hilo de una conversación de la bandeja, listo para `ChatThread`: lee, escribe (con cita o respuesta guardada) y
+ * edita por la API de la bandeja; los mensajes se llevan a la forma común del hilo.
+ */
+export const useInboxThread = (conversationId: string): ThreadBinding => {
+  const queryClient = useQueryClient();
+  return useMemo(
+    () => ({
+      source: {
+        conversationId,
+        fetch: async (query) => {
+          const page = await listConversationMessages(conversationId, query);
+          return { items: page.items.map(toChatMessage), hasMore: page.hasMore };
+        },
+        send: async ({ clientMessageId, body, replyToSeq, templateId }) => {
+          // Con una respuesta guardada va sólo su id: el back completa las variables (`body` y `templateId` juntos → 400).
+          const message = await sendConversationMessage(conversationId, {
+            clientMessageId,
+            ...(templateId ? { templateId } : { body }),
+            ...(replyToSeq ? { replyToSeq } : {}),
+          });
+          // La primera respuesta cambia la ficha (primera respuesta, contadores).
+          void invalidateInbox(queryClient);
+          return toChatMessage(message);
+        },
+        edit: async (messageId, body) => toChatMessage(await editConversationMessage(conversationId, messageId, body)),
+      },
+      read: async (seq) => {
+        await readConversation(conversationId, seq);
+        // La insignia y el contador de la lista bajan en el acto (el socket lo confirma a las otras pestañas).
+        void invalidateInbox(queryClient);
+      },
+    }),
+    [conversationId, queryClient],
+  );
+};
+
+// ── Configuración ─────────────────────────────────────────────────────────────
+
+/** Configuración de la bandeja (también `openNow` / `nextOpenAt` para el indicador «Fuera de horario»). */
+export const useChatSettings = (enabled = true) =>
+  useQuery({ queryKey: inboxKeys.settings(), queryFn: getChatSettings, enabled, staleTime: 60_000 });
+
+export const useUpdateChatSettings = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: UpdateChatSettingsBody) => updateChatSettings(body),
+    onSuccess: (settings) => {
+      queryClient.setQueryData(inboxKeys.settings(), settings);
+    },
+  });
+};
+
+export const useBusinessHours = (enabled = true) =>
+  useQuery({ queryKey: inboxKeys.hours(), queryFn: getBusinessHours, enabled });
+
+export const useUpdateBusinessHours = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: UpdateChatBusinessHoursBody) => updateBusinessHours(body),
+    onSuccess: (hours) => {
+      queryClient.setQueryData(inboxKeys.hours(), hours);
+      // El horario cambia `openNow` de la configuración (el indicador de la bandeja).
+      void queryClient.invalidateQueries({ queryKey: inboxKeys.settings() });
+    },
+  });
+};
+
+/** Respuestas guardadas: todas (configuración) o las activas de un canal (el `/` del compositor). */
+export const useCompanyTemplates = (params: { channel?: InboxChannel; active?: boolean } = {}, enabled = true) =>
+  useQuery({
+    queryKey: inboxKeys.templates(params),
+    queryFn: () => listCompanyTemplates(params),
+    enabled,
+    staleTime: 5 * 60_000,
+  });
+
+const useTemplateMutation = <V, R>(fn: (vars: V) => Promise<R>) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    onSettled: () => queryClient.invalidateQueries({ queryKey: [...root, 'templates'] }),
+  });
+};
+
+export const useCreateCompanyTemplate = () =>
+  useTemplateMutation((body: CreateCompanyTemplateBody) => createCompanyTemplate(body));
+
+export const useUpdateCompanyTemplate = () =>
+  useTemplateMutation(({ id, body }: { id: string; body: UpdateCompanyTemplateBody }) =>
+    updateCompanyTemplate(id, body),
+  );
+
+export const useDeleteCompanyTemplate = () => useTemplateMutation((id: string) => deleteCompanyTemplate(id));

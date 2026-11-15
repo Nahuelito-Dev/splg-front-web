@@ -42,9 +42,34 @@ const beep = () => {
  */
 export const alertIncoming = (message: MessageDto, title: string) => {
   if (message.isMine || message.party === 'system' || message.visibility === 'internal') return;
+  notifyHidden(message.conversationId, message.seq, title, (message.body ?? '').slice(0, 140));
+};
+
+/** Las notificaciones a la vista, por conversación (el `tag`): para cerrar la de un mensaje que después se borra. */
+const shown = new Map<string, { seq: number; notification: Notification }>();
+
+const notifyHidden = (conversationId: string, seq: number, title: string, body?: string) => {
   if (typeof document === 'undefined' || document.visibilityState !== 'hidden' || !alertsEnabled()) return;
   beep();
   if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
-  const body = (message.body ?? '').slice(0, 140);
-  new Notification(title, { body, tag: `chat:${message.conversationId}` });
+  const notification = new Notification(title, { ...(body ? { body } : {}), tag: `chat:${conversationId}` });
+  shown.set(conversationId, { seq, notification });
+  notification.onclose = () => {
+    if (shown.get(conversationId)?.notification === notification) shown.delete(conversationId);
+  };
+};
+
+/**
+ * Aviso de una conversación que no está abierta en pantalla (`chat:inbox`): sin el texto del mensaje, sólo quién
+ * escribió («Nuevo mensaje de Lucía»). Misma preferencia y misma regla de la pestaña oculta.
+ */
+export const alertInboxMessage = (conversationId: string, seq: number, title: string) =>
+  notifyHidden(conversationId, seq, title);
+
+/** Un mensaje se borró: si la notificación a la vista era de ese mensaje, se cierra (su texto ya no existe). */
+export const dismissAlert = (conversationId: string, seq: number) => {
+  const current = shown.get(conversationId);
+  if (!current || current.seq !== seq) return;
+  current.notification.close();
+  shown.delete(conversationId);
 };

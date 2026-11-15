@@ -5,11 +5,13 @@ import { useSocketContext } from '../../../context/useSocketContext';
 import type { ChatSide } from '../../../services/queries/supportChat';
 import { chatKeys } from '../../../services/queries/supportChat';
 import { useThread, type ThreadSource } from '../../../services/queries/chatThread';
-import type { MessageTemplate } from '../../../services/api/types';
-import { lastSeqOf, type PendingMessage } from '../thread';
+import type { SendExtras } from '../../../services/queries/chatThread';
+import { errorMessage, toApiError } from '../../../services/api/errors';
+import { notify } from '../../../utils/notifications';
+import { lastSeqOf, type ChatMessage, type PendingMessage } from '../thread';
 import { useTyping } from '../typing';
 import { useConversationRoom } from '../useConversationRoom';
-import { Composer } from './Composer';
+import { Composer, type ComposerBanner, type QuickReply } from './Composer';
 import { MessageList } from './MessageList';
 import { ThreadSkeleton } from './ThreadSkeleton';
 import type { MessageContext } from './MessageItem';
@@ -31,7 +33,11 @@ export interface ChatThreadProps {
   canWrite: boolean;
   readOnlyNotice?: ReactNode;
   allowInternal?: boolean;
-  quickReplies?: MessageTemplate[];
+  quickReplies?: QuickReply[];
+  /** «Responder» (citar) un mensaje (bandeja, D-C25). */
+  allowReply?: boolean;
+  /** Valores de las variables de las respuestas guardadas (ver `Composer`). */
+  variables?: Readonly<Record<string, string | null>>;
   empty: ReactNode;
   /** Cambia cuando hay que releer lo que se ve (p. ej. se abrió un ticket que cita mensajes). */
   reloadKey?: string | number;
@@ -61,10 +67,20 @@ export const ChatThread = ({
   quickReplies,
   empty,
   reloadKey,
+  allowReply = false,
+  variables,
 }: ChatThreadProps) => {
   const { conversationId } = source;
-  const { thread, isPending, error, refetch, loadOlder, loadingOlder, olderError, send, retry, discard, reload } =
+  const { thread, isPending, error, refetch, loadOlder, loadingOlder, olderError, send, edit, retry, discard, reload } =
     useThread(source);
+  // A qué mensaje se responde y cuál se edita, por `seq`: se muestran como están ahora en el hilo (si se borra
+  // mientras tanto, «Mensaje eliminado»).
+  const [replySeq, setReplySeq] = useState<number | null>(null);
+  const [editingSeq, setEditingSeq] = useState<number | null>(null);
+  const [editText, setEditText] = useState<{ text: string; nonce: number } | null>(null);
+  const [focusKey, setFocusKey] = useState(0);
+  const replyTo = replySeq === null ? null : (thread?.messages.find((m) => m.seq === replySeq) ?? null);
+  const editing = editingSeq === null ? null : (thread?.messages.find((m) => m.seq === editingSeq) ?? null);
   useConversationRoom(conversationId);
   const { emit } = useSocketContext();
   const queryClient = useQueryClient();
@@ -98,7 +114,66 @@ export const ChatThread = ({
 
   useEffect(() => {
     readSent.current = 0;
+    setReplySeq(null);
+    setEditingSeq(null);
   }, [conversationId]);
+
+  // El mensaje que se estaba editando se borró (o desapareció): se sale de la edición con aviso.
+  const editingGone = editingSeq !== null && thread !== undefined && (!editing || Boolean(editing.deleted));
+  useEffect(() => {
+    if (!editingGone) return;
+    setEditingSeq(null);
+    notify.warn('El mensaje que editabas ya no se puede editar');
+  }, [editingGone]);
+
+  const onReply = useCallback((message: ChatMessage) => {
+    setEditingSeq(null);
+    setReplySeq(message.seq);
+    setFocusKey(Date.now());
+  }, []);
+
+  const onEdit = useCallback((message: ChatMessage) => {
+    setReplySeq(null);
+    setEditingSeq(message.seq);
+    setEditText({ text: message.body ?? '', nonce: Date.now() });
+    setFocusKey(Date.now());
+  }, []);
+
+  const cancelBanner = useCallback(() => {
+    setEditingSeq(null);
+    setReplySeq(null);
+  }, []);
+
+  const onSend = useCallback(
+    (body: string, extras?: SendExtras) => {
+      if (editing && edit) {
+        const target = editing;
+        if (body === (target.body ?? '').trim()) {
+          setEditingSeq(null);
+          return;
+        }
+        edit(target.id, body)
+          .then(() => setEditingSeq((seq) => (seq === target.seq ? null : seq)))
+          .catch((cause: unknown) => {
+            const { status } = toApiError(cause);
+            if (status !== null && status < 500 && status !== 429) {
+              // La API no lo acepta (pasaron los 15 minutos, se citó, se cerró): reintentar no sirve. Se sale de la
+              // edición y vuelve el borrador; el mensaje queda como estaba.
+              notify.warn(`${errorMessage(cause)}. No se guardó la edición.`);
+              setEditingSeq((seq) => (seq === target.seq ? null : seq));
+              return;
+            }
+            notify.error(cause);
+            // Un corte: lo escrito no se pierde, vuelve al compositor para reintentar.
+            setEditText({ text: body, nonce: Date.now() });
+          });
+        return;
+      }
+      send(body, { ...extras, ...(replyTo ? { replyToSeq: replyTo.seq } : {}) });
+      setReplySeq(null);
+    },
+    [edit, editing, replyTo, send],
+  );
 
   const firstReload = useRef(true);
   useEffect(() => {
@@ -121,6 +196,17 @@ export const ChatThread = ({
     [discard],
   );
 
+  const partyName = ctx.partyName;
+  const banner: ComposerBanner | null = editing
+    ? { kind: 'edit', title: 'Editando tu mensaje', preview: editing.body ?? '' }
+    : replyTo
+      ? {
+          kind: 'reply',
+          title: `Respondés a ${partyName?.(replyTo.party) ?? 'este mensaje'}`,
+          preview: replyTo.deleted ? 'Mensaje eliminado' : (replyTo.body ?? 'Mensaje no disponible'),
+        }
+      : null;
+
   if (isPending && !thread) return <ThreadSkeleton />;
   if (error && !thread) {
     return <ErrorState error={error} resource="Los mensajes" onRetry={() => void refetch()} />;
@@ -131,7 +217,12 @@ export const ChatThread = ({
     <div className="flex min-h-0 flex-1 flex-col">
       <MessageList
         thread={thread}
-        ctx={{ ...ctx, counterpartLastReadSeq: Math.max(counterpartLastReadSeq, thread.counterpartLastReadSeq) }}
+        ctx={{
+          ...ctx,
+          counterpartLastReadSeq: Math.max(counterpartLastReadSeq, thread.counterpartLastReadSeq),
+          onReply: canWrite && allowReply ? onReply : undefined,
+          onEdit: canWrite && edit ? onEdit : undefined,
+        }}
         loadOlder={() => void loadOlder()}
         loadingOlder={loadingOlder}
         olderError={olderError}
@@ -144,11 +235,16 @@ export const ChatThread = ({
       {canWrite ? (
         <Composer
           draftKey={conversationId ?? `${side}:new`}
-          onSend={send}
+          onSend={onSend}
           onTyping={conversationId ? onTyping : undefined}
           quickReplies={quickReplies}
           allowInternal={allowInternal}
           draft={draft}
+          banner={banner}
+          onCancelBanner={cancelBanner}
+          focusKey={focusKey}
+          editText={editText}
+          variables={variables}
         />
       ) : (
         readOnlyNotice

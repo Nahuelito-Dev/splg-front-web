@@ -117,3 +117,23 @@ describe('menú por alcance', () => {
     for (const viewer of [PLATFORM, SUPPORT, ADMIN]) expect(visiblePaths(viewer)).not.toContain('/addresses');
   });
 });
+
+describe('«Mensajes» (bandeja de la empresa, CH4)', () => {
+  it('se ve con cualquiera de los permisos de mensajes; sin ninguno, no', () => {
+    expect(visiblePaths({ mode: 'company', permissions: ['mensajes.clientes'] })).toContain('/messages');
+    expect(visiblePaths({ mode: 'company', permissions: ['mensajes.choferes'] })).toContain('/messages');
+    expect(visiblePaths({ mode: 'company', permissions: ['pedidos.ver'] })).not.toContain('/messages');
+  });
+
+  it('la configuración pide `mensajes.configurar`', () => {
+    expect(visiblePaths({ mode: 'company', permissions: ['mensajes.configurar'] })).toContain('/messages/settings');
+    expect(visiblePaths({ mode: 'company', permissions: ['mensajes.clientes'] })).not.toContain('/messages/settings');
+  });
+
+  it('con el módulo `chat` apagado no se ve; el administrador general no la ve ni en modo soporte', () => {
+    expect(visiblePaths({ ...ADMIN, modules: { chat: false } })).not.toContain('/messages');
+    expect(visiblePaths({ ...ADMIN, modules: { chat: true } })).toContain('/messages');
+    expect(visiblePaths(SUPPORT)).not.toContain('/messages');
+    expect(visiblePaths(PLATFORM)).not.toContain('/messages');
+  });
+});

@@ -191,7 +191,7 @@ describe('ChatThread: tiempo real y reconexión (P2, P3, P6)', () => {
     fetchFn.mockResolvedValueOnce(page([msg(4), msg(5)]));
     act(() => socket.fire('chat:message', { conversationId: 'c-1', seq: 5, message: msg(5) }));
     expect(await screen.findByText('mensaje 4')).toBeInTheDocument();
-    expect(fetchFn).toHaveBeenLastCalledWith({ afterSeq: 3, limit: 100 });
+    expect(fetchFn).toHaveBeenCalledWith({ afterSeq: 3, limit: 100 });
   });
 
   it('al reconectar vuelve a entrar a la sala y pide lo que pasó durante el corte (afterSeq)', async () => {
@@ -277,6 +277,9 @@ describe('ChatThread: mensajes que llegan antes de la primera carga (corrección
     act(() => answer([msg(1), msg(2)]));
     await waitFor(() => expect(fetchFn).toHaveBeenCalledWith({ afterSeq: 2, limit: 100 }));
     act(() => answer([msg(3), msg(4)]));
+    // Después de lo posterior, relee la última página que ya tiene (lo editado o borrado mientras tanto).
+    await waitFor(() => expect(fetchFn).toHaveBeenCalledWith({ beforeSeq: 5, limit: 50 }));
+    act(() => answer([msg(3), msg(4)]));
     expect(await screen.findByText('mensaje 3')).toBeInTheDocument();
     expect(screen.getByText('mensaje 4')).toBeInTheDocument();
   });
@@ -286,7 +289,7 @@ describe('ChatThread: entre la foto del GET y la entrada a la sala (corrección 
   it('foto en seq 2 → ack del join → GET resuelve → afterSeq trae seq 3 y aparece', async () => {
     let answerFirst: (p: MessageList) => void = () => undefined;
     const fetchFn = vi.fn((q: MessagesQuery) =>
-      q.afterSeq === undefined
+      q.afterSeq === undefined && q.beforeSeq === undefined
         ? new Promise<MessageList>((resolve) => (answerFirst = resolve))
         : Promise.resolve(q.afterSeq === 2 ? page([msg(3)]) : page([])),
     );

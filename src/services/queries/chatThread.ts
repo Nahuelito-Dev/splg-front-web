@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   decideIncoming,
   dropConfirmed,
@@ -7,33 +7,52 @@ import {
   firstSeqOf,
   lastSeqOf,
   mergeMessages,
+  refreshKnown,
+  replaceMessage,
+  toChatMessage,
+  type ChatMessage,
   type PendingMessage,
   type ThreadData,
+  type ThreadPage,
 } from '../../features/chat/thread';
 import { errorMessage, toApiError } from '../api/errors';
 import { MESSAGES_PAGE, MESSAGES_PAGE_MAX, type MessagesQuery } from '../api/supportChat';
-import type { MessageDto, MessageList } from '../api/types';
+import type { InboxMessage, MessageDto } from '../api/types';
 import { chatKeys } from './supportChat';
 import { newUuid } from '../../utils/uuid';
 
-/** Lo que se manda al escribir: el texto, el id que genera el panel y, en un ticket de la plataforma, la visibilidad. */
+/**
+ * Lo que se manda al escribir: el texto, el id que genera el panel y, según el hilo, la visibilidad (ticket de la
+ * plataforma), el mensaje al que responde y la respuesta guardada (bandeja).
+ */
 export interface OutgoingMessage {
   clientMessageId: string;
   body: string;
   visibility?: 'all' | 'internal';
+  replyToSeq?: number;
+  templateId?: string;
+}
+
+/** Lo que se puede agregar a un envío además del texto. */
+export interface SendExtras {
+  visibility?: 'all' | 'internal';
+  replyToSeq?: number;
+  templateId?: string;
 }
 
 /** De dónde sale y a dónde va un hilo: cada pantalla arma el suyo con las llamadas de su lado. */
 export interface ThreadSource {
   /** La conversación (su sala y su caché). `null`: la empresa todavía no tiene chat abierto; el primer mensaje lo crea. */
   conversationId: string | null;
-  fetch: ((query: MessagesQuery) => Promise<MessageList>) | null;
-  send: (message: OutgoingMessage) => Promise<MessageDto>;
+  fetch: ((query: MessagesQuery) => Promise<ThreadPage>) | null;
+  send: (message: OutgoingMessage) => Promise<ChatMessage>;
+  /** Editar un mensaje propio (bandeja, D-C22). Sin esto, el hilo no ofrece editar. */
+  edit?: (messageId: string, body: string) => Promise<ChatMessage>;
   /**
    * Un envío confirmado quedó en otra conversación (la empresa abrió un chat nuevo): quien muestra el hilo tiene que
    * pasar a ella en el acto (su caché ya tiene el mensaje).
    */
-  onSent?: (message: MessageDto) => void;
+  onSent?: (message: ChatMessage) => void;
 }
 
 /** Clave del hilo del chat de la empresa mientras no hay conversación. */
@@ -52,16 +71,16 @@ const update = (queryClient: QueryClient, key: readonly unknown[], fn: (thread: 
  * Mensajes del socket que llegaron antes de la primera carga de su hilo (entre `chat:join` y la respuesta del GET).
  * Uno por cliente de React Query y por hilo; se vacía al sumarlos.
  */
-const earlyMessages = new WeakMap<QueryClient, Map<string, MessageDto[]>>();
+const earlyMessages = new WeakMap<QueryClient, Map<string, ChatMessage[]>>();
 const hashOf = (key: readonly unknown[]) => JSON.stringify(key);
 
-const keepEarly = (queryClient: QueryClient, key: readonly unknown[], message: MessageDto) => {
-  const byThread = earlyMessages.get(queryClient) ?? new Map<string, MessageDto[]>();
+const keepEarly = (queryClient: QueryClient, key: readonly unknown[], message: ChatMessage) => {
+  const byThread = earlyMessages.get(queryClient) ?? new Map<string, ChatMessage[]>();
   earlyMessages.set(queryClient, byThread);
   byThread.set(hashOf(key), mergeMessages(byThread.get(hashOf(key)) ?? [], [message]));
 };
 
-const takeEarly = (queryClient: QueryClient, key: readonly unknown[]): MessageDto[] => {
+const takeEarly = (queryClient: QueryClient, key: readonly unknown[]): ChatMessage[] => {
   const byThread = earlyMessages.get(queryClient);
   const early = byThread?.get(hashOf(key)) ?? [];
   byThread?.delete(hashOf(key));
@@ -69,8 +88,8 @@ const takeEarly = (queryClient: QueryClient, key: readonly unknown[]): MessageDt
 };
 
 /** Los que siguen sin hueco al último de la foto, y si quedó alguno después de un hueco. */
-const splitEarly = (early: MessageDto[], last: number): { contiguous: MessageDto[]; gap: boolean } => {
-  const contiguous: MessageDto[] = [];
+const splitEarly = (early: ChatMessage[], last: number): { contiguous: ChatMessage[]; gap: boolean } => {
+  const contiguous: ChatMessage[] = [];
   let next = last;
   for (const message of early) {
     if (message.seq > next + 1) return { contiguous, gap: true };
@@ -88,11 +107,11 @@ const splitEarly = (early: MessageDto[], last: number): { contiguous: MessageDto
 export const loadThread = async (
   queryClient: QueryClient,
   key: readonly unknown[],
-  fetch: (query: MessagesQuery) => Promise<MessageList>,
+  fetch: (query: MessagesQuery) => Promise<ThreadPage>,
 ): Promise<ThreadData> => {
   const current = queryClient.getQueryData<ThreadData>(key);
   if (!current || current.messages.length === 0) {
-    let page: MessageList;
+    let page: ThreadPage;
     try {
       page = await fetch({ limit: MESSAGES_PAGE });
     } catch (error) {
@@ -111,7 +130,7 @@ export const loadThread = async (
     if (gap) window.setTimeout(() => void queryClient.invalidateQueries({ queryKey: key }), 0);
     return { ...latest, messages, hasMoreBefore: page.hasMore, pending: dropConfirmed(latest.pending, messages) };
   }
-  const items: MessageDto[] = [];
+  const items: ChatMessage[] = [];
   let after = lastSeqOf(current);
   for (let round = 0; round < CATCH_UP_ROUNDS; round += 1) {
     const page = await fetch({ afterSeq: after, limit: MESSAGES_PAGE_MAX });
@@ -119,16 +138,23 @@ export const loadThread = async (
     if (!page.hasMore || page.items.length === 0) break;
     after = page.items[page.items.length - 1].seq;
   }
+  // Lo que ya se tenía también pudo cambiar sin que llegara el aviso (se editó o se borró con el hilo fuera de la sala
+  // o sin conexión): se relee la última página (hasta el último que se tiene) y se reemplaza por `seq`. Editar y borrar sólo se puede en los primeros
+  // 15 minutos, así que lo que cambia está siempre entre los últimos mensajes.
+  const caughtUp = mergeMessages(current.messages, items);
+  const recent = await fetch({ beforeSeq: lastSeqOf({ messages: caughtUp }) + 1, limit: MESSAGES_PAGE });
   const latest = queryClient.getQueryData<ThreadData>(key) ?? current;
-  const messages = mergeMessages(latest.messages, items);
+  const messages = refreshKnown(mergeMessages(latest.messages, items), recent.items);
   return { ...latest, messages, pending: dropConfirmed(latest.pending, messages) };
 };
 
 /**
  * Un mensaje que llegó por el socket (`chat:message`). Sólo importa si el hilo está abierto en alguna pantalla (hay
- * caché): si es el siguiente, se agrega; si ya estaba, nada; si saltea números, se pone al día por HTTP.
+ * caché): si es el siguiente, se agrega; si ya estaba, nada; si saltea números, se pone al día por HTTP. Sirve para
+ * el chat con la plataforma y para la bandeja (el mensaje se lleva a la forma común).
  */
-export const applyIncomingMessage = (queryClient: QueryClient, message: MessageDto) => {
+export const applyIncomingMessage = (queryClient: QueryClient, raw: MessageDto | InboxMessage) => {
+  const message = toChatMessage(raw);
   const key = chatKeys.thread(message.conversationId);
   const thread = queryClient.getQueryData<ThreadData>(key);
   if (!thread) {
@@ -147,6 +173,17 @@ export const applyIncomingMessage = (queryClient: QueryClient, message: MessageD
     const messages = mergeMessages(current.messages, [message]);
     return { ...current, messages, pending: dropConfirmed(current.pending, messages) };
   });
+};
+
+/**
+ * Un mensaje editado o borrado por su autor (`chat:message-edited` / `chat:message-deleted`): se reemplaza en su lugar
+ * («editado» / «Mensaje eliminado» en vivo). Si el hilo no lo tiene, no hace nada: el GET ya trae la versión nueva.
+ */
+export const applyMessageUpdate = (queryClient: QueryClient, raw: MessageDto | InboxMessage) => {
+  const message = toChatMessage(raw);
+  const key = chatKeys.thread(message.conversationId);
+  if (!queryClient.getQueryData<ThreadData>(key)) return;
+  update(queryClient, key, (current) => ({ ...current, messages: replaceMessage(current.messages, message) }));
 };
 
 /** La otra punta leyó hasta `lastReadSeq` (`chat:read`): el ✓✓ nunca baja. */
@@ -211,7 +248,7 @@ const isRetryable = (error: unknown) => {
 export const useThread = (source: ThreadSource) => {
   const queryClient = useQueryClient();
   const key = keyOf(source.conversationId);
-  const { fetch, send, onSent } = source;
+  const { fetch, send, onSent, edit } = source;
   const query = useQuery({
     queryKey: key,
     queryFn: () =>
@@ -264,6 +301,8 @@ export const useThread = (source: ThreadSource) => {
           clientMessageId: pending.clientMessageId,
           body: pending.body,
           ...(pending.visibility ? { visibility: pending.visibility } : {}),
+          ...(pending.replyToSeq ? { replyToSeq: pending.replyToSeq } : {}),
+          ...(pending.templateId ? { templateId: pending.templateId } : {}),
         });
         const target = chatKeys.thread(message.conversationId);
         const sameThread = message.conversationId === source.conversationId;
@@ -305,12 +344,14 @@ export const useThread = (source: ThreadSource) => {
 
   /** Escribe: la burbuja aparece al instante como «enviando» y el compositor se puede limpiar sin perder el texto. */
   const sendMessage = useCallback(
-    (body: string, visibility?: 'all' | 'internal') => {
+    (body: string, extras: SendExtras = {}) => {
       const pending: PendingMessage = {
         clientMessageId: newUuid(),
         body,
         status: 'sending',
-        visibility,
+        visibility: extras.visibility,
+        replyToSeq: extras.replyToSeq,
+        templateId: extras.templateId,
         createdAt: new Date().toISOString(),
       };
       update(queryClient, key, (current) => ({ ...current, pending: [...current.pending, pending] }));
@@ -345,6 +386,25 @@ export const useThread = (source: ThreadSource) => {
     [key, queryClient],
   );
 
+  /**
+   * Edita un mensaje propio y deja la versión de la API en su lugar (con su `canEdit`). Si la API lo rechaza (pasaron
+   * los 15 minutos, se cerró la conversación), el error sube a quien llama y el hilo queda como estaba.
+   */
+  const editMessage = useMemo(
+    () =>
+      edit
+        ? async (messageId: string, body: string) => {
+            const message = await edit(messageId, body);
+            update(queryClient, chatKeys.thread(message.conversationId), (current) => ({
+              ...current,
+              messages: replaceMessage(current.messages, message, 'api'),
+            }));
+            return message;
+          }
+        : undefined,
+    [edit, queryClient],
+  );
+
   return {
     thread: query.data,
     isPending: query.isPending,
@@ -355,6 +415,7 @@ export const useThread = (source: ThreadSource) => {
     olderError,
     reload,
     send: sendMessage,
+    edit: editMessage,
     retry,
     discard,
   };

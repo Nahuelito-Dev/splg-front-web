@@ -9,6 +9,8 @@ import { MessageText } from './MessageText';
 const PARTY_LABEL: Record<MessageDto['party'], string> = {
   company: 'Empresa',
   platform: 'Soporte',
+  customer: 'Cliente',
+  driver: 'Chofer',
   system: 'Sistema',
 };
 
