@@ -1,7 +1,7 @@
 import { Ban, Check, CheckCheck, CornerUpLeft, Lock, PencilLine, Ticket as TicketIcon } from 'lucide-react';
 import { memo } from 'react';
 import { Link } from 'react-router-dom';
-import { cx } from '../../../common/components/ui';
+import { cx, PersonAvatar } from '../../../common/components/ui';
 import type { MessageDto } from '../../../services/api/types';
 import { formatDateTime, formatTime } from '../../../utils/format';
 import { claimOfSystem, isOutOfHoursReply, systemText, ticketOfSystem } from '../messageText';
@@ -24,6 +24,10 @@ export interface MessageContext {
   variant?: 'support' | 'inbox';
   /** Nombre de la otra punta (el cliente o el chofer) cuando el mensaje no trae autor. */
   counterpartName?: string;
+  /** Usuario de la otra punta (el cliente o el chofer): la foto de sus mensajes. */
+  counterpartUserId?: string | null;
+  /** Foto de perfil al lado de los mensajes ajenos (la bandeja de la empresa). */
+  showAvatars?: boolean;
   /** Quién firma las respuestas automáticas. */
   autoName?: string;
   /** Cómo se nombra a cada punta en una cita. */
@@ -122,6 +126,8 @@ const MessageItemView = ({ message, first, ctx }: Props) => {
   }
 
   const mine = message.isMine;
+  // Sólo la bandeja (y sólo para el personal) trae el usuario de quien escribió: su foto de perfil.
+  const senderUserId = (message.sender as { userId?: string } | null | undefined)?.userId ?? null;
   const internal = message.visibility === 'internal';
   const auto = message.kind === 'auto_reply';
   const deleted = Boolean(message.deleted);
@@ -153,6 +159,19 @@ const MessageItemView = ({ message, first, ctx }: Props) => {
           aria-label={`Elegir el mensaje de las ${time}`}
         />
       )}
+      {ctx.showAvatars &&
+        !mine &&
+        (first ? (
+          <PersonAvatar
+            name={author}
+            userId={auto ? null : (senderUserId ?? (message.party !== 'company' ? ctx.counterpartUserId : null))}
+            size="sm"
+            decorative
+            className="mb-0.5 h-7 w-7 shrink-0 text-[11px]"
+          />
+        ) : (
+          <span aria-hidden="true" className="w-7 shrink-0" />
+        ))}
       <div className={cx('flex max-w-[85%] flex-col sm:max-w-[70%]', mine ? 'items-end' : 'items-start')}>
         {first && (
           <span className="mb-0.5 flex items-center gap-1 px-1 text-[11px] font-medium text-muted">
@@ -266,6 +285,8 @@ export const MessageItem = memo(MessageItemView, (prev, next) => {
     read(prev) === read(next) &&
     prev.ctx.platformName === next.ctx.platformName &&
     prev.ctx.counterpartName === next.ctx.counterpartName &&
+    prev.ctx.counterpartUserId === next.ctx.counterpartUserId &&
+    prev.ctx.showAvatars === next.ctx.showAvatars &&
     prev.ctx.variant === next.ctx.variant &&
     Boolean(prev.ctx.onOfferTicket) === Boolean(next.ctx.onOfferTicket) &&
     Boolean(prev.ctx.onReply) === Boolean(next.ctx.onReply) &&

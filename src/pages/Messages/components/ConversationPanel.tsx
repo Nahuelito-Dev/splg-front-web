@@ -247,6 +247,8 @@ export const ConversationPanel = ({ id, myUserId, companyName, access }: Props) 
             platformName: companyName,
             variant: 'inbox',
             counterpartName: name,
+            counterpartUserId: (conversation.customer ?? conversation.driver)?.id ?? null,
+            showAvatars: true,
             autoName: companyName,
             partyName: partyNamer(conversation),
             claimHref,

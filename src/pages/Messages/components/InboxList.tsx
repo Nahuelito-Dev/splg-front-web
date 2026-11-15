@@ -1,7 +1,7 @@
 import { HardHat, MessageSquareText, UserRound } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { cx, EmptyState, ErrorState, SearchInput, Skeleton, Tabs } from '../../../common/components/ui';
+import { cx, EmptyState, ErrorState, PersonAvatar, SearchInput, Skeleton, Tabs } from '../../../common/components/ui';
 import { useDebounce } from '../../../hooks/useDebounce';
 import { counterpartName, subjectLabel } from '../../../features/chat/inbox/inboxLabels';
 import { messageHref } from '../../../features/chat/routes';
@@ -9,7 +9,7 @@ import { INBOX_SEARCH_MAX, INBOX_SEARCH_MIN, type InboxChannel, type InboxQuery 
 import type { InboxConversation } from '../../../services/api/types';
 import { tabQuery, type InboxFilter, type InboxTab, isInboxTab } from '../inboxTabs';
 import { useInboxConversations } from '../../../services/queries/inbox';
-import { formatElapsed, initialsOf } from '../../../utils/format';
+import { formatElapsed } from '../../../utils/format';
 
 const PAGE = 50;
 
@@ -61,15 +61,13 @@ const Row = ({ conversation, selected, now }: { conversation: InboxConversation;
         selected && 'bg-primary-soft hover:bg-primary-soft',
       )}
     >
-      <span
-        aria-hidden="true"
-        className={cx(
-          'grid h-9 w-9 shrink-0 place-items-center rounded-full text-xs font-semibold',
-          conversation.channel === 'staff_driver' ? 'bg-surface-muted text-ink-2' : 'bg-primary-soft text-primary',
-        )}
-      >
-        {initialsOf(name)}
-      </span>
+      <PersonAvatar
+        name={name}
+        userId={(conversation.customer ?? conversation.driver)?.id ?? null}
+        size="md"
+        decorative
+        className="h-9 w-9 shrink-0 text-xs"
+      />
       <span className="grid min-w-0 flex-1 gap-0.5">
         <span className="flex items-center gap-2">
           <span
