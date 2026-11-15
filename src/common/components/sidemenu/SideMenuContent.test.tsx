@@ -11,6 +11,7 @@ vi.mock('../../../hooks/reduxHooks', () => ({
     pick({ auth: { email: 'admin@splg.com', role: 'admin' } }),
 }));
 vi.mock('../LogoSplg', () => ({ LogoSplg: () => null }));
+vi.mock('../CompanyBrand', () => ({ CompanyBrand: () => null, PoweredByPlatform: () => null }));
 vi.mock('./TenantCard', () => ({ TenantCard: () => null }));
 
 import { SideMenuContent } from './SideMenuContent';

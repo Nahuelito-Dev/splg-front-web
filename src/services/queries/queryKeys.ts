@@ -23,6 +23,7 @@ export const queryKeys = {
   carDocuments: resource('carDocuments'),
   claims: resource('claims'),
   containerCharge: resource('containerCharge'),
+  companyTheme: resource('companyTheme'),
   coverageZones: resource('coverageZones'),
   customers: resource('customers'),
   cylinderRecovery: resource('cylinderRecovery'),

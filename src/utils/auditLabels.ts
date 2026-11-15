@@ -14,6 +14,7 @@ export const AUDIT_ENTITY = {
   CylinderRecoveryNotice: 'Aviso de recupero de envase',
   Delivery: 'Chofer',
   Distributor: 'Distribuidora',
+  DistributorTheme: 'Apariencia de la distribuidora',
   Employee: 'Legajo de personal',
   GasCylinder: 'Garrafa (producto)',
   GasCylinderPromotion: 'Promoción de garrafa',
