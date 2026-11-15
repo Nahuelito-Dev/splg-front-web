@@ -13,14 +13,23 @@ import {
 } from '../../common/components/ui';
 import { usePermissions } from '../../hooks';
 import { useProcessConfigs } from '../../services/queries/moduleConfig';
+import { isModuleOff, useModuleAvailability } from '../../services/queries/modules';
 import { formatDateTime } from '../../utils/format';
 import { DistributorRequired } from './components/DistributorRequired';
 import { ProcessConfigModal } from './components/ProcessConfigModal';
 
-/** Los cinco procesos automáticos configurables por distribuidora, con sus parámetros vigentes (CU-172). */
+/**
+ * Los procesos automáticos configurables por distribuidora, con sus parámetros vigentes (CU-172). Cada proceso es el
+ * de un módulo con su misma clave: los de un módulo que la plataforma no le habilitó a la empresa no se muestran (la
+ * API respondería 403 `MODULE_DISABLED` al abrirlos).
+ */
 export const AutomaticProcesses = () => {
   const { needsDistributor, canWrite, writeHint } = usePermissions();
-  const { data, isPending, error, refetch } = useProcessConfigs({ enabled: !needsDistributor });
+  const { data: all, isPending: configsPending, error, refetch } = useProcessConfigs({ enabled: !needsDistributor });
+  const { enabledByKey, loading: modulesPending } = useModuleAvailability();
+  const isPending = configsPending || modulesPending;
+  const data = all?.filter((p) => !isModuleOff(enabledByKey, p.process));
+  const hiddenCount = (all?.length ?? 0) - (data?.length ?? 0);
   const [editing, setEditing] = useState<string | null>(null);
   // Se busca en la lista vigente: al guardar, la lista se actualiza sola y el modal se cierra.
   const config = data?.find((p) => p.process === editing);
@@ -35,10 +44,17 @@ export const AutomaticProcesses = () => {
         <DistributorRequired />
       ) : error ? (
         <ErrorState error={error} resource="Los procesos automáticos" onRetry={() => void refetch()} />
-      ) : isPending ? (
+      ) : isPending || !data ? (
         <Skeleton className="h-64 w-full" />
       ) : data.length === 0 ? (
-        <EmptyState title="No hay procesos configurables" description="La API no devolvió ningún proceso." />
+        hiddenCount > 0 ? (
+          <EmptyState
+            title="No hay procesos para configurar"
+            description="Los procesos automáticos son de módulos que no están incluidos en el plan de tu empresa."
+          />
+        ) : (
+          <EmptyState title="No hay procesos configurables" description="La API no devolvió ningún proceso." />
+        )
       ) : (
         <ul className="space-y-4">
           {data.map((process) => (

@@ -29,6 +29,17 @@ describe('toApiError', () => {
     expect(error.message).toMatch(/no incluye archivos ni exportes/);
   });
 
+  it('el 403 MODULE_DISABLED se muestra como «no incluido en tu plan» y se reconoce por su código', () => {
+    const error = toApiError(
+      axiosError(403, { message: 'La función «Lector de documentos» no está habilitada', code: 'MODULE_DISABLED' }),
+    );
+    expect(error.moduleDisabled).toBe(true);
+    expect(error.message).toBe('Esta función no está incluida en tu plan');
+    expect(toApiError(axiosError(403, { message: 'Sin permiso', code: 'PERMISSION_DENIED' })).moduleDisabled).toBe(
+      false,
+    );
+  });
+
   it('la falta de distribuidora se muestra como pide el panel', () => {
     const message = 'Falta la distribuidora: enviá el header X-Distributor (slug o id)';
     expect(errorMessage(axiosError(400, { message }))).toBe(

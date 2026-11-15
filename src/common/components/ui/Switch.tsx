@@ -8,15 +8,18 @@ interface Props {
   disabled?: boolean;
   /** Por qué está deshabilitado (permisos), como `title` del control. */
   title?: string;
+  /** Id de un texto que describe el estado (para el lector de pantalla), como `aria-describedby`. */
+  describedBy?: string;
 }
 
 /** Interruptor accesible (`role="switch"`), para el activo/inactivo de una fila. */
-export const Switch = ({ checked, onChange, label, disabled, title }: Props) => (
+export const Switch = ({ checked, onChange, label, disabled, title, describedBy }: Props) => (
   <button
     type="button"
     role="switch"
     aria-checked={checked}
     aria-label={label}
+    aria-describedby={describedBy}
     title={title}
     disabled={disabled}
     onClick={() => onChange(!checked)}

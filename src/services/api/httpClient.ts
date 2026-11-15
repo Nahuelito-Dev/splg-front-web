@@ -7,7 +7,8 @@ import { OWNED_COMPANY_GONE_CODE, OWNED_COMPANY_HEADER, ownedCompany } from './o
 import { getCurrentIdToken, logOutFirebase } from '../../firebase/providers';
 import { esErrorDeSesion, SESSION_EXPIRED_MESSAGE } from '../../firebase/sessionErrors';
 import { queryClient } from '../queries/queryClient';
-import { toApiError } from './errors';
+import { queryKeys } from '../queries/queryKeys';
+import { MODULE_DISABLED_CODE, toApiError } from './errors';
 
 // Axios no trae estas opciones: las agregan `skipSupportSession` y `public` (ver `attachAuthHeaders`).
 declare module 'axios' {
@@ -149,6 +150,11 @@ http.interceptors.response.use(undefined, async (error: unknown) => {
     const sentOwned: unknown = original?.headers?.[OWNED_COMPANY_HEADER];
     if (typeof sentOwned === 'string' && status === 403 && code === OWNED_COMPANY_GONE_CODE) {
       ownedCompany.endedByApi(sentOwned);
+    }
+    // Un módulo que la plataforma apagó: se vuelven a pedir los módulos de la empresa, así el menú y las rutas lo
+    // esconden enseguida (sin esperar al próximo refresco).
+    if (status === 403 && code === MODULE_DISABLED_CODE) {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.companyModules.all });
     }
     if (status === 401) {
       // Con el token recién renovado, el 401 no es vencimiento (cuenta bloqueada, distribuidora inválida, rol): se muestra el motivo de la API.

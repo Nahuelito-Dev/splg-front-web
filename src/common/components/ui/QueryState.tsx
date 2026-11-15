@@ -30,7 +30,10 @@ interface ErrorStateProps {
   onRetry?: () => void;
 }
 
-/** Error de una consulta: 404 como "no existe", el resto con el mensaje de la API. */
+/**
+ * Error de una consulta: 404 como "no existe", 403 `MODULE_DISABLED` como «No incluido en tu plan» (un módulo que la
+ * plataforma apagó mientras se miraba la pantalla) y el resto con el mensaje de la API.
+ */
 export const ErrorState = ({
   error,
   resource = 'El recurso',
@@ -40,6 +43,14 @@ export const ErrorState = ({
   const apiError = toApiError(error);
   if (apiError.notFound || apiError.invalidId) {
     return <EmptyState title={`${resource} no existe`} description={notFoundDescription} />;
+  }
+  if (apiError.moduleDisabled) {
+    return (
+      <EmptyState
+        title="No incluido en tu plan"
+        description="Esta función no está habilitada para tu empresa. Lo demás del panel sigue funcionando igual."
+      />
+    );
   }
   return (
     <EmptyState

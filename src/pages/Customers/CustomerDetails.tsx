@@ -27,6 +27,8 @@ import { useCustomer, useCustomerPurchaseStats, useRemoveCustomer } from '../../
 import { useCustomerAccountOf } from '../../services/queries/finance';
 import { useCylinders } from '../../services/queries/physicalCylinders';
 import { useCustomerRepurchase } from '../../services/queries/repurchase';
+import { useModuleGate } from '../../services/queries/modules';
+import { IfModule } from '../../common/components/RequireModule';
 import { useUserAddresses } from '../../services/queries/userAddresses';
 import { formatCurrency, formatCurrencyExact, formatDate, formatNumber } from '../../utils/format';
 import { confirm, notify } from '../../utils/notifications';
@@ -67,7 +69,12 @@ export const CustomerDetails = () => {
   const [editing, setEditing] = useState(false);
   const [editingLocation, setEditingLocation] = useState(false);
   const [claimId, setClaimId] = useState<string | null>(null);
-  const [tab, setTab] = useProfileTab(TAB_KEYS, 'summary');
+  // La recompra es un módulo (M3): apagado, ni la pestaña, ni el dato del encabezado, ni la consulta.
+  const repurchaseGate = useModuleGate('repurchase');
+  const [tab, setTab] = useProfileTab(
+    repurchaseGate.off ? TAB_KEYS.filter((key) => key !== 'repurchase') : TAB_KEYS,
+    'summary',
+  );
 
   const purchaseStats = useCustomerPurchaseStats(customer?.user_id);
   const addresses = useUserAddresses(customer?.user_id);
@@ -87,7 +94,9 @@ export const CustomerDetails = () => {
     : customer?.deletedAt || customer?.user?.deletedAt
       ? 'removed'
       : null;
-  const repurchaseQuery = useCustomerRepurchase(customer?.user_id, { enabled: !needsDistributor && !inactiveReason });
+  const repurchaseQuery = useCustomerRepurchase(customer?.user_id, {
+    enabled: !needsDistributor && !inactiveReason && repurchaseGate.ready,
+  });
   const nextRepurchase = repurchaseQuery.data?.forecast;
   const claimsQuery = useClaims();
   // `claim.customer_id` es el id de la cuenta (`user_id`) del cliente, no el de su perfil: se filtran los de esta ficha.
@@ -116,60 +125,62 @@ export const CustomerDetails = () => {
   const statsFailed = purchaseStats.isError;
   const statsMissing = statsFailed ? 'No disponible' : '–';
   const consumption = customer?.avgMonthlyConsumptionKg;
-  const coverStats: CoverStat[] = [
-    {
-      label: 'Total comprado',
-      value: stats ? formatCurrency(stats.totalPurchased) : statsMissing,
-      hint: statsFailed ? 'No se pudieron cargar las estadísticas de compra' : 'Pedidos entregados',
-    },
-    { label: 'Pedidos', value: stats ? String(stats.ordersCount) : statsMissing },
-    {
-      label: 'Ticket promedio',
-      value: stats
-        ? stats.averageTicket === null
-          ? 'Sin entregas'
-          : formatCurrencyExact(stats.averageTicket)
-        : statsMissing,
-    },
-    {
-      label: 'Última compra',
-      value: stats
-        ? stats.lastDeliveredAt
-          ? formatDate(stats.lastDeliveredAt)
-          : stats.ordersCount > 0
+  const coverStats = (
+    [
+      {
+        label: 'Total comprado',
+        value: stats ? formatCurrency(stats.totalPurchased) : statsMissing,
+        hint: statsFailed ? 'No se pudieron cargar las estadísticas de compra' : 'Pedidos entregados',
+      },
+      { label: 'Pedidos', value: stats ? String(stats.ordersCount) : statsMissing },
+      {
+        label: 'Ticket promedio',
+        value: stats
+          ? stats.averageTicket === null
             ? 'Sin entregas'
-            : 'Sin pedidos'
-        : statsMissing,
-    },
-    {
-      label: 'Consumo declarado',
-      value: consumption == null ? 'Sin declarar' : `${formatNumber(consumption)} kg/mes`,
-    },
-    {
-      label: 'Próxima recompra',
-      value: needsDistributor
-        ? 'Elegí distribuidora'
-        : inactiveReason
-          ? 'No aplica'
-          : repurchaseQuery.isError || repurchaseQuery.data === undefined
+            : formatCurrencyExact(stats.averageTicket)
+          : statsMissing,
+      },
+      {
+        label: 'Última compra',
+        value: stats
+          ? stats.lastDeliveredAt
+            ? formatDate(stats.lastDeliveredAt)
+            : stats.ordersCount > 0
+              ? 'Sin entregas'
+              : 'Sin pedidos'
+          : statsMissing,
+      },
+      {
+        label: 'Consumo declarado',
+        value: consumption == null ? 'Sin declarar' : `${formatNumber(consumption)} kg/mes`,
+      },
+      !repurchaseGate.off && {
+        label: 'Próxima recompra',
+        value: needsDistributor
+          ? 'Elegí distribuidora'
+          : inactiveReason
+            ? 'No aplica'
+            : repurchaseQuery.isError || repurchaseQuery.data === undefined
+              ? '–'
+              : nextRepurchase
+                ? formatDate(nextRepurchase.estimatedAt)
+                : 'Sin estimar',
+        hint: nextRepurchase ? daysLeftText(nextRepurchase.daysLeft) : undefined,
+      },
+      {
+        label: 'Cuenta corriente',
+        value: needsDistributor
+          ? 'Elegí distribuidora'
+          : accountQuery.isError || account === undefined
             ? '–'
-            : nextRepurchase
-              ? formatDate(nextRepurchase.estimatedAt)
-              : 'Sin estimar',
-      hint: nextRepurchase ? daysLeftText(nextRepurchase.daysLeft) : undefined,
-    },
-    {
-      label: 'Cuenta corriente',
-      value: needsDistributor
-        ? 'Elegí distribuidora'
-        : accountQuery.isError || account === undefined
-          ? '–'
-          : account
-            ? formatCurrencyExact(account.balance)
-            : 'Sin cuenta',
-      hint: account ? balanceHint(account.balance) : undefined,
-    },
-  ];
+            : account
+              ? formatCurrencyExact(account.balance)
+              : 'Sin cuenta',
+        hint: account ? balanceHint(account.balance) : undefined,
+      },
+    ] satisfies (CoverStat | false)[]
+  ).filter((stat): stat is CoverStat => stat !== false);
 
   const tabs: ProfileTabItem[] = [
     { key: 'summary', label: 'Resumen' },
@@ -178,7 +189,7 @@ export const CustomerDetails = () => {
     { key: 'cylinders', label: 'Envases en su poder', badge: heldCylinders.data?.total },
     { key: 'claims', label: 'Reclamos', badge: claimsQuery.data ? claims.length : undefined },
     { key: 'account', label: 'Cuenta corriente' },
-    { key: 'repurchase', label: 'Recompra' },
+    ...(repurchaseGate.off ? [] : [{ key: 'repurchase', label: 'Recompra' }]),
     { key: 'ratings', label: 'Calificaciones' },
   ];
 
@@ -279,9 +290,12 @@ export const CustomerDetails = () => {
               listSearch={`customer=${customer.user_id}`}
             />
             {!needsDistributor && (
-              <div className="mt-6">
-                <CustomerRecoveryCard userId={customer.user_id} />
-              </div>
+              // El recupero de envases es un módulo (M5): apagado, la tarjeta no se pide ni se muestra.
+              <IfModule module="cylinder_recovery">
+                <div className="mt-6">
+                  <CustomerRecoveryCard userId={customer.user_id} />
+                </div>
+              </IfModule>
             )}
           </ProfileTabPanel>
           <ProfileTabPanel tabKey="claims" value={tab}>

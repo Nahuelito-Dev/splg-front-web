@@ -9,6 +9,12 @@ interface ErrorBody {
   code?: string;
 }
 
+/** Código del 403 de un módulo no habilitado (`ModuloGuard` del back, DISENO-PLATAFORMA-ORIXTECH §5.8). */
+export const MODULE_DISABLED_CODE = 'MODULE_DISABLED';
+
+/** Lo que se le dice a la empresa cuando llega un `MODULE_DISABLED` (§5.8). */
+export const MODULE_DISABLED_MESSAGE = 'Esta función no está incluida en tu plan';
+
 const MISSING_DISTRIBUTOR_MESSAGE = 'Esta acción es de una empresa: la hace un administrador de esa empresa';
 
 /** Un error de la API ya interpretado: estado HTTP y mensajes legibles. */
@@ -40,6 +46,11 @@ export class ApiError extends Error {
     return this.status === 403;
   }
 
+  /** 403 `MODULE_DISABLED`: la función es de un módulo que la plataforma no le habilitó a la empresa. */
+  get moduleDisabled(): boolean {
+    return this.status === 403 && this.code === MODULE_DISABLED_CODE;
+  }
+
   /** 429: el back limita las consultas por minuto (p. ej. `POST /users/check-exists`, 10 por IP). */
   get rateLimited(): boolean {
     return this.status === 429;
@@ -66,6 +77,7 @@ const SCOPE_REQUIRED_MESSAGE =
 
 const friendly = (status: number | null, messages: string[], code?: string | null): string[] => {
   if (code === 'SUPPORT_SCOPE_REQUIRED') return [SCOPE_REQUIRED_MESSAGE];
+  if (code === MODULE_DISABLED_CODE) return [MODULE_DISABLED_MESSAGE];
   if (status === 429) return [RATE_LIMITED_MESSAGE];
   if (status === 409) return messages.map((m) => (UNPAID_INCIDENT.test(m) ? UNPAID_INCIDENT_MESSAGE : m));
   return status === 400

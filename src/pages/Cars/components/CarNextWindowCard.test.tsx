@@ -3,8 +3,13 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { failed, loading, ok } from '../../../test/pageTest';
 
-const state = vi.hoisted(() => ({ forecast: vi.fn(), needsDistributor: false }));
+const state = vi.hoisted(() => ({
+  forecast: vi.fn(),
+  needsDistributor: false,
+  gate: { ready: true, off: false },
+}));
 vi.mock('../../../hooks', () => ({ usePermissions: () => ({ needsDistributor: state.needsDistributor }) }));
+vi.mock('../../../services/queries/modules', () => ({ useModuleGate: () => state.gate }));
 vi.mock('../../../services/queries/planner', () => ({
   usePlannerForecast: (...args: unknown[]) => state.forecast(...args) as unknown,
 }));
@@ -22,6 +27,7 @@ afterEach(() => {
   cleanup();
   vi.clearAllMocks();
   state.needsDistributor = false;
+  state.gate = { ready: true, off: false };
 });
 
 describe('CarNextWindowCard', () => {
@@ -68,5 +74,22 @@ describe('CarNextWindowCard', () => {
     draw();
     expect(screen.getByText('Elegí una distribuidora')).toBeInTheDocument();
     expect(state.forecast).toHaveBeenCalledWith('car-1', { enabled: false });
+  });
+
+  it('con el planificador apagado para la empresa no pide el pronóstico ni muestra la tarjeta (ni un error)', () => {
+    state.gate = { ready: false, off: true };
+    state.forecast.mockReturnValue(loading());
+    draw();
+    expect(state.forecast).toHaveBeenCalledWith('car-1', { enabled: false });
+    expect(screen.queryByText('Próxima ventana de taller')).not.toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('mientras no se sabe si el planificador está habilitado, tampoco pide ni muestra', () => {
+    state.gate = { ready: false, off: false };
+    state.forecast.mockReturnValue(loading());
+    draw();
+    expect(state.forecast).toHaveBeenCalledWith('car-1', { enabled: false });
+    expect(screen.queryByText('Próxima ventana de taller')).not.toBeInTheDocument();
   });
 });

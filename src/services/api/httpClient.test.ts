@@ -23,7 +23,10 @@ vi.mock('../../utils/notifications', () => ({
     info: vi.fn(),
   },
 }));
-vi.mock('../queries/queryClient', () => ({ queryClient: { clear: () => void clearCache() } }));
+const invalidateQueries = vi.fn();
+vi.mock('../queries/queryClient', () => ({
+  queryClient: { clear: () => void clearCache(), invalidateQueries: (arg: unknown) => void invalidateQueries(arg) },
+}));
 
 const { attachAuthHeaders, http, toPage, toQuery, SESSION_EXPIRED_MESSAGE } = await import('./httpClient');
 const { store } = await import('../../store/store');
@@ -504,5 +507,41 @@ describe('empresa propia: entre pestañas', () => {
     clearCache.mockReset();
     window.dispatchEvent(new StorageEvent('storage', { key: 'theme', newValue: 'dark' }));
     expect(clearCache).not.toHaveBeenCalled();
+  });
+});
+
+describe('403 MODULE_DISABLED: un módulo que la plataforma no le habilitó a la empresa', () => {
+  const fail = (status: number, data: unknown) => (cfg: InternalAxiosRequestConfig) =>
+    Promise.reject(
+      Object.assign(new Error(String(status)), {
+        isAxiosError: true,
+        config: cfg,
+        response: { status, data, headers: {}, config: cfg },
+      }),
+    );
+
+  beforeEach(() => {
+    localStorage.clear();
+    localStorage.setItem('token', 'el-token');
+    getCurrentIdToken.mockReset().mockResolvedValue(null);
+    supportMode.reset();
+    invalidateQueries.mockReset();
+    clearCache.mockReset();
+    vi.mocked(store.dispatch).mockClear();
+  });
+
+  it('vuelve a pedir los módulos de la empresa (menú y rutas) y deja el error al llamador, sin cerrar la sesión', async () => {
+    const adapter = fail(403, { code: 'MODULE_DISABLED', message: 'La función no está habilitada' });
+    await expect(http.get('/document-readings', { adapter })).rejects.toThrow('403');
+    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['companyModules'] });
+    expect(clearCache).not.toHaveBeenCalled();
+    expect(store.dispatch).not.toHaveBeenCalled();
+  });
+
+  it('otro 403 (permiso, sólo lectura) no toca los módulos', async () => {
+    await expect(
+      http.get('/orders', { adapter: fail(403, { code: 'PERMISSION_DENIED', message: 'Sin permiso' }) }),
+    ).rejects.toThrow('403');
+    expect(invalidateQueries).not.toHaveBeenCalled();
   });
 });

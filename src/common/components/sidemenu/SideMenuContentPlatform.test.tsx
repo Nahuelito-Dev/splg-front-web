@@ -6,6 +6,10 @@ const orders = vi.hoisted(() => vi.fn());
 vi.mock('../../../services/queries/orders', () => ({
   useOrders: (...args: unknown[]) => orders(...args) as unknown,
 }));
+// Los módulos de la empresa (el filtro por módulo se prueba en SideMenuContent.test): acá no se sabe ninguno.
+vi.mock('../../../services/queries/modules', () => ({
+  useModuleAvailability: () => ({ enabledByKey: null, loading: false }),
+}));
 vi.mock('../../../services/queries/permissions', () => ({ useMyPermissions: () => ({ data: undefined }) }));
 const SIGNED = 'https://splg.s3.amazonaws.com/users/me.jpg?X-Amz-Signature=abc';
 vi.mock('../../../services/queries/users', () => ({

@@ -10,6 +10,11 @@ const state = vi.hoisted(() => ({
   perms: { needsDistributor: false, canWrite: true, writeHint: undefined as string | undefined },
   query: undefined as unknown,
   update: undefined as unknown,
+  modules: { enabledByKey: null as Record<string, boolean> | null, loading: false },
+}));
+vi.mock('../../services/queries/modules', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  useModuleAvailability: () => state.modules,
 }));
 vi.mock('../../hooks', () => ({ usePermissions: () => state.perms }));
 vi.mock('../../services/queries/moduleConfig', () => ({
@@ -82,6 +87,7 @@ afterEach(() => {
   cleanup();
   confirmed.value = true;
   state.perms = { needsDistributor: false, canWrite: true, writeHint: undefined };
+  state.modules = { enabledByKey: null, loading: false };
 });
 
 const open = (name: string) => fireEvent.click(screen.getByRole('button', { name }));
@@ -182,5 +188,25 @@ describe('AutomaticProcesses', () => {
     open('Ver Anticipación de recompra');
     expect(await screen.findByLabelText('Anticipación (días)')).toBeDisabled();
     expect(save()).toBeDisabled();
+  });
+
+  it('no muestra los procesos de un módulo que la plataforma no le habilitó a la empresa', () => {
+    state.modules = { enabledByKey: { repurchase: false, route_batching: true }, loading: false };
+    setup();
+    expect(screen.queryByRole('heading', { name: 'Anticipación de recompra' })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Agrupación por recorrido' })).toBeInTheDocument();
+  });
+
+  it('si no queda ninguno habilitado lo explica, sin decir que la API no devolvió nada', () => {
+    state.modules = { enabledByKey: { repurchase: false, route_batching: false }, loading: false };
+    setup();
+    expect(screen.getByText('No hay procesos para configurar')).toBeInTheDocument();
+    expect(screen.getByText(/no están incluidos en el plan/)).toBeInTheDocument();
+  });
+
+  it('mientras no se saben los módulos espera, sin mostrar procesos que después desaparecen', () => {
+    state.modules = { enabledByKey: null, loading: true };
+    setup();
+    expect(screen.queryByRole('heading', { name: 'Anticipación de recompra' })).not.toBeInTheDocument();
   });
 });

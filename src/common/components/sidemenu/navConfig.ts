@@ -5,6 +5,7 @@ import {
   Bot,
   BookOpen,
   Boxes,
+  Blocks,
   Building2,
   Circle,
   Coins,
@@ -67,6 +68,7 @@ import {
   Wrench,
   Route as RouteIcon,
 } from 'lucide-react';
+import type { ModuleKey } from '../../../services/api/modules';
 
 export interface NavItem {
   title: string;
@@ -84,6 +86,11 @@ export interface NavItem {
   permission?: string;
   /** Sólo el admin de la empresa (la API se la niega al administrador general aun en modo soporte). */
   companyAdminOnly?: boolean;
+  /**
+   * Módulo de la plataforma del que es la pantalla (DISENO-PLATAFORMA-ORIXTECH §6.5): si no está habilitado para la
+   * empresa que se mira, el ítem no se muestra. Sin esto es núcleo.
+   */
+  module?: ModuleKey;
   /** Insignia con lo sin leer del chat con la plataforma: todo (empresa), los chats o los tickets (plataforma). */
   supportBadge?: 'all' | 'chats' | 'tickets';
 }
@@ -102,8 +109,14 @@ export const NAV_SECTIONS: NavSection[] = [
       { title: 'Pedidos', path: '/orders', icon: ReceiptText, showPendingOrders: true },
       { title: 'Tablero de despacho', path: '/orders/dispatch', icon: Columns3 },
       { title: 'Seguimiento en vivo', path: '/tracking', icon: Navigation },
-      { title: 'Recorridos', path: '/route-batches', icon: RouteIcon },
-      { title: 'Hojas de ruta', path: '/route-sheets', icon: Waypoints, permission: 'despacho.gestionar' },
+      { title: 'Recorridos', path: '/route-batches', icon: RouteIcon, module: 'route_batching' },
+      {
+        title: 'Hojas de ruta',
+        path: '/route-sheets',
+        icon: Waypoints,
+        permission: 'despacho.gestionar',
+        module: 'route_planning',
+      },
       { title: 'Reservas', path: '/reservations', icon: CalendarDays },
     ],
   },
@@ -121,6 +134,7 @@ export const NAV_SECTIONS: NavSection[] = [
         supportBadge: 'chats',
       },
       { title: 'Tickets', path: '/platform/tickets', icon: Ticket, scope: 'platform', supportBadge: 'tickets' },
+      { title: 'Módulos', path: '/platform/modules', icon: Blocks, scope: 'platform' },
       { title: 'Sesiones de soporte', path: '/platform/support-sessions', icon: Headset, scope: 'platform' },
       { title: 'Monitoreo', path: '/platform/monitoring', icon: Activity, scope: 'platform' },
       { title: 'Tareas programadas', path: '/platform/scheduled-tasks', icon: Timer, scope: 'platform' },
@@ -133,7 +147,7 @@ export const NAV_SECTIONS: NavSection[] = [
     title: 'Clientes',
     items: [
       { title: 'Clientes', path: '/customers', icon: Users },
-      { title: 'Recompra', path: '/customers/repurchase', icon: Repeat },
+      { title: 'Recompra', path: '/customers/repurchase', icon: Repeat, module: 'repurchase' },
       { title: 'Reclamos', path: '/claims', icon: MessageSquareWarning },
       { title: 'Incidencias', path: '/incidents', icon: TriangleAlert },
     ],
@@ -143,7 +157,12 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { title: 'Garrafas', path: '/cylinders', icon: Flame },
       { title: 'Envases', path: '/physical-cylinders', icon: Cylinder },
-      { title: 'Recupero de envases', path: '/physical-cylinders/recovery', icon: PackageSearch },
+      {
+        title: 'Recupero de envases',
+        path: '/physical-cylinders/recovery',
+        icon: PackageSearch,
+        module: 'cylinder_recovery',
+      },
     ],
   },
   {
@@ -175,7 +194,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { title: 'Vencimientos', path: '/fleet/expirations', icon: CalendarClock },
       { title: 'Tareas', path: '/fleet/tasks', icon: ListChecks },
       { title: 'Planes', path: '/fleet/plans', icon: ClipboardList },
-      { title: 'Planificador de taller', path: '/fleet/planner', icon: Wrench },
+      { title: 'Planificador de taller', path: '/fleet/planner', icon: Wrench, module: 'fleet_planner' },
       { title: 'Combustible', path: '/fleet/fuel-loads', icon: Fuel },
       { title: 'Neumáticos', path: '/fleet/tires', icon: Circle },
       { title: 'Multas', path: '/fleet/fines', icon: Gavel },
@@ -207,7 +226,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { title: 'Reintegros', path: '/refunds', icon: Undo2 },
       { title: 'Rendiciones', path: '/finance/settlements', icon: HandCoins },
       { title: 'Cuentas corrientes', path: '/finance/accounts', icon: Landmark },
-      { title: 'Conciliación MP', path: '/finance/mp-reconciliation', icon: ArrowLeftRight },
+      { title: 'Conciliación MP', path: '/finance/mp-reconciliation', icon: ArrowLeftRight, module: 'mercadopago' },
       { title: 'Cajas de cobro', path: '/finance/collection-settings', icon: CreditCard },
       { title: 'Categorías', path: '/finance/categories', icon: Tags },
     ],
@@ -216,7 +235,7 @@ export const NAV_SECTIONS: NavSection[] = [
     title: 'Administración',
     items: [
       { title: 'Reportes', path: '/reports', icon: ChartLine },
-      { title: 'Lectura de documentos', path: '/document-readings', icon: ScanText },
+      { title: 'Lectura de documentos', path: '/document-readings', icon: ScanText, module: 'document_reading' },
       { title: 'Notificaciones', path: '/notifications', icon: Bell, scope: 'both' },
       { title: 'Usuarios', path: '/users', icon: UserRound, scope: 'both' },
       { title: 'Administradores', path: '/admins', icon: ShieldCheck, scope: 'both' },
@@ -245,7 +264,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { title: 'Apariencia', path: '/settings/appearance', icon: Palette, permission: 'configuracion.ver' },
       { title: 'Zonas de cobertura', path: '/coverage-zones', icon: MapIcon },
       { title: 'Parámetros del despacho', path: '/settings/dispatch', icon: SlidersHorizontal },
-      { title: 'Compra express', path: '/settings/express', icon: Zap },
+      { title: 'Compra express', path: '/settings/express', icon: Zap, module: 'express' },
       { title: 'Procesos automáticos', path: '/settings/automatic-processes', icon: Bot },
       { title: 'Tareas programadas', path: '/settings/scheduled-tasks', icon: Timer },
     ],

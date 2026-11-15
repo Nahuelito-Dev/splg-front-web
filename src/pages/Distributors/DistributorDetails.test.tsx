@@ -41,6 +41,13 @@ vi.mock('../../services/queries/platformConsole', () => ({
   },
   useSetCompanyOwnedByPlatform: () => state.setOwned,
 }));
+vi.mock('../Platform/Modules/CompanyModulesList', () => ({
+  CompanyModulesList: ({ companyId, companyName }: { companyId: string; companyName: string }) => (
+    <p>
+      Módulos de {companyName} ({companyId})
+    </p>
+  ),
+}));
 vi.mock('./useDistributorActions', () => ({
   useDistributorActions: () => ({ toggleStatus: vi.fn(), remove: vi.fn() }),
 }));
@@ -84,6 +91,15 @@ describe('Ficha de la empresa (plataforma)', () => {
     expect(screen.getByText('contacto@gasandino.com')).toBeInTheDocument();
     expect(screen.queryByText('Teléfono')).not.toBeInTheDocument();
     expect(screen.queryByText('Empresa propia', { selector: 'span' })).not.toBeInTheDocument();
+  });
+
+  it('«Plan y módulos» muestra los módulos de la empresa y se puede abrir directo por la URL', () => {
+    render();
+    fireEvent.click(screen.getByRole('tab', { name: 'Plan y módulos' }));
+    expect(screen.getByText('Módulos de Nahuel Gas (c-gas)')).toBeInTheDocument();
+    cleanup();
+    render('/distributors/c-gas?tab=modules');
+    expect(screen.getByText('Módulos de Nahuel Gas (c-gas)')).toBeInTheDocument();
   });
 
   it('Uso, Admins y Soporte muestran cada parte de la ficha', () => {

@@ -83,9 +83,14 @@ vi.mock('../../services/queries/finance', () => ({
     error: null,
   }),
 }));
-const repurchaseOf = vi.hoisted(() => vi.fn<[], Record<string, unknown>>());
+const repurchaseOf = vi.hoisted(() => vi.fn<unknown[], Record<string, unknown>>());
 vi.mock('../../services/queries/repurchase', () => ({
-  useCustomerRepurchase: () => repurchaseOf(),
+  useCustomerRepurchase: (...args: unknown[]) => repurchaseOf(...args),
+}));
+// Módulos de la plataforma: por omisión todos habilitados; cada test apaga el que necesita.
+const offModules = vi.hoisted(() => new Set<string>());
+vi.mock('../../services/queries/modules', () => ({
+  useModuleGate: (key: string) => ({ ready: !offModules.has(key), off: offModules.has(key) }),
 }));
 vi.mock('../../services/queries/photos', () => ({
   useUploadPhoto: () => ({ mutate: vi.fn(), isPending: false }),
@@ -586,5 +591,36 @@ describe('CustomerDetails: baja en la distribuidora', () => {
     expect(button).toHaveAttribute('title', expect.stringContaining('Ver como') as string);
     fireEvent.click(button);
     expect(removal.confirm).not.toHaveBeenCalled();
+  });
+});
+
+describe('CustomerDetails: módulos que la plataforma no le habilitó a la empresa', () => {
+  afterEach(() => offModules.clear());
+
+  it('con la recompra apagada no hay pestaña, ni dato en la portada, ni consulta al back', () => {
+    offModules.add('repurchase');
+    renderPage();
+    expect(screen.queryByRole('tab', { name: 'Recompra' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Próxima recompra')).not.toBeInTheDocument();
+    expect(repurchaseOf).toHaveBeenCalledWith('u-1', { enabled: false });
+  });
+
+  it('por URL a la pestaña de recompra apagada cae en el resumen', () => {
+    offModules.add('repurchase');
+    renderPage('/customers/details/c-1?tab=repurchase');
+    expect(screen.queryByText('Sin recompra estimada')).not.toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Resumen', selected: true })).toBeInTheDocument();
+  });
+
+  it('con el recupero de envases apagado la tarjeta de casos no se monta (ni pide)', () => {
+    offModules.add('cylinder_recovery');
+    renderPage('/customers/details/c-1?tab=cylinders');
+    expect(screen.queryByText('recupero de u-1')).not.toBeInTheDocument();
+  });
+
+  it('con los módulos habilitados todo sigue como siempre', () => {
+    renderPage();
+    expect(screen.getByRole('tab', { name: 'Recompra' })).toBeInTheDocument();
+    expect(repurchaseOf).toHaveBeenCalledWith('u-1', { enabled: true });
   });
 });

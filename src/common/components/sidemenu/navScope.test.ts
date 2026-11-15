@@ -27,6 +27,7 @@ describe('menú por alcance', () => {
         '/notifications',
         '/platform/activity',
         '/platform/chats',
+        '/platform/modules',
         '/platform/monitoring',
         '/platform/scheduled-tasks',
         '/platform/service-usage',
@@ -39,11 +40,12 @@ describe('menú por alcance', () => {
   });
 
   it('el menú de plataforma va primero y en el orden del diseño', () => {
-    expect(visiblePaths(PLATFORM).slice(0, 10)).toEqual([
+    expect(visiblePaths(PLATFORM).slice(0, 11)).toEqual([
       '/home',
       '/distributors',
       '/platform/chats',
       '/platform/tickets',
+      '/platform/modules',
       '/platform/support-sessions',
       '/platform/monitoring',
       '/platform/scheduled-tasks',

@@ -1,13 +1,19 @@
 import { Link } from 'react-router-dom';
 import { Card, CardHeader, EmptyState, LoadingState, Badge } from '../../../common/components/ui';
 import { usePermissions } from '../../../hooks';
+import { useModuleGate } from '../../../services/queries/modules';
 import { usePlannerForecast } from '../../../services/queries/planner';
 import { PLANNING_CASE_STATUS, formatWindow } from '../../Fleet/Planner/plannerLabels';
 
-/** La próxima ventana de taller del vehículo (CU-105), con lo que falta para que se programe. */
+/**
+ * La próxima ventana de taller del vehículo (CU-105), con lo que falta para que se programe. Es del planificador (M2):
+ * si la plataforma no se lo habilitó a la empresa, la tarjeta no se pide ni se muestra (mientras no se sabe, tampoco).
+ */
 export const CarNextWindowCard = ({ carId }: { carId: string }) => {
   const { needsDistributor } = usePermissions();
-  const { data, isPending, error } = usePlannerForecast(carId, { enabled: !needsDistributor });
+  const planner = useModuleGate('fleet_planner');
+  const { data, isPending, error } = usePlannerForecast(carId, { enabled: !needsDistributor && planner.ready });
+  if (!planner.ready) return null;
   const vehicle = data?.vehicles.find((v) => v.carId === carId);
   const next = vehicle?.nextWindow ?? null;
 

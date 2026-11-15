@@ -30,9 +30,10 @@ import { CompanySupportTab } from './components/CompanySupportTab';
 import { CompanyUsageTab } from './components/CompanyUsageTab';
 import { useDistributorActions } from './useDistributorActions';
 import { useEnterOwnedCompany } from '../Platform/useEnterOwnedCompany';
+import { CompanyModulesList } from '../Platform/Modules/CompanyModulesList';
 
 const TABS_ID = 'company';
-const TAB_KEYS = ['data', 'usage', 'admins', 'support'];
+const TAB_KEYS = ['data', 'modules', 'usage', 'admins', 'support'];
 
 /** Marcar o desmarcar la empresa propia, con confirmación; el rechazo de la API queda a la vista. */
 const useOwnedToggle = () => {
@@ -69,7 +70,7 @@ const useOwnedToggle = () => {
 
 /**
  * La ficha de una empresa en la plataforma (`GET /v2/platform/companies/:id`), sólo para el administrador general:
- * Datos, Uso (métricas del período, lector y procesos), Admins y Soporte.
+ * Datos, Plan y módulos (qué le habilita la plataforma), Uso (métricas del período, lector y procesos), Admins y Soporte.
  */
 export const DistributorDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -125,6 +126,7 @@ export const DistributorDetails = () => {
   const tabs = detail
     ? [
         { id: 'data', label: 'Datos' },
+        { id: 'modules', label: 'Plan y módulos' },
         { id: 'usage', label: 'Uso' },
         { id: 'admins', label: 'Admins', count: detail.admins.length },
         { id: 'support', label: 'Soporte', count: detail.supportSessions.length },
@@ -170,7 +172,9 @@ export const DistributorDetails = () => {
             <Tabs items={tabs} value={tab} onChange={setTab} label="Secciones de la empresa" idPrefix={TABS_ID} />
           </Card>
           <div {...tabPanelProps(TABS_ID, tab)}>
-            {tab === 'usage' ? (
+            {tab === 'modules' ? (
+              <CompanyModulesList companyId={detail.company.id} companyName={detail.company.name} />
+            ) : tab === 'usage' ? (
               <CompanyUsageTab detail={detail} range={range} onRangeChange={setRange} />
             ) : tab === 'admins' ? (
               <CompanyAdminsTab admins={detail.admins} />

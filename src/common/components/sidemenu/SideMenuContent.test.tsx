@@ -4,6 +4,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const perms = vi.hoisted(() => ({ data: undefined as unknown }));
 vi.mock('../../../services/queries/permissions', () => ({ useMyPermissions: () => ({ data: perms.data }) }));
+const mods = vi.hoisted(() => ({ enabledByKey: null as Record<string, boolean> | null }));
+vi.mock('../../../services/queries/modules', () => ({
+  useModuleAvailability: () => ({ enabledByKey: mods.enabledByKey, loading: false }),
+}));
 vi.mock('../../../services/queries/orders', () => ({ useOrders: () => ({ data: { total: 0 } }) }));
 vi.mock('../../../services/queries/users', () => ({ useMyAccount: () => ({ data: undefined }) }));
 vi.mock('../../../hooks/reduxHooks', () => ({
@@ -25,7 +29,10 @@ const draw = () =>
     </MemoryRouter>,
   );
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  mods.enabledByKey = null;
+});
 
 describe('SideMenuContent: permisos', () => {
   it('sin «despacho.gestionar» no muestra «Hojas de ruta»; el resto sigue', () => {
@@ -43,5 +50,39 @@ describe('SideMenuContent: permisos', () => {
     perms.data = undefined;
     draw();
     expect(screen.getByRole('link', { name: /Hojas de ruta/ })).toBeInTheDocument();
+  });
+});
+
+describe('SideMenuContent: módulos de la plataforma', () => {
+  it('un módulo que la plataforma no le habilitó a la empresa no aparece; los habilitados y el núcleo sí', () => {
+    perms.data = { role: 'admin', allPermissions: true, staffRole: null, permissions: [] };
+    mods.enabledByKey = { document_reading: false, repurchase: true, route_planning: false };
+    draw();
+    expect(screen.queryByRole('link', { name: /Lectura de documentos/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Hojas de ruta/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Recompra/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Pedidos/ })).toBeInTheDocument();
+  });
+
+  it('mientras no se saben los módulos no esconde nada', () => {
+    perms.data = { role: 'admin', allPermissions: true, staffRole: null, permissions: [] };
+    mods.enabledByKey = null;
+    draw();
+    expect(screen.getByRole('link', { name: /Lectura de documentos/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Hojas de ruta/ })).toBeInTheDocument();
+  });
+
+  it('al habilitarse de nuevo, el ítem vuelve sin recargar', () => {
+    perms.data = { role: 'admin', allPermissions: true, staffRole: null, permissions: [] };
+    mods.enabledByKey = { document_reading: false };
+    const { rerender } = draw();
+    expect(screen.queryByRole('link', { name: /Lectura de documentos/ })).not.toBeInTheDocument();
+    mods.enabledByKey = { document_reading: true };
+    rerender(
+      <MemoryRouter>
+        <SideMenuContent isSuperAdmin={false} fullName="Ana" onLogout={vi.fn()} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole('link', { name: /Lectura de documentos/ })).toBeInTheDocument();
   });
 });

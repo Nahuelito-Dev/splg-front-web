@@ -4,6 +4,7 @@ import { DashboardLayout } from '../common/layout';
 import { RouteProgressBar } from '../common/layout/RouteProgressBar';
 import { LoadingState } from '../common/components/ui';
 import { RequireCompanyAdmin, RequireCompanyScope } from '../common/components/RequireCompanyScope';
+import { RequireModule } from '../common/components/RequireModule';
 import { RequireSuperAdmin } from '../common/components/RequireSuperAdmin';
 import { lazyPage } from './lazyPage';
 import { CheckingAuth } from '../common/components/Spinner';
@@ -72,6 +73,7 @@ const PlatformScheduledTasks = lazyPage(
   'PlatformScheduledTasks',
 );
 const ServiceUsage = lazyPage(() => import('../pages/Platform/ServiceUsage'), 'ServiceUsage');
+const PlatformModules = lazyPage(() => import('../pages/Platform/Modules/PlatformModules'), 'PlatformModules');
 const PlatformActivity = lazyPage(() => import('../pages/Platform/PlatformActivity'), 'PlatformActivity');
 const SupportSessions = lazyPage(() => import('../pages/Platform/SupportSessions'), 'SupportSessions');
 const ExpressSettings = lazyPage(() => import('../pages/Configuration/ExpressSettings'), 'ExpressSettings');
@@ -208,6 +210,7 @@ export const DashboardRoutes = () => {
             <Route path="distributors/:id" element={<DistributorDetails />} />
             <Route path="distributors/:id/edit" element={<DistributorForm />} />
             <Route path="system" element={<System />} />
+            <Route path="platform/modules" element={<PlatformModules />} />
             <Route path="platform/support-sessions" element={<SupportSessions />} />
             <Route path="platform/chats" element={<PlatformChats />} />
             <Route path="platform/chats/:id" element={<PlatformChats />} />
@@ -221,18 +224,23 @@ export const DashboardRoutes = () => {
             <Route path="settings/process-monitor" element={<Navigate to="/platform/monitoring" replace />} />
           </Route>
 
-          {/* Empresa: el admin de la empresa, y el administrador general sólo en modo soporte (en sólo lectura) */}
+          {/* Empresa: el admin de la empresa, y el administrador general sólo en modo soporte (en sólo lectura). Las
+              pantallas de un módulo van además con `RequireModule`: sin el módulo habilitado, «No incluido en tu plan». */}
           <Route element={<RequireCompanyScope />}>
             {/* La auditoría de datos es de una empresa: la plataforma tiene la suya en `/platform/activity`. */}
             <Route path="audit" element={<Audit />} />
             <Route path="customers" element={<Customers />} />
-            <Route path="customers/repurchase" element={<Repurchase />} />
+            <Route element={<RequireModule module="repurchase" />}>
+              <Route path="customers/repurchase" element={<Repurchase />} />
+            </Route>
             <Route path="customers/details/:id" element={<CustomerDetails />} />
             <Route path="cylinders" element={<GasCylinders />} />
             <Route path="cylinders/details/:id" element={<GasCylinderDetails />} />
             <Route path="physical-cylinders" element={<PhysicalCylinders />} />
             <Route path="physical-cylinders/expirations" element={<CylinderExpirations />} />
-            <Route path="physical-cylinders/recovery" element={<RecoveryCases />} />
+            <Route element={<RequireModule module="cylinder_recovery" />}>
+              <Route path="physical-cylinders/recovery" element={<RecoveryCases />} />
+            </Route>
             <Route path="physical-cylinders/:id" element={<CylinderDetails />} />
             <Route path="employees" element={<Employees />} />
             <Route path="employees/new" element={<EmployeeForm />} />
@@ -252,10 +260,14 @@ export const DashboardRoutes = () => {
             <Route path="settings/dispatch" element={<DispatchSettings />} />
             <Route path="settings/scheduled-tasks" element={<ScheduledTasksSettings />} />
             <Route path="settings/automatic-processes" element={<AutomaticProcesses />} />
-            <Route path="settings/express" element={<ExpressSettings />} />
+            <Route element={<RequireModule module="express" />}>
+              <Route path="settings/express" element={<ExpressSettings />} />
+            </Route>
             <Route path="refunds" element={<Refunds />} />
             <Route path="fleet/expirations" element={<FleetExpirations />} />
-            <Route path="fleet/planner" element={<FleetPlanner />} />
+            <Route element={<RequireModule module="fleet_planner" />}>
+              <Route path="fleet/planner" element={<FleetPlanner />} />
+            </Route>
             <Route path="fleet/files" element={<FleetFiles />} />
             <Route path="fleet/plans" element={<FleetPlans />} />
             <Route path="fleet/plans/:id" element={<FleetPlanDetails />} />
@@ -263,8 +275,12 @@ export const DashboardRoutes = () => {
             <Route path="fleet/tasks/:id" element={<FleetTaskDetail />} />
             <Route path="orders" element={<Orders />} />
             <Route path="orders/dispatch" element={<DispatchBoard />} />
-            <Route path="route-batches" element={<RouteBatches />} />
-            <Route path="route-sheets" element={<RouteSheets />} />
+            <Route element={<RequireModule module="route_batching" />}>
+              <Route path="route-batches" element={<RouteBatches />} />
+            </Route>
+            <Route element={<RequireModule module="route_planning" />}>
+              <Route path="route-sheets" element={<RouteSheets />} />
+            </Route>
             <Route path="orders/new" element={<NewOrder />} />
             <Route path="orders/:id" element={<OrderDetails />} />
             <Route path="stock" element={<StockSummary />} />
@@ -287,8 +303,10 @@ export const DashboardRoutes = () => {
             <Route path="fleet/fuel-loads/new" element={<FuelLoadForm />} />
             <Route path="fleet/fuel-loads/:id/edit" element={<FuelLoadForm />} />
             <Route path="fleet/fines" element={<TrafficFines />} />
-            <Route path="document-readings" element={<DocumentReadings />} />
-            <Route path="document-readings/:id" element={<DocumentReadingDetails />} />
+            <Route element={<RequireModule module="document_reading" />}>
+              <Route path="document-readings" element={<DocumentReadings />} />
+              <Route path="document-readings/:id" element={<DocumentReadingDetails />} />
+            </Route>
             <Route path="fleet/insurers" element={<Insurers />} />
             <Route path="fleet/accidents" element={<VehicleAccidents />} />
             <Route path="fleet/accidents/new" element={<VehicleAccidentForm />} />
@@ -302,8 +320,10 @@ export const DashboardRoutes = () => {
             <Route path="finance/movements" element={<CashMovements />} />
             <Route path="finance/categories" element={<CashCategories />} />
             <Route path="finance/collection-settings" element={<CashCollectionSettings />} />
-            <Route path="finance/mp-reconciliation" element={<MpReconciliations />} />
-            <Route path="finance/mp-reconciliation/:id" element={<MpReconciliationDetails />} />
+            <Route element={<RequireModule module="mercadopago" />}>
+              <Route path="finance/mp-reconciliation" element={<MpReconciliations />} />
+              <Route path="finance/mp-reconciliation/:id" element={<MpReconciliationDetails />} />
+            </Route>
             <Route path="finance/settlements" element={<DriverSettlements />} />
             <Route path="finance/settlements/:id" element={<DriverSettlementDetails />} />
             <Route path="finance/accounts" element={<CustomerAccounts />} />
