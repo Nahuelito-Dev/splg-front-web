@@ -12,6 +12,7 @@ const resource = <R extends string>(name: R) => ({
 export const queryKeys = {
   adminNotifications: resource('adminNotifications'),
   admins: resource('admins'),
+  assistantFaqs: resource('assistantFaqs'),
   bankDetails: resource('bankDetails'),
   mercadoPagoCredentials: resource('mercadoPagoCredentials'),
   myPermissions: resource('myPermissions'),
@@ -83,6 +84,8 @@ export const queryKeys = {
   platform: resource('platform'),
   platformConsole: resource('platformConsole'),
   platformModules: resource('platformModules'),
+  platformAssistantFaqs: resource('platformAssistantFaqs'),
+  platformAssistantTemplates: resource('platformAssistantTemplates'),
   timeSlots: resource('timeSlots'),
   tires: resource('tires'),
   trafficFines: resource('trafficFines'),

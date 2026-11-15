@@ -11409,8 +11409,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Copiar las plantillas de OrixTech
-     * @description Copia a la base las plantillas vigentes de la plataforma que todavía no tiene (por su clave o porque ya hay una pregunta igual), para ajustarlas después. Idempotente: repetirlo no duplica nada ni sube la versión. Todo o nada: si no entran todas bajo el tope, no copia ninguna (409). En modo soporte, 403 `SUPPORT_READ_ONLY`.
+     * Copiar las preguntas de ejemplo de OrixTech
+     * @description Copia a la base las preguntas de ejemplo vigentes del catálogo de OrixTech (`GET /company/assistant/templates`) que todavía no tiene (por su clave o porque ya hay una pregunta igual), al final y en el orden del catálogo, para ajustarlas después: desde ahí son de la distribuidora. Idempotente: repetirlo no duplica nada ni sube la versión. Todo o nada: si no entran todas bajo el tope, no copia ninguna (409). En modo soporte, 403 `SUPPORT_READ_ONLY`.
      */
     post: operations['CompanyAssistantFaqController_copiarPlantillas'];
     delete?: never;
@@ -11443,6 +11443,26 @@ export interface paths {
     patch: operations['CompanyAssistantFaqController_actualizar'];
     trace?: never;
   };
+  '/api/v2/company/assistant/templates': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Preguntas de ejemplo de OrixTech
+     * @description Las vigentes del catálogo, en el orden en que se copian, con `alreadyInBase` si la base de la distribuidora ya tiene esa clave o esa misma pregunta (esas no se copian).
+     */
+    get: operations['CompanyAssistantTemplateController_listar'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v2/platform/assistant/faqs': {
     parameters: {
       query?: never;
@@ -11452,13 +11472,13 @@ export interface paths {
     };
     /**
      * Preguntas frecuentes de la plataforma
-     * @description Las vigentes, con su clave y si se ofrecen como plantilla, la versión de la base y el tope de preguntas.
+     * @description Las vigentes, con su clave, la versión de la base y el tope de preguntas.
      */
     get: operations['PlatformAssistantFaqController_listar'];
     put?: never;
     /**
      * Nueva pregunta frecuente de la plataforma
-     * @description Texto plano, con su clave. Por omisión se ofrece como plantilla a las distribuidoras. Sube la versión de la base. Máximo 200.
+     * @description Texto plano, con su clave. Sólo para el soporte de OrixTech: no se copia a las distribuidoras. Sube la versión de la base. Máximo 200.
      */
     post: operations['PlatformAssistantFaqController_crear'];
     delete?: never;
@@ -11479,16 +11499,64 @@ export interface paths {
     post?: never;
     /**
      * Dar de baja una pregunta frecuente de la plataforma
-     * @description Baja lógica: deja de usarse y de ofrecerse como plantilla; su clave queda libre. Lo ya copiado a las distribuidoras sigue. Sube la versión de la base.
+     * @description Baja lógica: deja de usarse; su clave y su pregunta quedan libres. Sube la versión de la base.
      */
     delete: operations['PlatformAssistantFaqController_darDeBaja'];
     options?: never;
     head?: never;
     /**
      * Editar una pregunta frecuente de la plataforma
-     * @description Lo que no viene queda como estaba; la clave no cambia. Lo ya copiado a las distribuidoras no se toca: cada una ajusta la suya. Si cambia algo, sube la versión de la base.
+     * @description Lo que no viene queda como estaba; la clave no cambia. Si cambia algo, sube la versión de la base.
      */
     patch: operations['PlatformAssistantFaqController_actualizar'];
+    trace?: never;
+  };
+  '/api/v2/platform/assistant/templates': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Preguntas de ejemplo para distribuidoras
+     * @description Las vigentes del catálogo, en su orden (el mismo con el que se copian), y el tope.
+     */
+    get: operations['PlatformAssistantTemplateController_listar'];
+    put?: never;
+    /**
+     * Nueva pregunta de ejemplo
+     * @description Texto plano, con su clave; va al final del catálogo. Las distribuidoras la ven y la copian cuando cargan las preguntas de ejemplo; lo ya copiado no cambia. Máximo 200.
+     */
+    post: operations['PlatformAssistantTemplateController_crear'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/platform/assistant/templates/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Dar de baja una pregunta de ejemplo
+     * @description Baja lógica: deja de ofrecerse; su clave y su pregunta quedan libres. Lo ya copiado a las distribuidoras sigue.
+     */
+    delete: operations['PlatformAssistantTemplateController_darDeBaja'];
+    options?: never;
+    head?: never;
+    /**
+     * Editar una pregunta de ejemplo
+     * @description Lo que no viene queda como estaba; la clave no cambia. Lo ya copiado a las distribuidoras no se toca: cada una ajusta la suya.
+     */
+    patch: operations['PlatformAssistantTemplateController_actualizar'];
     trace?: never;
   };
 }
@@ -25754,7 +25822,7 @@ export interface components {
       /** Format: uuid */
       id: string;
       /**
-       * @description Clave de la plantilla de OrixTech de la que salió; nula si la escribió la distribuidora.
+       * @description Clave de la pregunta de ejemplo de la que salió; nula si la escribió la distribuidora.
        * @example medios_de_pago
        */
       key: string | null;
@@ -25797,12 +25865,12 @@ export interface components {
     };
     CopyAssistantTemplatesResponseDto: {
       /**
-       * @description Plantillas copiadas ahora
+       * @description Preguntas de ejemplo copiadas ahora
        * @example 5
        */
       copied: number;
       /**
-       * @description Plantillas que no se copiaron porque la base ya tiene esa clave o esa misma pregunta
+       * @description Preguntas de ejemplo que no se copiaron porque la base ya tiene esa clave o esa misma pregunta
        * @example 0
        */
       skipped: number;
@@ -25824,6 +25892,26 @@ export interface components {
        */
       answer?: string;
     };
+    AssistantFaqTemplateResponseDto: {
+      /** @example medios_de_pago */
+      key: string;
+      /** @example ¿Qué medios de pago aceptan? */
+      question: string;
+      answer: string;
+      /**
+       * @description Orden en el catálogo
+       * @example 1
+       */
+      position: number;
+      /**
+       * @description Si la base de la distribuidora ya tiene esa clave o esa misma pregunta: `from-templates` no la copia
+       * @example false
+       */
+      alreadyInBase: boolean;
+    };
+    AssistantFaqTemplateListResponseDto: {
+      items: components['schemas']['AssistantFaqTemplateResponseDto'][];
+    };
     PlatformAssistantFaqResponseDto: {
       /** Format: uuid */
       id: string;
@@ -25838,10 +25926,8 @@ export interface components {
       createdAt: string;
       /** Format: date-time */
       updatedAt: string;
-      /** @example medios_de_pago */
+      /** @example soporte_facturacion */
       key: string;
-      /** @description Si se ofrece como plantilla a las distribuidoras */
-      useAsTemplate: boolean;
     };
     PlatformAssistantFaqListResponseDto: {
       /**
@@ -25868,15 +25954,10 @@ export interface components {
        */
       answer: string;
       /**
-       * @description Clave de la pregunta: minúsculas, números y guiones bajos. Única entre las vigentes y no cambia (para cambiarla, se da de baja y se crea otra). Es la que evita duplicar la plantilla al copiarla a una distribuidora.
+       * @description Clave de la pregunta: minúsculas, números y guiones bajos. Única entre las vigentes y no cambia (para cambiarla, se da de baja y se crea otra).
        * @example medios_de_pago
        */
       key: string;
-      /**
-       * @description Si se ofrece como plantilla a las distribuidoras (`from-templates`). Con `false` queda sólo en la base del soporte de la plataforma.
-       * @default true
-       */
-      useAsTemplate: boolean;
     };
     UpdatePlatformAssistantFaqDto: {
       /**
@@ -25889,8 +25970,61 @@ export interface components {
        * @example De lunes a sábado, de 8 a 20. Los pedidos fuera de horario se entregan al día siguiente.
        */
       answer?: string;
-      /** @description Si se ofrece como plantilla a las distribuidoras. Si no viene, queda como estaba. */
-      useAsTemplate?: boolean;
+    };
+    PlatformAssistantFaqTemplateResponseDto: {
+      /** Format: uuid */
+      id: string;
+      /** @example medios_de_pago */
+      key: string;
+      /** @example ¿Qué medios de pago aceptan? */
+      question: string;
+      answer: string;
+      /**
+       * @description Orden en el catálogo (1 es la primera); la lista y la copia salen ordenadas por él
+       * @example 1
+       */
+      position: number;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    PlatformAssistantFaqTemplateListResponseDto: {
+      items: components['schemas']['PlatformAssistantFaqTemplateResponseDto'][];
+      /**
+       * @description Tope de preguntas de ejemplo del catálogo
+       * @example 200
+       */
+      limit: number;
+    };
+    CreateAssistantFaqTemplateDto: {
+      /**
+       * @description Texto plano, sin HTML. Única en la base (sin distinguir mayúsculas).
+       * @example ¿Hasta qué hora toman pedidos?
+       */
+      question: string;
+      /**
+       * @description Texto plano, sin HTML.
+       * @example De lunes a sábado, de 8 a 20. Los pedidos fuera de horario se entregan al día siguiente.
+       */
+      answer: string;
+      /**
+       * @description Clave de la pregunta: minúsculas, números y guiones bajos. Única entre las vigentes y no cambia (para cambiarla, se da de baja y se crea otra).
+       * @example medios_de_pago
+       */
+      key: string;
+    };
+    UpdateAssistantFaqTemplateDto: {
+      /**
+       * @description Texto plano, sin HTML. Única en la base (sin distinguir mayúsculas).
+       * @example ¿Hasta qué hora toman pedidos?
+       */
+      question?: string;
+      /**
+       * @description Texto plano, sin HTML.
+       * @example De lunes a sábado, de 8 a 20. Los pedidos fuera de horario se entregan al día siguiente.
+       */
+      answer?: string;
     };
   };
   responses: never;
@@ -64921,6 +65055,46 @@ export interface operations {
       };
     };
   };
+  CompanyAssistantTemplateController_listar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AssistantFaqTemplateListResponseDto'];
+        };
+      };
+      /** @description Falta la distribuidora: super admin sin sesión de soporte ni empresa propia (`MISSING_DISTRIBUTOR`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la base de conocimiento del asistente (`asistente.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Asistente del chat» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   PlatformAssistantFaqController_listar: {
     parameters: {
       query?: never;
@@ -65105,6 +65279,198 @@ export interface operations {
         content?: never;
       };
       /** @description Ya hay una pregunta igual en la base (`ASSISTANT_FAQ_DUPLICATE`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformAssistantTemplateController_listar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PlatformAssistantFaqTemplateListResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformAssistantTemplateController_crear: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateAssistantFaqTemplateDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PlatformAssistantFaqTemplateResponseDto'];
+        };
+      };
+      /** @description Datos inválidos (p. ej. «Pregunta: tiene que tener entre 5 y 200 caracteres», «Respuesta: no puede llevar HTML…», «Clave: no tiene un formato válido», un campo que no corresponde) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya hay una pregunta de ejemplo igual en el catálogo (`ASSISTANT_TEMPLATE_DUPLICATE`), ya hay una con esa clave (`ASSISTANT_TEMPLATE_KEY_TAKEN`) o el catálogo ya tiene 200 (`ASSISTANT_TEMPLATE_LIMIT_REACHED`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformAssistantTemplateController_darDeBaja: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Dada de baja */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El id no es un UUID (`INVALID_ID`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o ya está dada de baja (`ASSISTANT_TEMPLATE_NOT_FOUND`) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformAssistantTemplateController_actualizar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateAssistantFaqTemplateDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PlatformAssistantFaqTemplateResponseDto'];
+        };
+      };
+      /** @description El id no es un UUID (`INVALID_ID`). Datos inválidos (p. ej. «Pregunta: tiene que tener entre 5 y 200 caracteres», «Respuesta: no puede llevar HTML…», «Clave: no tiene un formato válido», un campo que no corresponde) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o ya está dada de baja (`ASSISTANT_TEMPLATE_NOT_FOUND`) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya hay una pregunta de ejemplo igual en el catálogo (`ASSISTANT_TEMPLATE_DUPLICATE`) */
       409: {
         headers: {
           [name: string]: unknown;

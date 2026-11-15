@@ -87,3 +87,24 @@ describe('SideMenuContent: módulos de la plataforma', () => {
     expect(screen.getByRole('link', { name: /Lectura de documentos/ })).toBeInTheDocument();
   });
 });
+
+describe('SideMenuContent: asistente del chat (M8)', () => {
+  it('con el módulo apagado, «Asistente del chat» no aparece', () => {
+    perms.data = { role: 'admin', allPermissions: true, staffRole: null, permissions: [] };
+    mods.enabledByKey = { assistant: false };
+    draw();
+    expect(screen.queryByRole('link', { name: /Asistente del chat/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Procesos automáticos/ })).toBeInTheDocument();
+  });
+
+  it('habilitado aparece, pero sólo con «asistente.ver»', () => {
+    mods.enabledByKey = { assistant: true };
+    perms.data = { role: 'admin', allPermissions: false, staffRole: null, permissions: ['asistente.ver'] };
+    draw();
+    expect(screen.getByRole('link', { name: /Asistente del chat/ })).toHaveAttribute('href', '/settings/assistant');
+    cleanup();
+    perms.data = { role: 'admin', allPermissions: false, staffRole: null, permissions: ['pedidos.ver'] };
+    draw();
+    expect(screen.queryByRole('link', { name: /Asistente del chat/ })).not.toBeInTheDocument();
+  });
+});

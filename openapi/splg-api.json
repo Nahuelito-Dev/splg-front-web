@@ -44576,7 +44576,7 @@
         },
         "/api/v2/company/assistant/faqs/from-templates": {
             "post": {
-                "description": "Copia a la base las plantillas vigentes de la plataforma que todavía no tiene (por su clave o porque ya hay una pregunta igual), para ajustarlas después. Idempotente: repetirlo no duplica nada ni sube la versión. Todo o nada: si no entran todas bajo el tope, no copia ninguna (409). En modo soporte, 403 `SUPPORT_READ_ONLY`.",
+                "description": "Copia a la base las preguntas de ejemplo vigentes del catálogo de OrixTech (`GET /company/assistant/templates`) que todavía no tiene (por su clave o porque ya hay una pregunta igual), al final y en el orden del catálogo, para ajustarlas después: desde ahí son de la distribuidora. Idempotente: repetirlo no duplica nada ni sube la versión. Todo o nada: si no entran todas bajo el tope, no copia ninguna (409). En modo soporte, 403 `SUPPORT_READ_ONLY`.",
                 "operationId": "CompanyAssistantFaqController_copiarPlantillas",
                 "parameters": [],
                 "responses": {
@@ -44608,7 +44608,7 @@
                         "bearer": []
                     }
                 ],
-                "summary": "Copiar las plantillas de OrixTech",
+                "summary": "Copiar las preguntas de ejemplo de OrixTech",
                 "tags": [
                     "Configuración · Asistente del chat"
                 ]
@@ -44716,9 +44716,46 @@
                 ]
             }
         },
+        "/api/v2/company/assistant/templates": {
+            "get": {
+                "description": "Las vigentes del catálogo, en el orden en que se copian, con `alreadyInBase` si la base de la distribuidora ya tiene esa clave o esa misma pregunta (esas no se copian).",
+                "operationId": "CompanyAssistantTemplateController_listar",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AssistantFaqTemplateListResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta la distribuidora: super admin sin sesión de soporte ni empresa propia (`MISSING_DISTRIBUTOR`)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la base de conocimiento del asistente (`asistente.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Asistente del chat» no está habilitada para la distribuidora (`MODULE_DISABLED`)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Preguntas de ejemplo de OrixTech",
+                "tags": [
+                    "Configuración · Asistente del chat"
+                ]
+            }
+        },
         "/api/v2/platform/assistant/faqs": {
             "get": {
-                "description": "Las vigentes, con su clave y si se ofrecen como plantilla, la versión de la base y el tope de preguntas.",
+                "description": "Las vigentes, con su clave, la versión de la base y el tope de preguntas.",
                 "operationId": "PlatformAssistantFaqController_listar",
                 "parameters": [],
                 "responses": {
@@ -44751,7 +44788,7 @@
                 "x-permission": "plataforma.tickets.ver"
             },
             "post": {
-                "description": "Texto plano, con su clave. Por omisión se ofrece como plantilla a las distribuidoras. Sube la versión de la base. Máximo 200.",
+                "description": "Texto plano, con su clave. Sólo para el soporte de OrixTech: no se copia a las distribuidoras. Sube la versión de la base. Máximo 200.",
                 "operationId": "PlatformAssistantFaqController_crear",
                 "parameters": [],
                 "requestBody": {
@@ -44802,7 +44839,7 @@
         },
         "/api/v2/platform/assistant/faqs/{id}": {
             "patch": {
-                "description": "Lo que no viene queda como estaba; la clave no cambia. Lo ya copiado a las distribuidoras no se toca: cada una ajusta la suya. Si cambia algo, sube la versión de la base.",
+                "description": "Lo que no viene queda como estaba; la clave no cambia. Si cambia algo, sube la versión de la base.",
                 "operationId": "PlatformAssistantFaqController_actualizar",
                 "parameters": [
                     {
@@ -44863,7 +44900,7 @@
                 "x-permission": "plataforma.tickets.configurar"
             },
             "delete": {
-                "description": "Baja lógica: deja de usarse y de ofrecerse como plantilla; su clave queda libre. Lo ya copiado a las distribuidoras sigue. Sube la versión de la base.",
+                "description": "Baja lógica: deja de usarse; su clave y su pregunta quedan libres. Sube la versión de la base.",
                 "operationId": "PlatformAssistantFaqController_darDeBaja",
                 "parameters": [
                     {
@@ -44898,6 +44935,194 @@
                     }
                 ],
                 "summary": "Dar de baja una pregunta frecuente de la plataforma",
+                "tags": [
+                    "Asistente del chat (plataforma)"
+                ],
+                "x-permission": "plataforma.tickets.configurar"
+            }
+        },
+        "/api/v2/platform/assistant/templates": {
+            "get": {
+                "description": "Las vigentes del catálogo, en su orden (el mismo con el que se copian), y el tope.",
+                "operationId": "PlatformAssistantTemplateController_listar",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PlatformAssistantFaqTemplateListResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Preguntas de ejemplo para distribuidoras",
+                "tags": [
+                    "Asistente del chat (plataforma)"
+                ],
+                "x-permission": "plataforma.tickets.ver"
+            },
+            "post": {
+                "description": "Texto plano, con su clave; va al final del catálogo. Las distribuidoras la ven y la copian cuando cargan las preguntas de ejemplo; lo ya copiado no cambia. Máximo 200.",
+                "operationId": "PlatformAssistantTemplateController_crear",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateAssistantFaqTemplateDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PlatformAssistantFaqTemplateResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Datos inválidos (p. ej. «Pregunta: tiene que tener entre 5 y 200 caracteres», «Respuesta: no puede llevar HTML…», «Clave: no tiene un formato válido», un campo que no corresponde)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: super_admin"
+                    },
+                    "409": {
+                        "description": "Ya hay una pregunta de ejemplo igual en el catálogo (`ASSISTANT_TEMPLATE_DUPLICATE`), ya hay una con esa clave (`ASSISTANT_TEMPLATE_KEY_TAKEN`) o el catálogo ya tiene 200 (`ASSISTANT_TEMPLATE_LIMIT_REACHED`)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Nueva pregunta de ejemplo",
+                "tags": [
+                    "Asistente del chat (plataforma)"
+                ],
+                "x-permission": "plataforma.tickets.configurar"
+            }
+        },
+        "/api/v2/platform/assistant/templates/{id}": {
+            "patch": {
+                "description": "Lo que no viene queda como estaba; la clave no cambia. Lo ya copiado a las distribuidoras no se toca: cada una ajusta la suya.",
+                "operationId": "PlatformAssistantTemplateController_actualizar",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateAssistantFaqTemplateDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PlatformAssistantFaqTemplateResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "El id no es un UUID (`INVALID_ID`). Datos inválidos (p. ej. «Pregunta: tiene que tener entre 5 y 200 caracteres», «Respuesta: no puede llevar HTML…», «Clave: no tiene un formato válido», un campo que no corresponde)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o ya está dada de baja (`ASSISTANT_TEMPLATE_NOT_FOUND`)"
+                    },
+                    "409": {
+                        "description": "Ya hay una pregunta de ejemplo igual en el catálogo (`ASSISTANT_TEMPLATE_DUPLICATE`)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Editar una pregunta de ejemplo",
+                "tags": [
+                    "Asistente del chat (plataforma)"
+                ],
+                "x-permission": "plataforma.tickets.configurar"
+            },
+            "delete": {
+                "description": "Baja lógica: deja de ofrecerse; su clave y su pregunta quedan libres. Lo ya copiado a las distribuidoras sigue.",
+                "operationId": "PlatformAssistantTemplateController_darDeBaja",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Dada de baja"
+                    },
+                    "400": {
+                        "description": "El id no es un UUID (`INVALID_ID`)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: super_admin"
+                    },
+                    "404": {
+                        "description": "No existe o ya está dada de baja (`ASSISTANT_TEMPLATE_NOT_FOUND`)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Dar de baja una pregunta de ejemplo",
                 "tags": [
                     "Asistente del chat (plataforma)"
                 ],
@@ -80023,7 +80248,7 @@
                         "type": "string",
                         "nullable": true,
                         "example": "medios_de_pago",
-                        "description": "Clave de la plantilla de OrixTech de la que salió; nula si la escribió la distribuidora."
+                        "description": "Clave de la pregunta de ejemplo de la que salió; nula si la escribió la distribuidora."
                     },
                     "question": {
                         "type": "string"
@@ -80110,12 +80335,12 @@
                     "copied": {
                         "type": "number",
                         "example": 5,
-                        "description": "Plantillas copiadas ahora"
+                        "description": "Preguntas de ejemplo copiadas ahora"
                     },
                     "skipped": {
                         "type": "number",
                         "example": 0,
-                        "description": "Plantillas que no se copiaron porque la base ya tiene esa clave o esa misma pregunta"
+                        "description": "Preguntas de ejemplo que no se copiaron porque la base ya tiene esa clave o esa misma pregunta"
                     },
                     "version": {
                         "type": "number",
@@ -80148,6 +80373,53 @@
                     }
                 }
             },
+            "AssistantFaqTemplateResponseDto": {
+                "type": "object",
+                "properties": {
+                    "key": {
+                        "type": "string",
+                        "example": "medios_de_pago"
+                    },
+                    "question": {
+                        "type": "string",
+                        "example": "¿Qué medios de pago aceptan?"
+                    },
+                    "answer": {
+                        "type": "string"
+                    },
+                    "position": {
+                        "type": "number",
+                        "example": 1,
+                        "description": "Orden en el catálogo"
+                    },
+                    "alreadyInBase": {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Si la base de la distribuidora ya tiene esa clave o esa misma pregunta: `from-templates` no la copia"
+                    }
+                },
+                "required": [
+                    "key",
+                    "question",
+                    "answer",
+                    "position",
+                    "alreadyInBase"
+                ]
+            },
+            "AssistantFaqTemplateListResponseDto": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/AssistantFaqTemplateResponseDto"
+                        }
+                    }
+                },
+                "required": [
+                    "items"
+                ]
+            },
             "PlatformAssistantFaqResponseDto": {
                 "type": "object",
                 "properties": {
@@ -80176,11 +80448,7 @@
                     },
                     "key": {
                         "type": "string",
-                        "example": "medios_de_pago"
-                    },
-                    "useAsTemplate": {
-                        "type": "boolean",
-                        "description": "Si se ofrece como plantilla a las distribuidoras"
+                        "example": "soporte_facturacion"
                     }
                 },
                 "required": [
@@ -80190,8 +80458,7 @@
                     "position",
                     "createdAt",
                     "updatedAt",
-                    "key",
-                    "useAsTemplate"
+                    "key"
                 ]
             },
             "PlatformAssistantFaqListResponseDto": {
@@ -80240,13 +80507,9 @@
                     "key": {
                         "type": "string",
                         "example": "medios_de_pago",
+                        "minLength": 2,
                         "maxLength": 60,
-                        "description": "Clave de la pregunta: minúsculas, números y guiones bajos. Única entre las vigentes y no cambia (para cambiarla, se da de baja y se crea otra). Es la que evita duplicar la plantilla al copiarla a una distribuidora."
-                    },
-                    "useAsTemplate": {
-                        "type": "boolean",
-                        "default": true,
-                        "description": "Si se ofrece como plantilla a las distribuidoras (`from-templates`). Con `false` queda sólo en la base del soporte de la plataforma."
+                        "description": "Clave de la pregunta: minúsculas, números y guiones bajos. Única entre las vigentes y no cambia (para cambiarla, se da de baja y se crea otra)."
                     }
                 },
                 "required": [
@@ -80271,10 +80534,118 @@
                         "minLength": 1,
                         "maxLength": 1500,
                         "description": "Texto plano, sin HTML."
+                    }
+                }
+            },
+            "PlatformAssistantFaqTemplateResponseDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
                     },
-                    "useAsTemplate": {
-                        "type": "boolean",
-                        "description": "Si se ofrece como plantilla a las distribuidoras. Si no viene, queda como estaba."
+                    "key": {
+                        "type": "string",
+                        "example": "medios_de_pago"
+                    },
+                    "question": {
+                        "type": "string",
+                        "example": "¿Qué medios de pago aceptan?"
+                    },
+                    "answer": {
+                        "type": "string"
+                    },
+                    "position": {
+                        "type": "number",
+                        "example": 1,
+                        "description": "Orden en el catálogo (1 es la primera); la lista y la copia salen ordenadas por él"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "id",
+                    "key",
+                    "question",
+                    "answer",
+                    "position",
+                    "createdAt",
+                    "updatedAt"
+                ]
+            },
+            "PlatformAssistantFaqTemplateListResponseDto": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PlatformAssistantFaqTemplateResponseDto"
+                        }
+                    },
+                    "limit": {
+                        "type": "number",
+                        "example": 200,
+                        "description": "Tope de preguntas de ejemplo del catálogo"
+                    }
+                },
+                "required": [
+                    "items",
+                    "limit"
+                ]
+            },
+            "CreateAssistantFaqTemplateDto": {
+                "type": "object",
+                "properties": {
+                    "question": {
+                        "type": "string",
+                        "example": "¿Hasta qué hora toman pedidos?",
+                        "minLength": 5,
+                        "maxLength": 200,
+                        "description": "Texto plano, sin HTML. Única en la base (sin distinguir mayúsculas)."
+                    },
+                    "answer": {
+                        "type": "string",
+                        "example": "De lunes a sábado, de 8 a 20. Los pedidos fuera de horario se entregan al día siguiente.",
+                        "minLength": 1,
+                        "maxLength": 1500,
+                        "description": "Texto plano, sin HTML."
+                    },
+                    "key": {
+                        "type": "string",
+                        "example": "medios_de_pago",
+                        "minLength": 2,
+                        "maxLength": 60,
+                        "description": "Clave de la pregunta: minúsculas, números y guiones bajos. Única entre las vigentes y no cambia (para cambiarla, se da de baja y se crea otra)."
+                    }
+                },
+                "required": [
+                    "question",
+                    "answer",
+                    "key"
+                ]
+            },
+            "UpdateAssistantFaqTemplateDto": {
+                "type": "object",
+                "properties": {
+                    "question": {
+                        "type": "string",
+                        "example": "¿Hasta qué hora toman pedidos?",
+                        "minLength": 5,
+                        "maxLength": 200,
+                        "description": "Texto plano, sin HTML. Única en la base (sin distinguir mayúsculas)."
+                    },
+                    "answer": {
+                        "type": "string",
+                        "example": "De lunes a sábado, de 8 a 20. Los pedidos fuera de horario se entregan al día siguiente.",
+                        "minLength": 1,
+                        "maxLength": 1500,
+                        "description": "Texto plano, sin HTML."
                     }
                 }
             }

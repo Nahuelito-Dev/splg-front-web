@@ -76,6 +76,11 @@ const ServiceUsage = lazyPage(() => import('../pages/Platform/ServiceUsage'), 'S
 const PlatformModules = lazyPage(() => import('../pages/Platform/Modules/PlatformModules'), 'PlatformModules');
 const PlatformActivity = lazyPage(() => import('../pages/Platform/PlatformActivity'), 'PlatformActivity');
 const SupportSessions = lazyPage(() => import('../pages/Platform/SupportSessions'), 'SupportSessions');
+const AssistantFaqs = lazyPage(() => import('../pages/Assistant/AssistantFaqs'), 'AssistantFaqs');
+const PlatformAssistantFaqs = lazyPage(
+  () => import('../pages/Platform/Assistant/PlatformAssistantFaqs'),
+  'PlatformAssistantFaqs',
+);
 const ExpressSettings = lazyPage(() => import('../pages/Configuration/ExpressSettings'), 'ExpressSettings');
 const Refunds = lazyPage(() => import('../pages/Refunds/Refunds'), 'Refunds');
 const ScheduledTasksSettings = lazyPage(
@@ -228,6 +233,7 @@ export const DashboardRoutes = () => {
             <Route path="platform/scheduled-tasks" element={<PlatformScheduledTasks />} />
             <Route path="platform/service-usage" element={<ServiceUsage />} />
             <Route path="platform/activity" element={<PlatformActivity />} />
+            <Route path="platform/assistant" element={<PlatformAssistantFaqs />} />
             {/* El monitoreo pasó a la plataforma: el enlace viejo lleva al nuevo (a un admin, al inicio). */}
             <Route path="settings/process-monitor" element={<Navigate to="/platform/monitoring" replace />} />
           </Route>
@@ -270,6 +276,9 @@ export const DashboardRoutes = () => {
             <Route path="settings/automatic-processes" element={<AutomaticProcesses />} />
             <Route element={<RequireModule module="express" />}>
               <Route path="settings/express" element={<ExpressSettings />} />
+            </Route>
+            <Route element={<RequireModule module="assistant" />}>
+              <Route path="settings/assistant" element={<AssistantFaqs />} />
             </Route>
             <Route path="refunds" element={<Refunds />} />
             <Route path="fleet/expirations" element={<FleetExpirations />} />

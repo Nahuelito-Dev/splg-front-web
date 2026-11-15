@@ -26,6 +26,7 @@ describe('menú por alcance', () => {
         '/home',
         '/notifications',
         '/platform/activity',
+        '/platform/assistant',
         '/platform/chats',
         '/platform/modules',
         '/platform/monitoring',
@@ -36,6 +37,17 @@ describe('menú por alcance', () => {
         '/system',
         '/users',
       ].sort(),
+    );
+  });
+
+  it('la base de conocimiento de OrixTech («Asistente») es sólo de la plataforma; la de la empresa, de la empresa', () => {
+    expect(visiblePaths(PLATFORM)).toContain('/platform/assistant');
+    expect(visiblePaths(PLATFORM)).not.toContain('/settings/assistant');
+    expect(visiblePaths(SUPPORT)).not.toContain('/platform/assistant');
+    expect(visiblePaths(ADMIN)).not.toContain('/platform/assistant');
+    expect(visiblePaths(ADMIN)).toContain('/settings/assistant');
+    expect(visiblePaths({ mode: 'company', permissions: 'all', modules: { assistant: false } })).not.toContain(
+      '/settings/assistant',
     );
   });
 
