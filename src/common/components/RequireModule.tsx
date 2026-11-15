@@ -24,18 +24,18 @@ export const ModuleNotIncluded = ({ label }: NotIncludedProps) => {
     <PageContainer>
       <EmptyState
         icon={PackageX}
-        title="No incluido en tu plan"
+        title="No disponible"
         description={
           label
-            ? `«${label}» no está habilitado para tu empresa. Lo demás del panel sigue funcionando igual.`
-            : 'Esta función no está habilitada para tu empresa. Lo demás del panel sigue funcionando igual.'
+            ? `«${label}» no está disponible para tu empresa. Lo demás del panel sigue funcionando igual.`
+            : 'Esta función no está disponible para tu empresa. Lo demás del panel sigue funcionando igual.'
         }
         action={
           <div className="flex flex-wrap justify-center gap-2">
             <Button variant="secondary" onClick={() => navigate('/home')}>
               Ir al tablero
             </Button>
-            {canAsk && <Button onClick={() => navigate('/support')}>Consultar a la plataforma</Button>}
+            {canAsk && <Button onClick={() => navigate('/support')}>Consultar por Ayuda</Button>}
           </div>
         }
       />
@@ -49,7 +49,7 @@ interface Props {
 
 /**
  * Pantallas de un módulo (lector, recompra, hojas de ruta…): si la plataforma no se lo habilitó a la empresa que se
- * mira, en vez de la pantalla (que recibiría 403 `MODULE_DISABLED` en cada consulta) se ve «No incluido en tu plan».
+ * mira, en vez de la pantalla (que recibiría 403 `MODULE_DISABLED` en cada consulta) se ve «No disponible» (sin hablarle a la empresa de módulos ni de planes).
  * Mientras no se sabe se espera; si no se pudo leer, se deja pasar: el back igual decide. Lo que no está en el catálogo
  * que devuelve la API es núcleo.
  */

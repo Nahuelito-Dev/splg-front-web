@@ -233,7 +233,7 @@ export const DashboardRoutes = () => {
           </Route>
 
           {/* Empresa: el admin de la empresa, y el administrador general sólo en modo soporte (en sólo lectura). Las
-              pantallas de un módulo van además con `RequireModule`: sin el módulo habilitado, «No incluido en tu plan». */}
+              pantallas de un módulo van además con `RequireModule`: sin el módulo habilitado, «No disponible». */}
           <Route element={<RequireCompanyScope />}>
             {/* La auditoría de datos es de una empresa: la plataforma tiene la suya en `/platform/activity`. */}
             <Route path="audit" element={<Audit />} />

@@ -13,7 +13,7 @@ interface ErrorBody {
 export const MODULE_DISABLED_CODE = 'MODULE_DISABLED';
 
 /** Lo que se le dice a la empresa cuando llega un `MODULE_DISABLED` (§5.8). */
-export const MODULE_DISABLED_MESSAGE = 'Esta función no está incluida en tu plan';
+export const MODULE_DISABLED_MESSAGE = 'Esta función no está disponible para tu empresa';
 
 const MISSING_DISTRIBUTOR_MESSAGE = 'Esta acción es de una empresa: la hace un administrador de esa empresa';
 

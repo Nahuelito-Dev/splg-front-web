@@ -50,7 +50,7 @@ export const AutomaticProcesses = () => {
         hiddenCount > 0 ? (
           <EmptyState
             title="No hay procesos para configurar"
-            description="Los procesos automáticos son de módulos que no están incluidos en el plan de tu empresa."
+            description="Por ahora tu empresa no tiene procesos automáticos para ajustar."
           />
         ) : (
           <EmptyState title="No hay procesos configurables" description="La API no devolvió ningún proceso." />

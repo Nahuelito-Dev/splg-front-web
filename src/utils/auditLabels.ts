@@ -24,7 +24,7 @@ export const AUDIT_ENTITY = {
   MaintenanceTask: 'Tarea de flota',
   MaintenanceTaskAttachment: 'Adjunto de tarea',
   MaintenanceWindowProposal: 'Propuesta de ventana de mantenimiento',
-  ModuleConfig: 'Configuración de módulo',
+  ModuleConfig: 'Configuración de procesos automáticos',
   Order: 'Pedido',
   OrderAddressChange: 'Cambio de dirección del pedido',
   OrderItem: 'Renglón de pedido',

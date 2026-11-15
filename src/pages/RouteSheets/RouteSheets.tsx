@@ -154,7 +154,7 @@ export const RouteSheets = () => {
           <>
             <Chip
               icon={<Sparkles aria-hidden="true" className="h-3.5 w-3.5" />}
-              text="Módulo inteligente"
+              text="Planificación inteligente"
               className="bg-primary-soft text-primary-strong"
             />
             {data && <Badge label={PLAN_STATUS[data.plan.status]} />}

@@ -323,7 +323,7 @@ export const TICKET_PRIORITY: LabelMap<Ticket['priority']> = {
 export const TICKET_CATEGORY: LabelMap<Ticket['category']> = {
   billing: { text: 'Facturación', tone: 'neutral' },
   technical: { text: 'Técnico', tone: 'neutral' },
-  module: { text: 'Módulos', tone: 'neutral' },
+  module: { text: 'Funciones', tone: 'neutral' },
   data: { text: 'Datos', tone: 'neutral' },
   account: { text: 'Cuenta', tone: 'neutral' },
   other: { text: 'Otro', tone: 'neutral' },

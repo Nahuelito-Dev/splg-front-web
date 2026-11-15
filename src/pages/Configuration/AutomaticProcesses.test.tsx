@@ -201,7 +201,7 @@ describe('AutomaticProcesses', () => {
     state.modules = { enabledByKey: { repurchase: false, route_batching: false }, loading: false };
     setup();
     expect(screen.getByText('No hay procesos para configurar')).toBeInTheDocument();
-    expect(screen.getByText(/no están incluidos en el plan/)).toBeInTheDocument();
+    expect(screen.getByText(/no tiene procesos automáticos para ajustar/)).toBeInTheDocument();
   });
 
   it('mientras no se saben los módulos espera, sin mostrar procesos que después desaparecen', () => {

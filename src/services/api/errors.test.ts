@@ -29,12 +29,13 @@ describe('toApiError', () => {
     expect(error.message).toMatch(/no incluye archivos ni exportes/);
   });
 
-  it('el 403 MODULE_DISABLED se muestra como «no incluido en tu plan» y se reconoce por su código', () => {
+  it('el 403 MODULE_DISABLED se muestra como «no está disponible» (sin hablar de planes ni módulos) y se reconoce por su código', () => {
     const error = toApiError(
       axiosError(403, { message: 'La función «Lector de documentos» no está habilitada', code: 'MODULE_DISABLED' }),
     );
     expect(error.moduleDisabled).toBe(true);
-    expect(error.message).toBe('Esta función no está incluida en tu plan');
+    expect(error.message).toBe('Esta función no está disponible para tu empresa');
+    expect(error.message).not.toMatch(/\bplan\b|m[óo]dulo|habilitad/i);
     expect(toApiError(axiosError(403, { message: 'Sin permiso', code: 'PERMISSION_DENIED' })).moduleDisabled).toBe(
       false,
     );

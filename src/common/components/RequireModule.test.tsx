@@ -52,18 +52,20 @@ afterEach(() => {
 });
 
 describe('RequireModule', () => {
-  it('por URL a un módulo que la plataforma no le habilitó: «No incluido en tu plan» con su nombre, sin montar la pantalla', () => {
+  it('por URL a un módulo que la plataforma no le habilitó: «No disponible» con su nombre, sin montar la pantalla', () => {
     state.query = { data: MODULES, isPending: false };
     renderRoute();
-    expect(screen.getByText('No incluido en tu plan')).toBeInTheDocument();
-    expect(screen.getByText(/«Lector de documentos» no está habilitado/)).toBeInTheDocument();
+    expect(screen.getByText('No disponible')).toBeInTheDocument();
+    expect(screen.getByText(/«Lector de documentos» no está disponible/)).toBeInTheDocument();
     expect(screen.queryByText('Pantalla del lector')).not.toBeInTheDocument();
+    // A la distribuidora no se le habla de módulos ni de planes: sólo de qué hace cada función.
+    expect(document.body.textContent).not.toMatch(/\bplan\b|m[óo]dulo|habilitad/i);
   });
 
   it('ofrece volver al tablero y consultar a la plataforma por Ayuda', () => {
     state.query = { data: MODULES, isPending: false };
     renderRoute();
-    fireEvent.click(screen.getByRole('button', { name: 'Consultar a la plataforma' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Consultar por Ayuda' }));
     expect(screen.getByText('Ayuda')).toBeInTheDocument();
   });
 
@@ -71,7 +73,7 @@ describe('RequireModule', () => {
     state.mode = 'support';
     state.query = { data: MODULES, isPending: false };
     renderRoute();
-    expect(screen.queryByRole('button', { name: 'Consultar a la plataforma' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Consultar por Ayuda' })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Ir al tablero' }));
     expect(screen.getByText('Tablero')).toBeInTheDocument();
   });
@@ -110,7 +112,7 @@ describe('RequireModule', () => {
   it('al habilitarse de nuevo, la pantalla vuelve sin recargar', () => {
     state.query = { data: MODULES, isPending: false };
     const { rerender } = renderRoute();
-    expect(screen.getByText('No incluido en tu plan')).toBeInTheDocument();
+    expect(screen.getByText('No disponible')).toBeInTheDocument();
     state.query = { data: MODULES.map((m) => ({ ...m, enabled: true })), isPending: false };
     rerender(
       <MemoryRouter initialEntries={['/document-readings']}>
@@ -126,7 +128,7 @@ describe('RequireModule', () => {
 });
 
 describe('ErrorState con 403 MODULE_DISABLED', () => {
-  it('una pantalla abierta cuando la plataforma apaga el módulo muestra «No incluido en tu plan», sin «Reintentar»', () => {
+  it('una pantalla abierta cuando la plataforma apaga el módulo muestra «No disponible», sin «Reintentar»', () => {
     const error = new AxiosError('fallo');
     error.response = {
       status: 403,
@@ -136,8 +138,9 @@ describe('ErrorState con 403 MODULE_DISABLED', () => {
       config: { headers: new AxiosHeaders() },
     };
     render(<ErrorState error={error} onRetry={vi.fn()} />);
-    expect(screen.getByText('No incluido en tu plan')).toBeInTheDocument();
+    expect(screen.getByText('No disponible')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Reintentar' })).not.toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/\bplan\b|m[óo]dulo|habilitad/i);
   });
 });
 

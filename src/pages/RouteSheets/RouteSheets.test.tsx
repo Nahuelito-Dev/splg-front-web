@@ -87,7 +87,7 @@ describe('RouteSheets', () => {
   it('muestra el día con el chip de módulo inteligente, la explicación, las hojas y lo que quedó sin hoja', () => {
     renderPage(<RouteSheets />, { url: '/route-sheets' });
     expect(screen.getByRole('heading', { level: 1, name: 'Hojas de ruta' })).toBeInTheDocument();
-    expect(screen.getByText('Módulo inteligente')).toBeInTheDocument();
+    expect(screen.getByText('Planificación inteligente')).toBeInTheDocument();
     expect(screen.queryByText(/Prototipo/)).not.toBeInTheDocument();
     expect(
       screen.getByText(/agrupando los pedidos programados por zona, franja horaria y capacidad/),

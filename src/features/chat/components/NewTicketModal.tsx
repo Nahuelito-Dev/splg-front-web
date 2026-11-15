@@ -70,7 +70,7 @@ export const NewTicketModal = ({ open, onClose, side, onCreated, renderCompany }
       title="Nuevo ticket"
       description={
         side === 'company'
-          ? 'Para lo que necesita seguimiento: un error a investigar, una factura, un pedido de módulo.'
+          ? 'Para lo que necesita seguimiento: un error a investigar, una factura, una función nueva.'
           : 'Un ticket hacia una empresa: queda esperando su respuesta y asignado a vos.'
       }
       footer={
