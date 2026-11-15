@@ -180,7 +180,7 @@ export const TemplatesCard = ({ canEdit }: { canEdit: boolean }) => {
   };
 
   return (
-    <Card>
+    <Card className="p-5 sm:p-6">
       <CardHeader
         title="Respuestas guardadas"
         subtitle="Textos frecuentes para responder rápido. «/» en el compositor las abre."

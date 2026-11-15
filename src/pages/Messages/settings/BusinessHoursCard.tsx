@@ -81,7 +81,7 @@ const HoursForm = ({ hours, canEdit }: { hours: ChatBusinessHours; canEdit: bool
             Sin franjas cargadas se atiende todo el día, todos los días: nunca sale la respuesta fuera de horario.
           </p>
         )}
-        <ul className="grid gap-2">
+        <ul className="divide-y divide-outline-soft rounded-xl border border-outline-soft">
           {WEEK_ORDER.map((weekday) => {
             const slots = days.fields
               .map((field, index) => ({ field, index }))
@@ -89,12 +89,12 @@ const HoursForm = ({ hours, canEdit }: { hours: ChatBusinessHours; canEdit: bool
             return (
               <li
                 key={weekday}
-                className="grid gap-2 rounded-xl border border-outline-soft px-3 py-2 sm:grid-cols-[110px_minmax(0,1fr)_auto] sm:items-start"
+                className="grid min-h-12 gap-2 px-4 py-2.5 sm:grid-cols-[120px_minmax(0,1fr)_auto] sm:items-center"
               >
-                <span className="pt-2 text-sm font-medium text-ink">{WEEKDAYS[weekday]}</span>
+                <span className="text-sm font-medium text-ink">{WEEKDAYS[weekday]}</span>
                 <div className="grid gap-2">
                   {slots.length === 0 ? (
-                    <span className="pt-2 text-xs text-muted">
+                    <span className="text-sm text-ink-2">
                       {days.fields.length === 0 ? 'Todo el día' : 'No atiende'}
                     </span>
                   ) : (
@@ -201,7 +201,7 @@ const HoursForm = ({ hours, canEdit }: { hours: ChatBusinessHours; canEdit: bool
 export const BusinessHoursCard = ({ canEdit }: { canEdit: boolean }) => {
   const { data, error, isPending, refetch } = useBusinessHours();
   return (
-    <Card>
+    <Card className="p-5 sm:p-6">
       <CardHeader
         title="Horario de atención"
         subtitle="Fuera de horario, al cliente le llega la respuesta automática una sola vez por período."

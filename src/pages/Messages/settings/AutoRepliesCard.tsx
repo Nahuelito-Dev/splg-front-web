@@ -180,7 +180,7 @@ const SettingsForm = ({ settings, canEdit }: { settings: ChatSettings; canEdit: 
 export const AutoRepliesCard = ({ canEdit }: { canEdit: boolean }) => {
   const { data, error, isPending, refetch } = useChatSettings();
   return (
-    <Card>
+    <Card className="p-5 sm:p-6">
       <CardHeader
         title="Respuestas automáticas"
         subtitle="Las manda el sistema con la marca de la empresa. Los choferes no reciben automáticas."
