@@ -21,7 +21,6 @@ export const UserRefLink = ({ userId, name, loading = false, className }: Props)
       className,
     )}
   >
-    <PersonAvatar name={name || formatShortId(userId)} userId={userId} size="xs" decorative />
     <span className="min-w-0 truncate">{name || (loading ? 'Cargando…' : formatShortId(userId))}</span>
   </Link>
 );
