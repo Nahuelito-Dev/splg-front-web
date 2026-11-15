@@ -11,13 +11,15 @@ import plugin from 'tailwindcss/plugin.js';
  * Modo oscuro: los roles que dependen del fondo (ink, muted, outline, bg,
  * surface, los "soft" de estado…) viven en variables CSS (`:root` / `.dark`,
  * inyectadas más abajo) para poder cambiar de valor sin cambiar de clase.
- * Las escalas (`llama`, `gas`, `tinta`) y el menú lateral (`side`) quedan
- * fijos: el menú ya es oscuro en los dos temas.
+ * Las escalas (`llama`, `gas`, `tinta`) quedan fijas. El menú lateral
+ * (`side*`) es oscuro en los dos temas: mismo valor en `:root` y `.dark`.
  *
  * Tema por distribuidora: los roles de marca (`primary`, sus variantes y el
- * gradiente, `on-primary`, `accent`) también son variables. Acá llevan Brasa
- * (la plataforma y la empresa sin tema propio); en el contexto de una empresa
- * con tema, `src/theme/companyTheme.ts` las pisa con los tokens de la API.
+ * gradiente, `on-primary`, `accent`), el menú lateral (`side*`) y las
+ * superficies (`bg`, `surface*`, `outline*`) también son variables. Acá llevan
+ * Brasa (la plataforma y la empresa sin tema propio); en el contexto de una
+ * empresa con tema, `src/theme/companyTheme.ts` las pisa con los tokens de la
+ * API (las superficies oscuras y el menú toman el tono de su color principal).
  */
 const brand = createRequire(import.meta.url)('./src/theme/brand.json');
 const { llama, gas, tinta, canvas, sidebar, status, statusSoft, primaryGradient, dark } = brand;
@@ -48,7 +50,12 @@ const BRAND_VARS = {
   'primary-edge': primaryGradient.border,
   'on-primary': '#FFFFFF',
   accent: gas['400'],
-  'side-accent': llama['400'],
+  side: sidebar.bg,
+  'side-raised': sidebar.raised,
+  'side-line': sidebar.line,
+  'side-text': sidebar.text,
+  'side-muted': sidebar.muted,
+  'side-accent': sidebar.accent,
 };
 
 const LIGHT_VARS = {
@@ -152,7 +159,13 @@ export default {
         'surface-hover': themed('surface-hover'),
         'surface-sunken': themed('surface-sunken'),
         'surface-muted': themed('surface-muted'),
-        side: { DEFAULT: sidebar.bg, raised: sidebar.raised, line: sidebar.line, text: sidebar.text },
+        side: {
+          DEFAULT: themed('side'),
+          raised: themed('side-raised'),
+          line: themed('side-line'),
+          text: themed('side-text'),
+          muted: themed('side-muted'),
+        },
         'side-accent': themed('side-accent'),
         success: { DEFAULT: themed('success'), soft: themed('success-soft') },
         danger: { DEFAULT: themed('danger'), soft: themed('danger-soft') },

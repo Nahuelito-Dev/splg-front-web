@@ -1,11 +1,12 @@
 import '@mui/x-data-grid/themeAugmentation';
 import type { Components, Theme } from '@mui/material/styles';
 import type { ResolvedThemeMode } from '../themeMode';
+import type { ThemeModeTokens } from '../../services/api/types';
 import { surfaceTokens } from './palette';
 
 /** La grilla de datos del panel (antes vivía en el `sx` de `DataTable`). */
-export const dataGridComponents = (mode: ResolvedThemeMode): Components<Theme> => {
-  const t = surfaceTokens(mode);
+export const dataGridComponents = (mode: ResolvedThemeMode, company?: ThemeModeTokens): Components<Theme> => {
+  const t = surfaceTokens(mode, company);
   return {
     MuiDataGrid: {
       styleOverrides: {

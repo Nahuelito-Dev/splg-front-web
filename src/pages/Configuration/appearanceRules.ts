@@ -53,6 +53,12 @@ const PAIR_LABEL: Record<string, string> = {
   'accent/surface': 'Acento sobre el blanco',
   'accent/canvas': 'Acento sobre el fondo del panel',
   'primaryStrong/primarySoft': 'Texto destacado sobre el fondo suave',
+  'sideText/side': 'Texto del menú lateral',
+  'sideText/sideRaised': 'Texto del menú sobre sus tarjetas',
+  'sideMuted/side': 'Títulos de sección del menú',
+  'sideMuted/sideRaised': 'Texto secundario del menú sobre sus tarjetas',
+  'sideAccent/side': 'Ícono activo del menú',
+  'sideAccent/sideRaised': 'Iniciales y realces del menú sobre sus tarjetas',
 };
 
 export const pairLabel = (pair: string): string => PAIR_LABEL[pair] ?? pair;

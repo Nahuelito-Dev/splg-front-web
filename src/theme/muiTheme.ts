@@ -16,7 +16,7 @@ const font = 'Geist, "Helvetica Neue", Arial, sans-serif';
  * la grilla de datos, los íconos y algunos controles; el resto va con
  * Tailwind. `createAppTheme` arma un tema por modo: los dos leen de
  * `brand.json` (claro de la raíz, oscuro de `brand.json#/dark`). Con `company` (los tokens del tema de la empresa del
- * contexto) el principal y el secundario salen de ahí, como en Tailwind.
+ * contexto) el principal, el secundario y las superficies salen de ahí, como en Tailwind.
  */
 export const createAppTheme = (mode: ResolvedThemeMode, company: ThemeTokens | null = null) => {
   const tokens = company?.[mode];
@@ -43,10 +43,10 @@ export const createAppTheme = (mode: ResolvedThemeMode, company: ThemeTokens | n
           primary: mode === 'dark' ? dark.ink : tinta['900'],
           secondary: mode === 'dark' ? dark.muted : tinta['500'],
         },
-        divider: mode === 'dark' ? dark.outline : tinta['200'],
+        divider: tokens?.outline ?? (mode === 'dark' ? dark.outline : tinta['200']),
         background: {
-          default: mode === 'dark' ? dark.canvas : brand.canvas,
-          paper: mode === 'dark' ? dark.surface : '#FFFFFF',
+          default: tokens?.canvas ?? (mode === 'dark' ? dark.canvas : brand.canvas),
+          paper: tokens?.surface ?? (mode === 'dark' ? dark.surface : '#FFFFFF'),
         },
       },
       typography: {
@@ -55,12 +55,12 @@ export const createAppTheme = (mode: ResolvedThemeMode, company: ThemeTokens | n
       },
       shape: { borderRadius: 10 },
       components: {
-        ...overlayComponents(mode),
-        ...dataGridComponents(mode),
+        ...overlayComponents(mode, tokens),
+        ...dataGridComponents(mode, tokens),
         MuiTooltip: {
           styleOverrides: {
             tooltip: {
-              backgroundColor: mode === 'dark' ? dark.surfaceMuted : tinta['900'],
+              backgroundColor: mode === 'dark' ? (tokens?.surfaceMuted ?? dark.surfaceMuted) : tinta['900'],
               fontSize: 12,
               fontWeight: 500,
               padding: '6px 10px',

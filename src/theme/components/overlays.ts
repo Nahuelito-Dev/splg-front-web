@@ -1,10 +1,11 @@
 import type { Components, Theme } from '@mui/material/styles';
 import type { ResolvedThemeMode } from '../themeMode';
+import type { ThemeModeTokens } from '../../services/api/types';
 import { SHADOW_DIALOG, SHADOW_MENU, surfaceTokens } from './palette';
 
 /** Menús, popovers, diálogos, paneles laterales y fondo: se ven igual en todo el panel sin clases por pantalla. */
-export const overlayComponents = (mode: ResolvedThemeMode): Components<Theme> => {
-  const t = surfaceTokens(mode);
+export const overlayComponents = (mode: ResolvedThemeMode, company?: ThemeModeTokens): Components<Theme> => {
+  const t = surfaceTokens(mode, company);
   return {
     MuiPopover: {
       styleOverrides: {

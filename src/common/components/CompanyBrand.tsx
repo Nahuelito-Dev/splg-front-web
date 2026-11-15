@@ -56,7 +56,7 @@ export const PoweredByPlatform = ({ className }: { className?: string }) => {
   const { data: platform } = usePlatform();
   if (!platform?.name) return null;
   return (
-    <p className={cx('text-center text-[10.5px] font-medium text-side-text/70', className)}>
+    <p className={cx('text-center text-[10.5px] font-medium text-side-muted', className)}>
       con tecnología de <span className="font-semibold text-side-text">{platform.name}</span>
     </p>
   );

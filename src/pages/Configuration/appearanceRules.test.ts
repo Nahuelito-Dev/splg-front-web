@@ -55,6 +55,7 @@ describe('appearanceRules', () => {
 
   it('etiquetas de contraste', () => {
     expect(pairLabel('onPrimary/primary')).toBe('Texto de los botones sobre el color principal');
+    expect(pairLabel('sideText/side')).toBe('Texto del menú lateral');
     expect(pairLabel('otro/par')).toBe('otro/par');
     expect(ratioLabel(4.5)).toBe('4,5:1');
     const items = [

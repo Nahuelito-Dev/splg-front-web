@@ -1,5 +1,6 @@
 import brand from '../brand.json';
 import type { ResolvedThemeMode } from '../themeMode';
+import type { ThemeModeTokens } from '../../services/api/types';
 
 const { tinta, llama, dark } = brand;
 
@@ -9,16 +10,19 @@ export const withAlpha = (hex: string, alpha: number): string => {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
-/** Valores de la marca que cambian con el modo, para los overrides de los componentes de MUI. */
-export const surfaceTokens = (mode: ResolvedThemeMode) => {
+/**
+ * Valores que cambian con el modo, para los overrides de los componentes de MUI. Con `company` (los tokens del modo
+ * de la empresa del contexto) las superficies y el principal salen de ahí, como en Tailwind; la tinta no se tematiza.
+ */
+export const surfaceTokens = (mode: ResolvedThemeMode, company?: ThemeModeTokens) => {
   const isDark = mode === 'dark';
   return {
-    outline: isDark ? dark.outline : tinta['200'],
-    surfaceHover: isDark ? dark.surfaceHover : tinta['50'],
-    surfaceMuted: isDark ? dark.surfaceMuted : tinta['100'],
+    outline: company?.outline ?? (isDark ? dark.outline : tinta['200']),
+    surfaceHover: company?.surfaceHover ?? (isDark ? dark.surfaceHover : tinta['50']),
+    surfaceMuted: company?.surfaceMuted ?? (isDark ? dark.surfaceMuted : tinta['100']),
     ink: isDark ? dark.ink : tinta['900'],
     muted: isDark ? dark.muted : tinta['500'],
-    primary: isDark ? dark.primaryStrong : llama['600'],
+    primary: company ? (isDark ? company.primaryStrong : company.primary) : isDark ? dark.primaryStrong : llama['600'],
     backdrop: isDark ? withAlpha(tinta['950'], 0.72) : withAlpha(tinta['900'], 0.42),
   };
 };
