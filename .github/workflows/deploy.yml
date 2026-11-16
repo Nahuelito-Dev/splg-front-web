@@ -35,6 +35,16 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ inputs.ref || 'main' }}
+          fetch-depth: 0
+
+      - name: Sólo lo que ya está en main
+        env:
+          REF: ${{ inputs.ref || 'main' }}
+        run: |
+          git fetch -q origin main
+          if ! git merge-base --is-ancestor HEAD origin/main; then
+            echo "«$REF» no está en main: a producción sólo va lo que ya se integró a main."; exit 1
+          fi
 
       - name: Datos del commit
         id: c
