@@ -1,5 +1,13 @@
 import '@testing-library/jest-dom/vitest';
+import { configure } from '@testing-library/react';
 import { vi } from 'vitest';
+
+/**
+ * En el runner de GitHub, con toda la suite en paralelo, una pantalla puede tardar más del segundo que
+ * `waitFor`/`findBy*` esperan por omisión: fallaba un test distinto en cada corrida. Se esperan hasta 5 s
+ * (sigue siendo un tope: un test que nunca llega a cumplirse falla igual).
+ */
+configure({ asyncUtilTimeout: 5000 });
 
 /**
  * El router de datos arma `new Request(url, { signal })` con el `AbortSignal` de jsdom, que el `Request` de Node
