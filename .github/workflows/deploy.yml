@@ -64,6 +64,10 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: Reglas (el mismo gate que Checks)
+        env:
+          TZ: UTC
+        run: npm run verify
 
       - name: Compilar
         env:
