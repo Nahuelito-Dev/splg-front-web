@@ -11,8 +11,15 @@ interface Props {
   focusPoint: { lat: number; lng: number } | null;
 }
 
+// Hora argentina en 24 h, sin depender de la zona ni del formato del navegador.
 const time = (iso: string) =>
-  new Date(iso).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  new Date(iso).toLocaleTimeString('es-AR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+    timeZone: 'America/Argentina/Buenos_Aires',
+  });
 
 /** Los choferes con entregas en curso, cada uno en su última posición; tocar uno muestra su pedido y la hora. */
 export const TrackingMap = ({ trackedOrders, focusPoint }: Props) => {
