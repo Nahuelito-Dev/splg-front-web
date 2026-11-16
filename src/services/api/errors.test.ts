@@ -58,6 +58,13 @@ describe('toApiError', () => {
     expect(toApiError(axiosError(409, { message: 'x' })).rateLimited).toBe(false);
   });
 
+  it('un 429 con código es una regla del negocio: se muestra el texto de la API', () => {
+    const message = 'Ya mandaste 30 archivos hoy. Vas a poder mandar más mañana.';
+    const error = axiosError(429, { statusCode: 429, message, code: 'ATTACHMENT_DAILY_LIMIT' });
+    expect(errorMessage(error)).toBe(message);
+    expect(toApiError(error).rateLimited).toBe(true);
+  });
+
   it('cerrar la incidencia de un impago (409) manda a «Resolver impago» en vez de mostrar el endpoint', () => {
     const message =
       'La incidencia de cobro impago se cierra resolviendo el cobro del pedido: PATCH /orders/:id/payment/resolve-unpaid';

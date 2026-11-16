@@ -5,6 +5,7 @@ import {
   dropConfirmed,
   emptyThread,
   firstSeqOf,
+  keepScanned,
   lastSeqOf,
   mergeMessages,
   refreshKnown,
@@ -17,7 +18,9 @@ import {
 } from '../../features/chat/thread';
 import { errorMessage, toApiError } from '../api/errors';
 import { MESSAGES_PAGE, MESSAGES_PAGE_MAX, type MessagesQuery } from '../api/supportChat';
-import type { InboxMessage, MessageDto } from '../api/types';
+import type { DownloadLink, InboxMessage, MessageDto } from '../api/types';
+import type { ChatAttachmentInput, OnUploadProgress } from '../api/chatAttachments';
+import type { ChatAttachmentChannel } from '../../features/chat/attachments';
 import type { MentionToken } from '../../features/chat/composerDraft';
 import { chatKeys } from './supportChat';
 import { newUuid } from '../../utils/uuid';
@@ -47,6 +50,16 @@ export interface SendExtras {
   mentionTokens?: MentionToken[];
 }
 
+/**
+ * Adjuntos de un hilo (CH7): el canal (qué tipos y topes), la subida (sin esto, el hilo sólo los muestra: un chat
+ * cerrado) y el enlace firmado de cada uno (se pide al verlo; vence a los 300 s).
+ */
+export interface ThreadAttachments {
+  channel: ChatAttachmentChannel;
+  upload?: (input: ChatAttachmentInput, onProgress?: OnUploadProgress) => Promise<ChatMessage>;
+  link: (messageId: string) => Promise<DownloadLink>;
+}
+
 /** De dónde sale y a dónde va un hilo: cada pantalla arma el suyo con las llamadas de su lado. */
 export interface ThreadSource {
   /** La conversación (su sala y su caché). `null`: la empresa todavía no tiene chat abierto; el primer mensaje lo crea. */
@@ -60,6 +73,8 @@ export interface ThreadSource {
    * pasar a ella en el acto (su caché ya tiene el mensaje).
    */
   onSent?: (message: ChatMessage) => void;
+  /** Adjuntos: sin esto el hilo no ofrece adjuntar ni sabe pedir los archivos. */
+  attachments?: ThreadAttachments;
 }
 
 /** Clave del hilo del chat de la empresa mientras no hay conversación. */
@@ -155,12 +170,15 @@ export const loadThread = async (
   return { ...latest, messages, pending: dropConfirmed(latest.pending, messages) };
 };
 
+/** `known`: el hilo ya tenía ese mensaje (una versión nueva, p. ej. el adjunto ya escaneado): no es para avisar. */
+export type IncomingResult = 'new' | 'known';
+
 /**
  * Un mensaje que llegó por el socket (`chat:message`). Sólo importa si el hilo está abierto en alguna pantalla (hay
  * caché): si es el siguiente, se agrega; si ya estaba, nada; si saltea números, se pone al día por HTTP. Sirve para
  * el chat con la plataforma y para la bandeja (el mensaje se lleva a la forma común).
  */
-export const applyIncomingMessage = (queryClient: QueryClient, raw: MessageDto | InboxMessage) => {
+export const applyIncomingMessage = (queryClient: QueryClient, raw: MessageDto | InboxMessage): IncomingResult => {
   const message = toChatMessage(raw);
   const key = chatKeys.thread(message.conversationId);
   const thread = queryClient.getQueryData<ThreadData>(key);
@@ -168,18 +186,32 @@ export const applyIncomingMessage = (queryClient: QueryClient, raw: MessageDto |
     // La pantalla está abierta (la consulta existe) pero la primera carga no terminó: se guarda para sumarlo al
     // terminar. Si nadie lo mira, no hace falta: cuando se abra, el GET lo trae.
     if (queryClient.getQueryCache().find({ queryKey: key, exact: true })) keepEarly(queryClient, key, message);
-    return;
+    return 'new';
   }
   const decision = decideIncoming(thread, message.seq);
-  if (decision === 'ignore') return;
+  if (decision === 'ignore') {
+    // Uno viejo: nunca se agrega (si es anterior a lo cargado, lo trae «cargar anteriores»). Si el hilo lo tiene y es
+    // un adjunto, es la re-emisión al terminar el escaneo: se actualiza el adjunto en su lugar, sin volver atrás; lo
+    // demás queda como lo tiene quien mira (`isMine`, `canEdit`).
+    if (message.attachment && thread.messages.some((m) => m.seq === message.seq)) {
+      update(queryClient, key, (current) => ({
+        ...current,
+        messages: current.messages.map((m) =>
+          m.seq === message.seq ? { ...m, attachment: keepScanned(m, message).attachment } : m,
+        ),
+      }));
+    }
+    return 'known';
+  }
   if (decision === 'catch-up') {
     void queryClient.invalidateQueries({ queryKey: key });
-    return;
+    return 'new';
   }
   update(queryClient, key, (current) => {
     const messages = mergeMessages(current.messages, [message]);
     return { ...current, messages, pending: dropConfirmed(current.pending, messages) };
   });
+  return 'new';
 };
 
 /**
@@ -415,7 +447,42 @@ export const useThread = (source: ThreadSource) => {
     [edit, queryClient],
   );
 
+  /**
+   * Sube un adjunto como mensaje. No es optimista: quien llama muestra el avance y el error (413/415/429 con el texto
+   * de la API) y reintenta con el MISMO `clientMessageId` (la API devuelve el ya guardado sin volver a subir). Lo
+   * confirmado entra al hilo por `seq`, igual que un texto.
+   */
+  const upload = source.attachments?.upload;
+  const attach = useMemo(
+    () =>
+      upload
+        ? async (input: ChatAttachmentInput, onProgress?: OnUploadProgress) => {
+            const message = await upload(input, onProgress);
+            const target = chatKeys.thread(message.conversationId);
+            const thread = queryClient.getQueryData<ThreadData>(target);
+            if (thread && decideIncoming(thread, message.seq) === 'catch-up') {
+              await queryClient.refetchQueries({ queryKey: target });
+            } else {
+              update(queryClient, target, (current) => ({
+                ...current,
+                // La respuesta trae el adjunto como se guardó: si el socket ya trajo el resultado del escaneo, queda ése.
+                messages: mergeMessages(current.messages, [
+                  keepScanned(
+                    current.messages.find((m) => m.seq === message.seq),
+                    message,
+                  ),
+                ]),
+                hasMoreBefore: current.messages.length === 0 ? message.seq > 1 : current.hasMoreBefore,
+              }));
+            }
+            return message;
+          }
+        : undefined,
+    [queryClient, upload],
+  );
+
   return {
+    attach,
     thread: query.data,
     isPending: query.isPending,
     error: query.error,

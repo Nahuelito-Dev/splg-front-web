@@ -73,3 +73,22 @@ export const dismissAlert = (conversationId: string, seq: number) => {
   current.notification.close();
   shown.delete(conversationId);
 };
+
+/** Cuántos mensajes recuerda cada puente para no avisar dos veces el mismo. */
+const SEEN_MAX = 500;
+
+/**
+ * Lo ya avisado por un puente del socket: el mismo mensaje puede llegar dos veces (la re-emisión de un adjunto al
+ * terminar su escaneo, incluso con el hilo todavía cargando, cuando no se puede saber si ya estaba). Devuelve `true`
+ * la primera vez de cada mensaje (conversación + `seq`).
+ */
+export const firstAlertOf = () => {
+  const seen = new Set<string>();
+  return (conversationId: string, seq: number): boolean => {
+    const key = `${conversationId}:${seq}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    if (seen.size > SEEN_MAX) seen.delete(seen.values().next().value as string);
+    return true;
+  };
+};

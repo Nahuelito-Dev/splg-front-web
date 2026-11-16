@@ -1,6 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { toChatMessage } from '../../features/chat/thread';
+import { getConversationAttachmentLink, uploadConversationAttachment } from '../api/chatAttachments';
 import {
   assignConversation,
   broadcastDrivers,
@@ -200,6 +201,16 @@ export const useInboxThread = (conversationId: string): ThreadBinding => {
           return toChatMessage(message);
         },
         edit: async (messageId, body) => toChatMessage(await editConversationMessage(conversationId, messageId, body)),
+        attachments: {
+          channel: 'inbox',
+          upload: async (input, onProgress) => {
+            const message = await uploadConversationAttachment(conversationId, input, onProgress);
+            // Como un texto: la primera respuesta y la vista previa de la lista («📎 Foto»).
+            void invalidateInbox(queryClient);
+            return toChatMessage(message);
+          },
+          link: (messageId) => getConversationAttachmentLink(conversationId, messageId),
+        },
       },
       read: async (seq) => {
         await readConversation(conversationId, seq);

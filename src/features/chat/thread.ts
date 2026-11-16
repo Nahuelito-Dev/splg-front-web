@@ -98,13 +98,38 @@ export const mergeMessages = (current: ChatMessage[], incoming: ChatMessage[]): 
 export type IncomingDecision = 'append' | 'ignore' | 'catch-up';
 
 /**
- * Un mensaje del socket: si es el siguiente (o uno que ya estaba), se agrega; si saltea números, se perdió algo en el
- * medio y se pide lo posterior al último que se tiene (`afterSeq`). Con el hilo vacío, sólo el primero se agrega.
+ * Un mensaje del socket: si es el siguiente, se agrega; si saltea números, se perdió algo en el medio y se pide lo
+ * posterior al último que se tiene (`afterSeq`). Uno que no pasa del último y ya estaba, o es anterior a lo cargado
+ * (p. ej. la re-emisión de un adjunto al terminar su escaneo), no se agrega: dejaría un hueco en «cargar anteriores»;
+ * si el hilo lo tiene, quien llama lo actualiza en su lugar. Uno faltante entre el primero y el último cargados sí se
+ * agrega. Con el hilo vacío, sólo el primero se agrega.
  */
 export const decideIncoming = (thread: Pick<ThreadData, 'messages'>, seq: number): IncomingDecision => {
   const last = lastSeqOf(thread);
-  if (seq <= last) return thread.messages.some((m) => m.seq === seq) ? 'ignore' : 'append';
+  if (seq <= last) {
+    // Dentro de lo cargado y faltante (p. ej. el socket entrega el mensaje de otro después de la respuesta HTTP del
+    // propio, que ya trajo un número mayor): se agrega en su lugar.
+    const missing = seq > firstSeqOf(thread) && !thread.messages.some((m) => m.seq === seq);
+    return missing ? 'append' : 'ignore';
+  }
   return seq === last + 1 ? 'append' : 'catch-up';
+};
+
+/** Los estados del escaneo que ya no vuelven a «verificando» por una respuesta vieja. */
+const SCANNED = new Set(['clean', 'infected', 'failed', 'not_required']);
+
+/**
+ * La versión que llega de un mensaje que el hilo ya tiene, sin retroceder su escaneo: la respuesta HTTP de una subida
+ * trae el adjunto como se guardó (`pending`) y puede llegar después de la re-emisión del socket con el resultado. Un
+ * adjunto ya escaneado no vuelve a «verificando».
+ */
+export const keepScanned = (current: ChatMessage | undefined, incoming: ChatMessage): ChatMessage => {
+  const before = current?.attachment;
+  const after = incoming.attachment;
+  if (!before || !after || before.id !== after.id) return incoming;
+  return after.scanStatus === 'pending' && SCANNED.has(before.scanStatus)
+    ? { ...incoming, attachment: before }
+    : incoming;
 };
 
 /** Saca de la cola de pendientes los que la API ya confirmó (por `clientMessageId`). */

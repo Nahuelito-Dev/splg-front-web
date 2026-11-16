@@ -542,6 +542,25 @@ describe('Mensajes: sugerencias de respuesta', () => {
   });
 });
 
+describe('Mensajes: la vista previa de un adjunto', () => {
+  it('en la lista se ve la que arma el back («📎 Foto» / «📎 Archivo»), con la firma del equipo si es propio', async () => {
+    api.listConversations.mockResolvedValue(
+      list([
+        inboxConversation({
+          lastMessage: { seq: 2, preview: '📎 Foto', at: '2026-11-15T13:02:00.000Z', party: 'customer' },
+        }),
+        inboxConversation({
+          id: 'conv-2',
+          lastMessage: { seq: 3, preview: '📎 Archivo', at: '2026-11-15T13:03:00.000Z', party: 'company' },
+        }),
+      ]),
+    );
+    show();
+    expect(await screen.findByText('📎 Foto')).toBeInTheDocument();
+    expect(screen.getByText('Equipo: 📎 Archivo')).toBeInTheDocument();
+  });
+});
+
 describe('Mensajes: lo que manda el asistente', () => {
   it('en la lista, el último mensaje del asistente se ve con su firma corta; un aviso sin texto, como aviso', async () => {
     api.listConversations.mockResolvedValue(

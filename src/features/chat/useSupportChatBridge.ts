@@ -4,7 +4,7 @@ import { useSocketContext } from '../../context/useSocketContext';
 import type { CompanyPlatformChat, Conversation, Ticket, TicketSummary } from '../../services/api/types';
 import { applyCounterpartRead, applyIncomingMessage, catchUpThreads } from '../../services/queries/chatThread';
 import { chatKeys, invalidateChatLists, type ChatSide } from '../../services/queries/supportChat';
-import { alertIncoming } from './alerts';
+import { alertIncoming, firstAlertOf } from './alerts';
 import {
   CHAT_EVENTS,
   type ChatConversationEvent,
@@ -63,6 +63,7 @@ export const useSupportChatBridge = (side: ChatSide | null, alertTitle: string) 
   useEffect(() => {
     if (!side) return;
     let timer: number | undefined;
+    const firstAlert = firstAlertOf();
     const refreshLists = () => {
       window.clearTimeout(timer);
       timer = window.setTimeout(() => void invalidateChatLists(queryClient), LISTS_DEBOUNCE_MS);
@@ -71,9 +72,10 @@ export const useSupportChatBridge = (side: ChatSide | null, alertTitle: string) 
       subscribe<ChatMessageEvent>(CHAT_EVENTS.MESSAGE, ({ message }) => {
         // Los de la bandeja (clientes y choferes) no traen `visibility`: son de `useInboxBridge`.
         if (!message || !('visibility' in message)) return;
-        applyIncomingMessage(queryClient, message);
+        // Una versión nueva de uno que ya estaba (el adjunto ya escaneado) no se avisa otra vez.
+        const known = applyIncomingMessage(queryClient, message) === 'known';
         if (!message.isMine) typingStore.clear(message.conversationId);
-        alertIncoming(message, titleRef.current);
+        if (!known && firstAlert(message.conversationId, message.seq)) alertIncoming(message, titleRef.current);
         refreshLists();
       }),
       subscribe<ChatConversationEvent>(CHAT_EVENTS.CONVERSATION, ({ conversationId, conversation }) => {

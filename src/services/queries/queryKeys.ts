@@ -49,6 +49,7 @@ export const queryKeys = {
   repurchase: resource('repurchase'),
   mpReconciliations: resource('mpReconciliations'),
   attachments: resource('attachments'),
+  chatAttachments: resource('chatAttachments'),
   cashBoxes: resource('cashBoxes'),
   cashCategories: resource('cashCategories'),
   cashSettings: resource('cashSettings'),
