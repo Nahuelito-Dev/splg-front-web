@@ -11485,6 +11485,46 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/chat/metrics': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Métricas de los mensajes con clientes y choferes
+     * @description De la empresa de quien pide, en el período (por la creación de cada conversación; sin fechas, los últimos 30 días): tiempo de primera respuesta (mediana y p90 en minutos hábiles de su horario de atención y feriados) y cumplimiento de su objetivo, por canal; tiempo de resolución; abiertas, sin asignar y sin respuesta en vivo; el asistente con IA si la empresa lo tiene (resueltas sin persona, derivaciones y motivos, respuestas); respuestas automáticas y rápidas por clave; la encuesta al cerrar y una serie diaria. Sin datos: ceros y `null`.
+     */
+    get: operations['CompanyChatMetricsController_metricasDeLaEmpresa'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/platform/chat/metrics': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Métricas del soporte y del chat por empresa
+     * @description En el período (sin fechas, los últimos 30 días; con `distributorId`, sólo esa empresa): chat con las empresas (esperando y su espera, primera respuesta en minutos hábiles del horario del soporte, % que terminó en ticket), tickets (abiertos, vencidos, primera respuesta contra su vencimiento, resolución, satisfacción), el asistente del soporte y, por empresa, conversaciones y mensajes (sólo conteos) y su asistente si lo usó. Nunca el texto de un mensaje.
+     */
+    get: operations['PlatformChatMetricsController_metricasDeLaPlataforma'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v2/platform': {
     parameters: {
       query?: never;
@@ -25992,6 +26032,268 @@ export interface components {
       answeredAt: string | null;
       /** Format: uuid */
       conversationId: string;
+    };
+    TargetComplianceDto: {
+      /** @description Respondidas dentro del objetivo */
+      met: number;
+      /** @description Respondidas fuera del objetivo, más las que siguen sin respuesta y ya lo pasaron */
+      missed: number;
+      /**
+       * @description `met / (met + missed)`, de 0 a 1; `null` si no hay ninguna
+       * @example 0.85
+       */
+      rate: number | null;
+    };
+    FirstResponseStatsDto: {
+      /** @description Con primera respuesta */
+      responded: number;
+      /** @description Abiertas que todavía esperan la primera respuesta de una persona (las creadas en el período; coherente con `live.unanswered`, que cuenta todas las abiertas) */
+      unanswered: number;
+      /** @description Cerradas sin respuesta de una persona (las resolvió el asistente, se cerraron por inactividad o el ticket se resolvió sin escribir): no entran en el TPR ni en el objetivo. Tampoco entra una cuya respuesta es anterior al inicio de la espera (ticket abierto desde un chat ya respondido). */
+      closedWithoutHumanReply: number;
+      /**
+       * @description Mediana del tiempo de primera respuesta, en minutos hábiles (dentro del horario de atención); `null` sin respuestas
+       * @example 12
+       */
+      medianMinutes: number | null;
+      /**
+       * @description Percentil 90, en minutos hábiles; `null` sin respuestas
+       * @example 45
+       */
+      p90Minutes: number | null;
+      /** @description Contra el objetivo (`firstResponseTargetMinutes` de la empresa; el vencimiento de cada ticket). `null` donde no hay objetivo (chat con la plataforma). */
+      target: components['schemas']['TargetComplianceDto'] | null;
+    };
+    ChatResolutionDto: {
+      /** @description Cerradas (creadas en el período). No cuentan las cerradas porque el pedido pasó a otro chofer. */
+      closed: number;
+      /** @description Mediana de cierre − creación, en minutos de reloj corrido (no hábiles: cuenta noches, fines de semana y feriados); `null` sin cerradas */
+      medianMinutes: number | null;
+    };
+    ChatLiveDto: {
+      /** @description Abiertas ahora */
+      open: number;
+      /** @description Abiertas sin nadie asignado */
+      unassigned: number;
+      /** @description Abiertas en las que el cliente o el chofer escribió y nadie del equipo respondió todavía */
+      unanswered: number;
+      /** @description Abiertas que el asistente pasó a una persona y nadie tomó */
+      awaitingHuman: number;
+    };
+    ChatChannelMetricsDto: {
+      /** @enum {string} */
+      channel: 'staff_customer' | 'staff_driver';
+      /** @description Creadas en el período */
+      conversations: number;
+      firstResponse: components['schemas']['FirstResponseStatsDto'];
+      resolution: components['schemas']['ChatResolutionDto'];
+      /** @description En vivo (no depende del período) */
+      live: components['schemas']['ChatLiveDto'];
+    };
+    HandoffReasonDto: {
+      /** @example requested */
+      reason: string;
+      /** @example El asistente no pudo resolverlo o la persona pidió hablar con alguien */
+      label: string;
+      count: number;
+    };
+    CompanyAssistantMetricsDto: {
+      /** @description Respuestas que publicó el asistente con IA */
+      aiReplies: number;
+      /** @description Veces que pasó la conversación a una persona */
+      handoffs: number;
+      /** @description Derivaciones por motivo, la más frecuente primero */
+      handoffReasons: components['schemas']['HandoffReasonDto'][];
+      /** @description Conversaciones en las que respondió o derivó */
+      conversationsAttended: number;
+      /** @description Cerradas (creadas en el período) en las que el asistente respondió al menos una vez */
+      closedWithAssistant: number;
+      /** @description De ésas, las que no derivó y en las que nadie del equipo escribió */
+      resolvedWithoutHuman: number;
+      /**
+       * @description `resolvedWithoutHuman / closedWithAssistant`; `null` si no hay
+       * @example 0.6
+       */
+      resolvedWithoutHumanRate: number | null;
+      /** @description Si la empresa tiene prendido el asistente con IA ahora */
+      enabled: boolean;
+    };
+    KeyCountDto: {
+      /** @example fuera_de_horario */
+      key: string;
+      count: number;
+    };
+    KeyCountSummaryDto: {
+      total: number;
+      /** @description La más usada primero */
+      byKey: components['schemas']['KeyCountDto'][];
+    };
+    ScoreCountDto: {
+      score: number;
+      count: number;
+    };
+    ChatSatisfactionDto: {
+      /** @description Encuestas pedidas al cerrar, sin las anuladas */
+      requested: number;
+      answered: number;
+      /** @description Vencidas sin responder */
+      expired: number;
+      /** @description Tasa de respuesta: `answered / requested`; `null` sin pedidas */
+      responseRate: number | null;
+      /** @description Promedio de 1 a 5 */
+      average: number | null;
+      /** @description Proporción de 4 y 5 sobre las respondidas */
+      csat: number | null;
+      /** @description Distribución: siempre los cinco puntajes */
+      byScore: components['schemas']['ScoreCountDto'][];
+      /** @description Atendidas sólo por el asistente */
+      assistant: components['schemas']['CsatGroupDto'];
+      /** @description Atendidas por el equipo */
+      team: components['schemas']['CsatGroupDto'];
+    };
+    ChatDailyPointDto: {
+      /** @example 2026-11-16 */
+      date: string;
+      newConversations: number;
+      /** @description Mediana del TPR (minutos hábiles) de las creadas ese día que ya tienen respuesta */
+      firstResponseMedianMinutes: number | null;
+    };
+    ChatMetricsResponseDto: {
+      /** @example 2026-10-18 */
+      from: string;
+      /** @example 2026-11-16 */
+      to: string;
+      /**
+       * @description El canal pedido; `null`: los dos
+       * @enum {string|null}
+       */
+      channel: 'staff_customer' | 'staff_driver' | null;
+      /**
+       * @description El objetivo de primera respuesta de la empresa, en minutos
+       * @example 30
+       */
+      targetMinutes: number;
+      /** @description Creadas en el período */
+      conversations: number;
+      firstResponse: components['schemas']['FirstResponseStatsDto'];
+      resolution: components['schemas']['ChatResolutionDto'];
+      /** @description En vivo (no depende del período) */
+      live: components['schemas']['ChatLiveDto'];
+      byChannel: components['schemas']['ChatChannelMetricsDto'][];
+      /** @description Sólo con el asistente con IA disponible para la empresa y con el canal de clientes en la consulta */
+      assistant: components['schemas']['CompanyAssistantMetricsDto'] | null;
+      /** @description Respuestas automáticas (fuera de horario, aviso de recibido, asistente) por clave */
+      automaticReplies: components['schemas']['KeyCountSummaryDto'];
+      /** @description Respuestas rápidas del equipo por `template_key` */
+      quickReplies: components['schemas']['KeyCountSummaryDto'];
+      /** @description Encuesta al cerrar (sólo con clientes): `null` si la consulta es sólo de choferes */
+      satisfaction: components['schemas']['ChatSatisfactionDto'] | null;
+      /** @description Un punto por día del período, también los vacíos */
+      daily: components['schemas']['ChatDailyPointDto'][];
+    };
+    SupportChatMetricsDto: {
+      /** @description Chats creados en el período */
+      chats: number;
+      /** @description Abiertos con un mensaje de la empresa sin respuesta de la plataforma (en vivo) */
+      waiting: number;
+      /** @description La espera más larga de ésos, en minutos hábiles del soporte */
+      longestWaitMinutes: number | null;
+      medianWaitMinutes: number | null;
+      /** @description Desde el primer mensaje de la empresa hasta la primera respuesta de la plataforma; `target` es `null` */
+      firstResponse: components['schemas']['FirstResponseStatsDto'];
+      /** @description Chats con al menos un ticket abierto desde ellos */
+      endedInTicket: number;
+      endedInTicketRate: number | null;
+    };
+    TicketFirstResponseStatsDto: {
+      /** @description Con primera respuesta */
+      responded: number;
+      /** @description Abiertas que todavía esperan la primera respuesta de una persona (las creadas en el período; coherente con `live.unanswered`, que cuenta todas las abiertas) */
+      unanswered: number;
+      /** @description Cerradas sin respuesta de una persona (las resolvió el asistente, se cerraron por inactividad o el ticket se resolvió sin escribir): no entran en el TPR ni en el objetivo. Tampoco entra una cuya respuesta es anterior al inicio de la espera (ticket abierto desde un chat ya respondido). */
+      closedWithoutHumanReply: number;
+      /**
+       * @description Mediana del tiempo de primera respuesta, en minutos hábiles (dentro del horario de atención); `null` sin respuestas
+       * @example 12
+       */
+      medianMinutes: number | null;
+      /**
+       * @description Percentil 90, en minutos hábiles; `null` sin respuestas
+       * @example 45
+       */
+      p90Minutes: number | null;
+      /** @description Contra el vencimiento de primera respuesta de cada ticket */
+      target: components['schemas']['TargetComplianceDto'] | null;
+    };
+    TicketResolutionDto: {
+      resolved: number;
+      /** @description Mediana de resolución − apertura, en minutos de reloj corrido (no hábiles); `null` sin resueltos */
+      medianMinutes: number | null;
+    };
+    TicketSatisfactionDto: {
+      /** @description Tickets calificados */
+      rated: number;
+      /** @description Calificados sobre cerrados (se califica al confirmar, y confirmar lo cierra) */
+      responseRate: number | null;
+      average: number | null;
+      byScore: components['schemas']['ScoreCountDto'][];
+    };
+    SupportTicketMetricsDto: {
+      /** @description Creados en el período */
+      created: number;
+      /** @description Sin resolver ni cerrar (en vivo) */
+      open: number;
+      /** @description Sin primera respuesta y con el plazo vencido, sin cerrar (en vivo) */
+      overdue: number;
+      /** @description De los abiertos por la empresa, en minutos hábiles del soporte */
+      firstResponse: components['schemas']['TicketFirstResponseStatsDto'];
+      resolution: components['schemas']['TicketResolutionDto'];
+      satisfaction: components['schemas']['TicketSatisfactionDto'];
+    };
+    AssistantMetricsDto: {
+      /** @description Respuestas que publicó el asistente con IA */
+      aiReplies: number;
+      /** @description Veces que pasó la conversación a una persona */
+      handoffs: number;
+      /** @description Derivaciones por motivo, la más frecuente primero */
+      handoffReasons: components['schemas']['HandoffReasonDto'][];
+      /** @description Conversaciones en las que respondió o derivó */
+      conversationsAttended: number;
+      /** @description Cerradas (creadas en el período) en las que el asistente respondió al menos una vez */
+      closedWithAssistant: number;
+      /** @description De ésas, las que no derivó y en las que nadie del equipo escribió */
+      resolvedWithoutHuman: number;
+      /**
+       * @description `resolvedWithoutHuman / closedWithAssistant`; `null` si no hay
+       * @example 0.6
+       */
+      resolvedWithoutHumanRate: number | null;
+    };
+    CompanyChatUsageDto: {
+      /** Format: uuid */
+      distributorId: string;
+      /** @example Gas del Sur */
+      name: string;
+      /** @description Conversaciones con clientes y choferes creadas en el período */
+      conversations: number;
+      /** @description Mensajes visibles de personas en esas conversaciones (sólo el conteo) */
+      messages: number;
+      /** @description Sólo si la empresa usó el asistente con IA en el período */
+      assistant: components['schemas']['AssistantMetricsDto'] | null;
+    };
+    PlatformChatMetricsResponseDto: {
+      /** @example 2026-10-18 */
+      from: string;
+      /** @example 2026-11-16 */
+      to: string;
+      /** Format: uuid */
+      distributorId: string | null;
+      chat: components['schemas']['SupportChatMetricsDto'];
+      tickets: components['schemas']['SupportTicketMetricsDto'];
+      /** @description El asistente del soporte de la plataforma */
+      assistant: components['schemas']['AssistantMetricsDto'];
+      /** @description Las empresas con conversaciones o mensajes en el período, la de más mensajes primero */
+      companies: components['schemas']['CompanyChatUsageDto'][];
     };
     PlatformResponseDto: {
       /**
@@ -66362,6 +66664,107 @@ export interface operations {
       };
       /** @description El antivirus todavía lo está revisando (`ATTACHMENT_SCAN_PENDING`), o no lo pudo revisar todavía (`ATTACHMENT_SCAN_FAILED`: se reintenta solo; nadie lo baja mientras tanto) */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyChatMetricsController_metricasDeLaEmpresa: {
+    parameters: {
+      query?: {
+        /** @description Desde (día en hora argentina, AAAA-MM-DD, inclusive). Sin `from`: los 30 días que terminan en `to`. */
+        from?: string;
+        /** @description Hasta (día en hora argentina, AAAA-MM-DD, inclusive). Sin `to`: hoy. El período abarca hasta 366 días. */
+        to?: string;
+        /** @description Sólo un canal: clientes (C3) o choferes (C2). Sin él, los dos. */
+        channel?: 'staff_customer' | 'staff_driver';
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ChatMetricsResponseDto'];
+        };
+      };
+      /** @description Fecha que no es AAAA-MM-DD o no existe, «desde» posterior a «hasta», período de más de 366 días o parámetro desconocido, o canal que no es `staff_customer` ni `staff_driver` */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para supervisar los mensajes (`mensajes.supervisar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformChatMetricsController_metricasDeLaPlataforma: {
+    parameters: {
+      query?: {
+        /** @description Desde (día en hora argentina, AAAA-MM-DD, inclusive). Sin `from`: los 30 días que terminan en `to`. */
+        from?: string;
+        /** @description Hasta (día en hora argentina, AAAA-MM-DD, inclusive). Sin `to`: hoy. El período abarca hasta 366 días. */
+        to?: string;
+        /** @description Sólo una empresa (404 si no existe). Sin él, todas. */
+        distributorId?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PlatformChatMetricsResponseDto'];
+        };
+      };
+      /** @description Fecha que no es AAAA-MM-DD o no existe, «desde» posterior a «hasta», período de más de 366 días o parámetro desconocido, o `distributorId` que no es uuid */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Rol que no es administrador general */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe la empresa pedida */
+      404: {
         headers: {
           [name: string]: unknown;
         };

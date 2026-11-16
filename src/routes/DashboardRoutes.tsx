@@ -158,10 +158,12 @@ const TruckLoadDetails = lazyPage(() => import('../pages/TruckLoads/TruckLoadDet
 const SupportHelp = lazyPage(() => import('../pages/Support/SupportHelp'), 'SupportHelp');
 const Messages = lazyPage(() => import('../pages/Messages/Messages'), 'Messages');
 const MessagesSettings = lazyPage(() => import('../pages/Messages/MessagesSettings'), 'MessagesSettings');
+const MessagesMetrics = lazyPage(() => import('../pages/Messages/MessagesMetrics'), 'MessagesMetrics');
 const CompanyTicketDetail = lazyPage(() => import('../pages/Support/CompanyTicketDetail'), 'CompanyTicketDetail');
 const CompanyChatArchive = lazyPage(() => import('../pages/Support/CompanyChatArchive'), 'CompanyChatArchive');
 const PlatformChats = lazyPage(() => import('../pages/Platform/Support/PlatformChats'), 'PlatformChats');
 const PlatformTickets = lazyPage(() => import('../pages/Platform/Support/PlatformTickets'), 'PlatformTickets');
+const SupportMetrics = lazyPage(() => import('../pages/Platform/Support/SupportMetrics'), 'SupportMetrics');
 const PlatformTicketDetail = lazyPage(
   () => import('../pages/Platform/Support/PlatformTicketDetail'),
   'PlatformTicketDetail',
@@ -212,6 +214,7 @@ export const DashboardRoutes = () => {
             <Route element={<RequireModule module="chat" />}>
               <Route path="messages" element={<Messages />} />
               <Route path="messages/settings" element={<MessagesSettings />} />
+              <Route path="messages/metrics" element={<MessagesMetrics />} />
               <Route path="messages/:id" element={<Messages />} />
             </Route>
           </Route>
@@ -229,6 +232,7 @@ export const DashboardRoutes = () => {
             <Route path="platform/chats/:id" element={<PlatformChats />} />
             <Route path="platform/tickets" element={<PlatformTickets />} />
             <Route path="platform/tickets/:id" element={<PlatformTicketDetail />} />
+            <Route path="platform/support-metrics" element={<SupportMetrics />} />
             <Route path="platform/monitoring" element={<PlatformMonitoring />} />
             <Route path="platform/scheduled-tasks" element={<PlatformScheduledTasks />} />
             <Route path="platform/service-usage" element={<ServiceUsage />} />

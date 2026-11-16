@@ -32,6 +32,7 @@ describe('menú por alcance', () => {
         '/platform/monitoring',
         '/platform/scheduled-tasks',
         '/platform/service-usage',
+        '/platform/support-metrics',
         '/platform/support-sessions',
         '/platform/tickets',
         '/system',
@@ -52,11 +53,12 @@ describe('menú por alcance', () => {
   });
 
   it('el menú de plataforma va primero y en el orden del diseño', () => {
-    expect(visiblePaths(PLATFORM).slice(0, 11)).toEqual([
+    expect(visiblePaths(PLATFORM).slice(0, 12)).toEqual([
       '/home',
       '/distributors',
       '/platform/chats',
       '/platform/tickets',
+      '/platform/support-metrics',
       '/platform/modules',
       '/platform/support-sessions',
       '/platform/monitoring',
@@ -140,6 +142,20 @@ describe('«Mensajes» (bandeja de la empresa, CH4)', () => {
   it('la configuración pide `mensajes.configurar`', () => {
     expect(visiblePaths({ mode: 'company', permissions: ['mensajes.configurar'] })).toContain('/messages/settings');
     expect(visiblePaths({ mode: 'company', permissions: ['mensajes.clientes'] })).not.toContain('/messages/settings');
+  });
+
+  it('las métricas piden `mensajes.supervisar` y el módulo `chat`; el administrador general no las ve', () => {
+    expect(visiblePaths({ mode: 'company', permissions: ['mensajes.supervisar'] })).toContain('/messages/metrics');
+    expect(visiblePaths({ mode: 'company', permissions: ['mensajes.clientes'] })).not.toContain('/messages/metrics');
+    expect(visiblePaths({ ...ADMIN, modules: { chat: false } })).not.toContain('/messages/metrics');
+    expect(visiblePaths(SUPPORT)).not.toContain('/messages/metrics');
+    expect(visiblePaths(PLATFORM)).not.toContain('/messages/metrics');
+  });
+
+  it('el tablero de soporte es sólo de la plataforma', () => {
+    expect(visiblePaths(PLATFORM)).toContain('/platform/support-metrics');
+    for (const viewer of [SUPPORT, ADMIN, OWNED])
+      expect(visiblePaths(viewer)).not.toContain('/platform/support-metrics');
   });
 
   it('con el módulo `chat` apagado no se ve; el administrador general no la ve ni en modo soporte', () => {
