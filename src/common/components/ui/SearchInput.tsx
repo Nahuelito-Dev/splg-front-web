@@ -7,7 +7,8 @@ interface Props extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
   label: string;
 }
 
-export const SearchInput = forwardRef<HTMLInputElement, Props>(({ label, className, ...rest }, ref) => (
+/** Buscador del kit: 40 px de alto y siempre con texto de ejemplo (si no se pasa `placeholder`, la etiqueta). */
+export const SearchInput = forwardRef<HTMLInputElement, Props>(({ label, className, placeholder, ...rest }, ref) => (
   <label className={cx('relative block w-full sm:w-72', className)}>
     <span className="sr-only">{label}</span>
     <SearchIcon
@@ -17,7 +18,8 @@ export const SearchInput = forwardRef<HTMLInputElement, Props>(({ label, classNa
     <input
       ref={ref}
       type="search"
-      className="h-9 w-full rounded-[10px] border border-outline bg-surface pl-9 pr-3 text-[13px] text-ink shadow-control placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+      placeholder={placeholder ?? label}
+      className="h-10 w-full rounded-[10px] border border-outline bg-surface pl-9 pr-3 text-[13px] text-ink shadow-control placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:bg-surface-hover"
       {...rest}
     />
   </label>

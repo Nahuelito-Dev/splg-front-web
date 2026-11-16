@@ -1,6 +1,15 @@
 import { Cylinder, Gavel, SearchX } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Badge, Card, CardHeader, EmptyState, ErrorState, KpiCard, ListSkeleton } from '../../../common/components/ui';
+import {
+  Badge,
+  Card,
+  CardHeader,
+  EmptyState,
+  ErrorState,
+  KpiCard,
+  KpiGrid,
+  ListSkeleton,
+} from '../../../common/components/ui';
 import type { RecoveryCase } from '../../../services/api/types';
 import { useRecoveryReport } from '../../../services/queries/recovery';
 import { formatCurrencyExact } from '../../../utils/format';
@@ -25,7 +34,7 @@ const CaseList = ({ cases, empty }: { cases: RecoveryCase[]; empty: string }) =>
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <span className="font-mono text-sm text-ink">{formatCurrencyExact(c.depositAmount)}</span>
+            <span className="tabular-nums text-sm text-ink">{formatCurrencyExact(c.depositAmount)}</span>
             <Badge label={RECOVERY_CASE_STATUS[c.status]} />
           </div>
           <span className="w-full text-xs text-muted">{nextStepText(c)}</span>
@@ -46,7 +55,7 @@ export const RecoveryReportTab = () => {
   const totals = data?.totals;
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-3">
+      <KpiGrid className="sm:grid-cols-3">
         <KpiCard
           title="Envases perdidos"
           icon={SearchX}
@@ -68,7 +77,7 @@ export const RecoveryReportTab = () => {
           value={totals ? String(totals.manualReviewCount) : '–'}
           hint="Con cliente, pero sin dato de quién ni desde cuándo"
         />
-      </div>
+      </KpiGrid>
       <Card>
         <CardHeader title="Casos escalados sin resolver" className="border-b border-outline p-4" />
         {isPending ? (

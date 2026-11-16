@@ -1,5 +1,5 @@
 import { useState, type DragEvent } from 'react';
-import { Badge, cx } from '../../../common/components/ui';
+import { Badge, cx, EmptyState } from '../../../common/components/ui';
 import type { FleetTask } from '../../../services/api/types';
 import { FLEET_TASK_STATUS, labelOf } from '../../../utils/statusLabels';
 import { dropAction, type FleetTaskStatus } from '../fleetTaskKanban';
@@ -48,13 +48,13 @@ export const FleetKanbanColumn = ({ status, tasks, dragged, onDropTask, ...card 
       )}
     >
       <header className="mb-2.5 flex items-center justify-between px-1">
-        <Badge label={labelOf(FLEET_TASK_STATUS, status)} variant="critical" />
-        <span className="font-mono text-xs text-muted">{tasks.length}</span>
+        <Badge label={labelOf(FLEET_TASK_STATUS, status)} />
+        <span className="tabular-nums text-xs text-muted">{tasks.length}</span>
       </header>
       {tasks.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-outline px-3 py-6 text-center text-[12px] text-muted">
-          Sin tareas
-        </p>
+        <div className="rounded-lg border border-dashed border-outline">
+          <EmptyState compact title="Sin tareas" />
+        </div>
       ) : (
         <ul className="space-y-2">
           {tasks.map((task) => (

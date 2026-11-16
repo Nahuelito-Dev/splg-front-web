@@ -31,7 +31,7 @@ export const ProcessCard = ({ item, distributorName }: Props) => {
             {distributorName ? ` · ${distributorName}` : ''}
           </p>
         </div>
-        <Badge label={labelOf(PROCESS_HEALTH, item.health)} variant="critical" />
+        <Badge label={labelOf(PROCESS_HEALTH, item.health)} />
       </div>
 
       {run ? (

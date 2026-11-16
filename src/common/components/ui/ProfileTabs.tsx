@@ -77,7 +77,7 @@ export const ProfileTabs = ({ tabs, value, onChange, idBase = 'profile' }: Props
               <span
                 className={cx(
                   'rounded-full px-1.5 py-0.5 text-[11px] font-semibold',
-                  active ? 'bg-primary-soft text-primary-strong' : 'bg-surface-hover text-ink-2',
+                  active ? 'bg-primary-soft text-on-primary-soft' : 'bg-surface-hover text-ink-2',
                 )}
               >
                 {tab.badge}

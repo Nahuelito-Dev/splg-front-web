@@ -204,7 +204,7 @@ export const ClaimDetailDrawer = ({ open, onClose, claim: listed, startAction = 
 
         <DetailList
           items={[
-            { label: 'Estado', value: <Badge label={labelOf(CLAIM_STATUS, claim.status)} variant="critical" /> },
+            { label: 'Estado', value: <Badge label={labelOf(CLAIM_STATUS, claim.status)} /> },
             { label: 'Alta', value: formatDateTime(claim.createdAt) },
             { label: 'Nota de resolución', value: claim.resolutionNote || '—', wide: true },
           ]}

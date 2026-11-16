@@ -31,7 +31,7 @@ const Line = ({ label, amount, strong, note }: LineProps) => (
   <div>
     <div className={`flex justify-between gap-4 ${strong ? 'text-base font-semibold text-ink' : 'text-sm text-muted'}`}>
       <dt className="min-w-0 break-words">{label}</dt>
-      <dd className="shrink-0 font-mono tabular-nums">{formatCurrency(amount)}</dd>
+      <dd className="shrink-0 tabular-nums">{formatCurrency(amount)}</dd>
     </div>
     {note && <p className="text-xs text-muted">{note}</p>}
   </div>

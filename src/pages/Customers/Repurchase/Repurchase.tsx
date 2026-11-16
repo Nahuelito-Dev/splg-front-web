@@ -6,6 +6,7 @@ import {
   EmptyState,
   ErrorState,
   KpiCard,
+  KpiGrid,
   PageContainer,
   PageHeader,
   Tabs,
@@ -119,10 +120,7 @@ export const Repurchase = () => {
               onRetry={() => void stats.refetch()}
             />
           ) : (
-            <section
-              aria-label="Resultados de los últimos 90 días"
-              className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"
-            >
+            <KpiGrid label="Resultados de los últimos 90 días" className="sm:grid-cols-2 lg:grid-cols-4">
               <KpiCard
                 title="Invitaciones"
                 icon={Repeat}
@@ -151,7 +149,7 @@ export const Repurchase = () => {
                 loading={stats.isPending}
                 hint="Pedidos de las aceptadas"
               />
-            </section>
+            </KpiGrid>
           )}
           <Card>
             <Tabs items={TABS} value={active} onChange={setTab} label="Secciones de la recompra" idPrefix={TABS_ID} />

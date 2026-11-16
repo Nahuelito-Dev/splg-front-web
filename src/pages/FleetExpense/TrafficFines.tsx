@@ -178,6 +178,7 @@ export const TrafficFines = () => {
           idPrefix="traffic-fines"
         >
           <TableToolbar
+            resultCount={data?.total}
             filters={
               <>
                 <Select

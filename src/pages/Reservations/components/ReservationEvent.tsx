@@ -27,7 +27,7 @@ export const ReservationEvent = ({ reservation, onOpen, variant = 'card' }: Prop
     >
       <span className="block truncate font-semibold">{name}</span>
       {variant !== 'chip' && (
-        <span className="block truncate font-mono text-[11.5px] opacity-90">
+        <span className="block truncate tabular-nums text-[11.5px] opacity-90">
           {formatCurrency(reservation.total)}
           {variant === 'row' && ` · ${state}`}
         </span>

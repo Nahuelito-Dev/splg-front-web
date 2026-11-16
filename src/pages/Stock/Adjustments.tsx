@@ -92,7 +92,7 @@ export const Adjustments = () => {
       flex: 1.3,
       minWidth: 200,
       sortable: false,
-      renderCell: ({ row }) => <span className="truncate font-mono text-xs">{summaryOf(row)}</span>,
+      renderCell: ({ row }) => <span className="truncate tabular-nums text-xs">{summaryOf(row)}</span>,
     },
     {
       field: 'actions',
@@ -174,7 +174,7 @@ export const Adjustments = () => {
                   <Badge label={labelOf(ADJUSTMENT_REASON, row.reason)} />
                   <span className="text-muted">{row.location.name}</span>
                 </div>
-                <p className="font-mono text-xs text-ink">{summaryOf(row)}</p>
+                <p className="tabular-nums text-xs text-ink">{summaryOf(row)}</p>
                 <Button size="sm" variant="secondary" onClick={() => goTo(row)}>
                   Ver detalle
                 </Button>

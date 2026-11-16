@@ -188,7 +188,7 @@ export const GasCylinders = () => {
                 options={typeOptions}
                 onChange={(e) => selectType(e.target.value)}
               />
-              <div className="flex items-center gap-2 pb-2.5">
+              <div className="flex h-10 items-center gap-2">
                 <Switch
                   checked={onlyAvailable}
                   disabled={typeSelected || onlyInactive}

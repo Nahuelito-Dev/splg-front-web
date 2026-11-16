@@ -87,7 +87,7 @@ export const SalesAreaCard = () => {
       }
     >
       <div className="mb-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <strong className="font-mono text-[22px] font-semibold tracking-[-0.03em] text-ink">
+        <strong className="tabular-nums text-[22px] font-semibold tracking-[-0.03em] text-ink">
           {summary.data ? formatCurrency(total) : '—'}
         </strong>
         {summary.data && <span className="text-xs text-muted">{formatNumber(orders)} pedidos</span>}

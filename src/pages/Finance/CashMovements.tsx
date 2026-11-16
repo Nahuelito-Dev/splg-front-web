@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { GridColDef } from '@mui/x-data-grid';
 import { ArrowLeftRight, BookOpen, Paperclip, Plus, ShoppingBag, Undo2 } from 'lucide-react';
 import {
   Badge,
@@ -18,6 +17,7 @@ import {
   PageContainer,
   TableToolbar,
   type FilterChip,
+  type TableColumn,
 } from '../../common/components/ui';
 import { AttachmentsDrawer } from '../../common/components/AttachmentsDrawer';
 import { useClampPage, usePermissions, useUrlPagedParams } from '../../hooks';
@@ -127,9 +127,10 @@ export const CashMovements = () => {
       <Badge label={labelOf(CASH_REFERENCE, row.referenceType)} />
     );
 
-  const columns: GridColDef<CashMovement>[] = [
+  const columns: TableColumn<CashMovement>[] = [
     {
       field: 'occurredAt',
+      kind: 'date',
       headerName: 'Fecha',
       width: 170,
       sortable: false,
@@ -157,7 +158,7 @@ export const CashMovements = () => {
       sortable: false,
       align: 'right',
       headerAlign: 'right',
-      renderCell: ({ row }) => <span className="font-mono">{amount(row)}</span>,
+      renderCell: ({ row }) => <span className="tabular-nums">{amount(row)}</span>,
     },
     {
       field: 'actions',
@@ -284,7 +285,7 @@ export const CashMovements = () => {
                   icon={BookOpen}
                 />
                 <div className="flex flex-wrap items-center gap-2">
-                  <strong className="font-mono">{amount(row)}</strong>
+                  <strong className="tabular-nums">{amount(row)}</strong>
                   {state(row)}
                   <span className="text-xs text-muted">{formatDateTime(row.occurredAt)}</span>
                 </div>

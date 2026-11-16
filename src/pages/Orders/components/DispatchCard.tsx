@@ -46,7 +46,7 @@ export const DispatchCard = ({ order, now, onAssign, onPreview, onOpen }: Props)
             </span>
           </span>
         </button>
-        <span className="shrink-0 font-mono text-[13px] font-semibold text-ink">
+        <span className="shrink-0 tabular-nums text-[13px] font-semibold text-ink">
           {formatCurrency(order.total_amount)}
         </span>
       </div>

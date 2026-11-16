@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import type { GridColDef } from '@mui/x-data-grid';
 import { Ban, Check, HandCoins, Scale, Undo2, Wallet } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { PdfButton, useCrumbLeaf } from '../../common/components';
@@ -12,11 +11,13 @@ import {
   EmptyState,
   ErrorState,
   KpiCard,
+  KpiGrid,
   PageHeader,
   ReasonModal,
   ResponsiveTable,
   PageContainer,
   CardHeader,
+  type TableColumn,
 } from '../../common/components/ui';
 import { useBackToList, usePermissions } from '../../hooks';
 import { toApiError } from '../../services/api/errors';
@@ -32,9 +33,10 @@ import { confirm, notify } from '../../utils/notifications';
 import { COMMISSION_ENTRY_TYPE, LIQUIDATION_STATUS, labelOf } from '../../utils/statusLabels';
 import { PayLiquidationModal } from './components/PayLiquidationModal';
 
-const COLUMNS: GridColDef<CommissionEntry>[] = [
+const COLUMNS: TableColumn<CommissionEntry>[] = [
   {
     field: 'occurredAt',
+    kind: 'date',
     headerName: 'Fecha',
     width: 170,
     sortable: false,
@@ -68,7 +70,7 @@ const COLUMNS: GridColDef<CommissionEntry>[] = [
     align: 'right',
     headerAlign: 'right',
     renderCell: ({ row }) => (
-      <span className={`font-mono ${row.amount < 0 ? 'text-danger' : ''}`}>{formatCurrency(row.amount)}</span>
+      <span className={`tabular-nums ${row.amount < 0 ? 'text-danger' : ''}`}>{formatCurrency(row.amount)}</span>
     ),
   },
 ];
@@ -193,11 +195,11 @@ export const DriverLiquidationDetails = () => {
         <ErrorState error={error} resource="La liquidación" onRetry={() => void refetch()} />
       ) : (
         <div className="grid gap-6">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <KpiGrid className="sm:grid-cols-3">
             <KpiCard title="Bruto" icon={HandCoins} value={formatCurrency(liquidation.gross)} />
             <KpiCard title="Deducciones" icon={Scale} value={formatCurrency(liquidation.deductions)} />
             <KpiCard title="Neto a pagar" icon={Wallet} value={formatCurrency(liquidation.net)} />
-          </div>
+          </KpiGrid>
           <Card className="p-5">
             <DetailList
               items={[
@@ -219,7 +221,7 @@ export const DriverLiquidationDetails = () => {
               renderCard={(row) => (
                 <div className="flex items-center justify-between gap-3">
                   <Badge label={labelOf(COMMISSION_ENTRY_TYPE, row.type)} />
-                  <span className="font-mono">{formatCurrency(row.amount)}</span>
+                  <span className="tabular-nums">{formatCurrency(row.amount)}</span>
                 </div>
               )}
             />

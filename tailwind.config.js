@@ -73,7 +73,9 @@ const LIGHT_VARS = {
   'outline-soft': tinta['100'],
   'primary-soft': llama['50'],
   'primary-strong': llama['700'],
+  'on-primary-soft': llama['700'],
   'accent-soft': gas['50'],
+  'on-accent-soft': tinta['900'],
   'on-accent': tinta['900'],
   success: status.success,
   'success-soft': statusSoft.success,
@@ -100,7 +102,9 @@ const DARK_VARS = {
   'outline-soft': dark.outlineSoft,
   'primary-soft': dark.primarySoft,
   'primary-strong': dark.primaryStrong,
+  'on-primary-soft': dark.primaryStrong,
   'accent-soft': dark.accentSoft,
+  'on-accent-soft': dark.ink,
   'on-accent': tinta['900'],
   success: dark.status.success,
   'success-soft': dark.statusSoft.success,
@@ -148,6 +152,9 @@ export default {
         'on-primary': themed('on-primary'),
         accent: { DEFAULT: themed('accent'), soft: themed('accent-soft') },
         'on-accent': themed('on-accent'),
+        // Texto de los tonos suaves de la marca: con el tema de una empresa, el que llegue a 4,5:1 (companyTheme.ts).
+        'on-primary-soft': themed('on-primary-soft'),
+        'on-accent-soft': themed('on-accent-soft'),
         ink: themed('ink'),
         'ink-2': themed('ink-2'),
         muted: themed('muted'),
@@ -180,8 +187,8 @@ export default {
       boxShadow: {
         card: '0 1px 2px rgba(16, 24, 40, 0.04)',
         control: '0 1px 2px rgba(16, 24, 40, 0.05)',
-        primary:
-          'inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 1px 2px rgba(16, 24, 40, 0.12), 0 6px 14px -6px rgb(var(--c-primary) / 0.55)',
+        /** El botón principal: un brillo interno de 1 px y una sombra de 1 px, sin halo de color alrededor. */
+        primary: 'inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 1px 2px rgba(16, 24, 40, 0.12)',
         mark: '0 6px 16px -6px rgb(var(--c-primary) / 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.35)',
       },
       borderRadius: {

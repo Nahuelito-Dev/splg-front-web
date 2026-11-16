@@ -141,7 +141,7 @@ export const DistributorDetails = () => {
         badges={
           company && (
             <>
-              <Badge label={labelOf(DISTRIBUTOR_STATUS, company.status)} variant="critical" />
+              <Badge label={labelOf(DISTRIBUTOR_STATUS, company.status)} />
               {company.ownedByPlatform && <OwnedBadge />}
             </>
           )

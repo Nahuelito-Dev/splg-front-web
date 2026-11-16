@@ -73,7 +73,7 @@ export const DeliveriesTable = ({
           row.calification === null ? (
             <span className="text-muted">Sin calificar</span>
           ) : (
-            <span className="inline-flex items-center gap-1 font-mono font-semibold text-ink">
+            <span className="inline-flex items-center gap-1 tabular-nums font-semibold text-ink">
               <Star aria-hidden="true" className="h-3.5 w-3.5 fill-accent text-accent" />
               {row.calification.toFixed(1)}
             </span>

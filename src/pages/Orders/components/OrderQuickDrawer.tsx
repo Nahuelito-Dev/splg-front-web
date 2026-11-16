@@ -99,13 +99,12 @@ export const OrderQuickDrawer = ({ open, onClose, order: listed, onAssign }: Pro
                 'Sin asignar'
               ),
             },
-            { label: 'Total', value: formatCurrency(order.total_amount), mono: true },
+            { label: 'Total', value: formatCurrency(order.total_amount) },
             ...(order.containerChargeAmount > 0
               ? [
                   {
                     label: containerChargeLabel(containersChargedCount(order.order_items)),
                     value: formatCurrency(order.containerChargeAmount),
-                    mono: true,
                   },
                 ]
               : []),
@@ -125,7 +124,7 @@ export const OrderQuickDrawer = ({ open, onClose, order: listed, onAssign }: Pro
                 <span className="min-w-0 truncate text-ink">
                   {item.quantity} × {item.gas_cylinder?.type ?? 'Producto sin datos'}
                 </span>
-                <span className="shrink-0 font-mono text-ink">{formatCurrency(item.subtotal)}</span>
+                <span className="shrink-0 tabular-nums text-ink">{formatCurrency(item.subtotal)}</span>
               </li>
             ))}
           </ul>

@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { useState } from 'react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 afterEach(cleanup);
 import { Tabs, tabPanelProps, type TabItem } from './index';
@@ -58,5 +58,39 @@ describe('Tabs', () => {
       'aria-labelledby',
       screen.getByRole('tab', { name: 'Dos –' }).id,
     );
+  });
+
+  it('si no entran, un degradé avisa de qué lado hay más pestañas', () => {
+    const sizes = { scrollWidth: 500, clientWidth: 200 };
+    const scroll = vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockImplementation(function (
+      this: HTMLElement,
+    ) {
+      return this.getAttribute('role') === 'tablist' ? sizes.scrollWidth : 0;
+    });
+    const client = vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockImplementation(function (
+      this: HTMLElement,
+    ) {
+      return this.getAttribute('role') === 'tablist' ? sizes.clientWidth : 0;
+    });
+    try {
+      render(<Harness />);
+      expect(screen.getByTestId('tabs-fade-end')).toBeInTheDocument();
+      expect(screen.queryByTestId('tabs-fade-start')).not.toBeInTheDocument();
+
+      const list = screen.getByRole('tablist');
+      list.scrollLeft = 300;
+      fireEvent.scroll(list);
+      expect(screen.getByTestId('tabs-fade-start')).toBeInTheDocument();
+      expect(screen.queryByTestId('tabs-fade-end')).not.toBeInTheDocument();
+    } finally {
+      scroll.mockRestore();
+      client.mockRestore();
+    }
+  });
+
+  it('si entran, no hay degradé', () => {
+    render(<Harness />);
+    expect(screen.queryByTestId('tabs-fade-end')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('tabs-fade-start')).not.toBeInTheDocument();
   });
 });

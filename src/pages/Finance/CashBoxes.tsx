@@ -128,6 +128,7 @@ export const CashBoxes = () => {
       <FinanceSummary kind="boxes" />
       <Card>
         <TableToolbar
+          resultCount={data?.total}
           filters={
             <>
               <Select
@@ -175,7 +176,7 @@ export const CashBoxes = () => {
               <>
                 <IdentityCell title={row.name} subtitle={labelOf(CASH_BOX_KIND, row.kind).text} icon={Wallet} />
                 <div className="flex flex-wrap items-center gap-2">
-                  <strong className="font-mono text-lg">{formatCurrency(row.balance)}</strong>
+                  <strong className="tabular-nums text-lg">{formatCurrency(row.balance)}</strong>
                   {status(row)}
                 </div>
                 <div className="flex flex-wrap gap-2">

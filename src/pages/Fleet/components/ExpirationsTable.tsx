@@ -62,7 +62,7 @@ export const ExpirationsTable = ({ rows, identityHeader, loading, emptyTitle, on
           <div className="leading-tight">
             <span className="block text-ink">{row.item.planName}</span>
             <span className="mt-0.5 block">
-              <Badge label={labelOf(FLEET_TASK_CRITICALITY, row.item.criticality)} variant="critical" />
+              <Badge label={labelOf(FLEET_TASK_CRITICALITY, row.item.criticality)} />
             </span>
           </div>
         ),
@@ -84,9 +84,7 @@ export const ExpirationsTable = ({ rows, identityHeader, loading, emptyTitle, on
         field: 'expirationStatus',
         headerName: 'Estado',
         width: 130,
-        renderCell: ({ row }) => (
-          <Badge label={labelOf(FLEET_EXPIRATION_STATUS, row.item.expirationStatus)} variant="critical" />
-        ),
+        renderCell: ({ row }) => <Badge label={labelOf(FLEET_EXPIRATION_STATUS, row.item.expirationStatus)} />,
       },
       {
         field: 'actions',

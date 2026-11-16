@@ -131,7 +131,6 @@ export const CylinderDetails = () => {
                 {
                   label: 'Garantía',
                   value: cylinder.deposit > 0 ? formatCurrency(cylinder.deposit) : 'Sin garantía',
-                  mono: cylinder.deposit > 0,
                 },
                 { label: 'Fabricación', value: formatDay(cylinder.manufactured_at) },
                 { label: 'Última inspección', value: formatArgentinaDay(cylinder.last_inspection_at) },

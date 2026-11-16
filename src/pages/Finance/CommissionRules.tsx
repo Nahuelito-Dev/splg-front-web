@@ -127,7 +127,7 @@ export const CommissionRules = () => {
                 <IdentityCell title={scope(row)} subtitle={periodText(row)} icon={Percent} />
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge label={labelOf(COMMISSION_BASIS, row.basis)} />
-                  <span className="font-mono text-sm">{valueText(row)}</span>
+                  <span className="tabular-nums text-sm">{valueText(row)}</span>
                   {!row.isActive && <Badge label={{ text: 'Inactiva', tone: 'neutral' }} />}
                 </div>
                 {canWrite && (

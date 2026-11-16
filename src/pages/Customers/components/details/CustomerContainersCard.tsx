@@ -70,7 +70,7 @@ export const CustomerContainersCard = ({ customerId }: { customerId: string }) =
               <dl className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm">
                 <div className="flex items-baseline gap-1.5">
                   <dt className="text-xs text-muted">Propios</dt>
-                  <dd className="font-mono font-semibold text-ink">{a.owned}</dd>
+                  <dd className="tabular-nums font-semibold text-ink">{a.owned}</dd>
                 </div>
                 {a.loanedByM5 > 0 && (
                   <div
@@ -78,7 +78,7 @@ export const CustomerContainersCard = ({ customerId }: { customerId: string }) =
                     title="Envases con número de serie que el recupero tiene en poder del cliente. Sólo informativo."
                   >
                     <dt className="text-xs text-muted">Prestados (recupero)</dt>
-                    <dd className="font-mono text-ink-2">{a.loanedByM5}</dd>
+                    <dd className="tabular-nums text-ink-2">{a.loanedByM5}</dd>
                   </div>
                 )}
               </dl>

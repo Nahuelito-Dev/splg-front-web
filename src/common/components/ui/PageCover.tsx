@@ -58,7 +58,7 @@ export const PageCover = ({ avatar, title, subtitle, badges, actions, stats, chi
           {stats.map((stat) => (
             <div key={stat.label} className="min-w-0 rounded-xl bg-surface-hover px-3.5 py-2.5">
               <dt className="text-xs font-medium text-muted">{stat.label}</dt>
-              <dd className="mt-0.5 break-words font-mono text-[15px] font-semibold text-ink sm:text-[17px]">
+              <dd className="mt-0.5 break-words tabular-nums text-[15px] font-semibold text-ink sm:text-[17px]">
                 {stat.value}
               </dd>
               {stat.hint && <p className="text-[11.5px] text-muted [overflow-wrap:anywhere]">{stat.hint}</p>}

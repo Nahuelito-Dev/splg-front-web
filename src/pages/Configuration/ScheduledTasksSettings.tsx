@@ -49,7 +49,9 @@ const Frequencies = ({ config }: { config: ScheduledTasksConfig }) => {
               <p className="text-sm font-medium text-ink">{task.label}</p>
               <p className="text-sm text-muted">{task.help}</p>
             </dt>
-            <dd className="whitespace-nowrap font-mono text-sm text-ink">cada {formatInterval(config[task.field])}</dd>
+            <dd className="whitespace-nowrap tabular-nums text-sm text-ink">
+              cada {formatInterval(config[task.field])}
+            </dd>
           </div>
         ))}
       </dl>

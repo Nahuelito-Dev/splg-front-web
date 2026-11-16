@@ -44,7 +44,7 @@ export const DispatchColumn = ({
     >
       <header className="mb-2.5 flex items-center justify-between gap-2 px-1">
         <Badge label={{ ...labelOf(ORDER_STATUS, status), text: COLUMN_TITLE[status] }} />
-        <span className="font-mono text-xs text-muted" aria-label={`${orders.length} pedidos`}>
+        <span className="tabular-nums text-xs text-muted" aria-label={`${orders.length} pedidos`}>
           {loading ? '–' : orders.length}
         </span>
       </header>

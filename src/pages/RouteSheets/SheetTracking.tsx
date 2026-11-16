@@ -332,7 +332,7 @@ export const SheetTracking = ({ day, sheet, canWrite }: Props) => {
                   >
                     <span
                       className={cx(
-                        'grid h-7 w-7 place-items-center rounded-full font-mono text-xs font-semibold',
+                        'grid h-7 w-7 place-items-center rounded-full tabular-nums text-xs font-semibold',
                         stop.progress === 'delivered'
                           ? 'bg-success text-white'
                           : stop.progress === 'on_the_way'
@@ -360,7 +360,7 @@ export const SheetTracking = ({ day, sheet, canWrite }: Props) => {
                       <StopFacts stop={stop} />
                     </div>
                     <div className="text-right" title="Hora estimada de llegada">
-                      <b className="font-mono text-sm font-semibold text-ink" data-testid="eta">
+                      <b className="tabular-nums text-sm font-semibold text-ink" data-testid="eta">
                         {stop.progress === 'delivered' ? 'Entregada' : hhmm(stop.etaAt)}
                       </b>
                       {open && <Delay stop={stop} />}

@@ -1,4 +1,3 @@
-import type { GridColDef } from '@mui/x-data-grid';
 import {
   Badge,
   Card,
@@ -10,6 +9,7 @@ import {
   PageHeader,
   ResponsiveTable,
   TableToolbar,
+  type TableColumn,
 } from '../../common/components/ui';
 import { useUrlPagedParams } from '../../hooks';
 import type { ActivityItem } from '../../services/api/types';
@@ -48,9 +48,10 @@ const Result = ({ row }: { row: ActivityItem }) => (
   </span>
 );
 
-const columns: GridColDef<ActivityItem>[] = [
+const columns: TableColumn<ActivityItem>[] = [
   {
     field: 'at',
+    kind: 'date',
     headerName: 'Cuándo',
     width: 170,
     sortable: false,
@@ -151,13 +152,11 @@ export const PlatformActivity = () => {
           filters={
             <>
               <DateRangeFilter from={filters.from} to={filters.to} onChange={(range) => setFilters(range)} />
-              <div className="sm:w-60">
-                <CompanySelect
-                  value={filters.company}
-                  onChange={(company) => setFilters({ company })}
-                  emptyLabel="Todas"
-                />
-              </div>
+              <CompanySelect
+                value={filters.company}
+                onChange={(company) => setFilters({ company })}
+                emptyLabel="Todas"
+              />
               <div className="sm:w-72">
                 <AccountPicker
                   label="Quién"

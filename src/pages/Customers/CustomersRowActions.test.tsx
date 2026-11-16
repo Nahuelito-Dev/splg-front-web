@@ -62,11 +62,12 @@ const renderPage = () =>
   );
 
 describe('Clientes: fila de acciones', () => {
-  it('muestra Ver, Editar y Dar de baja con ícono', () => {
+  it('muestra Ver y Editar con ícono y Dar de baja en el ⋯', () => {
     renderPage();
     expect(screen.getByRole('button', { name: 'Ver Ana Pérez' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Editar Ana Pérez' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Dar de baja Ana Pérez' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Más acciones de Ana Pérez' }));
+    expect(screen.getByRole('menuitem', { name: 'Dar de baja' })).toBeInTheDocument();
   });
 
   it('Dar de baja pide confirmación: si se cancela no se da de baja, si se acepta sí', async () => {
@@ -74,7 +75,8 @@ describe('Clientes: fila de acciones', () => {
     mocks.confirm.mockImplementation(() => new Promise<boolean>((resolve) => (answer.resolve = resolve)));
     renderPage();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Dar de baja Ana Pérez' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Más acciones de Ana Pérez' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Dar de baja' }));
     expect(mocks.confirm).toHaveBeenCalledWith(
       expect.objectContaining({
         confirmText: 'Dar de baja',
@@ -86,7 +88,8 @@ describe('Clientes: fila de acciones', () => {
     await act(() => Promise.resolve(answer.resolve(false)));
     expect(mocks.mutate).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Dar de baja Ana Pérez' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Más acciones de Ana Pérez' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Dar de baja' }));
     await act(() => Promise.resolve(answer.resolve(true)));
     expect(mocks.mutate).toHaveBeenCalledWith('1', expect.anything());
   });

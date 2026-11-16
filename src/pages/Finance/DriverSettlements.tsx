@@ -141,6 +141,7 @@ export const DriverSettlements = () => {
           idPrefix="driver-settlements"
         >
           <TableToolbar
+            resultCount={data?.total}
             filters={
               <>
                 <DayFilter
@@ -151,6 +152,7 @@ export const DriverSettlements = () => {
                 />
                 <Button
                   variant="secondary"
+                  className="md:order-2"
                   onClick={() => setFilters(filters.all === '1' ? { all: '' } : { all: '1', date: '' })}
                 >
                   {filters.all === '1' ? 'Ver sólo un día' : 'Ver todos los días'}
@@ -195,7 +197,7 @@ export const DriverSettlements = () => {
                   />
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge label={labelOf(SETTLEMENT_STATUS, row.status)} />
-                    <span className="font-mono text-sm">Esperado {formatCurrency(row.expectedCash)}</span>
+                    <span className="tabular-nums text-sm">Esperado {formatCurrency(row.expectedCash)}</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <Button size="sm" variant="secondary" onClick={() => goTo(row)}>

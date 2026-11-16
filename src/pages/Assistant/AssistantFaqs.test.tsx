@@ -287,11 +287,13 @@ describe('AssistantFaqs', () => {
   it('dar de baja pide confirmación y sólo con el sí llama a la API', async () => {
     draw();
     state.confirm.mockResolvedValueOnce(false);
-    fireEvent.click(screen.getByRole('button', { name: /^Dar de baja la pregunta/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Más acciones de la pregunta/ }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Dar de baja' }));
     await waitFor(() => expect(state.confirm).toHaveBeenCalledTimes(1));
     expect((state.remove as Mut).mutate).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByRole('button', { name: /^Dar de baja la pregunta/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Más acciones de la pregunta/ }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Dar de baja' }));
     await waitFor(() => expect((state.remove as Mut).mutate).toHaveBeenCalledWith('f-1'));
     expect(state.confirm.mock.calls[1]).toEqual([expect.objectContaining({ danger: true })]);
     // Los avisos los da la mutación (sirven para bajas seguidas), no cada `mutate`.
@@ -308,7 +310,7 @@ describe('AssistantFaqs', () => {
     expect(screen.getByText('¿Qué medios de pago aceptan?')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Nueva pregunta' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Editar/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /^Dar de baja/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Más acciones de la pregunta/ })).not.toBeInTheDocument();
   });
 
   it('en modo soporte (sólo lectura) el alta y la copia se ven apagadas con el motivo y no hacen nada', () => {
@@ -323,7 +325,7 @@ describe('AssistantFaqs', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect((state.copy as Mut).mutate).not.toHaveBeenCalled();
     expect(screen.queryByRole('button', { name: /^Editar/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /^Dar de baja/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Más acciones de la pregunta/ })).not.toBeInTheDocument();
   });
 
   it('en modo soporte con la base vacía, la copia del vacío tampoco llama a la API', () => {

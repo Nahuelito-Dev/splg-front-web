@@ -62,7 +62,7 @@ export const CylindersTable = ({
         valueGetter: ({ row }) => formatCurrency(row.price),
         renderCell: ({ row }) => (
           <div className="flex min-w-0 flex-col leading-tight">
-            <span className="font-mono text-ink">{formatCurrency(row.price)}</span>
+            <span className="tabular-nums text-ink">{formatCurrency(row.price)}</span>
             <span className="truncate text-xs text-muted">
               {row.container_price === null || row.container_price === undefined
                 ? 'Envase sin cargar'

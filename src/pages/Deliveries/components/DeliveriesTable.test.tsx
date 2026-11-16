@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -49,15 +49,14 @@ describe('DeliveriesTable: acciones de la fila', () => {
   it('con los manejadores ofrece editar, dar de baja y validar', () => {
     renderTable({ onEdit: vi.fn(), onDelete: vi.fn(), onToggleValidated: vi.fn() });
     expect(screen.getByRole('button', { name: /^Editar/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^Dar de baja/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^Más acciones/ })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /^Más acciones/ }));
+    expect(screen.getByRole('menuitem', { name: 'Dar de baja' })).toBeInTheDocument();
   });
 
   it('sin manejadores (sin distribuidora elegida) sólo se puede ver al chofer', () => {
     renderTable({});
     expect(screen.getByRole('button', { name: /^Ver/ })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Editar/ })).toBeNull();
-    expect(screen.queryByRole('button', { name: /^Dar de baja/ })).toBeNull();
     expect(screen.queryByRole('button', { name: /^Más acciones/ })).toBeNull();
   });
 });

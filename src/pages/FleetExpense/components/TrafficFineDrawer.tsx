@@ -52,13 +52,13 @@ export const TrafficFineDrawer = ({ fineId, onClose }: Props) => {
               { label: 'Vence', value: formatDay(fine.dueDate) },
               { label: 'Jurisdicción', value: fine.jurisdiction },
               { label: 'Acta', value: fine.actNumber, mono: true },
-              { label: 'Importe', value: formatCurrency(fine.amount), mono: true },
-              { label: 'Pago voluntario', value: formatCurrency(fine.voluntaryPaymentAmount), mono: true },
+              { label: 'Importe', value: formatCurrency(fine.amount) },
+              { label: 'Pago voluntario', value: formatCurrency(fine.voluntaryPaymentAmount) },
               { label: 'Infracción', value: fine.infraction, wide: true },
               ...(fine.status === 'paid'
                 ? [
                     { label: 'Pagada el', value: formatDateTime(fine.paidAt) },
-                    { label: 'Importe pagado', value: formatCurrency(fine.paidAmount), mono: true },
+                    { label: 'Importe pagado', value: formatCurrency(fine.paidAmount) },
                     ...(fine.operationNumber
                       ? [{ label: 'Número de operación', value: fine.operationNumber, mono: true }]
                       : []),

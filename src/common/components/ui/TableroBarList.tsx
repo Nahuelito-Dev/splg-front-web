@@ -41,7 +41,7 @@ export const TableroBarList = ({ items, label }: Props) => {
         <li key={item.id} className="grid gap-1.5">
           <div className="flex items-baseline justify-between gap-3 text-[12.5px]">
             <span className="min-w-0 truncate font-medium text-ink">{item.label}</span>
-            <span className="shrink-0 font-mono font-semibold text-ink">{item.valueLabel}</span>
+            <span className="shrink-0 tabular-nums font-semibold text-ink">{item.valueLabel}</span>
           </div>
           <div
             role="meter"

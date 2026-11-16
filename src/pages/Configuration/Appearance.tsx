@@ -324,7 +324,7 @@ const AppearanceForm = ({ theme, canWrite, writeHint }: FormProps) => {
                       <TriangleAlert aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
                     )}
                     <span className="min-w-0 flex-1 text-ink-2">{pairLabel(item.pair)}</span>
-                    <span className="shrink-0 font-mono text-xs text-muted">
+                    <span className="shrink-0 tabular-nums text-xs text-muted">
                       {ratioLabel(item.ratio)} / {ratioLabel(item.required)}
                     </span>
                   </li>

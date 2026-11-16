@@ -1,5 +1,5 @@
 import { Ban, Banknote, HandCoins, Landmark, Undo2, TrendingDown } from 'lucide-react';
-import { ErrorState, KpiCard } from '../../../common/components/ui';
+import { ErrorState, KpiCard, KpiGrid } from '../../../common/components/ui';
 import type { CifraDeCobro } from '../../../services/api/types';
 import { useCollections } from '../../../services/queries/reports';
 import type { DayRange } from '../../../utils/dateRange';
@@ -24,7 +24,7 @@ export const CollectionsCards = ({ range }: { range: DayRange }) => {
         entregaron. «Reintegro pendiente» no mira la entrega: cuenta los pedidos cobrados y cancelados después, según su
         última modificación dentro del rango; el sistema no gestiona la devolución, la hace la distribuidora por fuera.
       </p>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <KpiGrid className="sm:grid-cols-2 lg:grid-cols-3">
         <KpiCard
           title="Efectivo por confirmar"
           icon={Banknote}
@@ -72,7 +72,7 @@ export const CollectionsCards = ({ range }: { range: DayRange }) => {
           pill={data && data.pendingRefund.totalOrders > 0 ? { text: 'Devolver al cliente', trend: 'warn' } : undefined}
           hint={orders(data?.pendingRefund)}
         />
-      </div>
+      </KpiGrid>
     </section>
   );
 };

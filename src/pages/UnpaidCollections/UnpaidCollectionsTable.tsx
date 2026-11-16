@@ -95,7 +95,7 @@ export const UnpaidCollectionsTable = ({
         headerAlign: 'right',
         sortable: false,
         renderCell: ({ row }) => (
-          <span className="font-mono font-semibold text-ink">{formatCurrency(row.total_amount)}</span>
+          <span className="tabular-nums font-semibold text-ink">{formatCurrency(row.total_amount)}</span>
         ),
       },
       {
@@ -150,7 +150,7 @@ export const UnpaidCollectionsTable = ({
                   />
                   <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
                     <span className="text-muted">{row.delivery_name ?? 'Sin chofer'}</span>
-                    <span className="font-mono font-semibold text-ink">{formatCurrency(row.total_amount)}</span>
+                    <span className="tabular-nums font-semibold text-ink">{formatCurrency(row.total_amount)}</span>
                   </div>
                   {incidentsError ? (
                     <span className="text-xs text-danger">No se pudo cargar la incidencia</span>

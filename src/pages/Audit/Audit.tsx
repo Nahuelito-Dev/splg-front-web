@@ -37,8 +37,8 @@ export const Audit = () => {
       />
       <Card>
         <Tabs items={TABS} value={tab} onChange={setTab} label="Tipo de auditoría" idPrefix={TABS_ID} />
+        <div {...tabPanelProps(TABS_ID, tab)}>{tab === 'data' ? <DataAuditTab /> : <OperationsAuditTab />}</div>
       </Card>
-      <div {...tabPanelProps(TABS_ID, tab)}>{tab === 'data' ? <DataAuditTab /> : <OperationsAuditTab />}</div>
     </PageContainer>
   );
 };

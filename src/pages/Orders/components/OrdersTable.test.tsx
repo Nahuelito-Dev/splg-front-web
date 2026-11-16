@@ -70,7 +70,8 @@ describe('OrdersTable: editar y cancelar', () => {
     const onCancel = vi.fn();
     renderTable([order('aaaaaa', {})], onEdit, onCancel);
     fireEvent.click(screen.getByRole('button', { name: /^Editar pedido/ }));
-    fireEvent.click(screen.getByRole('button', { name: /^Cancelar pedido/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Más acciones de pedido/ }));
+    fireEvent.click(screen.getByRole('menuitem', { name: /^Cancelar/ }));
     expect(onEdit).toHaveBeenCalledTimes(1);
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
@@ -94,7 +95,9 @@ describe('OrdersTable: editar y cancelar', () => {
 
   it('un pedido cancelado no se vuelve a cancelar', () => {
     renderTable([order('dddddd', { status: 'cancelled' })]);
-    expect(screen.queryByRole('button', { name: /^Cancelar pedido/ })).toBeNull();
+    const more = screen.queryByRole('button', { name: /^Más acciones de pedido/ });
+    if (more) fireEvent.click(more);
+    expect(screen.queryByRole('menuitem', { name: /^Cancelar/ })).toBeNull();
   });
 });
 
@@ -111,14 +114,13 @@ describe('OrdersTable: sin distribuidora elegida', () => {
       />,
     );
     expect(screen.getByRole('button', { name: /^Ver pedido/ })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /^Cancelar pedido/ })).toBeNull();
     expect(screen.queryByRole('button', { name: /Más acciones de pedido/ })).toBeNull();
   });
 
   it('con los dos manejadores se ofrecen cancelar y más acciones (asignar)', () => {
     renderTable([order('aaaaaa', {})]);
-    expect(screen.getByRole('button', { name: /^Cancelar pedido/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Más acciones de pedido/ })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Más acciones de pedido/ }));
+    expect(screen.getByRole('menuitem', { name: /^Cancelar/ })).toBeInTheDocument();
   });
 });
 

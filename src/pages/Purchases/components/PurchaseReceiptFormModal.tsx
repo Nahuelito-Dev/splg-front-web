@@ -246,7 +246,7 @@ export const PurchaseReceiptFormModal = ({ open, onClose, order, onSaved }: Prop
               )}
               <p className="text-sm text-muted">
                 Total de la recepción:{' '}
-                <b className="font-mono text-ink">{total === null ? '—' : formatCurrency(total)}</b>
+                <b className="tabular-nums text-ink">{total === null ? '—' : formatCurrency(total)}</b>
               </p>
             </div>
           </div>

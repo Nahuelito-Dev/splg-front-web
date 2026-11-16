@@ -149,6 +149,7 @@ export const VehicleAccidents = () => {
           idPrefix="vehicle-accidents"
         >
           <TableToolbar
+            resultCount={data?.total}
             filters={
               <>
                 <Select

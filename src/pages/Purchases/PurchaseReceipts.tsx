@@ -83,9 +83,9 @@ export const PurchaseReceipts = () => {
   const doc = (row: PurchaseReceiptSummary) =>
     `${labelOf(SUPPLIER_DOCUMENT_TYPE, row.supplierDocumentType).text} ${row.supplierDocumentNumber}`;
   const badges = (row: PurchaseReceiptSummary) => (
-    <span className="flex flex-wrap gap-1.5">
+    <span className="flex flex-col items-start gap-0.5">
       <Badge label={labelOf(RECEIPT_STATUS, row.status)} />
-      <Badge label={labelOf(RECEIPT_PAYMENT, row.paymentStatus)} />
+      <span className="text-xs text-muted">{labelOf(RECEIPT_PAYMENT, row.paymentStatus).text}</span>
     </span>
   );
 
@@ -128,9 +128,9 @@ export const PurchaseReceipts = () => {
       headerName: 'Importe',
       width: 130,
       sortable: false,
-      renderCell: ({ row }) => <span className="font-mono font-semibold">{formatCurrency(row.totalAmount)}</span>,
+      renderCell: ({ row }) => <span className="tabular-nums font-semibold">{formatCurrency(row.totalAmount)}</span>,
     },
-    { field: 'status', headerName: 'Estado', width: 250, sortable: false, renderCell: ({ row }) => badges(row) },
+    { field: 'status', headerName: 'Estado', width: 160, sortable: false, renderCell: ({ row }) => badges(row) },
     {
       field: 'actions',
       headerName: '',

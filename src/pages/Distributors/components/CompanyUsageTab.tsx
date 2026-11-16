@@ -1,11 +1,11 @@
 import { Link } from 'react-router-dom';
 import { HardHat, ReceiptText, ScanText, ShoppingBag, Users, Wallet } from 'lucide-react';
-import { Badge, Card, CardHeader, DateRangeFilter, EmptyState, KpiCard } from '../../../common/components/ui';
+import { Badge, Card, CardHeader, DateRangeFilter, EmptyState, KpiCard, KpiGrid } from '../../../common/components/ui';
 import type { CompanyDetail } from '../../../services/api/types';
 import { formatCurrency, formatDateTime, formatNumber, formatUsd } from '../../../utils/format';
 import { PROCESS_HEALTH, labelOf } from '../../../utils/statusLabels';
 import { formatMonth, formatRange } from '../../Platform/platformRules';
-import { needsAttention, sortByAttention } from '../../Configuration/processMonitorRules';
+import { sortByAttention } from '../../Configuration/processMonitorRules';
 
 interface Props {
   detail: CompanyDetail;
@@ -23,7 +23,7 @@ export const CompanyUsageTab = ({ detail, range, onRangeChange }: Props) => {
         <DateRangeFilter from={range.from} to={range.to} onChange={onRangeChange} label="Período" />
         <p className="text-sm text-muted">Período: {formatRange(detail.range)}</p>
       </div>
-      <div className="grid gap-3.5 sm:grid-cols-2 xl:grid-cols-3">
+      <KpiGrid className="sm:grid-cols-2 xl:grid-cols-3">
         <KpiCard title="Pedidos" icon={ReceiptText} value={formatNumber(metrics.orders)} hint="Creados en el período" />
         <KpiCard
           title="Ventas"
@@ -45,7 +45,7 @@ export const CompanyUsageTab = ({ detail, range, onRangeChange }: Props) => {
               : { text: 'Apagado', trend: 'warn' }
           }
         />
-      </div>
+      </KpiGrid>
 
       <Card className="p-6">
         <CardHeader
@@ -73,10 +73,7 @@ export const CompanyUsageTab = ({ detail, range, onRangeChange }: Props) => {
                     {process.failuresLast24h > 0 && ` · ${process.failuresLast24h} fallas en 24 h`}
                   </p>
                 </div>
-                <Badge
-                  label={labelOf(PROCESS_HEALTH, process.health)}
-                  variant={needsAttention(process) ? 'filled' : 'soft'}
-                />
+                <Badge label={labelOf(PROCESS_HEALTH, process.health)} />
               </li>
             ))}
           </ul>

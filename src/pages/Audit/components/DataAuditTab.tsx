@@ -1,6 +1,6 @@
 import type { GridPaginationModel } from '@mui/x-data-grid';
 import { useMemo, useState } from 'react';
-import { Card, ErrorState, TableToolbar, type SelectOption } from '../../../common/components/ui';
+import { ErrorState, TableToolbar, type SelectOption } from '../../../common/components/ui';
 import { useDebounce, useUrlParams } from '../../../hooks';
 import { auditEntriesQuery } from '../../../services/api/audit';
 import type { AuditEntryV2 } from '../../../services/api/types';
@@ -47,32 +47,30 @@ export const DataAuditTab = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <TableToolbar
-          filters={<DataAuditFiltersBar value={filters} onChange={change} actionOptions={actionOptions} />}
-          serverExport={{ resource: 'auditoria-datos', params: auditEntriesQuery(listParams) }}
-          chips={chips}
-          onRemoveChip={(key) => change({ [key]: '' })}
-          onClearChips={() => change(EMPTY_DATA_AUDIT_FILTERS)}
-          resultCount={data?.total}
-          noun={['registro', 'registros']}
+    <>
+      <TableToolbar
+        filters={<DataAuditFiltersBar value={filters} onChange={change} actionOptions={actionOptions} />}
+        serverExport={{ resource: 'auditoria-datos', params: auditEntriesQuery(listParams) }}
+        chips={chips}
+        onRemoveChip={(key) => change({ [key]: '' })}
+        onClearChips={() => change(EMPTY_DATA_AUDIT_FILTERS)}
+        resultCount={data?.total}
+        noun={['registro', 'registros']}
+      />
+      {error ? (
+        <ErrorState error={error} resource="La auditoría" onRetry={() => void refetch()} />
+      ) : (
+        <DataAuditTable
+          rows={data?.rows ?? []}
+          total={data?.total ?? 0}
+          loading={isFetching}
+          filtered={chips.length > 0}
+          pagination={pagination}
+          onPaginationChange={setPagination}
+          onView={setDetail}
         />
-        {error ? (
-          <ErrorState error={error} resource="La auditoría" onRetry={() => void refetch()} />
-        ) : (
-          <DataAuditTable
-            rows={data?.rows ?? []}
-            total={data?.total ?? 0}
-            loading={isFetching}
-            filtered={chips.length > 0}
-            pagination={pagination}
-            onPaginationChange={setPagination}
-            onView={setDetail}
-          />
-        )}
-      </Card>
+      )}
       <DataAuditDrawer entry={detail} onClose={() => setDetail(null)} />
-    </div>
+    </>
   );
 };

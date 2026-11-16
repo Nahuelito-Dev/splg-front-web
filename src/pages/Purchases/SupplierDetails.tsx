@@ -12,6 +12,7 @@ import {
   EmptyState,
   ErrorState,
   KpiCard,
+  KpiGrid,
   PageHeader,
   ResponsiveTable,
   PageContainer,
@@ -149,7 +150,7 @@ export const SupplierDetails = () => {
             />
           </Card>
           <div className="min-w-0 space-y-6 lg:col-span-2">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <KpiGrid className="sm:grid-cols-3">
               <KpiCard
                 title="Recepciones"
                 icon={Receipt}
@@ -168,7 +169,7 @@ export const SupplierDetails = () => {
                 value={history.data ? formatCurrency(history.data.totalAmount) : '—'}
                 loading={history.isPending}
               />
-            </div>
+            </KpiGrid>
             <Card>
               <CardHeader
                 title="Historial de compras"

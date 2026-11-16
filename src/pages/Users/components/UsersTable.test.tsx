@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -68,13 +68,15 @@ describe('UsersTable: permisos en la fila de acciones', () => {
     expect(screen.queryByRole('button', { name: 'Dar de baja Ana Cliente' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Más acciones de Ana Cliente' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Editar Beto Admin' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Dar de baja Beto Admin' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Más acciones de Beto Admin' }));
+    expect(screen.getByRole('menuitem', { name: 'Dar de baja' })).toBeInTheDocument();
   });
 
-  it('con permiso, la fila del cliente tiene Editar y Dar de baja', () => {
+  it('con permiso, la fila del cliente tiene Editar y Dar de baja (en el ⋯)', () => {
     renderTable(true);
     expect(screen.getByRole('button', { name: 'Editar Ana Cliente' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Dar de baja Ana Cliente' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Más acciones de Ana Cliente' }));
+    expect(screen.getByRole('menuitem', { name: 'Dar de baja' })).toBeInTheDocument();
   });
 });
 

@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import type { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Cylinder } from '../../../services/api/types';
@@ -59,8 +59,19 @@ describe('PhysicalCylindersTable: editar y dar de baja', () => {
       ],
       onRetire,
     );
-    expect(screen.getAllByRole('button', { name: /^Dar de baja envase/ })).toHaveLength(2);
-    fireEvent.click(screen.getByRole('button', { name: 'Dar de baja envase A' }));
+    const offersRetire = (serial: string) => {
+      const more = screen.queryByRole('button', { name: `Más acciones de envase ${serial}` });
+      if (!more) return false;
+      fireEvent.click(more);
+      const menus = screen.getAllByRole('menu');
+      const offered = within(menus[menus.length - 1]).queryByRole('menuitem', { name: 'Dar de baja' }) !== null;
+      fireEvent.keyDown(menus[menus.length - 1], { key: 'Escape' });
+      return offered;
+    };
+    expect(['C', 'D', 'B', 'A'].map(offersRetire)).toEqual([false, false, true, true]);
+    fireEvent.click(screen.getByRole('button', { name: 'Más acciones de envase A' }));
+    const menus = screen.getAllByRole('menu');
+    fireEvent.click(within(menus[menus.length - 1]).getByRole('menuitem', { name: 'Dar de baja' }));
     expect(onRetire).toHaveBeenCalledTimes(1);
   });
 
@@ -68,7 +79,6 @@ describe('PhysicalCylindersTable: editar y dar de baja', () => {
     renderTable([cylinder('R', 'retired')]);
     expect(screen.getByRole('button', { name: 'Ver envase R' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Editar envase/ })).toBeNull();
-    expect(screen.queryByRole('button', { name: /^Dar de baja envase/ })).toBeNull();
     expect(screen.queryByRole('button', { name: /Más acciones/ })).toBeNull();
   });
 });

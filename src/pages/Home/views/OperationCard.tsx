@@ -31,7 +31,7 @@ const Row = ({ icon: Icon, label, detail, value, to, alert = false }: RowProps) 
       <b className="block text-[13px] font-semibold text-ink">{label}</b>
       <span className="block truncate text-[11.5px] text-muted">{detail}</span>
     </span>
-    <b className={alert ? 'font-mono text-[15px] text-danger' : 'font-mono text-[15px] text-ink'}>{value}</b>
+    <b className={alert ? 'tabular-nums text-[15px] text-danger' : 'tabular-nums text-[15px] text-ink'}>{value}</b>
   </Link>
 );
 

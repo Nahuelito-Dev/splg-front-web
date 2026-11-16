@@ -93,14 +93,12 @@ export const CompanyTicketsPanel = () => {
       <TableToolbar
         filters={
           <>
-            <div className="sm:w-48">
-              <Select
-                label="Estado"
-                value={group}
-                onChange={(event) => setFilters({ group: event.target.value })}
-                options={GROUP_OPTIONS}
-              />
-            </div>
+            <Select
+              label="Estado"
+              value={group}
+              onChange={(event) => setFilters({ group: event.target.value })}
+              options={GROUP_OPTIONS}
+            />
             {canManage && (
               <div className="flex items-end">
                 <Button icon={<Plus />} onClick={() => setCreating(true)}>

@@ -170,7 +170,7 @@ export const PurchaseOrderFormModal = ({ open, onClose, order, onSaved }: Props)
                 Agregar otra garrafa
               </Button>
               <p className="text-sm text-muted">
-                Total: <b className="font-mono text-ink">{total === null ? '—' : formatCurrency(total)}</b>
+                Total: <b className="tabular-nums text-ink">{total === null ? '—' : formatCurrency(total)}</b>
               </p>
             </div>
           </div>

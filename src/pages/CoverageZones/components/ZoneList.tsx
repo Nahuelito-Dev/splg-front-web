@@ -1,8 +1,5 @@
-import type { GridColDef } from '@mui/x-data-grid';
 import { useMemo } from 'react';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
-import { Badge, cx, DataTable, EmptyState, IconButton, Switch } from '../../../common/components/ui';
+import { Badge, cx, DataTable, EmptyState, RowActions, Switch, type TableColumn } from '../../../common/components/ui';
 import type { CoverageZone } from '../../../services/api/types';
 import { DEFAULT_ZONE_COLOR } from '../../../theme/zoneColors';
 import { formatSurcharge, formatValidity } from '../coverageZoneUtils';
@@ -19,7 +16,7 @@ interface Props {
 }
 
 export const ZoneList = ({ rows, loading, selectedZoneId, onSelectRow, onToggleActive, onEdit, onDelete }: Props) => {
-  const columns = useMemo<GridColDef<CoverageZone>[]>(
+  const columns = useMemo<TableColumn<CoverageZone>[]>(
     () => [
       {
         field: 'name',
@@ -76,6 +73,8 @@ export const ZoneList = ({ rows, loading, selectedZoneId, onSelectRow, onToggleA
       },
       {
         field: 'isActive',
+        // El interruptor es el dato que más se usa: siempre en la tarjeta del celular.
+        card: true,
         headerName: 'Activa',
         width: 90,
         align: 'center',
@@ -98,17 +97,12 @@ export const ZoneList = ({ rows, loading, selectedZoneId, onSelectRow, onToggleA
         align: 'right',
         headerAlign: 'right',
         renderCell: ({ row }) => (
-          <div className="flex gap-2">
-            {onEdit && <IconButton label="Editar zona" icon={<EditOutlinedIcon />} onClick={() => onEdit(row)} />}
-            {onDelete && (
-              <IconButton
-                label="Dar de baja la zona"
-                tone="danger"
-                icon={<DeleteOutlineIcon />}
-                onClick={() => onDelete(row)}
-              />
-            )}
-          </div>
+          <RowActions
+            rowLabel={`la zona ${row.name}`}
+            onEdit={onEdit && (() => onEdit(row))}
+            onDelete={onDelete && (() => onDelete(row))}
+            deleteLabel="Dar de baja"
+          />
         ),
       },
     ],

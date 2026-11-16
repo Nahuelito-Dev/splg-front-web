@@ -102,7 +102,9 @@ export const Refunds = () => {
         align: 'right',
         headerAlign: 'right',
         sortable: false,
-        renderCell: ({ row }) => <span className="font-mono font-semibold text-ink">{formatCurrency(row.amount)}</span>,
+        renderCell: ({ row }) => (
+          <span className="tabular-nums font-semibold text-ink">{formatCurrency(row.amount)}</span>
+        ),
       },
       {
         field: 'actions',
@@ -185,7 +187,7 @@ export const Refunds = () => {
                 <>
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-mono font-semibold text-ink">{formatShortId(row.orderId)}</span>
-                    <span className="font-mono font-semibold text-ink">{formatCurrency(row.amount)}</span>
+                    <span className="tabular-nums font-semibold text-ink">{formatCurrency(row.amount)}</span>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge label={labelOf(REFUND_KIND, row.kind)} />

@@ -150,6 +150,7 @@ export const CustomerAccounts = () => {
           idPrefix="customer-accounts"
         >
           <TableToolbar
+            resultCount={data?.total}
             filters={
               <>
                 <Checkbox
@@ -202,9 +203,11 @@ export const CustomerAccounts = () => {
                   <IdentityCell title={row.businessName} subtitle={row.customerName || undefined} icon={Landmark} />
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge label={labelOf(ACCOUNT_STATUS, row.status)} />
-                    <span className="font-mono text-sm">Saldo {formatCurrency(row.balance)}</span>
+                    <span className="tabular-nums text-sm">Saldo {formatCurrency(row.balance)}</span>
                     {row.overdueAmount > 0 && (
-                      <span className="font-mono text-sm text-danger">Vencido {formatCurrency(row.overdueAmount)}</span>
+                      <span className="tabular-nums text-sm text-danger">
+                        Vencido {formatCurrency(row.overdueAmount)}
+                      </span>
                     )}
                   </div>
                   <div>

@@ -57,7 +57,7 @@ export const ClaimsTable = ({ rows, loading, filtered = false, onManage, onEdit,
         field: 'status',
         headerName: 'Estado',
         width: 130,
-        renderCell: ({ row }) => <Badge label={labelOf(CLAIM_STATUS, row.status)} variant="critical" />,
+        renderCell: ({ row }) => <Badge label={labelOf(CLAIM_STATUS, row.status)} />,
       },
       {
         field: 'actions',

@@ -22,8 +22,8 @@ const SlotBody = ({ slotId }: { slotId: string }) => {
         items={[
           { label: 'Nombre', value: slot.name },
           { label: 'Cupo', value: `${slot.capacity} pedidos por día` },
-          { label: 'Desde', value: slot.startTime.slice(0, 5), mono: true },
-          { label: 'Hasta', value: slot.endTime.slice(0, 5), mono: true },
+          { label: 'Desde', value: slot.startTime.slice(0, 5) },
+          { label: 'Hasta', value: slot.endTime.slice(0, 5) },
           { label: 'Alta', value: formatDateTime(slot.createdAt) },
           { label: 'Última modificación', value: formatDateTime(slot.updatedAt) },
           { label: 'Id', value: slot.time_slot_id, mono: true, wide: true },

@@ -117,7 +117,7 @@ export const WarehouseDetails = () => {
                   label: 'Ubicación',
                   value:
                     warehouse.latitude != null && warehouse.longitude != null ? (
-                      <span className="font-mono">
+                      <span className="tabular-nums">
                         {warehouse.latitude.toFixed(6)}, {warehouse.longitude.toFixed(6)}
                       </span>
                     ) : (

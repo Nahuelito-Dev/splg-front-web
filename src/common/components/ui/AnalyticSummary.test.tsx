@@ -35,6 +35,25 @@ describe('AnalyticSummary', () => {
     expect(screen.getByRole('button', { name: /Entregados/ })).toHaveAttribute('aria-pressed', 'true');
   });
 
+  it('en el celular va en una grilla de 2 columnas (nunca se desborda) y en una fila desde sm', () => {
+    render(<AnalyticSummary label="Resumen" items={ITEMS} />);
+    const list = screen.getByRole('list', { name: 'Resumen' });
+    expect(list).toHaveClass('grid', 'grid-cols-2', 'sm:flex');
+    expect(list.className).toContain('max-sm:[&>li:last-child:nth-child(odd)]:col-span-2');
+    expect(list.closest('.overflow-x-auto')).toBeNull();
+  });
+
+  it('una cantidad en 0 va apagada y en cifras tabulares (no mono); el nombre largo se recorta', () => {
+    render(
+      <AnalyticSummary label="Resumen" items={[...ITEMS, { key: 'd', label: 'En proceso', count: 0, tone: 'info' }]} />,
+    );
+    const zero = screen.getByText('0');
+    expect(zero).toHaveClass('text-muted', 'tabular-nums');
+    expect(zero).not.toHaveClass('font-mono');
+    expect(screen.getByText('3')).toHaveClass('text-ink');
+    expect(screen.getByText('En proceso')).toHaveClass('truncate');
+  });
+
   it('sin onSelect no hay botones', () => {
     render(<AnalyticSummary label="Resumen" items={ITEMS} />);
     expect(screen.queryByRole('button')).not.toBeInTheDocument();

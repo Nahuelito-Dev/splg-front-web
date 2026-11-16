@@ -6,6 +6,7 @@ import { useServerExport, type ServerExport } from '../../../hooks/useServerExpo
 import { FilterChips, type FilterChip } from './FilterChips';
 import { MoreActionsMenu, type MenuAction } from './MoreActionsMenu';
 import { SearchInput } from './SearchInput';
+import { ToolbarContext } from './toolbarContext';
 
 interface Props {
   search?: {
@@ -17,7 +18,10 @@ interface Props {
     /** Por qué no se puede buscar ahora. */
     title?: string;
   };
-  /** Selects y `DateRangePicker`: van antes de la búsqueda, que ocupa el resto de la fila. */
+  /**
+   * Selects, casillas y `DateRangeFilter`/`DayFilter`. Se dibujan en su versión de barra (40 px, la etiqueta adentro y
+   * en `aria-label`, las casillas como chip): los selects y chips van antes del buscador; las fechas, después.
+   */
   filters?: ReactNode;
   /** Exporte completo desde el back (CSV y Excel con todas las filas que cumplen los filtros). */
   serverExport?: ServerExport;
@@ -39,8 +43,9 @@ interface Props {
 type ToolbarProps = Props & { exportItems?: MenuAction[] };
 
 /**
- * Barra de herramientas de un listado: filtros, búsqueda que ocupa el resto y un menú «Más» (⋮) con la exportación;
- * debajo, los filtros activos o el conteo. En pantallas chicas se apila.
+ * Barra de herramientas de un listado, en una sola fila con todos los controles de 40 px alineados arriba (un error debajo de uno no corre a los demás): filtros,
+ * búsqueda que ocupa el resto, fechas y al final el menú «Más» (⋮) con la exportación. Debajo, el conteo y los filtros
+ * activos. En pantallas chicas se apila.
  */
 const Toolbar = ({
   search,
@@ -70,12 +75,42 @@ const Toolbar = ({
     ...actions,
   ];
 
+  const count = resultCount !== undefined && (
+    <p className="text-sm text-muted" aria-live="polite">
+      <b className="font-semibold text-ink tabular-nums">{resultCount}</b> {resultCount === 1 ? noun[0] : noun[1]}
+    </p>
+  );
+  const activeChips = chips.length > 0 && onRemoveChip;
+  const menu = items.length > 0 && <MoreActionsMenu actions={items} />;
+
+  // Sin buscador ni filtros, la fila de controles quedaría como una banda alta con el ⋮ solo: va todo en una fila
+  // compacta, con el conteo (y los chips) a la izquierda y el ⋮ a la derecha.
+  if (!search && !filters) {
+    if (!count && !activeChips && !menu && !children) return null;
+    return (
+      <div className="flex flex-col gap-3 border-b border-outline px-4 py-2" data-testid="toolbar-compact">
+        <div className="flex min-h-10 flex-wrap items-center justify-between gap-x-3 gap-y-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+            {count}
+            {activeChips && <FilterChips items={chips} onRemove={onRemoveChip} onClearAll={onClearChips} />}
+          </div>
+          {menu && <div className="ml-auto [&_button]:h-10 [&_button]:w-10 [&_button]:rounded-[10px]">{menu}</div>}
+        </div>
+        {children}
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-3 border-b border-outline p-4">
-      <div className="flex flex-col gap-2 md:flex-row md:items-end">
-        {filters && <div className="flex flex-wrap items-end gap-2 [&>*]:w-full md:[&>*]:w-auto">{filters}</div>}
+      <div className="flex flex-col gap-2 md:flex-row md:flex-wrap md:items-start" data-testid="toolbar-row">
+        {filters && (
+          <ToolbarContext.Provider value={true}>
+            <div className="contents">{filters}</div>
+          </ToolbarContext.Provider>
+        )}
         {search && (
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 md:order-1 md:min-w-[200px] md:flex-1">
             <SearchInput
               label={search.label}
               placeholder={search.placeholder}
@@ -87,20 +122,17 @@ const Toolbar = ({
             />
           </div>
         )}
-        {items.length > 0 && (
-          <div className="self-end md:self-auto">
-            <MoreActionsMenu actions={items} />
+        {menu && (
+          <div className="self-end md:order-3 md:ml-auto md:self-start [&_button]:h-10 [&_button]:w-10 [&_button]:rounded-[10px]">
+            {menu}
           </div>
         )}
       </div>
-      {chips.length > 0 && onRemoveChip ? (
-        <FilterChips items={chips} onRemove={onRemoveChip} onClearAll={onClearChips} resultCount={resultCount} />
-      ) : (
-        resultCount !== undefined && (
-          <p className="text-sm text-muted" aria-live="polite">
-            {resultCount} {resultCount === 1 ? noun[0] : noun[1]}
-          </p>
-        )
+      {(count || activeChips) && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          {count}
+          {activeChips && <FilterChips items={chips} onRemove={onRemoveChip} onClearAll={onClearChips} />}
+        </div>
       )}
       {children}
     </div>

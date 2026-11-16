@@ -58,7 +58,7 @@ export const SerialLookupCard = () => {
       {found && (
         <div className="mt-4 border-t border-outline pt-4">
           <div className="flex flex-wrap items-center gap-3">
-            <Badge label={labelOf(CYLINDER_VIGENCIA, found.status)} variant="critical" />
+            <Badge label={labelOf(CYLINDER_VIGENCIA, found.status)} />
             <span className="text-sm text-ink">
               {daysLabel(found.status, found.daysRemaining)}
               {found.expiresAt ? ` · ${formatArgentinaDay(found.expiresAt)}` : ''}

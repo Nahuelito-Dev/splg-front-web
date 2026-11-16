@@ -1,5 +1,15 @@
+import { Star } from 'lucide-react';
 import { useState } from 'react';
-import { Button, Card, LoadingState, PageHeader, SearchInput, PageContainer } from '../../common/components/ui';
+import {
+  Card,
+  EmptyState,
+  LoadingState,
+  PageHeader,
+  SearchInput,
+  PageContainer,
+  Tabs,
+  tabPanelProps,
+} from '../../common/components/ui';
 import { useDebounce } from '../../hooks';
 import { useCustomers } from '../../services/queries/customers';
 import { useDeliveries } from '../../services/queries/deliveries';
@@ -13,6 +23,11 @@ type Tab = 'delivery' | 'customer';
 
 const LIST_PAGE = { page: 0, pageSize: 20 };
 const TAB_LABEL: Record<Tab, string> = { delivery: 'chofer', customer: 'cliente' };
+const TABS_ID = 'ratings';
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'delivery', label: 'Choferes' },
+  { id: 'customer', label: 'Clientes' },
+];
 
 export const Ratings = () => {
   const [tab, setTab] = useState<Tab>('delivery');
@@ -45,46 +60,40 @@ export const Ratings = () => {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-1">
-          <div className="flex gap-2 border-b border-outline p-4">
-            <Button
-              variant={tab === 'delivery' ? 'primary' : 'secondary'}
-              size="sm"
-              className="flex-1"
-              onClick={() => handleTab('delivery')}
-            >
-              Choferes
-            </Button>
-            <Button
-              variant={tab === 'customer' ? 'primary' : 'secondary'}
-              size="sm"
-              className="flex-1"
-              onClick={() => handleTab('customer')}
-            >
-              Clientes
-            </Button>
-          </div>
-          <div className="border-b border-outline p-4">
-            <SearchInput
-              label={`Buscar ${TAB_LABEL[tab]}`}
-              className="w-full"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+          <Tabs
+            items={TABS}
+            value={tab}
+            onChange={(id) => handleTab(id === 'customer' ? 'customer' : 'delivery')}
+            label="Calificaciones de"
+            idPrefix={TABS_ID}
+          />
+          <div {...tabPanelProps(TABS_ID, tab)}>
+            <div className="border-b border-outline p-4">
+              <SearchInput
+                label={`Buscar ${TAB_LABEL[tab]}`}
+                className="w-full"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <ProfileList
+              icon={tab}
+              items={items}
+              loading={loadingList}
+              selectedId={selected?.user_id}
+              onSelect={setSelected}
             />
           </div>
-          <ProfileList
-            icon={tab}
-            items={items}
-            loading={loadingList}
-            selectedId={selected?.user_id}
-            onSelect={setSelected}
-          />
         </Card>
 
         <div className="space-y-6 lg:col-span-2">
           {!selected ? (
-            <Card className="p-16 text-center">
-              <p className="font-display text-base font-semibold text-ink">Elegí un {TAB_LABEL[tab]}</p>
-              <p className="mt-1 text-sm text-muted">Seleccioná un perfil de la lista para ver sus calificaciones.</p>
+            <Card>
+              <EmptyState
+                icon={Star}
+                title={`Elegí un ${TAB_LABEL[tab]}`}
+                description="Seleccioná un perfil de la lista para ver sus calificaciones."
+              />
             </Card>
           ) : loadingSummary || loadingHistory ? (
             <LoadingState label="Cargando calificaciones…" />

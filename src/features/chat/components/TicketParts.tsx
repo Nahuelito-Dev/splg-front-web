@@ -16,7 +16,7 @@ import {
 export const TicketHeaderBadges = ({ ticket }: { ticket: Ticket }) => (
   <>
     <Badge label={labelOf(TICKET_STATUS, ticket.status)} />
-    <Badge label={labelOf(TICKET_PRIORITY, ticket.priority)} variant="critical" />
+    <Badge label={labelOf(TICKET_PRIORITY, ticket.priority)} />
     <Badge label={labelOf(TICKET_CATEGORY, ticket.category)} />
   </>
 );

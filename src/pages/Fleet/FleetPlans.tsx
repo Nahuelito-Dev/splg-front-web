@@ -1,4 +1,3 @@
-import type { GridColDef } from '@mui/x-data-grid';
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CirclePlus, Power, PowerOff } from 'lucide-react';
@@ -14,6 +13,7 @@ import {
   RowActions,
   Select,
   PageContainer,
+  type TableColumn,
 } from '../../common/components/ui';
 import { FROM_LIST_STATE, usePermissions, useUrlParam } from '../../hooks';
 import type { FleetPlan } from '../../services/api/types';
@@ -76,7 +76,7 @@ export const FleetPlans = () => {
     [updatePlan],
   );
 
-  const columns = useMemo<GridColDef<FleetPlan>[]>(
+  const columns = useMemo<TableColumn<FleetPlan>[]>(
     () => [
       {
         field: 'name',
@@ -106,12 +106,14 @@ export const FleetPlans = () => {
       },
       {
         field: 'criticality',
+        card: true,
         headerName: 'Criticidad',
         width: 150,
-        renderCell: ({ row }) => <Badge label={labelOf(FLEET_TASK_CRITICALITY, row.criticality)} variant="critical" />,
+        renderCell: ({ row }) => <Badge label={labelOf(FLEET_TASK_CRITICALITY, row.criticality)} />,
       },
       {
         field: 'carType',
+        card: true,
         headerName: 'Tipo de vehículo',
         width: 150,
         renderCell: ({ row }) => <span className="text-ink">{row.carType ?? 'Todos'}</span>,

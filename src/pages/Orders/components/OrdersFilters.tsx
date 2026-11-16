@@ -28,7 +28,7 @@ export const OrdersFilters = ({ values, onChange }: Props) => {
         options={PAYMENT_OPTIONS}
         onChange={(e) => set({ payment: e.target.value as OrdersToolbarFilters['payment'] })}
       />
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-1.5 md:order-2">
         <DateRangeFilter from={values.from} to={values.to} onChange={set} />
         {isInvertedRange(values) && (
           <p role="alert" className="text-xs text-danger">

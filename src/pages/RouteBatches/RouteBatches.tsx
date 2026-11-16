@@ -104,7 +104,7 @@ export const RouteBatches = () => {
         field: 'status',
         headerName: 'Estado',
         width: 140,
-        renderCell: ({ row }) => <Badge label={ROUTE_BATCH_STATUS[row.status]} variant="critical" />,
+        renderCell: ({ row }) => <Badge label={ROUTE_BATCH_STATUS[row.status]} />,
       },
       {
         field: 'holder',
@@ -223,7 +223,7 @@ export const RouteBatches = () => {
                     >
                       <div className="flex items-start justify-between gap-2">
                         <span className="font-mono text-sm text-ink">{formatShortId(row.batchId)}</span>
-                        <Badge label={ROUTE_BATCH_STATUS[row.status]} variant="critical" />
+                        <Badge label={ROUTE_BATCH_STATUS[row.status]} />
                       </div>
                       <p className="mt-1 text-sm text-ink">
                         {stopCountOf(row)} paradas · {formatKg(row.totalWeightKg)}

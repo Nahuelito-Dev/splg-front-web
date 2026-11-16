@@ -258,7 +258,7 @@ export const InsurancePolicyFormModal = ({ open, onClose, carId, policy }: Props
                         <span className="text-ink-2">
                           vence {formatDay(item.dueDate)} · gracia hasta {formatDay(item.graceUntil)}
                         </span>
-                        <span className="font-mono text-ink-2">{formatCurrency(item.amount)}</span>
+                        <span className="tabular-nums text-ink-2">{formatCurrency(item.amount)}</span>
                       </li>
                     ))}
                   </ul>

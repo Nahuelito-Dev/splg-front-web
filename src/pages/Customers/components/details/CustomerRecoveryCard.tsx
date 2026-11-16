@@ -47,7 +47,7 @@ export const CustomerRecoveryCard = ({ userId }: { userId: string }) => {
                 </span>
               </div>
               <div className="flex items-center gap-3">
-                <span className="font-mono text-sm text-ink">{formatCurrencyExact(c.depositAmount)}</span>
+                <span className="tabular-nums text-sm text-ink">{formatCurrencyExact(c.depositAmount)}</span>
                 <Badge label={RECOVERY_CASE_STATUS[c.status]} />
               </div>
             </li>

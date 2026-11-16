@@ -34,7 +34,7 @@ export const TopDriversCard = () => {
           const rating = ratingText(ratings[index]?.data);
           return (
             <li key={driver.id} className="grid grid-cols-[auto_auto_1fr_auto] items-center gap-3">
-              <span className="w-4 text-center font-mono text-xs font-semibold text-muted">{index + 1}</span>
+              <span className="w-4 text-center tabular-nums text-xs font-semibold text-muted">{index + 1}</span>
               <PersonAvatar name={driver.name} userId={driver.id} />
               <span className="min-w-0">
                 <b className="block truncate text-[13px] font-semibold text-ink">{driver.name}</b>
@@ -51,7 +51,7 @@ export const TopDriversCard = () => {
                   )}
                 </span>
               </span>
-              <b className="font-mono text-[13px] text-ink">{formatCurrency(driver.sales)}</b>
+              <b className="tabular-nums text-[13px] text-ink">{formatCurrency(driver.sales)}</b>
             </li>
           );
         })}

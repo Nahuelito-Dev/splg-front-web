@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import type { GridColDef } from '@mui/x-data-grid';
 import { Banknote, Hourglass, Landmark, Paperclip, Pencil, Scale, ScrollText } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { useCrumbLeaf } from '../../common/components';
@@ -14,11 +13,13 @@ import {
   EmptyState,
   ErrorState,
   KpiCard,
+  KpiGrid,
   PageHeader,
   ResponsiveTable,
   RowActions,
   PageContainer,
   DateRangeFilter,
+  type TableColumn,
 } from '../../common/components/ui';
 import { useBackToList, useClampPage, usePermissions, useUrlPagedParams } from '../../hooks';
 import type { CustomerEntry } from '../../services/api/types';
@@ -47,9 +48,10 @@ export const CustomerAccountDetails = () => {
   const [adjusting, setAdjusting] = useState(false);
   const [attaching, setAttaching] = useState<CustomerEntry | null>(null);
 
-  const columns: GridColDef<CustomerEntry>[] = [
+  const columns: TableColumn<CustomerEntry>[] = [
     {
       field: 'occurredAt',
+      kind: 'date',
       headerName: 'Fecha',
       width: 170,
       sortable: false,
@@ -85,7 +87,7 @@ export const CustomerAccountDetails = () => {
       align: 'right',
       headerAlign: 'right',
       renderCell: ({ row }) => (
-        <span className={`font-mono ${row.signedAmount < 0 ? 'text-success' : ''}`}>
+        <span className={`tabular-nums ${row.signedAmount < 0 ? 'text-success' : ''}`}>
           {formatCurrency(row.signedAmount)}
         </span>
       ),
@@ -170,7 +172,7 @@ export const CustomerAccountDetails = () => {
         <ErrorState error={error} resource="La cuenta corriente" onRetry={() => void refetch()} />
       ) : (
         <div className="grid gap-6">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <KpiGrid className="sm:grid-cols-2 lg:grid-cols-4">
             <KpiCard
               title="Saldo"
               icon={Landmark}
@@ -195,7 +197,7 @@ export const CustomerAccountDetails = () => {
               value={formatCurrency(account.overdueAmount)}
               pill={account.overdueAmount > 0 ? { text: 'Reclamar', trend: 'down' } : undefined}
             />
-          </div>
+          </KpiGrid>
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <Card className="p-5">
               <CardHeader title="Datos" className="mb-3" />
@@ -206,7 +208,7 @@ export const CustomerAccountDetails = () => {
                   { label: 'CUIT', value: account.taxId ?? '—', mono: true },
                   { label: 'Condición fiscal', value: labelOf(TAX_CONDITION, account.taxCondition).text },
                   { label: 'Plazo de pago', value: `${account.paymentTermsDays} días` },
-                  { label: 'Límite de crédito', value: formatCurrency(account.creditLimit), mono: true },
+                  { label: 'Límite de crédito', value: formatCurrency(account.creditLimit) },
                 ]}
               />
             </Card>
@@ -214,11 +216,11 @@ export const CustomerAccountDetails = () => {
               <CardHeader title="Antigüedad de la deuda" className="mb-3" />
               <DetailList
                 items={[
-                  { label: '0 a 30 días', value: formatCurrency(account.aging.upTo30Days), mono: true },
-                  { label: '31 a 60 días', value: formatCurrency(account.aging.from31To60Days), mono: true },
-                  { label: '61 a 90 días', value: formatCurrency(account.aging.from61To90Days), mono: true },
-                  { label: 'Más de 90 días', value: formatCurrency(account.aging.over90Days), mono: true },
-                  { label: 'Total abierto', value: formatCurrency(account.aging.total), mono: true },
+                  { label: '0 a 30 días', value: formatCurrency(account.aging.upTo30Days) },
+                  { label: '31 a 60 días', value: formatCurrency(account.aging.from31To60Days) },
+                  { label: '61 a 90 días', value: formatCurrency(account.aging.from61To90Days) },
+                  { label: 'Más de 90 días', value: formatCurrency(account.aging.over90Days) },
+                  { label: 'Total abierto', value: formatCurrency(account.aging.total) },
                 ]}
               />
             </Card>
@@ -235,7 +237,7 @@ export const CustomerAccountDetails = () => {
               </p>
             )}
             {statement.data && (
-              <p className="border-b border-outline px-5 py-2 font-mono text-sm text-muted">
+              <p className="border-b border-outline px-5 py-2 tabular-nums text-sm text-muted">
                 Saldo inicial {formatCurrency(statement.data.openingBalance)} · saldo final{' '}
                 {formatCurrency(statement.data.closingBalance)}
               </p>
@@ -259,7 +261,7 @@ export const CustomerAccountDetails = () => {
                   <>
                     <div className="flex items-center justify-between gap-3">
                       <Badge label={labelOf(CUSTOMER_ENTRY_TYPE, row.type)} />
-                      <span className="font-mono">{formatCurrency(row.signedAmount)}</span>
+                      <span className="tabular-nums">{formatCurrency(row.signedAmount)}</span>
                     </div>
                     <div className="text-xs text-muted">
                       {formatDateTime(row.occurredAt)} · saldo{' '}

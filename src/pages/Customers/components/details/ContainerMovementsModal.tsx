@@ -72,7 +72,7 @@ export const ContainerMovementsModal = ({ open, onClose, customerId }: Props) =>
                 </div>
                 <span
                   className={cx(
-                    'shrink-0 font-mono text-sm font-semibold',
+                    'shrink-0 tabular-nums text-sm font-semibold',
                     m.quantity < 0 ? 'text-danger' : 'text-success',
                   )}
                 >

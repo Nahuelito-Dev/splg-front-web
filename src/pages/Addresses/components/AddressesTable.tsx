@@ -1,8 +1,16 @@
-import type { GridColDef, GridPaginationModel } from '@mui/x-data-grid';
+import type { GridPaginationModel } from '@mui/x-data-grid';
 import { useMemo } from 'react';
 import { MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Badge, DataTable, EmptyState, IdentityCell, RowActions, UserRefLink } from '../../../common/components/ui';
+import {
+  Badge,
+  DataTable,
+  EmptyState,
+  IdentityCell,
+  RowActions,
+  UserRefLink,
+  type TableColumn,
+} from '../../../common/components/ui';
 import type { UserAddressConUsuario } from '../../../services/api/types';
 import { labelOf } from '../../../utils/statusLabels';
 import { ADDRESS_PRECISION } from '../addressPrecision';
@@ -20,7 +28,7 @@ interface Props {
 
 export const AddressesTable = ({ rows, total, loading, pagination, onPaginationChange, onEdit, onDelete }: Props) => {
   const navigate = useNavigate();
-  const columns = useMemo<GridColDef<UserAddressConUsuario>[]>(
+  const columns = useMemo<TableColumn<UserAddressConUsuario>[]>(
     () => [
       {
         field: 'street',
@@ -59,6 +67,7 @@ export const AddressesTable = ({ rows, total, loading, pagination, onPaginationC
       },
       {
         field: 'geocodePrecision',
+        card: false,
         headerName: 'Precisión',
         width: 140,
         renderCell: ({ row }) => <Badge label={labelOf(ADDRESS_PRECISION, row.geocodePrecision)} />,

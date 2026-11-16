@@ -7,6 +7,7 @@ import {
   EmptyState,
   ErrorState,
   KpiCard,
+  KpiGrid,
   PageHeader,
   Select,
   type FilterChip,
@@ -77,7 +78,7 @@ export const Attendance = () => {
         </Card>
       ) : (
         <>
-          <div className="grid gap-3.5 sm:grid-cols-2">
+          <KpiGrid className="sm:grid-cols-2">
             <KpiCard
               title="Presentes hoy"
               icon={UserCheck}
@@ -97,7 +98,7 @@ export const Attendance = () => {
               }
               hint="De días anteriores"
             />
-          </div>
+          </KpiGrid>
 
           <Card>
             <TableToolbar

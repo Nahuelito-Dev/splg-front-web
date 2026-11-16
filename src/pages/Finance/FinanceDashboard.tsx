@@ -6,6 +6,7 @@ import {
   CardHeader,
   ErrorState,
   KpiCard,
+  KpiGrid,
   LoadingState,
   PageHeader,
   PageContainer,
@@ -44,7 +45,7 @@ export const FinanceDashboard = () => {
         <ErrorState error={error} resource="El tablero" onRetry={() => void refetch()} />
       ) : (
         <div className="grid gap-6">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <KpiGrid className="sm:grid-cols-2 lg:grid-cols-4">
             <KpiCard title="Saldo en cajas" icon={Wallet} value={formatCurrency(data.totalBalance)} />
             <KpiCard
               title={`Entradas del ${formatDay(data.date)}`}
@@ -63,7 +64,7 @@ export const FinanceDashboard = () => {
               }
               hint={`${data.receivables.accountsWithDebt} cuentas`}
             />
-          </div>
+          </KpiGrid>
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <Card>
               <CardHeader
@@ -85,7 +86,7 @@ export const FinanceDashboard = () => {
                         {box.hasOpenSession ? ' · abierta' : ''}
                       </span>
                     </span>
-                    <strong className="font-mono">{formatCurrency(box.balance)}</strong>
+                    <strong className="tabular-nums">{formatCurrency(box.balance)}</strong>
                   </li>
                 ))}
               </ul>
@@ -109,7 +110,7 @@ export const FinanceDashboard = () => {
                 <p className="flex items-center gap-2 text-sm">
                   <HandCoins aria-hidden="true" className="h-4 w-4 text-muted" />
                   Efectivo presentado sin aprobar:{' '}
-                  <b className="font-mono">{formatCurrency(data.settlements.pendingCash)}</b>
+                  <b className="tabular-nums">{formatCurrency(data.settlements.pendingCash)}</b>
                 </p>
                 {data.settlements.overdue > 0 && (
                   <p role="status" className="rounded-lg border border-warn bg-warn-soft px-3 py-2 text-sm text-warn">

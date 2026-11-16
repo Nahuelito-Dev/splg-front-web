@@ -8,6 +8,7 @@ import {
   EmptyState,
   ErrorState,
   KpiCard,
+  KpiGrid,
   IdentityCell,
   PageHeader,
   ResponsiveTable,
@@ -103,7 +104,7 @@ export const FleetCosts = () => {
           />
         }
       />
-      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+      <KpiGrid className="mb-4 sm:grid-cols-3">
         <KpiCard
           title="Vehículos"
           icon={Gauge}
@@ -128,9 +129,10 @@ export const FleetCosts = () => {
               : 'Promedio de la flota'
           }
         />
-      </div>
+      </KpiGrid>
       <Card>
         <TableToolbar
+          resultCount={vehicles?.length}
           serverExport={{ resource: 'costos-flota', params: fleetCostQuery(range) }}
           noun={['vehículo', 'vehículos']}
         />

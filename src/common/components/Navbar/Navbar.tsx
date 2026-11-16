@@ -1,5 +1,6 @@
 import { Menu } from 'lucide-react';
 import { usePermissions } from '../../../hooks';
+import { SupportHelpButton } from '../../../features/chat/SupportHelpButton';
 import { AccountMenu } from './components/AccountMenu';
 import { Breadcrumbs } from './components/Breadcrumbs';
 import { NotificationBell } from './components/NotificationBell';
@@ -30,6 +31,7 @@ export const Navbar = ({ onOpenMenu }: Props) => {
         <SearchButton />
         {isSuperAdmin && <SupportModeButton />}
         <ThemeModeToggle />
+        <SupportHelpButton />
         <NotificationBell />
         <AccountMenu />
       </div>

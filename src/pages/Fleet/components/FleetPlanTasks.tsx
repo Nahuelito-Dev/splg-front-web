@@ -42,7 +42,7 @@ export const FleetPlanTasks = ({ planId }: { planId: string }) => {
         field: 'status',
         headerName: 'Estado',
         width: 140,
-        renderCell: ({ row }) => <Badge label={labelOf(FLEET_TASK_STATUS, row.status)} variant="critical" />,
+        renderCell: ({ row }) => <Badge label={labelOf(FLEET_TASK_STATUS, row.status)} />,
       },
       {
         field: 'actions',

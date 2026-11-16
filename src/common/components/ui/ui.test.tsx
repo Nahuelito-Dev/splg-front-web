@@ -57,19 +57,17 @@ describe('kit de UI', () => {
     expect(screen.getByText('Entregado')).toBeInTheDocument();
   });
 
-  it('Badge: la variante llena pinta el tono completo y «critical» sólo lo hace con el tono danger', () => {
+  it('Badge: una sola variante suave de 22 px, también para los estados críticos', () => {
     render(
       <>
-        <Badge label={{ text: 'Vencido', tone: 'danger' }} variant="filled" />
-        <Badge label={{ text: 'Rechazado', tone: 'danger' }} variant="critical" />
-        <Badge label={{ text: 'Vigente', tone: 'success' }} variant="critical" />
-        <Badge label={{ text: 'Cobrado', tone: 'success' }} />
+        <Badge label={{ text: 'Rechazado', tone: 'danger' }} />
+        <Badge label={{ text: 'Anulada', tone: 'neutral' }} />
       </>,
     );
-    expect(screen.getByText('Vencido')).toHaveClass('bg-danger', 'text-bg');
-    expect(screen.getByText('Rechazado')).toHaveClass('bg-danger');
-    expect(screen.getByText('Vigente')).toHaveClass('bg-success-soft');
-    expect(screen.getByText('Cobrado')).toHaveClass('bg-success-soft');
+    const danger = screen.getByText('Rechazado');
+    expect(danger).toHaveClass('bg-danger-soft', 'text-danger', 'h-[22px]');
+    expect(danger).not.toHaveClass('bg-danger');
+    expect(screen.getByText('Anulada')).toHaveClass('bg-surface-muted', 'text-ink-2');
   });
 
   it('Switch: anuncia su estado y avisa al tocarlo', () => {

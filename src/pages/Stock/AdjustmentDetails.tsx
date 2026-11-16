@@ -79,7 +79,7 @@ export const AdjustmentDetails = () => {
                 renderCard={(row) => (
                   <p className="text-sm">
                     <b>{row.gasCylinderType}</b> · {labelOf(STOCK_CONDITION, row.condition).text}:{' '}
-                    <span className="font-mono">
+                    <span className="tabular-nums">
                       {row.quantityDelta > 0 ? `+${row.quantityDelta}` : row.quantityDelta}
                     </span>
                   </p>

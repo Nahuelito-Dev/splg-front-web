@@ -99,7 +99,7 @@ export const AvailableOrdersPool = ({ pool }: { pool: AvailablePool }) => {
                     <span className="block truncate text-sm font-semibold text-ink">
                       {order.customer?.full_name ?? 'Cliente sin nombre'}
                     </span>
-                    <span className="shrink-0 font-mono text-xs font-semibold text-ink">
+                    <span className="shrink-0 tabular-nums text-xs font-semibold text-ink">
                       {formatCurrency(order.total_amount)}
                     </span>
                   </span>

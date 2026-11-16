@@ -55,10 +55,8 @@ export const FleetTaskDetailModal = ({ task, onClose, canWrite, onEdit, onReques
       {task && (
         <div className="space-y-5">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge label={labelOf(FLEET_TASK_STATUS, task.status)} variant="critical" />
-            {task.expirationStatus && (
-              <Badge label={labelOf(FLEET_EXPIRATION_STATUS, task.expirationStatus)} variant="critical" />
-            )}
+            <Badge label={labelOf(FLEET_TASK_STATUS, task.status)} />
+            {task.expirationStatus && <Badge label={labelOf(FLEET_EXPIRATION_STATUS, task.expirationStatus)} />}
             {task.blocks && open && (
               <span className="text-xs font-medium text-danger">Sin esto vigente, no puede salir a operar.</span>
             )}
@@ -67,7 +65,7 @@ export const FleetTaskDetailModal = ({ task, onClose, canWrite, onEdit, onReques
           <DetailList
             items={[
               { label: 'Vence el', value: formatDay(task.dueAt) },
-              { label: 'Vence a los', value: task.dueKm === null ? '—' : `${formatNumber(task.dueKm)} km`, mono: true },
+              { label: 'Vence a los', value: task.dueKm === null ? '—' : `${formatNumber(task.dueKm)} km` },
               { label: 'Proveedor', value: task.provider || '—' },
               { label: 'Nº de referencia', value: task.referenceNumber || '—', mono: true },
               { label: 'Categoría', value: task.category || '—' },

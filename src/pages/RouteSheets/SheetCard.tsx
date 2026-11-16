@@ -39,19 +39,19 @@ export const SheetCard = ({ sheet, onOpen }: { sheet: RouteSheet; onOpen: () => 
       <dl className="grid grid-cols-2 gap-2 border-t border-outline-soft pt-3 text-xs">
         <div>
           <dt className="text-muted">Paradas</dt>
-          <dd className="font-mono text-sm font-semibold text-ink">{sheet.stops.length}</dd>
+          <dd className="tabular-nums text-sm font-semibold text-ink">{sheet.stops.length}</dd>
         </div>
         <div>
           <dt className="text-muted">Recorrido</dt>
-          <dd className="font-mono text-sm font-semibold text-ink">{formatKm(sheet.totals.distanceKm)}</dd>
+          <dd className="tabular-nums text-sm font-semibold text-ink">{formatKm(sheet.totals.distanceKm)}</dd>
         </div>
         <div>
           <dt className="text-muted">Duración</dt>
-          <dd className="font-mono text-sm font-semibold text-ink">{formatMinutes(sheet.totals.durationMin)}</dd>
+          <dd className="tabular-nums text-sm font-semibold text-ink">{formatMinutes(sheet.totals.durationMin)}</dd>
         </div>
         <div>
           <dt className="text-muted">Regreso</dt>
-          <dd className="font-mono text-sm font-semibold text-ink">{hhmm(returnAtOf(sheet))}</dd>
+          <dd className="tabular-nums text-sm font-semibold text-ink">{hhmm(returnAtOf(sheet))}</dd>
         </div>
       </dl>
       {sheet.totals.emptiesExpected > 0 && (

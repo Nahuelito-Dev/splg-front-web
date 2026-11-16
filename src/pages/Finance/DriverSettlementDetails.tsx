@@ -13,6 +13,7 @@ import {
   EmptyState,
   ErrorState,
   KpiCard,
+  KpiGrid,
   PageHeader,
   ResponsiveTable,
   PageContainer,
@@ -190,7 +191,7 @@ export const DriverSettlementDetails = () => {
         <ErrorState error={error} resource="La rendición" onRetry={() => void refetch()} />
       ) : (
         <div className="grid gap-6">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <KpiGrid className="sm:grid-cols-2 lg:grid-cols-4">
             <KpiCard title="Esperado" icon={Scale} value={formatCurrency(settlement.expectedCash)} />
             <KpiCard
               title="Declarado"
@@ -210,15 +211,14 @@ export const DriverSettlementDetails = () => {
                     : { text: settlement.difference < 0 ? 'Faltante' : 'Sobrante', trend: 'warn' }
               }
             />
-          </div>
+          </KpiGrid>
           <Card className="p-5">
             <DetailList
               items={[
-                { label: 'Efectivo de pedidos', value: formatCurrency(settlement.cashFromOrders), mono: true },
+                { label: 'Efectivo de pedidos', value: formatCurrency(settlement.cashFromOrders) },
                 {
                   label: 'Cobros de cuenta corriente',
                   value: formatCurrency(settlement.cashFromCollections),
-                  mono: true,
                 },
                 {
                   label: 'Resolución de la diferencia',
@@ -255,7 +255,7 @@ export const DriverSettlementDetails = () => {
               renderCard={(row) => (
                 <div className="flex items-center justify-between gap-3">
                   <span className="font-mono">{formatShortId(row.orderId)}</span>
-                  <span className="font-mono">{formatCurrency(row.amountToCollect)}</span>
+                  <span className="tabular-nums">{formatCurrency(row.amountToCollect)}</span>
                 </div>
               )}
             />
@@ -271,7 +271,7 @@ export const DriverSettlementDetails = () => {
               renderCard={(row) => (
                 <div className="flex items-center justify-between gap-3">
                   <span>{row.businessName}</span>
-                  <span className="font-mono">{formatCurrency(row.amount)}</span>
+                  <span className="tabular-nums">{formatCurrency(row.amount)}</span>
                 </div>
               )}
             />
@@ -287,7 +287,7 @@ export const DriverSettlementDetails = () => {
               renderCard={(row) => (
                 <div className="flex items-center justify-between gap-3">
                   <span>{row.categoryName}</span>
-                  <span className="font-mono">{formatCurrency(row.amount)}</span>
+                  <span className="tabular-nums">{formatCurrency(row.amount)}</span>
                 </div>
               )}
             />

@@ -1,5 +1,5 @@
 import { Banknote, PackageCheck, Receipt, Timer } from 'lucide-react';
-import { KpiCard, type KpiTrend } from '../../../common/components/ui';
+import { KpiCard, KpiGrid, type KpiTrend } from '../../../common/components/ui';
 import { useOrderStats } from '../../../services/queries/stats';
 import { useChartPalette } from '../../../theme/useChartPalette';
 import { formatCurrency, formatNumber, percentChange } from '../../../utils/format';
@@ -50,7 +50,7 @@ export const KpiRow = () => {
   const inProgress = pending + accepted + onTheWay;
 
   return (
-    <section aria-label="Indicadores" className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
+    <KpiGrid label="Indicadores" className="sm:grid-cols-2 xl:grid-cols-4">
       <KpiCard
         title="Ventas cobradas de hoy"
         icon={Banknote}
@@ -126,6 +126,6 @@ export const KpiRow = () => {
               : 'vs. 30 días previos'
         }
       />
-    </section>
+    </KpiGrid>
   );
 };

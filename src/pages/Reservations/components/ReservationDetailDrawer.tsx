@@ -105,22 +105,22 @@ export const ReservationDetailDrawer = ({ reservation, onClose, onConfirmDeposit
             {reservation.items.map((item, index) => (
               <li key={`${item.type ?? 'garrafa'}-${index}`} className="flex justify-between px-4 py-2.5">
                 <span className="text-ink">{item.type ?? 'Garrafa'}</span>
-                <span className="font-mono text-muted">× {item.quantity}</span>
+                <span className="tabular-nums text-muted">× {item.quantity}</span>
               </li>
             ))}
           </ul>
           <dl className="grid grid-cols-3 gap-2 border-t border-outline bg-surface-sunken px-4 py-3 text-[13px]">
             <div>
               <dt className="text-xs text-muted">Total</dt>
-              <dd className="font-mono font-semibold text-ink">{formatCurrency(reservation.total)}</dd>
+              <dd className="tabular-nums font-semibold text-ink">{formatCurrency(reservation.total)}</dd>
             </div>
             <div>
               <dt className="text-xs text-muted">Seña</dt>
-              <dd className="font-mono font-semibold text-ink">{formatCurrency(reservation.depositAmount)}</dd>
+              <dd className="tabular-nums font-semibold text-ink">{formatCurrency(reservation.depositAmount)}</dd>
             </div>
             <div>
               <dt className="text-xs text-muted">Saldo al entregar</dt>
-              <dd className="font-mono font-semibold text-ink">
+              <dd className="tabular-nums font-semibold text-ink">
                 {reservation.balanceDue === undefined || reservation.balanceDue === null
                   ? '—'
                   : formatCurrency(reservation.balanceDue)}

@@ -12,6 +12,7 @@ import {
   EmptyState,
   ErrorState,
   KpiCard,
+  KpiGrid,
   PageContainer,
   PageHeader,
   SelectionBar,
@@ -69,11 +70,11 @@ const Summary = ({ run, canSeeAccount }: { run: MpReconciliationDetail; canSeeAc
   if (!summary) return null;
   return (
     <div className="grid gap-6">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <KpiGrid className="sm:grid-cols-3">
         <KpiCard title="Neto según Mercado Pago" icon={Landmark} value={formatCurrencyExact(summary.mp.net)} />
         <KpiCard title="Neto en la caja (mismo rango)" icon={Wallet} value={formatCurrencyExact(summary.cash.net)} />
         <KpiCard title="Diferencia de neto" icon={Scale} value={formatCurrencyExact(summary.netGap)} />
-      </div>
+      </KpiGrid>
       <p className="-mt-2 text-xs text-muted">
         La caja registra cada cobro el día que se aprobó y el reporte de Mercado Pago el día que se libera: en un rango
         corto el neto puede no coincidir sin que falte nada.

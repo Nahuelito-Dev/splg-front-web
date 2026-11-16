@@ -87,7 +87,7 @@ describe('Incidents', () => {
     expect(screen.getByText('Carla Ruiz')).toBeInTheDocument();
     expect(screen.queryByText('Ana Pérez')).not.toBeInTheDocument();
     const chips = screen.getByRole('group', { name: 'Filtros activos' });
-    expect(chips).toHaveTextContent('1 resultado');
+    expect(screen.getByText('1', { selector: 'b' }).parentElement).toHaveTextContent('1 incidencia');
     expect(chips).toHaveTextContent('Abierta');
     expect(chips).toHaveTextContent('Cliente ausente');
     fireEvent.click(screen.getByRole('button', { name: 'Limpiar todo' }));

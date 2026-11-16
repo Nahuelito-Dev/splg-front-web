@@ -25,12 +25,12 @@ export const TireDrawer = ({ tireId, onClose }: Props) => {
             items={[
               { label: 'Marca', value: tire.brand },
               { label: 'Medida', value: tire.size, mono: true },
-              { label: 'Costo', value: formatCurrency(tire.cost), mono: true },
-              { label: 'Recapados', value: tire.retreadCount, mono: true },
+              { label: 'Costo', value: formatCurrency(tire.cost) },
+              { label: 'Recapados', value: tire.retreadCount },
               { label: 'Vehículo', value: tire.carPatent ?? '—', mono: true },
               { label: 'Posición', value: tire.position, mono: true },
-              { label: 'Km recorridos', value: `${formatNumber(tire.kmTraveled)} km`, mono: true },
-              { label: 'Km al montar', value: formatNumber(tire.mountedOdometerKm), mono: true },
+              { label: 'Km recorridos', value: `${formatNumber(tire.kmTraveled)} km` },
+              { label: 'Km al montar', value: formatNumber(tire.mountedOdometerKm) },
             ]}
           />
           <TirePayment tire={tire} />
@@ -46,7 +46,7 @@ export const TireDrawer = ({ tireId, onClose }: Props) => {
                     className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm"
                   >
                     <Badge label={labelOf(TIRE_EVENT_TYPE, event.type)} />
-                    <span className="font-mono text-ink-2">
+                    <span className="tabular-nums text-ink-2">
                       {event.position ?? '—'} · {formatNumber(event.odometerKm)} km
                     </span>
                     <span className="text-muted">{formatDateTime(event.createdAt)}</span>

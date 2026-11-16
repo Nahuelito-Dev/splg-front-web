@@ -37,7 +37,7 @@ export const SpendCard = () => {
       ) : (
         <div className="grid gap-3">
           <p className="flex flex-wrap items-baseline gap-x-2">
-            <strong className="font-mono text-2xl font-semibold text-ink">{formatUsd(spend.data.costUsd)}</strong>
+            <strong className="tabular-nums text-2xl font-semibold text-ink">{formatUsd(spend.data.costUsd)}</strong>
             <span className="text-sm text-muted">
               {budget === null ? 'sin tope cargado' : `de ${formatUsd(budget)} de tope`} · {spend.data.readings}{' '}
               {spend.data.readings === 1 ? 'lectura' : 'lecturas'}

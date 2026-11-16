@@ -65,7 +65,7 @@ const chipsOf = (filters: Filters) => {
 
 const StatusBadges = ({ row }: { row: SupportSession }) => (
   <span className="inline-flex flex-wrap items-center gap-1.5">
-    <Badge label={labelOf(SUPPORT_SESSION_STATUS, row.status)} variant="critical" />
+    <Badge label={labelOf(SUPPORT_SESSION_STATUS, row.status)} />
     {row.kind === 'emergency' && <Badge label={{ text: 'Emergencia', tone: 'danger' }} />}
   </span>
 );
@@ -337,21 +337,17 @@ export const SupportSessions = () => {
         <TableToolbar
           filters={
             <>
-              <div className="sm:w-44">
-                <Select
-                  label="Estado"
-                  value={filters.status}
-                  onChange={(event) => setFilters({ status: event.target.value })}
-                  options={STATUS_OPTIONS}
-                />
-              </div>
-              <div className="sm:w-60">
-                <CompanySelect
-                  value={filters.company}
-                  onChange={(company) => setFilters({ company })}
-                  emptyLabel="Todas"
-                />
-              </div>
+              <Select
+                label="Estado"
+                value={filters.status}
+                onChange={(event) => setFilters({ status: event.target.value })}
+                options={STATUS_OPTIONS}
+              />
+              <CompanySelect
+                value={filters.company}
+                onChange={(company) => setFilters({ company })}
+                emptyLabel="Todas"
+              />
               <div className="sm:w-72">
                 <AccountPicker
                   label="Quién la pidió"

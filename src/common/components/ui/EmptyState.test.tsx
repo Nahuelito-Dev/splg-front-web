@@ -8,17 +8,32 @@ import { ListSkeleton, ProfileSkeleton } from './Skeleton';
 afterEach(cleanup);
 
 describe('EmptyState', () => {
-  it('por defecto dibuja la ilustración propia, decorativa y con el mensaje escrito', () => {
+  it('un solo estilo: ícono de 40 px en un círculo de 56, título de 16 y texto de 14', () => {
     const { container } = render(<EmptyState title="Sin reclamos" description="Todo en orden" illustration="done" />);
-    const svg = container.querySelector('svg');
-    expect(svg).toHaveAttribute('aria-hidden', 'true');
-    expect(screen.getByText('Sin reclamos')).toBeInTheDocument();
+    const circle = container.querySelector('span[aria-hidden="true"]');
+    expect(circle).toHaveClass('h-14', 'w-14', 'rounded-full');
+    expect(circle?.querySelector('svg')).toHaveClass('h-10', 'w-10');
+    expect(screen.getByText('Sin reclamos')).toHaveClass('text-base');
+    expect(screen.getByText('Todo en orden')).toHaveClass('text-sm');
+    // Ya no hay ilustración grande (120×96).
+    expect(container.querySelector('svg.h-24')).toBeNull();
   });
 
-  it('con `icon` usa el círculo con ícono y no la ilustración', () => {
+  it('con `icon` usa ese ícono en el círculo', () => {
     const { container } = render(<EmptyState title="Vacío" icon={Inbox} />);
-    expect(container.querySelector('svg.h-24')).toBeNull();
-    expect(container.querySelector('svg')).not.toBeNull();
+    expect(container.querySelector('svg.lucide-inbox')).not.toBeNull();
+  });
+
+  it('la acción es opcional', () => {
+    render(<EmptyState title="Sin clientes" action={<button type="button">Nuevo cliente</button>} />);
+    expect(screen.getByRole('button', { name: 'Nuevo cliente' })).toBeInTheDocument();
+  });
+
+  it('compacto: sin ícono, en una caja de 64 px, para secciones y columnas de un tablero', () => {
+    const { container } = render(<EmptyState compact title="Sin tareas" description="Nada pendiente" />);
+    expect(container.querySelector('svg')).toBeNull();
+    expect(container.firstElementChild).toHaveClass('min-h-[64px]');
+    expect(screen.getByText('Sin tareas')).toHaveClass('text-sm');
   });
 });
 

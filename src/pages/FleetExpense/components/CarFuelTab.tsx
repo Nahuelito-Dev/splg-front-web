@@ -9,6 +9,7 @@ import {
   EmptyState,
   ErrorState,
   KpiCard,
+  KpiGrid,
   LoadingState,
   CardHeader,
 } from '../../../common/components/ui';
@@ -66,7 +67,7 @@ export const CarFuelTab = ({ car, canWrite, writeHint }: Props) => {
         <ErrorState error={error} resource="El consumo" onRetry={() => void refetch()} />
       ) : (
         <>
-          <div className="grid gap-3 sm:grid-cols-4">
+          <KpiGrid className="sm:grid-cols-4">
             <KpiCard title="Kilómetros medidos" icon={Fuel} value={formatNumber(data.totals.km)} />
             <KpiCard title="Litros" icon={Fuel} value={formatNumber(data.totals.liters)} />
             <KpiCard
@@ -79,7 +80,7 @@ export const CarFuelTab = ({ car, canWrite, writeHint }: Props) => {
               icon={Fuel}
               value={data.totals.costPerKm === null ? '—' : formatCurrency(data.totals.costPerKm)}
             />
-          </div>
+          </KpiGrid>
           <Card className="overflow-x-auto p-4">
             {data.tranches.length === 0 ? (
               <EmptyState
@@ -101,7 +102,7 @@ export const CarFuelTab = ({ car, canWrite, writeHint }: Props) => {
                     <th className="py-1.5 text-right font-medium">$/km</th>
                   </tr>
                 </thead>
-                <tbody className="font-mono">
+                <tbody className="tabular-nums">
                   {data.tranches.map((t) => (
                     <tr key={t.toLoadId} className="border-t border-outline">
                       <td className="py-1.5 pr-3">
@@ -124,7 +125,7 @@ export const CarFuelTab = ({ car, canWrite, writeHint }: Props) => {
                 {data.anomalies.map((a) => (
                   <li key={a.fuelLoadId} className="flex flex-wrap items-center gap-2">
                     <Badge label={{ text: 'Anómala', tone: 'warn' }} />
-                    <span className="font-mono">
+                    <span className="tabular-nums">
                       {formatNumber(a.odometerKm)} km · {formatNumber(a.liters)} L
                     </span>
                   </li>

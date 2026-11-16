@@ -8,6 +8,7 @@ import {
   EmptyState,
   ErrorState,
   KpiCard,
+  KpiGrid,
   ListSkeleton,
 } from '../../../../common/components/ui';
 import type { CustomerAccount } from '../../../../services/api/types';
@@ -63,7 +64,7 @@ export const CustomerAccountTab = ({ userId, name, account, loading, needsDistri
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <KpiGrid className="sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
           title="Saldo"
           icon={Landmark}
@@ -84,7 +85,7 @@ export const CustomerAccountTab = ({ userId, name, account, loading, needsDistri
           value={formatCurrency(account.overdueAmount)}
           pill={account.overdueAmount > 0 ? { text: 'Reclamar', trend: 'down' } : undefined}
         />
-      </div>
+      </KpiGrid>
 
       <Card>
         <CardHeader
@@ -126,7 +127,7 @@ export const CustomerAccountTab = ({ userId, name, account, loading, needsDistri
                     {entry.description ? ` · ${entry.description}` : ''}
                   </p>
                 </div>
-                <span className={`font-mono text-sm ${entry.signedAmount < 0 ? 'text-success' : 'text-ink'}`}>
+                <span className={`tabular-nums text-sm ${entry.signedAmount < 0 ? 'text-success' : 'text-ink'}`}>
                   {formatCurrency(entry.signedAmount)}
                 </span>
               </li>

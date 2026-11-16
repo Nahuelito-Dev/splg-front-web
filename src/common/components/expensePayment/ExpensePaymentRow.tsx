@@ -38,7 +38,7 @@ export const ExpensePaymentRow = ({
       <div className="flex flex-wrap items-center gap-2 text-sm text-ink-2">
         <Badge label={paid ? { text: paidLabel, tone: 'success' } : { text: unpaidLabel, tone: 'warn' }} />
         {paid && paidAt && <span>{formatDateTime(paidAt)}</span>}
-        {paid && amount != null && <span className="font-mono">{formatCurrency(amount)}</span>}
+        {paid && amount != null && <span className="tabular-nums">{formatCurrency(amount)}</span>}
         {note && <span className="text-xs text-muted">{note}</span>}
       </div>
     </div>

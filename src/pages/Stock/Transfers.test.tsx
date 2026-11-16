@@ -56,6 +56,7 @@ describe('Transfers', () => {
     state.list.mockReturnValue(ok(pageOf([movement()])));
     renderPage(<Transfers />, { url: '/stock/transfers' });
     expect(screen.getByText('Contraasentada')).toBeInTheDocument();
+    expect(screen.getByText('Contraasentada')).toHaveClass('self-start');
     expect(screen.queryByRole('button', { name: 'Contraasentar lote' })).not.toBeInTheDocument();
   });
 

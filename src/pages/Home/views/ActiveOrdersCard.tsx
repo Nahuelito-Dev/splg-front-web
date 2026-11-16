@@ -126,7 +126,7 @@ export const ActiveOrdersCard = () => {
                     <td className="px-3 py-3">
                       <Badge label={labelOf(ORDER_STATUS, order.status)} />
                     </td>
-                    <td className="whitespace-nowrap px-[18px] py-3 text-right font-mono font-semibold text-ink">
+                    <td className="whitespace-nowrap px-[18px] py-3 text-right tabular-nums font-semibold text-ink">
                       {formatCurrency(order.total_amount)}
                     </td>
                   </tr>
