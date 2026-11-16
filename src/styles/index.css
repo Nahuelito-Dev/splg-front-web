@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Sólo lo de base: fondo, tipografía y foco. Nada de estilos globales para
+ * botones o inputs: cada componente trae los suyos (common/components/ui).
+ */
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    @apply bg-bg font-sans text-[13.5px] text-ink;
+    font-feature-settings: 'ss01', 'cv11';
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary/40 ring-offset-2 ring-offset-bg;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* El brillo cálido arriba del menú lateral: la brasa de la marca. */
+@layer components {
+  .side-glow::before {
+    content: '';
+    position: absolute;
+    inset: -120px -80px auto -80px;
+    height: 260px;
+    background: radial-gradient(closest-side, rgb(var(--c-primary) / 22%), transparent 70%);
+    pointer-events: none;
+  }
+}

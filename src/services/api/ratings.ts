@@ -1,42 +1,39 @@
-import { privateAxiosInstance } from './axiosConfig';
+import { http } from './httpClient';
+import type { ModerateRatingBody, Rating, RatingSummary } from './types';
 
-/** Quién emite la calificación (coincide con RaterRole del backend). */
-export type RaterRole = 'customer' | 'delivery';
-
-export interface Rating {
-  rating_id: string;
-  order_id: string;
-  distributor_id?: string;
-  from_user_id: string;
-  to_user_id: string;
-  from_role: RaterRole;
-  /** Usuario que emitió la calificación (para mostrar el nombre en el panel). */
-  fromUser?: { user_id: string; full_name?: string };
-  stars: number;
-  comment?: string;
-  createdAt: string;
-}
-
-export interface RatingSummary {
-  average: number;
-  count: number;
-}
-
-// GET /ratings/user/:userId/summary — promedio + cantidad de calificaciones
-// recibidas. Simétrico: sirve tanto para choferes como para clientes (el
-// backend ya no filtra por rol del que califica).
-export const getRatingSummary = async (userId: string) => {
-  const { data } = await privateAxiosInstance.get<RatingSummary>(
-    `/ratings/user/${userId}/summary`,
-  );
+/**
+ * GET /ratings/user/:userId/summary — promedio y cantidad de calificaciones
+ * recibidas. Sirve tanto para choferes como para clientes: las calificaciones
+ * son bidireccionales (cliente↔chofer al finalizar un pedido).
+ */
+export const getRatingSummary = async (userId: string): Promise<RatingSummary> => {
+  const { data } = await http.get<RatingSummary>(`/ratings/user/${userId}/summary`);
   return data;
 };
 
-// GET /ratings/user/:userId — historial completo de calificaciones recibidas
-// por ese usuario (como chofer o como cliente, según corresponda).
-export const getRatingsForUser = async (userId: string) => {
-  const { data } = await privateAxiosInstance.get<Rating[]>(
-    `/ratings/user/${userId}`,
-  );
+/** GET /ratings/user/:userId — historial completo de calificaciones recibidas. */
+export const listRatingsForUser = async (userId: string): Promise<Rating[]> => {
+  const { data } = await http.get<Rating[]>(`/ratings/user/${userId}`);
+  return data;
+};
+
+/** GET /ratings/:id — una calificación, también si está oculta. */
+export const getRating = async (id: string): Promise<Rating> => {
+  const { data } = await http.get<Rating>(`/ratings/${id}`);
+  return data;
+};
+
+/**
+ * PATCH /ratings/:id/hide — oculta la calificación con un motivo: deja de contar en el promedio y el resumen.
+ * No se borra (baja lógica). 409 si ya estaba oculta.
+ */
+export const hideRating = async (id: string, body: ModerateRatingBody): Promise<Rating> => {
+  const { data } = await http.patch<Rating>(`/ratings/${id}/hide`, body);
+  return data;
+};
+
+/** PATCH /ratings/:id/unhide — vuelve a mostrarla y a contarla. 409 si no estaba oculta. */
+export const unhideRating = async (id: string, body: ModerateRatingBody): Promise<Rating> => {
+  const { data } = await http.patch<Rating>(`/ratings/${id}/unhide`, body);
   return data;
 };

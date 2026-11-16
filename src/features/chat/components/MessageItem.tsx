@@ -1,0 +1,343 @@
+import {
+  Ban,
+  Check,
+  CheckCheck,
+  CornerUpLeft,
+  Lock,
+  MousePointerClick,
+  PencilLine,
+  Ticket as TicketIcon,
+} from 'lucide-react';
+import { memo } from 'react';
+import { Link } from 'react-router-dom';
+import { cx, PersonAvatar } from '../../../common/components/ui';
+import type { InboxCsat, MessageDto } from '../../../services/api/types';
+import { formatDateTime, formatTime } from '../../../utils/format';
+import { claimOfSystem, isOutOfHoursReply, systemText, ticketOfSystem } from '../messageText';
+import { messageDomId, useCanEditNow } from '../messageActions';
+import type { ChatMessage } from '../thread';
+import { aiSourcesOf, customerActionOf, handoffNoteOf } from '../inbox/messageExtras';
+import { AutomatedMark } from './AutomatedMark';
+import { CsatRequestItem, HandoffNoteItem, InternalNoteItem } from './InboxMessageExtras';
+import { MessageText } from './MessageText';
+import { QuotedExcerpt } from './QuotedExcerpt';
+
+export interface MessageContext {
+  platformName: string;
+  /** Hasta dónde leyó la otra punta: los propios hasta ahí llevan ✓✓. */
+  counterpartLastReadSeq: number;
+  /** A dónde lleva un ticket nombrado en el hilo. */
+  ticketHref: (ticketId: string) => string;
+  /** Fuera de horario: «Abrir ticket con esto». Sin esto (sin permiso) no se ofrece. */
+  onOfferTicket?: (message: MessageDto) => void;
+  /** Modo selección (abrir un ticket con mensajes del chat). */
+  selection?: { selected: ReadonlySet<number>; toggle: (seq: number) => void };
+  /** `inbox`: la bandeja de la empresa con clientes y choferes (otros textos de sistema y de autor). */
+  variant?: 'support' | 'inbox';
+  /** Nombre de la otra punta (el cliente o el chofer) cuando el mensaje no trae autor. */
+  counterpartName?: string;
+  /** Usuario de la otra punta (el cliente o el chofer): la foto de sus mensajes. */
+  counterpartUserId?: string | null;
+  /** Foto de perfil al lado de los mensajes ajenos (la bandeja de la empresa). */
+  showAvatars?: boolean;
+  /** Quién firma las respuestas automáticas. */
+  autoName?: string;
+  /** Cómo se nombra a cada punta en una cita. */
+  partyName?: (party: MessageDto['party']) => string;
+  /** A dónde lleva un reclamo nombrado en el hilo. */
+  claimHref?: (claimId: string) => string;
+  /** «Responder» (citar) un mensaje. Sin esto no se ofrece. */
+  onReply?: (message: ChatMessage) => void;
+  /** «Editar» un mensaje propio dentro de los 15 minutos. Sin esto no se ofrece. */
+  onEdit?: (message: ChatMessage) => void;
+  /** La encuesta del último cierre de la conversación (bandeja, con un cliente): su resultado va junto al pedido. */
+  csat?: InboxCsat | null;
+}
+
+interface Props {
+  message: ChatMessage;
+  /** Primero de su grupo (misma punta y minuto): lleva el nombre. */
+  first: boolean;
+  ctx: MessageContext;
+}
+
+const SYSTEM_KINDS = new Set<MessageDto['kind']>(['system']);
+
+const ReadMark = ({ read }: { read: boolean }) =>
+  read ? (
+    <CheckCheck aria-label="Leído" className="h-3.5 w-3.5" />
+  ) : (
+    <Check aria-label="Enviado" className="h-3.5 w-3.5" />
+  );
+
+const jumpTo = (conversationId: string, seq: number) => {
+  const target = document.getElementById(messageDomId(conversationId, seq));
+  if (!target) return;
+  target.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
+  target.focus({ preventScroll: true });
+};
+
+/** La cita del mensaje al que responde (D-C25): quién y una línea; nunca el texto de uno borrado. */
+const ReplyQuote = ({ message, ctx, onPrimary }: { message: ChatMessage; ctx: MessageContext; onPrimary: boolean }) => {
+  const quoted = message.replyTo;
+  if (!quoted) return null;
+  const who = ctx.partyName?.(quoted.party) ?? 'Mensaje';
+  return (
+    <button
+      type="button"
+      onClick={() => jumpTo(message.conversationId, quoted.seq)}
+      className={cx(
+        'mb-1.5 block w-full rounded-lg border-l-[3px] px-2 py-1 text-left text-xs',
+        onPrimary ? 'border-on-primary/70 bg-on-primary/15' : 'border-primary bg-surface-muted',
+      )}
+      aria-label={`Responde a ${who}: ${quoted.preview ?? 'mensaje no disponible'}. Ir al mensaje`}
+    >
+      <span className={cx('block font-semibold', onPrimary ? 'text-on-primary' : 'text-ink')}>{who}</span>
+      <span className={cx('line-clamp-2 break-words', onPrimary ? 'text-on-primary/85' : 'text-muted')}>
+        {quoted.preview ?? <em>Mensaje no disponible</em>}
+      </span>
+    </button>
+  );
+};
+
+/** Un mensaje del hilo: de sistema (centrado), cita del chat (plegable) o texto (burbuja propia o ajena). */
+const MessageItemView = ({ message, first, ctx }: Props) => {
+  const variant = ctx.variant ?? 'support';
+  const editableNow = useCanEditNow(message);
+  // Lo que manda el asistente (aunque sea un aviso de sistema, como el de recibido) va en burbuja, firmado y marcado.
+  const automated = Boolean(message.automated);
+  if (variant === 'inbox') {
+    const handoff = handoffNoteOf(message);
+    if (handoff) return <HandoffNoteItem message={message} note={handoff} />;
+    if (message.systemCode === 'csat_request') return <CsatRequestItem message={message} csat={ctx.csat ?? null} />;
+    if (message.visibility === 'internal' && message.kind === 'text') {
+      return <InternalNoteItem message={message} ctx={ctx} />;
+    }
+  }
+  if (SYSTEM_KINDS.has(message.kind) && !automated) {
+    const ticket = ticketOfSystem(message);
+    const claimId = claimOfSystem(message);
+    return (
+      <li className="my-2 flex justify-center px-2">
+        <p className="max-w-[90%] rounded-full bg-surface-muted px-3 py-1 text-center text-xs text-muted">
+          {systemText(message, ctx.platformName, variant)}
+          {ticket && (
+            <>
+              {' · '}
+              <Link to={ctx.ticketHref(ticket.ticketId)} className="font-medium text-primary underline">
+                Ver ticket
+              </Link>
+            </>
+          )}
+          {claimId && ctx.claimHref && (
+            <>
+              {' · '}
+              <Link to={ctx.claimHref(claimId)} className="font-medium text-primary underline">
+                Ver reclamo
+              </Link>
+            </>
+          )}
+        </p>
+      </li>
+    );
+  }
+  if (message.kind === 'quoted_excerpt') {
+    return (
+      <li className="my-2 px-2">
+        <QuotedExcerpt message={message} />
+      </li>
+    );
+  }
+
+  const mine = message.isMine;
+  // Sólo la bandeja (y sólo para el personal) trae el usuario de quien escribió: su foto de perfil.
+  const senderUserId = (message.sender as { userId?: string } | null | undefined)?.userId ?? null;
+  const internal = message.visibility === 'internal';
+  const auto = automated || message.kind === 'auto_reply';
+  // La marca «Respuesta automática»: la bandeja (siempre) y lo que la API marque como automático.
+  const marked = automated || (auto && variant === 'inbox');
+  const deleted = Boolean(message.deleted);
+  const selectable = ctx.selection && !auto;
+  const checked = ctx.selection?.selected.has(message.seq) ?? false;
+  const other = ctx.counterpartName ?? ctx.platformName;
+  const author = auto
+    ? (message.senderLabel ?? ctx.autoName ?? ctx.platformName)
+    : (message.sender?.displayName ?? (mine ? 'Vos' : other));
+  const onPrimary = mine && !internal && !deleted;
+  // Una nota interna no se cita: la vería la otra punta (el back lo rechaza).
+  const replyable = ctx.onReply && !deleted && !auto && !internal && message.body !== null;
+  // Sólo el personal recibe las fuentes (4d) y la marca del botón que tocó el cliente (4e).
+  const sources = variant === 'inbox' && auto && !deleted ? aiSourcesOf(message) : [];
+  const action = variant === 'inbox' && !deleted ? customerActionOf(message) : null;
+  const editable = ctx.onEdit && mine && editableNow;
+  const time = formatTime(message.createdAt);
+
+  return (
+    <li
+      id={messageDomId(message.conversationId, message.seq)}
+      tabIndex={-1}
+      className={cx(
+        'group flex items-end gap-2 px-2 focus:outline-none',
+        first ? 'mt-3' : 'mt-0.5',
+        mine ? 'flex-row-reverse' : '',
+      )}
+    >
+      {selectable && (
+        <input
+          type="checkbox"
+          className="mb-2 h-4 w-4 shrink-0 accent-primary"
+          checked={checked}
+          onChange={() => ctx.selection?.toggle(message.seq)}
+          aria-label={`Elegir el mensaje de las ${time}`}
+        />
+      )}
+      {ctx.showAvatars &&
+        !mine &&
+        (first ? (
+          <PersonAvatar
+            name={author}
+            userId={auto ? null : (senderUserId ?? (message.party !== 'company' ? ctx.counterpartUserId : null))}
+            size="sm"
+            decorative
+            className="mb-0.5 h-7 w-7 shrink-0 text-[11px]"
+          />
+        ) : (
+          <span aria-hidden="true" className="w-7 shrink-0" />
+        ))}
+      <div className={cx('flex max-w-[85%] flex-col sm:max-w-[70%]', mine ? 'items-end' : 'items-start')}>
+        {first && (
+          <span className="mb-0.5 flex flex-wrap items-center gap-1 px-1 text-[11px] font-medium text-muted">
+            {internal && <Lock aria-hidden="true" className="h-3 w-3" />}
+            {internal ? `Nota interna · ${author}` : author}
+            {marked && <AutomatedMark />}
+          </span>
+        )}
+        <div
+          className={cx(
+            'rounded-2xl px-3 py-2 text-sm',
+            deleted
+              ? 'border border-dashed border-outline bg-surface-muted text-muted'
+              : internal
+                ? 'border border-warn/40 bg-warn-soft text-ink'
+                : mine
+                  ? 'bg-primary text-on-primary'
+                  : 'border border-outline bg-surface text-ink',
+            checked && 'ring-2 ring-primary/50',
+          )}
+        >
+          {action && (
+            <span className="mb-1 inline-flex items-center gap-1 rounded-full bg-surface-muted px-1.5 py-px text-[10.5px] font-medium text-ink-2">
+              <MousePointerClick aria-hidden="true" className="h-3 w-3" />
+              Botón: {action}
+            </span>
+          )}
+          {!deleted && <ReplyQuote message={message} ctx={ctx} onPrimary={onPrimary} />}
+          {deleted ? (
+            <em className="inline-flex items-center gap-1.5">
+              <Ban aria-hidden="true" className="h-3.5 w-3.5" />
+              Mensaje eliminado
+            </em>
+          ) : message.redacted || message.body === null ? (
+            <em className="opacity-75">Mensaje no disponible</em>
+          ) : (
+            <MessageText body={message.body} onPrimary={onPrimary} />
+          )}
+          <span
+            className={cx(
+              'mt-1 flex items-center justify-end gap-1 text-[10.5px]',
+              onPrimary ? 'text-on-primary/80' : 'text-muted',
+            )}
+          >
+            {message.editedAt && !deleted && (
+              <span title={`Editado ${formatDateTime(message.editedAt)}`}>editado ·</span>
+            )}
+            <time dateTime={message.createdAt} title={formatDateTime(message.createdAt)}>
+              {time}
+            </time>
+            {mine && !internal && !deleted && <ReadMark read={message.seq <= ctx.counterpartLastReadSeq} />}
+          </span>
+        </div>
+        {sources.length > 0 && (
+          <p className="mt-0.5 max-w-full px-1 text-[11px] text-muted">
+            <span className="font-medium">Fuente:</span> {sources.join(' · ')}
+          </p>
+        )}
+        {(replyable || editable) && (
+          // A la vista al pasar el mouse o al llegar con el teclado; en el celular, siempre.
+          <span className="mt-0.5 flex gap-1 px-1 sm:opacity-0 sm:transition-opacity sm:focus-within:opacity-100 sm:group-hover:opacity-100">
+            {replyable && (
+              <button
+                type="button"
+                onClick={() => ctx.onReply?.(message)}
+                className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium text-muted hover:bg-surface-hover hover:text-ink"
+                aria-label={`Responder al mensaje de las ${time}`}
+              >
+                <CornerUpLeft aria-hidden="true" className="h-3 w-3" />
+                Responder
+              </button>
+            )}
+            {editable && (
+              <button
+                type="button"
+                onClick={() => ctx.onEdit?.(message)}
+                className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium text-muted hover:bg-surface-hover hover:text-ink"
+                aria-label={`Editar tu mensaje de las ${time}`}
+              >
+                <PencilLine aria-hidden="true" className="h-3 w-3" />
+                Editar
+              </button>
+            )}
+          </span>
+        )}
+        {message.citedInTickets.length > 0 && (
+          <span className="mt-0.5 flex flex-wrap gap-1 px-1">
+            {message.citedInTickets.map((cited) => (
+              <Link
+                key={cited.ticketId}
+                to={ctx.ticketHref(cited.ticketId)}
+                className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
+              >
+                <TicketIcon aria-hidden="true" className="h-3 w-3" />→ {cited.number}
+              </Link>
+            ))}
+          </span>
+        )}
+        {auto && isOutOfHoursReply(message) && ctx.onOfferTicket && (
+          <button
+            type="button"
+            onClick={() => ctx.onOfferTicket?.(message)}
+            className="mt-1 rounded-lg border border-primary-edge px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary-soft"
+          >
+            Abrir ticket con esto
+          </button>
+        )}
+      </div>
+    </li>
+  );
+};
+
+/**
+ * Se vuelve a dibujar sólo si cambia lo que muestra: el mensaje (la API manda otra versión), el grupo, su ✓/✓✓, su
+ * casilla o las acciones que ofrece. Un mensaje nuevo al final no redibuja los cientos de arriba.
+ */
+export const MessageItem = memo(MessageItemView, (prev, next) => {
+  const seq = next.message.seq;
+  const read = (p: Props) => p.message.isMine && seq <= p.ctx.counterpartLastReadSeq;
+  return (
+    prev.message === next.message &&
+    prev.first === next.first &&
+    read(prev) === read(next) &&
+    prev.ctx.platformName === next.ctx.platformName &&
+    prev.ctx.counterpartName === next.ctx.counterpartName &&
+    prev.ctx.counterpartUserId === next.ctx.counterpartUserId &&
+    prev.ctx.showAvatars === next.ctx.showAvatars &&
+    prev.ctx.variant === next.ctx.variant &&
+    // La encuesta sólo cambia el pedido de calificación: los demás no se redibujan al releer la conversación.
+    (next.message.systemCode !== 'csat_request' || prev.ctx.csat === next.ctx.csat) &&
+    Boolean(prev.ctx.onOfferTicket) === Boolean(next.ctx.onOfferTicket) &&
+    Boolean(prev.ctx.onReply) === Boolean(next.ctx.onReply) &&
+    Boolean(prev.ctx.onEdit) === Boolean(next.ctx.onEdit) &&
+    Boolean(prev.ctx.selection) === Boolean(next.ctx.selection) &&
+    (prev.ctx.selection?.selected.has(seq) ?? false) === (next.ctx.selection?.selected.has(seq) ?? false)
+  );
+});

@@ -1,103 +1,78 @@
-// services/api/users.ts
-import { privateAxiosInstance } from './axiosConfig';
-import { User } from '../../interfaces';
+import { http, toQuery, type Page, type PageParams } from './httpClient';
+import type { paths } from './schema';
+import type {
+  BloqueoDeUsuario,
+  CheckUserExistsBody,
+  ListadoDeUsuarios,
+  Message,
+  UpdateUserBody,
+  User,
+  UsuarioExiste,
+} from './types';
 
-export const getAllUsers = async (page = 0, limit = 10, term?: string) => {
-  const offset = limit * page;
+/** Tipos de rol que acepta `?role=` de GET /users. */
+export type UserRoleFilter = NonNullable<NonNullable<paths['/api/v1/users']['get']['parameters']['query']>['role']>;
 
-  // Si mandas 'term', lo metemos en la URL.
-  // Si el Backend deployado es viejo, simplemente va a ignorar este parámetro extra y no pasa nada.
-  let url = `/users?limit=${limit}&offset=${offset}`;
-
-  if (term) {
-    url += `&term=${term}`;
-  }
-
-  console.log('📡 Fetching:', url);
-
-  try {
-    const { data } = await privateAxiosInstance.get(url);
-
-    return {
-      users: data.users || [],
-      maxUsers: data.maxUsers || 0,
-    };
-  } catch (error: any) {
-    console.error('❌ [GET ALL USERS] Error:', error);
-    throw error;
-  }
-};
-
-interface UserWithPassword extends Partial<User> {
-  password: string;
-}
-
-export const createUser = async (newUser: UserWithPassword) => {
-  const { data } = await privateAxiosInstance.post<User>('/users', newUser);
-  return data;
-};
-
-// DELETE Físico
-export const deleteUser = async (user_id: string) => {
-  // Pasamos el ID directamente
-  const { data } = await privateAxiosInstance.delete(`/users/${user_id}`);
-  return data;
-};
-
-// UPDATE
-export const updateUser = async (
-  user_id: string,
-  updateData: Partial<User>,
-) => {
-  const { data } = await privateAxiosInstance.patch<User>(
-    `/users/${user_id}`,
-    updateData,
-  );
-  return data;
-};
-
-// RESET PASSWORD (Usa el mismo PATCH /users/:id, Firebase se encarga del hash)
-export const resetUserPassword = async (userId: string, password: string) => {
-  const { data } = await privateAxiosInstance.patch(`/users/${userId}`, {
-    password,
+/** GET /users: paginados, con búsqueda por término y filtro opcional por tipo de rol (total real de la API). */
+export const listUsers = async (params: PageParams, search?: string, role?: UserRoleFilter): Promise<Page<User>> => {
+  const { data } = await http.get<ListadoDeUsuarios>('/users', {
+    params: { ...toQuery(params), term: search || undefined, role },
   });
+  return { rows: data.users, total: data.maxUsers };
+};
+
+/** GET /users/:id: la ficha de un usuario, con su rol (cliente, chofer o admin). */
+export const getUser = async (id: string): Promise<User> => {
+  const { data } = await http.get<User>(`/users/${id}`);
   return data;
 };
 
-// BLOCK / UNBLOCK (CU-050) — PATCH /users/:id/block { block: boolean }.
-export const blockUser = async (userId: string, block: boolean) => {
-  const { data } = await privateAxiosInstance.patch(`/users/${userId}/block`, {
-    block,
-  });
+/** GET /users/email/:email: la cuenta de la propia sesión (el panel sólo conoce su correo). */
+export const getUserByEmail = async (email: string): Promise<User> => {
+  const { data } = await http.get<User>(`/users/email/${encodeURIComponent(email)}`, { skipSupportSession: true });
   return data;
 };
-// Añade esta función para obtener usuario por email (reemplaza getAdmin)
-export const getUserByEmail = async (email: string) => {
-  try {
-    console.log(`🔍 [GET USER BY EMAIL] Buscando: ${email}`);
-    const { data } = await privateAxiosInstance.get(`/users/email/${email}`);
-    console.log('✅ [GET USER BY EMAIL] Response:', data);
-    return data;
-  } catch (error: any) {
-    console.error('❌ [GET USER BY EMAIL] Error:', error);
-    if (error.response?.status === 404) {
-      return null;
-    }
-    throw error;
-  }
+
+/**
+ * PATCH /users/:id con sólo los campos que acepta la API (nombre, teléfono,
+ * foto, bloqueo y contraseña nueva). Lo de la cuenta de un cliente es sólo del
+ * administrador general: la API responde 403 a un admin de empresa. La usa
+ * también la página de Clientes: no cambiar la firma.
+ */
+export const updateUserAccount = async (userId: string, changes: UpdateUserBody): Promise<User> => {
+  const { data } = await http.patch<User>(`/users/${userId}`, changes);
+  return data;
 };
-// services/api/users.ts - agregar esta función
-export const getUserById = async (userId: string) => {
-  try {
-    console.log(`🔍 [GET USER BY ID] Buscando: ${userId}`);
-    const { data } = await privateAxiosInstance.get(`/users/${userId}`);
-    console.log('✅ [GET USER BY ID] Response:', data);
-    return data;
-  } catch (error: any) {
-    console.error('❌ [GET USER BY ID] Error:', error);
-    if (error.response?.status === 404) {
-      throw new Error('Usuario no encontrado');
-    }
-    throw error;
-  }
+
+/** PATCH /users/:id/block: bloquea o habilita la cuenta. */
+export const blockUser = async (userId: string, block: boolean): Promise<BloqueoDeUsuario> => {
+  const { data } = await http.patch<BloqueoDeUsuario>(`/users/${userId}/block`, { block });
+  return data;
+};
+
+/** DELETE /users/:id: baja lógica de la cuenta. */
+export const deleteUser = async (id: string): Promise<Message> => {
+  const { data } = await http.delete<Message>(`/users/${id}`);
+  return data;
+};
+
+/**
+ * GET /users/phone/:phoneNumber: busca una cuenta por teléfono en formato
+ * E.164. Devuelve `null` si nadie lo tiene (la API contesta 200 con el cuerpo
+ * vacío, no 404).
+ */
+export const getUserByPhone = async (phoneNumber: string): Promise<User | null> => {
+  const { data } = await http.get<User>(`/users/phone/${encodeURIComponent(phoneNumber)}`);
+  return data && 'user_id' in data ? data : null;
+};
+
+/**
+ * POST /users/check-exists: para validar en vivo, antes de enviar un alta, si
+ * el correo o el teléfono ya tienen cuenta. Sólo booleanos: no devuelve datos
+ * de la cuenta (a diferencia de `GET /users/:email`, que por eso se dio de
+ * baja).
+ */
+export const checkUserExists = async (body: CheckUserExistsBody): Promise<UsuarioExiste> => {
+  const { data } = await http.post<UsuarioExiste>('/users/check-exists', body);
+  return data;
 };

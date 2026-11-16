@@ -1,25 +1,20 @@
-import { YennigasLogo } from '../../common/components/YennigasLogo';
+import { LogoSplg } from '../../common/components/LogoSplg';
 
 export const CheckingAuth = () => {
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#0f1014] gap-8">
-      {/* Logo con animación de pulso suave */}
+    // bg-side (no bg-ink): la pantalla de carga es parte de la marca, siempre oscura,
+    // sin importar el tema elegido (ink cambia de claro a oscuro según el modo).
+    <div className="flex min-h-screen w-full flex-col items-center justify-center gap-8 bg-side">
       <div className="animate-pulse">
-        <YennigasLogo textSize="text-6xl" />
+        <LogoSplg size="lg" />
       </div>
 
-      {/* Spinner personalizado con los colores de la marca */}
-      <div className="relative w-16 h-16">
-        {/* Círculo base (fondo grisáceo) */}
-        <div className="absolute inset-0 border-4 border-slate-800 rounded-full"></div>
-
-        {/* Círculo giratorio (color principal rosa) */}
-        <div className="absolute inset-0 border-4 border-[#f43f5e] rounded-full border-t-transparent animate-spin"></div>
+      <div className="relative h-16 w-16" role="status" aria-label="Cargando">
+        <div className="absolute inset-0 rounded-full border-4 border-side-line" />
+        <div className="absolute inset-0 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
 
-      <p className="text-slate-500 text-sm font-medium tracking-widest uppercase animate-pulse">
-        Cargando Sistema...
-      </p>
+      <p className="animate-pulse text-sm font-medium uppercase tracking-widest text-side-text">Cargando sistema...</p>
     </div>
   );
 };

@@ -1,0 +1,120 @@
+import { useState, type MouseEvent } from 'react';
+import { Menu, MenuItem } from '@mui/material';
+import { Ellipsis, Eye, Pencil, Trash2, type LucideIcon } from 'lucide-react';
+import { IconButton } from './IconButton';
+
+interface RowAction {
+  label: string;
+  icon: LucideIcon;
+  onClick: () => void;
+  tone?: 'neutral' | 'danger';
+  /** Si existe pero en esta fila no se puede, el porqué: se ve apagada, con el motivo en su nombre accesible. */
+  blockedReason?: string;
+}
+
+interface Props {
+  /** Nombre de la fila para los lectores de pantalla ("pedido #1C647A"). */
+  rowLabel: string;
+  onView?: () => void;
+  onEdit?: () => void;
+  /**
+   * Si «Editar» existe pero esta fila no se puede editar, el porqué: el botón se ve apagado y el motivo va en su
+   * nombre accesible y en el tooltip. Sin `onEdit` ni motivo, no se dibuja.
+   */
+  editBlockedReason?: string;
+  /** Baja lógica: el que llama pide la confirmación antes de dar de baja. */
+  onDelete?: () => void;
+  /** Igual que `editBlockedReason`, para la baja: el botón se ve apagado y el motivo va en su nombre accesible. */
+  deleteBlockedReason?: string;
+  /** Texto de la baja según la pantalla ("Eliminar", "Dar de baja", "Desactivar"). */
+  deleteLabel?: string;
+  /** Lo demás va en el menú ⋯ al final de la fila. Sin acciones, no hay menú. */
+  actions?: RowAction[];
+}
+
+/**
+ * Acciones de una fila: Ver, Editar y Eliminar como botones con ícono, en ese
+ * orden, y lo que no aplica a la entidad no se muestra. Las acciones extra van
+ * en un menú ⋯. Los clics no llegan a la fila (que también abre el detalle).
+ */
+export const RowActions = ({
+  rowLabel,
+  onView,
+  onEdit,
+  editBlockedReason,
+  onDelete,
+  deleteBlockedReason,
+  deleteLabel = 'Eliminar',
+  actions = [],
+}: Props) => {
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+  const stop = (event: MouseEvent) => event.stopPropagation();
+
+  return (
+    <div className="flex items-center justify-end gap-1.5" onClick={stop}>
+      {onView && <IconButton label={`Ver ${rowLabel}`} icon={<Eye />} onClick={onView} />}
+      {onEdit && !editBlockedReason && <IconButton label={`Editar ${rowLabel}`} icon={<Pencil />} onClick={onEdit} />}
+      {editBlockedReason && (
+        <IconButton
+          label={`Editar ${rowLabel} (no disponible: ${editBlockedReason})`}
+          icon={<Pencil />}
+          aria-disabled="true"
+          className="cursor-not-allowed opacity-50"
+          onClick={() => undefined}
+        />
+      )}
+      {onDelete && !deleteBlockedReason && (
+        <IconButton label={`${deleteLabel} ${rowLabel}`} icon={<Trash2 />} tone="danger" onClick={onDelete} />
+      )}
+      {deleteBlockedReason && (
+        <IconButton
+          label={`${deleteLabel} ${rowLabel} (no disponible: ${deleteBlockedReason})`}
+          icon={<Trash2 />}
+          tone="danger"
+          aria-disabled="true"
+          className="cursor-not-allowed opacity-50"
+          onClick={() => undefined}
+        />
+      )}
+      {actions.length > 0 && (
+        <>
+          <IconButton
+            label={`Más acciones de ${rowLabel}`}
+            icon={<Ellipsis />}
+            aria-haspopup="menu"
+            aria-expanded={Boolean(anchor)}
+            onClick={(event) => setAnchor(event.currentTarget)}
+          />
+          <Menu
+            anchorEl={anchor}
+            open={Boolean(anchor)}
+            onClose={() => setAnchor(null)}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+          >
+            {actions.map(({ label, icon: Icon, onClick, tone = 'neutral', blockedReason }) => (
+              <MenuItem
+                key={label}
+                aria-disabled={blockedReason ? true : undefined}
+                aria-label={blockedReason ? `${label} (no disponible: ${blockedReason})` : undefined}
+                title={blockedReason}
+                onClick={() => {
+                  if (blockedReason) return;
+                  setAnchor(null);
+                  onClick();
+                }}
+                sx={{
+                  ...(tone === 'danger' ? { color: 'error.main' } : {}),
+                  ...(blockedReason ? { opacity: 0.5, cursor: 'not-allowed' } : {}),
+                }}
+              >
+                <Icon aria-hidden="true" className="h-4 w-4" strokeWidth={1.8} />
+                {label}
+              </MenuItem>
+            ))}
+          </Menu>
+        </>
+      )}
+    </div>
+  );
+};

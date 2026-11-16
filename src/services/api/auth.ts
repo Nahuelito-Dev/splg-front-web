@@ -1,30 +1,23 @@
-// services/api/auth.ts
-import { publicAxiosInstance } from './axiosConfig';
+import { ApiError } from './errors';
+import { http } from './httpClient';
+import type { User } from './types';
 
-export const checkToken = async () => {
-  const response = await publicAxiosInstance.post('/users/validate');
-  return response.status;
-};
+export interface AdminInfo {
+  fullName: string | null;
+  role: 'admin' | 'super_admin';
+  blocked: boolean;
+}
 
-export const getAdmin = async (email: string) => {
-  try {
-    // CAMBIO: La ruta correcta según tu Controller es /users/email/
-    const { data } = await publicAxiosInstance.get(`/users/email/${email}`);
-
-    // En tu backend, la relación se llama 'role' y el campo es 'type'
-    const roleType = data.role?.type;
-
-    if (roleType !== 'admin' && roleType !== 'super_admin') {
-      throw new Error('No tienes permisos de administrador');
-    }
-
-    return {
-      fullName: data.full_name,
-      role: roleType,
-      blocked: data.blocked || false,
-    };
-  } catch (error: any) {
-    console.error('❌ Error validando admin:', error);
-    throw error;
+/**
+ * GET /users/email/:email. Sólo admin y super_admin pueden entrar al panel. Sin
+ * `X-Support-Session`: es la identidad de la cuenta, no la de una empresa; una sesión de
+ * soporte que terminó no puede tirar abajo el login (ver httpClient).
+ */
+export const getAdmin = async (email: string): Promise<AdminInfo> => {
+  const { data } = await http.get<User>(`/users/email/${email}`, { skipSupportSession: true });
+  const roleType = data.role?.type;
+  if (roleType !== 'admin' && roleType !== 'super_admin') {
+    throw new ApiError(403, ['No tenés permisos de administrador']);
   }
+  return { fullName: data.full_name, role: roleType, blocked: data.blocked };
 };

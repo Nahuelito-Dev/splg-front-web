@@ -1,52 +1,43 @@
-import { SalesStats } from './views/SalesStats'; // <--- NUEVO
-import { FleetStatus } from './views/FleetStatus'; // <--- YA LO TENÍAS
-import { DashboardStats } from './views/DashboardStats'; // <--- EL QUE HICIMOS ANTES (CLIENTES/STOCK)
+import { PageContainer } from '../../common/components/ui';
+import { usePermissions } from '../../hooks';
+import { PlatformHome } from './PlatformHome';
+import { ActiveOrdersCard } from './views/ActiveOrdersCard';
+import { ActivityCard } from './views/ActivityCard';
+import { DistributionCard } from './views/DistributionCard';
+import { KpiRow } from './views/KpiRow';
+import { OperationCard } from './views/OperationCard';
+import { PersonnelCard } from './views/PersonnelCard';
+import { SalesAreaCard } from './views/SalesAreaCard';
+import { StatusDonutCard } from './views/StatusDonutCard';
+import { StockCard } from './views/StockCard';
+import { TopDriversCard } from './views/TopDriversCard';
+import { WelcomeCard } from './views/WelcomeCard';
 
-// Iconos
-import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
-import { RecentOrdersWidget } from './views/RecentOrdersWidget';
-
+/** Inicio «ambos»: el tablero de la empresa (también en modo soporte) o el de la plataforma. */
 export const Home = () => {
+  const { mode } = usePermissions();
+  if (mode === 'platform') return <PlatformHome />;
   return (
-    <div className="p-4 md:p-8 bg-slate-50 min-h-screen">
-      <div className="max-w-[1600px] mx-auto space-y-8">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-              Dashboard General
-            </h1>
-            <p className="text-slate-500 mt-1">
-              Resumen de operaciones en tiempo real.
-            </p>
-          </div>
-          <div className="bg-white px-4 py-2 rounded-full shadow-sm border border-slate-200 flex items-center gap-2 text-sm font-bold text-slate-600">
-            <NotificationsActiveIcon
-              className="text-amber-500"
-              fontSize="small"
-            />
-            Sistema Operativo
-          </div>
-        </div>
-
-        {/* 1. SECCIÓN FINANCIERA Y OPERATIVA (VENTAS) */}
-        <SalesStats />
-
-        <DashboardStats />
-
-        {/* 3. SECCIÓN DIVIDIDA */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Izquierda: Accesos Directos y Avisos */}
-          <div className="lg:col-span-2 space-y-6">
-            <RecentOrdersWidget />
-          </div>
-
-          {/* Derecha: ESTADO DE FLOTA (REAL) */}
-          <div className="h-full">
-            <FleetStatus />
-          </div>
+    <PageContainer className="grid gap-3.5">
+      <WelcomeCard />
+      <KpiRow />
+      <div className="grid gap-3.5 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <SalesAreaCard />
+        <StatusDonutCard />
+      </div>
+      <div className="grid gap-3.5 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <ActiveOrdersCard />
+        <ActivityCard />
+      </div>
+      <div className="grid gap-3.5 lg:grid-cols-2 xl:grid-cols-3">
+        <TopDriversCard />
+        <DistributionCard />
+        <div className="grid content-start gap-3.5 lg:col-span-2 xl:col-span-1">
+          <StockCard />
+          <OperationCard />
+          <PersonnelCard />
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 };

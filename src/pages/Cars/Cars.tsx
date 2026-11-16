@@ -1,130 +1,144 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import { Button, Card, PageHeader, TableToolbar, PageContainer } from '../../common/components/ui';
+import { useDebounce, usePermissions } from '../../hooks';
+import type { Car } from '../../services/api/types';
+import { useDeliveryOptions } from '../../services/queries/deliveries';
+import { useCarByPatent, useCars, useDeleteCar } from '../../services/queries/cars';
+import { confirm, notify } from '../../utils/notifications';
+import { normalizePatent } from '../../utils/patent';
+import { CarFormModal } from './components/CarFormModal';
 import { CarsTable } from './components/CarsTable';
-import { CarModal } from '../Deilverys/components/CarModal';
-import { createCar, updateCar, deleteCar } from '../../services/api/cars';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import Swal from 'sweetalert2';
-import { Car } from '../../interfaces';
-import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
+
+type FormState = { open: false } | { open: true; car: Car | null };
 
 export const Cars = () => {
-  const [selectedCar, setSelectedCar] = useState<Car | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const [form, setForm] = useState<FormState>({ open: false });
+  const [patentSearch, setPatentSearch] = useState('');
+  const typedPatent = normalizePatent(patentSearch);
+  const debouncedPatent = useDebounce(typedPatent);
+  const searchingPatent = typedPatent.length > 0;
+  // Mientras corre el debounce el resultado que hay es de otra patente: no se muestra.
+  const patentSettling = searchingPatent && debouncedPatent !== typedPatent;
 
-  const saveMutation = useMutation({
-    mutationFn: (data: any) => {
-      const payload = { ...data };
-      if (!payload.user_id || payload.user_id === '') {
-        delete payload.user_id;
-      }
-      
-      if (selectedCar) {
-        return updateCar(selectedCar.car_id, payload);
-      }
-      return createCar(payload);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['allCars']);
-      setIsModalOpen(false);
-      Swal.fire({
-        title: selectedCar ? 'Actualizado' : 'Creado',
-        text: selectedCar ? 'Datos del vehículo actualizados' : 'Vehículo registrado correctamente',
-        icon: 'success',
-        confirmButtonText: 'OK',
-        customClass: {
-          popup: 'rounded-2xl shadow-xl',
-          confirmButton: 'bg-indigo-600 text-white px-5 py-2 rounded-lg'
-        },
-        buttonsStyling: false
-      });
-    },
-  });
+  const { data: cars = [], isFetching } = useCars();
+  const patentMatch = useCarByPatent(searchingPatent && !patentSettling ? debouncedPatent : undefined);
+  const { data: driverPage } = useDeliveryOptions();
+  const drivers = driverPage?.rows ?? [];
+  const deleteCar = useDeleteCar();
+  const { canWrite, writeHint } = usePermissions();
 
-  const deleteMutation = useMutation({
-    mutationFn: deleteCar,
-    onSuccess: () => {
-      queryClient.invalidateQueries(['allCars']);
-      Swal.fire({
-        title: 'Eliminado',
-        text: 'Vehículo eliminado correctamente',
-        icon: 'success',
-        confirmButtonText: 'OK',
-        customClass: {
-          confirmButton: 'bg-indigo-600 text-white font-bold px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors'
-        },
-        buttonsStyling: false
-      });
-    },
-  });
+  const patentFound = !patentSettling && !patentMatch.isError && patentMatch.data ? [patentMatch.data] : [];
+  const rows = searchingPatent ? patentFound : cars;
+  const loading = searchingPatent ? patentSettling || patentMatch.isFetching : isFetching;
+  const patentStatus =
+    patentSettling || patentMatch.isFetching
+      ? 'Buscando…'
+      : patentMatch.isError
+        ? 'No se pudo buscar la patente. Probá de nuevo.'
+        : patentFound.length > 0
+          ? 'Vehículo encontrado'
+          : 'Sin coincidencias';
 
-  const handleAction = async (event: any) => {
-    const { row, field } = event;
+  const driverOptions = drivers.map((delivery) => ({
+    value: delivery.user_id,
+    label: delivery.user?.full_name
+      ? `${delivery.user.full_name} (${delivery.user.email ?? 'sin email'})`
+      : delivery.user_id,
+  }));
+  // La API pagina /delivery: si hay más choferes de los que entran acá, el
+  // combo no los muestra a todos (no hay buscador en este select).
+  const driverOptionsTruncated = (driverPage?.total ?? 0) > drivers.length;
 
-    if (field === 'edit') {
-      setSelectedCar(row);
-      setIsModalOpen(true);
-    }
-
-    if (field === 'delete') {
-      const res = await Swal.fire({
-        title: '¿Eliminar Vehículo?',
-        text: `Se eliminará el ${row.car_brand} ${row.car_model} (${row.car_patent})`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#f43f5e',
-        cancelButtonColor: '#cbd5e1',
-        confirmButtonText: 'Eliminar',
-        cancelButtonText: 'Cancelar',
-        customClass: {
-          popup: 'rounded-2xl shadow-xl',
-          confirmButton: 'bg-rose-500 text-white px-5 py-2 rounded-lg',
-          cancelButton: 'bg-slate-200 text-slate-600 px-5 py-2 rounded-lg'
-        },
-        buttonsStyling: false
-      });
-      if (res.isConfirmed) {
-        deleteMutation.mutate(row.car_id);
-      }
-    }
+  const handleDelete = async (car: Car) => {
+    const confirmed = await confirm({
+      title: '¿Dar de baja el vehículo?',
+      text: `Baja lógica: ${car.car_brand ?? ''} ${car.car_model ?? ''} (${car.car_patent ?? 'sin patente'}) deja de usarse. No se borra.`,
+      confirmText: 'Dar de baja',
+      danger: true,
+    });
+    if (!confirmed) return;
+    deleteCar.mutate(car.car_id, {
+      onSuccess: () => notify.success('Vehículo dado de baja'),
+      onError: notify.error,
+    });
   };
 
   return (
-    <div className="p-4 md:p-8 bg-slate-50 min-h-screen">
-      <div className="max-w-[1600px] mx-auto">
-        <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-              Flota de Vehículos
-            </h1>
-            <p className="text-slate-500 mt-1">
-              Vista global de todos los vehículos registrados en el sistema.
-            </p>
-          </div>
-          <button
-            onClick={() => {
-              setSelectedCar(null);
-              setIsModalOpen(true);
-            }}
-            className="bg-indigo-600 text-white px-5 py-3 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition-all flex items-center gap-2"
+    <PageContainer>
+      <PageHeader
+        title="Vehículos"
+        description="La flota de la distribuidora."
+        actions={
+          <Button
+            icon={<AddCircleOutlineIcon />}
+            disabled={!canWrite}
+            title={writeHint}
+            onClick={() => setForm({ open: true, car: null })}
           >
-            <DirectionsCarIcon />
-            Nuevo Vehículo
-          </button>
-        </header>
+            Nuevo vehículo
+          </Button>
+        }
+      />
 
-        <section className="bg-white rounded-2xl shadow-sm border border-slate-200">
-          <CarsTable setAction={handleAction} />
-        </section>
-
-        <CarModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          car={selectedCar}
-          onSave={(data) => saveMutation.mutate(data)}
-          isSaving={saveMutation.isLoading}
+      <Card>
+        <TableToolbar
+          search={{
+            label: 'Buscar por patente',
+            placeholder: 'Patente (ej. AB104EJ)',
+            value: patentSearch,
+            onChange: (value) => setPatentSearch(value),
+          }}
+          serverExport={{
+            resource: 'vehiculos',
+            // El exporte trae toda la flota: no conoce la búsqueda por patente.
+            blockedReason: searchingPatent ? 'El exporte trae toda la flota: quitá la búsqueda por patente' : undefined,
+          }}
+          noun={['vehículo', 'vehículos']}
+        >
+          {searchingPatent && (
+            <p
+              className={patentMatch.isError && !patentSettling ? 'text-sm text-danger' : 'text-sm text-muted'}
+              role={patentMatch.isError && !patentSettling ? 'alert' : undefined}
+              aria-live="polite"
+            >
+              {patentStatus}
+              {patentMatch.isError && !patentSettling && (
+                <button
+                  type="button"
+                  className="ml-2 font-semibold underline"
+                  onClick={() => void patentMatch.refetch()}
+                >
+                  Reintentar
+                </button>
+              )}
+            </p>
+          )}
+        </TableToolbar>
+        <CarsTable
+          onView={(car) => navigate(`/cars/details/${car.car_id}`)}
+          rows={rows}
+          loading={loading}
+          searching={searchingPatent}
+          searchFailed={searchingPatent && patentMatch.isError}
+          onEdit={canWrite ? (car) => setForm({ open: true, car }) : undefined}
+          onDelete={canWrite ? (car) => void handleDelete(car) : undefined}
         />
-      </div>
-    </div>
+      </Card>
+
+      <CarFormModal
+        open={form.open}
+        onClose={() => setForm({ open: false })}
+        car={form.open ? form.car : null}
+        driverOptions={driverOptions}
+        driverOptionsHint={
+          driverOptionsTruncated
+            ? `Se muestran ${drivers.length} de ${driverPage?.total ?? 0} choferes. Si no aparece el que buscás, editá el vehículo desde la ficha de ese chofer.`
+            : undefined
+        }
+      />
+    </PageContainer>
   );
 };

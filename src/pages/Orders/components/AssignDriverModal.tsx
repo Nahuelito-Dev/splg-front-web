@@ -1,126 +1,164 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { getAllDeliveries } from '../../../services/api/deliveries';
-import Swal from 'sweetalert2';
-
-// Iconos
+import { useEffect, useMemo, useState } from 'react';
 import TwoWheelerIcon from '@mui/icons-material/TwoWheeler';
-import CircleIcon from '@mui/icons-material/Circle';
+import {
+  AffectedList,
+  Badge,
+  Button,
+  cx,
+  EmptyState,
+  LoadingState,
+  Modal,
+  PersonAvatar,
+  SearchInput,
+} from '../../../common/components/ui';
+import { useDebounce } from '../../../hooks';
+import { errorMessage } from '../../../services/api/errors';
+import { useEnabledDeliveries } from '../../../services/queries/orders';
+import { driverStatus } from '../../../utils/statusLabels';
 
 interface Props {
-  isOpen: boolean;
+  open: boolean;
   onClose: () => void;
   onConfirm: (deliveryId: string) => void;
-  isAssigning: boolean;
+  assigning: boolean;
+  /** Asignación en lote: cuántos pedidos van al chofer elegido. */
+  count?: number;
+  /** Qué pedidos se van a afectar (lote): se listan antes de confirmar. */
+  affected?: string[];
+  /** El rechazo del back a la última asignación (documentación vencida, moto requerida en express…). */
+  error?: unknown;
 }
 
-export const AssignDriverModal = ({
-  isOpen,
-  onClose,
-  onConfirm,
-  isAssigning,
-}: Props) => {
-  const [selectedDriver, setSelectedDriver] = useState('');
+/** Sobreescribe a mano la asignación automática de un pedido. */
+export const AssignDriverModal = ({ open, onClose, onConfirm, assigning, count = 1, affected, error }: Props) => {
+  const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search.trim());
+  const { data, isPending } = useEnabledDeliveries(debouncedSearch, { enabled: open });
+  const [selected, setSelected] = useState('');
+  // Un rechazo anterior (de otro pedido, de otra apertura o de otra elección) no se vuelve a mostrar.
+  const [dismissedError, setDismissedError] = useState<unknown>(null);
+  const shownError = error != null && error !== dismissedError ? errorMessage(error) : null;
 
-  // Traer choferes (Solo activos)
-  // Nota: Podrías usar el endpoint /delivery/active si lo tienes, sino filtramos aquí
-  const { data, isLoading } = useQuery(['activeDrivers'], () =>
-    getAllDeliveries(0, 100),
-  );
+  useEffect(() => {
+    if (open) {
+      setSelected('');
+      setSearch('');
+      setDismissedError(error ?? null);
+    }
+    // Sólo al abrir: el error que ya estaba entonces es de un intento anterior.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
-  // Filtramos visualmente para el admin
-  const drivers = data?.rows?.filter((d: any) => d.isActive) || [];
-
-  const handleConfirm = () => {
-    if (!selectedDriver)
-      return Swal.fire('Atención', 'Selecciona un chofer', 'warning');
-    onConfirm(selectedDriver);
-  };
-
-  if (!isOpen) return null;
+  // Asignables = habilitados y validados, en línea o no; los en línea primero.
+  const drivers = useMemo(() => {
+    if (!data) return undefined;
+    const rows = data.rows
+      .filter((driver) => driver.isEnabled && driver.validated)
+      .sort((a, b) => Number(b.isAvailable) - Number(a.isAvailable));
+    // El aviso de «Mostrando X de Y» es sólo para cuando la página del back no trajo a todos.
+    return { rows, truncated: data.total > data.rows.length };
+  }, [data]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden animate-fadeIn">
-        <div className="bg-slate-50 px-6 py-4 border-b border-slate-100">
-          <h3 className="text-lg font-bold text-slate-800">
-            Asignación Manual
-          </h3>
-          <p className="text-xs text-slate-500">
-            Sobreescribir asignación automática
-          </p>
-        </div>
-
-        <div className="p-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
-          {isLoading ? (
-            <p className="text-center text-slate-400 py-4">Buscando flota...</p>
-          ) : drivers.length === 0 ? (
-            <p className="text-center text-rose-500 py-4">
-              No hay choferes activos disponibles.
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {drivers.map((driver: any) => (
-                <label
-                  key={driver.delivery_id}
-                  className={`flex items-center justify-between p-3 border rounded-xl cursor-pointer transition-all ${
-                    selectedDriver === driver.delivery_id
-                      ? 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500'
-                      : 'border-slate-200 hover:border-indigo-200'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-white rounded-full text-indigo-500 shadow-sm">
-                      <TwoWheelerIcon fontSize="small" />
-                    </div>
-                    <div>
-                      <p className="font-bold text-sm text-slate-700">
-                        {driver.user?.full_name}
-                      </p>
-                      <div className="flex items-center gap-1">
-                        <CircleIcon
-                          sx={{ fontSize: 8 }}
-                          className={
-                            driver.isTraveling
-                              ? 'text-amber-500'
-                              : 'text-emerald-500'
-                          }
-                        />
-                        <span className="text-xs text-slate-500">
-                          {driver.isTraveling ? 'En viaje' : 'Libre'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <input
-                    type="radio"
-                    name="driver_select"
-                    value={driver.delivery_id}
-                    onChange={(e) => setSelectedDriver(e.target.value)}
-                    className="w-4 h-4 accent-indigo-600"
-                  />
-                </label>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-200 bg-white border border-slate-200 rounded-lg font-medium transition-colors"
-          >
+    <Modal
+      open={open}
+      onClose={onClose}
+      // Mientras se asigna no se cierra: el resultado tiene que verse en este pedido, no en el próximo que se abra.
+      closeBlocked={assigning}
+      title="Asignación manual"
+      description={
+        count > 1
+          ? `Asigna los ${count} pedidos al mismo chofer y pisa la asignación automática.`
+          : 'Sobreescribe la asignación automática del pedido.'
+      }
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose} disabled={assigning}>
             Cancelar
-          </button>
-          <button
-            onClick={handleConfirm}
-            disabled={isAssigning || !selectedDriver}
-            className="px-6 py-2 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-md shadow-indigo-200 disabled:opacity-70 transition-all"
-          >
-            {isAssigning ? 'Asignando...' : 'Confirmar'}
-          </button>
+          </Button>
+          <Button onClick={() => onConfirm(selected)} loading={assigning} disabled={!selected}>
+            Confirmar
+          </Button>
+        </>
+      }
+    >
+      {affected && (
+        <div className="mb-3">
+          <AffectedList items={affected} />
         </div>
-      </div>
-    </div>
+      )}
+      <SearchInput
+        label="Buscar chofer"
+        placeholder="Nombre, teléfono o patente"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="mb-3"
+      />
+      {isPending ? (
+        <LoadingState label="Buscando choferes…" />
+      ) : !drivers || drivers.rows.length === 0 ? (
+        <EmptyState
+          title="No hay choferes habilitados y validados"
+          description={
+            debouncedSearch
+              ? 'Ningún chofer habilitado y validado coincide con la búsqueda.'
+              : 'Habilitá y validá a un chofer para poder asignarlo a mano.'
+          }
+        />
+      ) : (
+        <div className="space-y-2">
+          {drivers.truncated && (
+            <p className="text-xs text-muted">
+              Se muestran los primeros {drivers.rows.length} choferes. Buscá por nombre, teléfono o patente para
+              encontrar al resto.
+            </p>
+          )}
+          {drivers.rows.map((driver) => (
+            <label
+              key={driver.delivery_id}
+              className={cx(
+                'flex cursor-pointer items-center justify-between gap-3 rounded-xl border p-3 transition-colors',
+                selected === driver.delivery_id
+                  ? 'border-primary bg-primary-soft'
+                  : 'border-outline hover:border-primary/50',
+              )}
+            >
+              <span className="flex min-w-0 items-center gap-3">
+                <PersonAvatar
+                  name={driver.user?.full_name ?? 'Chofer'}
+                  userId={driver.user_id}
+                  fallback={
+                    <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full bg-surface text-primary-strong shadow-sm">
+                      <TwoWheelerIcon fontSize="small" />
+                    </span>
+                  }
+                />
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold text-ink">{driver.user?.full_name ?? 'Sin nombre'}</span>
+                  <span className="block text-xs text-muted">{driver.user?.phone_number ?? '—'}</span>
+                  <Badge label={driverStatus(driver)} className="mt-1" />
+                </span>
+              </span>
+              <input
+                type="radio"
+                name="delivery"
+                value={driver.delivery_id}
+                checked={selected === driver.delivery_id}
+                onChange={() => {
+                  setSelected(driver.delivery_id);
+                  setDismissedError(error ?? null);
+                }}
+                className="h-4 w-4 shrink-0 accent-[theme(colors.primary.DEFAULT)]"
+              />
+            </label>
+          ))}
+        </div>
+      )}
+      {shownError && (
+        <p role="alert" className="mt-3 rounded-xl border border-danger/30 bg-danger-soft p-3 text-sm text-danger">
+          {shownError}
+        </p>
+      )}
+    </Modal>
   );
 };

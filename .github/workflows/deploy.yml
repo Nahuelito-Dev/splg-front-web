@@ -1,38 +1,99 @@
-name: CI + Deploy → Netlify (Yennigas Panel)
+name: Deploy panel
 
+# Publica el panel en Firebase Hosting (https://splg-gas.web.app) cuando el Release automático
+# de main termina bien, o a mano desde Actions > Deploy panel > Run workflow.
+#
+# Secretos: FIREBASE_SERVICE_ACCOUNT_SPLG_GAS, VITE_GOOGLE_MAPS_API_KEY, TELEGRAM_BOT_TOKEN,
+# TELEGRAM_CHAT_ID. Variable: API_PUBLICA (https://orix-server…ts.net, sin /api).
 on:
-  push:
-    branches: [ "main" ] # O 'master', confirma tu rama principal
+  workflow_run:
+    workflows: ['Release automatico']
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Rama, tag o commit a publicar'
+        default: main
+
+concurrency:
+  group: deploy-panel
+  cancel-in-progress: false
+
+permissions:
+  contents: read
 
 jobs:
-  trigger_netlify_build:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-
+    timeout-minutes: 20
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
     steps:
-      - name: Checkout del código
-        uses: actions/checkout@v3
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ inputs.ref || 'main' }}
+          fetch-depth: 0
 
-      - name: Obtener datos del Commit
-        id: vars
+      - name: Sólo lo que ya está en main
+        env:
+          REF: ${{ inputs.ref || 'main' }}
         run: |
-          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-          echo "author=$(git log -1 --pretty=format:'%an')" >> $GITHUB_OUTPUT
-          echo "date=$(date '+%Y-%m-%d %H:%M')" >> $GITHUB_OUTPUT
+          git fetch -q origin main
+          if ! git merge-base --is-ancestor HEAD origin/main; then
+            echo "«$REF» no está en main: a producción sólo va lo que ya se integró a main."; exit 1
+          fi
 
-      - name: 🔔 Slack Notificación (INICIO)
-        if: ${{ secrets.SLACK_WEBHOOK_URL != '' }} # Solo si existe el secreto
+      - name: Datos del commit
+        id: c
         run: |
-          curl -X POST -H 'Content-type: application/json' \
-          --data "{\"text\":\"🚧 *Deploy iniciado* en Netlify (Yennigas)\n👤 Autor: ${{ steps.vars.outputs.author }}\n🔢 Commit: ${{ steps.vars.outputs.sha_short }}\"}" \
-          "${{ secrets.SLACK_WEBHOOK_URL }}"
+          echo "corto=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
 
-      - name: 🚀 Disparar Build en Netlify
+      - name: Aviso de inicio
         run: |
-          curl -X POST -d '{}' "${{ secrets.NETLIFY_BUILD_HOOK }}"
+          [ -n "$TELEGRAM_BOT_TOKEN" ] || exit 0
+          curl -s -o /dev/null "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=🚀 Deploy panel iniciado · v${{ steps.c.outputs.version }} (${{ steps.c.outputs.corto }}) por ${{ github.actor }}"
 
-      - name: ✅ Slack Notificación (EXITO)
-        if: ${{ secrets.SLACK_WEBHOOK_URL != '' }}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Reglas (el mismo gate que Checks)
+        env:
+          TZ: UTC
+        run: npm run verify
+
+      - name: Compilar
+        env:
+          VITE_APP_API_URL: ${{ vars.API_PUBLICA }}/api
+          VITE_APP_SOCKET_URL: ${{ vars.API_PUBLICA }}
+          VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
+        run: npx vite build
+
+      - name: Publicar en Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@500ac625ca2dd40cbd15f7659af953801858032a # v0.11.0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SPLG_GAS }}
+          projectId: splg-gas
+          channelId: live
+
+      - name: El panel responde
         run: |
-          curl -X POST -H 'Content-type: application/json' \
-          --data "{\"text\":\"🚀 *Deploy enviado a Netlify* (Yennigas)\n👤 Autor: ${{ steps.vars.outputs.author }}\n🔢 Commit: ${{ steps.vars.outputs.sha_short }}\n📅 Hora: ${{ steps.vars.outputs.date }}\"}" \
-          "${{ secrets.SLACK_WEBHOOK_URL }}"
+          c=$(curl -s -o /dev/null -w '%{http_code}' -m 15 https://splg-gas.web.app/login)
+          [ "$c" = 200 ] || { echo "El panel publicado respondió $c"; exit 1; }
+
+      - name: Aviso de resultado
+        if: always()
+        run: |
+          [ -n "$TELEGRAM_BOT_TOKEN" ] || exit 0
+          if [ "${{ job.status }}" = success ]; then t="✅ Deploy panel ok · v${{ steps.c.outputs.version }} (${{ steps.c.outputs.corto }}) en https://splg-gas.web.app"
+          else t="🔴 Deploy panel falló · v${{ steps.c.outputs.version }} (${{ steps.c.outputs.corto }}). Ver: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"; fi
+          curl -s -o /dev/null "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" --data-urlencode "text=$t" -d disable_web_page_preview=true

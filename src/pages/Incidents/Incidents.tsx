@@ -1,194 +1,202 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMemo, useState } from 'react';
+import { TriangleAlert } from 'lucide-react';
 import {
-  getAllIncidents,
-  resolveIncident,
-  Incident,
-  IncidentType,
-} from '../../services/api/incidents';
-import { ResolveIncidentModal } from './components/ResolveIncidentModal';
-import Swal from 'sweetalert2';
+  AnalyticSummary,
+  Button,
+  Card,
+  ErrorState,
+  ListSkeleton,
+  PageHeader,
+  Select,
+  Tabs,
+  tabPanelProps,
+  type AnalyticItem,
+  type FilterChip,
+  type TabItem,
+  PageContainer,
+  TableToolbar,
+} from '../../common/components/ui';
+import { usePermissions, useUrlParams } from '../../hooks';
+import { useIncident, useIncidents } from '../../services/queries/incidents';
+import type { Incident } from '../../services/api/types';
+import { INCIDENT_STATUS, INCIDENT_TYPE, labelOf } from '../../utils/statusLabels';
+import { CreateIncidentModal } from './components/CreateIncidentModal';
+import { DiscardIncidentModal } from './components/DiscardIncidentModal';
+import { EditIncidentModal } from './components/EditIncidentModal';
+import { IncidentDetailDrawer } from './components/IncidentDetailDrawer';
+import { IncidentsTable } from './components/IncidentsTable';
+import {
+  INCIDENT_STATUS_ORDER,
+  INCIDENT_TYPE_ORDER,
+  countIncidentsByStatus,
+  filterIncidents,
+  type IncidentStatusFilter,
+  type IncidentTypeFilter,
+} from './incidentFilters';
 
-// Iconos
-import ReportProblemIcon from '@mui/icons-material/ReportProblem';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import PendingIcon from '@mui/icons-material/Pending';
+const TABS_ID = 'incidents';
 
-const TYPE_LABELS: Record<IncidentType, string> = {
-  damaged: 'Garrafa dañada',
-  out_of_stock: 'Sin stock',
-  no_show: 'Cliente ausente',
-  other: 'Otro',
+const STATUS_PLURAL: Record<Incident['status'], string> = {
+  open: 'Abiertas',
+  resolved: 'Resueltas',
+  discarded: 'Descartadas',
 };
 
+const TYPE_OPTIONS = [
+  { value: 'all', label: 'Todos los tipos' },
+  ...INCIDENT_TYPE_ORDER.map((type) => ({ value: type, label: labelOf(INCIDENT_TYPE, type).text })),
+];
+
 export const Incidents = () => {
-  const queryClient = useQueryClient();
-  const [selectedIncident, setSelectedIncident] = useState<Incident | null>(
-    null,
-  );
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const { data: incidents = [], isLoading } = useQuery(
-    ['incidents'],
-    getAllIncidents,
-  );
-
-  const resolveMutation = useMutation({
-    mutationFn: (resolutionNote: string) =>
-      resolveIncident(selectedIncident!.incident_id, resolutionNote),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['incidents']);
-      setIsModalOpen(false);
-      Swal.fire({
-        title: 'Resuelta',
-        text: 'La incidencia fue marcada como resuelta.',
-        icon: 'success',
-        customClass: {
-          confirmButton:
-            'bg-indigo-600 text-white font-bold px-6 py-2 rounded-md hover:bg-indigo-700 transition-colors',
-        },
-        buttonsStyling: false,
-      });
-    },
-    onError: () =>
-      Swal.fire({
-        title: 'Error',
-        text: 'No se pudo resolver la incidencia.',
-        icon: 'error',
-        customClass: {
-          confirmButton:
-            'bg-rose-600 text-white font-bold px-6 py-2 rounded-md hover:bg-rose-700 transition-colors',
-        },
-        buttonsStyling: false,
-      }),
+  const { data: incidents, isLoading, isFetching, error, refetch } = useIncidents();
+  const [{ status: statusParam, type: typeParam, q: term, incident }, setFilters] = useUrlParams({
+    status: 'all',
+    type: 'all',
+    q: '',
+    incident: '',
   });
+  const setStatus = (value: string) => setFilters({ status: value });
+  const setType = (value: string) => setFilters({ type: value });
+  const setTerm = (value: string) => setFilters({ q: value });
+  const status: IncidentStatusFilter = INCIDENT_STATUS_ORDER.find((s) => s === statusParam) ?? 'all';
+  const type: IncidentTypeFilter = INCIDENT_TYPE_ORDER.find((t) => t === typeParam) ?? 'all';
+  // La incidencia abierta vive en la URL (`?incident=<id>`): el aviso de la bandeja lleva directo a ella.
+  const selectedId = incident || null;
+  const setSelectedId = (id: string | null) => setFilters({ incident: id ?? '' });
+  const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState<Incident | null>(null);
+  const [discarding, setDiscarding] = useState<Incident | null>(null);
+  const { canOperate, canWrite, writeHint } = usePermissions();
 
-  const handleOpenResolve = (incident: Incident) => {
-    setSelectedIncident(incident);
-    setIsModalOpen(true);
+  const all = useMemo(() => incidents ?? [], [incidents]);
+  const counts = useMemo(() => countIncidentsByStatus(all), [all]);
+  const rows = useMemo(() => filterIncidents(all, { status, type, term }), [all, status, type, term]);
+  // La ficha viene de GET /incidents/:id (con pedido y cliente al día); mientras carga se muestra la fila del listado.
+  const detail = useIncident(selectedId);
+  const selected = detail.data ?? all.find((incident) => incident.incident_id === selectedId) ?? null;
+
+  const tabs: TabItem[] = [
+    { id: 'all', label: 'Todas', count: counts.all },
+    ...INCIDENT_STATUS_ORDER.map((s) => ({
+      id: s,
+      label: STATUS_PLURAL[s],
+      count: counts[s],
+      tone: labelOf(INCIDENT_STATUS, s).tone,
+    })),
+  ];
+  const summary: AnalyticItem[] = INCIDENT_STATUS_ORDER.map((s) => ({
+    key: s,
+    label: STATUS_PLURAL[s],
+    count: counts[s],
+    tone: labelOf(INCIDENT_STATUS, s).tone,
+  }));
+
+  const chips: FilterChip[] = [];
+  if (status !== 'all') chips.push({ key: 'status', label: labelOf(INCIDENT_STATUS, status).text });
+  if (type !== 'all') chips.push({ key: 'type', label: labelOf(INCIDENT_TYPE, type).text });
+  if (term.trim()) chips.push({ key: 'q', label: `"${term.trim()}"` });
+  const removeChip = (key: string) => {
+    if (key === 'status') setStatus('all');
+    else if (key === 'type') setType('all');
+    else setTerm('');
   };
-
-  const getStatusBadge = (status: string) => {
-    if (status === 'resolved') {
-      return (
-        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold border uppercase text-emerald-600 bg-emerald-50 border-emerald-100">
-          <CheckCircleIcon fontSize="inherit" /> Resuelta
-        </span>
-      );
-    }
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold border uppercase text-amber-600 bg-amber-50 border-amber-100">
-        <PendingIcon fontSize="inherit" /> Abierta
-      </span>
-    );
-  };
-
-  const openCount = incidents.filter((i) => i.status === 'open').length;
+  const clearAll = () => setFilters({ status: 'all', type: 'all', q: '' });
 
   return (
-    <div className="p-4 md:p-8 bg-slate-50 min-h-screen">
-      <div className="max-w-[1600px] mx-auto">
-        <header className="mb-8">
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3">
-            <ReportProblemIcon fontSize="large" className="text-slate-400" />{' '}
-            Incidencias de reparto
-          </h1>
-          <p className="text-slate-500 mt-1 ml-11">
-            Problemas reportados por los choferes durante la entrega
-            {openCount > 0 ? ` · ${openCount} abierta(s)` : ''}.
-          </p>
-        </header>
+    <PageContainer>
+      <PageHeader
+        title="Incidencias de reparto"
+        description="Problemas reportados por los choferes durante la entrega."
+        actions={
+          <Button
+            icon={<TriangleAlert />}
+            onClick={() => setCreating(true)}
+            blockedReason={canWrite ? undefined : writeHint}
+          >
+            Registrar incidencia
+          </Button>
+        }
+      />
 
-        <section className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-          {isLoading ? (
-            <div className="p-10 text-center text-slate-400">
-              Cargando incidencias...
+      {isLoading ? (
+        <Card>
+          <ListSkeleton />
+        </Card>
+      ) : error ? (
+        <Card>
+          <ErrorState error={error} resource="Las incidencias" onRetry={() => void refetch()} />
+        </Card>
+      ) : (
+        <>
+          <AnalyticSummary
+            label="Incidencias por estado"
+            items={summary}
+            selected={status === 'all' ? undefined : status}
+            onSelect={(key) => setStatus(key === status ? 'all' : key)}
+          />
+          <Card>
+            <Tabs
+              items={tabs}
+              value={status}
+              onChange={setStatus}
+              label="Filtrar incidencias por estado"
+              idPrefix={TABS_ID}
+            />
+            <div {...tabPanelProps(TABS_ID, status)}>
+              <TableToolbar
+                filters={
+                  <>
+                    <Select
+                      label="Tipo"
+                      className="sm:w-48"
+                      value={type}
+                      options={TYPE_OPTIONS}
+                      onChange={(e) => setType(e.target.value)}
+                    />
+                  </>
+                }
+                search={{
+                  label: 'Buscar incidencias',
+                  placeholder: 'Cliente, teléfono o n.º de pedido',
+                  value: term,
+                  onChange: (value) => setTerm(value),
+                }}
+                serverExport={{
+                  resource: 'incidencias',
+                  blockedReason:
+                    status !== 'all' || type !== 'all' || term.trim()
+                      ? 'El exporte trae todas las incidencias: quitá los filtros para exportar'
+                      : undefined,
+                }}
+                chips={chips}
+                onRemoveChip={removeChip}
+                onClearChips={clearAll}
+                resultCount={rows.length}
+                noun={['incidencia', 'incidencias']}
+              />
+              <IncidentsTable
+                rows={rows}
+                loading={isFetching}
+                filtered={chips.length > 0}
+                onView={(incident) => setSelectedId(incident.incident_id)}
+                onEdit={canOperate ? setEditing : undefined}
+                onDiscard={canOperate ? setDiscarding : undefined}
+              />
             </div>
-          ) : incidents.length === 0 ? (
-            <div className="p-16 text-center">
-              <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircleIcon className="text-emerald-300" fontSize="large" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-700">
-                Sin incidencias
-              </h3>
-              <p className="text-slate-500">
-                Los choferes no reportaron problemas de reparto.
-              </p>
-            </div>
-          ) : (
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-100">
-                <tr>
-                  <th className="px-6 py-4">ID</th>
-                  <th className="px-6 py-4">Fecha</th>
-                  <th className="px-6 py-4">Cliente / Pedido</th>
-                  <th className="px-6 py-4">Tipo</th>
-                  <th className="px-6 py-4">Descripción</th>
-                  <th className="px-6 py-4 text-center">Estado</th>
-                  <th className="px-6 py-4 text-center">Acción</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {incidents.map((incident: Incident) => (
-                  <tr
-                    key={incident.incident_id}
-                    className="hover:bg-slate-50 transition-colors"
-                  >
-                    <td className="px-6 py-4 font-mono text-xs text-slate-400">
-                      #{incident.incident_id.slice(-6)}
-                    </td>
-                    <td className="px-6 py-4 text-slate-600">
-                      {new Date(incident.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="font-bold text-slate-800">
-                        {incident.order?.customer?.full_name ?? '—'}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        Pedido #{incident.order_id.slice(-6)}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="font-medium text-slate-700">
-                        {TYPE_LABELS[incident.type] ?? incident.type}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-xs text-slate-500 truncate max-w-[220px]">
-                        {incident.description}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      {getStatusBadge(incident.status)}
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      {incident.status === 'open' ? (
-                        <button
-                          onClick={() => handleOpenResolve(incident)}
-                          className="bg-indigo-600 text-white font-bold hover:bg-indigo-700 px-3 py-1 rounded transition-colors text-xs border border-indigo-600"
-                        >
-                          Resolver
-                        </button>
-                      ) : (
-                        <span className="text-xs text-slate-400">—</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </section>
+          </Card>
+        </>
+      )}
 
-        <ResolveIncidentModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          incident={selectedIncident}
-          onResolve={(note) => resolveMutation.mutate(note)}
-          isResolving={resolveMutation.isLoading}
-        />
-      </div>
-    </div>
+      <IncidentDetailDrawer
+        open={selected !== null}
+        onClose={() => setSelectedId(null)}
+        incident={selected}
+        onEdit={setEditing}
+        onDiscard={setDiscarding}
+      />
+      <EditIncidentModal incident={editing} onClose={() => setEditing(null)} />
+      <DiscardIncidentModal incident={discarding} onClose={() => setDiscarding(null)} />
+      <CreateIncidentModal open={creating} onClose={() => setCreating(false)} />
+    </PageContainer>
   );
 };

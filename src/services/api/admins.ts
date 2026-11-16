@@ -1,52 +1,50 @@
-import { privateAxiosInstance } from './axiosConfig';
+import { http } from './httpClient';
+import { registerUser, type AccountFields } from './registration';
+import type { Admin, AdminVista, Message, UpdateAdminBody, User } from './types';
 
-export interface AdminRole {
-  role_id: string;
-  /** Identificador del rol (columna `type` del backend): 'admin' | 'super_admin' | ... */
-  type: string;
-}
-
-export interface AdminUser {
-  user_id: string;
-  full_name?: string;
-  email?: string;
-  phone_number?: string;
-}
-
-export interface Admin {
-  admin_id: string;
-  user_id: string;
-  role_id: string;
-  distributor_id?: string | null;
-  user?: AdminUser;
-  role?: AdminRole;
-  distributor?: { distributor_id: string; name: string; slug: string };
-}
-
-export interface RegisterAdminPayload {
-  email: string;
-  password: string;
-  full_name: string;
-  phone_number: string;
-  role_id: string;
-  distributorId?: string;
-}
-
-// GET /admin — lista de admins (scopeada por distribuidora en el backend).
-export const getAdmins = async () => {
-  const { data } = await privateAxiosInstance.get<Admin[]>('/admin');
+/**
+ * GET /admin: los administradores. Con `distributorId`, los de esa empresa (el administrador general
+ * puede pedir cualquiera; un admin de empresa sólo la suya, si no 403); sin él, los del contexto.
+ */
+export const listAdmins = async (distributorId?: string): Promise<Admin[]> => {
+  const { data } = await http.get<Admin[]>('/admin', { params: { distributorId } });
   return data;
 };
 
-// POST /admin/register — alta de admin (super_admin). El backend crea el user
-// en Firebase + DB y la entidad Admin, asociándolo a la distribuidora.
-export const registerAdmin = async (payload: RegisterAdminPayload) => {
-  const { data } = await privateAxiosInstance.post('/admin/register', payload);
+/** GET /admin/:id: la ficha de un administrador (usuario, rol y empresa). 404 si no existe o es de otra empresa. */
+export const getAdmin = async (id: string): Promise<Admin> => {
+  const { data } = await http.get<Admin>(`/admin/${id}`);
   return data;
 };
 
-// GET /role — roles disponibles para asignar al admin.
-export const getRoles = async () => {
-  const { data } = await privateAxiosInstance.get<AdminRole[]>('/role');
+/** GET /admin/term/:term (CU-088): un admin puntual, por su id o su correo. */
+export const findAdminByTerm = async (term: string): Promise<AdminVista> => {
+  const { data } = await http.get<AdminVista>(`/admin/term/${encodeURIComponent(term)}`);
+  return data;
+};
+
+export type AdminRole = 'admin' | 'super_admin';
+
+/** Los datos de cuenta de un admin nuevo. La empresa sólo la elige un administrador general. */
+export type AdminAccountFields = AccountFields & { distributorId?: string };
+
+/** Alta de un admin: POST /users con rol admin o super_admin. */
+export const createAdmin = (role: AdminRole, account: AdminAccountFields): Promise<User> => registerUser(role, account);
+
+/**
+ * PATCH /admin/:id: nombre y teléfono del administrador (el correo y el bloqueo van por otras rutas). 403 si un admin de
+ * empresa se edita a sí mismo, 404 si es de otra empresa o un super admin, 409 si el teléfono ya lo usa otra cuenta.
+ */
+export const updateAdmin = async (id: string, body: UpdateAdminBody): Promise<Admin> => {
+  const { data } = await http.patch<Admin>(`/admin/${id}`, body);
+  return data;
+};
+
+/**
+ * DELETE /admin/:id: baja lógica del administrador (deshabilita su cuenta de acceso; nada se borra). 403 si es uno
+ * mismo, 409 si es el último administrador activo de la empresa o el último super admin.
+ */
+export const deleteAdmin = async (id: string): Promise<Message> => {
+  const { data } = await http.delete<Message>(`/admin/${id}`);
   return data;
 };

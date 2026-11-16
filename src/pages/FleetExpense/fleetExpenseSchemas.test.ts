@@ -1,0 +1,292 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  accidentSchema,
+  closeAccidentSchema,
+  fuelFitsTank,
+  fuelLoadSchema,
+  nextAccidentStatuses,
+  parseLatLng,
+  payFineSchema,
+  tireEventSchema,
+  tireEventsFor,
+  tireSchema,
+  trafficFineSchema,
+} from './fleetExpenseSchemas';
+
+/** Reloj fijo: las reglas de «no futuro» y «no pasado» dependen de la hora de ejecución. */
+const NOW = new Date('2026-10-21T15:00:00.000Z');
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(NOW);
+});
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+const fuel = {
+  carId: 'c1',
+  loadedAt: '',
+  fuelType: '',
+  liters: '40',
+  unitPrice: '1000',
+  totalAmount: '40000',
+  odometerKm: '1000',
+  isFullTank: true,
+  station: '',
+  paymentMethod: 'card',
+  receiptNumber: '',
+  notes: '',
+  odometerCorrection: false,
+  odometerCorrectionNote: '',
+};
+
+describe('carga de combustible', () => {
+  it('acepta una carga coherente', () => {
+    expect(fuelLoadSchema.safeParse(fuel).success).toBe(true);
+  });
+
+  it('el importe contra litros × precio lo controla el back: el formulario sólo pide un importe', () => {
+    expect(fuelLoadSchema.safeParse({ ...fuel, totalAmount: '50000' }).success).toBe(true);
+    expect(fuelLoadSchema.safeParse({ ...fuel, totalAmount: '' }).success).toBe(false);
+  });
+
+  it('los litros entran en el tanque con 5 % de tolerancia; sin capacidad no se controla', () => {
+    expect(fuelFitsTank(63, 60)).toBe(true);
+    expect(fuelFitsTank(63.1, 60)).toBe(false);
+    expect(fuelFitsTank(500, null)).toBe(true);
+  });
+
+  it('exige vehículo, medio de pago, litros y precio positivos y kilometraje entero', () => {
+    expect(fuelLoadSchema.safeParse({ ...fuel, carId: '' }).success).toBe(false);
+    expect(fuelLoadSchema.safeParse({ ...fuel, paymentMethod: '' }).success).toBe(false);
+    expect(fuelLoadSchema.safeParse({ ...fuel, liters: '0', totalAmount: '0' }).success).toBe(false);
+    expect(fuelLoadSchema.safeParse({ ...fuel, unitPrice: '-1' }).success).toBe(false);
+    expect(fuelLoadSchema.safeParse({ ...fuel, odometerKm: '10.5' }).success).toBe(false);
+    expect(fuelLoadSchema.safeParse({ ...fuel, odometerKm: '' }).success).toBe(false);
+  });
+
+  it('el kilometraje tiene el tope del back y la carga no puede ser futura', () => {
+    expect(fuelLoadSchema.safeParse({ ...fuel, odometerKm: '2000000' }).success).toBe(true);
+    expect(fuelLoadSchema.safeParse({ ...fuel, odometerKm: '2000001' }).success).toBe(false);
+    const tomorrow = new Date(Date.now() + 24 * 3600 * 1000);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const future = `${tomorrow.getFullYear()}-${pad(tomorrow.getMonth() + 1)}-${pad(tomorrow.getDate())}T10:00`;
+    const res = fuelLoadSchema.safeParse({ ...fuel, loadedAt: future });
+    expect(res.error?.issues[0]).toMatchObject({ path: ['loadedAt'] });
+    expect(fuelLoadSchema.safeParse({ ...fuel, loadedAt: '2026-10-10T12:00' }).success).toBe(true);
+  });
+
+  it('corregir el kilometraje exige la nota', () => {
+    const res = fuelLoadSchema.safeParse({ ...fuel, odometerCorrection: true });
+    expect(res.error?.issues[0]).toMatchObject({ path: ['odometerCorrectionNote'] });
+    expect(
+      fuelLoadSchema.safeParse({ ...fuel, odometerCorrection: true, odometerCorrectionNote: 'Cambio de tablero' })
+        .success,
+    ).toBe(true);
+  });
+});
+
+describe('multa', () => {
+  const fine = {
+    carId: 'c1',
+    occurredAt: '2026-10-10T12:00',
+    jurisdiction: 'Posadas',
+    actNumber: 'A-1',
+    infraction: 'Exceso de velocidad',
+    amount: '85000',
+    voluntaryPaymentAmount: '',
+    dueDate: '',
+    employeeId: '',
+    paymentUrl: '',
+    paymentCode: '',
+  };
+
+  it('acepta los datos mínimos y deja vacío el pago voluntario', () => {
+    const res = trafficFineSchema.safeParse(fine);
+    expect(res.success).toBe(true);
+    expect(res.data?.voluntaryPaymentAmount).toBeUndefined();
+  });
+
+  it('el pago voluntario no supera el importe', () => {
+    const res = trafficFineSchema.safeParse({ ...fine, voluntaryPaymentAmount: '90000' });
+    expect(res.error?.issues[0]).toMatchObject({ path: ['voluntaryPaymentAmount'] });
+  });
+
+  it('exige jurisdicción, acta e infracción y un importe positivo', () => {
+    for (const patch of [{ jurisdiction: ' ' }, { actNumber: '' }, { infraction: '' }, { amount: '0' }]) {
+      expect(trafficFineSchema.safeParse({ ...fine, ...patch }).success).toBe(false);
+    }
+  });
+
+  it('el enlace de pago tiene que ser https y el código tiene tope', () => {
+    expect(trafficFineSchema.safeParse({ ...fine, paymentUrl: 'https://pagos.posadas.gob.ar/m1' }).success).toBe(true);
+    for (const paymentUrl of ['http://pagos.test', 'pagos.test', 'javascript:alert(1)']) {
+      expect(trafficFineSchema.safeParse({ ...fine, paymentUrl }).error?.issues[0]).toMatchObject({
+        path: ['paymentUrl'],
+      });
+    }
+    expect(trafficFineSchema.safeParse({ ...fine, paymentCode: 'x'.repeat(81) }).success).toBe(false);
+  });
+});
+
+describe('siniestro', () => {
+  const accident = {
+    carId: 'c1',
+    occurredAt: '2026-10-10T12:00',
+    location: '',
+    address: '',
+    description: 'Choque',
+    injuries: false,
+    thirdPartiesInvolved: false,
+    hazmatRelease: false,
+    policeReportNumber: '',
+    insurerClaimNumber: '',
+    vehicleUnusable: false,
+    status: 'reported',
+  };
+
+  it('el punto es opcional, pero si está tiene que ser «latitud,longitud» válido', () => {
+    expect(accidentSchema.safeParse(accident).success).toBe(true);
+    expect(accidentSchema.safeParse({ ...accident, location: '-27.3671,-55.8961' }).success).toBe(true);
+    expect(accidentSchema.safeParse({ ...accident, location: '95,200' }).success).toBe(false);
+    expect(accidentSchema.safeParse({ ...accident, location: 'acá' }).success).toBe(false);
+    expect(parseLatLng(' -27.3, -55.9 ')).toEqual({ lat: -27.3, lng: -55.9 });
+    expect(parseLatLng('12')).toBeNull();
+  });
+
+  it('el siniestro no puede ser futuro', () => {
+    const next = new Date(Date.now() + 24 * 3600 * 1000);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const future = `${next.getFullYear()}-${pad(next.getMonth() + 1)}-${pad(next.getDate())}T10:00`;
+    const res = accidentSchema.safeParse({ ...accident, occurredAt: future });
+    expect(res.error?.issues[0]).toMatchObject({ path: ['occurredAt'] });
+  });
+
+  it('exige la descripción', () => {
+    expect(accidentSchema.safeParse({ ...accident, description: ' ' }).success).toBe(false);
+  });
+
+  it('desde cada estado sólo se puede quedar o pasar al siguiente; el cierre es aparte', () => {
+    expect(nextAccidentStatuses('reported')).toEqual(['reported', 'under_review']);
+    expect(nextAccidentStatuses('under_review')).toEqual(['under_review', 'repairing']);
+    expect(nextAccidentStatuses('repairing')).toEqual(['repairing']);
+    expect(nextAccidentStatuses('closed')).toEqual([]);
+  });
+
+  it('el cierre acepta ceros y rechaza importes negativos', () => {
+    const ok = { repairCost: '350000', insurerReimbursement: '0', deductibleAmount: '0' };
+    expect(closeAccidentSchema.safeParse(ok).success).toBe(true);
+    expect(closeAccidentSchema.safeParse({ ...ok, repairCost: '-1' }).success).toBe(false);
+    expect(closeAccidentSchema.safeParse({ ...ok, insurerReimbursement: '' }).success).toBe(false);
+  });
+});
+
+describe('neumáticos', () => {
+  it('el alta pide serie, marca, medida y un costo no negativo', () => {
+    const ok = { serialNumber: 'S-1', brand: 'Pirelli', size: '215/75', cost: '1000' };
+    expect(tireSchema.safeParse(ok).success).toBe(true);
+    expect(tireSchema.safeParse({ ...ok, serialNumber: '' }).success).toBe(false);
+    expect(tireSchema.safeParse({ ...ok, cost: '-1' }).success).toBe(false);
+  });
+
+  it('cada estado admite sus movimientos', () => {
+    expect(tireEventsFor('in_stock')).toEqual(['mount', 'retread', 'retire']);
+    expect(tireEventsFor('mounted')).toEqual(['unmount', 'rotate', 'retire']);
+    expect(tireEventsFor('retired')).toEqual([]);
+  });
+
+  it('montar pide vehículo y posición; rotar, la posición; el resto, sólo el kilometraje', () => {
+    const base = { odometerKm: '100', carId: '', position: '' };
+    expect(tireEventSchema.safeParse({ ...base, type: 'mount' }).success).toBe(false);
+    expect(tireEventSchema.safeParse({ ...base, type: 'mount', carId: 'c1', position: 'DI' }).success).toBe(true);
+    expect(tireEventSchema.safeParse({ ...base, type: 'rotate' }).success).toBe(false);
+    expect(tireEventSchema.safeParse({ ...base, type: 'rotate', position: 'TD' }).success).toBe(true);
+    expect(tireEventSchema.safeParse({ ...base, type: 'unmount' }).success).toBe(true);
+    expect(tireEventSchema.safeParse({ ...base, type: 'retire', odometerKm: '' }).success).toBe(false);
+    expect(tireEventSchema.safeParse({ ...base, type: 'unmount', position: 'demasiado-larga' }).success).toBe(false);
+  });
+});
+
+describe('fechas que no pueden ser futuras', () => {
+  it('la carga de combustible no puede ser futura', () => {
+    expect(fuelLoadSchema.safeParse({ ...fuel, loadedAt: '2099-01-01T10:00' }).success).toBe(false);
+    expect(fuelLoadSchema.safeParse({ ...fuel, loadedAt: '2020-01-01T10:00' }).success).toBe(true);
+  });
+
+  it('la multa: infracción no futura y vencimiento no anterior a la infracción', () => {
+    const base = {
+      carId: 'c1',
+      occurredAt: '2026-03-10T10:00',
+      jurisdiction: 'Posadas',
+      actNumber: 'A-1',
+      infraction: 'Exceso de velocidad',
+      amount: '100000',
+      dueDate: '',
+      employeeId: '',
+      paymentUrl: '',
+      paymentCode: '',
+    };
+    expect(trafficFineSchema.safeParse(base).success).toBe(true);
+    expect(trafficFineSchema.safeParse({ ...base, occurredAt: '2099-01-01T10:00' }).success).toBe(false);
+    expect(trafficFineSchema.safeParse({ ...base, dueDate: '2026-03-09' }).success).toBe(false);
+    expect(trafficFineSchema.safeParse({ ...base, dueDate: '2026-03-10' }).success).toBe(true);
+  });
+});
+
+describe('misma tolerancia que el back (5 minutos)', () => {
+  const inMinutes = (m: number) => new Date(Date.now() + m * 60_000).toISOString();
+  const accident = {
+    carId: 'c1',
+    occurredAt: '2026-03-10T10:00',
+    location: '',
+    address: '',
+    description: 'Choque',
+    injuries: false,
+    thirdPartiesInvolved: false,
+    hazmatRelease: false,
+    policeReportNumber: '',
+    insurerClaimNumber: '',
+    vehicleUnusable: false,
+    status: 'reported' as const,
+  };
+
+  it('el siniestro no puede ser futuro', () => {
+    expect(accidentSchema.safeParse(accident).success).toBe(true);
+    expect(accidentSchema.safeParse({ ...accident, occurredAt: '2099-01-01T10:00' }).success).toBe(false);
+  });
+
+  it('la carga acepta hasta 5 minutos de adelanto', () => {
+    expect(fuelLoadSchema.safeParse({ ...fuel, loadedAt: inMinutes(3) }).success).toBe(true);
+    expect(fuelLoadSchema.safeParse({ ...fuel, loadedAt: inMinutes(30) }).success).toBe(false);
+  });
+
+  describe('pago de la multa', () => {
+    const paid = { paidAt: '2026-10-21T10:00', amount: '59500', operationNumber: '', cashBoxId: 'caja-1' };
+
+    it('acepta fecha y hora, importe, n.º de operación opcional y la caja', () => {
+      expect(payFineSchema(85000).safeParse(paid).success).toBe(true);
+    });
+
+    it('exige caja, importe positivo y una fecha que no sea futura', () => {
+      const schema = payFineSchema(85000);
+      expect(schema.safeParse({ ...paid, cashBoxId: '' }).success).toBe(false);
+      expect(schema.safeParse({ ...paid, amount: '0' }).success).toBe(false);
+      expect(schema.safeParse({ ...paid, paidAt: '2026-10-22T10:00' }).success).toBe(false);
+      expect(schema.safeParse({ ...paid, paidAt: '' }).success).toBe(false);
+    });
+
+    it('no se paga más que el importe de la multa', () => {
+      const schema = payFineSchema(85000);
+      expect(schema.safeParse({ ...paid, amount: '85000' }).success).toBe(true);
+      expect(schema.safeParse({ ...paid, amount: '85000.01' }).error?.issues[0]).toMatchObject({ path: ['amount'] });
+    });
+
+    it('no puede ser anterior al día de la infracción', () => {
+      const schema = payFineSchema(85000, '2026-10-10T12:00:00.000Z');
+      expect(schema.safeParse({ ...paid, paidAt: '2026-10-09T10:00' }).error?.issues[0]).toMatchObject({
+        path: ['paidAt'],
+      });
+      expect(schema.safeParse({ ...paid, paidAt: '2026-10-10T10:00' }).success).toBe(true);
+    });
+  });
+});

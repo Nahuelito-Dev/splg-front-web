@@ -1,170 +1,249 @@
-import { useState } from 'react';
-import { CustomersTable, CustomerModal } from './components';
-import { 
-  createCustomer, 
-  updateCustomer, 
-  deleteCustomer 
-} from '../../services/api/customers';
-import { resetUserPassword } from '../../services/api/users';
-import { useCRUDModal } from '../../hooks';
-import Swal from 'sweetalert2';
-import { Customer } from '../../interfaces';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import { useEffect, useState } from 'react';
+import type { GridPaginationModel } from '@mui/x-data-grid';
+import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
+import { SearchCheck } from 'lucide-react';
+import {
+  AnalyticSummary,
+  Button,
+  Card,
+  PageHeader,
+  SelectionBar,
+  TableToolbar,
+  Tabs,
+  tabPanelProps,
+  type AnalyticItem,
+  type FilterChip,
+  type TabItem,
+  PageContainer,
+  EmptyState,
+} from '../../common/components/ui';
+import { useDebounce, usePermissions, useUrlParams } from '../../hooks';
+import { customerQuery } from '../../services/api/customers';
+import type { Customer } from '../../services/api/types';
+import {
+  useCustomerStatusCounts,
+  useCustomers,
+  useRemoveCustomer,
+  useRemovedCustomerCount,
+  useRemovedCustomers,
+  useRestoreCustomer,
+} from '../../services/queries/customers';
+import { confirm, notify } from '../../utils/notifications';
+import { CustomerFormModal } from './components/CustomerFormModal';
+import { CustomersTable } from './components/CustomersTable';
+import { FindCustomerByUserModal } from './components/FindCustomerByUserModal';
+import { RemovedCustomersTable } from './components/RemovedCustomersTable';
+import { removalConfirmation, restoreConfirmation, removalError } from './customerRemoval';
+import { CUSTOMER_SEGMENTS, CUSTOMER_SEGMENT_LABELS, type CustomerSegment } from './customerSegments';
+import { asText, csvDateTime } from '../../utils/csv';
+
+type FormState = { open: false } | { open: true; customer: Customer | null };
+
+const TABS_ID = 'customers';
+const PAGE_SIZE = 10;
+const CSV_HEADERS = ['Cliente', 'Email', 'Teléfono', 'Alta'];
 
 export const Customers = () => {
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const queryClient = useQueryClient();
-
-  const { deleteMutation } = useCRUDModal({
-    deleteFn: deleteCustomer,
-    queryKey: 'customers',
+  const { canManageCustomerAccounts, needsDistributor, operateHint, canWrite, writeHint } = usePermissions();
+  // La búsqueda, el segmento y la página viven en la URL: al volver de una ficha se conservan.
+  const [{ q: search, status: statusParam, page: pageParam }, setFilters] = useUrlParams({
+    q: '',
+    status: 'all',
+    page: '1',
   });
+  const debouncedSearch = useDebounce(search.trim());
+  const pagination: GridPaginationModel = { page: Math.max(0, Number(pageParam) - 1 || 0), pageSize: PAGE_SIZE };
+  const setPagination = (model: GridPaginationModel) => setFilters({ page: String(model.page + 1) });
+  const [form, setForm] = useState<FormState>({ open: false });
+  const [findingByUser, setFindingByUser] = useState(false);
 
-  const saveMutation = useMutation({
-    mutationFn: async (data: any) => {
-      if (selectedCustomer) {
-        // Update datos del customer
-        const result = await updateCustomer(selectedCustomer.customer_id, {
-          validated: data.validated,
-        });
+  // El estado de la cuenta y la búsqueda los resuelve la API (`?status=`, `?term=`); los conteos son sus totales reales.
+  const segment: CustomerSegment = CUSTOMER_SEGMENTS.find((s) => s === statusParam) ?? 'all';
+  const removedView = segment === 'removed';
+  const statusFilter = segment === 'all' || removedView ? undefined : segment;
+  const active = useCustomers(pagination, debouncedSearch, statusFilter, !removedView);
+  // La lista de dados de baja es por distribuidora: sin «Ver como» el back responde 400, así que ni se pide.
+  const removed = useRemovedCustomers(pagination, debouncedSearch, removedView && !needsDistributor);
+  const server = removedView ? removed : active;
+  const counts = {
+    ...useCustomerStatusCounts(debouncedSearch),
+    removed: useRemovedCustomerCount(debouncedSearch, !needsDistributor),
+  };
+  const rows = server.data?.rows ?? [];
+  const total = server.data?.total ?? 0;
+  const loading = server.isFetching;
+  // Una `?page=` fuera de rango (o una página que quedó vacía tras dar de baja) vuelve a la primera.
+  useEffect(() => {
+    if (!loading && total > 0 && rows.length === 0 && pagination.page > 0) setFilters({ page: '1' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, total, rows.length, pagination.page]);
+  const removeCustomer = useRemoveCustomer();
+  const restoreCustomer = useRestoreCustomer();
 
-        // Si se incluyó nueva contraseña, actualizarla via Firebase
-        if (data.newPassword && selectedCustomer.user_id) {
-          await resetUserPassword(selectedCustomer.user_id, data.newPassword);
-        }
+  // La selección es sólo de lo que se ve: cambiar de segmento, búsqueda o página la suelta.
+  const [selected, setSelected] = useState<Record<string, Customer>>({});
+  const clearSelection = () => setSelected({});
+  const changeFilters = (patch: Parameters<typeof setFilters>[0]) => {
+    clearSelection();
+    setFilters(patch);
+  };
+  const visibleIds = new Set(rows.map((customer) => customer.customer_id));
+  const selectedCustomers = Object.values(selected).filter((customer) => visibleIds.has(customer.customer_id));
+  const handleSelection = (ids: string[]) =>
+    setSelected((previous) => {
+      const known = { ...previous, ...Object.fromEntries(rows.map((customer) => [customer.customer_id, customer])) };
+      return Object.fromEntries(ids.flatMap((id) => (known[id] ? [[id, known[id]]] : [])));
+    });
+  const toCsvRows = (list: Customer[]) =>
+    list.map((customer) => [
+      customer.user?.full_name ?? '',
+      customer.user?.email ?? '',
+      asText(customer.user?.phone_number),
+      csvDateTime(customer.createdAt),
+    ]);
 
-        return result;
-      }
-      return await createCustomer(data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['customers']);
-      setIsModalOpen(false);
-      Swal.fire({
-        title: 'Éxito',
-        text: 'Cliente guardado correctamente',
-        icon: 'success',
-        confirmButtonText: 'OK',
-        customClass: {
-          popup: 'rounded-2xl shadow-xl',
-          confirmButton: 'bg-indigo-600 text-white px-5 py-2 rounded-lg'
-        },
-        buttonsStyling: false
-      });
-    },
-    onError: (err: any) => {
-      const errorMessage = err.response?.data?.message || 'Error al guardar el cliente';
-      Swal.fire({
-        title: 'Error',
-        text: typeof errorMessage === 'string' ? errorMessage : 'Error interno del servidor',
-        icon: 'error',
-        confirmButtonText: 'OK',
-        customClass: {
-          popup: 'rounded-2xl shadow-xl',
-          confirmButton: 'bg-indigo-600 text-white px-5 py-2 rounded-lg'
-        },
-        buttonsStyling: false
-      });
-    },
-  });
+  const summary: AnalyticItem[] = [
+    { key: 'active', label: CUSTOMER_SEGMENT_LABELS.active, count: counts.active, tone: 'success' },
+    { key: 'blocked', label: CUSTOMER_SEGMENT_LABELS.blocked, count: counts.blocked, tone: 'danger' },
+  ];
 
-  const handleAction = async (event: any) => {
-    const { row, field } = event;
+  const tabs: TabItem[] = CUSTOMER_SEGMENTS.map((s) => ({
+    id: s,
+    label: CUSTOMER_SEGMENT_LABELS[s],
+    count: counts[s],
+    tone: s === 'blocked' ? 'danger' : s === 'active' ? 'success' : undefined,
+  }));
 
-    if (field === 'delete') {
-      const result = await Swal.fire({
-        title: '¿Eliminar Cliente?',
-        text: `Se eliminará al cliente "${row.user?.full_name || 'Desconocido'}" y sus datos asociados.`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#f43f5e',
-        cancelButtonColor: '#cbd5e1',
-        confirmButtonText: 'Sí, eliminar',
-        cancelButtonText: 'Cancelar',
-        customClass: {
-          popup: 'rounded-2xl shadow-xl',
-          confirmButton: 'bg-rose-500 text-white px-5 py-2 rounded-lg',
-          cancelButton: 'bg-slate-200 text-slate-600 px-5 py-2 rounded-lg'
-        },
-        buttonsStyling: false
-      });
+  const chips: FilterChip[] = [];
+  if (segment !== 'all') chips.push({ key: 'status', label: CUSTOMER_SEGMENT_LABELS[segment] });
+  if (search.trim()) chips.push({ key: 'q', label: `"${search.trim()}"` });
+  const removeChip = (key: string) =>
+    changeFilters(key === 'status' ? { status: 'all', page: '1' } : { q: '', page: '1' });
 
-      if (result.isConfirmed) {
-        try {
-          await deleteMutation.mutateAsync(row.customer_id);
-          Swal.fire({
-            title: 'Eliminado',
-            text: 'El cliente ha sido eliminado.',
-            icon: 'success',
-            confirmButtonText: 'OK',
-            customClass: {
-              popup: 'rounded-2xl shadow-xl',
-              confirmButton: 'bg-indigo-600 text-white px-5 py-2 rounded-lg'
-            },
-            buttonsStyling: false
-          });
-        } catch (error) {
-          Swal.fire({
-            title: 'Error',
-            text: 'No se pudo eliminar al cliente.',
-            icon: 'error',
-            confirmButtonText: 'OK',
-            customClass: {
-              popup: 'rounded-2xl shadow-xl',
-              confirmButton: 'bg-indigo-600 text-white px-5 py-2 rounded-lg'
-            },
-            buttonsStyling: false
-          });
-        }
-      }
-    }
-
-    if (field === 'edit') {
-      setSelectedCustomer(row);
-      setIsModalOpen(true);
-    }
+  const handleDelete = async (customer: Customer) => {
+    const confirmed = await confirm(removalConfirmation(customer.user?.full_name));
+    if (!confirmed) return;
+    removeCustomer.mutate(customer.customer_id, {
+      onSuccess: () => notify.success('Cliente dado de baja'),
+      onError: (error) => notify.error(removalError(error)),
+    });
   };
 
-  const openCreateModal = () => {
-    setSelectedCustomer(null);
-    setIsModalOpen(true);
+  const handleRestore = async (customer: Customer) => {
+    const confirmed = await confirm(restoreConfirmation(customer.user?.full_name));
+    if (!confirmed) return;
+    restoreCustomer.mutate(customer.customer_id, {
+      onSuccess: () => notify.success('Cliente reactivado'),
+      onError: (error) => notify.error(removalError(error)),
+    });
   };
 
   return (
-    <div className="p-4 md:p-8 bg-slate-50 min-h-screen">
-      <div className="max-w-[1600px] mx-auto">
-        <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-              Cartera de Clientes
-            </h1>
-            <p className="text-slate-500 mt-1 text-lg">
-              Visualiza y administra los clientes registrados desde la App.
-            </p>
+    <PageContainer>
+      <PageHeader
+        title="Clientes"
+        description="Los clientes que le compraron a la distribuidora."
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" icon={<SearchCheck />} onClick={() => setFindingByUser(true)}>
+              Buscar por usuario
+            </Button>
+            <Button
+              icon={<PersonAddAlt1Icon />}
+              onClick={() => setForm({ open: true, customer: null })}
+              blockedReason={canWrite ? undefined : writeHint}
+            >
+              Nuevo cliente
+            </Button>
           </div>
+        }
+      />
 
-          <button
-            onClick={openCreateModal}
-            className="bg-indigo-600 text-white px-5 py-3 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition-all flex items-center gap-2"
-          >
-            <PersonAddIcon fontSize="small" /> Nuevo Cliente
-          </button>
-        </header>
+      <AnalyticSummary
+        label="Clientes por estado de la cuenta"
+        items={summary}
+        selected={segment === 'all' ? undefined : segment}
+        onSelect={(key) => changeFilters({ status: key === segment ? 'all' : key, page: '1' })}
+      />
 
-        <section className="bg-white rounded-2xl shadow-sm border border-slate-200">
-          <CustomersTable setAction={handleAction} />
-        </section>
-
-        <CustomerModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          customer={selectedCustomer}
-          onSave={(data) => saveMutation.mutate(data)}
-          isSaving={saveMutation.isLoading}
+      <Card>
+        <Tabs
+          items={tabs}
+          value={segment}
+          onChange={(id) => changeFilters({ status: id, page: '1' })}
+          label="Filtrar clientes por estado de la cuenta"
+          idPrefix={TABS_ID}
         />
-      </div>
-    </div>
+        <div {...tabPanelProps(TABS_ID, segment)}>
+          <TableToolbar
+            search={{
+              label: 'Buscar clientes',
+              // Los dados de baja se buscan por nombre o teléfono (el back no busca por correo ahí).
+              placeholder: removedView ? 'Nombre o teléfono' : 'Nombre, email o teléfono',
+              value: search,
+              onChange: (value) => changeFilters({ q: value, page: '1' }),
+            }}
+            serverExport={
+              removedView ? undefined : { resource: 'clientes', params: customerQuery(debouncedSearch, statusFilter) }
+            }
+            csv={
+              selectedCustomers.length > 0
+                ? {
+                    filename: 'clientes',
+                    label: 'Exportar selección',
+                    headers: CSV_HEADERS,
+                    rows: toCsvRows(selectedCustomers),
+                  }
+                : undefined
+            }
+            chips={chips}
+            onRemoveChip={removeChip}
+            onClearChips={() => changeFilters({ q: '', status: 'all', page: '1' })}
+            resultCount={server.data ? total : undefined}
+            noun={['cliente', 'clientes']}
+          />
+          {removedView && needsDistributor ? (
+            <EmptyState title="Elegí una distribuidora" description={operateHint} />
+          ) : removedView ? (
+            <RemovedCustomersTable
+              rows={rows}
+              total={total}
+              loading={loading}
+              filtered={Boolean(search.trim())}
+              pagination={pagination}
+              onPaginationChange={setPagination}
+              onRestore={(customer) => void handleRestore(customer)}
+              restoreBlockedReason={operateHint}
+            />
+          ) : (
+            <>
+              <SelectionBar count={selectedCustomers.length} noun={['cliente', 'clientes']} onClear={clearSelection}>
+                <span className="text-sm text-primary-strong">Se exporta sólo la selección.</span>
+              </SelectionBar>
+              <CustomersTable
+                rows={rows}
+                total={total}
+                loading={loading}
+                filtered={chips.length > 0}
+                pagination={pagination}
+                onPaginationChange={setPagination}
+                onEdit={canManageCustomerAccounts ? (customer) => setForm({ open: true, customer }) : undefined}
+                selection={{ ids: Object.keys(selected), onChange: handleSelection }}
+                onPageChange={clearSelection}
+                onDelete={(customer) => void handleDelete(customer)}
+                deleteBlockedReason={operateHint}
+              />
+            </>
+          )}
+        </div>
+      </Card>
+
+      <CustomerFormModal
+        open={form.open}
+        onClose={() => setForm({ open: false })}
+        customer={form.open ? form.customer : null}
+      />
+      <FindCustomerByUserModal open={findingByUser} onClose={() => setFindingByUser(false)} />
+    </PageContainer>
   );
 };

@@ -1,264 +1,195 @@
-import { useState, useEffect } from 'react';
-import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
-import { useTable } from '../../../hooks';
-import { getAllOrders, Order } from '../../../services/api/orders';
-import { CustomTable } from '../../../common/components';
+import type { GridColDef, GridPaginationModel } from '@mui/x-data-grid';
+import { useMemo } from 'react';
+import { UserRoundCog } from 'lucide-react';
+import { Badge, DataTable, EmptyState, IdentityCell, PersonAvatar, RowActions } from '../../../common/components/ui';
+import { usePermissions } from '../../../hooks';
+import type { Order } from '../../../services/api/types';
+import { formatCurrency, formatDateTime, formatNumber, formatShortId } from '../../../utils/format';
+import { useOrderPaymentStates } from '../../../services/queries/orders';
+import { labelOf, mercadoPagoPaymentLabel, ORDER_STATUS, paymentStatusLabel } from '../../../utils/statusLabels';
+import { orderEditBlockedReason } from './orderEdit';
+import { isClosed, assignPaymentBlock } from './orderStatus';
 
-// UI & Icons
-import { IconButton, Tooltip } from '@mui/material';
-import AssignmentIndIcon from '@mui/icons-material/AssignmentInd';
-import CancelIcon from '@mui/icons-material/Cancel';
-import RemoveRedEyeIcon from '@mui/icons-material/RemoveRedEye';
-import LocalShippingIcon from '@mui/icons-material/LocalShipping';
-import CircleIcon from '@mui/icons-material/Circle';
-import SearchIcon from '@mui/icons-material/Search';
+/** "Villa Lanús +10 %" o "Garupá +$ 1.500": la zona que se cobró en ese pedido. */
+const zoneText = (order: Order): string | null => {
+  const zone = order.zone_surcharge;
+  if (!zone) return null;
+  const value = zone.type === 'percentage' ? `+${formatNumber(zone.value)} %` : `+${formatCurrency(zone.value)}`;
+  return `${zone.name} ${value}`;
+};
 
 interface Props {
-  onAssign: (order: Order) => void;
-  onCancel: (order: Order) => void;
-  onView: (order: Order) => void; // <--- FALTABA ESTO
+  rows: Order[];
+  total: number;
+  loading: boolean;
+  pagination: GridPaginationModel;
+  onPaginationChange: (model: GridPaginationModel) => void;
+  onView: (order: Order) => void;
+  /** Sin él no se ofrece «Asignar chofer» (p. ej. sin distribuidora elegida: la API rechaza la escritura). */
+  onAssign?: (order: Order) => void;
+  /** Sin él no se dibuja «Editar» (p. ej. sin distribuidora elegida). */
+  onEdit?: (order: Order) => void;
+  /** La baja del pedido: se cancela, no se borra (devuelve el stock). Sin él no se dibuja «Cancelar». */
+  onCancel?: (order: Order) => void;
+  /** Selección múltiple para las acciones en lote; sin esto la tabla no dibuja casillas. */
+  /** Hay filtros activos: un vacío significa "sin resultados". */
+  filtered?: boolean;
+  selection?: { ids: string[]; onChange: (ids: string[]) => void };
 }
 
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'pending':
-      return 'text-orange-600 bg-orange-50 border-orange-100';
-    case 'accepted':
-      return 'text-blue-600 bg-blue-50 border-blue-100';
-    case 'on_the_way':
-    case 'out_for_delivery':
-      return 'text-indigo-600 bg-indigo-50 border-indigo-100';
-    case 'delivered':
-      return 'text-emerald-600 bg-emerald-50 border-emerald-100';
-    case 'cancelled':
-      return 'text-rose-600 bg-rose-50 border-rose-100';
-    default:
-      return 'text-slate-600 bg-slate-50 border-slate-100';
-  }
-};
+/** Pedidos: quién, adónde, quién lo lleva, en qué estado (con su cobro) y cuánto. Ítems, pago y tiempos van en el detalle. */
+export const OrdersTable = ({
+  rows,
+  total,
+  loading,
+  pagination,
+  onPaginationChange,
+  onView,
+  onAssign,
+  onEdit,
+  onCancel,
+  selection,
+  filtered = false,
+}: Props) => {
+  // El pago de Mercado Pago de la página, en una sola consulta: el chip dice en qué quedó (y por qué). El administrador
+  // general sin «Ver como» no lo puede pedir (la API exige la distribuidora): se queda con el estado de cobro del pedido.
+  const { needsDistributor } = usePermissions();
+  const mercadoPagoIds = useMemo(
+    () => rows.filter((row) => row.paymentMethodDetail === 'mercadopago').map((row) => row.order_id),
+    [rows],
+  );
+  const { data: mercadoPago } = useOrderPaymentStates(mercadoPagoIds, !needsDistributor);
 
-const getStatusLabel = (status: string) => {
-  const labels: any = {
-    pending: 'Pendiente',
-    accepted: 'Aceptado',
-    on_the_way: 'En Camino',
-    out_for_delivery: 'En Camino',
-    delivered: 'Entregado',
-    cancelled: 'Cancelado',
-  };
-  return labels[status] || status.replace(/_/g, ' ');
-};
-
-export const OrdersTable = ({ onAssign, onCancel, onView }: Props) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState(searchTerm);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 500);
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
-
-  const tableProps = useTable({
-    queryKey: 'orders',
-    queryFn: async (page, limit) => {
-      const data = await getAllOrders(page, limit, debouncedSearch, startDate, endDate);
-      // Adaptamos la respuesta si el backend devuelve { orders: [], total: N }
-      return { rows: data.orders, total: data.total };
-    },
-    dependencies: [debouncedSearch, startDate, endDate],
-  });
-
-  const renderActions = (row: Order) => (
-    <div className="flex items-center justify-center gap-1">
-      {/* 1. Ver Detalle (Ahora sí funciona) */}
-      <Tooltip title="Ver Detalles">
-        <IconButton
-          onClick={() => onView(row)} // <--- CONECTADO
-          className="hover:bg-slate-100"
-        >
-          <RemoveRedEyeIcon fontSize="small" className="text-slate-400" />
-        </IconButton>
-      </Tooltip>
-
-      {/* 2. Asignar (Solo si NO está entregado/cancelado) */}
-      {!['delivered', 'cancelled'].includes(row.status) && (
-        <Tooltip title="Asignar / Reasignar">
-          <IconButton
-            onClick={() => onAssign(row)}
-            className="hover:bg-indigo-50"
-          >
-            <AssignmentIndIcon fontSize="small" className="text-indigo-600" />
-          </IconButton>
-        </Tooltip>
-      )}
-
-      {/* 3. Cancelar */}
-      {!['delivered', 'cancelled'].includes(row.status) && (
-        <Tooltip title="Cancelar Pedido">
-          <IconButton
-            onClick={() => onCancel(row)}
-            className="hover:bg-rose-50"
-          >
-            <CancelIcon fontSize="small" className="text-rose-500" />
-          </IconButton>
-        </Tooltip>
-      )}
-    </div>
+  const columns = useMemo<GridColDef<Order>[]>(
+    () => [
+      {
+        field: 'customer',
+        headerName: 'Pedido',
+        flex: 1.4,
+        minWidth: 240,
+        sortable: false,
+        valueGetter: ({ row }) => row.customer?.full_name ?? '',
+        renderCell: ({ row }) => (
+          <IdentityCell
+            title={row.customer?.full_name ?? 'Cliente sin nombre'}
+            subtitle={`${formatShortId(row.order_id)} · ${formatDateTime(row.created_at)}`}
+            avatarName={row.customer?.full_name ?? '?'}
+            person={{ userId: row.customer?.user_id }}
+          />
+        ),
+      },
+      {
+        field: 'delivery_address',
+        headerName: 'Entrega',
+        flex: 1.3,
+        minWidth: 220,
+        sortable: false,
+        valueGetter: ({ row }) => row.delivery_address?.street ?? '',
+        renderCell: ({ row }) => {
+          const zone = zoneText(row);
+          return (
+            <div className="min-w-0 leading-tight">
+              <span className="block truncate text-ink">{row.delivery_address?.street ?? 'Sin dirección'}</span>
+              {zone && (
+                <span className="mt-0.5 inline-flex max-w-full truncate rounded-md border border-outline-soft bg-bg px-1.5 py-px text-[11.5px] font-medium text-primary-strong">
+                  {zone}
+                </span>
+              )}
+              {row.delivery_name ? (
+                <span className="mt-0.5 flex items-center gap-1.5 text-[11.5px] text-muted" title={row.delivery_name}>
+                  <PersonAvatar name={row.delivery_name} deliveryId={row.delivery_id} size="sm" />
+                  <span className="truncate">{row.delivery_name}</span>
+                </span>
+              ) : (
+                !isClosed(row.status) && (
+                  <span className="mt-0.5 block truncate text-[11.5px] font-medium text-warn">Sin asignar</span>
+                )
+              )}
+            </div>
+          );
+        },
+      },
+      {
+        field: 'status',
+        headerName: 'Estado',
+        width: 200,
+        renderCell: ({ row }) => (
+          <div className="flex min-w-0 flex-col items-start gap-1 leading-none">
+            <Badge label={labelOf(ORDER_STATUS, row.status)} />
+            {row.paymentStatus && <Badge label={paymentStatusLabel(row.paymentStatus, row.paymentMethodDetail)} />}
+            {(() => {
+              const detail = mercadoPagoPaymentLabel(mercadoPago?.get(row.order_id));
+              return detail ? <Badge label={detail} /> : null;
+            })()}
+          </div>
+        ),
+      },
+      {
+        field: 'total_amount',
+        headerName: 'Total',
+        width: 110,
+        align: 'right',
+        headerAlign: 'right',
+        renderCell: ({ row }) => (
+          <span className="font-mono font-semibold text-ink">{formatCurrency(row.total_amount)}</span>
+        ),
+      },
+      {
+        field: 'actions',
+        headerName: '',
+        width: 176,
+        sortable: false,
+        align: 'right',
+        renderCell: ({ row }) => (
+          <RowActions
+            rowLabel={`pedido ${formatShortId(row.order_id)}`}
+            onView={() => onView(row)}
+            onEdit={onEdit && (() => onEdit(row))}
+            editBlockedReason={onEdit ? (orderEditBlockedReason(row) ?? undefined) : undefined}
+            onDelete={onCancel && !isClosed(row.status) ? () => onCancel(row) : undefined}
+            deleteLabel="Cancelar"
+            actions={
+              onAssign && !isClosed(row.status)
+                ? [
+                    {
+                      label: 'Asignar chofer',
+                      icon: UserRoundCog,
+                      blockedReason: assignPaymentBlock(row),
+                      onClick: () => onAssign(row),
+                    },
+                  ]
+                : []
+            }
+          />
+        ),
+      },
+    ],
+    [onView, onAssign, onEdit, onCancel, mercadoPago],
   );
 
-
-  const columns: GridColDef[] = [
-    {
-      field: 'id',
-      headerName: 'ID',
-      width: 90,
-      renderCell: ({ row }) => (
-        <span className="text-xs font-mono text-slate-400">
-          ...{((row as any).order_id || row.id).slice(-6)}
-        </span>
-      ),
-    },
-    {
-      field: 'customer',
-      headerName: 'CLIENTE',
-      flex: 1,
-      minWidth: 180,
-      renderCell: ({ row }: GridRenderCellParams<Order>) => {
-        const r = row as any;
-        return (
-          <div className="flex flex-col py-1">
-            <span className="font-bold text-slate-700 text-sm">
-              {r.customer_name || 'Anónimo'}
-            </span>
-            <span className="text-[10px] text-slate-400">
-              {r.delivery_address?.street || 'Sin dirección'}
-            </span>
-          </div>
-        );
-      },
-    },
-    {
-      field: 'date',
-      headerName: 'FECHA',
-      width: 130,
-      headerAlign: 'center',
-      align: 'center',
-      valueGetter: ({ row }) => {
-        const r = row as Order;
-        const raw = row as any;
-        const dateVal = r.createdAt || raw.created_at || raw.createdAt;
-        return dateVal ? new Date(dateVal).getTime() : 0;
-      },
-      renderCell: ({ value }) => {
-        if (!value) return '-- --';
-        const date = new Date(value);
-        return (
-          <span className="text-xs font-medium text-slate-500 italic">
-            {date.toLocaleString()}
-          </span>
-        );
-      },
-    },
-    {
-      field: 'status',
-      headerName: 'ESTADO',
-      width: 140,
-      align: 'center',
-      headerAlign: 'center',
-      renderCell: ({ value }) => {
-        return (
-          <span
-            className={`inline-flex items-center justify-center w-full gap-1 px-2 py-1 rounded-full text-[10px] font-bold border uppercase tracking-wide ${getStatusColor(
-              value,
-            )}`}
-          >
-            <CircleIcon sx={{ fontSize: 6 }} color="inherit" />
-            {getStatusLabel(value)}
-          </span>
-        );
-      },
-    },
-    {
-      field: 'delivery',
-      headerName: 'REPARTIDOR',
-      flex: 1,
-      renderCell: ({ row }: GridRenderCellParams<Order>) => {
-        const r = row as any;
-        return r.delivery_name ? (
-          <div className="flex w-max items-center gap-2 text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg border border-indigo-100">
-            <LocalShippingIcon fontSize="small" />
-            <span className="text-xs font-bold">{r.delivery_name}</span>
-          </div>
-        ) : (
-          <span className="text-xs text-slate-400 italic pl-2">
-            -- Buscando --
-          </span>
-        );
-      },
-    },
-    {
-      field: 'total_amount',
-      headerName: 'TOTAL',
-      width: 120,
-      renderCell: ({ value }) => (
-        <span className="font-bold text-slate-800">
-          $ {Number(value).toLocaleString()}
-        </span>
-      ),
-    },
-    {
-      field: 'actions',
-      headerName: 'ACCIONES',
-      width: 140,
-      align: 'center',
-      renderCell: ({ row }) => renderActions(row),
-    },
-  ];
-
   return (
-    <CustomTable
-      title={'Monitoreo de Pedidos'}
+    <DataTable
+      rows={rows}
       columns={columns}
-      rows={tableProps.data?.rows || []}
-      getRowId={(row: any) => row.order_id || row.id}
-      setActive={() => {}}
-      {...tableProps}
-    >
-      <div className="flex flex-col sm:flex-row gap-4 w-full justify-end items-center">
-        <label className="flex items-center gap-2 text-sm text-slate-600 font-medium">
-          Desde:
-          <input
-            type="date"
-            className="border border-slate-200 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 bg-slate-50 focus:bg-white transition-colors"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
+      getRowId={(row) => row.order_id}
+      loading={loading}
+      pagination={{ model: pagination, onChange: onPaginationChange, total }}
+      onRowClick={onView}
+      selection={selection && { ...selection, isSelectable: (order) => !isClosed(order.status) }}
+      empty={
+        filtered ? (
+          <EmptyState
+            illustration="search"
+            title="Sin resultados"
+            description="Ningún pedido coincide con los filtros elegidos."
           />
-        </label>
-        <label className="flex items-center gap-2 text-sm text-slate-600 font-medium">
-          Hasta:
-          <input
-            type="date"
-            className="border border-slate-200 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 bg-slate-50 focus:bg-white transition-colors"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
+        ) : (
+          <EmptyState
+            title="No hay pedidos"
+            description="Los pedidos aparecen cuando un cliente compra desde la app."
           />
-        </label>
-        <div className="relative group w-full sm:w-72">
-          <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
-            <SearchIcon className="h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-          </div>
-          <input
-            type="text"
-            style={{ paddingLeft: '42px' }}
-            className="block w-full pr-3 py-2 border border-slate-200 rounded-lg leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all shadow-sm"
-            placeholder="Buscar por cliente o repartidor..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-      </div>
-    </CustomTable>
+        )
+      }
+    />
   );
 };

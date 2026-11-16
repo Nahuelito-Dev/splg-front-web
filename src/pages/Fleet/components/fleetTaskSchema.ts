@@ -1,0 +1,80 @@
+import { z } from 'zod';
+import { isFutureMoment } from '../../../utils/dates';
+
+/** Un número opcional: en el formulario el campo puede quedar vacío. */
+const optionalNumber = (schema: z.ZodNumber) =>
+  z.preprocess((value) => (value === '' || value === undefined ? undefined : value), schema.optional());
+
+/** `dueKm`/`odometerKm`: la API los valida con `@IsInt()` (kilometraje, no tiene sentido con decimales). */
+const optionalInt = () =>
+  optionalNumber(z.coerce.number().int('Tiene que ser un número entero').nonnegative('No puede ser negativo'));
+
+/** Un texto opcional con el mismo límite que su `@MaxLength` en el DTO del back. */
+const optionalText = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max, `No puede tener más de ${max} caracteres`)
+    .optional()
+    .transform((value) => value || undefined);
+
+/** Lo que se edita de una tarea abierta (`UpdateFleetTaskDto`): nunca el plan ni a quién pertenece. */
+export const fleetTaskDetailsSchema = z.object({
+  validFrom: z.string().optional(),
+  cost: optionalNumber(z.coerce.number().nonnegative('No puede ser negativo')),
+  dueAt: z.string().optional(),
+  dueKm: optionalInt(),
+  provider: optionalText(120),
+  referenceNumber: optionalText(60),
+  category: optionalText(10),
+  notes: optionalText(2000),
+  scheduledAt: z.string().optional(),
+});
+
+/** El alta (`CreateFleetTaskDto`): además del plan, necesita un vencimiento (fecha o km). */
+export const fleetTaskCreateSchema = fleetTaskDetailsSchema
+  .extend({ planId: z.string().trim().min(1, 'Elegí un plan') })
+  .refine((values) => Boolean(values.dueAt) || values.dueKm !== undefined, {
+    message: 'Ingresá una fecha límite o un kilometraje',
+    path: ['dueAt'],
+  })
+  .refine((values) => !values.validFrom || !values.dueAt || values.validFrom <= values.dueAt, {
+    message: 'El inicio de la vigencia no puede ser posterior al vencimiento',
+    path: ['validFrom'],
+  });
+
+export type FleetTaskCreateValues = z.infer<typeof fleetTaskCreateSchema>;
+
+/** Cómo cerrar una tarea (`CloseFleetTaskDto`, CU-141): cuándo se hizo es obligatorio. */
+export const fleetTaskCloseSchema = z.object({
+  performedAt: z
+    .string()
+    .trim()
+    .min(1, 'Ingresá cuándo se hizo')
+    .refine(
+      (value) => !isFutureMoment(value, 5 * 60 * 1000),
+      'performedAt no puede ser una fecha futura: registrá cuándo se hizo',
+    ),
+  odometerKm: optionalInt(),
+  cost: optionalNumber(z.coerce.number().nonnegative('No puede ser negativo')),
+  provider: optionalText(120),
+  notes: optionalText(2000),
+});
+
+export type FleetTaskCloseValues = z.infer<typeof fleetTaskCloseSchema>;
+
+/**
+ * «Lo pagué ahora» al cerrar: necesita un costo mayor a cero y la caja de la que sale el pago.
+ * Devuelve el error por campo, o `null` si está bien.
+ */
+export const closePaymentErrors = (
+  payNow: boolean,
+  cost: number | undefined,
+  cashBoxId: string,
+): { cost?: string; cashBoxId?: string } | null => {
+  if (!payNow) return null;
+  const errors: { cost?: string; cashBoxId?: string } = {};
+  if (cost === undefined || cost <= 0) errors.cost = 'Para pagarla ahora ingresá el costo';
+  if (!cashBoxId) errors.cashBoxId = 'Elegí la caja de la que sale el pago';
+  return Object.keys(errors).length > 0 ? errors : null;
+};

@@ -1,210 +1,164 @@
-import { useEffect } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useEffect, useMemo, useRef } from 'react';
 import { useForm } from 'react-hook-form';
-import { useQuery } from '@tanstack/react-query';
-import CloseIcon from '@mui/icons-material/Close';
-import { getRoles, RegisterAdminPayload } from '../../../services/api/admins';
-import { getAllDistributors } from '../../../services/api/distributors';
+import { z } from 'zod';
+import { accountFields, newPassword } from '../../../common/forms/accountSchema';
+import { checkAccountFree } from '../../../common/forms/checkAccountFree';
+import { Button, Modal, FormInput, FormSelect, Form } from '../../../common/components/ui';
+import type { AdminRole } from '../../../services/api/admins';
+import { useCreateAdmin } from '../../../services/queries/admins';
+import { useDistributors } from '../../../services/queries/distributors';
+import { notify } from '../../../utils/notifications';
+
+const ROLE_OPTIONS: Record<AdminRole, string> = {
+  admin: 'Admin de empresa',
+  super_admin: 'Administrador general',
+};
+
+const baseSchema = z.object({
+  ...accountFields,
+  email: z.string().trim().email('Email inválido'),
+  password: newPassword,
+  confirmPassword: z.string(),
+  role: z.enum(['admin', 'super_admin']),
+  distributorId: z.string().optional(),
+});
+
+type AdminFormValues = z.infer<typeof baseSchema>;
+
+/**
+ * Mismas reglas que la API: un `admin` pertenece siempre a una distribuidora
+ * (el administrador general la elige; el admin de empresa crea en la suya) y un
+ * `super_admin` es de la plataforma, sin distribuidora.
+ */
+const adminSchema = (isSuperAdmin: boolean) =>
+  baseSchema.superRefine((data, ctx) => {
+    if (data.password !== data.confirmPassword) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Las contraseñas no coinciden', path: ['confirmPassword'] });
+    }
+    if (isSuperAdmin && data.role === 'admin' && !data.distributorId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Elegí la distribuidora del admin',
+        path: ['distributorId'],
+      });
+    }
+  });
 
 interface Props {
-  isOpen: boolean;
+  open: boolean;
   onClose: () => void;
-  onCreate: (payload: RegisterAdminPayload) => void;
-  isSaving: boolean;
-  /** super_admin puede elegir empresa y crear cualquier rol; el admin de empresa no. */
+  /** El administrador general puede elegir rol y empresa; el admin de empresa sólo crea admins en la suya. */
   isSuperAdmin: boolean;
 }
 
-export const CreateAdminModal = ({
-  isOpen,
-  onClose,
-  onCreate,
-  isSaving,
-  isSuperAdmin,
-}: Props) => {
+export const CreateAdminModal = ({ open, onClose, isSuperAdmin }: Props) => {
+  const createAdmin = useCreateAdmin();
+  const { data: distributors } = useDistributors(open && isSuperAdmin);
+  const availableRoles = useMemo<AdminRole[]>(
+    () => (isSuperAdmin ? ['admin', 'super_admin'] : ['admin']),
+    [isSuperAdmin],
+  );
+
+  const methods = useForm<AdminFormValues>({
+    resolver: zodResolver(adminSchema(isSuperAdmin)),
+    defaultValues: { role: 'admin' },
+  });
   const {
-    register,
-    handleSubmit,
     reset,
-    formState: { errors },
-  } = useForm<RegisterAdminPayload>();
+    watch,
+    setError,
+    formState: { isSubmitting },
+  } = methods;
 
-  const { data: roles } = useQuery(['roles'], getRoles, { enabled: isOpen });
-  const { data: distributors } = useQuery(
-    ['distributors'],
-    getAllDistributors,
-    { enabled: isOpen && isSuperAdmin },
-  );
+  const role = watch('role');
 
-  // Un admin de empresa no puede crear super_admins.
-  const availableRoles = (roles ?? []).filter(
-    (r) => isSuperAdmin || r.type !== 'super_admin',
-  );
+  // El modal puede cerrarse mientras corre check-exists: en ese caso no se da de alta nada.
+  const openRef = useRef(open);
+  openRef.current = open;
 
   useEffect(() => {
-    if (isOpen) reset({});
-  }, [isOpen, reset]);
+    if (open)
+      reset({
+        full_name: '',
+        phone_number: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+        role: 'admin',
+        distributorId: '',
+      });
+  }, [open, reset]);
 
-  if (!isOpen) return null;
-
-  const onSubmit = (data: RegisterAdminPayload) => {
-    onCreate({ ...data, distributorId: data.distributorId || undefined });
+  const onSubmit = async ({ confirmPassword: _confirmPassword, role, distributorId, ...account }: AdminFormValues) => {
+    if (!(await checkAccountFree(account, setError)) || !openRef.current) return;
+    createAdmin.mutate(
+      { role, account: { ...account, distributorId: role === 'admin' && distributorId ? distributorId : undefined } },
+      {
+        onSuccess: () => {
+          notify.success('Admin creado');
+          onClose();
+        },
+        onError: notify.error,
+      },
+    );
   };
 
-  const inputCls =
-    'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500';
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
-        <div className="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
-          <h3 className="text-lg font-bold text-slate-800">Nuevo admin</h3>
-          <button
-            onClick={onClose}
-            className="p-1 hover:bg-slate-200 rounded-full transition-colors"
-          >
-            <CloseIcon className="text-slate-400 hover:text-slate-600" />
-          </button>
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Nuevo admin"
+      description="Se crea la cuenta con la que entra al panel."
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button type="submit" form="admin-create" loading={isSubmitting || createAdmin.isPending}>
+            Crear admin
+          </Button>
+        </>
+      }
+    >
+      <Form methods={methods} id="admin-create" onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
+        <FormInput name="full_name" label="Nombre completo" required autoComplete="name" />
+        <FormInput name="phone_number" label="Teléfono" required type="tel" placeholder="+5493764000000" />
+        <div className="sm:col-span-2">
+          <FormInput name="email" label="Email" required type="email" autoComplete="email" />
         </div>
-
-        <form
-          onSubmit={handleSubmit(onSubmit)}
-          className="p-6 space-y-4 overflow-y-auto"
-        >
-          <div>
-            <label className="block text-sm font-bold text-slate-700 mb-1">
-              Nombre completo <span className="text-rose-500">*</span>
-            </label>
-            <input
-              {...register('full_name', { required: 'Requerido' })}
-              className={inputCls}
-              placeholder="Ej: Juana Pérez"
-            />
-            {errors.full_name && (
-              <p className="text-xs text-rose-600 mt-1">
-                {errors.full_name.message}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-bold text-slate-700 mb-1">
-              Email <span className="text-rose-500">*</span>
-            </label>
-            <input
-              type="email"
-              {...register('email', { required: 'Requerido' })}
-              className={inputCls}
-              placeholder="admin@empresa.com"
-            />
-            {errors.email && (
-              <p className="text-xs text-rose-600 mt-1">
-                {errors.email.message}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-bold text-slate-700 mb-1">
-              Teléfono <span className="text-rose-500">*</span>
-            </label>
-            <input
-              {...register('phone_number', { required: 'Requerido' })}
-              className={inputCls}
-              placeholder="+54 9 376 4123456"
-            />
-            {errors.phone_number && (
-              <p className="text-xs text-rose-600 mt-1">
-                {errors.phone_number.message}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-bold text-slate-700 mb-1">
-              Contraseña <span className="text-rose-500">*</span>
-            </label>
-            <input
-              type="text"
-              {...register('password', {
-                required: 'Requerido',
-                minLength: { value: 6, message: 'Mínimo 6 caracteres' },
-              })}
-              className={inputCls}
-              placeholder="Mínimo 6 caracteres"
-            />
-            {errors.password && (
-              <p className="text-xs text-rose-600 mt-1">
-                {errors.password.message}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-bold text-slate-700 mb-1">
-              Rol <span className="text-rose-500">*</span>
-            </label>
-            <select
-              {...register('role_id', { required: 'Requerido' })}
-              className={`${inputCls} bg-white`}
-            >
-              <option value="">— Elegir rol —</option>
-              {availableRoles.map((r) => (
-                <option key={r.role_id} value={r.role_id}>
-                  {r.type}
-                </option>
-              ))}
-            </select>
-            {errors.role_id && (
-              <p className="text-xs text-rose-600 mt-1">
-                {errors.role_id.message}
-              </p>
-            )}
-          </div>
-
-          {isSuperAdmin ? (
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-1">
-                Empresa (distribuidora)
-              </label>
-              <select
-                {...register('distributorId')}
-                className={`${inputCls} bg-white`}
-              >
-                <option value="">— Sin empresa (cross-tenant) —</option>
-                {(distributors ?? []).map((d: any) => (
-                  <option key={d.distributor_id} value={d.distributor_id}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
-              <p className="text-[11px] text-slate-400 mt-1">
-                Dejar vacío solo para admins de plataforma (super_admin).
-              </p>
-            </div>
-          ) : (
-            <p className="text-[11px] text-slate-400">
-              El admin se crea en tu misma empresa.
-            </p>
-          )}
-
-          <div className="flex justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded-md text-slate-600 font-medium hover:bg-slate-100 transition-colors"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="bg-indigo-600 text-white font-bold px-6 py-2 rounded-md hover:bg-indigo-700 transition-colors disabled:opacity-60"
-            >
-              {isSaving ? 'Creando...' : 'Crear admin'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <FormInput name="password" label="Contraseña" required type="password" autoComplete="new-password" />
+        <FormInput
+          name="confirmPassword"
+          label="Repetir contraseña"
+          required
+          type="password"
+          autoComplete="new-password"
+        />
+        <FormSelect
+          name="role"
+          label="Rol"
+          required
+          options={availableRoles.map((role) => ({ value: role, label: ROLE_OPTIONS[role] }))}
+        />
+        {role === 'super_admin' ? (
+          <p className="self-end text-xs text-muted">
+            El administrador general es de la plataforma: no lleva distribuidora.
+          </p>
+        ) : isSuperAdmin ? (
+          <FormSelect
+            name="distributorId"
+            label="Distribuidora"
+            required
+            options={[
+              { value: '', label: 'Elegí una distribuidora' },
+              ...(distributors ?? []).map((d) => ({ value: d.distributor_id, label: d.name })),
+            ]}
+          />
+        ) : (
+          <p className="self-end text-xs text-muted">El admin se crea en tu misma distribuidora.</p>
+        )}
+      </Form>
+    </Modal>
   );
 };

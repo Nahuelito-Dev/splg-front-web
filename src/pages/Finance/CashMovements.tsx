@@ -1,0 +1,360 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import type { GridColDef } from '@mui/x-data-grid';
+import { ArrowLeftRight, BookOpen, Paperclip, Plus, ShoppingBag, Undo2 } from 'lucide-react';
+import {
+  Badge,
+  Button,
+  Card,
+  DateRangeFilter,
+  EmptyState,
+  ErrorState,
+  IdentityCell,
+  PageHeader,
+  ReasonModal,
+  ResponsiveTable,
+  RowActions,
+  Select,
+  PageContainer,
+  TableToolbar,
+  type FilterChip,
+} from '../../common/components/ui';
+import { AttachmentsDrawer } from '../../common/components/AttachmentsDrawer';
+import { useClampPage, usePermissions, useUrlPagedParams } from '../../hooks';
+import { toApiError } from '../../services/api/errors';
+import { cashMovementQuery } from '../../services/api/finance';
+import type { CashMovementV2 as CashMovement } from '../../services/api/types';
+import {
+  useCashBoxOptions,
+  useCashCategories,
+  useCashMovements,
+  useReverseCashMovement,
+  useReverseCashTransfer,
+} from '../../services/queries/finance';
+import { formatCurrency, formatDateTime, formatDay } from '../../utils/format';
+import { notify } from '../../utils/notifications';
+import { CASH_REFERENCE, labelOf } from '../../utils/statusLabels';
+import { FinanceSummary } from './components/FinanceSummary';
+import { CashMovementFormModal } from './components/CashMovementFormModal';
+import { TransferModal } from './components/TransferModal';
+import { reverseKindOf } from './movementActions';
+
+const DIRECTIONS = [
+  { value: '', label: 'Entradas y salidas' },
+  { value: 'in', label: 'Entradas' },
+  { value: 'out', label: 'Salidas' },
+];
+
+/** El libro de movimientos de caja: consulta, registro, transferencia y anulación (CU-228, 229, 309, 310, 340). */
+export const CashMovements = () => {
+  const { canWrite, writeHint } = usePermissions();
+  const navigate = useNavigate();
+  const [filters, setFilters, pagination, setPagination] = useUrlPagedParams(
+    { cashBoxId: '', direction: '', categoryId: '', from: '', to: '', countsForResult: '' },
+    25,
+  );
+  const boxes = useCashBoxOptions();
+  const categories = useCashCategories({ page: 0, pageSize: 100 }, { includeInactive: true });
+  const rangeInvalid = Boolean(filters.from && filters.to && filters.from > filters.to);
+  const listFilters = {
+    cashBoxId: filters.cashBoxId || undefined,
+    direction: (filters.direction || undefined) as CashMovement['direction'] | undefined,
+    categoryId: filters.categoryId || undefined,
+    from: filters.from || undefined,
+    to: filters.to || undefined,
+    countsForResult: filters.countsForResult === 'true' ? true : undefined,
+  };
+  const { data, isFetching, error, refetch } = useCashMovements(pagination, listFilters, { enabled: !rangeInvalid });
+  const reverseMovement = useReverseCashMovement();
+  const reverseTransfer = useReverseCashTransfer();
+  const [creating, setCreating] = useState(false);
+  const [transferring, setTransferring] = useState(false);
+  const [reversing, setReversing] = useState<CashMovement | null>(null);
+  const [attaching, setAttaching] = useState<CashMovement | null>(null);
+  const [serverError, setServerError] = useState<string | null>(null);
+
+  const boxName = (id: string) => boxes.data?.data.find((b) => b.cashBoxId === id)?.name;
+  const categoryName = (id: string) => categories.data?.data.find((c) => c.categoryId === id)?.name;
+  const chips = [
+    filters.cashBoxId && { key: 'cashBoxId', label: `Caja: ${boxName(filters.cashBoxId) ?? '…'}` },
+    filters.direction && {
+      key: 'direction',
+      name: 'Sentido',
+      label: filters.direction === 'in' ? 'Entradas' : 'Salidas',
+    },
+    filters.categoryId && { key: 'categoryId', label: `Categoría: ${categoryName(filters.categoryId) ?? '…'}` },
+    filters.from && { key: 'from', label: `Desde ${formatDay(filters.from)}` },
+    filters.to && { key: 'to', label: `Hasta ${formatDay(filters.to)}` },
+    filters.countsForResult === 'true' && {
+      key: 'countsForResult',
+      name: 'Alcance',
+      label: 'Sólo los que cuentan en ingresos y egresos',
+    },
+  ].filter((c): c is FilterChip => Boolean(c));
+
+  const reversingKind = reversing ? reverseKindOf(reversing) : null;
+  const reversePending = reversingKind === 'transfer' ? reverseTransfer.isPending : reverseMovement.isPending;
+
+  const confirmReverse = (reason: string) => {
+    if (!reversing) return;
+    const request = { id: reversing.movementId, body: { reason } };
+    const options = {
+      onSuccess: () => {
+        notify.success(reversingKind === 'transfer' ? 'Transferencia anulada' : 'Movimiento anulado');
+        setReversing(null);
+      },
+      onError: (e: unknown) => setServerError(toApiError(e).messages.join('. ')),
+    };
+    if (reversingKind === 'transfer') reverseTransfer.mutate(request, options);
+    else reverseMovement.mutate(request, options);
+  };
+
+  const canReverse = (row: CashMovement) => canWrite && reverseKindOf(row) !== null;
+  const reverseLabel = (row: CashMovement) => (reverseKindOf(row) === 'transfer' ? 'Anular transferencia' : 'Anular');
+
+  const amount = (row: CashMovement) => (
+    <span className={row.direction === 'in' ? 'text-success' : 'text-danger'}>
+      {row.direction === 'in' ? '+' : '−'} {formatCurrency(row.amount)}
+    </span>
+  );
+
+  const state = (row: CashMovement) =>
+    row.reversed ? (
+      <Badge label={{ text: 'Anulado', tone: 'warn' }} />
+    ) : row.reversesMovementId ? (
+      <Badge label={{ text: 'Anulación', tone: 'warn' }} />
+    ) : (
+      <Badge label={labelOf(CASH_REFERENCE, row.referenceType)} />
+    );
+
+  const columns: GridColDef<CashMovement>[] = [
+    {
+      field: 'occurredAt',
+      headerName: 'Fecha',
+      width: 170,
+      sortable: false,
+      valueGetter: ({ row }) => formatDateTime(row.occurredAt),
+    },
+    {
+      field: 'description',
+      headerName: 'Movimiento',
+      flex: 1.6,
+      minWidth: 260,
+      sortable: false,
+      renderCell: ({ row }) => (
+        <IdentityCell
+          title={row.description}
+          subtitle={`${row.cashBoxName} · ${row.categoryName}${row.createdByUserId === null ? ' · Sistema' : ''}`}
+          icon={BookOpen}
+        />
+      ),
+    },
+    { field: 'origin', headerName: 'Origen', width: 190, sortable: false, renderCell: ({ row }) => state(row) },
+    {
+      field: 'amount',
+      headerName: 'Importe',
+      width: 150,
+      sortable: false,
+      align: 'right',
+      headerAlign: 'right',
+      renderCell: ({ row }) => <span className="font-mono">{amount(row)}</span>,
+    },
+    {
+      field: 'actions',
+      headerName: '',
+      width: 70,
+      sortable: false,
+      align: 'right',
+      renderCell: ({ row }) => (
+        <RowActions
+          rowLabel={`movimiento ${row.description}`}
+          actions={[
+            { label: 'Comprobantes', icon: Paperclip, onClick: () => setAttaching(row) },
+            ...(row.orderId
+              ? [{ label: 'Ver pedido', icon: ShoppingBag, onClick: () => navigate(`/orders/${row.orderId}`) }]
+              : []),
+            ...(canReverse(row)
+              ? [{ label: reverseLabel(row), icon: Undo2, tone: 'danger' as const, onClick: () => setReversing(row) }]
+              : []),
+          ]}
+        />
+      ),
+    },
+  ];
+
+  useClampPage(pagination, data?.total, setPagination);
+
+  return (
+    <PageContainer>
+      <PageHeader
+        title="Movimientos de caja"
+        description="El libro de la plata: solo se agrega, y lo que está mal se anula con otro movimiento."
+        actions={
+          <>
+            <Button
+              variant="secondary"
+              icon={<ArrowLeftRight />}
+              disabled={!canWrite}
+              title={writeHint}
+              onClick={() => setTransferring(true)}
+            >
+              Transferir
+            </Button>
+            <Button icon={<Plus />} disabled={!canWrite} title={writeHint} onClick={() => setCreating(true)}>
+              Registrar movimiento
+            </Button>
+          </>
+        }
+      />
+      <FinanceSummary kind="movements" />
+      <Card>
+        <TableToolbar
+          filters={
+            <>
+              <Select
+                label="Caja"
+                options={[
+                  { value: '', label: 'Todas las cajas' },
+                  ...(boxes.data?.data ?? []).map((b) => ({ value: b.cashBoxId, label: b.name })),
+                ]}
+                value={filters.cashBoxId}
+                onChange={(e) => setFilters({ cashBoxId: e.target.value })}
+              />
+              <Select
+                label="Sentido"
+                options={DIRECTIONS}
+                value={filters.direction}
+                onChange={(e) => setFilters({ direction: e.target.value })}
+              />
+              <Select
+                label="Categoría"
+                options={[
+                  { value: '', label: 'Todas' },
+                  ...(categories.data?.data ?? []).map((c) => ({ value: c.categoryId, label: c.name })),
+                ]}
+                value={filters.categoryId}
+                onChange={(e) => setFilters({ categoryId: e.target.value })}
+              />
+              <DateRangeFilter from={filters.from} to={filters.to} onChange={(range) => setFilters(range)} />
+            </>
+          }
+          serverExport={{
+            resource: 'movimientos-caja',
+            params: cashMovementQuery(listFilters),
+            blockedReason: rangeInvalid ? 'El rango de fechas es inválido' : undefined,
+          }}
+          chips={chips}
+          onRemoveChip={(key) => setFilters({ [key]: '' })}
+          onClearChips={() => setFilters({ cashBoxId: '', direction: '', categoryId: '', from: '', to: '' })}
+          resultCount={data?.total}
+          noun={['movimiento', 'movimientos']}
+        >
+          {rangeInvalid && (
+            <p role="alert" className="text-xs text-danger">
+              La fecha inicial no puede ser posterior a la final
+            </p>
+          )}
+        </TableToolbar>
+        {error ? (
+          <ErrorState error={error} resource="Los movimientos" onRetry={() => void refetch()} />
+        ) : (
+          <ResponsiveTable
+            label="movimientos"
+            rows={data?.data ?? []}
+            columns={columns}
+            getRowId={(row) => row.movementId}
+            loading={isFetching}
+            pagination={{ model: pagination, onChange: setPagination, total: data?.total ?? 0 }}
+            empty={
+              chips.length > 0 ? (
+                <EmptyState illustration="search" title="Sin resultados" description="Probá con otros filtros." />
+              ) : (
+                <EmptyState
+                  icon={BookOpen}
+                  title="Todavía no hay movimientos"
+                  description="Los ingresos y gastos de las cajas aparecen acá."
+                />
+              )
+            }
+            renderCard={(row) => (
+              <>
+                <IdentityCell
+                  title={row.description}
+                  subtitle={`${row.cashBoxName} · ${row.categoryName}${row.createdByUserId === null ? ' · Sistema' : ''}`}
+                  icon={BookOpen}
+                />
+                <div className="flex flex-wrap items-center gap-2">
+                  <strong className="font-mono">{amount(row)}</strong>
+                  {state(row)}
+                  <span className="text-xs text-muted">{formatDateTime(row.occurredAt)}</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" variant="secondary" icon={<Paperclip />} onClick={() => setAttaching(row)}>
+                    Comprobantes
+                  </Button>
+                  {row.orderId && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      icon={<ShoppingBag />}
+                      onClick={() => navigate(`/orders/${row.orderId}`)}
+                    >
+                      Ver pedido
+                    </Button>
+                  )}
+                  {canReverse(row) && (
+                    <Button size="sm" variant="secondary" onClick={() => setReversing(row)}>
+                      {reverseLabel(row)}
+                    </Button>
+                  )}
+                </div>
+              </>
+            )}
+          />
+        )}
+      </Card>
+      <CashMovementFormModal
+        open={creating}
+        onClose={() => setCreating(false)}
+        defaultCashBoxId={filters.cashBoxId || undefined}
+      />
+      <AttachmentsDrawer
+        owner={
+          attaching
+            ? {
+                ownerType: 'cash_movement',
+                ownerId: attaching.movementId,
+                description: `${attaching.description} · ${formatCurrency(attaching.amount)}`,
+              }
+            : null
+        }
+        onClose={() => setAttaching(null)}
+        canWrite={canWrite}
+        blockedReason={writeHint}
+        hint="El ticket o la factura del gasto, el recibo del ingreso…"
+      />
+      <TransferModal open={transferring} onClose={() => setTransferring(false)} />
+      <ReasonModal
+        open={reversing !== null}
+        onClose={() => {
+          setReversing(null);
+          setServerError(null);
+        }}
+        onConfirm={confirmReverse}
+        title={reversingKind === 'transfer' ? 'Anular la transferencia' : 'Anular el movimiento'}
+        description={
+          !reversing
+            ? ''
+            : reversingKind === 'transfer'
+              ? `Se revierten las dos patas de la transferencia de ${formatCurrency(reversing.amount)}: vuelve al origen y sale del destino. Si el destino ya no tiene ese saldo, no se anula.`
+              : `Se asienta un movimiento inverso de ${formatCurrency(reversing.amount)} en ${reversing.cashBoxName}. El original queda en el libro.`
+        }
+        reasonLabel="Motivo de la anulación"
+        confirmLabel={reversingKind === 'transfer' ? 'Anular transferencia' : 'Anular movimiento'}
+        serverError={serverError}
+        onReasonChange={() => setServerError(null)}
+        loading={reversePending}
+      />
+    </PageContainer>
+  );
+};

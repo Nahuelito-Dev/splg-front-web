@@ -1,0 +1,83 @@
+name: Release automatico
+
+# Cada merge a main publica una version nueva, sin que nadie elija el numero.
+#
+# El salto lo deciden los commits desde el ultimo tag:
+#   un commit con "!" o BREAKING CHANGE -> sube la mayor
+#   algun commit feat:                  -> sube la menor
+#   cualquier otra cosa                 -> sube el parche
+#
+# Si no hay commits nuevos, no hace nada. Los commits que genera este mismo
+# workflow llevan [skip ci] y quedan excluidos del calculo, asi que no se
+# retroalimenta.
+
+on:
+  push:
+    branches: [main]
+  # Lo lanza el Release nocturno (su push a main no dispara workflows) o se corre a mano.
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publicar:
+    name: Version y Release de SPLG Panel Admin
+    runs-on: ubuntu-latest
+    steps:
+      - name: Traer el repo completo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Calcular la version nueva
+        id: calculo
+        run: |
+          NUEVA=$(./scripts/version.sh siguiente)
+          if [ -z "$NUEVA" ]; then
+            echo "hay=no" >> "$GITHUB_OUTPUT"
+            echo "No hay commits nuevos desde el ultimo tag. Nada que publicar."
+            exit 0
+          fi
+          if git rev-parse "v$NUEVA" >/dev/null 2>&1; then
+            echo "hay=no" >> "$GITHUB_OUTPUT"
+            echo "El tag v$NUEVA ya existe. Nada que publicar."
+            exit 0
+          fi
+          echo "hay=si" >> "$GITHUB_OUTPUT"
+          echo "version=$NUEVA" >> "$GITHUB_OUTPUT"
+          echo "Version anterior: $(./scripts/version.sh actual)"
+          echo "Version nueva:    $NUEVA"
+
+      - name: Escribir la version en el proyecto
+        if: steps.calculo.outputs.hay == 'si'
+        run: ./scripts/version.sh fijar "${{ steps.calculo.outputs.version }}"
+
+      - name: Armar el changelog
+        if: steps.calculo.outputs.hay == 'si'
+        env:
+          VERSION: ${{ steps.calculo.outputs.version }}
+        run: ./scripts/release-notes.sh
+
+      - name: Commitear la version y crear el tag
+        if: steps.calculo.outputs.hay == 'si'
+        env:
+          VERSION: ${{ steps.calculo.outputs.version }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore(release): version $VERSION [skip ci]"
+          git tag -a "v$VERSION" -F NOTES.md
+          git push origin HEAD:main
+          git push origin "v$VERSION"
+
+      - name: Publicar la Release
+        if: steps.calculo.outputs.hay == 'si'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v${{ steps.calculo.outputs.version }}" \
+            --title "SPLG Panel Admin v${{ steps.calculo.outputs.version }}" \
+            --notes-file NOTES.md \
+            --verify-tag

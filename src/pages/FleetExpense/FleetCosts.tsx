@@ -1,0 +1,173 @@
+import { useState } from 'react';
+import type { GridColDef } from '@mui/x-data-grid';
+import { Gauge } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Card,
+  DateRangePicker,
+  EmptyState,
+  ErrorState,
+  KpiCard,
+  IdentityCell,
+  PageHeader,
+  ResponsiveTable,
+  RowActions,
+  PageContainer,
+  TableToolbar,
+} from '../../common/components/ui';
+import { fleetCostQuery } from '../../services/api/fleetExpense';
+import type { FleetCostSummary } from '../../services/api/types';
+import { useFleetCosts } from '../../services/queries/fleetExpense';
+import { presetRange, type DayRange, type RangePresetId } from '../../utils/dateRange';
+import { formatCurrency, formatNumber } from '../../utils/format';
+import { COST_RUBROS, KM_SOURCE_LABEL } from './components/costLabels';
+
+/** El tablero de costos de la flota (CU-204): un renglón por vehículo, de mayor a menor costo por km. */
+export const FleetCosts = () => {
+  const navigate = useNavigate();
+  const [range, setRange] = useState<DayRange>(() => presetRange('thisMonth'));
+  const [preset, setPreset] = useState<RangePresetId | null>('thisMonth');
+  const { data, isFetching, error, refetch } = useFleetCosts(range);
+  const summary = data?.summary;
+  const vehicles = data?.vehicles;
+  const goTo = (row: FleetCostSummary) => navigate(`/cars/details/${row.carId}?tab=costs`);
+
+  const columns: GridColDef<FleetCostSummary>[] = [
+    {
+      field: 'car',
+      headerName: 'Vehículo',
+      flex: 1.2,
+      minWidth: 200,
+      sortable: false,
+      renderCell: ({ row }) => (
+        <IdentityCell
+          title={row.carPatent ?? 'Sin patente'}
+          subtitle={[row.carBrand, row.carModel].filter(Boolean).join(' ')}
+          icon={Gauge}
+        />
+      ),
+    },
+    ...COST_RUBROS.map(({ key, label }): GridColDef<FleetCostSummary> => ({
+      field: key,
+      headerName: label,
+      width: 125,
+      sortable: false,
+      valueGetter: ({ row }) => formatCurrency(row[key]),
+    })),
+    {
+      field: 'total',
+      headerName: 'Total',
+      width: 130,
+      sortable: false,
+      valueGetter: ({ row }) => formatCurrency(row.total),
+    },
+    {
+      field: 'km',
+      headerName: 'Km',
+      width: 100,
+      sortable: false,
+      valueGetter: ({ row }) => formatNumber(row.km),
+    },
+    {
+      field: 'costPerKm',
+      headerName: '$/km',
+      width: 110,
+      sortable: false,
+      valueGetter: ({ row }) => (row.costPerKm === null ? '—' : formatCurrency(row.costPerKm)),
+    },
+    {
+      field: 'actions',
+      headerName: '',
+      width: 70,
+      sortable: false,
+      align: 'right',
+      renderCell: ({ row }) => (
+        <RowActions rowLabel={`costos de ${row.carPatent ?? 'vehículo'}`} onView={() => goTo(row)} />
+      ),
+    },
+  ];
+
+  return (
+    <PageContainer>
+      <PageHeader
+        title="Costos de la flota"
+        description="Qué cuesta cada vehículo en el período: de mayor a menor costo por km, para ver cuáles conviene revisar."
+        actions={
+          <DateRangePicker
+            value={range}
+            preset={preset}
+            onChange={(next, nextPreset) => {
+              setRange(next);
+              setPreset(nextPreset);
+            }}
+          />
+        }
+      />
+      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+        <KpiCard
+          title="Vehículos"
+          icon={Gauge}
+          value={summary ? formatNumber(summary.vehicles) : '—'}
+          loading={!data && !error}
+        />
+        <KpiCard
+          title="Costo total"
+          icon={Gauge}
+          value={summary ? formatCurrency(summary.total) : '—'}
+          loading={!data && !error}
+          hint="En el período"
+        />
+        <KpiCard
+          title="Costo por km"
+          icon={Gauge}
+          value={summary && summary.costPerKm !== null ? formatCurrency(summary.costPerKm) : '—'}
+          loading={!data && !error}
+          hint={
+            summary && summary.withoutKm > 0
+              ? `${summary.withoutKm} ${summary.withoutKm === 1 ? 'vehículo sin km' : 'vehículos sin km'}`
+              : 'Promedio de la flota'
+          }
+        />
+      </div>
+      <Card>
+        <TableToolbar
+          serverExport={{ resource: 'costos-flota', params: fleetCostQuery(range) }}
+          noun={['vehículo', 'vehículos']}
+        />
+        {error ? (
+          <ErrorState error={error} resource="Los costos" onRetry={() => void refetch()} />
+        ) : (
+          <ResponsiveTable
+            label="costos de la flota"
+            rows={vehicles ?? []}
+            columns={columns}
+            getRowId={(row) => row.carId}
+            loading={isFetching}
+            onRowClick={goTo}
+            empty={
+              <EmptyState
+                icon={Gauge}
+                title="No hay vehículos"
+                description="Cuando se carguen vehículos, acá aparecen sus costos."
+              />
+            }
+            renderCard={(row) => (
+              <>
+                <IdentityCell
+                  title={row.carPatent ?? 'Sin patente'}
+                  subtitle={[row.carBrand, row.carModel].filter(Boolean).join(' ')}
+                  icon={Gauge}
+                />
+                <p className="text-sm text-ink-2">
+                  Total {formatCurrency(row.total)} · {formatNumber(row.km)} km ·{' '}
+                  {row.costPerKm === null ? 'sin $/km' : `${formatCurrency(row.costPerKm)}/km`}
+                </p>
+                <p className="text-xs text-muted">{KM_SOURCE_LABEL[row.kmSource]}</p>
+              </>
+            )}
+          />
+        )}
+      </Card>
+    </PageContainer>
+  );
+};

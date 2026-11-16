@@ -1,0 +1,123 @@
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { MemoryRouter, useLocation } from 'react-router-dom';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { User } from '../../services/api/types';
+
+const byRole = vi.hoisted(() => vi.fn());
+const permissions = vi.hoisted(() => ({ isSuperAdmin: true }));
+
+vi.mock('../../hooks', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  usePermissions: () => ({ canManageCustomerAccounts: false, isSuperAdmin: permissions.isSuperAdmin }),
+}));
+vi.mock('../../services/queries/users', () => ({
+  useUsersByRole: (tab: string) => byRole(tab) as unknown,
+  useUserRoleCounts: () => ({ all: 31, admin: 1, super_admin: 1, delivery: 5, customer: 24 }),
+  useBlockUser: () => ({ mutate: vi.fn() }),
+  useDeleteUser: () => ({ mutate: vi.fn() }),
+}));
+vi.mock('./components/UserEditModal', () => ({ UserEditModal: () => null }));
+vi.mock('./components/FindUserByPhoneModal', () => ({ FindUserByPhoneModal: () => null }));
+
+import { Users } from './Users';
+
+afterEach(cleanup);
+
+const user = (id: string, name: string): User =>
+  ({
+    user_id: id,
+    full_name: name,
+    email: `${id}@mail.com`,
+    phone_number: '3764',
+    blocked: false,
+    role: { type: 'customer' },
+  }) as unknown as User;
+
+const Search = () => <output data-testid="search">{useLocation().search}</output>;
+
+describe('Users: pestañas por rol', () => {
+  it('en una empresa muestra la cantidad de cada rol y pide la lista del rol elegido', () => {
+    permissions.isSuperAdmin = false;
+    byRole.mockReturnValue({
+      data: { rows: [user('u1', 'Ana Pérez')], total: 25 },
+      isLoading: false,
+      isFetching: false,
+    });
+    render(
+      <MemoryRouter initialEntries={['/users']}>
+        <Users />
+        <Search />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole('tab', { name: 'Todos 31' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Clientes 24' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Choferes 5' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Administradores 1' })).toBeInTheDocument();
+    expect(byRole).toHaveBeenLastCalledWith('all');
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Choferes 5' }));
+    expect(byRole).toHaveBeenLastCalledWith('delivery');
+    expect(screen.getByTestId('search')).toHaveTextContent('?role=delivery');
+    expect(screen.getByRole('group', { name: 'Filtros activos' })).toHaveTextContent('Choferes');
+    permissions.isSuperAdmin = true;
+  });
+
+  it('en la plataforma no hay clientes ni choferes: ni pestañas, ni rol en la URL, ni buscar por teléfono', () => {
+    byRole.mockReturnValue({ data: { rows: [], total: 0 }, isLoading: false, isFetching: false });
+    render(
+      <MemoryRouter initialEntries={['/users?role=customer']}>
+        <Users />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole('tab', { name: 'Super administradores 1' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Administradores 1' })).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /Clientes/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /Choferes/ })).not.toBeInTheDocument();
+    expect(byRole).toHaveBeenLastCalledWith('all');
+    expect(screen.queryByRole('button', { name: 'Buscar por teléfono' })).not.toBeInTheDocument();
+  });
+
+  it('la pestaña Super administradores es sólo del super admin', () => {
+    byRole.mockReturnValue({ data: { rows: [], total: 0 }, isLoading: false, isFetching: false });
+    permissions.isSuperAdmin = false;
+    render(
+      <MemoryRouter initialEntries={['/users?role=super_admin']}>
+        <Users />
+      </MemoryRouter>,
+    );
+    permissions.isSuperAdmin = true;
+    expect(screen.queryByRole('tab', { name: /Super administradores/ })).not.toBeInTheDocument();
+    expect(byRole).toHaveBeenLastCalledWith('all');
+  });
+
+  it('un rol desconocido en la URL cae en "Todos"', () => {
+    byRole.mockReturnValue({ data: { rows: [], total: 0 }, isLoading: false, isFetching: false });
+    render(
+      <MemoryRouter initialEntries={['/users?role=cualquiera']}>
+        <Users />
+      </MemoryRouter>,
+    );
+    expect(byRole).toHaveBeenLastCalledWith('all');
+  });
+
+  it('mientras carga muestra el esqueleto del listado', () => {
+    byRole.mockReturnValue({ data: undefined, isLoading: true, isFetching: true });
+    render(
+      <MemoryRouter>
+        <Users />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole('status', { name: 'Cargando listado' })).toBeInTheDocument();
+  });
+
+  it('la página vive en la URL y una fuera de rango vuelve a la primera', () => {
+    byRole.mockReturnValue({ data: { rows: [], total: 25 }, isLoading: false, isFetching: false });
+    render(
+      <MemoryRouter initialEntries={['/users?page=7']}>
+        <Users />
+        <Search />
+      </MemoryRouter>,
+    );
+    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
+  });
+});

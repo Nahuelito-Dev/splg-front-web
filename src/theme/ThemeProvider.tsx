@@ -1,22 +1,20 @@
-import { useMemo } from 'react';
-// material
+import { useMemo, useSyncExternalStore, type ReactNode } from 'react';
 import { CssBaseline } from '@mui/material';
-import { ThemeProvider as MUIThemeProvider, createTheme, StyledEngineProvider } from '@mui/material/styles';
-import palette from './pallete';
+import { ThemeProvider as MUIThemeProvider, StyledEngineProvider } from '@mui/material/styles';
+import { companyThemeStore } from './companyTheme';
+import { createAppTheme } from './muiTheme';
+import { ThemeModeProvider } from './ThemeModeContext';
+import { useThemeMode } from './useThemeMode';
 
 interface Props {
-  children: React.ReactNode | React.ReactNode[];
+  children: ReactNode;
 }
 
-export const ThemeProvider = ({ children }: Props) => {
-  const themeOptions = useMemo(
-    () => ({
-      palette,
-    }),
-    []
-  );
-
-  const theme = createTheme(themeOptions);
+/** Arma el tema de MUI según el modo resuelto (claro/oscuro) y el tema de la empresa del contexto, si hay. */
+const MuiBridge = ({ children }: Props) => {
+  const { resolvedMode } = useThemeMode();
+  const company = useSyncExternalStore(companyThemeStore.subscribe, companyThemeStore.getSnapshot);
+  const theme = useMemo(() => createAppTheme(resolvedMode, company), [resolvedMode, company]);
 
   return (
     <StyledEngineProvider injectFirst>
@@ -26,4 +24,10 @@ export const ThemeProvider = ({ children }: Props) => {
       </MUIThemeProvider>
     </StyledEngineProvider>
   );
-}
+};
+
+export const ThemeProvider = ({ children }: Props) => (
+  <ThemeModeProvider>
+    <MuiBridge>{children}</MuiBridge>
+  </ThemeModeProvider>
+);

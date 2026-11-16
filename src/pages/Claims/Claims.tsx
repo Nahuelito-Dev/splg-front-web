@@ -1,194 +1,168 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getAllClaims, resolveClaim, Claim } from '../../services/api/claims';
-import { ResolveClaimModal } from './components/ResolveClaimModal';
-import Swal from 'sweetalert2';
+import { useMemo, useState } from 'react';
+import { MessageSquarePlus } from 'lucide-react';
+import {
+  AnalyticSummary,
+  Button,
+  Card,
+  ErrorState,
+  ListSkeleton,
+  PageHeader,
+  Tabs,
+  tabPanelProps,
+  type AnalyticItem,
+  type FilterChip,
+  type TabItem,
+  PageContainer,
+  TableToolbar,
+} from '../../common/components/ui';
+import { usePermissions, useUrlParams } from '../../hooks';
+import type { Claim } from '../../services/api/types';
+import { useClaims } from '../../services/queries/claims';
+import { CLAIM_STATUS, labelOf } from '../../utils/statusLabels';
+import { ClaimDetailDrawer, type PendingAction } from './components/ClaimDetailDrawer';
+import { ClaimsTable } from './components/ClaimsTable';
+import { EditClaimModal } from './components/EditClaimModal';
+import { CreateClaimModal } from './components/CreateClaimModal';
+import { CLAIM_STATUS_ORDER, countClaimsByStatus, filterClaims, type ClaimStatusFilter } from './claimFilters';
 
-// Iconos
-import FeedbackIcon from '@mui/icons-material/Feedback';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import PendingIcon from '@mui/icons-material/Pending';
-import CancelIcon from '@mui/icons-material/Cancel';
-import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
+const TABS_ID = 'claims';
 
 export const Claims = () => {
-  const queryClient = useQueryClient();
-  const [selectedClaim, setSelectedClaim] = useState<Claim | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { data: claims, isLoading, isFetching, error, refetch } = useClaims();
+  // El estado y la búsqueda viven en la URL: al volver o recargar la lista queda como estaba.
+  // El reclamo abierto también (`?claim=<id>`): el aviso de la bandeja lleva directo a él.
+  const [{ status: statusParam, q: term, claim }, setFilters] = useUrlParams({ status: 'all', q: '', claim: '' });
+  const status: ClaimStatusFilter = CLAIM_STATUS_ORDER.find((s) => s === statusParam) ?? 'all';
+  const setStatus = (value: string) => setFilters({ status: value });
+  const setTerm = (value: string) => setFilters({ q: value });
+  const selectedId = claim || null;
+  const setSelectedId = (id: string | null) => setFilters({ claim: id ?? '' });
+  const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState<Claim | null>(null);
+  const [startAction, setStartAction] = useState<PendingAction>(null);
+  const { canOperate, canWrite, writeHint } = usePermissions();
 
-  // Query
-  const { data: claims = [], isLoading } = useQuery(['claims'], getAllClaims);
+  const all = useMemo(() => claims ?? [], [claims]);
+  const counts = useMemo(() => countClaimsByStatus(all), [all]);
+  const rows = useMemo(() => filterClaims(all, { status, term }), [all, status, term]);
+  // El reclamo abierto sale de la lista: tras resolverlo, el panel muestra el estado nuevo.
+  const selected = all.find((claim) => claim.claim_id === selectedId) ?? null;
 
-  // Mutation
-  const resolveMutation = useMutation({
-    mutationFn: (data: { resolution: string; status: string }) =>
-      resolveClaim(selectedClaim!.claim_id, data.resolution, data.status),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['claims']);
-      setIsModalOpen(false);
-      Swal.fire({
-        title: 'Guardado',
-        text: 'El reclamo ha sido actualizado.',
-        icon: 'success',
-        customClass: {
-          confirmButton:
-            'bg-indigo-600 text-white font-bold px-6 py-2 rounded-md hover:bg-indigo-700 transition-colors',
-        },
-        buttonsStyling: false,
-      });
-    },
-    onError: () =>
-      Swal.fire({
-        title: 'Error',
-        text: 'No se pudo actualizar.',
-        icon: 'error',
-        customClass: {
-          confirmButton:
-            'bg-rose-600 text-white font-bold px-6 py-2 rounded-md hover:bg-rose-700 transition-colors',
-        },
-        buttonsStyling: false,
-      }),
-  });
+  const tabs: TabItem[] = [
+    { id: 'all', label: 'Todos', count: counts.all },
+    ...CLAIM_STATUS_ORDER.map((s) => ({
+      id: s,
+      label: labelOf(CLAIM_STATUS, s).text,
+      count: counts[s],
+      tone: labelOf(CLAIM_STATUS, s).tone,
+    })),
+  ];
+  const summary: AnalyticItem[] = CLAIM_STATUS_ORDER.map((s) => ({
+    key: s,
+    label: labelOf(CLAIM_STATUS, s).text,
+    count: counts[s],
+    tone: labelOf(CLAIM_STATUS, s).tone,
+  }));
 
-  const handleOpenResolve = (claim: Claim) => {
-    setSelectedClaim(claim);
-    setIsModalOpen(true);
-  };
-
-  const getStatusBadge = (status: string) => {
-    const config: any = {
-      pending: {
-        color: 'text-amber-600 bg-amber-50 border-amber-100',
-        icon: <PendingIcon fontSize="inherit" />,
-        label: 'Pendiente',
-      },
-      in_process: {
-        color: 'text-blue-600 bg-blue-50 border-blue-100',
-        icon: <HourglassEmptyIcon fontSize="inherit" />,
-        label: 'En Proceso',
-      },
-      resolved: {
-        color: 'text-emerald-600 bg-emerald-50 border-emerald-100',
-        icon: <CheckCircleIcon fontSize="inherit" />,
-        label: 'Resuelto',
-      },
-      rejected: {
-        color: 'text-rose-600 bg-rose-50 border-rose-100',
-        icon: <CancelIcon fontSize="inherit" />,
-        label: 'Rechazado',
-      },
-    };
-    const style = config[status] || config.pending;
-
-    return (
-      <span
-        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold border uppercase ${style.color}`}
-      >
-        {style.icon} {style.label}
-      </span>
-    );
-  };
+  const chips: FilterChip[] = [];
+  if (status !== 'all') chips.push({ key: 'status', label: labelOf(CLAIM_STATUS, status).text });
+  if (term.trim()) chips.push({ key: 'q', label: `"${term.trim()}"` });
+  const removeChip = (key: string) => (key === 'status' ? setStatus('all') : setTerm(''));
+  const clearAll = () => setFilters({ status: 'all', q: '' });
 
   return (
-    <div className="p-4 md:p-8 bg-slate-50 min-h-screen">
-      <div className="max-w-[1600px] mx-auto">
-        <header className="mb-8">
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3">
-            <FeedbackIcon fontSize="large" className="text-slate-400" /> Gestión
-            de Reclamos
-          </h1>
-          <p className="text-slate-500 mt-1 ml-11">
-            Atención y resolución de incidencias post-venta.
-          </p>
-        </header>
+    <PageContainer>
+      <PageHeader
+        title="Reclamos"
+        description="Atención y resolución de reclamos post-venta de los clientes."
+        actions={
+          <Button
+            icon={<MessageSquarePlus />}
+            onClick={() => setCreating(true)}
+            blockedReason={canWrite ? undefined : writeHint}
+          >
+            Cargar reclamo
+          </Button>
+        }
+      />
 
-        <section className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-          {isLoading ? (
-            <div className="p-10 text-center text-slate-400">
-              Cargando reclamos...
+      {isLoading ? (
+        <Card>
+          <ListSkeleton />
+        </Card>
+      ) : error ? (
+        <Card>
+          <ErrorState error={error} resource="Los reclamos" onRetry={() => void refetch()} />
+        </Card>
+      ) : (
+        <>
+          <AnalyticSummary
+            label="Reclamos por estado"
+            items={summary}
+            selected={status === 'all' ? undefined : status}
+            onSelect={(key) => setStatus(key === status ? 'all' : key)}
+          />
+          <Card>
+            <Tabs
+              items={tabs}
+              value={status}
+              onChange={setStatus}
+              label="Filtrar reclamos por estado"
+              idPrefix={TABS_ID}
+            />
+            <div {...tabPanelProps(TABS_ID, status)}>
+              <TableToolbar
+                search={{
+                  label: 'Buscar reclamos',
+                  placeholder: 'Cliente, teléfono, motivo o n.º de pedido',
+                  value: term,
+                  onChange: (value) => setTerm(value),
+                }}
+                serverExport={{
+                  resource: 'reclamos',
+                  blockedReason:
+                    status !== 'all' || term.trim()
+                      ? 'El exporte trae todos los reclamos: quitá los filtros para exportar'
+                      : undefined,
+                }}
+                chips={chips}
+                onRemoveChip={removeChip}
+                onClearChips={clearAll}
+                resultCount={rows.length}
+                noun={['reclamo', 'reclamos']}
+              />
+              <ClaimsTable
+                rows={rows}
+                loading={isFetching}
+                filtered={chips.length > 0}
+                onManage={(claim) => {
+                  setStartAction(null);
+                  setSelectedId(claim.claim_id);
+                }}
+                onEdit={canOperate ? setEditing : undefined}
+                onReject={
+                  canOperate
+                    ? (claim) => {
+                        setStartAction('reject');
+                        setSelectedId(claim.claim_id);
+                      }
+                    : undefined
+                }
+              />
             </div>
-          ) : claims.length === 0 ? (
-            <div className="p-16 text-center">
-              <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircleIcon
-                  className="text-emerald-300"
-                  fontSize="large"
-                />
-              </div>
-              <h3 className="text-lg font-bold text-slate-700">
-                ¡Todo en orden!
-              </h3>
-              <p className="text-slate-500">
-                No hay reclamos pendientes de atención.
-              </p>
-            </div>
-          ) : (
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-100">
-                <tr>
-                  <th className="px-6 py-4">ID Reclamo</th>
-                  <th className="px-6 py-4">Fecha</th>
-                  <th className="px-6 py-4">Cliente / Pedido</th>
-                  <th className="px-6 py-4">Motivo</th>
-                  <th className="px-6 py-4 text-center">Estado</th>
-                  <th className="px-6 py-4 text-center">Acción</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {claims.map((claim: Claim) => (
-                  <tr
-                    key={claim.claim_id}
-                    className="hover:bg-slate-50 transition-colors"
-                  >
-                    <td className="px-6 py-4 font-mono text-xs text-slate-400">
-                      #{claim.claim_id.slice(-6)}
-                    </td>
-                    <td className="px-6 py-4 text-slate-600">
-                      {new Date(claim.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="font-bold text-slate-800">
-                        {claim.customer.full_name}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        Pedido #{claim.order.order_id.slice(-6)}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="font-medium text-slate-700">
-                        {claim.reason}
-                      </p>
-                      <p className="text-xs text-slate-500 truncate max-w-[200px]">
-                        {claim.description}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      {getStatusBadge(claim.status)}
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <button
-                        onClick={() => handleOpenResolve(claim)}
-                        className="bg-indigo-600 text-white font-bold hover:bg-indigo-700 px-3 py-1 rounded transition-colors text-xs border border-indigo-600"
-                      >
-                        Gestionar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </section>
+          </Card>
+        </>
+      )}
 
-        {/* Modal */}
-        <ResolveClaimModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          claim={selectedClaim}
-          onResolve={(data) => resolveMutation.mutate(data)}
-          isResolving={resolveMutation.isLoading}
-        />
-      </div>
-    </div>
+      <ClaimDetailDrawer
+        open={selected !== null}
+        onClose={() => setSelectedId(null)}
+        claim={selected}
+        startAction={startAction}
+        onEdit={setEditing}
+      />
+      <EditClaimModal claim={editing} onClose={() => setEditing(null)} />
+      <CreateClaimModal open={creating} onClose={() => setCreating(false)} />
+    </PageContainer>
   );
 };

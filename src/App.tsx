@@ -1,38 +1,26 @@
-//import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
+import { QueryClientProvider } from '@tanstack/react-query';
+import { SnackbarProvider } from 'notistack';
+import { CompanyThemeSync } from './common/components/CompanyThemeSync';
+import { ConfirmDialogHost } from './common/components/ui/ConfirmDialog';
+import { SocketProvider } from './context/SocketContext';
+import { Navigation } from './router/Navigation';
+import { queryClient } from './services/queries/queryClient';
+import { ThemeProvider } from './theme';
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-
-import { CustomAlert } from "./common/components"
-//import { AuthRoutes } from "./routes/AuthRoutes"
-//import { DashboardRoutes } from "./routes/DashboardRoutes"
-import { ThemeProvider } from "./theme"
-
-import { useAppSelector } from "./hooks/reduxHooks"
-import { Navigation } from "./router/Navigation"
-import { SocketProvider } from "./context/SocketContext"
-
-const queryClient = new QueryClient()
-
-export const App = () => {
-  const { isOpen } = useAppSelector((state) => state.ui)
-  return (
-      <ThemeProvider>
-        <QueryClientProvider client={queryClient}>
-          <SocketProvider>
-            <Navigation />
-            {/* <BrowserRouter>
-              <Routes>
-                {
-                  status === 'authenticated'
-                    ? <Route path="/*" element={<DashboardRoutes />} />
-                    : <Route path="/auth/*" element={<AuthRoutes />} />
-                }
-                <Route path="/*" element={<Navigate to={'/auth/login'} />} />
-              </Routes> */}
-            <CustomAlert isOpen={isOpen} />
-            {/* </BrowserRouter> */}
-          </SocketProvider>
-        </QueryClientProvider>
-      </ThemeProvider>
-  )
-}
+export const App = () => (
+  <ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <CompanyThemeSync />
+      <SocketProvider>
+        <SnackbarProvider
+          maxSnack={3}
+          autoHideDuration={4000}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        >
+          <Navigation />
+          <ConfirmDialogHost />
+        </SnackbarProvider>
+      </SocketProvider>
+    </QueryClientProvider>
+  </ThemeProvider>
+);

@@ -1,37 +1,79 @@
-import { privateAxiosInstance } from './axiosConfig';
+import { http, toPage, type Page } from './httpClient';
+import type { CoverageCheck, CoverageZone } from './types';
 
-export interface CoverageZone {
-  coverage_zone_id: string;
-  name: string;
-  surcharge: number;
-  isActive: boolean;
-  // GeoJSON Polygon: coordinates[0] es el anillo como [lng, lat][].
-  area: {
-    type: 'Polygon';
-    coordinates: number[][][];
-  };
+/** GET /coverage-zones/check: parámetros de la verificación puntual. */
+export interface CheckCoverageParams {
+  lat: number;
+  lng: number;
+  /** Subtotal de garrafas: con él, la respuesta trae `amount` (recargo ya calculado). */
+  subtotal?: number;
 }
 
-export interface CreateCoverageZonePayload {
-  name: string;
-  // Anillo del polígono como [lng, lat][] (orden GeoJSON).
-  polygon: number[][];
-  surcharge?: number;
+/**
+ * `CreateCoverageZoneDto`/`UpdateCoverageZoneDto` (`CreateCoverageZoneBody`/
+ * `UpdateCoverageZoneBody` en `types.ts`) marcan `surchargeType`,
+ * `surchargeValue` y `priority` como obligatorios: en el DTO real del back son
+ * opcionales (`@IsOptional()` con `@default`), pero `openapi-typescript` toma
+ * cualquier propiedad con `default` en el swagger como siempre presente. Es un
+ * defecto de la anotación Swagger del back, reportado en el informe: acá se
+ * tipa el payload a mano en vez de mandar lo que salió mal generado.
+ */
+interface CoverageZoneFields {
+  name?: string;
+  polygon?: number[][];
+  surchargeType?: 'fixed' | 'percentage';
+  surchargeValue?: number;
+  label?: string;
+  color?: string;
+  priority?: number;
+  validFrom?: string;
+  validUntil?: string;
   isActive?: boolean;
 }
 
-export const getCoverageZones = async () => {
-  const { data } =
-    await privateAxiosInstance.get<CoverageZone[]>('/coverage-zones');
+export interface CreateCoverageZonePayload extends CoverageZoneFields {
+  name: string;
+  /** Anillo del polígono como `[lng, lat][]` (orden GeoJSON), mínimo 3 vértices. */
+  polygon: number[][];
+}
+
+/** En la edición `null` quita el límite de vigencia (rige desde siempre / no vence); sin la clave, no se toca. */
+export type UpdateCoverageZonePayload = Omit<CoverageZoneFields, 'validFrom' | 'validUntil'> & {
+  validFrom?: string | null;
+  validUntil?: string | null;
+};
+
+/** GET /coverage-zones?includeInactive: todas las zonas de la distribuidora (activas e inactivas). */
+export const listCoverageZones = async (includeInactive = true): Promise<Page<CoverageZone>> => {
+  const response = await http.get<CoverageZone[]>('/coverage-zones', { params: { includeInactive } });
+  return toPage(response);
+};
+
+/** GET /coverage-zones/:id: una zona puntual (404 si no existe o es de otra distribuidora). */
+export const getCoverageZone = async (id: string): Promise<CoverageZone> => {
+  const { data } = await http.get<CoverageZone>(`/coverage-zones/${id}`);
   return data;
 };
 
-export const createCoverageZone = async (payload: CreateCoverageZonePayload) => {
-  const { data } = await privateAxiosInstance.post('/coverage-zones', payload);
+/** POST /coverage-zones */
+export const createCoverageZone = async (body: CreateCoverageZonePayload): Promise<CoverageZone> => {
+  const { data } = await http.post<CoverageZone>('/coverage-zones', body);
   return data;
 };
 
-export const deleteCoverageZone = async (id: string) => {
-  const { data } = await privateAxiosInstance.delete(`/coverage-zones/${id}`);
+/** PATCH /coverage-zones/:id */
+export const updateCoverageZone = async (id: string, body: UpdateCoverageZonePayload): Promise<CoverageZone> => {
+  const { data } = await http.patch<CoverageZone>(`/coverage-zones/${id}`, body);
+  return data;
+};
+
+/** DELETE /coverage-zones/:id (baja lógica) */
+export const deleteCoverageZone = async (id: string): Promise<void> => {
+  await http.delete(`/coverage-zones/${id}`);
+};
+
+/** GET /coverage-zones/check?lat&lng&subtotal: qué zona gana en ese punto y cuánto recarga. */
+export const checkCoverage = async ({ lat, lng, subtotal }: CheckCoverageParams): Promise<CoverageCheck> => {
+  const { data } = await http.get<CoverageCheck>('/coverage-zones/check', { params: { lat, lng, subtotal } });
   return data;
 };

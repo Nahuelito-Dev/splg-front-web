@@ -1,24 +1,48 @@
-import { Navbar, SideMenu } from '../components';
+import { useState, type ReactNode } from 'react';
+import { CrumbProvider, Navbar, SideMenu } from '../components';
+import { NAV_MINI_KEY, useStoredFlag } from '../../hooks';
+import { cx } from '../components/ui/cx';
+import { CompanySupportStrip } from '../support/CompanySupportStrip';
+import { OwnedCompanyBanner } from '../support/OwnedCompanyBanner';
+import { SupportBanner } from '../support/SupportBanner';
+import { SupportChatHost } from '../../features/chat/SupportChatHost';
 
 interface Props {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 export const DashboardLayout = ({ children }: Props) => {
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [navMini, setNavMini] = useStoredFlag(NAV_MINI_KEY);
+
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900 selection:bg-indigo-500 selection:text-white">
-      {/* Menú Lateral (Fixed) */}
-      <SideMenu />
+    <CrumbProvider>
+      <div className="min-h-screen bg-bg text-ink">
+        <SideMenu
+          mobileOpen={mobileNavOpen}
+          onCloseMobile={() => setMobileNavOpen(false)}
+          mini={navMini}
+          onToggleMini={() => setNavMini(!navMini)}
+        />
 
-      {/* Contenedor Principal */}
-      {/* ml-72: Crea el margen izquierdo exacto del ancho del menú (w-72) */}
-      <main className="ml-72 min-h-screen transition-all duration-300">
-        {/* Barra superior (campana de notificaciones en tiempo real) */}
-        <Navbar />
-
-        {/* Wrapper del contenido con padding interno */}
-        <div className="w-full">{children}</div>
-      </main>
-    </div>
+        {/* El padding es el ancho exacto del menú lateral fijo en escritorio (completo o reducido a íconos). */}
+        <div
+          className={cx(
+            'flex min-h-screen flex-col transition-[padding] duration-200',
+            navMini ? 'lg:pl-[76px]' : 'lg:pl-64',
+          )}
+        >
+          {/* La banda del modo soporte queda pegada arriba junto con la barra: se ve en todas las pantallas. */}
+          <div className="sticky top-0 z-20">
+            <SupportBanner />
+            <OwnedCompanyBanner />
+            <Navbar onOpenMenu={() => setMobileNavOpen(true)} />
+          </div>
+          <CompanySupportStrip />
+          <main className="flex-1">{children}</main>
+        </div>
+        <SupportChatHost />
+      </div>
+    </CrumbProvider>
   );
 };
