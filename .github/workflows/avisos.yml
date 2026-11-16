@@ -1,7 +1,8 @@
 name: Avisos a Telegram
 
-# Avisa a Telegram cómo terminó cada corrida de Checks, Revisión de código y Release.
-# Los deploys avisan desde su propio workflow (inicio y resultado).
+# Avisa a Telegram cómo terminó cada corrida de Checks, Revisión de código y Release: qué commit,
+# en qué rama, cuánto tardó y, si falló, qué partes fallaron. Los deploys y el release nocturno
+# avisan desde su propio workflow.
 on:
   workflow_run:
     workflows: ['Checks', 'Revisión de código', 'Release automatico']
@@ -9,34 +10,59 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   avisar:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
+      GH_TOKEN: ${{ github.token }}
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      REPO: ${{ github.repository }}
+      RUN_ID: ${{ github.event.workflow_run.id }}
       NOMBRE: ${{ github.event.workflow_run.name }}
       RESULTADO: ${{ github.event.workflow_run.conclusion }}
       RAMA: ${{ github.event.workflow_run.head_branch }}
+      SHA: ${{ github.event.workflow_run.head_sha }}
       COMMIT: ${{ github.event.workflow_run.head_commit.message }}
       AUTOR: ${{ github.event.workflow_run.actor.login }}
       URL: ${{ github.event.workflow_run.html_url }}
+      INICIO: ${{ github.event.workflow_run.run_started_at }}
+      FIN: ${{ github.event.workflow_run.updated_at }}
     steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          sparse-checkout: .github/scripts
+
       - name: Mandar el aviso
         run: |
-          [ -n "$TELEGRAM_BOT_TOKEN" ] || { echo "Sin TELEGRAM_BOT_TOKEN: no se avisa."; exit 0; }
+          . .github/scripts/telegram.sh --funciones
           case "$RESULTADO" in
-            success) icono="✅"; texto="pasó" ;;
-            failure) icono="🔴"; texto="falló" ;;
-            cancelled) icono="⚪"; texto="se canceló" ;;
+            success) icono="✅"; texto="pasaron" ;;
+            failure) icono="🔴"; texto="fallaron" ;;
+            cancelled) exit 0 ;; # lo cancela una corrida más nueva: no es noticia
             skipped) exit 0 ;;
-            *) icono="🟡"; texto="$RESULTADO" ;;
+            *) icono="🟡"; texto="terminaron en «$RESULTADO»" ;;
           esac
-          titulo=$(printf '%s' "$COMMIT" | head -n1 | cut -c1-90)
-          t="$icono SPLG Panel · $NOMBRE $texto en $RAMA
-          $titulo
-          por $AUTOR · $URL"
-          curl -s -o /dev/null "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" --data-urlencode "text=$t" -d disable_web_page_preview=true
+          case "$NOMBRE" in
+            'Release automatico') que="Release"; [ "$RESULTADO" = success ] && texto="publicado" || texto="falló" ;;
+            *) que="$NOMBRE" ;;
+          esac
+          proyecto="${REPO#*/}"; case "$proyecto" in splg-back) proyecto="API" ;; splg-front-web) proyecto="Panel" ;; esac
+          min=$(( ( $(date -d "$FIN" +%s) - $(date -d "$INICIO" +%s) + 59 ) / 60 ))
+          titulo=$(printf '%s' "$COMMIT" | head -n1 | cut -c1-90 | escapar)
+          rama=$(printf '%s' "$RAMA" | escapar)
+          fallas=""
+          if [ "$RESULTADO" = failure ]; then
+            fallas=$(gh run view "$RUN_ID" -R "$REPO" --json jobs \
+              -q '.jobs[] | select(.conclusion=="failure") | .name + (if .steps then " → " + ([.steps[] | select(.conclusion=="failure") | .name][0] // "") else "" end)' \
+              2>/dev/null | head -n 4 | escapar)
+          fi
+          {
+            printf '%s <b>%s · %s %s</b> en %s · %s min\n' "$icono" "$proyecto" "$que" "$texto" "$rama" "$min"
+            printf '<code>%s</code> %s\n' "${SHA:0:7}" "$titulo"
+            [ -n "$fallas" ] && printf 'Falló: %s\n' "$fallas"
+            printf 'por %s · <a href="%s">Ver detalle</a>\n' "$AUTOR" "$URL"
+          } | .github/scripts/telegram.sh

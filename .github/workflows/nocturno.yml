@@ -35,17 +35,17 @@ jobs:
       - name: Pasar develop a main si corresponde
         id: paso
         run: |
-          avisar() {
-            [ -n "$TELEGRAM_BOT_TOKEN" ] || return 0
-            curl -s -o /dev/null "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-              --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" --data-urlencode "text=$1" -d disable_web_page_preview=true
-          }
-          nombre="${REPO#*/}"
           git fetch -q origin develop
+          # El script de avisos se toma de develop: main puede no tenerlo todavía.
+          git show origin/develop:.github/scripts/telegram.sh > "$RUNNER_TEMP/telegram.sh"
+          chmod +x "$RUNNER_TEMP/telegram.sh"
+          . "$RUNNER_TEMP/telegram.sh" --funciones
+          avisar() { printf '%s\n' "$1" | "$RUNNER_TEMP/telegram.sh"; }
+          nombre="${REPO#*/}"; case "$nombre" in splg-back) nombre="API" ;; splg-front-web) nombre="Panel" ;; esac
           nuevos=$(git rev-list --count --no-merges origin/main..origin/develop)
           if [ "$nuevos" = 0 ]; then
             echo "Sin cambios nuevos en develop."
-            avisar "🌙 $nombre · release nocturno: no había cambios nuevos en develop."
+            avisar "🌙 <b>$nombre · release nocturno</b>: no había cambios nuevos en develop."
             exit 0
           fi
 
@@ -57,12 +57,12 @@ jobs:
           if [ "$sha" != "$head" ]; then
             fuera=$(git diff --name-only "$sha" "$head" | grep -vE '\.md$|^postman/' || true)
             if [ -n "$fuera" ]; then
-              avisar "🟡 $nombre · release nocturno frenado: los Checks del último commit de develop todavía no corrieron."
+              avisar "🟡 <b>$nombre · release nocturno frenado</b>: los Checks del último commit de develop (<code>${head:0:7}</code>) todavía no corrieron. Producción no cambia."
               exit 1
             fi
           fi
           if [ "$estado" != completed ] || [ "$conclusion" != success ]; then
-            avisar "🔴 $nombre · release nocturno frenado: los Checks de develop están en «$conclusion»."
+            avisar "🔴 <b>$nombre · release nocturno frenado</b>: los Checks de develop (<code>${sha:0:7}</code>) están en «$conclusion». Producción no cambia."
             exit 1
           fi
 
@@ -71,7 +71,12 @@ jobs:
           git merge --no-ff -q -m "chore(release): integrar develop" origin/develop
           git push -q origin HEAD:main
           echo "paso=si" >> "$GITHUB_OUTPUT"
-          avisar "🌙 $nombre · release nocturno: $nuevos commit(s) de develop pasaron a main. Arranca el release y el deploy."
+          lista=$(git log --no-merges --format='• %s' HEAD^1..HEAD^2 | grep -v '^• chore(release)' | head -n 10 | cut -c1-90 | escapar)
+          [ "$nuevos" -gt 10 ] && lista="$lista
+          … y $((nuevos - 10)) más"
+          avisar "🌙 <b>$nombre · release nocturno</b>: $nuevos commit(s) de develop pasan a main. Arranca el release y el deploy.
+
+          $lista"
 
       # Un push hecho con el token de Actions no dispara otros workflows: el release se lanza a mano.
       - name: Lanzar el Release automático
