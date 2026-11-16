@@ -4,7 +4,7 @@ import { useLocation } from 'react-router-dom';
 import { Drawer, Skeleton } from '../../common/components/ui';
 import { usePlatform } from '../../services/queries/supportSessions';
 import { SUPPORT_PATH } from './routes';
-import { useInboxUnread } from '../../services/queries/inbox';
+import { useInboxSummary } from '../../services/queries/inbox';
 import { useInboxAccess } from './useInboxAccess';
 import { useInboxBridge } from './useInboxBridge';
 import { useSupportChatBridge } from './useSupportChatBridge';
@@ -51,7 +51,8 @@ export const SupportChatHost = () => {
   useSupportChatBridge(side, side === 'company' ? `Mensaje de ${platformName}` : 'Mensaje de una empresa');
   const inbox = useInboxAccess();
   useInboxBridge(inbox.any);
-  const inboxUnread = useInboxUnread(inbox.any).data ?? 0;
+  // Las conversaciones de la bandeja con algo sin leer (no los mensajes): el mismo resumen que la insignia del menú.
+  const inboxUnread = useInboxSummary(inbox.any).data?.unread ?? 0;
   useUnreadTitle((side ? unread : 0) + (inbox.any ? inboxUnread : 0));
 
   const onSupportPage = pathname === SUPPORT_PATH || pathname.startsWith(`${SUPPORT_PATH}/`);

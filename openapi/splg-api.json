@@ -42185,6 +42185,40 @@
                 ]
             }
         },
+        "/api/v2/conversations/summary": {
+            "get": {
+                "description": "Para la insignia del menú «Mensajes» y las pestañas: de las conversaciones abiertas de los canales que atiende quien pide (`mensajes.clientes`, `mensajes.choferes`), cuántas están sin asignar, cuántas son suyas, cuántas esperan a una persona y cuántas tienen algo sin leer para quien pide. Sólo de su empresa.",
+                "operationId": "CompanyInboxController_resumen",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InboxSummaryDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no es del personal de una empresa; el rol no atiende ningún canal de mensajes (`PERMISSION_DENIED`); o la empresa no tiene habilitados los mensajes (`MODULE_DISABLED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Resumen de la bandeja (insignias)",
+                "tags": [
+                    "Inbox (company)"
+                ]
+            }
+        },
         "/api/v2/conversations/{id}": {
             "get": {
                 "operationId": "CompanyInboxController_una",
@@ -42277,6 +42311,55 @@
                     }
                 ],
                 "summary": "Sugerencias de respuesta",
+                "tags": [
+                    "Inbox (company)"
+                ]
+            }
+        },
+        "/api/v2/conversations/{id}/assignees": {
+            "get": {
+                "description": "El personal vigente de la empresa (sin baja ni bloqueo, con un rol vigente) que atiende el canal de la conversación: `mensajes.clientes` para las de clientes, `mensajes.choferes` para las de choferes (un rol de sistema atiende los dos). Es la misma regla con que `assign` valida. Ordenado por nombre; nadie de otra empresa.",
+                "operationId": "CompanyInboxController_personasParaAsignar",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InboxAssigneeListResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Id que no es uuid (`INVALID_ID`)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no es del personal de una empresa; el rol no atiende ningún canal de mensajes (`PERMISSION_DENIED`); o la empresa no tiene habilitados los mensajes (`MODULE_DISABLED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`)"
+                    },
+                    "404": {
+                        "description": "No existe, es de otra empresa o de un canal que quien pide no atiende"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "A quién se le puede asignar",
                 "tags": [
                     "Inbox (company)"
                 ]
@@ -42437,7 +42520,7 @@
         },
         "/api/v2/conversations/{id}/messages/{messageId}": {
             "patch": {
-                "description": "Sólo quien lo escribió (no un compañero), sólo texto y hasta 15 minutos después de enviarlo, con la conversación abierta. Queda la marca `editedAt` y el texto anterior en el historial. La otra punta lo recibe por el socket (`chat:message-edited`).",
+                "description": "Sólo quien lo escribió (no un compañero), sólo texto y hasta 15 minutos después de enviarlo, con la conversación abierta. No se edita lo que quedó como constancia: una conversación por un pedido, un mensaje que forma parte de un reclamo o un ticket, o uno que ya citaron (`canEdit` lo anticipa con la misma regla). Queda la marca `editedAt` y el texto anterior en el historial. La otra punta lo recibe por el socket (`chat:message-edited`).",
                 "operationId": "CompanyInboxController_editar",
                 "parameters": [
                     {
@@ -42491,7 +42574,7 @@
                         "description": "No existe, es de otra empresa o de un canal que quien pide no atiende; o el mensaje no es de esa conversación"
                     },
                     "409": {
-                        "description": "Pasaron los 15 minutos (`MESSAGE_EDIT_WINDOW_CLOSED`), no es un texto (`MESSAGE_NOT_EDITABLE`) o la conversación está cerrada (`CONVERSATION_CLOSED`)"
+                        "description": "Pasaron los 15 minutos (`MESSAGE_EDIT_WINDOW_CLOSED`), no es un texto (`MESSAGE_NOT_EDITABLE`), la conversación es por un pedido (`MESSAGE_IN_ORDER_CONVERSATION`), forma parte de un reclamo o un ticket (`MESSAGE_LINKED_TO_CLAIM`), ya lo citaron en una respuesta (`MESSAGE_ALREADY_QUOTED`) o la conversación está cerrada (`CONVERSATION_CLOSED`)"
                     }
                 },
                 "security": [
@@ -43507,7 +43590,7 @@
         },
         "/api/v2/me/conversations/{id}/messages/{messageId}": {
             "patch": {
-                "description": "Sólo texto propio, hasta 15 minutos después de enviarlo y con la conversación abierta. Queda la marca `editedAt`; la empresa lo recibe en vivo.",
+                "description": "Sólo texto propio, hasta 15 minutos después de enviarlo y con la conversación abierta. No se edita si la conversación es por un pedido, si el mensaje forma parte de un reclamo o de un ticket, o si ya respondieron citándolo (`canEdit` lo anticipa con la misma regla). Queda la marca `editedAt`; la empresa lo recibe en vivo.",
                 "operationId": "MyConversationsController_editar",
                 "parameters": [
                     {
@@ -43561,7 +43644,7 @@
                         "description": "No existe, es de otra empresa o de otra persona; o el mensaje no es de esa conversación"
                     },
                     "409": {
-                        "description": "Pasaron los 15 minutos (`MESSAGE_EDIT_WINDOW_CLOSED`), no es un texto (`MESSAGE_NOT_EDITABLE`) o la conversación está cerrada (`CONVERSATION_CLOSED`)"
+                        "description": "Pasaron los 15 minutos (`MESSAGE_EDIT_WINDOW_CLOSED`), no es un texto (`MESSAGE_NOT_EDITABLE`), la conversación es por un pedido (`MESSAGE_IN_ORDER_CONVERSATION`), forma parte de un reclamo o un ticket (`MESSAGE_LINKED_TO_CLAIM`), ya lo citaron en una respuesta (`MESSAGE_ALREADY_QUOTED`) o la conversación está cerrada (`CONVERSATION_CLOSED`)"
                     }
                 },
                 "security": [
@@ -78113,7 +78196,7 @@
                     "displayName": {
                         "type": "string",
                         "example": "Gas Norte",
-                        "description": "Para el cliente y el chofer, el nombre de la empresa; para el personal, el del cliente o el chofer"
+                        "description": "Para el cliente y el chofer, el nombre de la empresa como la conocen (el de su marca si lo cargó; si no, el legal); para el personal, el del cliente o el chofer"
                     }
                 },
                 "required": [
@@ -78461,7 +78544,7 @@
                 "properties": {
                     "displayName": {
                         "type": "string",
-                        "description": "Para el personal, el nombre de quien escribió; para el cliente y el chofer, el de la empresa en los mensajes de la empresa (D-C5)"
+                        "description": "Para el personal, el nombre de quien escribió; para el cliente y el chofer, el de la empresa en los mensajes de la empresa (el de su marca si lo cargó; si no, el legal; D-C5)"
                     },
                     "userId": {
                         "type": "string",
@@ -78544,7 +78627,7 @@
                     },
                     "canEdit": {
                         "type": "boolean",
-                        "description": "Lo escribió quien pide (la persona, no su equipo) y está en los 15 minutos: se puede editar (por el socket llega siempre `false`: es de la sala, no de una persona)"
+                        "description": "Lo escribió quien pide (la persona, no su equipo), es un texto, está en los 15 minutos y no quedó atado (conversación por un pedido, parte de un reclamo o un ticket, o ya citado en una respuesta): se puede editar. La misma regla que el PATCH. Por el socket llega siempre `false`: es de la sala, no de una persona"
                     },
                     "kind": {
                         "type": "string",
@@ -78720,6 +78803,37 @@
                     "conversationIds"
                 ]
             },
+            "InboxSummaryDto": {
+                "type": "object",
+                "properties": {
+                    "unassigned": {
+                        "type": "number",
+                        "example": 3,
+                        "description": "Abiertas sin asignar (pestaña «Sin asignar»)"
+                    },
+                    "mine": {
+                        "type": "number",
+                        "example": 2,
+                        "description": "Abiertas asignadas a quien pide (pestaña «Mías»)"
+                    },
+                    "awaitingHuman": {
+                        "type": "number",
+                        "example": 1,
+                        "description": "Abiertas que esperan a una persona: el asistente con IA las derivó y nadie las tomó todavía"
+                    },
+                    "unread": {
+                        "type": "number",
+                        "example": 4,
+                        "description": "Abiertas con algún mensaje sin leer para quien pide (cuenta conversaciones, no mensajes): lo del cliente o el chofer posterior a su lectura, sin avisos del sistema, respuestas automáticas ni mensajes borrados"
+                    }
+                },
+                "required": [
+                    "unassigned",
+                    "mine",
+                    "awaitingHuman",
+                    "unread"
+                ]
+            },
             "InboxSuggestionDto": {
                 "type": "object",
                 "properties": {
@@ -78767,6 +78881,42 @@
                 },
                 "required": [
                     "basedOnSeq",
+                    "items"
+                ]
+            },
+            "InboxAssigneeOptionDto": {
+                "type": "object",
+                "properties": {
+                    "userId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "fullName": {
+                        "type": "string",
+                        "example": "Lucía Gómez"
+                    },
+                    "photoUrl": {
+                        "type": "string",
+                        "description": "Foto de perfil (URL firmada, vence): no viene si no tiene foto"
+                    }
+                },
+                "required": [
+                    "userId",
+                    "fullName"
+                ]
+            },
+            "InboxAssigneeListResponseDto": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "description": "Ordenadas por nombre",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/InboxAssigneeOptionDto"
+                        }
+                    }
+                },
+                "required": [
                     "items"
                 ]
             },

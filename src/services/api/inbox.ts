@@ -10,11 +10,13 @@ import type {
   CompanyTemplateList,
   CreateClaimFromConversationBody,
   CreateCompanyTemplateBody,
+  InboxAssigneeList,
   InboxConversation,
   InboxList,
   InboxMessage,
   InboxMessageList,
   InboxSuggestions,
+  InboxSummary,
   OpenConversation,
   OpenStaffConversationBody,
   SendStaffMessageBody,
@@ -92,6 +94,24 @@ const id = (value: string) => encodeURIComponent(value);
 /** GET /v2/conversations: las de los canales que atiende quien pide, por el último mensaje, con los contadores. */
 export const listConversations = async (params: InboxQuery): Promise<InboxList> => {
   const { data } = await http.get<InboxList>('/conversations', { ...V2, params });
+  return data;
+};
+
+/**
+ * GET /v2/conversations/summary: de las abiertas de los canales que atiende quien pide, cuántas están sin asignar, son
+ * suyas, esperan a una persona y tienen algo sin leer para él (conversaciones, no mensajes). Las insignias.
+ */
+export const getInboxSummary = async (): Promise<InboxSummary> => {
+  const { data } = await http.get<InboxSummary>('/conversations/summary', V2);
+  return data;
+};
+
+/**
+ * GET /v2/conversations/:id/assignees: el personal vigente que atiende el canal de esa conversación (la misma regla con
+ * que valida `assign`), por nombre. 404 si no existe, es de otra empresa o de un canal que quien pide no atiende.
+ */
+export const listConversationAssignees = async (conversationId: string): Promise<InboxAssigneeList> => {
+  const { data } = await http.get<InboxAssigneeList>(`/conversations/${id(conversationId)}/assignees`, V2);
   return data;
 };
 

@@ -24,6 +24,8 @@ const api = vi.hoisted(() => ({
   getChatSettings: vi.fn(),
   listCompanyTemplates: vi.fn(() => Promise.resolve({ items: [] })),
   getConversationSuggestions: vi.fn(),
+  getInboxSummary: vi.fn(),
+  listConversationAssignees: vi.fn(),
 }));
 const confirmMock = vi.hoisted(() => vi.fn(() => Promise.resolve(true)));
 
@@ -35,15 +37,6 @@ vi.mock('../../services/api/inbox', async (importOriginal) => ({
 vi.mock('../../services/queries/users', () => ({ useMyAccount: () => ({ data: { user_id: 'u-me' } }) }));
 vi.mock('../../common/components/useCompanyDisplayName', () => ({ useCompanyDisplayName: () => 'Gas Norte' }));
 vi.mock('../../hooks/reduxHooks', () => ({ useAppSelector: () => 'admin@splg.com' }));
-vi.mock('../../services/queries/admins', () => ({
-  useAdmins: () => ({
-    data: [
-      { user_id: 'u-me', user: { full_name: 'Ana Operadora', blocked: false, deletedAt: null } },
-      { user_id: 'u-2', user: { full_name: 'Beto Despacho', blocked: false, deletedAt: null } },
-    ],
-    isPending: false,
-  }),
-}));
 vi.mock('../../services/queries/claims', () => ({ useClaim: () => ({ data: undefined, isPending: true }) }));
 vi.mock('../../services/queries/customers', () => ({
   useCustomerOrders: () => ({
@@ -95,6 +88,13 @@ beforeEach(() => {
   api.listConversationMessages.mockResolvedValue({ items: [inboxMsg(1)], hasMore: false });
   api.getChatSettings.mockResolvedValue(SETTINGS);
   api.getConversationSuggestions.mockResolvedValue({ basedOnSeq: 1, items: [] });
+  api.getInboxSummary.mockResolvedValue({ unassigned: 2, mine: 1, awaitingHuman: 0, unread: 1 });
+  api.listConversationAssignees.mockResolvedValue({
+    items: [
+      { userId: 'u-me', fullName: 'Ana Operadora' },
+      { userId: 'u-2', fullName: 'Beto Despacho' },
+    ],
+  });
 });
 afterEach(cleanup);
 
@@ -119,6 +119,27 @@ describe('Mensajes: la bandeja', () => {
     const row = await screen.findByRole('link', { name: /Lucía Benítez/ });
     expect(within(row).getByText('1')).toBeInTheDocument();
     expect(within(row).getByText(/Sin asignar/)).toBeInTheDocument();
+  });
+
+  it('«Sin asignar» y «Mías» cuentan desde el resumen de la bandeja; «Todas», desde la lista', async () => {
+    api.getInboxSummary.mockResolvedValue({ unassigned: 7, mine: 4, awaitingHuman: 1, unread: 3 });
+    show();
+    expect(await screen.findByRole('tab', { name: /Sin asignar.*7/ })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Mías.*4/ })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Todas.*5/ })).toBeInTheDocument();
+    expect(api.getInboxSummary).toHaveBeenCalled();
+  });
+
+  it('con un filtro de canal, «Sin asignar» y «Mías» son los de la lista de ese canal, no los del resumen', async () => {
+    api.getInboxSummary.mockResolvedValue({ unassigned: 7, mine: 4, awaitingHuman: 1, unread: 3 });
+    show();
+    expect(await screen.findByRole('tab', { name: /Sin asignar.*7/ })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Choferes' }));
+    await waitFor(() =>
+      expect(api.listConversations).toHaveBeenLastCalledWith(expect.objectContaining({ channel: 'staff_driver' })),
+    );
+    expect(await screen.findByRole('tab', { name: /Sin asignar.*2/ })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Mías.*1/ })).toBeInTheDocument();
   });
 
   it('«Mías» y «Todas» cambian lo que se pide; el filtro de canal también', async () => {
@@ -250,12 +271,12 @@ describe('Mensajes: una conversación', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Más acciones' }));
     fireEvent.click(await screen.findByRole('menuitem', { name: /Asignar a/ }));
     const dialog = await screen.findByRole('dialog', { name: 'Asignar la conversación' });
-    fireEvent.change(within(dialog).getByLabelText('Atiende'), { target: { value: 'u-2' } });
+    fireEvent.click(await within(dialog).findByRole('radio', { name: /Beto Despacho/ }));
     await act(async () => {
       client.setQueryData(inboxKeys.detail('conv-1'), inboxConversation({ unreadCount: 3 }));
       await new Promise((resolve) => setTimeout(resolve, 30));
     });
-    expect(within(dialog).getByLabelText('Atiende')).toHaveValue('u-2');
+    expect(within(dialog).getByRole('radio', { name: /Beto Despacho/ })).toBeChecked();
   });
 
   it('cerrar pide confirmación y deja la conversación en lectura; reabrir la vuelve a abrir', async () => {
@@ -280,6 +301,26 @@ describe('Mensajes: una conversación', () => {
     expect(await screen.findByRole('textbox', { name: 'Mensaje' })).toBeInTheDocument();
   });
 
+  it('«Editar» sólo si el mensaje lo permite y la conversación deja escribir', async () => {
+    const own = inboxMsg(2, {
+      party: 'company',
+      isMine: true,
+      canEdit: true,
+      sender: { displayName: 'Ana Operadora' },
+      body: 'mensaje propio',
+      createdAt: new Date(Date.now() - 60_000).toISOString(),
+    });
+    api.listConversationMessages.mockResolvedValue({ items: [inboxMsg(1), own], hasMore: false });
+    api.getConversation.mockResolvedValue(
+      inboxConversation({ status: 'closed', canWrite: false, closedReason: 'manual' }),
+    );
+    show('/messages/conv-1');
+    expect(
+      await within(await screen.findByRole('log', { name: 'Mensajes' })).findByText('mensaje propio'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Editar tu mensaje/ })).not.toBeInTheDocument();
+  });
+
   it('un 409 al cerrar se muestra y relee la conversación', async () => {
     const { notify } = await import('../../utils/notifications');
     const { ApiError } = await import('../../services/api/errors');
@@ -298,7 +339,7 @@ describe('Mensajes: una conversación', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Más acciones' }));
     fireEvent.click(await screen.findByRole('menuitem', { name: /Asignar a/ }));
     const dialog = await screen.findByRole('dialog', { name: 'Asignar la conversación' });
-    fireEvent.change(within(dialog).getByLabelText('Atiende'), { target: { value: 'u-2' } });
+    fireEvent.click(await within(dialog).findByRole('radio', { name: /Beto Despacho/ }));
     fireEvent.click(within(dialog).getByRole('button', { name: 'Guardar' }));
     await waitFor(() => expect(api.assignConversation).toHaveBeenCalledWith('conv-1', 'u-2'));
   });

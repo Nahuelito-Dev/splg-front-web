@@ -8,6 +8,7 @@ import { useThread, type ThreadSource } from '../../../services/queries/chatThre
 import type { SendExtras } from '../../../services/queries/chatThread';
 import { errorMessage, toApiError } from '../../../services/api/errors';
 import { notify } from '../../../utils/notifications';
+import { readDraft, withRescuedText, writeDraft } from '../composerDraft';
 import { lastCounterpartSeq, lastSeqOf, type ChatMessage, type PendingMessage } from '../thread';
 import { useTyping } from '../typing';
 import { useConversationRoom } from '../useConversationRoom';
@@ -77,6 +78,7 @@ export const ChatThread = ({
   renderSuggestions,
 }: ChatThreadProps) => {
   const { conversationId } = source;
+  const draftKey = conversationId ?? `${side}:new`;
   const { thread, isPending, error, refetch, loadOlder, loadingOlder, olderError, send, edit, retry, discard, reload } =
     useThread(source);
   // A qué mensaje se responde y cuál se edita, por `seq`: se muestran como están ahora en el hilo (si se borra
@@ -94,6 +96,18 @@ export const ChatThread = ({
   const visible = useVisible();
   const [atBottom, setAtBottom] = useState(true);
   const [draft, setDraft] = useState<{ text: string; nonce: number } | null>(null);
+  // El texto de una edición que la API rechazó: lo suma el compositor a su borrador (`Composer.rescue`).
+  const [rescue, setRescue] = useState<{ text: string; nonce: number } | null>(null);
+  // La respuesta de una edición llega tarde: puede que ya se esté editando otro mensaje o que el hilo ya no esté.
+  const editingSeqRef = useRef(editingSeq);
+  editingSeqRef.current = editingSeq;
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
   const readSent = useRef(0);
   const lastSeq = thread ? lastSeqOf(thread) : 0;
   // Las pantallas arman `read` y `reload` en cada render: los efectos usan la última sin volver a correr por eso.
@@ -163,10 +177,27 @@ export const ChatThread = ({
           .catch((cause: unknown) => {
             const { status } = toApiError(cause);
             if (status !== null && status < 500 && status !== 429) {
-              // La API no lo acepta (pasaron los 15 minutos, se citó, se cerró): reintentar no sirve. Se sale de la
-              // edición y vuelve el borrador; el mensaje queda como estaba.
-              notify.warn(`${errorMessage(cause)}. No se guardó la edición.`);
-              setEditingSeq((seq) => (seq === target.seq ? null : seq));
+              // La API no lo acepta (pasaron los 15 minutos, ya lo citaron, quedó en un reclamo o un ticket, la
+              // conversación es por un pedido o se cerró): reintentar no sirve. Se sale de esa edición, el mensaje queda
+              // como estaba y lo escrito pasa al borrador de la conversación para mandarlo como mensaje nuevo: al
+              // compositor si está a la vista, guardado si se está editando otro mensaje o ya se salió del hilo. Se
+              // relee el hilo para que «Editar» deje de ofrecerse (la API ya no da `canEdit`).
+              const reason = errorMessage(cause).replace(/\.$/, '');
+              const mounted = mountedRef.current;
+              const editingOther = mounted && editingSeqRef.current !== null && editingSeqRef.current !== target.seq;
+              if (mounted) {
+                setEditingSeq((seq) => (seq === target.seq ? null : seq));
+                setRescue({ text: body, nonce: Date.now() });
+                void reloadRef.current();
+              } else {
+                writeDraft(draftKey, withRescuedText(readDraft(draftKey), body));
+              }
+              const where = !mounted
+                ? 'tu texto quedó como borrador de esa conversación.'
+                : editingOther
+                  ? 'tu texto quedó como borrador: vuelve al cuadro cuando termines de editar.'
+                  : 'tu texto quedó en el cuadro para enviarlo.';
+              notify.warn(`${reason}. No se guardó la edición: ${where}`);
               return;
             }
             notify.error(cause);
@@ -178,7 +209,7 @@ export const ChatThread = ({
       send(body, { ...extras, ...(replyTo ? { replyToSeq: replyTo.seq } : {}) });
       setReplySeq(null);
     },
-    [edit, editing, replyTo, send],
+    [draftKey, edit, editing, replyTo, send],
   );
 
   const firstReload = useRef(true);
@@ -244,7 +275,7 @@ export const ChatThread = ({
       />
       {canWrite ? (
         <Composer
-          draftKey={conversationId ?? `${side}:new`}
+          draftKey={draftKey}
           onSend={onSend}
           onTyping={conversationId ? onTyping : undefined}
           quickReplies={quickReplies}
@@ -255,6 +286,7 @@ export const ChatThread = ({
           onCancelBanner={cancelBanner}
           focusKey={focusKey}
           editText={editText}
+          rescue={rescue}
           variables={variables}
           suggestions={renderSuggestions?.({
             lastCounterpartSeq: lastCounterpartSeq(thread.messages),

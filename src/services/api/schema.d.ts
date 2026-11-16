@@ -10717,6 +10717,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/conversations/summary': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Resumen de la bandeja (insignias)
+     * @description Para la insignia del menú «Mensajes» y las pestañas: de las conversaciones abiertas de los canales que atiende quien pide (`mensajes.clientes`, `mensajes.choferes`), cuántas están sin asignar, cuántas son suyas, cuántas esperan a una persona y cuántas tienen algo sin leer para quien pide. Sólo de su empresa.
+     */
+    get: operations['CompanyInboxController_resumen'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v2/conversations/{id}': {
     parameters: {
       query?: never;
@@ -10746,6 +10766,26 @@ export interface paths {
      * @description Hasta 3 respuestas guardadas de la empresa (activas y de este canal) parecidas al último mensaje del cliente o del chofer, sin IA: búsqueda de texto en castellano, sin tildes. Con las variables ya completadas para esta conversación. No manda nada: el panel las ofrece para pegar y editar. Lista vacía si nada se parece o si la persona todavía no escribió.
      */
     get: operations['CompanyInboxController_sugerir'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/conversations/{id}/assignees': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * A quién se le puede asignar
+     * @description El personal vigente de la empresa (sin baja ni bloqueo, con un rol vigente) que atiende el canal de la conversación: `mensajes.clientes` para las de clientes, `mensajes.choferes` para las de choferes (un rol de sistema atiende los dos). Es la misma regla con que `assign` valida. Ordenado por nombre; nadie de otra empresa.
+     */
+    get: operations['CompanyInboxController_personasParaAsignar'];
     put?: never;
     post?: never;
     delete?: never;
@@ -10793,7 +10833,7 @@ export interface paths {
     head?: never;
     /**
      * Editar un mensaje propio
-     * @description Sólo quien lo escribió (no un compañero), sólo texto y hasta 15 minutos después de enviarlo, con la conversación abierta. Queda la marca `editedAt` y el texto anterior en el historial. La otra punta lo recibe por el socket (`chat:message-edited`).
+     * @description Sólo quien lo escribió (no un compañero), sólo texto y hasta 15 minutos después de enviarlo, con la conversación abierta. No se edita lo que quedó como constancia: una conversación por un pedido, un mensaje que forma parte de un reclamo o un ticket, o uno que ya citaron (`canEdit` lo anticipa con la misma regla). Queda la marca `editedAt` y el texto anterior en el historial. La otra punta lo recibe por el socket (`chat:message-edited`).
      */
     patch: operations['CompanyInboxController_editar'];
     trace?: never;
@@ -11069,7 +11109,7 @@ export interface paths {
     head?: never;
     /**
      * Editar un mensaje mío
-     * @description Sólo texto propio, hasta 15 minutos después de enviarlo y con la conversación abierta. Queda la marca `editedAt`; la empresa lo recibe en vivo.
+     * @description Sólo texto propio, hasta 15 minutos después de enviarlo y con la conversación abierta. No se edita si la conversación es por un pedido, si el mensaje forma parte de un reclamo o de un ticket, o si ya respondieron citándolo (`canEdit` lo anticipa con la misma regla). Queda la marca `editedAt`; la empresa lo recibe en vivo.
      */
     patch: operations['MyConversationsController_editar'];
     trace?: never;
@@ -24885,7 +24925,7 @@ export interface components {
       /** @enum {string} */
       party: 'platform' | 'company' | 'customer' | 'driver' | 'system';
       /**
-       * @description Para el cliente y el chofer, el nombre de la empresa; para el personal, el del cliente o el chofer
+       * @description Para el cliente y el chofer, el nombre de la empresa como la conocen (el de su marca si lo cargó; si no, el legal); para el personal, el del cliente o el chofer
        * @example Gas Norte
        */
       displayName: string;
@@ -25018,7 +25058,7 @@ export interface components {
       firstMessage: components['schemas']['SendStaffMessageDto'];
     };
     InboxSenderDto: {
-      /** @description Para el personal, el nombre de quien escribió; para el cliente y el chofer, el de la empresa en los mensajes de la empresa (D-C5) */
+      /** @description Para el personal, el nombre de quien escribió; para el cliente y el chofer, el de la empresa en los mensajes de la empresa (el de su marca si lo cargó; si no, el legal; D-C5) */
       displayName: string;
       /**
        * Format: uuid
@@ -25046,7 +25086,7 @@ export interface components {
       sender: components['schemas']['InboxSenderDto'] | null;
       /** @description Lo escribió la punta de quien pide */
       isMine: boolean;
-      /** @description Lo escribió quien pide (la persona, no su equipo) y está en los 15 minutos: se puede editar (por el socket llega siempre `false`: es de la sala, no de una persona) */
+      /** @description Lo escribió quien pide (la persona, no su equipo), es un texto, está en los 15 minutos y no quedó atado (conversación por un pedido, parte de un reclamo o un ticket, o ya citado en una respuesta): se puede editar. La misma regla que el PATCH. Por el socket llega siempre `false`: es de la sala, no de una persona */
       canEdit: boolean;
       /** @enum {string} */
       kind: 'text' | 'system' | 'auto_reply' | 'quoted_excerpt';
@@ -25114,6 +25154,28 @@ export interface components {
       /** @description La conversación general de cada chofer, en el orden pedido */
       conversationIds: string[];
     };
+    InboxSummaryDto: {
+      /**
+       * @description Abiertas sin asignar (pestaña «Sin asignar»)
+       * @example 3
+       */
+      unassigned: number;
+      /**
+       * @description Abiertas asignadas a quien pide (pestaña «Mías»)
+       * @example 2
+       */
+      mine: number;
+      /**
+       * @description Abiertas que esperan a una persona: el asistente con IA las derivó y nadie las tomó todavía
+       * @example 1
+       */
+      awaitingHuman: number;
+      /**
+       * @description Abiertas con algún mensaje sin leer para quien pide (cuenta conversaciones, no mensajes): lo del cliente o el chofer posterior a su lectura, sin avisos del sistema, respuestas automáticas ni mensajes borrados
+       * @example 4
+       */
+      unread: number;
+    };
     InboxSuggestionDto: {
       /** Format: uuid */
       templateId: string;
@@ -25132,6 +25194,18 @@ export interface components {
       basedOnSeq: number | null;
       /** @description Hasta 3, de la más parecida a la menos. Vacía si ninguna se parece. */
       items: components['schemas']['InboxSuggestionDto'][];
+    };
+    InboxAssigneeOptionDto: {
+      /** Format: uuid */
+      userId: string;
+      /** @example Lucía Gómez */
+      fullName: string;
+      /** @description Foto de perfil (URL firmada, vence): no viene si no tiene foto */
+      photoUrl?: string;
+    };
+    InboxAssigneeListResponseDto: {
+      /** @description Ordenadas por nombre */
+      items: components['schemas']['InboxAssigneeOptionDto'][];
     };
     InboxMessageListResponseDto: {
       /** @description En orden de `seq` */
@@ -62965,6 +63039,39 @@ export interface operations {
       };
     };
   };
+  CompanyInboxController_resumen: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InboxSummaryDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no es del personal de una empresa; el rol no atiende ningún canal de mensajes (`PERMISSION_DENIED`); o la empresa no tiene habilitados los mensajes (`MODULE_DISABLED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   CompanyInboxController_una: {
     parameters: {
       query?: never;
@@ -63048,6 +63155,55 @@ export interface operations {
         content?: never;
       };
       /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para atender los mensajes de los clientes (`mensajes.clientes`) ni para atender los mensajes de los choferes (`mensajes.choferes`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe, es de otra empresa o de un canal que quien pide no atiende */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyInboxController_personasParaAsignar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InboxAssigneeListResponseDto'];
+        };
+      };
+      /** @description Id que no es uuid (`INVALID_ID`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no es del personal de una empresa; el rol no atiende ningún canal de mensajes (`PERMISSION_DENIED`); o la empresa no tiene habilitados los mensajes (`MODULE_DISABLED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -63246,7 +63402,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Pasaron los 15 minutos (`MESSAGE_EDIT_WINDOW_CLOSED`), no es un texto (`MESSAGE_NOT_EDITABLE`) o la conversación está cerrada (`CONVERSATION_CLOSED`) */
+      /** @description Pasaron los 15 minutos (`MESSAGE_EDIT_WINDOW_CLOSED`), no es un texto (`MESSAGE_NOT_EDITABLE`), la conversación es por un pedido (`MESSAGE_IN_ORDER_CONVERSATION`), forma parte de un reclamo o un ticket (`MESSAGE_LINKED_TO_CLAIM`), ya lo citaron en una respuesta (`MESSAGE_ALREADY_QUOTED`) o la conversación está cerrada (`CONVERSATION_CLOSED`) */
       409: {
         headers: {
           [name: string]: unknown;
@@ -64315,7 +64471,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Pasaron los 15 minutos (`MESSAGE_EDIT_WINDOW_CLOSED`), no es un texto (`MESSAGE_NOT_EDITABLE`) o la conversación está cerrada (`CONVERSATION_CLOSED`) */
+      /** @description Pasaron los 15 minutos (`MESSAGE_EDIT_WINDOW_CLOSED`), no es un texto (`MESSAGE_NOT_EDITABLE`), la conversación es por un pedido (`MESSAGE_IN_ORDER_CONVERSATION`), forma parte de un reclamo o un ticket (`MESSAGE_LINKED_TO_CLAIM`), ya lo citaron en una respuesta (`MESSAGE_ALREADY_QUOTED`) o la conversación está cerrada (`CONVERSATION_CLOSED`) */
       409: {
         headers: {
           [name: string]: unknown;

@@ -11,7 +11,7 @@ import { messageHref } from '../../../features/chat/routes';
 import { INBOX_SEARCH_MAX, INBOX_SEARCH_MIN, type InboxChannel, type InboxQuery } from '../../../services/api/inbox';
 import type { InboxConversation } from '../../../services/api/types';
 import { awaitingFilterApplies, tabQuery, type InboxFilter, type InboxTab, isInboxTab } from '../inboxTabs';
-import { useInboxConversations } from '../../../services/queries/inbox';
+import { useInboxConversations, useInboxSummary } from '../../../services/queries/inbox';
 import { formatElapsed } from '../../../utils/format';
 
 const PAGE = 50;
@@ -156,6 +156,13 @@ export const InboxList = ({
     offset: 0,
   };
   const { data, error, isPending, refetch, isFetching } = useInboxConversations(params);
+  // «Sin asignar» y «Mías» salen del resumen (el mismo de la insignia del menú, al día con el socket); mientras no
+  // llega, los de la lista. El resumen es de todos los canales que se atienden: con un filtro de canal, los números son
+  // los de la lista (la API los cuenta sólo de ese canal). «Todas» no está en el resumen: la da la lista.
+  const summary = useInboxSummary(true).data;
+  const fromSummary = filter === 'all' ? summary : undefined;
+  const unassignedCount = fromSummary?.unassigned ?? data?.counts.unassigned ?? null;
+  const mineCount = fromSummary?.mine ?? data?.counts.mine ?? null;
   const now = useMinuteClock();
   const items = data?.items ?? [];
   const { search } = useLocation();
@@ -169,8 +176,8 @@ export const InboxList = ({
         value={tab}
         onChange={(id) => isInboxTab(id) && onTab(id)}
         items={[
-          { id: 'unassigned', label: 'Sin asignar', count: data ? data.counts.unassigned : null, tone: 'warn' },
-          { id: 'mine', label: 'Mías', count: data ? data.counts.mine : null },
+          { id: 'unassigned', label: 'Sin asignar', count: unassignedCount, tone: 'warn' },
+          { id: 'mine', label: 'Mías', count: mineCount },
           { id: 'all', label: 'Todas', count: data ? data.counts.open : null },
           { id: 'closed', label: 'Cerradas' },
         ]}

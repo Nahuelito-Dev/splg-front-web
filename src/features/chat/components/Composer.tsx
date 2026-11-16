@@ -4,6 +4,7 @@ import { cx } from '../../../common/components/ui';
 import { MESSAGE_MAX } from '../../../services/api/supportChat';
 import type { MessageTemplate } from '../../../services/api/types';
 import type { SendExtras } from '../../../services/queries/chatThread';
+import { readDraft, withRescuedText, writeDraft } from '../composerDraft';
 import { insertAt } from '../insertText';
 import { fillVariables } from '../variables';
 
@@ -11,28 +12,6 @@ import { fillVariables } from '../variables';
 export const TYPING_EVERY_MS = 3000;
 /** Alto máximo del compositor antes de pasar a scroll. */
 const MAX_HEIGHT_PX = 160;
-
-/** Lo escrito y no enviado se guarda por conversación en la pestaña (sobrevive a un corte, a cambiar de pantalla o a recargar). */
-const DRAFT_PREFIX = 'chatDraft:';
-
-const readDraft = (key: string | undefined): string => {
-  if (!key) return '';
-  try {
-    return sessionStorage.getItem(DRAFT_PREFIX + key) ?? '';
-  } catch {
-    return '';
-  }
-};
-
-const writeDraft = (key: string | undefined, text: string) => {
-  if (!key) return;
-  try {
-    if (text) sessionStorage.setItem(DRAFT_PREFIX + key, text);
-    else sessionStorage.removeItem(DRAFT_PREFIX + key);
-  } catch {
-    // sin sessionStorage el borrador vive mientras el compositor está a la vista
-  }
-};
 
 /** Una respuesta rápida: de la plataforma o guardada por la empresa (`/` las abre). */
 export type QuickReply = Pick<MessageTemplate, 'id' | 'key' | 'title' | 'body' | 'active'>;
@@ -79,6 +58,11 @@ interface Props {
    */
   editText?: { text: string; nonce: number } | null;
   /**
+   * El texto de una edición que la API rechazó: se suma al borrador sin perder nada (ni el borrador guardado ni lo que
+   * se escribió mientras se esperaba la respuesta). Si se está editando otro mensaje, sólo se guarda: aparece al salir.
+   */
+  rescue?: { text: string; nonce: number } | null;
+  /**
    * Los valores de las variables `{{…}}` de las respuestas guardadas (bandeja). Si se envía un texto propio con
    * variables, se completan acá; si alguna no tiene valor (o no existe), no se envía y se pide completarla: nunca sale
    * una `{{…}}` literal.
@@ -105,6 +89,7 @@ export const Composer = ({
   onCancelBanner,
   focusKey,
   editText,
+  rescue,
   variables,
   suggestions,
 }: Props) => {
@@ -130,11 +115,13 @@ export const Composer = ({
   const tooLong = text.length > MESSAGE_MAX;
   const canSend = trimmed.length > 0 && !tooLong;
 
+  // Mientras se edita, el compositor es de la edición: un borrador que vuelve se guarda y aparece al salir.
+  const editingRef = useRef(editing);
+  editingRef.current = editing;
   useEffect(() => {
-    if (draft) {
-      setTextState(draft.text);
-      writeDraft(draftKey, draft.text);
-    }
+    if (!draft) return;
+    writeDraft(draftKey, draft.text);
+    if (!editingRef.current) setTextState(draft.text);
   }, [draft, draftKey]);
 
   useEffect(() => setTextState(readDraft(draftKey)), [draftKey]);
@@ -171,6 +158,21 @@ export const Composer = ({
   useEffect(() => {
     if (editText) setTextState(editText.text);
   }, [editText]);
+  // Va antes que la salida de la edición: deja el borrador armado para que esa salida lo muestre.
+  useEffect(() => {
+    if (!rescue) return;
+    const saved = readDraft(draftKey);
+    if (editingRef.current) {
+      writeDraft(draftKey, withRescuedText(saved, rescue.text));
+      return;
+    }
+    // Lo escrito mientras volvía la respuesta (en modo edición no se guarda): se conserva entre el borrador y el rescate.
+    const typed = textRef.current;
+    const base = typed.trim() && typed !== saved ? withRescuedText(saved, typed) : saved;
+    const next = withRescuedText(base, rescue.text);
+    writeDraft(draftKey, next);
+    setTextState(next);
+  }, [rescue, draftKey]);
   const wasEditing = useRef(editing);
   useEffect(() => {
     if (wasEditing.current && !editing) setTextState(readDraft(draftKey));

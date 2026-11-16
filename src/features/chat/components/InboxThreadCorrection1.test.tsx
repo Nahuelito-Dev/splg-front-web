@@ -247,12 +247,53 @@ describe('Corrección 1 · 8: «Editar» sólo mientras corresponde', () => {
     type('propio 2 tarde');
     enter();
     await waitFor(() =>
-      expect(notifications.warn).toHaveBeenCalledWith('Pasaron los 15 minutos. No se guardó la edición.'),
+      expect(notifications.warn).toHaveBeenCalledWith(
+        'Pasaron los 15 minutos. No se guardó la edición: tu texto quedó en el cuadro para enviarlo.',
+      ),
     );
     expect(screen.queryByText('Editando tu mensaje')).not.toBeInTheDocument();
-    expect(composer()).toHaveValue('borrador');
+    // Ni el borrador que había ni lo editado se pierden: los dos quedan en el compositor.
+    expect(composer()).toHaveValue('borrador\n\npropio 2 tarde');
     expect(editFn).toHaveBeenCalledTimes(1);
   });
+
+  it.each([
+    // El texto real del back termina en punto: el aviso no lo duplica.
+    ['MESSAGE_ALREADY_QUOTED', 'No se puede editar: ya respondieron citando este mensaje.'],
+    ['MESSAGE_LINKED_TO_CLAIM', 'El mensaje forma parte de un reclamo: no se puede editar'],
+    ['MESSAGE_IN_ORDER_CONVERSATION', 'La conversación es por un pedido: sus mensajes no se editan'],
+  ])(
+    'un 409 %s: muestra el motivo, lo editado queda para reenviar y «Editar» deja de ofrecerse',
+    async (code, text) => {
+      let tied = false;
+      const { editFn, sendFn } = mount({
+        // Después del rechazo, la API ya no da `canEdit` para ese mensaje.
+        fetch: () => [inboxMsg(1), own(2, { canEdit: !tied })],
+        edit: () => {
+          tied = true;
+          return Promise.reject(new ApiError(409, [text], code));
+        },
+      });
+      await inLog('propio 2');
+      fireEvent.click(screen.getByRole('button', { name: /Editar tu mensaje/ }));
+      type('propio 2 corregido');
+      enter();
+      await waitFor(() =>
+        expect(notifications.warn).toHaveBeenCalledWith(
+          `${text.replace(/\.$/, '')}. No se guardó la edición: tu texto quedó en el cuadro para enviarlo.`,
+        ),
+      );
+      expect(screen.queryByText('Editando tu mensaje')).not.toBeInTheDocument();
+      expect(composer()).toHaveValue('propio 2 corregido');
+      expect(within(log()).getByText('propio 2')).toBeInTheDocument();
+      await waitFor(() => expect(screen.queryByRole('button', { name: /Editar tu mensaje/ })).not.toBeInTheDocument());
+      // Lo rescatado es un borrador común: Enter lo manda como mensaje nuevo, no como edición.
+      enter();
+      await waitFor(() => expect(sendFn).toHaveBeenCalledTimes(1));
+      expect(sendFn.mock.calls[0][0]).toMatchObject({ body: 'propio 2 corregido' });
+      expect(editFn).toHaveBeenCalledTimes(1);
+    },
+  );
 
   it('si el mensaje que se edita se borra, sale de la edición', async () => {
     const { socket } = mount();
@@ -268,5 +309,82 @@ describe('Corrección 1 · 8: «Editar» sólo mientras corresponde', () => {
     );
     await waitFor(() => expect(screen.queryByText('Editando tu mensaje')).not.toBeInTheDocument());
     expect(notifications.warn).toHaveBeenCalled();
+  });
+});
+
+describe('Corrección 1 (bandeja-detalles) · el rescate de una edición rechazada no pisa nada', () => {
+  const QUOTED = new ApiError(
+    409,
+    ['No se puede editar: ya respondieron citando este mensaje.'],
+    'MESSAGE_ALREADY_QUOTED',
+  );
+  /** Un PATCH que contesta cuando el test quiere. */
+  const deferredEdit = () => {
+    let reject: (cause: unknown) => void = () => undefined;
+    const edit = () => new Promise<InboxMessage>((_resolve, fail) => (reject = fail));
+    return { edit, reject: (cause: unknown) => reject(cause) };
+  };
+  const twoOwn = () => [inboxMsg(1), own(2), own(3)];
+  const editButtons = () => screen.getAllByRole('button', { name: /Editar tu mensaje/ });
+
+  it('si mientras volvía el 409 se está editando otro mensaje, la edición de ese sigue intacta y lo rescatado se guarda', async () => {
+    const pending = deferredEdit();
+    const { editFn } = mount({ fetch: twoOwn, edit: pending.edit });
+    await inLog('propio 3');
+    type('borrador');
+    fireEvent.click(editButtons()[0]);
+    type('propio 2 corregido');
+    enter();
+    await waitFor(() => expect(editFn).toHaveBeenCalledTimes(1));
+    // Mientras tanto, empieza a editar el 3.
+    fireEvent.click(editButtons()[1]);
+    type('propio 3 a medio editar');
+    await act(() => Promise.resolve(pending.reject(QUOTED)));
+    await waitFor(() =>
+      expect(notifications.warn).toHaveBeenCalledWith(
+        'No se puede editar: ya respondieron citando este mensaje. No se guardó la edición: tu texto quedó como borrador: vuelve al cuadro cuando termines de editar.',
+      ),
+    );
+    expect(screen.getByText('Editando tu mensaje')).toBeInTheDocument();
+    expect(composer()).toHaveValue('propio 3 a medio editar');
+    expect(sessionStorage.getItem('chatDraft:conv-1')).toBe('borrador\n\npropio 2 corregido');
+    // Al salir de la edición del 3, vuelve el borrador con lo rescatado.
+    fireEvent.keyDown(composer(), { key: 'Escape' });
+    expect(composer()).toHaveValue('borrador\n\npropio 2 corregido');
+  });
+
+  it('si ya se salió del hilo, lo rescatado se guarda en el borrador de esa conversación', async () => {
+    const pending = deferredEdit();
+    const view = mount({ edit: pending.edit });
+    await inLog('propio 2');
+    type('borrador');
+    fireEvent.click(screen.getByRole('button', { name: /Editar tu mensaje/ }));
+    type('propio 2 corregido');
+    enter();
+    await waitFor(() => expect(view.editFn).toHaveBeenCalledTimes(1));
+    view.unmount();
+    await act(() => Promise.resolve(pending.reject(QUOTED)));
+    await waitFor(() =>
+      expect(notifications.warn).toHaveBeenCalledWith(
+        'No se puede editar: ya respondieron citando este mensaje. No se guardó la edición: tu texto quedó como borrador de esa conversación.',
+      ),
+    );
+    expect(sessionStorage.getItem('chatDraft:conv-1')).toBe('borrador\n\npropio 2 corregido');
+  });
+
+  it('lo escrito mientras volvía la respuesta no se pierde', async () => {
+    const pending = deferredEdit();
+    const { editFn } = mount({ edit: pending.edit });
+    await inLog('propio 2');
+    type('borrador');
+    fireEvent.click(screen.getByRole('button', { name: /Editar tu mensaje/ }));
+    type('propio 2 corregido');
+    enter();
+    await waitFor(() => expect(editFn).toHaveBeenCalledTimes(1));
+    type('mientras tanto');
+    await act(() => Promise.resolve(pending.reject(QUOTED)));
+    await waitFor(() => expect(screen.queryByText('Editando tu mensaje')).not.toBeInTheDocument());
+    expect(composer()).toHaveValue('borrador\n\nmientras tanto\n\npropio 2 corregido');
+    expect(sessionStorage.getItem('chatDraft:conv-1')).toBe('borrador\n\nmientras tanto\n\npropio 2 corregido');
   });
 });

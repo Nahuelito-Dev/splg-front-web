@@ -171,6 +171,12 @@ describe('Bandeja: editar el propio (D-C22)', () => {
     expect(screen.queryByRole('button', { name: /Editar tu mensaje/ })).not.toBeInTheDocument();
   });
 
+  it('con `canEdit` pero sin poder escribir (cerrada, chat de clientes apagado) no se ofrece', async () => {
+    setup({ messages: [inboxMsg(1), own()], canWrite: false });
+    await screen.findByText('mensjae con error');
+    expect(screen.queryByRole('button', { name: /Editar tu mensaje/ })).not.toBeInTheDocument();
+  });
+
   it('si la API lo rechaza (409), avisa y el texto vuelve al compositor', async () => {
     const { notify } = await import('../../../utils/notifications');
     setup({ messages: [own()], edit: () => Promise.reject(new Error('Pasaron los 15 minutos')) });

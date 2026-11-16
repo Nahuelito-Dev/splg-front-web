@@ -13,6 +13,8 @@ import {
   getChatSettings,
   getConversation,
   getConversationSuggestions,
+  getInboxSummary,
+  listConversationAssignees,
   listCompanyTemplates,
   listConversationMessages,
   listConversations,
@@ -46,7 +48,9 @@ export const inboxKeys = {
   all: root,
   list: (params: InboxQuery) => [...root, 'list', params] as const,
   detail: (conversationId: string) => [...root, 'detail', conversationId] as const,
-  unread: () => [...root, 'unread'] as const,
+  /** Las insignias (menú y pestañas): una sola consulta para todo el panel. */
+  summary: () => [...root, 'summary'] as const,
+  assignees: (conversationId: string) => [...root, 'assignees', conversationId] as const,
   settings: () => [...root, 'settings'] as const,
   hours: () => [...root, 'hours'] as const,
   templates: (params: object = {}) => [...root, 'templates', params] as const,
@@ -58,13 +62,12 @@ export const inboxKeys = {
 export const invalidateInbox = (queryClient: QueryClient) =>
   queryClient.invalidateQueries({
     queryKey: root,
-    predicate: (query) => !['settings', 'hours', 'templates', 'suggestions'].includes(String(query.queryKey[1])),
+    predicate: (query) =>
+      !['settings', 'hours', 'templates', 'suggestions', 'assignees'].includes(String(query.queryKey[1])),
   });
 
-/** Cada cuánto se relee el contador aunque el socket esté callado (red caída sin aviso). */
+/** Cada cuánto se relee el resumen aunque el socket esté callado (red caída sin aviso). */
 export const INBOX_POLL_MS = 60_000;
-/** Cuántas conversaciones abiertas se suman para la insignia (la API acepta hasta 100 por página). */
-const UNREAD_PAGE = 100;
 
 export const useInboxConversations = (params: InboxQuery, enabled = true) =>
   useQuery({
@@ -83,18 +86,25 @@ export const useInboxConversation = (conversationId: string | undefined) =>
   });
 
 /**
- * Lo sin leer de la bandeja, para la insignia del menú: la suma de `unreadCount` de las abiertas de los canales que
- * atiende quien mira. La API no tiene un resumen propio (anotado en la entrega): se pide una página de 100.
+ * El resumen de la bandeja (sin asignar, mías, esperando a una persona, con algo sin leer) para la insignia del menú,
+ * las pestañas y el título de la pestaña del navegador. Se relee con cada aviso del socket (`invalidateInbox`) y, de
+ * respaldo, cada minuto.
  */
-export const useInboxUnread = (enabled: boolean) =>
+export const useInboxSummary = (enabled: boolean) =>
   useQuery({
-    queryKey: inboxKeys.unread(),
-    queryFn: async () => {
-      const page = await listConversations({ status: 'open', limit: UNREAD_PAGE, offset: 0 });
-      return page.items.reduce((sum, c) => sum + c.unreadCount, 0);
-    },
+    queryKey: inboxKeys.summary(),
+    queryFn: getInboxSummary,
     enabled,
     refetchInterval: INBOX_POLL_MS,
+  });
+
+/** A quién se le puede asignar la conversación (sólo mientras el modal está abierto). */
+export const useConversationAssignees = (conversationId: string | undefined) =>
+  useQuery({
+    queryKey: inboxKeys.assignees(conversationId ?? ''),
+    queryFn: () => listConversationAssignees(conversationId ?? ''),
+    enabled: Boolean(conversationId),
+    retry: false,
   });
 
 /** Deja la ficha que devolvió la API en su caché y relee el resto de la bandeja. */
