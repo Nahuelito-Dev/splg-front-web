@@ -38,7 +38,14 @@ const show = () => {
 beforeEach(() => {
   access.value = { customers: true, drivers: true, configure: false, claims: false, any: true };
   Object.values(api).forEach((fn) => fn.mockReset());
-  api.getInboxSummary.mockResolvedValue({ unassigned: 3, mine: 1, awaitingHuman: 1, unread: 2 });
+  api.getInboxSummary.mockResolvedValue({
+    unassigned: 3,
+    mine: 1,
+    awaitingHuman: 1,
+    unread: 2,
+    attention: 4,
+    mentions: 0,
+  });
 });
 afterEach(cleanup);
 
@@ -48,17 +55,25 @@ describe('InboxNavBadge: lo que pide atención en «Mensajes»', () => {
     const badge = await screen.findByLabelText(
       'Mensajes: 3 sin asignar, 1 esperando a alguien del equipo, 2 con mensajes sin leer',
     );
-    expect(badge).toHaveTextContent('3');
+    // `attention` de la API: cada conversación una vez (no el mayor ni la suma de los otros números).
+    expect(badge).toHaveTextContent('4');
     expect(api.listConversations).not.toHaveBeenCalled();
   });
 
   it('se relee con los avisos del socket y cada minuto de respaldo', async () => {
     const { client, socket } = show();
-    await screen.findByText('3');
+    await screen.findByText('4');
     expect(client.getQueryCache().find({ queryKey: inboxKeys.summary() })?.options).toMatchObject({
       refetchInterval: INBOX_POLL_MS,
     });
-    api.getInboxSummary.mockResolvedValue({ unassigned: 0, mine: 1, awaitingHuman: 0, unread: 5 });
+    api.getInboxSummary.mockResolvedValue({
+      unassigned: 0,
+      mine: 1,
+      awaitingHuman: 0,
+      unread: 5,
+      attention: 5,
+      mentions: 0,
+    });
     act(() =>
       socket.fire('chat:inbox', {
         conversationId: 'conv-1',
@@ -74,7 +89,14 @@ describe('InboxNavBadge: lo que pide atención en «Mensajes»', () => {
   });
 
   it('sin nada pendiente no se muestra; sin permiso de mensajes no pide nada', async () => {
-    api.getInboxSummary.mockResolvedValue({ unassigned: 0, mine: 2, awaitingHuman: 0, unread: 0 });
+    api.getInboxSummary.mockResolvedValue({
+      unassigned: 0,
+      mine: 2,
+      awaitingHuman: 0,
+      unread: 0,
+      attention: 0,
+      mentions: 0,
+    });
     show();
     await waitFor(() => expect(api.getInboxSummary).toHaveBeenCalled());
     expect(screen.queryByLabelText(/Mensajes:/)).not.toBeInTheDocument();

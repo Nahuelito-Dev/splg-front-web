@@ -1,5 +1,6 @@
 import {
   Activity,
+  AtSign,
   Bell,
   CalendarClock,
   CalendarX2,
@@ -65,7 +66,11 @@ const KIND_VISUALS: Record<string, { icon: LucideIcon; tone: Tone }> = {
   support_access_requested: { icon: LifeBuoy, tone: 'warn' },
   support_emergency_opened: { icon: LifeBuoy, tone: 'danger' },
   support_access_auto_approved: { icon: LifeBuoy, tone: 'info' },
+  chat_mention: { icon: AtSign, tone: 'info' },
 };
+
+/** El aviso de una mención en una nota interna del chat (sólo le llega a la persona mencionada). */
+export const CHAT_MENTION_KIND = 'chat_mention';
 
 /** Ícono y tono de un aviso guardado según su `kind`; un tipo que el panel no conoce se muestra con uno genérico. */
 export const notificationVisuals = (kind: string): { icon: LucideIcon; tone: Tone } =>
@@ -104,6 +109,8 @@ export const notificationTarget = (link: AdminNotification['link'] | undefined):
       return `/document-readings/${id}`;
     case 'support-session':
       return `/support-access?session=${id}`;
+    case 'conversation':
+      return `/messages/${id}`;
     default:
       return null;
   }

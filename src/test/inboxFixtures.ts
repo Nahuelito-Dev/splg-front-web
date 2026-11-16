@@ -11,6 +11,7 @@ export const inboxMsg = (seq: number, over: Partial<InboxMessage> = {}): InboxMe
   isMine: false,
   canEdit: false,
   kind: 'text',
+  internal: false,
   body: `hola ${seq}`,
   templateKey: null,
   systemCode: null,

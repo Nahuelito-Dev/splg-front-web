@@ -16,6 +16,7 @@ const api = vi.hoisted(() => ({
   createCompanyTemplate: vi.fn(),
   updateCompanyTemplate: vi.fn(),
   deleteCompanyTemplate: vi.fn(),
+  getCsatSummary: vi.fn(),
 }));
 const confirmMock = vi.hoisted(() => vi.fn(() => Promise.resolve(true)));
 
@@ -53,9 +54,26 @@ const SETTINGS = {
   ackEnabled: false,
   ackMessage: null,
   effectiveAckMessage: 'Recibimos tu mensaje.',
+  csatEnabled: true,
+  csatMessage: null,
+  effectiveCsatMessage: '¿Cómo te atendimos en {{empresa.nombre}}? Tocá de 1 a 5 para calificar la conversación.',
+  customerActions: ['where_is_my_order', 'repeat_last_order', 'payment_methods', 'talk_to_person'],
   firstResponseTargetMinutes: 30,
   openNow: false,
   nextOpenAt: '2026-11-16T12:00:00.000Z',
+};
+const CSAT = {
+  from: '2026-10-16T00:00:00.000Z',
+  to: '2026-11-15T00:00:00.000Z',
+  requested: 10,
+  answered: 8,
+  expired: 2,
+  cancelled: 1,
+  average: 4.25,
+  csat: 0.75,
+  byScore: { '1': 0, '2': 1, '3': 1, '4': 3, '5': 3 },
+  assistant: { answered: 3, average: 4.666, csat: 1 },
+  team: { answered: 5, average: 4, csat: 0.6 },
 };
 const TEMPLATE = {
   id: 'tpl-1',
@@ -73,6 +91,7 @@ beforeEach(() => {
   api.getBusinessHours.mockResolvedValue(HOURS);
   api.getChatSettings.mockResolvedValue(SETTINGS);
   api.listCompanyTemplates.mockResolvedValue({ items: [TEMPLATE] });
+  api.getCsatSummary.mockResolvedValue(CSAT);
 });
 afterEach(cleanup);
 
@@ -460,5 +479,129 @@ describe('Mensajes y horario: respuestas guardadas', () => {
     fireEvent.click(screen.getByRole('button', { name: /Dar de baja/ }));
     await waitFor(() => expect(api.deleteCompanyTemplate).toHaveBeenCalledWith('tpl-1'));
     expect(confirmMock).toHaveBeenCalled();
+  });
+});
+
+describe('Mensajes y horario: la encuesta al cerrar (4b)', () => {
+  it('la vista previa muestra el texto de siempre con la empresa y los cinco números', async () => {
+    show();
+    const preview = await screen.findByRole('region', { name: /Vista previa de la encuesta/ });
+    expect(
+      within(preview).getByText('¿Cómo te atendimos en Gas Norte? Tocá de 1 a 5 para calificar la conversación.'),
+    ).toBeInTheDocument();
+    expect(within(preview).getByText('5')).toBeInTheDocument();
+  });
+
+  it('guarda el texto propio; una variable desconocida no se manda', async () => {
+    api.updateChatSettings.mockResolvedValue(SETTINGS);
+    show();
+    const field = await screen.findByLabelText('Texto del pedido');
+    fireEvent.change(field, { target: { value: '¿Qué tal {{cliente.apodo}}?' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar la encuesta' }));
+    expect(await screen.findByText(/Variable desconocida: \{\{cliente.apodo\}\}/)).toBeInTheDocument();
+    expect(api.updateChatSettings).not.toHaveBeenCalled();
+    fireEvent.change(field, { target: { value: '¿Cómo te atendimos, {{cliente.nombre}}?' } });
+    expect(screen.getByRole('region', { name: /Vista previa de la encuesta/ })).toHaveTextContent(
+      '¿Cómo te atendimos, Ana?',
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar la encuesta' }));
+    await waitFor(() =>
+      expect(api.updateChatSettings).toHaveBeenCalledWith({
+        csatEnabled: true,
+        csatMessage: '¿Cómo te atendimos, {{cliente.nombre}}?',
+      }),
+    );
+  });
+
+  it('apagarla manda sólo el interruptor (el texto escondido no viaja)', async () => {
+    api.updateChatSettings.mockResolvedValue({ ...SETTINGS, csatEnabled: false });
+    show();
+    fireEvent.click(await screen.findByRole('switch', { name: 'Pedir que califiquen al cerrar' }));
+    expect(screen.queryByLabelText('Texto del pedido')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar la encuesta' }));
+    await waitFor(() => expect(api.updateChatSettings).toHaveBeenCalledWith({ csatEnabled: false }));
+  });
+
+  it('los resultados del último mes: respondidas, promedio, satisfechos y asistente contra equipo', async () => {
+    show();
+    const results = await screen.findByRole('region', { name: 'Cómo calificaron el último mes' });
+    expect(await within(results).findByText('8 de 10')).toBeInTheDocument();
+    expect(within(results).getByText('4,3 / 5')).toBeInTheDocument();
+    expect(within(results).getByText('75 %')).toBeInTheDocument();
+    const assistant = within(results).getByRole('row', { name: /Sólo el asistente/ });
+    expect(assistant).toHaveTextContent('34,7100 %');
+    expect(within(results).getByRole('row', { name: /El equipo/ })).toHaveTextContent('54,060 %');
+    // 8 respondidas = 3 del asistente + 5 del equipo: no hay sin atender.
+    expect(within(results).queryByText(/nadie llegó a atender/)).not.toBeInTheDocument();
+  });
+
+  it('las respondidas que nadie atendió se aclaran (no entran en ninguna fila)', async () => {
+    api.getCsatSummary.mockResolvedValue({
+      ...CSAT,
+      answered: 2,
+      assistant: { answered: 0, average: null, csat: null },
+      team: { answered: 0, average: null, csat: null },
+    });
+    show();
+    const results = await screen.findByRole('region', { name: 'Cómo calificaron el último mes' });
+    expect(
+      await within(results).findByText('2 respondidas son de conversaciones que nadie llegó a atender.'),
+    ).toBeInTheDocument();
+  });
+
+  it('sin atender a los clientes no se piden los resultados', async () => {
+    access.value = { customers: false, drivers: true, configure: true, claims: false, any: true };
+    show();
+    expect(
+      await screen.findByText(/Los resultados los ve quien atiende los mensajes de los clientes/),
+    ).toBeInTheDocument();
+    expect(api.getCsatSummary).not.toHaveBeenCalled();
+  });
+
+  it('un error al leer los resultados se muestra con reintento', async () => {
+    api.getCsatSummary.mockRejectedValue(Object.assign(new Error('Falla'), { isAxiosError: true }));
+    show();
+    const results = await screen.findByRole('region', { name: 'Cómo calificaron el último mes' });
+    expect(await within(results).findByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
+  });
+});
+
+describe('Mensajes y horario: los botones del cliente (4e)', () => {
+  it('elige qué botones ve el cliente, con vista previa, y guarda en el orden del catálogo', async () => {
+    api.updateChatSettings.mockResolvedValue(SETTINGS);
+    show();
+    const preview = await screen.findByRole('region', { name: /Vista previa de los botones/ });
+    expect(
+      within(preview)
+        .getAllByRole('listitem')
+        .map((li) => li.textContent),
+    ).toEqual(['¿Dónde está mi pedido?', 'Repetir mi último pedido', 'Medios de pago', 'Hablar con una persona']);
+    fireEvent.click(screen.getByRole('checkbox', { name: /Repetir mi último pedido/ }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /¿Dónde está mi pedido\?/ }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /¿Dónde está mi pedido\?/ }));
+    expect(within(preview).queryByText('Repetir mi último pedido')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar los botones' }));
+    await waitFor(() =>
+      expect(api.updateChatSettings).toHaveBeenCalledWith({
+        customerActions: ['where_is_my_order', 'payment_methods', 'talk_to_person'],
+      }),
+    );
+  });
+
+  it('sin ninguno, la vista previa lo dice y se manda la lista vacía', async () => {
+    api.updateChatSettings.mockResolvedValue({ ...SETTINGS, customerActions: [] });
+    show();
+    await screen.findByRole('region', { name: /Vista previa de los botones/ });
+    for (const name of [
+      /¿Dónde está mi pedido\?/,
+      /Repetir mi último pedido/,
+      /Medios de pago/,
+      /Hablar con una persona/,
+    ]) {
+      fireEvent.click(screen.getByRole('checkbox', { name }));
+    }
+    expect(screen.getByText('Sin botones: el cliente sólo escribe.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar los botones' }));
+    await waitFor(() => expect(api.updateChatSettings).toHaveBeenCalledWith({ customerActions: [] }));
   });
 });

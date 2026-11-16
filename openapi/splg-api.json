@@ -41591,7 +41591,7 @@
                         }
                     },
                     "400": {
-                        "description": "Valor fuera de rango (también los topes del asistente con IA: 1–50 respuestas por conversación, 10.000–1.000.000.000 tokens por mes), zona horaria desconocida, franjas solapadas o aviso que no llega antes del cierre"
+                        "description": "Valor fuera de rango (también los topes del asistente con IA: 1–50 respuestas por conversación, 10.000–1.000.000.000 tokens por mes, en total y por empresa), cupo por empresa mayor que el total del soporte, zona horaria desconocida, franjas solapadas o aviso que no llega antes del cierre"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -41917,7 +41917,7 @@
         },
         "/api/v2/conversations": {
             "get": {
-                "description": "Sólo los canales que atiende quien pide. Ordenadas por el último mensaje; con `assigned=none`, primero las que esperan a una persona (el asistente con IA las derivó; la que espera hace más, primero). `awaiting=true` deja sólo las que esperan. `counts` son las abiertas de esos canales: sin asignar, asignadas a quien pide y todas.",
+                "description": "Sólo los canales que atiende quien pide. Ordenadas por el último mensaje; con `assigned=none`, primero las que esperan a una persona (el asistente con IA las derivó; la que espera hace más, primero). `awaiting=true` deja sólo las que esperan. `mentioned=me` es la vista «Me mencionaron» (con alguna nota que menciona a quien pide; `mentioned=unread`, sólo con menciones sin leer). `counts` son las abiertas de esos canales: sin asignar, asignadas a quien pide y todas.",
                 "operationId": "CompanyInboxController_listar",
                 "parameters": [
                     {
@@ -41986,6 +41986,19 @@
                         }
                     },
                     {
+                        "name": "mentioned",
+                        "required": false,
+                        "in": "query",
+                        "description": "Vista «Me mencionaron»: `me`, las conversaciones con alguna nota que menciona a quien pide; `unread`, sólo las que tienen alguna mención sin leer.",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "me",
+                                "unread"
+                            ]
+                        }
+                    },
+                    {
                         "name": "customerId",
                         "required": false,
                         "in": "query",
@@ -42048,7 +42061,7 @@
                         }
                     },
                     "400": {
-                        "description": "Filtro inválido: canal, estado, `assigned` (`me`, `none` o uuid), ids, `awaiting` que no es `true`/`false`, `q` de menos de 3 caracteres, fecha o paginación"
+                        "description": "Filtro inválido: canal, estado, `assigned` (`me`, `none` o uuid), ids, `awaiting` que no es `true`/`false`, `mentioned` que no es `me`/`unread`, `q` de menos de 3 caracteres, fecha o paginación"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -42187,7 +42200,7 @@
         },
         "/api/v2/conversations/summary": {
             "get": {
-                "description": "Para la insignia del menú «Mensajes» y las pestañas: de las conversaciones abiertas de los canales que atiende quien pide (`mensajes.clientes`, `mensajes.choferes`), cuántas están sin asignar, cuántas son suyas, cuántas esperan a una persona y cuántas tienen algo sin leer para quien pide. Sólo de su empresa.",
+                "description": "Para la insignia del menú «Mensajes» y las pestañas: de las conversaciones abiertas de los canales que atiende quien pide (`mensajes.clientes`, `mensajes.choferes`), cuántas están sin asignar, cuántas son suyas, cuántas esperan a una persona, cuántas tienen algo sin leer para quien pide (sin las asignadas a otra persona), cuántas piden atención (sin asignar ∪ esperando persona ∪ sin leer, sin duplicar) y cuántas menciones sin leer tiene en notas internas. Sólo de su empresa.",
                 "operationId": "CompanyInboxController_resumen",
                 "parameters": [],
                 "responses": {
@@ -42214,6 +42227,64 @@
                     }
                 ],
                 "summary": "Resumen de la bandeja (insignias)",
+                "tags": [
+                    "Inbox (company)"
+                ]
+            }
+        },
+        "/api/v2/conversations/csat": {
+            "get": {
+                "description": "De las encuestas pedidas al cerrar conversaciones con clientes en el período (por cuándo se pidieron; sin `from`, los últimos 30 días): pedidas, respondidas, vencidas, promedio (1 a 5), CSAT (proporción de 4 y 5) y lo mismo de las atendidas sólo por el asistente con IA y de las atendidas por el equipo. Sólo de la empresa de quien pide. Es lo que lee el tablero (B4).",
+                "operationId": "CompanyInboxController_csat",
+                "parameters": [
+                    {
+                        "name": "from",
+                        "required": false,
+                        "in": "query",
+                        "description": "Desde (por pedido de la encuesta); sin él, los últimos 30 días",
+                        "schema": {
+                            "format": "date-time",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "required": false,
+                        "in": "query",
+                        "description": "Hasta; sin él, ahora. No puede ser anterior a `from` (400).",
+                        "schema": {
+                            "format": "date-time",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CsatSummaryResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Fecha inválida"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para atender los mensajes de los clientes (`mensajes.clientes`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Resumen de la encuesta de satisfacción",
                 "tags": [
                     "Inbox (company)"
                 ]
@@ -42518,6 +42589,140 @@
                 ]
             }
         },
+        "/api/v2/conversations/{id}/notes": {
+            "post": {
+                "description": "Sólo la ve el personal de la empresa: nunca le llega al cliente ni al chofer (ni por HTTP ni por el socket), ni al asistente con IA. No cuenta como primera respuesta, no saca a la conversación de «esperando persona» ni cambia su vista previa. `mentions` avisa a cada persona mencionada (aviso del panel sólo para ella) y la nota queda en su «Me mencionaron» hasta que la lee. Se edita como un mensaje propio (`PATCH :id/messages/:messageId`, sólo su autor, 15 minutos). Reintentar con el mismo `clientMessageId` devuelve la nota ya guardada (200) sin volver a avisar.",
+                "operationId": "CompanyInboxController_nota",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SendInternalNoteDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Reintento: ya estaba",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InboxMessageDto"
+                                }
+                            }
+                        }
+                    },
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InboxMessageDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Id que no es uuid, texto vacío o de más de 2000, `mentions` que no es una lista de uuid sin repetir de hasta 10, o menciona a alguien que no atiende este canal (`MENTION_NOT_ALLOWED`)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no es del personal de una empresa; el rol no atiende ningún canal de mensajes (`PERMISSION_DENIED`); o la empresa no tiene habilitados los mensajes (`MODULE_DISABLED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`)"
+                    },
+                    "404": {
+                        "description": "No existe, es de otra empresa o de un canal que quien pide no atiende"
+                    },
+                    "409": {
+                        "description": "La conversación está cerrada (`CONVERSATION_CLOSED`)"
+                    },
+                    "429": {
+                        "description": "Más de 30 mensajes por minuto (`CHAT_RATE_LIMITED`)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Dejar una nota interna (con @menciones)",
+                "tags": [
+                    "Inbox (company)"
+                ]
+            }
+        },
+        "/api/v2/conversations/{id}/mentions/read": {
+            "post": {
+                "description": "Las menciones a quien pide en las notas internas de la conversación (todas, o hasta la nota `upToSeq`). Leer la conversación (`POST :id/read`) también las marca hasta ese mensaje. Idempotente: las ya leídas no cuentan.",
+                "operationId": "CompanyInboxController_leerMenciones",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/MarkMentionsReadDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MentionsReadResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Id que no es uuid o `upToSeq` que no es un entero positivo"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no es del personal de una empresa; el rol no atiende ningún canal de mensajes (`PERMISSION_DENIED`); o la empresa no tiene habilitados los mensajes (`MODULE_DISABLED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`)"
+                    },
+                    "404": {
+                        "description": "No existe, es de otra empresa o de un canal que quien pide no atiende"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Marcar leídas mis menciones en la conversación",
+                "tags": [
+                    "Inbox (company)"
+                ]
+            }
+        },
         "/api/v2/conversations/{id}/messages/{messageId}": {
             "patch": {
                 "description": "Sólo quien lo escribió (no un compañero), sólo texto y hasta 15 minutos después de enviarlo, con la conversación abierta. No se edita lo que quedó como constancia: una conversación por un pedido, un mensaje que forma parte de un reclamo o un ticket, o uno que ya citaron (`canEdit` lo anticipa con la misma regla). Queda la marca `editedAt` y el texto anterior en el historial. La otra punta lo recibe por el socket (`chat:message-edited`).",
@@ -42652,7 +42857,7 @@
         },
         "/api/v2/conversations/{id}/close": {
             "post": {
-                "description": "Queda en lectura. El cliente o el chofer que vuelva a escribir abre otra; la empresa la puede reabrir.",
+                "description": "Queda en lectura. El cliente o el chofer que vuelva a escribir abre otra; la empresa la puede reabrir. Con un cliente, si la empresa tiene prendida la encuesta, sale el mensaje `csat_request` para que califique (1 a 5, hasta 48 h).",
                 "operationId": "CompanyInboxController_cerrar",
                 "parameters": [
                     {
@@ -43387,6 +43592,43 @@
                 ]
             }
         },
+        "/api/v2/me/conversations/actions": {
+            "get": {
+                "description": "Para mostrar al abrir un chat nuevo: los que muestra la empresa del `X-Distributor` («¿Dónde está mi pedido?», «Repetir mi último pedido», «Medios de pago», «Hablar con una persona»), en orden. `kind: app` lo abre la app (el chat no crea pedidos). Lista vacía si la empresa no muestra ninguno o no atiende por chat. También llegan en `actions` del primer mensaje del asistente de cada conversación.",
+                "operationId": "MyConversationsController_acciones",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CustomerActionListResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "El cliente sin `X-Distributor` (`MISSING_DISTRIBUTOR`)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no es de un cliente o un chofer; el chofer (`CUSTOMER_ONLY`); o la empresa no tiene habilitados los mensajes (`MODULE_DISABLED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Botones de acción del chat (cliente)",
+                "tags": [
+                    "Inbox (apps)"
+                ]
+            }
+        },
         "/api/v2/me/conversations/{id}": {
             "get": {
                 "operationId": "MyConversationsController_una",
@@ -43711,6 +43953,153 @@
                     }
                 ],
                 "summary": "Borrar un mensaje mío (sólo el cliente)",
+                "tags": [
+                    "Inbox (apps)"
+                ]
+            }
+        },
+        "/api/v2/me/conversations/{id}/actions": {
+            "post": {
+                "description": "Manda el mensaje predefinido de la acción como un mensaje del cliente (lo atiende el asistente o el equipo como siempre). `talk_to_person` además pasa la conversación a una persona (el asistente no contesta). Las de la app (`repeat_last_order`) no se mandan: 400. Reintentar con el mismo `clientMessageId` devuelve el mensaje ya guardado (200).",
+                "operationId": "MyConversationsController_accion",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SendCustomerActionDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Reintento: ya estaba",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InboxMessageDto"
+                                }
+                            }
+                        }
+                    },
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InboxMessageDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Id que no es uuid, `key` desconocida o sin `clientMessageId`; la empresa no muestra esa acción (`ACTION_NOT_AVAILABLE`); la abre la app (`ACTION_IS_APP_ONLY`); el cliente sin `X-Distributor`"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no es de un cliente o un chofer; el chofer (`CUSTOMER_ONLY`); la empresa apagó el chat con los clientes (`CUSTOMER_CHAT_DISABLED`); o no tiene habilitados los mensajes (`MODULE_DISABLED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`)"
+                    },
+                    "404": {
+                        "description": "No existe, es de otra empresa o de otra persona"
+                    },
+                    "409": {
+                        "description": "La conversación está cerrada (`CONVERSATION_CLOSED`) o ya no se puede escribir (`CHAT_NOT_WRITABLE`)"
+                    },
+                    "429": {
+                        "description": "Más de 30 mensajes por minuto, o más de 10 por minuto en una misma conversación (`CHAT_RATE_LIMITED`)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Tocar un botón de acción (cliente)",
+                "tags": [
+                    "Inbox (apps)"
+                ]
+            }
+        },
+        "/api/v2/me/conversations/{id}/rating": {
+            "post": {
+                "description": "La respuesta a ESA encuesta (`ratingId` del `payload` de su mensaje `csat_request`; cada cierre tiene la suya): 1 a 5 y un comentario opcional. Una sola vez, con la conversación cerrada y hasta 48 h después del cierre; si la empresa la reabrió, esa encuesta quedó anulada. Reintentar con la misma respuesta devuelve la guardada (200). Si en vez de calificar el cliente escribe, abre otra conversación como siempre. Al cliente no le llega `servedBy`.",
+                "operationId": "MyConversationsController_calificar",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RateConversationDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Reintento con la misma respuesta: ya estaba",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConversationRatingResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConversationRatingResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Id que no es uuid, falta `ratingId` o no es uuid, `score` fuera de 1–5 o no entero, comentario vacío o de más de 280; el cliente sin `X-Distributor`"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no es de un cliente o un chofer; el chofer (`CUSTOMER_ONLY`); o la empresa no tiene habilitados los mensajes (`MODULE_DISABLED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`)"
+                    },
+                    "404": {
+                        "description": "No existe, es de otra empresa o de otra persona; o esa encuesta no es de esta conversación o de quien pide (`RATING_NOT_FOUND`)"
+                    },
+                    "409": {
+                        "description": "Ya la calificó con otra respuesta (`RATING_ALREADY_ANSWERED`), se anuló porque la conversación se reabrió o está abierta (`RATING_CANCELLED`), o venció (`RATING_EXPIRED`)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Calificar la conversación (cliente)",
                 "tags": [
                     "Inbox (apps)"
                 ]
@@ -68773,7 +69162,7 @@
                             "processed": 3,
                             "errors": 0
                         },
-                        "description": "Lo que generó la corrida (casos, avisos, ofertas...), según el proceso"
+                        "description": "Lo que generó la corrida (casos, avisos, ofertas...), según el proceso. `errors`: elementos que fallaron en esta corrida (la deja `partial`; se reintentan en la próxima). `persistentFailures` (sólo si hay): de esos, los que vienen fallando hace 3 corridas seguidas o más; al llegar a 3 se avisa una vez a la plataforma."
                     },
                     "error": {
                         "type": "string",
@@ -69091,7 +69480,7 @@
                             "processed": 3,
                             "errors": 0
                         },
-                        "description": "Lo que generó la corrida (casos, avisos, ofertas...), según el proceso"
+                        "description": "Lo que generó la corrida (casos, avisos, ofertas...), según el proceso. `errors`: elementos que fallaron en esta corrida (la deja `partial`; se reintentan en la próxima). `persistentFailures` (sólo si hay): de esos, los que vienen fallando hace 3 corridas seguidas o más; al llegar a 3 se avisa una vez a la plataforma."
                     },
                     "error": {
                         "type": "string",
@@ -77227,7 +77616,9 @@
                             "received_ack",
                             "reopened",
                             "driver_changed",
-                            "claim_created"
+                            "claim_created",
+                            "handoff_note",
+                            "csat_request"
                         ],
                         "nullable": true
                     },
@@ -77816,6 +78207,12 @@
                         "maximum": 1000000000,
                         "description": "Tope de tokens por mes del asistente con IA, por empresa y para el soporte"
                     },
+                    "assistantMonthlyTokenLimitPerCompany": {
+                        "type": "number",
+                        "minimum": 10000,
+                        "maximum": 1000000000,
+                        "description": "Cupo de tokens por mes del asistente con IA de cada empresa en el soporte; nunca mayor que `assistantMonthlyTokenLimit`"
+                    },
                     "assistantMonthlyCostEstimateUsd": {
                         "description": "Lo que costaría por mes (por empresa, y el soporte aparte) consumir todo `assistantMonthlyTokenLimit`, en dólares. Lo calcula el back; el panel lo muestra tal cual.",
                         "allOf": [
@@ -77866,6 +78263,7 @@
                     "assistantAiEnabled",
                     "assistantRepliesPerConversation",
                     "assistantMonthlyTokenLimit",
+                    "assistantMonthlyTokenLimitPerCompany",
                     "assistantMonthlyCostEstimateUsd",
                     "chatInactivityHours",
                     "resolvedCloseDays",
@@ -77918,6 +78316,12 @@
                         "minimum": 10000,
                         "maximum": 1000000000,
                         "description": "Tope de tokens por mes del asistente con IA, para cada empresa y para el soporte (entrada, salida y caché). Al llegar, sólo las respuestas automáticas fijas y pasar a una persona."
+                    },
+                    "assistantMonthlyTokenLimitPerCompany": {
+                        "type": "number",
+                        "minimum": 10000,
+                        "maximum": 1000000000,
+                        "description": "Cupo de tokens por mes del asistente con IA de cada empresa en el soporte (entrada, salida y caché). No puede superar `assistantMonthlyTokenLimit` (400 si no, también si se baja el total por debajo del cupo guardado). Al llegar, esa empresa recibe sólo las respuestas automáticas fijas y pasa a una persona; las demás siguen con el asistente."
                     },
                     "chatInactivityHours": {
                         "type": "number",
@@ -78237,6 +78641,66 @@
                     "fullName"
                 ]
             },
+            "InboxCsatDto": {
+                "type": "object",
+                "properties": {
+                    "ratingId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "pending",
+                            "answered",
+                            "expired",
+                            "cancelled"
+                        ],
+                        "description": "Pendiente (se puede responder), respondida, vencida (48 h) o anulada (la conversación se reabrió antes de que la respondieran)"
+                    },
+                    "score": {
+                        "type": "number",
+                        "nullable": true,
+                        "minimum": 1,
+                        "maximum": 5
+                    },
+                    "comment": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "servedBy": {
+                        "type": "string",
+                        "enum": [
+                            "assistant",
+                            "team",
+                            "none"
+                        ],
+                        "description": "Sólo para el personal: quién atendió el tramo calificado (desde la apertura o la reapertura): el equipo (alguien escribió), el asistente con IA (sólo él) o nadie"
+                    },
+                    "requestedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "expiresAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "answeredAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "ratingId",
+                    "status",
+                    "score",
+                    "comment",
+                    "requestedAt",
+                    "expiresAt",
+                    "answeredAt"
+                ]
+            },
             "InboxLastMessageDto": {
                 "type": "object",
                 "properties": {
@@ -78366,8 +78830,22 @@
                         "nullable": true,
                         "description": "Sólo para el personal: minutos hábiles (horario de atención, sin días sin atención) entre el primer mensaje del cliente o del chofer y la primera respuesta; `null` si todavía no hubo las dos cosas"
                     },
+                    "unreadMentions": {
+                        "type": "number",
+                        "description": "Sólo para el personal: menciones sin leer a quien pide en las notas internas de esta conversación («Me mencionaron»)"
+                    },
+                    "csat": {
+                        "nullable": true,
+                        "description": "Sólo en las conversaciones con un cliente (C3), para el personal y para el cliente: la encuesta del último cierre; `null` si no hubo",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/InboxCsatDto"
+                            }
+                        ]
+                    },
                     "lastMessage": {
                         "nullable": true,
+                        "description": "El último mensaje visible para las dos puntas (nunca una nota interna)",
                         "allOf": [
                             {
                                 "$ref": "#/components/schemas/InboxLastMessageDto"
@@ -78556,6 +79034,63 @@
                     "displayName"
                 ]
             },
+            "InboxMentionDto": {
+                "type": "object",
+                "properties": {
+                    "userId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "fullName": {
+                        "type": "string",
+                        "example": "Juan Pérez"
+                    }
+                },
+                "required": [
+                    "userId",
+                    "fullName"
+                ]
+            },
+            "InboxActionDto": {
+                "type": "object",
+                "properties": {
+                    "key": {
+                        "type": "string",
+                        "enum": [
+                            "where_is_my_order",
+                            "repeat_last_order",
+                            "payment_methods",
+                            "talk_to_person"
+                        ],
+                        "example": "where_is_my_order"
+                    },
+                    "label": {
+                        "type": "string",
+                        "example": "¿Dónde está mi pedido?"
+                    },
+                    "kind": {
+                        "type": "string",
+                        "enum": [
+                            "message",
+                            "handoff",
+                            "app"
+                        ],
+                        "description": "`message`: con un toque la app llama a `POST /v2/me/conversations/:id/actions` (manda el mensaje predefinido); `handoff`: igual, y la conversación pasa a una persona; `app`: la abre la app (p. ej. repetir el último pedido arma el pedido en su pantalla), el chat no la ejecuta"
+                    },
+                    "text": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "¿Dónde está mi pedido?",
+                        "description": "El mensaje que se manda al tocarlo (la app lo puede mostrar como burbuja enviada); `null` en las de la app"
+                    }
+                },
+                "required": [
+                    "key",
+                    "label",
+                    "kind",
+                    "text"
+                ]
+            },
             "InboxReplyToDto": {
                 "type": "object",
                 "properties": {
@@ -78638,6 +79173,24 @@
                             "quoted_excerpt"
                         ]
                     },
+                    "internal": {
+                        "type": "boolean",
+                        "description": "Nota interna: sólo la ve el personal de la empresa (al cliente y al chofer nunca les llega). La del personal es `kind: text`; la del asistente con IA al derivar, `kind: system` con `systemCode: handoff_note` y el resumen y el motivo en `body`"
+                    },
+                    "mentions": {
+                        "description": "Sólo para el personal, en las notas internas: a quiénes menciona",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/InboxMentionDto"
+                        }
+                    },
+                    "actions": {
+                        "description": "Sólo para el cliente, en el primer mensaje del asistente de la conversación: los botones de acción que muestra la empresa (4e)",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/InboxActionDto"
+                        }
+                    },
                     "body": {
                         "type": "string",
                         "nullable": true,
@@ -78661,7 +79214,9 @@
                             "received_ack",
                             "reopened",
                             "driver_changed",
-                            "claim_created"
+                            "claim_created",
+                            "handoff_note",
+                            "csat_request"
                         ],
                         "nullable": true
                     },
@@ -78679,7 +79234,7 @@
                         "type": "object",
                         "additionalProperties": true,
                         "nullable": true,
-                        "description": "`claim_created`: `{ claimId }`; respuesta fuera de horario: `{ until, senderLabel }` (fin del período cerrado y firma); aviso de recibido: `{ senderLabel }`"
+                        "description": "`claim_created`: `{ claimId }`; respuesta fuera de horario: `{ until, senderLabel }` (fin del período cerrado y firma); aviso de recibido: `{ senderLabel }`; encuesta (`csat_request`): `{ ratingId, expiresAt, scale: 5 }`; respuesta del asistente con IA: `{ senderLabel, ai: { model, handoff?, sources? } }`, donde `ai.sources` (sólo para el personal: al cliente nunca le llega) son las fuentes de la respuesta, `[{ type: 'faq', faqId, question } | { type: 'tool', tool, orderNumber? }]`; nota de derivación (`handoff_note`, sólo el personal): `{ ai: { model, handoff: true }, handoff: { reason, reasonLabel, summary } }` (`summary` nulo si el modelo no corrió)"
                     },
                     "replyTo": {
                         "nullable": true,
@@ -78722,6 +79277,7 @@
                     "isMine",
                     "canEdit",
                     "kind",
+                    "internal",
                     "body",
                     "templateKey",
                     "systemCode",
@@ -78824,14 +79380,131 @@
                     "unread": {
                         "type": "number",
                         "example": 4,
-                        "description": "Abiertas con algún mensaje sin leer para quien pide (cuenta conversaciones, no mensajes): lo del cliente o el chofer posterior a su lectura, sin avisos del sistema, respuestas automáticas ni mensajes borrados"
+                        "description": "Abiertas con algún mensaje sin leer para quien pide (cuenta conversaciones, no mensajes): lo del cliente o el chofer posterior a su lectura, sin avisos del sistema, respuestas automáticas, notas internas ni mensajes borrados. No cuenta las asignadas a otra persona (ésas las atiende ella)."
+                    },
+                    "attention": {
+                        "type": "number",
+                        "example": 5,
+                        "description": "Abiertas que piden atención, contadas una vez: sin asignar, esperando a una persona o con algo sin leer (la regla de `unread`). Es la insignia del menú «Mensajes»."
+                    },
+                    "mentions": {
+                        "type": "number",
+                        "example": 1,
+                        "description": "Menciones sin leer a quien pide en notas internas de los canales que atiende (vista «Me mencionaron»)"
                     }
                 },
                 "required": [
                     "unassigned",
                     "mine",
                     "awaitingHuman",
-                    "unread"
+                    "unread",
+                    "attention",
+                    "mentions"
+                ]
+            },
+            "CsatGroupDto": {
+                "type": "object",
+                "properties": {
+                    "answered": {
+                        "type": "number",
+                        "description": "Encuestas respondidas"
+                    },
+                    "average": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": 4.5,
+                        "description": "Promedio de 1 a 5; `null` sin respuestas"
+                    },
+                    "csat": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": 0.8,
+                        "description": "CSAT: proporción de 4 y 5 sobre las respondidas (0 a 1)"
+                    }
+                },
+                "required": [
+                    "answered",
+                    "average",
+                    "csat"
+                ]
+            },
+            "CsatSummaryResponseDto": {
+                "type": "object",
+                "properties": {
+                    "from": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "to": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "requested": {
+                        "type": "number",
+                        "description": "Encuestas pedidas (cierres con encuesta), sin las anuladas"
+                    },
+                    "answered": {
+                        "type": "number"
+                    },
+                    "expired": {
+                        "type": "number",
+                        "description": "Vencidas sin responder (sin las anuladas)"
+                    },
+                    "cancelled": {
+                        "type": "number",
+                        "description": "Anuladas: la conversación se reabrió antes de que las respondieran. No cuentan como pedidas ni como vencidas"
+                    },
+                    "average": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "csat": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "byScore": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "number"
+                        },
+                        "example": {
+                            "1": 0,
+                            "2": 1,
+                            "3": 2,
+                            "4": 5,
+                            "5": 12
+                        },
+                        "description": "Cantidad de respuestas por puntaje"
+                    },
+                    "assistant": {
+                        "description": "Atendidas sólo por el asistente con IA",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/CsatGroupDto"
+                            }
+                        ]
+                    },
+                    "team": {
+                        "description": "Atendidas por el equipo",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/CsatGroupDto"
+                            }
+                        ]
+                    }
+                },
+                "required": [
+                    "from",
+                    "to",
+                    "requested",
+                    "answered",
+                    "expired",
+                    "cancelled",
+                    "average",
+                    "csat",
+                    "byScore",
+                    "assistant",
+                    "team"
                 ]
             },
             "InboxSuggestionDto": {
@@ -78938,6 +79611,59 @@
                 "required": [
                     "items",
                     "hasMore"
+                ]
+            },
+            "SendInternalNoteDto": {
+                "type": "object",
+                "properties": {
+                    "clientMessageId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Lo genera quien escribe. El mismo id repetido devuelve la nota ya guardada (200) sin duplicarla ni volver a avisar."
+                    },
+                    "body": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 2000,
+                        "example": "@Juan fijate si el chofer pasó por la casa"
+                    },
+                    "mentions": {
+                        "maxItems": 10,
+                        "uniqueItems": true,
+                        "description": "Ids de usuario de las personas del personal que se mencionan (hasta 10, sin repetir). Cada una tiene que atender el canal de la conversación (la misma regla que `assignees`); si no → 400 `MENTION_NOT_ALLOWED`.",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                },
+                "required": [
+                    "clientMessageId",
+                    "body"
+                ]
+            },
+            "MarkMentionsReadDto": {
+                "type": "object",
+                "properties": {
+                    "upToSeq": {
+                        "type": "number",
+                        "minimum": 1,
+                        "description": "Hasta la nota con ese `seq` (inclusive); sin él, todas las de la conversación"
+                    }
+                }
+            },
+            "MentionsReadResponseDto": {
+                "type": "object",
+                "properties": {
+                    "updated": {
+                        "type": "number",
+                        "example": 2,
+                        "description": "Menciones que se marcaron leídas"
+                    }
+                },
+                "required": [
+                    "updated"
                 ]
             },
             "EditMessageDto": {
@@ -79063,6 +79789,31 @@
                     "firstResponseTargetMinutes": {
                         "type": "number"
                     },
+                    "csatEnabled": {
+                        "type": "boolean",
+                        "description": "Encuesta de satisfacción al cerrar con un cliente"
+                    },
+                    "csatMessage": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "effectiveCsatMessage": {
+                        "type": "string",
+                        "description": "El texto del pedido de calificación que se usa (el propio o el de omisión), con sus variables sin completar"
+                    },
+                    "customerActions": {
+                        "type": "array",
+                        "description": "Los botones de acción que ve el cliente en el chat",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "where_is_my_order",
+                                "repeat_last_order",
+                                "payment_methods",
+                                "talk_to_person"
+                            ]
+                        }
+                    },
                     "openNow": {
                         "type": "boolean",
                         "description": "Si la empresa atiende ahora (horario y días sin atención)"
@@ -79089,6 +79840,10 @@
                     "ackMessage",
                     "effectiveAckMessage",
                     "firstResponseTargetMinutes",
+                    "csatEnabled",
+                    "csatMessage",
+                    "effectiveCsatMessage",
+                    "customerActions",
                     "openNow",
                     "nextOpenAt"
                 ]
@@ -79137,6 +79892,30 @@
                         "nullable": true,
                         "maxLength": 500,
                         "description": "Texto del aviso, con variables; `null`: «Recibimos tu mensaje. Alguien del equipo de {{empresa.nombre}} te va a atender a la brevedad.»"
+                    },
+                    "csatEnabled": {
+                        "type": "boolean",
+                        "description": "Encuesta de satisfacción (1 a 5) al cerrar una conversación con un cliente (prendida por omisión)"
+                    },
+                    "csatMessage": {
+                        "type": "string",
+                        "nullable": true,
+                        "maxLength": 500,
+                        "description": "Texto del pedido de calificación, con variables; `null`: «¿Cómo te atendimos en {{empresa.nombre}}? Tocá de 1 a 5 para calificar la conversación.»"
+                    },
+                    "customerActions": {
+                        "type": "array",
+                        "uniqueItems": true,
+                        "description": "Los botones de acción que ve el cliente en el chat, sin repetir: `where_is_my_order`, `repeat_last_order` (la abre la app), `payment_methods`, `talk_to_person`. Vacía: ninguno.",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "where_is_my_order",
+                                "repeat_last_order",
+                                "payment_methods",
+                                "talk_to_person"
+                            ]
+                        }
                     },
                     "firstResponseTargetMinutes": {
                         "type": "number",
@@ -79417,6 +80196,29 @@
                     "body"
                 ]
             },
+            "SendCustomerActionDto": {
+                "type": "object",
+                "properties": {
+                    "clientMessageId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Lo genera la app. El mismo id repetido devuelve el mensaje ya guardado (200)."
+                    },
+                    "key": {
+                        "type": "string",
+                        "enum": [
+                            "where_is_my_order",
+                            "repeat_last_order",
+                            "payment_methods",
+                            "talk_to_person"
+                        ]
+                    }
+                },
+                "required": [
+                    "clientMessageId",
+                    "key"
+                ]
+            },
             "OpenMyConversationDto": {
                 "type": "object",
                 "properties": {
@@ -79434,12 +80236,130 @@
                         "description": "Obligatorio con `order`; no va con `general`"
                     },
                     "firstMessage": {
-                        "$ref": "#/components/schemas/SendInboxMessageDto"
+                        "description": "El primer mensaje. Va esto o `firstAction`, uno de los dos (ninguno o los dos → 400).",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/SendInboxMessageDto"
+                            }
+                        ]
+                    },
+                    "firstAction": {
+                        "description": "Sólo el cliente (4e): abrir el chat tocando un botón de acción (`GET /v2/me/conversations/actions`). Se manda su texto predefinido como primer mensaje; `talk_to_person` además la deja esperando a una persona (el asistente no la toma). La de la app → 400 `ACTION_IS_APP_ONLY`; una que la empresa no muestra → 400 `ACTION_NOT_AVAILABLE`; el chofer → 403 `CUSTOMER_ONLY`. No va junto con `firstMessage`.",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/SendCustomerActionDto"
+                            }
+                        ]
                     }
                 },
                 "required": [
-                    "subjectType",
-                    "firstMessage"
+                    "subjectType"
+                ]
+            },
+            "CustomerActionListResponseDto": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "description": "Las que muestra la empresa, en el orden del catálogo; vacía si no muestra ninguna o si no atiende por chat",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/InboxActionDto"
+                        }
+                    }
+                },
+                "required": [
+                    "items"
+                ]
+            },
+            "RateConversationDto": {
+                "type": "object",
+                "properties": {
+                    "ratingId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "La encuesta que se responde: el `ratingId` del `payload` de su mensaje `csat_request` (cada cierre tiene la suya). De otra conversación o de otra persona → 404."
+                    },
+                    "score": {
+                        "type": "number",
+                        "minimum": 1,
+                        "maximum": 5,
+                        "example": 5
+                    },
+                    "comment": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 280,
+                        "example": "Muy rápido, gracias"
+                    }
+                },
+                "required": [
+                    "ratingId",
+                    "score"
+                ]
+            },
+            "ConversationRatingResponseDto": {
+                "type": "object",
+                "properties": {
+                    "ratingId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "pending",
+                            "answered",
+                            "expired",
+                            "cancelled"
+                        ],
+                        "description": "Pendiente (se puede responder), respondida, vencida (48 h) o anulada (la conversación se reabrió antes de que la respondieran)"
+                    },
+                    "score": {
+                        "type": "number",
+                        "nullable": true,
+                        "minimum": 1,
+                        "maximum": 5
+                    },
+                    "comment": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "servedBy": {
+                        "type": "string",
+                        "enum": [
+                            "assistant",
+                            "team",
+                            "none"
+                        ],
+                        "description": "Sólo para el personal: quién atendió el tramo calificado (desde la apertura o la reapertura): el equipo (alguien escribió), el asistente con IA (sólo él) o nadie"
+                    },
+                    "requestedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "expiresAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "answeredAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "conversationId": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                },
+                "required": [
+                    "ratingId",
+                    "status",
+                    "score",
+                    "comment",
+                    "requestedAt",
+                    "expiresAt",
+                    "answeredAt",
+                    "conversationId"
                 ]
             },
             "PlatformResponseDto": {

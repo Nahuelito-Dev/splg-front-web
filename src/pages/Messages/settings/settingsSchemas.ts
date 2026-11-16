@@ -1,9 +1,11 @@
 import { z } from 'zod';
+import type { CustomerActionKey } from '../../../features/chat/inbox/messageExtras';
 import {
   ASSISTANT_NAME_MAX,
   ASSISTANT_NAME_MIN,
   ASSISTANT_NAME_VARIABLES,
   AUTO_MESSAGE_MAX,
+  CSAT_MESSAGE_MAX,
   FIRST_RESPONSE_MAX,
   FIRST_RESPONSE_MIN,
   HOLIDAY_REASON_MAX,
@@ -185,6 +187,42 @@ export const autoRepliesSchema = z
   });
 
 export type AutoRepliesValues = z.infer<typeof autoRepliesSchema>;
+
+/**
+ * La encuesta al cerrar (`UpdateChatSettingsDto.csatEnabled`/`csatMessage`): el texto, vacío vuelve al de omisión; si
+ * no, hasta 500 caracteres y sólo las variables que conoce el back. Apagada, el texto no se manda ni se valida.
+ */
+export const surveySchema = z
+  .object({ csatEnabled: z.boolean(), csatMessage: z.string() })
+  .superRefine((values, ctx) => {
+    if (!values.csatEnabled) return;
+    if (charCount(values.csatMessage.trim()) > CSAT_MESSAGE_MAX) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['csatMessage'],
+        message: `Hasta ${CSAT_MESSAGE_MAX} caracteres`,
+      });
+    }
+    variablesRule(values.csatMessage, ctx, 'csatMessage');
+  });
+
+export type SurveyValues = z.infer<typeof surveySchema>;
+
+/** Los botones del chat del cliente (`customerActions`): del catálogo, sin repetir; vacía, ninguno. */
+export const CUSTOMER_ACTION_KEYS = [
+  'where_is_my_order',
+  'repeat_last_order',
+  'payment_methods',
+  'talk_to_person',
+] as const satisfies readonly CustomerActionKey[];
+
+export const customerActionsSchema = z.object({
+  customerActions: z
+    .array(z.enum(CUSTOMER_ACTION_KEYS))
+    .refine((keys) => new Set(keys).size === keys.length, 'Un botón no puede repetirse'),
+});
+
+export type CustomerActionsValues = z.infer<typeof customerActionsSchema>;
 
 export const templateSchema = z
   .object({

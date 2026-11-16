@@ -8,11 +8,18 @@ import { useThread, type ThreadSource } from '../../../services/queries/chatThre
 import type { SendExtras } from '../../../services/queries/chatThread';
 import { errorMessage, toApiError } from '../../../services/api/errors';
 import { notify } from '../../../utils/notifications';
-import { readDraft, withRescuedText, writeDraft } from '../composerDraft';
+import {
+  readDraft,
+  readNoteDraft,
+  withRescuedText,
+  writeDraft,
+  writeNoteDraft,
+  type MentionToken,
+} from '../composerDraft';
 import { lastCounterpartSeq, lastSeqOf, type ChatMessage, type PendingMessage } from '../thread';
 import { useTyping } from '../typing';
 import { useConversationRoom } from '../useConversationRoom';
-import { Composer, type ComposerBanner, type QuickReply } from './Composer';
+import { Composer, type ComposerBanner, type MentionSource, type QuickReply } from './Composer';
 import { MessageList } from './MessageList';
 import { ThreadSkeleton } from './ThreadSkeleton';
 import type { MessageContext } from './MessageItem';
@@ -34,6 +41,10 @@ export interface ChatThreadProps {
   canWrite: boolean;
   readOnlyNotice?: ReactNode;
   allowInternal?: boolean;
+  /** A quiénes se puede mencionar en una nota interna (bandeja). */
+  mentionSource?: MentionSource;
+  /** Avisa al pasar entre mensaje y nota interna. */
+  onNoteModeChange?: (internal: boolean) => void;
   quickReplies?: QuickReply[];
   /** «Responder» (citar) un mensaje (bandeja, D-C25). */
   allowReply?: boolean;
@@ -70,6 +81,8 @@ export const ChatThread = ({
   canWrite,
   readOnlyNotice,
   allowInternal,
+  mentionSource,
+  onNoteModeChange,
   quickReplies,
   empty,
   reloadKey,
@@ -95,9 +108,15 @@ export const ChatThread = ({
   const typing = useTyping(conversationId);
   const visible = useVisible();
   const [atBottom, setAtBottom] = useState(true);
-  const [draft, setDraft] = useState<{ text: string; nonce: number } | null>(null);
-  // El texto de una edición que la API rechazó: lo suma el compositor a su borrador (`Composer.rescue`).
-  const [rescue, setRescue] = useState<{ text: string; nonce: number } | null>(null);
+  // Lo que vuelve al compositor lleva su modo: una nota vuelve al borrador de las notas, nunca al del cliente.
+  const [draft, setDraft] = useState<{
+    text: string;
+    nonce: number;
+    internal?: boolean;
+    mentions?: MentionToken[];
+  } | null>(null);
+  // El texto de una edición que la API rechazó: lo suma el compositor al borrador de su modo (`Composer.rescue`).
+  const [rescue, setRescue] = useState<{ text: string; nonce: number; internal?: boolean } | null>(null);
   // La respuesta de una edición llega tarde: puede que ya se esté editando otro mensaje o que el hilo ya no esté.
   const editingSeqRef = useRef(editingSeq);
   editingSeqRef.current = editingSeq;
@@ -183,20 +202,33 @@ export const ChatThread = ({
               // compositor si está a la vista, guardado si se está editando otro mensaje o ya se salió del hilo. Se
               // relee el hilo para que «Editar» deje de ofrecerse (la API ya no da `canEdit`).
               const reason = errorMessage(cause).replace(/\.$/, '');
+              // Una nota rechazada vuelve al borrador de las notas: nunca al mensaje al cliente.
+              const note = target.visibility === 'internal';
               const mounted = mountedRef.current;
               const editingOther = mounted && editingSeqRef.current !== null && editingSeqRef.current !== target.seq;
               if (mounted) {
                 setEditingSeq((seq) => (seq === target.seq ? null : seq));
-                setRescue({ text: body, nonce: Date.now() });
+                setRescue({ text: body, nonce: Date.now(), internal: note });
                 void reloadRef.current();
               } else {
-                writeDraft(draftKey, withRescuedText(readDraft(draftKey), body));
+                if (note) {
+                  const saved = readNoteDraft(draftKey);
+                  writeNoteDraft(draftKey, { text: withRescuedText(saved.text, body), mentions: saved.mentions });
+                } else {
+                  writeDraft(draftKey, withRescuedText(readDraft(draftKey), body));
+                }
               }
-              const where = !mounted
-                ? 'tu texto quedó como borrador de esa conversación.'
-                : editingOther
-                  ? 'tu texto quedó como borrador: vuelve al cuadro cuando termines de editar.'
-                  : 'tu texto quedó en el cuadro para enviarlo.';
+              const where = note
+                ? !mounted
+                  ? 'tu texto quedó como borrador de nota de esa conversación.'
+                  : editingOther
+                    ? 'tu texto quedó como borrador de nota: vuelve cuando termines de editar.'
+                    : 'tu texto quedó en el cuadro de la nota interna para enviarlo.'
+                : !mounted
+                  ? 'tu texto quedó como borrador de esa conversación.'
+                  : editingOther
+                    ? 'tu texto quedó como borrador: vuelve al cuadro cuando termines de editar.'
+                    : 'tu texto quedó en el cuadro para enviarlo.';
               notify.warn(`${reason}. No se guardó la edición: ${where}`);
               return;
             }
@@ -204,6 +236,11 @@ export const ChatThread = ({
             // Un corte: lo escrito no se pierde, vuelve al compositor para reintentar.
             setEditText({ text: body, nonce: Date.now() });
           });
+        return;
+      }
+      // Una nota interna no cita mensajes (el back no lo admite): la respuesta en curso sigue para el próximo mensaje.
+      if (extras?.visibility === 'internal') {
+        send(body, extras);
         return;
       }
       send(body, { ...extras, ...(replyTo ? { replyToSeq: replyTo.seq } : {}) });
@@ -221,14 +258,23 @@ export const ChatThread = ({
     void reloadRef.current();
   }, [reloadKey]);
 
-  const onTyping = useCallback(() => {
-    if (conversationId) emit('chat:typing', { conversationId });
-  }, [conversationId, emit]);
+  // Escribiendo una nota va siempre con la marca `internal`: el back no se lo avisa al cliente ni al chofer.
+  const onTyping = useCallback(
+    (internal: boolean) => {
+      if (conversationId) emit('chat:typing', internal ? { conversationId, internal: true } : { conversationId });
+    },
+    [conversationId, emit],
+  );
 
   const onDiscard = useCallback(
     (pending: PendingMessage) => {
       discard(pending.clientMessageId);
-      setDraft({ text: pending.body, nonce: Date.now() });
+      const internal = pending.visibility === 'internal';
+      setDraft({
+        text: pending.body,
+        nonce: Date.now(),
+        ...(internal ? { internal, mentions: pending.mentionTokens ?? [] } : {}),
+      });
     },
     [discard],
   );
@@ -239,7 +285,9 @@ export const ChatThread = ({
 
   const partyName = ctx.partyName;
   const banner: ComposerBanner | null = editing
-    ? { kind: 'edit', title: 'Editando tu mensaje', preview: editing.body ?? '' }
+    ? editing.visibility === 'internal'
+      ? { kind: 'edit', title: 'Editando tu nota interna', preview: editing.body ?? '', internal: true }
+      : { kind: 'edit', title: 'Editando tu mensaje', preview: editing.body ?? '' }
     : replyTo
       ? {
           kind: 'reply',
@@ -280,6 +328,8 @@ export const ChatThread = ({
           onTyping={conversationId ? onTyping : undefined}
           quickReplies={quickReplies}
           allowInternal={allowInternal}
+          mentionSource={mentionSource}
+          onNoteModeChange={onNoteModeChange}
           draft={draft}
           insert={insert}
           banner={banner}

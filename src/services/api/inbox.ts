@@ -10,6 +10,7 @@ import type {
   CompanyTemplateList,
   CreateClaimFromConversationBody,
   CreateCompanyTemplateBody,
+  CsatSummary,
   InboxAssigneeList,
   InboxConversation,
   InboxList,
@@ -17,8 +18,11 @@ import type {
   InboxMessageList,
   InboxSuggestions,
   InboxSummary,
+  MarkMentionsReadBody,
+  MentionsRead,
   OpenConversation,
   OpenStaffConversationBody,
+  SendInternalNoteBody,
   SendStaffMessageBody,
   UpdateChatBusinessHoursBody,
   UpdateChatSettingsBody,
@@ -71,6 +75,13 @@ export const DEFAULT_ACK_MESSAGE =
 /** Motivo de un día sin atención (`ChatHolidayDto.reason`). */
 export const HOLIDAY_REASON_MIN = 2;
 export const HOLIDAY_REASON_MAX = 120;
+/** Texto del pedido de calificación al cerrar (`UpdateChatSettingsDto.csatMessage`): de 1 a 500. */
+export const CSAT_MESSAGE_MAX = 500;
+/** El pedido de calificación de omisión del back (`ENCUESTA_POR_DEFECTO`). */
+export const DEFAULT_CSAT_MESSAGE =
+  '¿Cómo te atendimos en {{empresa.nombre}}? Tocá de 1 a 5 para calificar la conversación.';
+/** Personas que puede mencionar una nota interna (`SendInternalNoteDto.mentions`). */
+export const NOTE_MENTIONS_MAX = 10;
 /** Las variables que entiende el back en respuestas guardadas y automáticas (otra → 400 `TEMPLATE_VARIABLE_UNKNOWN`). */
 export const TEMPLATE_VARIABLES = ['cliente.nombre', 'pedido.numero', 'empresa.nombre', 'horario.proximo'] as const;
 
@@ -84,6 +95,8 @@ export interface InboxQuery {
   orderId?: string;
   /** `true`: sólo las que el asistente pasó a una persona (`awaitingHumanSince`). */
   awaiting?: boolean;
+  /** «Me mencionaron»: `me`, con alguna nota que menciona a quien pide; `unread`, con alguna mención sin leer. */
+  mentioned?: 'me' | 'unread';
   q?: string;
   limit?: number;
   offset?: number;
@@ -152,6 +165,36 @@ export const sendConversationMessage = async (
   body: SendStaffMessageBody,
 ): Promise<InboxMessage> => {
   const { data } = await http.post<InboxMessage>(`/conversations/${id(conversationId)}/messages`, body, V2);
+  return data;
+};
+
+/**
+ * POST …/notes: una nota interna (sólo la ve el personal; nunca le llega al cliente ni al chofer) con sus menciones.
+ * El mismo `clientMessageId` devuelve la ya guardada (200) sin volver a avisar.
+ */
+export const sendConversationNote = async (
+  conversationId: string,
+  body: SendInternalNoteBody,
+): Promise<InboxMessage> => {
+  const { data } = await http.post<InboxMessage>(`/conversations/${id(conversationId)}/notes`, body, V2);
+  return data;
+};
+
+/** POST …/mentions/read: marca leídas las menciones a quien pide en esa conversación (todas, o hasta `upToSeq`). */
+export const markMentionsRead = async (
+  conversationId: string,
+  body: MarkMentionsReadBody = {},
+): Promise<MentionsRead> => {
+  const { data } = await http.post<MentionsRead>(`/conversations/${id(conversationId)}/mentions/read`, body, V2);
+  return data;
+};
+
+/**
+ * GET /v2/conversations/csat: el resumen de la encuesta de satisfacción del período (sin `from`, los últimos 30 días):
+ * pedidas, respondidas, vencidas, promedio, CSAT y lo mismo del asistente y del equipo.
+ */
+export const getCsatSummary = async (params: { from?: string; to?: string } = {}): Promise<CsatSummary> => {
+  const { data } = await http.get<CsatSummary>('/conversations/csat', { ...V2, params });
   return data;
 };
 

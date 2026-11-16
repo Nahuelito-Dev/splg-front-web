@@ -10682,7 +10682,7 @@ export interface paths {
     };
     /**
      * La bandeja: conversaciones con clientes y choferes
-     * @description Sólo los canales que atiende quien pide. Ordenadas por el último mensaje; con `assigned=none`, primero las que esperan a una persona (el asistente con IA las derivó; la que espera hace más, primero). `awaiting=true` deja sólo las que esperan. `counts` son las abiertas de esos canales: sin asignar, asignadas a quien pide y todas.
+     * @description Sólo los canales que atiende quien pide. Ordenadas por el último mensaje; con `assigned=none`, primero las que esperan a una persona (el asistente con IA las derivó; la que espera hace más, primero). `awaiting=true` deja sólo las que esperan. `mentioned=me` es la vista «Me mencionaron» (con alguna nota que menciona a quien pide; `mentioned=unread`, sólo con menciones sin leer). `counts` son las abiertas de esos canales: sin asignar, asignadas a quien pide y todas.
      */
     get: operations['CompanyInboxController_listar'];
     put?: never;
@@ -10726,9 +10726,29 @@ export interface paths {
     };
     /**
      * Resumen de la bandeja (insignias)
-     * @description Para la insignia del menú «Mensajes» y las pestañas: de las conversaciones abiertas de los canales que atiende quien pide (`mensajes.clientes`, `mensajes.choferes`), cuántas están sin asignar, cuántas son suyas, cuántas esperan a una persona y cuántas tienen algo sin leer para quien pide. Sólo de su empresa.
+     * @description Para la insignia del menú «Mensajes» y las pestañas: de las conversaciones abiertas de los canales que atiende quien pide (`mensajes.clientes`, `mensajes.choferes`), cuántas están sin asignar, cuántas son suyas, cuántas esperan a una persona, cuántas tienen algo sin leer para quien pide (sin las asignadas a otra persona), cuántas piden atención (sin asignar ∪ esperando persona ∪ sin leer, sin duplicar) y cuántas menciones sin leer tiene en notas internas. Sólo de su empresa.
      */
     get: operations['CompanyInboxController_resumen'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/conversations/csat': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Resumen de la encuesta de satisfacción
+     * @description De las encuestas pedidas al cerrar conversaciones con clientes en el período (por cuándo se pidieron; sin `from`, los últimos 30 días): pedidas, respondidas, vencidas, promedio (1 a 5), CSAT (proporción de 4 y 5) y lo mismo de las atendidas sólo por el asistente con IA y de las atendidas por el equipo. Sólo de la empresa de quien pide. Es lo que lee el tablero (B4).
+     */
+    get: operations['CompanyInboxController_csat'];
     put?: never;
     post?: never;
     delete?: never;
@@ -10818,6 +10838,46 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/conversations/{id}/notes': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Dejar una nota interna (con @menciones)
+     * @description Sólo la ve el personal de la empresa: nunca le llega al cliente ni al chofer (ni por HTTP ni por el socket), ni al asistente con IA. No cuenta como primera respuesta, no saca a la conversación de «esperando persona» ni cambia su vista previa. `mentions` avisa a cada persona mencionada (aviso del panel sólo para ella) y la nota queda en su «Me mencionaron» hasta que la lee. Se edita como un mensaje propio (`PATCH :id/messages/:messageId`, sólo su autor, 15 minutos). Reintentar con el mismo `clientMessageId` devuelve la nota ya guardada (200) sin volver a avisar.
+     */
+    post: operations['CompanyInboxController_nota'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/conversations/{id}/mentions/read': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Marcar leídas mis menciones en la conversación
+     * @description Las menciones a quien pide en las notas internas de la conversación (todas, o hasta la nota `upToSeq`). Leer la conversación (`POST :id/read`) también las marca hasta ese mensaje. Idempotente: las ya leídas no cuentan.
+     */
+    post: operations['CompanyInboxController_leerMenciones'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v2/conversations/{id}/messages/{messageId}': {
     parameters: {
       query?: never;
@@ -10869,7 +10929,7 @@ export interface paths {
     put?: never;
     /**
      * Cerrar
-     * @description Queda en lectura. El cliente o el chofer que vuelva a escribir abre otra; la empresa la puede reabrir.
+     * @description Queda en lectura. El cliente o el chofer que vuelva a escribir abre otra; la empresa la puede reabrir. Con un cliente, si la empresa tiene prendida la encuesta, sale el mensaje `csat_request` para que califique (1 a 5, hasta 48 h).
      */
     post: operations['CompanyInboxController_cerrar'];
     delete?: never;
@@ -11049,6 +11109,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/me/conversations/actions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Botones de acción del chat (cliente)
+     * @description Para mostrar al abrir un chat nuevo: los que muestra la empresa del `X-Distributor` («¿Dónde está mi pedido?», «Repetir mi último pedido», «Medios de pago», «Hablar con una persona»), en orden. `kind: app` lo abre la app (el chat no crea pedidos). Lista vacía si la empresa no muestra ninguno o no atiende por chat. También llegan en `actions` del primer mensaje del asistente de cada conversación.
+     */
+    get: operations['MyConversationsController_acciones'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v2/me/conversations/{id}': {
     parameters: {
       query?: never;
@@ -11112,6 +11192,46 @@ export interface paths {
      * @description Sólo texto propio, hasta 15 minutos después de enviarlo y con la conversación abierta. No se edita si la conversación es por un pedido, si el mensaje forma parte de un reclamo o de un ticket, o si ya respondieron citándolo (`canEdit` lo anticipa con la misma regla). Queda la marca `editedAt`; la empresa lo recibe en vivo.
      */
     patch: operations['MyConversationsController_editar'];
+    trace?: never;
+  };
+  '/api/v2/me/conversations/{id}/actions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Tocar un botón de acción (cliente)
+     * @description Manda el mensaje predefinido de la acción como un mensaje del cliente (lo atiende el asistente o el equipo como siempre). `talk_to_person` además pasa la conversación a una persona (el asistente no contesta). Las de la app (`repeat_last_order`) no se mandan: 400. Reintentar con el mismo `clientMessageId` devuelve el mensaje ya guardado (200).
+     */
+    post: operations['MyConversationsController_accion'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/me/conversations/{id}/rating': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Calificar la conversación (cliente)
+     * @description La respuesta a ESA encuesta (`ratingId` del `payload` de su mensaje `csat_request`; cada cierre tiene la suya): 1 a 5 y un comentario opcional. Una sola vez, con la conversación cerrada y hasta 48 h después del cierre; si la empresa la reabrió, esa encuesta quedó anulada. Reintentar con la misma respuesta devuelve la guardada (200). Si en vez de calificar el cliente escribe, abre otra conversación como siempre. Al cliente no le llega `servedBy`.
+     */
+    post: operations['MyConversationsController_calificar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
   '/api/v2/me/conversations/{id}/read': {
@@ -21406,7 +21526,7 @@ export interface components {
       /** @enum {string} */
       status: 'running' | 'ok' | 'partial' | 'failed' | 'skipped';
       /**
-       * @description Lo que generó la corrida (casos, avisos, ofertas...), según el proceso
+       * @description Lo que generó la corrida (casos, avisos, ofertas...), según el proceso. `errors`: elementos que fallaron en esta corrida (la deja `partial`; se reintentan en la próxima). `persistentFailures` (sólo si hay): de esos, los que vienen fallando hace 3 corridas seguidas o más; al llegar a 3 se avisa una vez a la plataforma.
        * @example {
        *       "processed": 3,
        *       "errors": 0
@@ -21585,7 +21705,7 @@ export interface components {
       /** @enum {string} */
       status: 'running' | 'ok' | 'partial' | 'failed' | 'skipped';
       /**
-       * @description Lo que generó la corrida (casos, avisos, ofertas...), según el proceso
+       * @description Lo que generó la corrida (casos, avisos, ofertas...), según el proceso. `errors`: elementos que fallaron en esta corrida (la deja `partial`; se reintentan en la próxima). `persistentFailures` (sólo si hay): de esos, los que vienen fallando hace 3 corridas seguidas o más; al llegar a 3 se avisa una vez a la plataforma.
        * @example {
        *       "processed": 3,
        *       "errors": 0
@@ -24607,6 +24727,8 @@ export interface components {
         | 'reopened'
         | 'driver_changed'
         | 'claim_created'
+        | 'handoff_note'
+        | 'csat_request'
         | null;
       /**
        * @description `internal` sólo llega a la plataforma
@@ -24802,6 +24924,8 @@ export interface components {
       assistantRepliesPerConversation: number;
       /** @description Tope de tokens por mes del asistente con IA, por empresa y para el soporte */
       assistantMonthlyTokenLimit: number;
+      /** @description Cupo de tokens por mes del asistente con IA de cada empresa en el soporte; nunca mayor que `assistantMonthlyTokenLimit` */
+      assistantMonthlyTokenLimitPerCompany: number;
       /** @description Lo que costaría por mes (por empresa, y el soporte aparte) consumir todo `assistantMonthlyTokenLimit`, en dólares. Lo calcula el back; el panel lo muestra tal cual. */
       assistantMonthlyCostEstimateUsd: components['schemas']['AssistantCostEstimateDto'];
       chatInactivityHours: number;
@@ -24832,6 +24956,8 @@ export interface components {
       assistantRepliesPerConversation?: number;
       /** @description Tope de tokens por mes del asistente con IA, para cada empresa y para el soporte (entrada, salida y caché). Al llegar, sólo las respuestas automáticas fijas y pasar a una persona. */
       assistantMonthlyTokenLimit?: number;
+      /** @description Cupo de tokens por mes del asistente con IA de cada empresa en el soporte (entrada, salida y caché). No puede superar `assistantMonthlyTokenLimit` (400 si no, también si se baja el total por debajo del cupo guardado). Al llegar, esa empresa recibe sólo las respuestas automáticas fijas y pasa a una persona; las demás siguen con el asistente. */
+      assistantMonthlyTokenLimitPerCompany?: number;
       /** @description Horas sin mensajes para cerrar el chat */
       chatInactivityHours?: number;
       resolvedCloseDays?: number;
@@ -24943,6 +25069,28 @@ export interface components {
       userId: string;
       fullName: string;
     };
+    InboxCsatDto: {
+      /** Format: uuid */
+      ratingId: string;
+      /**
+       * @description Pendiente (se puede responder), respondida, vencida (48 h) o anulada (la conversación se reabrió antes de que la respondieran)
+       * @enum {string}
+       */
+      status: 'pending' | 'answered' | 'expired' | 'cancelled';
+      score: number | null;
+      comment: string | null;
+      /**
+       * @description Sólo para el personal: quién atendió el tramo calificado (desde la apertura o la reapertura): el equipo (alguien escribió), el asistente con IA (sólo él) o nadie
+       * @enum {string}
+       */
+      servedBy?: 'assistant' | 'team' | 'none';
+      /** Format: date-time */
+      requestedAt: string;
+      /** Format: date-time */
+      expiresAt: string;
+      /** Format: date-time */
+      answeredAt: string | null;
+    };
     InboxLastMessageDto: {
       seq: number;
       preview: string | null;
@@ -24989,6 +25137,11 @@ export interface components {
       awaitingHumanSince?: string | null;
       /** @description Sólo para el personal: minutos hábiles (horario de atención, sin días sin atención) entre el primer mensaje del cliente o del chofer y la primera respuesta; `null` si todavía no hubo las dos cosas */
       firstResponseBusinessMinutes?: number | null;
+      /** @description Sólo para el personal: menciones sin leer a quien pide en las notas internas de esta conversación («Me mencionaron») */
+      unreadMentions?: number;
+      /** @description Sólo en las conversaciones con un cliente (C3), para el personal y para el cliente: la encuesta del último cierre; `null` si no hubo */
+      csat?: components['schemas']['InboxCsatDto'] | null;
+      /** @description El último mensaje visible para las dos puntas (nunca una nota interna) */
       lastMessage: components['schemas']['InboxLastMessageDto'] | null;
       /** @description Sin leer para quien pide */
       unreadCount: number;
@@ -25066,6 +25219,31 @@ export interface components {
        */
       userId?: string;
     };
+    InboxMentionDto: {
+      /** Format: uuid */
+      userId: string;
+      /** @example Juan Pérez */
+      fullName: string;
+    };
+    InboxActionDto: {
+      /**
+       * @example where_is_my_order
+       * @enum {string}
+       */
+      key: 'where_is_my_order' | 'repeat_last_order' | 'payment_methods' | 'talk_to_person';
+      /** @example ¿Dónde está mi pedido? */
+      label: string;
+      /**
+       * @description `message`: con un toque la app llama a `POST /v2/me/conversations/:id/actions` (manda el mensaje predefinido); `handoff`: igual, y la conversación pasa a una persona; `app`: la abre la app (p. ej. repetir el último pedido arma el pedido en su pantalla), el chat no la ejecuta
+       * @enum {string}
+       */
+      kind: 'message' | 'handoff' | 'app';
+      /**
+       * @description El mensaje que se manda al tocarlo (la app lo puede mostrar como burbuja enviada); `null` en las de la app
+       * @example ¿Dónde está mi pedido?
+       */
+      text: string | null;
+    };
     InboxReplyToDto: {
       seq: number;
       /** @enum {string} */
@@ -25090,6 +25268,12 @@ export interface components {
       canEdit: boolean;
       /** @enum {string} */
       kind: 'text' | 'system' | 'auto_reply' | 'quoted_excerpt';
+      /** @description Nota interna: sólo la ve el personal de la empresa (al cliente y al chofer nunca les llega). La del personal es `kind: text`; la del asistente con IA al derivar, `kind: system` con `systemCode: handoff_note` y el resumen y el motivo en `body` */
+      internal: boolean;
+      /** @description Sólo para el personal, en las notas internas: a quiénes menciona */
+      mentions?: components['schemas']['InboxMentionDto'][];
+      /** @description Sólo para el cliente, en el primer mensaje del asistente de la conversación: los botones de acción que muestra la empresa (4e) */
+      actions?: components['schemas']['InboxActionDto'][];
       /** @description Nulo si se redactó o si lo borró su autor */
       body: string | null;
       /** @description Respuesta rápida o automática que se usó */
@@ -25107,6 +25291,8 @@ export interface components {
         | 'reopened'
         | 'driver_changed'
         | 'claim_created'
+        | 'handoff_note'
+        | 'csat_request'
         | null;
       /** @description Lo mandó el asistente (fuera de horario, aviso de recibido): mostrarlo con la marca «Respuesta automática» */
       automated: boolean;
@@ -25115,7 +25301,7 @@ export interface components {
        * @example Asistente de Gas del Sur
        */
       senderLabel: string | null;
-      /** @description `claim_created`: `{ claimId }`; respuesta fuera de horario: `{ until, senderLabel }` (fin del período cerrado y firma); aviso de recibido: `{ senderLabel }` */
+      /** @description `claim_created`: `{ claimId }`; respuesta fuera de horario: `{ until, senderLabel }` (fin del período cerrado y firma); aviso de recibido: `{ senderLabel }`; encuesta (`csat_request`): `{ ratingId, expiresAt, scale: 5 }`; respuesta del asistente con IA: `{ senderLabel, ai: { model, handoff?, sources? } }`, donde `ai.sources` (sólo para el personal: al cliente nunca le llega) son las fuentes de la respuesta, `[{ type: 'faq', faqId, question } | { type: 'tool', tool, orderNumber? }]`; nota de derivación (`handoff_note`, sólo el personal): `{ ai: { model, handoff: true }, handoff: { reason, reasonLabel, summary } }` (`summary` nulo si el modelo no corrió) */
       payload: {
         [key: string]: unknown;
       } | null;
@@ -25171,10 +25357,66 @@ export interface components {
        */
       awaitingHuman: number;
       /**
-       * @description Abiertas con algún mensaje sin leer para quien pide (cuenta conversaciones, no mensajes): lo del cliente o el chofer posterior a su lectura, sin avisos del sistema, respuestas automáticas ni mensajes borrados
+       * @description Abiertas con algún mensaje sin leer para quien pide (cuenta conversaciones, no mensajes): lo del cliente o el chofer posterior a su lectura, sin avisos del sistema, respuestas automáticas, notas internas ni mensajes borrados. No cuenta las asignadas a otra persona (ésas las atiende ella).
        * @example 4
        */
       unread: number;
+      /**
+       * @description Abiertas que piden atención, contadas una vez: sin asignar, esperando a una persona o con algo sin leer (la regla de `unread`). Es la insignia del menú «Mensajes».
+       * @example 5
+       */
+      attention: number;
+      /**
+       * @description Menciones sin leer a quien pide en notas internas de los canales que atiende (vista «Me mencionaron»)
+       * @example 1
+       */
+      mentions: number;
+    };
+    CsatGroupDto: {
+      /** @description Encuestas respondidas */
+      answered: number;
+      /**
+       * @description Promedio de 1 a 5; `null` sin respuestas
+       * @example 4.5
+       */
+      average: number | null;
+      /**
+       * @description CSAT: proporción de 4 y 5 sobre las respondidas (0 a 1)
+       * @example 0.8
+       */
+      csat: number | null;
+    };
+    CsatSummaryResponseDto: {
+      /** Format: date-time */
+      from: string;
+      /** Format: date-time */
+      to: string;
+      /** @description Encuestas pedidas (cierres con encuesta), sin las anuladas */
+      requested: number;
+      answered: number;
+      /** @description Vencidas sin responder (sin las anuladas) */
+      expired: number;
+      /** @description Anuladas: la conversación se reabrió antes de que las respondieran. No cuentan como pedidas ni como vencidas */
+      cancelled: number;
+      average: number | null;
+      csat: number | null;
+      /**
+       * @description Cantidad de respuestas por puntaje
+       * @example {
+       *       "1": 0,
+       *       "2": 1,
+       *       "3": 2,
+       *       "4": 5,
+       *       "5": 12
+       *     }
+       */
+      byScore: {
+        [key: string]: number;
+      };
+      /** @description Atendidas sólo por el asistente con IA */
+      assistant: components['schemas']['CsatGroupDto'];
+      /** @description Atendidas por el equipo */
+      team: components['schemas']['CsatGroupDto'];
     };
     InboxSuggestionDto: {
       /** Format: uuid */
@@ -25212,6 +25454,28 @@ export interface components {
       items: components['schemas']['InboxMessageDto'][];
       /** @description Hay más en la dirección pedida */
       hasMore: boolean;
+    };
+    SendInternalNoteDto: {
+      /**
+       * Format: uuid
+       * @description Lo genera quien escribe. El mismo id repetido devuelve la nota ya guardada (200) sin duplicarla ni volver a avisar.
+       */
+      clientMessageId: string;
+      /** @example @Juan fijate si el chofer pasó por la casa */
+      body: string;
+      /** @description Ids de usuario de las personas del personal que se mencionan (hasta 10, sin repetir). Cada una tiene que atender el canal de la conversación (la misma regla que `assignees`); si no → 400 `MENTION_NOT_ALLOWED`. */
+      mentions?: string[];
+    };
+    MarkMentionsReadDto: {
+      /** @description Hasta la nota con ese `seq` (inclusive); sin él, todas las de la conversación */
+      upToSeq?: number;
+    };
+    MentionsReadResponseDto: {
+      /**
+       * @description Menciones que se marcaron leídas
+       * @example 2
+       */
+      updated: number;
     };
     EditMessageDto: {
       body: string;
@@ -25263,6 +25527,13 @@ export interface components {
       ackMessage: string | null;
       effectiveAckMessage: string;
       firstResponseTargetMinutes: number;
+      /** @description Encuesta de satisfacción al cerrar con un cliente */
+      csatEnabled: boolean;
+      csatMessage: string | null;
+      /** @description El texto del pedido de calificación que se usa (el propio o el de omisión), con sus variables sin completar */
+      effectiveCsatMessage: string;
+      /** @description Los botones de acción que ve el cliente en el chat */
+      customerActions: ('where_is_my_order' | 'repeat_last_order' | 'payment_methods' | 'talk_to_person')[];
       /** @description Si la empresa atiende ahora (horario y días sin atención) */
       openNow: boolean;
       /**
@@ -25291,6 +25562,12 @@ export interface components {
       ackEnabled?: boolean;
       /** @description Texto del aviso, con variables; `null`: «Recibimos tu mensaje. Alguien del equipo de {{empresa.nombre}} te va a atender a la brevedad.» */
       ackMessage?: string | null;
+      /** @description Encuesta de satisfacción (1 a 5) al cerrar una conversación con un cliente (prendida por omisión) */
+      csatEnabled?: boolean;
+      /** @description Texto del pedido de calificación, con variables; `null`: «¿Cómo te atendimos en {{empresa.nombre}}? Tocá de 1 a 5 para calificar la conversación.» */
+      csatMessage?: string | null;
+      /** @description Los botones de acción que ve el cliente en el chat, sin repetir: `where_is_my_order`, `repeat_last_order` (la abre la app), `payment_methods`, `talk_to_person`. Vacía: ninguno. */
+      customerActions?: ('where_is_my_order' | 'repeat_last_order' | 'payment_methods' | 'talk_to_person')[];
       /** @description Objetivo propio de primera respuesta, en minutos hábiles */
       firstResponseTargetMinutes?: number;
     };
@@ -25389,6 +25666,15 @@ export interface components {
       /** @description Responder a un mensaje (D-C25): el `seq` de un mensaje anterior de la MISMA conversación. Uno que no existe ahí → 400 `REPLY_TO_INVALID`. */
       replyToSeq?: number;
     };
+    SendCustomerActionDto: {
+      /**
+       * Format: uuid
+       * @description Lo genera la app. El mismo id repetido devuelve el mensaje ya guardado (200).
+       */
+      clientMessageId: string;
+      /** @enum {string} */
+      key: 'where_is_my_order' | 'repeat_last_order' | 'payment_methods' | 'talk_to_person';
+    };
     OpenMyConversationDto: {
       /**
        * @description `general`: con la empresa (una abierta por persona: si ya hay una, se agrega el mensaje y responde 200). `order`: por un pedido propio (`orderId`).
@@ -25400,7 +25686,49 @@ export interface components {
        * @description Obligatorio con `order`; no va con `general`
        */
       orderId?: string;
-      firstMessage: components['schemas']['SendInboxMessageDto'];
+      /** @description El primer mensaje. Va esto o `firstAction`, uno de los dos (ninguno o los dos → 400). */
+      firstMessage?: components['schemas']['SendInboxMessageDto'];
+      /** @description Sólo el cliente (4e): abrir el chat tocando un botón de acción (`GET /v2/me/conversations/actions`). Se manda su texto predefinido como primer mensaje; `talk_to_person` además la deja esperando a una persona (el asistente no la toma). La de la app → 400 `ACTION_IS_APP_ONLY`; una que la empresa no muestra → 400 `ACTION_NOT_AVAILABLE`; el chofer → 403 `CUSTOMER_ONLY`. No va junto con `firstMessage`. */
+      firstAction?: components['schemas']['SendCustomerActionDto'];
+    };
+    CustomerActionListResponseDto: {
+      /** @description Las que muestra la empresa, en el orden del catálogo; vacía si no muestra ninguna o si no atiende por chat */
+      items: components['schemas']['InboxActionDto'][];
+    };
+    RateConversationDto: {
+      /**
+       * Format: uuid
+       * @description La encuesta que se responde: el `ratingId` del `payload` de su mensaje `csat_request` (cada cierre tiene la suya). De otra conversación o de otra persona → 404.
+       */
+      ratingId: string;
+      /** @example 5 */
+      score: number;
+      /** @example Muy rápido, gracias */
+      comment?: string;
+    };
+    ConversationRatingResponseDto: {
+      /** Format: uuid */
+      ratingId: string;
+      /**
+       * @description Pendiente (se puede responder), respondida, vencida (48 h) o anulada (la conversación se reabrió antes de que la respondieran)
+       * @enum {string}
+       */
+      status: 'pending' | 'answered' | 'expired' | 'cancelled';
+      score: number | null;
+      comment: string | null;
+      /**
+       * @description Sólo para el personal: quién atendió el tramo calificado (desde la apertura o la reapertura): el equipo (alguien escribió), el asistente con IA (sólo él) o nadie
+       * @enum {string}
+       */
+      servedBy?: 'assistant' | 'team' | 'none';
+      /** Format: date-time */
+      requestedAt: string;
+      /** Format: date-time */
+      expiresAt: string;
+      /** Format: date-time */
+      answeredAt: string | null;
+      /** Format: uuid */
+      conversationId: string;
     };
     PlatformResponseDto: {
       /**
@@ -62531,7 +62859,7 @@ export interface operations {
           'application/json': components['schemas']['SupportSettingsResponseDto'];
         };
       };
-      /** @description Valor fuera de rango (también los topes del asistente con IA: 1–50 respuestas por conversación, 10.000–1.000.000.000 tokens por mes), zona horaria desconocida, franjas solapadas o aviso que no llega antes del cierre */
+      /** @description Valor fuera de rango (también los topes del asistente con IA: 1–50 respuestas por conversación, 10.000–1.000.000.000 tokens por mes, en total y por empresa), cupo por empresa mayor que el total del soporte, zona horaria desconocida, franjas solapadas o aviso que no llega antes del cierre */
       400: {
         headers: {
           [name: string]: unknown;
@@ -62860,6 +63188,8 @@ export interface operations {
         assigned?: string;
         /** @description `true`: sólo las que esperan a una persona (el asistente con IA las derivó); `false`: sólo las que no. Con `assigned=none`, las que esperan van primero (la que espera hace más, primero). */
         awaiting?: boolean;
+        /** @description Vista «Me mencionaron»: `me`, las conversaciones con alguna nota que menciona a quien pide; `unread`, sólo las que tienen alguna mención sin leer. */
+        mentioned?: 'me' | 'unread';
         /** @description Usuario del cliente */
         customerId?: string;
         /** @description Usuario del chofer */
@@ -62884,7 +63214,7 @@ export interface operations {
           'application/json': components['schemas']['InboxListResponseDto'];
         };
       };
-      /** @description Filtro inválido: canal, estado, `assigned` (`me`, `none` o uuid), ids, `awaiting` que no es `true`/`false`, `q` de menos de 3 caracteres, fecha o paginación */
+      /** @description Filtro inválido: canal, estado, `assigned` (`me`, `none` o uuid), ids, `awaiting` que no es `true`/`false`, `mentioned` que no es `me`/`unread`, `q` de menos de 3 caracteres, fecha o paginación */
       400: {
         headers: {
           [name: string]: unknown;
@@ -63064,6 +63394,51 @@ export interface operations {
         content?: never;
       };
       /** @description La cuenta no es del personal de una empresa; el rol no atiende ningún canal de mensajes (`PERMISSION_DENIED`); o la empresa no tiene habilitados los mensajes (`MODULE_DISABLED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyInboxController_csat: {
+    parameters: {
+      query?: {
+        /** @description Desde (por pedido de la encuesta); sin él, los últimos 30 días */
+        from?: string;
+        /** @description Hasta; sin él, ahora. No puede ser anterior a `from` (400). */
+        to?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CsatSummaryResponseDto'];
+        };
+      };
+      /** @description Fecha inválida */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para atender los mensajes de los clientes (`mensajes.clientes`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -63343,6 +63718,135 @@ export interface operations {
       };
       /** @description Más de 30 mensajes por minuto (`CHAT_RATE_LIMITED`) */
       429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyInboxController_nota: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SendInternalNoteDto'];
+      };
+    };
+    responses: {
+      /** @description Reintento: ya estaba */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InboxMessageDto'];
+        };
+      };
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InboxMessageDto'];
+        };
+      };
+      /** @description Id que no es uuid, texto vacío o de más de 2000, `mentions` que no es una lista de uuid sin repetir de hasta 10, o menciona a alguien que no atiende este canal (`MENTION_NOT_ALLOWED`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no es del personal de una empresa; el rol no atiende ningún canal de mensajes (`PERMISSION_DENIED`); o la empresa no tiene habilitados los mensajes (`MODULE_DISABLED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe, es de otra empresa o de un canal que quien pide no atiende */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La conversación está cerrada (`CONVERSATION_CLOSED`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Más de 30 mensajes por minuto (`CHAT_RATE_LIMITED`) */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyInboxController_leerMenciones: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MarkMentionsReadDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MentionsReadResponseDto'];
+        };
+      };
+      /** @description Id que no es uuid o `upToSeq` que no es un entero positivo */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no es del personal de una empresa; el rol no atiende ningún canal de mensajes (`PERMISSION_DENIED`); o la empresa no tiene habilitados los mensajes (`MODULE_DISABLED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe, es de otra empresa o de un canal que quien pide no atiende */
+      404: {
         headers: {
           [name: string]: unknown;
         };
@@ -64181,6 +64685,46 @@ export interface operations {
       };
     };
   };
+  MyConversationsController_acciones: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CustomerActionListResponseDto'];
+        };
+      };
+      /** @description El cliente sin `X-Distributor` (`MISSING_DISTRIBUTOR`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no es de un cliente o un chofer; el chofer (`CUSTOMER_ONLY`); o la empresa no tiene habilitados los mensajes (`MODULE_DISABLED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   MyConversationsController_una: {
     parameters: {
       query?: never;
@@ -64472,6 +65016,151 @@ export interface operations {
         content?: never;
       };
       /** @description Pasaron los 15 minutos (`MESSAGE_EDIT_WINDOW_CLOSED`), no es un texto (`MESSAGE_NOT_EDITABLE`), la conversación es por un pedido (`MESSAGE_IN_ORDER_CONVERSATION`), forma parte de un reclamo o un ticket (`MESSAGE_LINKED_TO_CLAIM`), ya lo citaron en una respuesta (`MESSAGE_ALREADY_QUOTED`) o la conversación está cerrada (`CONVERSATION_CLOSED`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MyConversationsController_accion: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SendCustomerActionDto'];
+      };
+    };
+    responses: {
+      /** @description Reintento: ya estaba */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InboxMessageDto'];
+        };
+      };
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InboxMessageDto'];
+        };
+      };
+      /** @description Id que no es uuid, `key` desconocida o sin `clientMessageId`; la empresa no muestra esa acción (`ACTION_NOT_AVAILABLE`); la abre la app (`ACTION_IS_APP_ONLY`); el cliente sin `X-Distributor` */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no es de un cliente o un chofer; el chofer (`CUSTOMER_ONLY`); la empresa apagó el chat con los clientes (`CUSTOMER_CHAT_DISABLED`); o no tiene habilitados los mensajes (`MODULE_DISABLED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe, es de otra empresa o de otra persona */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La conversación está cerrada (`CONVERSATION_CLOSED`) o ya no se puede escribir (`CHAT_NOT_WRITABLE`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Más de 30 mensajes por minuto, o más de 10 por minuto en una misma conversación (`CHAT_RATE_LIMITED`) */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MyConversationsController_calificar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RateConversationDto'];
+      };
+    };
+    responses: {
+      /** @description Reintento con la misma respuesta: ya estaba */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ConversationRatingResponseDto'];
+        };
+      };
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ConversationRatingResponseDto'];
+        };
+      };
+      /** @description Id que no es uuid, falta `ratingId` o no es uuid, `score` fuera de 1–5 o no entero, comentario vacío o de más de 280; el cliente sin `X-Distributor` */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no es de un cliente o un chofer; el chofer (`CUSTOMER_ONLY`); o la empresa no tiene habilitados los mensajes (`MODULE_DISABLED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe, es de otra empresa o de otra persona; o esa encuesta no es de esta conversación o de quien pide (`RATING_NOT_FOUND`) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya la calificó con otra respuesta (`RATING_ALREADY_ANSWERED`), se anuló porque la conversación se reabrió o está abierta (`RATING_CANCELLED`), o venció (`RATING_EXPIRED`) */
       409: {
         headers: {
           [name: string]: unknown;

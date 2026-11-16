@@ -1,13 +1,24 @@
-import { Ban, Check, CheckCheck, CornerUpLeft, Lock, PencilLine, Ticket as TicketIcon } from 'lucide-react';
+import {
+  Ban,
+  Check,
+  CheckCheck,
+  CornerUpLeft,
+  Lock,
+  MousePointerClick,
+  PencilLine,
+  Ticket as TicketIcon,
+} from 'lucide-react';
 import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { cx, PersonAvatar } from '../../../common/components/ui';
-import type { MessageDto } from '../../../services/api/types';
+import type { InboxCsat, MessageDto } from '../../../services/api/types';
 import { formatDateTime, formatTime } from '../../../utils/format';
 import { claimOfSystem, isOutOfHoursReply, systemText, ticketOfSystem } from '../messageText';
 import { messageDomId, useCanEditNow } from '../messageActions';
 import type { ChatMessage } from '../thread';
+import { aiSourcesOf, customerActionOf, handoffNoteOf } from '../inbox/messageExtras';
 import { AutomatedMark } from './AutomatedMark';
+import { CsatRequestItem, HandoffNoteItem, InternalNoteItem } from './InboxMessageExtras';
 import { MessageText } from './MessageText';
 import { QuotedExcerpt } from './QuotedExcerpt';
 
@@ -39,6 +50,8 @@ export interface MessageContext {
   onReply?: (message: ChatMessage) => void;
   /** «Editar» un mensaje propio dentro de los 15 minutos. Sin esto no se ofrece. */
   onEdit?: (message: ChatMessage) => void;
+  /** La encuesta del último cierre de la conversación (bandeja, con un cliente): su resultado va junto al pedido. */
+  csat?: InboxCsat | null;
 }
 
 interface Props {
@@ -93,6 +106,14 @@ const MessageItemView = ({ message, first, ctx }: Props) => {
   const editableNow = useCanEditNow(message);
   // Lo que manda el asistente (aunque sea un aviso de sistema, como el de recibido) va en burbuja, firmado y marcado.
   const automated = Boolean(message.automated);
+  if (variant === 'inbox') {
+    const handoff = handoffNoteOf(message);
+    if (handoff) return <HandoffNoteItem message={message} note={handoff} />;
+    if (message.systemCode === 'csat_request') return <CsatRequestItem message={message} csat={ctx.csat ?? null} />;
+    if (message.visibility === 'internal' && message.kind === 'text') {
+      return <InternalNoteItem message={message} ctx={ctx} />;
+    }
+  }
   if (SYSTEM_KINDS.has(message.kind) && !automated) {
     const ticket = ticketOfSystem(message);
     const claimId = claimOfSystem(message);
@@ -143,7 +164,11 @@ const MessageItemView = ({ message, first, ctx }: Props) => {
     ? (message.senderLabel ?? ctx.autoName ?? ctx.platformName)
     : (message.sender?.displayName ?? (mine ? 'Vos' : other));
   const onPrimary = mine && !internal && !deleted;
-  const replyable = ctx.onReply && !deleted && !auto && message.body !== null;
+  // Una nota interna no se cita: la vería la otra punta (el back lo rechaza).
+  const replyable = ctx.onReply && !deleted && !auto && !internal && message.body !== null;
+  // Sólo el personal recibe las fuentes (4d) y la marca del botón que tocó el cliente (4e).
+  const sources = variant === 'inbox' && auto && !deleted ? aiSourcesOf(message) : [];
+  const action = variant === 'inbox' && !deleted ? customerActionOf(message) : null;
   const editable = ctx.onEdit && mine && editableNow;
   const time = formatTime(message.createdAt);
 
@@ -200,6 +225,12 @@ const MessageItemView = ({ message, first, ctx }: Props) => {
             checked && 'ring-2 ring-primary/50',
           )}
         >
+          {action && (
+            <span className="mb-1 inline-flex items-center gap-1 rounded-full bg-surface-muted px-1.5 py-px text-[10.5px] font-medium text-ink-2">
+              <MousePointerClick aria-hidden="true" className="h-3 w-3" />
+              Botón: {action}
+            </span>
+          )}
           {!deleted && <ReplyQuote message={message} ctx={ctx} onPrimary={onPrimary} />}
           {deleted ? (
             <em className="inline-flex items-center gap-1.5">
@@ -226,6 +257,11 @@ const MessageItemView = ({ message, first, ctx }: Props) => {
             {mine && !internal && !deleted && <ReadMark read={message.seq <= ctx.counterpartLastReadSeq} />}
           </span>
         </div>
+        {sources.length > 0 && (
+          <p className="mt-0.5 max-w-full px-1 text-[11px] text-muted">
+            <span className="font-medium">Fuente:</span> {sources.join(' · ')}
+          </p>
+        )}
         {(replyable || editable) && (
           // A la vista al pasar el mouse o al llegar con el teclado; en el celular, siempre.
           <span className="mt-0.5 flex gap-1 px-1 sm:opacity-0 sm:transition-opacity sm:focus-within:opacity-100 sm:group-hover:opacity-100">
@@ -296,6 +332,8 @@ export const MessageItem = memo(MessageItemView, (prev, next) => {
     prev.ctx.counterpartUserId === next.ctx.counterpartUserId &&
     prev.ctx.showAvatars === next.ctx.showAvatars &&
     prev.ctx.variant === next.ctx.variant &&
+    // La encuesta sólo cambia el pedido de calificación: los demás no se redibujan al releer la conversación.
+    (next.message.systemCode !== 'csat_request' || prev.ctx.csat === next.ctx.csat) &&
     Boolean(prev.ctx.onOfferTicket) === Boolean(next.ctx.onOfferTicket) &&
     Boolean(prev.ctx.onReply) === Boolean(next.ctx.onReply) &&
     Boolean(prev.ctx.onEdit) === Boolean(next.ctx.onEdit) &&

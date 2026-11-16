@@ -1,5 +1,5 @@
 import { ArrowLeft, Hand, Lock, LockOpen, MessageSquareWarning, PanelRightOpen, UserRoundCog } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   Badge,
@@ -16,6 +16,8 @@ import { useSocketContext } from '../../../context/useSocketContext';
 import { AlertsToggle } from '../../../features/chat/components/AlertsToggle';
 import { AwaitingHumanMark } from '../../../features/chat/components/AwaitingHumanMark';
 import { ChatThread } from '../../../features/chat/components/ChatThread';
+import type { MentionSource } from '../../../features/chat/components/Composer';
+import { CsatResult } from '../../../features/chat/components/InboxMessageExtras';
 import { LiveIndicator } from '../../../features/chat/components/LiveIndicator';
 import { ThreadSkeleton } from '../../../features/chat/components/ThreadSkeleton';
 import {
@@ -36,8 +38,10 @@ import {
   useChatSettings,
   useCloseConversation,
   useCompanyTemplates,
+  useConversationAssignees,
   useInboxConversation,
   useInboxThread,
+  useMarkMentionsRead,
   useReopenConversation,
 } from '../../../services/queries/inbox';
 import { confirm, notify } from '../../../utils/notifications';
@@ -86,6 +90,32 @@ export const ConversationPanel = ({ id, myUserId, companyName, access }: Props) 
   const [assigning, setAssigning] = useState(false);
   const [claiming, setClaiming] = useState(false);
   const [contextOpen, setContextOpen] = useState(false);
+  // A quiénes se puede mencionar: se piden recién al pasar a «Nota interna».
+  const [noteMode, setNoteMode] = useState(false);
+  const assignees = useConversationAssignees(noteMode ? id : undefined);
+  const mentionSource = useMemo<MentionSource>(
+    () => ({
+      // Mencionarse a uno mismo no avisa a nadie: no se ofrece.
+      options: assignees.data?.items.filter((person) => person.userId !== myUserId),
+      error: Boolean(assignees.error),
+    }),
+    [assignees.data, assignees.error, myUserId],
+  );
+  // Con la conversación a la vista, las menciones a quien mira quedan leídas: al abrirla y cada vez que llega otra
+  // (sube `unreadMentions`). Una vez por subida: si falla, no se reintenta en bucle (leer el hilo también las marca).
+  const markMentions = useMarkMentionsRead();
+  const markMentionsRef = useRef(markMentions.mutate);
+  markMentionsRef.current = markMentions.mutate;
+  const markedAt = useRef(0);
+  const unreadMentions = conversation?.unreadMentions ?? 0;
+  useEffect(() => {
+    if (unreadMentions <= markedAt.current) {
+      markedAt.current = unreadMentions > 0 ? markedAt.current : 0;
+      return;
+    }
+    markedAt.current = unreadMentions;
+    markMentionsRef.current(id);
+  }, [id, unreadMentions]);
   const now = useMinuteClock();
   // Volver a la lista con sus filtros (pestaña, canal, «Esperando…»).
   const { search } = useLocation();
@@ -218,6 +248,12 @@ export const ConversationPanel = ({ id, myUserId, companyName, access }: Props) 
             <p className="truncate text-xs text-muted">
               {subjectLabel(conversation)} · {statusLine(conversation, myUserId)}
             </p>
+            {conversation.csat && (
+              <p className="mt-0.5 flex flex-wrap items-center gap-1 text-xs text-muted">
+                <span>Encuesta:</span>
+                <CsatResult csat={conversation.csat} />
+              </p>
+            )}
             {open && conversation.awaitingHumanSince && (
               <AwaitingHumanMark since={conversation.awaitingHumanSince} now={now} className="mt-0.5" />
             )}
@@ -288,10 +324,14 @@ export const ConversationPanel = ({ id, myUserId, companyName, access }: Props) 
             partyName: partyNamer(conversation),
             claimHref,
             ticketHref: () => '/support',
+            csat: conversation.csat ?? null,
           }}
           canWrite={conversation.canWrite}
           readOnlyNotice={readOnlyNotice(conversation)}
           quickReplies={templates.data?.items}
+          allowInternal
+          mentionSource={mentionSource}
+          onNoteModeChange={setNoteMode}
           allowReply
           variables={variables}
           empty={<p className="px-4 py-10 text-center text-sm text-muted">Todavía no hay mensajes.</p>}

@@ -1,4 +1,4 @@
-import { HardHat, MessageSquareText, UserRound } from 'lucide-react';
+import { AtSign, HardHat, MessageSquareText, UserRound } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cx, EmptyState, ErrorState, PersonAvatar, SearchInput, Skeleton, Tabs } from '../../../common/components/ui';
@@ -23,6 +23,10 @@ const EMPTY: Record<InboxTab, { title: string; description: string }> = {
   },
   mine: { title: 'No atendés ninguna conversación', description: 'Tomá una de «Sin asignar» para atenderla.' },
   all: { title: 'No hay conversaciones abiertas', description: 'Los mensajes de clientes y choferes aparecen acá.' },
+  mentions: {
+    title: 'Nadie te mencionó',
+    description: 'Cuando alguien del equipo te nombre con @ en una nota interna, la conversación aparece acá.',
+  },
   closed: { title: 'No hay conversaciones cerradas', description: 'Las que se cierran quedan acá, en lectura.' },
 };
 
@@ -67,6 +71,7 @@ const Row = ({ conversation, selected, now, search }: RowProps) => {
   const name = counterpartName(conversation);
   const last = conversation.lastMessage;
   const unread = conversation.unreadCount;
+  const mentions = conversation.unreadMentions ?? 0;
   const closed = conversation.status === 'closed';
   const preview = last
     ? last.preview === null
@@ -102,6 +107,16 @@ const Row = ({ conversation, selected, now, search }: RowProps) => {
         </span>
         <span className="flex items-center gap-2">
           <span className={cx('line-clamp-1 flex-1 text-xs', unread > 0 ? 'text-ink' : 'text-ink-2')}>{preview}</span>
+          {mentions > 0 && (
+            <span
+              className="inline-flex items-center gap-px rounded-full bg-info-soft px-1.5 text-[10px] font-semibold text-info"
+              title={mentions === 1 ? 'Te mencionaron en una nota' : `Te mencionaron en ${mentions} notas`}
+            >
+              <AtSign aria-hidden="true" className="h-2.5 w-2.5" />
+              {mentions}
+              <span className="sr-only">{mentions === 1 ? ' mención sin leer' : ' menciones sin leer'}</span>
+            </span>
+          )}
           {unread > 0 && (
             <span className="rounded-full bg-primary px-1.5 text-[10px] font-semibold text-on-primary">
               {unread}
@@ -179,6 +194,13 @@ export const InboxList = ({
           { id: 'unassigned', label: 'Sin asignar', count: unassignedCount, tone: 'warn' },
           { id: 'mine', label: 'Mías', count: mineCount },
           { id: 'all', label: 'Todas', count: data ? data.counts.open : null },
+          // Las menciones sin leer (del resumen); sin ninguna, la pestaña va sin número.
+          {
+            id: 'mentions',
+            label: 'Me mencionaron',
+            count: summary?.mentions ? summary.mentions : undefined,
+            tone: 'info',
+          },
           { id: 'closed', label: 'Cerradas' },
         ]}
       />

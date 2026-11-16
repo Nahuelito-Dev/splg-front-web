@@ -50,7 +50,8 @@ import {
   useMarkAllAdminNotificationsRead,
 } from '../../../../services/queries/adminNotifications';
 import { queryKeys } from '../../../../services/queries/queryKeys';
-import { notificationTarget, notificationVisuals } from '../../../../utils/adminNotifications';
+import { invalidateInbox } from '../../../../services/queries/inbox';
+import { CHAT_MENTION_KIND, notificationTarget, notificationVisuals } from '../../../../utils/adminNotifications';
 import { notify } from '../../../../utils/notifications';
 import { formatCurrency, formatShortId } from '../../../../utils/format';
 import { INCIDENT_TYPE, type Tone } from '../../../../utils/statusLabels';
@@ -199,6 +200,12 @@ export const NotificationBell = () => {
       subscribe<AdminNotificationPayload>(ADMIN_NOTIFICATION_EVENT, (payload) => {
         if (!belongsToView(payload)) return;
         void queryClient.invalidateQueries({ queryKey: queryKeys.adminNotifications.all });
+        // Una mención en una nota interna (sólo le llega a quien mencionaron): aviso y «Me mencionaron» al día.
+        if (payload.kind === CHAT_MENTION_KIND) {
+          notify.info(payload.body ? `${payload.title}: ${payload.body}` : payload.title);
+          // Resumen, listas y la ficha abierta (su `unreadMentions`: si está a la vista, se marca leída).
+          void invalidateInbox(queryClient);
+        }
       }),
     );
 

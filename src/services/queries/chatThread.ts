@@ -18,6 +18,7 @@ import {
 import { errorMessage, toApiError } from '../api/errors';
 import { MESSAGES_PAGE, MESSAGES_PAGE_MAX, type MessagesQuery } from '../api/supportChat';
 import type { InboxMessage, MessageDto } from '../api/types';
+import type { MentionToken } from '../../features/chat/composerDraft';
 import { chatKeys } from './supportChat';
 import { newUuid } from '../../utils/uuid';
 
@@ -31,6 +32,8 @@ export interface OutgoingMessage {
   visibility?: 'all' | 'internal';
   replyToSeq?: number;
   templateId?: string;
+  /** Usuarios mencionados en una nota interna (bandeja). */
+  mentions?: string[];
 }
 
 /** Lo que se puede agregar a un envío además del texto. */
@@ -38,6 +41,10 @@ export interface SendExtras {
   visibility?: 'all' | 'internal';
   replyToSeq?: number;
   templateId?: string;
+  /** Usuarios mencionados en una nota interna (bandeja). */
+  mentions?: string[];
+  /** Dónde está cada mención en el texto (no viaja a la API: es para devolver la nota a su borrador). */
+  mentionTokens?: MentionToken[];
 }
 
 /** De dónde sale y a dónde va un hilo: cada pantalla arma el suyo con las llamadas de su lado. */
@@ -303,6 +310,7 @@ export const useThread = (source: ThreadSource) => {
           ...(pending.visibility ? { visibility: pending.visibility } : {}),
           ...(pending.replyToSeq ? { replyToSeq: pending.replyToSeq } : {}),
           ...(pending.templateId ? { templateId: pending.templateId } : {}),
+          ...(pending.mentions?.length ? { mentions: pending.mentions } : {}),
         });
         const target = chatKeys.thread(message.conversationId);
         const sameThread = message.conversationId === source.conversationId;
@@ -352,6 +360,8 @@ export const useThread = (source: ThreadSource) => {
         visibility: extras.visibility,
         replyToSeq: extras.replyToSeq,
         templateId: extras.templateId,
+        mentions: extras.mentions,
+        mentionTokens: extras.mentionTokens,
         createdAt: new Date().toISOString(),
       };
       update(queryClient, key, (current) => ({ ...current, pending: [...current.pending, pending] }));

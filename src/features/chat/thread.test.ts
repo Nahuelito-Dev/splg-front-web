@@ -58,6 +58,7 @@ describe('mensajes de la bandeja en el núcleo del hilo', () => {
     isMine: true,
     canEdit: true,
     kind: 'text',
+    internal: false,
     body: 'hola',
     templateKey: null,
     systemCode: null,

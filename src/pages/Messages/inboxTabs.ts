@@ -1,25 +1,28 @@
 import type { InboxChannel, InboxQuery } from '../../services/api/inbox';
 
-export type InboxTab = 'unassigned' | 'mine' | 'all' | 'closed';
+export type InboxTab = 'unassigned' | 'mine' | 'all' | 'mentions' | 'closed';
 export type InboxFilter = 'all' | InboxChannel;
 
 export const isInboxTab = (value: string): value is InboxTab =>
-  value === 'unassigned' || value === 'mine' || value === 'all' || value === 'closed';
+  value === 'unassigned' || value === 'mine' || value === 'all' || value === 'mentions' || value === 'closed';
 export const isInboxFilter = (value: string): value is InboxFilter =>
   value === 'all' || value === 'staff_customer' || value === 'staff_driver';
 
 /**
  * Lo que pide cada pestaña: las abiertas sin asignar, las abiertas mías, todas las abiertas (el número de `counts.open`
- * es el de esa lista) y las cerradas (en lectura; sin contador, la API no lo da).
+ * es el de esa lista), «Me mencionaron» (abiertas o cerradas, con alguna nota que menciona a quien mira) y las cerradas
+ * (en lectura; sin contador, la API no lo da).
  */
-export const tabQuery = (tab: InboxTab): Pick<InboxQuery, 'assigned' | 'status'> =>
-  tab === 'unassigned'
-    ? { assigned: 'none', status: 'open' }
-    : tab === 'mine'
-      ? { assigned: 'me', status: 'open' }
-      : tab === 'all'
-        ? { status: 'open' }
-        : { status: 'closed' };
+export const tabQuery = (tab: InboxTab): Pick<InboxQuery, 'assigned' | 'status' | 'mentioned'> =>
+  tab === 'mentions'
+    ? { mentioned: 'me' }
+    : tab === 'unassigned'
+      ? { assigned: 'none', status: 'open' }
+      : tab === 'mine'
+        ? { assigned: 'me', status: 'open' }
+        : tab === 'all'
+          ? { status: 'open' }
+          : { status: 'closed' };
 
 /** El filtro «Esperando a alguien del equipo» va en «Sin asignar» y «Todas»: en «Mías» no hay (asignar limpia la marca). */
 export const awaitingFilterApplies = (tab: InboxTab): boolean => tab === 'unassigned' || tab === 'all';

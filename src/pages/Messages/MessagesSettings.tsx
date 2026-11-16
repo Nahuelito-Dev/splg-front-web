@@ -5,6 +5,8 @@ import { MESSAGES_PATH } from '../../features/chat/routes';
 import { useInboxAccess } from '../../features/chat/useInboxAccess';
 import { AssistantCard } from './settings/AssistantCard';
 import { BusinessHoursCard } from './settings/BusinessHoursCard';
+import { CustomerActionsCard } from './settings/CustomerActionsCard';
+import { SurveyCard } from './settings/SurveyCard';
 import { TemplatesCard } from './settings/TemplatesCard';
 
 /**
@@ -35,7 +37,7 @@ export const MessagesSettings = () => {
     <PageContainer size="md" stack>
       <PageHeader
         title="Mensajes y horario"
-        description="Cuándo atiende la empresa, qué responde el sistema solo y las respuestas guardadas del equipo."
+        description="Cuándo atiende la empresa, qué responde el sistema solo, los botones y la encuesta del cliente y las respuestas guardadas del equipo."
         badges={!canEdit ? <span className="text-xs text-muted">Sólo lectura</span> : undefined}
         actions={
           <Button variant="secondary" icon={<ArrowLeft />} onClick={() => navigate(MESSAGES_PATH)}>
@@ -45,6 +47,8 @@ export const MessagesSettings = () => {
       />
       <BusinessHoursCard canEdit={canEdit} />
       <AssistantCard canEdit={canEdit} />
+      <CustomerActionsCard canEdit={canEdit} />
+      <SurveyCard canEdit={canEdit} canSeeResults={access.customers} />
       <TemplatesCard canEdit={canEdit} />
     </PageContainer>
   );

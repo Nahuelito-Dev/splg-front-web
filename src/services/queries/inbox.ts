@@ -13,15 +13,18 @@ import {
   getChatSettings,
   getConversation,
   getConversationSuggestions,
+  getCsatSummary,
   getInboxSummary,
   listConversationAssignees,
   listCompanyTemplates,
   listConversationMessages,
   listConversations,
+  markMentionsRead,
   openConversation,
   readConversation,
   reopenConversation,
   sendConversationMessage,
+  sendConversationNote,
   updateBusinessHours,
   updateChatSettings,
   updateCompanyTemplate,
@@ -56,6 +59,8 @@ export const inboxKeys = {
   templates: (params: object = {}) => [...root, 'templates', params] as const,
   /** Por el último mensaje de la persona que tiene el hilo: uno nuevo del cliente o del chofer pide otras. */
   suggestions: (conversationId: string, lastSeq: number) => [...root, 'suggestions', conversationId, lastSeq] as const,
+  /** El resumen de la encuesta de satisfacción (último mes). */
+  csat: () => [...root, 'csat'] as const,
 };
 
 /** Relee listas, fichas y contadores de la bandeja (los hilos se ponen al día por `seq`, no se releen). */
@@ -63,7 +68,7 @@ export const invalidateInbox = (queryClient: QueryClient) =>
   queryClient.invalidateQueries({
     queryKey: root,
     predicate: (query) =>
-      !['settings', 'hours', 'templates', 'suggestions', 'assignees'].includes(String(query.queryKey[1])),
+      !['settings', 'hours', 'templates', 'suggestions', 'assignees', 'csat'].includes(String(query.queryKey[1])),
   });
 
 /** Cada cuánto se relee el resumen aunque el socket esté callado (red caída sin aviso). */
@@ -173,7 +178,17 @@ export const useInboxThread = (conversationId: string): ThreadBinding => {
           const page = await listConversationMessages(conversationId, query);
           return { items: page.items.map(toChatMessage), hasMore: page.hasMore };
         },
-        send: async ({ clientMessageId, body, replyToSeq, templateId }) => {
+        send: async ({ clientMessageId, body, replyToSeq, templateId, visibility, mentions }) => {
+          // Una nota interna va por su propio endpoint: nunca por el de los mensajes que ve el cliente o el chofer.
+          if (visibility === 'internal') {
+            const note = await sendConversationNote(conversationId, {
+              clientMessageId,
+              body,
+              ...(mentions?.length ? { mentions } : {}),
+            });
+            void invalidateInbox(queryClient);
+            return toChatMessage(note);
+          }
           // Con una respuesta guardada va sólo su id: el back completa las variables (`body` y `templateId` juntos → 400).
           const message = await sendConversationMessage(conversationId, {
             clientMessageId,
@@ -195,6 +210,28 @@ export const useInboxThread = (conversationId: string): ThreadBinding => {
     [conversationId, queryClient],
   );
 };
+
+/**
+ * Marca leídas las menciones a quien mira en esa conversación (al abrirla): baja «Me mencionaron» y la insignia. Si
+ * falla no se avisa: leer el hilo también las marca.
+ */
+export const useMarkMentionsRead = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (conversationId: string) => markMentionsRead(conversationId),
+    onSettled: () => invalidateInbox(queryClient),
+  });
+};
+
+/** El resumen de la encuesta de satisfacción del último mes (la tarjeta de la configuración). */
+export const useCsatSummary = (enabled = true) =>
+  useQuery({
+    queryKey: inboxKeys.csat(),
+    queryFn: () => getCsatSummary(),
+    enabled,
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
 
 /**
  * Las sugerencias de respuesta para quien atiende: se piden de nuevo cuando llega otro mensaje del cliente o del chofer

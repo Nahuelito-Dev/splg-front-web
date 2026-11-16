@@ -1,4 +1,5 @@
 import type { InboxMessage, MessageDto } from '../../services/api/types';
+import type { MentionToken } from './composerDraft';
 
 /**
  * Un mensaje del hilo. El del chat con la plataforma (`MessageDto`) y el de la bandeja con clientes y choferes
@@ -7,7 +8,10 @@ import type { InboxMessage, MessageDto } from '../../services/api/types';
  */
 export type ChatMessage = MessageDto &
   Partial<
-    Pick<InboxMessage, 'replyTo' | 'editedAt' | 'canEdit' | 'deleted' | 'deletedAt' | 'automated' | 'senderLabel'>
+    Pick<
+      InboxMessage,
+      'replyTo' | 'editedAt' | 'canEdit' | 'deleted' | 'deletedAt' | 'automated' | 'senderLabel' | 'mentions'
+    >
   >;
 
 /** Una página de mensajes, sea de la API que sea. */
@@ -16,9 +20,15 @@ export interface ThreadPage {
   hasMore: boolean;
 }
 
-/** Lleva un mensaje de la bandeja a la forma común: en la bandeja no hay notas internas ni citas en tickets. */
-export const toChatMessage = (message: MessageDto | InboxMessage): ChatMessage =>
-  'visibility' in message ? message : { ...message, visibility: 'all', citedInTickets: [], bodyFiltered: false };
+/**
+ * Lleva un mensaje de la bandeja a la forma común: la nota interna (`internal`) pasa a `visibility: 'internal'`, como
+ * las de los tickets; en la bandeja no hay citas en tickets.
+ */
+export const toChatMessage = (message: MessageDto | InboxMessage): ChatMessage => {
+  if ('visibility' in message) return message;
+  const { internal, ...rest } = message;
+  return { ...rest, visibility: internal ? 'internal' : 'all', citedInTickets: [], bodyFiltered: false };
+};
 
 /**
  * Lo que el panel tiene de un hilo (chat o ticket). La verdad está en la API: el orden es por `seq` (nunca por hora) y
@@ -48,6 +58,10 @@ export interface PendingMessage {
   replyToSeq?: number;
   /** Respuesta guardada elegida: el back completa sus variables (bandeja). */
   templateId?: string;
+  /** Personas del equipo mencionadas en una nota interna (bandeja). */
+  mentions?: string[];
+  /** Las mismas menciones con su lugar en el texto: si se descarta, la nota vuelve a su borrador con ellas. */
+  mentionTokens?: MentionToken[];
   /** Por qué no se envió (el mensaje de la API). */
   error?: string;
   /** Si tiene sentido reintentar (red, 5xx, 429). Un 4xx de validación o un 409 no se arregla reintentando. */

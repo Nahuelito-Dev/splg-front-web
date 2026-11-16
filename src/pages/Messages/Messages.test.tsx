@@ -74,6 +74,10 @@ const SETTINGS = {
   ackEnabled: false,
   ackMessage: null,
   effectiveAckMessage: 'Recibimos',
+  csatEnabled: true,
+  csatMessage: null,
+  effectiveCsatMessage: '¿Cómo te atendimos en {{empresa.nombre}}? Tocá de 1 a 5 para calificar la conversación.',
+  customerActions: ['where_is_my_order', 'repeat_last_order', 'payment_methods', 'talk_to_person'],
   firstResponseTargetMinutes: 30,
   openNow: true,
   nextOpenAt: null,
@@ -88,7 +92,14 @@ beforeEach(() => {
   api.listConversationMessages.mockResolvedValue({ items: [inboxMsg(1)], hasMore: false });
   api.getChatSettings.mockResolvedValue(SETTINGS);
   api.getConversationSuggestions.mockResolvedValue({ basedOnSeq: 1, items: [] });
-  api.getInboxSummary.mockResolvedValue({ unassigned: 2, mine: 1, awaitingHuman: 0, unread: 1 });
+  api.getInboxSummary.mockResolvedValue({
+    unassigned: 2,
+    mine: 1,
+    awaitingHuman: 0,
+    unread: 1,
+    attention: 3,
+    mentions: 0,
+  });
   api.listConversationAssignees.mockResolvedValue({
     items: [
       { userId: 'u-me', fullName: 'Ana Operadora' },
@@ -122,7 +133,14 @@ describe('Mensajes: la bandeja', () => {
   });
 
   it('«Sin asignar» y «Mías» cuentan desde el resumen de la bandeja; «Todas», desde la lista', async () => {
-    api.getInboxSummary.mockResolvedValue({ unassigned: 7, mine: 4, awaitingHuman: 1, unread: 3 });
+    api.getInboxSummary.mockResolvedValue({
+      unassigned: 7,
+      mine: 4,
+      awaitingHuman: 1,
+      unread: 3,
+      attention: 9,
+      mentions: 0,
+    });
     show();
     expect(await screen.findByRole('tab', { name: /Sin asignar.*7/ })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /Mías.*4/ })).toBeInTheDocument();
@@ -131,7 +149,14 @@ describe('Mensajes: la bandeja', () => {
   });
 
   it('con un filtro de canal, «Sin asignar» y «Mías» son los de la lista de ese canal, no los del resumen', async () => {
-    api.getInboxSummary.mockResolvedValue({ unassigned: 7, mine: 4, awaitingHuman: 1, unread: 3 });
+    api.getInboxSummary.mockResolvedValue({
+      unassigned: 7,
+      mine: 4,
+      awaitingHuman: 1,
+      unread: 3,
+      attention: 9,
+      mentions: 0,
+    });
     show();
     expect(await screen.findByRole('tab', { name: /Sin asignar.*7/ })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Choferes' }));

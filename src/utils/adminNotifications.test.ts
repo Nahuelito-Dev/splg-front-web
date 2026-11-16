@@ -14,6 +14,11 @@ describe('notificationTarget', () => {
     expect(notificationVisuals('support_emergency_opened').tone).toBe('danger');
   });
 
+  it('una mención en una nota interna del chat abre esa conversación de la bandeja', () => {
+    expect(notificationTarget({ entity: 'conversation', id: 'conv 1' })).toBe('/messages/conv%201');
+    expect(notificationVisuals('chat_mention').tone).toBe('info');
+  });
+
   it('lleva cada entidad a su pantalla', () => {
     expect(notificationTarget({ entity: 'order', id: 'o-1' })).toBe('/orders/o-1');
     expect(notificationTarget({ entity: 'claim', id: 'c-1' })).toBe('/claims?claim=c-1');
