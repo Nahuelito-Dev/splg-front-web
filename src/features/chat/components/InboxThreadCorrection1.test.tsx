@@ -253,7 +253,7 @@ describe('Corrección 1 · 8: «Editar» sólo mientras corresponde', () => {
     );
     expect(screen.queryByText('Editando tu mensaje')).not.toBeInTheDocument();
     // Ni el borrador que había ni lo editado se pierden: los dos quedan en el compositor.
-    expect(composer()).toHaveValue('borrador\n\npropio 2 tarde');
+    await waitFor(() => expect(composer()).toHaveValue('borrador\n\npropio 2 tarde'));
     expect(editFn).toHaveBeenCalledTimes(1);
   });
 
@@ -283,8 +283,9 @@ describe('Corrección 1 · 8: «Editar» sólo mientras corresponde', () => {
           `${text.replace(/\.$/, '')}. No se guardó la edición: tu texto quedó en el cuadro para enviarlo.`,
         ),
       );
+      // El texto rescatado llega al cuadro en el render siguiente al aviso: en un runner lento no es inmediato.
+      await waitFor(() => expect(composer()).toHaveValue('propio 2 corregido'));
       expect(screen.queryByText('Editando tu mensaje')).not.toBeInTheDocument();
-      expect(composer()).toHaveValue('propio 2 corregido');
       expect(within(log()).getByText('propio 2')).toBeInTheDocument();
       await waitFor(() => expect(screen.queryByRole('button', { name: /Editar tu mensaje/ })).not.toBeInTheDocument());
       // Lo rescatado es un borrador común: Enter lo manda como mensaje nuevo, no como edición.
@@ -384,7 +385,7 @@ describe('Corrección 1 (bandeja-detalles) · el rescate de una edición rechaza
     type('mientras tanto');
     await act(() => Promise.resolve(pending.reject(QUOTED)));
     await waitFor(() => expect(screen.queryByText('Editando tu mensaje')).not.toBeInTheDocument());
-    expect(composer()).toHaveValue('borrador\n\nmientras tanto\n\npropio 2 corregido');
+    await waitFor(() => expect(composer()).toHaveValue('borrador\n\nmientras tanto\n\npropio 2 corregido'));
     expect(sessionStorage.getItem('chatDraft:conv-1')).toBe('borrador\n\nmientras tanto\n\npropio 2 corregido');
   });
 });
