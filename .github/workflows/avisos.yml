@@ -1,0 +1,42 @@
+name: Avisos a Telegram
+
+# Avisa a Telegram cómo terminó cada corrida de Checks, Revisión de código y Release.
+# Los deploys avisan desde su propio workflow (inicio y resultado).
+on:
+  workflow_run:
+    workflows: ['Checks', 'Revisión de código', 'Release automatico']
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  avisar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      NOMBRE: ${{ github.event.workflow_run.name }}
+      RESULTADO: ${{ github.event.workflow_run.conclusion }}
+      RAMA: ${{ github.event.workflow_run.head_branch }}
+      COMMIT: ${{ github.event.workflow_run.head_commit.message }}
+      AUTOR: ${{ github.event.workflow_run.actor.login }}
+      URL: ${{ github.event.workflow_run.html_url }}
+    steps:
+      - name: Mandar el aviso
+        run: |
+          [ -n "$TELEGRAM_BOT_TOKEN" ] || { echo "Sin TELEGRAM_BOT_TOKEN: no se avisa."; exit 0; }
+          case "$RESULTADO" in
+            success) icono="✅"; texto="pasó" ;;
+            failure) icono="🔴"; texto="falló" ;;
+            cancelled) icono="⚪"; texto="se canceló" ;;
+            skipped) exit 0 ;;
+            *) icono="🟡"; texto="$RESULTADO" ;;
+          esac
+          titulo=$(printf '%s' "$COMMIT" | head -n1 | cut -c1-90)
+          t="$icono SPLG Panel · $NOMBRE $texto en $RAMA
+          $titulo
+          por $AUTOR · $URL"
+          curl -s -o /dev/null "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" --data-urlencode "text=$t" -d disable_web_page_preview=true

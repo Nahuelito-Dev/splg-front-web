@@ -1,8 +1,5 @@
 {
   "projects": {
-    "default": "gearth-back",
-    "production": "gearth-admin"
-  },
-  "targets": {},
-  "etags": {}
+    "default": "splg-gas"
+  }
 }
