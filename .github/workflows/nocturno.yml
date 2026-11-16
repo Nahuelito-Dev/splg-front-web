@@ -1,0 +1,79 @@
+name: Release nocturno
+
+# Todas las noches a las 23:00 (hora argentina) pasa develop a main si hay cambios nuevos y los
+# Checks de develop están en verde. Después lanza el Release automático, y al terminar éste
+# arranca el Deploy. Avisa por Telegram si pasó, si no había nada o si lo frenó.
+# También se puede correr a mano: Actions > Release nocturno > Run workflow.
+on:
+  schedule:
+    - cron: '0 2 * * *' # 02:00 UTC = 23:00 en Argentina
+  workflow_dispatch:
+
+concurrency:
+  group: release-nocturno
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  pasar-a-main:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Pasar develop a main si corresponde
+        id: paso
+        run: |
+          avisar() {
+            [ -n "$TELEGRAM_BOT_TOKEN" ] || return 0
+            curl -s -o /dev/null "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+              --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" --data-urlencode "text=$1" -d disable_web_page_preview=true
+          }
+          nombre="${REPO#*/}"
+          git fetch -q origin develop
+          nuevos=$(git rev-list --count --no-merges origin/main..origin/develop)
+          if [ "$nuevos" = 0 ]; then
+            echo "Sin cambios nuevos en develop."
+            avisar "🌙 $nombre · release nocturno: no había cambios nuevos en develop."
+            exit 0
+          fi
+
+          # Los Checks del último commit de develop (o del último que los corrió, si lo de
+          # después sólo toca archivos que Checks ignora) tienen que estar en verde.
+          head=$(git rev-parse origin/develop)
+          read -r sha estado conclusion < <(gh run list -R "$REPO" -w Checks -b develop -e push -L 1 \
+            --json headSha,status,conclusion -q '.[0] | "\(.headSha) \(.status) \(.conclusion)"')
+          if [ "$sha" != "$head" ]; then
+            fuera=$(git diff --name-only "$sha" "$head" | grep -vE '\.md$|^postman/' || true)
+            if [ -n "$fuera" ]; then
+              avisar "🟡 $nombre · release nocturno frenado: los Checks del último commit de develop todavía no corrieron."
+              exit 1
+            fi
+          fi
+          if [ "$estado" != completed ] || [ "$conclusion" != success ]; then
+            avisar "🔴 $nombre · release nocturno frenado: los Checks de develop están en «$conclusion»."
+            exit 1
+          fi
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git merge --no-ff -q -m "chore(release): integrar develop" origin/develop
+          git push -q origin HEAD:main
+          echo "paso=si" >> "$GITHUB_OUTPUT"
+          avisar "🌙 $nombre · release nocturno: $nuevos commit(s) de develop pasaron a main. Arranca el release y el deploy."
+
+      # Un push hecho con el token de Actions no dispara otros workflows: el release se lanza a mano.
+      - name: Lanzar el Release automático
+        if: steps.paso.outputs.paso == 'si'
+        run: gh workflow run 'Release automatico' -R "$REPO" --ref main

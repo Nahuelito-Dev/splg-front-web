@@ -14,6 +14,8 @@ name: Release automatico
 on:
   push:
     branches: [main]
+  # Lo lanza el Release nocturno (su push a main no dispara workflows) o se corre a mano.
+  workflow_dispatch:
 
 permissions:
   contents: write
