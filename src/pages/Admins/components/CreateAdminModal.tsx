@@ -8,7 +8,12 @@ import { Button, Modal, FormInput, FormSelect, Form } from '../../../common/comp
 import type { AdminRole } from '../../../services/api/admins';
 import { useCreateAdmin } from '../../../services/queries/admins';
 import { useDistributors } from '../../../services/queries/distributors';
+import { toApiError } from '../../../services/api/errors';
 import { notify } from '../../../utils/notifications';
+import { NewAdminStaffRoleField } from './NewAdminStaffRoleField';
+
+/** Los rechazos de la API que son del rol del personal elegido: van junto al campo. */
+const STAFF_ROLE_CODES = new Set(['STAFF_ROLE_REQUIRED', 'STAFF_ROLE_PERMISSION_NOT_HELD']);
 
 const ROLE_OPTIONS: Record<AdminRole, string> = {
   admin: 'Admin de empresa',
@@ -22,6 +27,7 @@ const baseSchema = z.object({
   confirmPassword: z.string(),
   role: z.enum(['admin', 'super_admin']),
   distributorId: z.string().optional(),
+  staffRoleId: z.string().optional(),
 });
 
 type AdminFormValues = z.infer<typeof baseSchema>;
@@ -41,6 +47,14 @@ const adminSchema = (isSuperAdmin: boolean) =>
         code: z.ZodIssueCode.custom,
         message: 'Elegí la distribuidora del admin',
         path: ['distributorId'],
+      });
+    }
+    // El admin de empresa da de alta con un rol del personal (la API pide uno que pueda dar).
+    if (!isSuperAdmin && !data.staffRoleId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Elegí el rol del personal del administrador nuevo',
+        path: ['staffRoleId'],
       });
     }
   });
@@ -87,19 +101,38 @@ export const CreateAdminModal = ({ open, onClose, isSuperAdmin }: Props) => {
         confirmPassword: '',
         role: 'admin',
         distributorId: '',
+        staffRoleId: '',
       });
   }, [open, reset]);
 
-  const onSubmit = async ({ confirmPassword: _confirmPassword, role, distributorId, ...account }: AdminFormValues) => {
+  const onSubmit = async ({
+    confirmPassword: _confirmPassword,
+    role,
+    distributorId,
+    staffRoleId,
+    ...account
+  }: AdminFormValues) => {
     if (!(await checkAccountFree(account, setError)) || !openRef.current) return;
     createAdmin.mutate(
-      { role, account: { ...account, distributorId: role === 'admin' && distributorId ? distributorId : undefined } },
+      {
+        role,
+        account: {
+          ...account,
+          distributorId: role === 'admin' && distributorId ? distributorId : undefined,
+          staffRoleId: !isSuperAdmin && staffRoleId ? staffRoleId : undefined,
+        },
+      },
       {
         onSuccess: () => {
           notify.success('Admin creado');
           onClose();
         },
-        onError: notify.error,
+        onError: (error) => {
+          const apiError = toApiError(error);
+          if (apiError.code && STAFF_ROLE_CODES.has(apiError.code))
+            setError('staffRoleId', { message: apiError.messages.join('. ') });
+          else notify.error(error);
+        },
       },
     );
   };
@@ -157,6 +190,11 @@ export const CreateAdminModal = ({ open, onClose, isSuperAdmin }: Props) => {
           />
         ) : (
           <p className="self-end text-xs text-muted">El admin se crea en tu misma distribuidora.</p>
+        )}
+        {!isSuperAdmin && (
+          <div className="sm:col-span-2">
+            <NewAdminStaffRoleField open={open} />
+          </div>
         )}
       </Form>
     </Modal>

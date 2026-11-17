@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Pencil, Trash2, UserCog } from 'lucide-react';
+import { KeyRound, Pencil, Trash2, UserCog } from 'lucide-react';
 import {
   AuditHistoryLink,
   Avatar,
@@ -19,13 +19,17 @@ import { useCrumbLeaf } from '../../common/components';
 import { useBackToList } from '../../hooks';
 import { useAdmin } from '../../services/queries/admins';
 import { formatDateTime } from '../../utils/format';
-import { roleLabel } from '../Users/roleLabel';
+import { offersStaffRoleChange } from './adminAccess';
+import { adminRoleLabel } from './adminRoleLabel';
+import { AssignStaffRoleModal } from './components/AssignStaffRoleModal';
 import { EditAdminModal } from './components/EditAdminModal';
 import { useAdminManagement } from './useAdminManagement';
+import { useStaffRoleChange } from './useStaffRoleChange';
 
 /**
- * La ficha de un administrador (`GET /admin/:id`): su cuenta, su rol y su empresa. Se edita (nombre y teléfono) y se da
- * de baja desde acá; el bloqueo y el correo se administran desde la ficha del usuario.
+ * La ficha de un administrador (`GET /admin/:id`): su cuenta, su rol del personal y su empresa. Se edita (nombre y
+ * teléfono), se le cambia el rol y se da de baja desde acá; el bloqueo y el correo se administran desde la ficha del
+ * usuario.
  */
 export const AdminDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -35,6 +39,8 @@ export const AdminDetails = () => {
   const { data: admin, isPending, error, refetch } = useAdmin(removed ? undefined : id);
   useCrumbLeaf(admin?.user?.full_name ?? undefined, goBack);
   const [editing, setEditing] = useState(false);
+  const [changingStaffRole, setChangingStaffRole] = useState(false);
+  const staffRoleChange = useStaffRoleChange();
   const { stateOf, remove, blockedReason } = useAdminManagement();
   const state = admin ? stateOf(admin) : null;
   const navigate = useNavigate();
@@ -62,6 +68,17 @@ export const AdminDetails = () => {
           icon: <UserCog />,
           onClick: () => navigate(`/users/details/${admin.user_id}`),
         },
+        // Las mismas reglas que en la tabla: nadie cambia el suyo y en modo soporte se ve apagado con el motivo.
+        ...(state && staffRoleChange.allowed && offersStaffRoleChange(admin, state)
+          ? [
+              {
+                label: 'Cambiar rol',
+                icon: <KeyRound />,
+                blockedReason: staffRoleChange.blockedReasonFor(admin),
+                onClick: () => setChangingStaffRole(true),
+              },
+            ]
+          : []),
         ...(state && state.remove !== 'hidden'
           ? [
               {
@@ -104,13 +121,16 @@ export const AdminDetails = () => {
                 <p className="text-sm text-muted">{admin.user?.email ?? 'Sin correo'}</p>
               </div>
             </div>
-            <Badge label={roleLabel(admin.user?.role?.type ?? admin.role?.type)} />
+            <Badge label={adminRoleLabel(admin)} />
           </div>
           <DetailList
             className="mt-5 border-t border-outline pt-5"
             items={[
               { label: 'Teléfono', value: admin.user?.phone_number ?? '—' },
               { label: 'Empresa', value: admin.distributor?.name ?? 'Plataforma' },
+              ...(admin.distributor_id
+                ? [{ label: 'Rol del personal', value: admin.staffRole?.name ?? 'Sin rol asignado' }]
+                : []),
               { label: 'Estado de la cuenta', value: admin.user?.blocked ? 'Bloqueada' : 'Activa' },
               { label: 'Alta como administrador', value: formatDateTime(admin.createdAt) },
               { label: 'ID del administrador', value: admin.admin_id, mono: true, wide: true },
@@ -120,6 +140,10 @@ export const AdminDetails = () => {
         </Card>
       )}
       <EditAdminModal admin={editing ? (admin ?? null) : null} onClose={() => setEditing(false)} />
+      <AssignStaffRoleModal
+        admin={changingStaffRole ? (admin ?? null) : null}
+        onClose={() => setChangingStaffRole(false)}
+      />
     </PageContainer>
   );
 };

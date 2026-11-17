@@ -658,7 +658,7 @@ export interface paths {
     put?: never;
     /**
      * Dar de alta un usuario de cualquier rol (CU-003, CU-031, CU-086)
-     * @description Un admin crea clientes, choferes y admins de su distribuidora; un super admin, cualquier rol en cualquier distribuidora.
+     * @description Un admin crea clientes (`clientes.gestionar`), choferes (`personal.gestionar`) y admins (`administradores.gestionar`, con `staffRoleId`: ver el campo) de su distribuidora; un super admin, cualquier rol en cualquier distribuidora.
      */
     post: operations['RegistroController_registrar'];
     delete?: never;
@@ -18739,6 +18739,11 @@ export interface components {
        * @description Chofer o admin: legajo existente (sin cuenta) al que se vincula el usuario en vez de crear otro. El puesto tiene que admitir el rol. Excluye a `legajo`
        */
       employeeId?: string;
+      /**
+       * Format: uuid
+       * @description Sólo para un admin de distribuidora: el rol del personal con que nace. Quien da de alta tiene que poder darlo (`STAFF_ROLE_PERMISSION_NOT_HELD`). Sin él, el admin nace con el rol de sistema, y eso sólo lo puede hacer quien tiene todos los permisos (si no, 400 `STAFF_ROLE_REQUIRED`). Dar de alta un admin pide `administradores.gestionar`
+       */
+      staffRoleId?: string;
       /** @description Chofer: datos del legajo que se crea con la cuenta, en la misma transacción */
       legajo?: components['schemas']['LegajoDeChoferDto'];
     };
@@ -30466,7 +30471,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los clientes (`clientes.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los clientes (`clientes.gestionar`) ni para gestionar el personal (`personal.gestionar`) ni para gestionar los administradores (`administradores.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -35754,7 +35759,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Cuenta que no es del panel, administrador sin `administradores.gestionar` (`PERMISSION_DENIED`), se quiere cambiar el propio rol (`STAFF_ROLE_SELF_ASSIGN`) o el rol tiene permisos que quien asigna no tiene, como el de sistema (`STAFF_ROLE_PERMISSION_NOT_HELD`) */
+      /** @description Cuenta que no es del panel, administrador sin `administradores.gestionar` (`PERMISSION_DENIED`), se quiere cambiar el propio rol (`STAFF_ROLE_SELF_ASSIGN`), el rol nuevo tiene permisos que quien asigna no tiene, como el de sistema (`STAFF_ROLE_PERMISSION_NOT_HELD`), o el rol que la persona tiene hoy tiene permisos que quien asigna no tiene: nadie le cambia el rol a quien tiene más (`STAFF_ROLE_TARGET_OUTRANKS`). Asignar el mismo rol que ya tiene no controla nada y devuelve 200 */
       403: {
         headers: {
           [name: string]: unknown;

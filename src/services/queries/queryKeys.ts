@@ -17,6 +17,8 @@ export const queryKeys = {
   bankDetails: resource('bankDetails'),
   mercadoPagoCredentials: resource('mercadoPagoCredentials'),
   myPermissions: resource('myPermissions'),
+  permissions: resource('permissions'),
+  staffRoles: resource('staffRoles'),
   paymentSurcharges: resource('paymentSurcharges'),
   processRuns: resource('processRuns'),
   attendance: resource('attendance'),

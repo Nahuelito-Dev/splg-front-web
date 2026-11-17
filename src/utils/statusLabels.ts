@@ -290,6 +290,12 @@ export const DISTRIBUTOR_STATUS: LabelMap<Distributor['status']> = {
   suspended: { text: 'Suspendida', tone: 'danger' },
 };
 
+/** Tipo de un rol del personal (F37): el de sistema viene con la empresa y tiene todos los permisos. */
+export const STAFF_ROLE_KIND: LabelMap<'system' | 'custom'> = {
+  system: { text: 'Sistema', tone: 'info' },
+  custom: { text: 'Personalizado', tone: 'neutral' },
+};
+
 /** Estado de un pedido o sesión de soporte (`support_session.status`). */
 export const SUPPORT_SESSION_STATUS: LabelMap<SupportSession['status']> = {
   pending: { text: 'Pendiente', tone: 'warn' },

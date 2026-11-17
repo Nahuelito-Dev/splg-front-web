@@ -1,10 +1,11 @@
 import type { GridColDef } from '@mui/x-data-grid';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { UserCog } from 'lucide-react';
 import { Badge, DataTable, EmptyState, IdentityCell, RowActions } from '../../../common/components/ui';
 import type { Admin } from '../../../services/api/types';
-import { roleLabel } from '../../Users/roleLabel';
-import type { Manageable } from '../adminAccess';
+import { adminRoleLabel } from '../adminRoleLabel';
+import { offersStaffRoleChange, type Manageable } from '../adminAccess';
 
 interface Props {
   rows: Admin[];
@@ -13,10 +14,23 @@ interface Props {
   blockedReason: string;
   onEdit: (admin: Admin) => void;
   onDelete: (admin: Admin) => void;
+  /** «Cambiar rol» (F37); sin esto no se ofrece. */
+  onChangeStaffRole?: (admin: Admin) => void;
+  /** Si se ofrece pero no se puede sobre ese administrador (modo soporte, tiene más permisos), el porqué. */
+  changeStaffRoleBlockedReason?: (admin: Admin) => string | undefined;
 }
 
 /** Administradores: «Ver» abre su ficha; editar y dar de baja según lo que la sesión puede sobre cada uno. */
-export const AdminsTable = ({ rows, loading, stateOf, blockedReason, onEdit, onDelete }: Props) => {
+export const AdminsTable = ({
+  rows,
+  loading,
+  stateOf,
+  blockedReason,
+  onEdit,
+  onDelete,
+  onChangeStaffRole,
+  changeStaffRoleBlockedReason,
+}: Props) => {
   const navigate = useNavigate();
   const columns = useMemo<GridColDef<Admin>[]>(
     () => [
@@ -46,8 +60,8 @@ export const AdminsTable = ({ rows, loading, stateOf, blockedReason, onEdit, onD
         field: 'role',
         headerName: 'Rol',
         width: 190,
-        valueGetter: ({ row }) => row.user?.role?.type ?? row.role?.type ?? '',
-        renderCell: ({ row }) => <Badge label={roleLabel(row.user?.role?.type ?? row.role?.type)} />,
+        valueGetter: ({ row }) => row.staffRole?.name ?? row.user?.role?.type ?? row.role?.type ?? '',
+        renderCell: ({ row }) => <Badge label={adminRoleLabel(row)} />,
       },
       {
         field: 'distributor',
@@ -73,12 +87,24 @@ export const AdminsTable = ({ rows, loading, stateOf, blockedReason, onEdit, onD
               onDelete={state.remove === 'hidden' ? undefined : () => onDelete(row)}
               deleteBlockedReason={state.remove === 'needs-distributor' ? blockedReason : undefined}
               deleteLabel="Dar de baja a"
+              actions={
+                onChangeStaffRole && offersStaffRoleChange(row, state)
+                  ? [
+                      {
+                        label: 'Cambiar rol',
+                        icon: UserCog,
+                        onClick: () => onChangeStaffRole(row),
+                        blockedReason: changeStaffRoleBlockedReason?.(row),
+                      },
+                    ]
+                  : undefined
+              }
             />
           );
         },
       },
     ],
-    [navigate, stateOf, blockedReason, onEdit, onDelete],
+    [navigate, stateOf, blockedReason, onEdit, onDelete, onChangeStaffRole, changeStaffRoleBlockedReason],
   );
 
   return (

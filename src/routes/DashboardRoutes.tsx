@@ -105,6 +105,7 @@ const DistributorForm = lazyPage(() => import('../pages/Distributors/Distributor
 const DistributorDetails = lazyPage(() => import('../pages/Distributors/DistributorDetails'), 'DistributorDetails');
 const Admins = lazyPage(() => import('../pages/Admins/Admins'), 'Admins');
 const AdminDetails = lazyPage(() => import('../pages/Admins/AdminDetails'), 'AdminDetails');
+const StaffRoles = lazyPage(() => import('../pages/StaffRoles/StaffRoles'), 'StaffRoles');
 const Ratings = lazyPage(() => import('../pages/Ratings/Ratings'), 'Ratings');
 const SupportAccess = lazyPage(() => import('../pages/SupportAccess/SupportAccess'), 'SupportAccess');
 const Audit = lazyPage(() => import('../pages/Audit/Audit'), 'Audit');
@@ -364,6 +365,7 @@ export const DashboardRoutes = () => {
             <Route path="reservations" element={<Reservations />} />
             <Route path="reports" element={<Reports />} />
             <Route path="ratings" element={<Ratings />} />
+            <Route path="staff-roles" element={<StaffRoles />} />
           </Route>
 
           {/* Ruta por defecto */}

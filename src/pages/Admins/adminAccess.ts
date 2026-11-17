@@ -38,3 +38,10 @@ export const manageStateOf = (admin: Admin, viewer: Viewer): Manageable => {
 };
 
 const both = (state: ManageState): Manageable => ({ edit: state, remove: state });
+
+/**
+ * «Cambiar rol» del personal (F37): sólo a un administrador de empresa que la sesión puede editar. Así nadie cambia el
+ * suyo (la API responde 403) ni se ofrece a un super admin, que no tiene rol del personal.
+ */
+export const offersStaffRoleChange = (admin: Admin, state: Manageable): boolean =>
+  Boolean(admin.distributor_id) && state.edit === 'allowed';

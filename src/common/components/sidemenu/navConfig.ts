@@ -38,6 +38,7 @@ import {
   Headset,
   Briefcase,
   IdCard,
+  KeyRound,
   HandCoins,
   House,
   LifeBuoy,
@@ -264,6 +265,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { title: 'Notificaciones', path: '/notifications', icon: Bell, scope: 'both' },
       { title: 'Usuarios', path: '/users', icon: UserRound, scope: 'both' },
       { title: 'Administradores', path: '/admins', icon: ShieldCheck, scope: 'both' },
+      { title: 'Roles del personal', path: '/staff-roles', icon: KeyRound, permission: 'roles.gestionar' },
       { title: 'Auditoría', path: '/audit', icon: FileClock },
       {
         title: 'Ayuda',

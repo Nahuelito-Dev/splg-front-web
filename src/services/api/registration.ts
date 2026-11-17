@@ -21,6 +21,7 @@ export const registerUser = async (role: Role, data: RegistrationData): Promise<
     ...(data.distributorId !== undefined && { distributorId: data.distributorId }),
     ...(data.validated !== undefined && { validated: data.validated }),
     ...(data.isActive !== undefined && { isActive: data.isActive }),
+    ...(data.staffRoleId !== undefined && { staffRoleId: data.staffRoleId }),
   };
   const { data: user } = await http.post<User>('/users', body);
   return user;
