@@ -4,6 +4,7 @@ import { Button, Card, EmptyState, PageContainer, PageHeader } from '../../commo
 import { MESSAGES_PATH } from '../../features/chat/routes';
 import { useInboxAccess } from '../../features/chat/useInboxAccess';
 import { AssistantCard } from './settings/AssistantCard';
+import { AutoAssignCard } from './settings/AutoAssignCard';
 import { BusinessHoursCard } from './settings/BusinessHoursCard';
 import { ConversationTimesCard } from './settings/ConversationTimesCard';
 import { CustomerActionsCard } from './settings/CustomerActionsCard';
@@ -40,7 +41,7 @@ export const MessagesSettings = () => {
     <PageContainer size="md" stack>
       <PageHeader
         title="Mensajes y horario"
-        description="Cuándo atiende la empresa, qué responde el sistema solo, los botones y la encuesta del cliente, cuándo se cierra sola una conversación, y las respuestas guardadas y etiquetas del equipo."
+        description="Cuándo atiende la empresa, qué responde el sistema solo, a quién se le da sola cada conversación, los botones y la encuesta del cliente, cuándo se cierra sola una conversación, y las respuestas guardadas y etiquetas del equipo."
         badges={!canEdit ? <span className="text-xs text-muted">Sólo lectura</span> : undefined}
         actions={
           <Button variant="secondary" icon={<ArrowLeft />} onClick={() => navigate(MESSAGES_PATH)}>
@@ -50,6 +51,7 @@ export const MessagesSettings = () => {
       />
       <BusinessHoursCard canEdit={canEdit} />
       <AssistantCard canEdit={canEdit} />
+      <AutoAssignCard canEdit={canEdit} />
       <ConversationTimesCard canEdit={canEdit} />
       <CustomerActionsCard canEdit={canEdit} />
       <SurveyCard canEdit={canEdit} canSeeResults={access.customers} />

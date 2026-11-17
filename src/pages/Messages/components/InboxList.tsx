@@ -5,6 +5,7 @@ import { cx, EmptyState, ErrorState, PersonAvatar, SearchInput, Skeleton, Tabs }
 import { useDebounce } from '../../../hooks/useDebounce';
 import { useMinuteClock } from '../../../hooks/useMinuteClock';
 import { AWAITING_HUMAN_LABEL } from '../../../features/chat/awaitingHuman';
+import { AutoAssignedMark } from '../../../features/chat/components/AutoAssignedMark';
 import { AwaitingHumanMark } from '../../../features/chat/components/AwaitingHumanMark';
 import { counterpartName, subjectLabel } from '../../../features/chat/inbox/inboxLabels';
 import { LabelList } from '../../../features/chat/labels/LabelList';
@@ -139,7 +140,10 @@ const Row = ({ conversation, selected, now, search }: RowProps) => {
           {closed ? (
             <span className="font-medium">· Cerrada</span>
           ) : conversation.assignedTo ? (
-            <span className="truncate">· {conversation.assignedTo.fullName}</span>
+            <span className="inline-flex min-w-0 items-center gap-1">
+              <span className="truncate">· {conversation.assignedTo.fullName}</span>
+              {conversation.assignedAutomatically && <AutoAssignedMark />}
+            </span>
           ) : (
             <span className="font-medium text-warn">· Sin asignar</span>
           )}

@@ -161,6 +161,7 @@ const SupportHelp = lazyPage(() => import('../pages/Support/SupportHelp'), 'Supp
 const Messages = lazyPage(() => import('../pages/Messages/Messages'), 'Messages');
 const MessagesSettings = lazyPage(() => import('../pages/Messages/MessagesSettings'), 'MessagesSettings');
 const MessagesMetrics = lazyPage(() => import('../pages/Messages/MessagesMetrics'), 'MessagesMetrics');
+const MessagesTeam = lazyPage(() => import('../pages/Messages/MessagesTeam'), 'MessagesTeam');
 const CompanyTicketDetail = lazyPage(() => import('../pages/Support/CompanyTicketDetail'), 'CompanyTicketDetail');
 const CompanyChatArchive = lazyPage(() => import('../pages/Support/CompanyChatArchive'), 'CompanyChatArchive');
 const PlatformChats = lazyPage(() => import('../pages/Platform/Support/PlatformChats'), 'PlatformChats');
@@ -217,6 +218,7 @@ export const DashboardRoutes = () => {
               <Route path="messages" element={<Messages />} />
               <Route path="messages/settings" element={<MessagesSettings />} />
               <Route path="messages/metrics" element={<MessagesMetrics />} />
+              <Route path="messages/team" element={<MessagesTeam />} />
               <Route path="messages/:id" element={<Messages />} />
             </Route>
           </Route>

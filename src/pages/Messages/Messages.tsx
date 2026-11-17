@@ -1,11 +1,11 @@
-import { ChartLine, Megaphone, MessageSquareText, Settings2 } from 'lucide-react';
+import { ChartLine, Megaphone, MessageSquareText, Settings2, UsersRound } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Badge, Button, Card, cx, EmptyState, PageContainer, PageHeader } from '../../common/components/ui';
 import { useCompanyDisplayName } from '../../common/components/useCompanyDisplayName';
 import { BroadcastDriversModal } from '../../features/chat/inbox/BroadcastDriversModal';
 import { reopensAt } from '../../features/chat/inbox/inboxLabels';
-import { MESSAGES_METRICS_PATH, MESSAGES_SETTINGS_PATH } from '../../features/chat/routes';
+import { MESSAGES_METRICS_PATH, MESSAGES_SETTINGS_PATH, MESSAGES_TEAM_PATH } from '../../features/chat/routes';
 import { useInboxAccess } from '../../features/chat/useInboxAccess';
 import { useAppSelector } from '../../hooks/reduxHooks';
 import { usePermiso } from '../../hooks/usePermiso';
@@ -14,6 +14,7 @@ import { useChatSettings } from '../../services/queries/inbox';
 import { useMyAccount } from '../../services/queries/users';
 import { ConversationPanel } from './components/ConversationPanel';
 import { InboxList } from './components/InboxList';
+import { MyChatStatus } from './components/MyChatStatus';
 import { isInboxFilter, isInboxTab, type InboxFilter, type InboxTab } from './inboxTabs';
 
 /** «En horario» / «Fuera de horario · vuelve…» y si el chat con los clientes está apagado. */
@@ -78,6 +79,7 @@ export const Messages = () => {
         badges={<HoursBadges />}
         actions={
           <>
+            <MyChatStatus myUserId={me} />
             {access.drivers && (
               <Button variant="secondary" icon={<Megaphone />} onClick={() => setBroadcasting(true)}>
                 Avisar a varios choferes
@@ -86,6 +88,11 @@ export const Messages = () => {
             {supervise && (
               <Button variant="secondary" icon={<ChartLine />} onClick={() => navigate(MESSAGES_METRICS_PATH)}>
                 Métricas
+              </Button>
+            )}
+            {(supervise || access.configure) && (
+              <Button variant="secondary" icon={<UsersRound />} onClick={() => navigate(MESSAGES_TEAM_PATH)}>
+                Equipo
               </Button>
             )}
             {access.configure && (

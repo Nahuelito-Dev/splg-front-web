@@ -11035,7 +11035,7 @@ export interface paths {
     get: operations['CompanyChatConfigController_leer'];
     /**
      * Cambiar los parámetros de la bandeja
-     * @description Lo que no viene queda como estaba; `null` en un texto o en el nombre del asistente vuelve al de omisión. `assistantAiEnabled` prende o apaga el asistente con IA. `inactivityCloseMinutes` y `inactivityWarningMinutes` prenden el cierre por inactividad (`null` lo apaga, y apagar el cierre apaga el aviso); `expectedReplyEnabled` muestra u oculta el tiempo de respuesta esperado a los clientes y choferes. Queda en la auditoría.
+     * @description Lo que no viene queda como estaba; `null` en un texto o en el nombre del asistente vuelve al de omisión. `assistantAiEnabled` prende o apaga el asistente con IA. `inactivityCloseMinutes` y `inactivityWarningMinutes` prenden el cierre por inactividad (`null` lo apaga, y apagar el cierre apaga el aviso); `expectedReplyEnabled` muestra u oculta el tiempo de respuesta esperado a los clientes y choferes. `autoAssignEnabled` y `autoAssignMaxOpen` prenden la asignación automática y fijan el tope por persona (prenderla o cambiar el tope reparte enseguida lo que espera). Queda en la auditoría.
      */
     put: operations['CompanyChatConfigController_actualizar'];
     post?: never;
@@ -11154,6 +11154,70 @@ export interface paths {
      * @description Nombre o color; lo que no viene queda como estaba. Las conversaciones que la tienen la muestran cambiada. Queda en la auditoría.
      */
     patch: operations['CompanyChatLabelsController_actualizar'];
+    trace?: never;
+  };
+  '/api/v2/me/chat-status': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Mi estado en la bandeja
+     * @description `available` = `online`, conectada al panel (o desconectada hace menos de 2 minutos: se conserva el estado elegido) y dentro del horario de atención de la empresa. `maxOpen` es el tope que rige (el propio o el de la empresa); `openAssigned`, las abiertas asignadas de los dos canales.
+     */
+    get: operations['MyChatStatusController_leer'];
+    /**
+     * Ponerme en línea o ausente
+     * @description Ponerse `online` dispara el reparto de lo que espera a una persona (si la asignación automática está prendida) sin esperarlo: lo que reciba llega por el socket (`chat:conversation`, `chat:inbox`, `chat:team`) y lo cuenta el próximo `GET`. Avisa `chat:team` al equipo. Queda en la auditoría.
+     */
+    put: operations['MyChatStatusController_cambiar'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/chat/agents': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * El equipo de la bandeja
+     * @description Las personas del personal de la empresa que atienden algún canal (`mensajes.clientes` o `mensajes.choferes`), por nombre, con su estado, conexión, disponibilidad, tope, abiertas asignadas, canales y la última vez que recibieron una sola. Sin email ni teléfono. En vivo: `chat:team` por el socket.
+     */
+    get: operations['CompanyChatAgentsController_listar'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/chat/agents/{userId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * El tope propio de una persona del equipo
+     * @description `maxOpenOverride` de 1 a 50, o `null` para volver al de la empresa. Cambiarlo dispara el reparto de lo que espera a una persona (no lo espera: lo asignado llega por el socket). Avisa `chat:team`. Queda en la auditoría.
+     */
+    put: operations['CompanyChatAgentsController_cambiarTope'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
   '/api/v2/me/conversations/expected-reply': {
@@ -22124,7 +22188,8 @@ export interface components {
         | 'support_housekeeping'
         | 'assistant_ai_sweep'
         | 'chat_attachment_scan'
-        | 'chat_inactivity_close';
+        | 'chat_inactivity_close'
+        | 'chat_auto_assign';
       /** @example Recompra: invitaciones anticipadas */
       title: string;
       /**
@@ -22201,7 +22266,8 @@ export interface components {
         | 'support_housekeeping'
         | 'assistant_ai_sweep'
         | 'chat_attachment_scan'
-        | 'chat_inactivity_close';
+        | 'chat_inactivity_close'
+        | 'chat_auto_assign';
       /** @example Recompra: invitaciones anticipadas */
       title: string;
       /**
@@ -22307,7 +22373,8 @@ export interface components {
         | 'support_housekeeping'
         | 'assistant_ai_sweep'
         | 'chat_attachment_scan'
-        | 'chat_inactivity_close';
+        | 'chat_inactivity_close'
+        | 'chat_auto_assign';
       /** @example Recompra: invitaciones anticipadas */
       title: string;
       /**
@@ -25806,6 +25873,8 @@ export interface components {
       canWrite: boolean;
       /** @description Sólo para el personal: quién la atiende; `null`, en la cola */
       assignedTo?: components['schemas']['InboxAssigneeDto'] | null;
+      /** @description Sólo para el personal: la asignó la asignación automática (8b) y nadie la cambió desde entonces; una asignación a mano o devolverla a la cola la vuelve a `false` */
+      assignedAutomatically?: boolean;
       /**
        * Format: uuid
        * @description Sólo para el personal: el reclamo creado desde el hilo
@@ -25818,7 +25887,7 @@ export interface components {
       firstResponseAt?: string | null;
       /**
        * Format: date-time
-       * @description Sólo para el personal: desde cuándo espera a una persona porque el asistente con IA se la pasó (C3); `null` si no espera. Se limpia cuando alguien la toma.
+       * @description Sólo para el personal: desde cuándo espera a una persona (el asistente con IA se la pasó, el cliente pidió una persona o, con la asignación automática prendida, el cliente o el chofer escribió y nadie la atiende); `null` si no espera. Se limpia cuando alguien la toma.
        */
       awaitingHumanSince?: string | null;
       /** @description Sólo para el personal: minutos hábiles (horario de atención, sin días sin atención) entre el primer mensaje del cliente o del chofer y la primera respuesta; `null` si todavía no hubo las dos cosas */
@@ -26242,6 +26311,10 @@ export interface components {
        * @description Desde cuándo rigen los plazos de inactividad (se prendió o se cambió el cierre o el aviso): lo anterior no cuenta; `null` si está apagado
        */
       inactivityEnabledAt: string | null;
+      /** @description Asignación automática (8b): la conversación que queda esperando a una persona se le da sola a alguien del equipo en línea con lugar (apagada por omisión) */
+      autoAssignEnabled: boolean;
+      /** @description Tope de conversaciones abiertas por persona para la asignación automática (5 por omisión); cada persona puede tener el suyo */
+      autoAssignMaxOpen: number;
       /** @description Si la empresa atiende ahora (horario y días sin atención) */
       openNow: boolean;
       /**
@@ -26284,6 +26357,10 @@ export interface components {
       inactivityCloseMinutes?: number | null;
       /** @description Minutos antes del cierre en que se avisa «Si no tenés más consultas, cerramos la conversación en N min» (5 a 1440 y menos que `inactivityCloseMinutes`). `null`: cierra sin avisar. */
       inactivityWarningMinutes?: number | null;
+      /** @description Asignación automática (8b): la conversación que queda esperando a una persona se le da sola a alguien del equipo en línea con lugar. Prenderla reparte enseguida lo que esté esperando. */
+      autoAssignEnabled?: boolean;
+      /** @description Tope de conversaciones abiertas por persona para la asignación automática (1 a 50); cada persona puede tener el suyo. Subirlo reparte enseguida lo que esté esperando. */
+      autoAssignMaxOpen?: number;
     };
     ChatHolidayResponseDto: {
       /** @example 2026-12-25 */
@@ -26404,6 +26481,67 @@ export interface components {
        * @enum {string}
        */
       color?: 'gray' | 'red' | 'orange' | 'yellow' | 'green' | 'teal' | 'blue' | 'indigo' | 'purple' | 'pink';
+    };
+    ChatStatusResponseDto: {
+      /**
+       * @description Lo que eligió la persona: `online` (recibe conversaciones) o `away`. Sin elegir nunca, `away`.
+       * @enum {string}
+       */
+      status: 'online' | 'away';
+      /** @description Tiene el panel abierto ahora (alguna pestaña conectada al tiempo real) */
+      connected: boolean;
+      /** @description Puede recibir conversaciones ahora: `online`, conectada al panel (o desconectada hace menos de 2 minutos) y dentro del horario de atención de la empresa */
+      available: boolean;
+      /** @description El tope que le rige: el propio o, si no tiene, el de la empresa */
+      maxOpen: number;
+      /** @description El tope propio; `null`: el de la empresa */
+      maxOpenOverride: number | null;
+      /** @description Conversaciones abiertas asignadas a la persona, de los dos canales (a mano o solas) */
+      openAssigned: number;
+      /** @description Los canales que atiende (por los permisos de su rol) */
+      channels: ('staff_customer' | 'staff_driver')[];
+    };
+    UpdateMyChatStatusDto: {
+      /**
+       * @description `online`: recibe conversaciones por asignación automática (si está conectada al panel y la empresa atiende); `away`: no recibe.
+       * @enum {string}
+       */
+      status: 'online' | 'away';
+    };
+    ChatAgentDto: {
+      /**
+       * @description Lo que eligió la persona: `online` (recibe conversaciones) o `away`. Sin elegir nunca, `away`.
+       * @enum {string}
+       */
+      status: 'online' | 'away';
+      /** @description Tiene el panel abierto ahora (alguna pestaña conectada al tiempo real) */
+      connected: boolean;
+      /** @description Puede recibir conversaciones ahora: `online`, conectada al panel (o desconectada hace menos de 2 minutos) y dentro del horario de atención de la empresa */
+      available: boolean;
+      /** @description El tope que le rige: el propio o, si no tiene, el de la empresa */
+      maxOpen: number;
+      /** @description El tope propio; `null`: el de la empresa */
+      maxOpenOverride: number | null;
+      /** @description Conversaciones abiertas asignadas a la persona, de los dos canales (a mano o solas) */
+      openAssigned: number;
+      /** @description Los canales que atiende (por los permisos de su rol) */
+      channels: ('staff_customer' | 'staff_driver')[];
+      /** Format: uuid */
+      userId: string;
+      /** @example Ana Pérez */
+      name: string;
+      /**
+       * Format: date-time
+       * @description La última vez que recibió una conversación por asignación automática; `null` si nunca
+       */
+      lastAssignedAt: string | null;
+    };
+    ChatAgentListResponseDto: {
+      items: components['schemas']['ChatAgentDto'][];
+    };
+    UpdateChatAgentDto: {
+      /** @description Tope propio de conversaciones abiertas (1 a 50); `null` vuelve al de la empresa. Es obligatorio mandarlo. */
+      maxOpenOverride: number | null;
     };
     MyConversationListResponseDto: {
       items: components['schemas']['InboxConversationDto'][];
@@ -27022,7 +27160,8 @@ export interface components {
         | 'support_housekeeping'
         | 'assistant_ai_sweep'
         | 'chat_attachment_scan'
-        | 'chat_inactivity_close';
+        | 'chat_inactivity_close'
+        | 'chat_auto_assign';
       /** @example Recupero de envases */
       title: string;
       /** @enum {string} */
@@ -27159,7 +27298,8 @@ export interface components {
         | 'support_housekeeping'
         | 'assistant_ai_sweep'
         | 'chat_attachment_scan'
-        | 'chat_inactivity_close';
+        | 'chat_inactivity_close'
+        | 'chat_auto_assign';
       /** @example Recupero de envases */
       title: string;
       /** @example M5 */
@@ -54412,7 +54552,8 @@ export interface operations {
           | 'support_housekeeping'
           | 'assistant_ai_sweep'
           | 'chat_attachment_scan'
-          | 'chat_inactivity_close';
+          | 'chat_inactivity_close'
+          | 'chat_auto_assign';
         status?: 'running' | 'ok' | 'partial' | 'failed' | 'skipped';
         /** @description Corridas que arrancaron desde este instante (ISO 8601; un día suelto es 00:00 UTC) */
         from?: string;
@@ -65632,7 +65773,7 @@ export interface operations {
           'application/json': components['schemas']['ChatSettingsResponseDto'];
         };
       };
-      /** @description Valor fuera de rango, texto vacío o de más de 500, nombre del asistente de menos de 2 o más de 60 caracteres o en más de una línea, variable desconocida o que no corresponde (`TEMPLATE_VARIABLE_UNKNOWN`), cierre por inactividad fuera de 30–10080 minutos, aviso fuera de 5–1440 minutos, aviso sin cierre o no anterior al cierre (contra lo ya guardado) */
+      /** @description Valor fuera de rango, texto vacío o de más de 500, nombre del asistente de menos de 2 o más de 60 caracteres o en más de una línea, variable desconocida o que no corresponde (`TEMPLATE_VARIABLE_UNKNOWN`), cierre por inactividad fuera de 30–10080 minutos, aviso fuera de 5–1440 minutos, aviso sin cierre o no anterior al cierre (contra lo ya guardado), `autoAssignEnabled` nulo o no booleano, `autoAssignMaxOpen` nulo, no entero o fuera de 1–50 */
       400: {
         headers: {
           [name: string]: unknown;
@@ -66120,6 +66261,169 @@ export interface operations {
       };
       /** @description Ya hay otra vigente con ese nombre (`CHAT_LABEL_NAME_TAKEN`) */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MyChatStatusController_leer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ChatStatusResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no es del personal de una empresa, el rol no atiende ningún canal de mensajes (`PERMISSION_DENIED`) o la empresa no tiene habilitados los mensajes (`MODULE_DISABLED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MyChatStatusController_cambiar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateMyChatStatusDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ChatStatusResponseDto'];
+        };
+      };
+      /** @description `status` falta o no es `online` ni `away` */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no es del personal de una empresa, el rol no atiende ningún canal de mensajes (`PERMISSION_DENIED`) o la empresa no tiene habilitados los mensajes (`MODULE_DISABLED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyChatAgentsController_listar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ChatAgentListResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no es del personal de una empresa, el rol no tiene `mensajes.supervisar` ni `mensajes.configurar` (`PERMISSION_DENIED`) o la empresa no tiene habilitados los mensajes (`MODULE_DISABLED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyChatAgentsController_cambiarTope: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        userId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateChatAgentDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ChatAgentDto'];
+        };
+      };
+      /** @description `userId` que no es uuid (`INVALID_ID`), o `maxOpenOverride` que falta, no es entero o está fuera de 1–50 */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para configurar los mensajes (`mensajes.configurar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La persona no es del equipo de la bandeja de la empresa: de otra empresa, dada de baja o bloqueada, o sin permiso de ningún canal */
+      404: {
         headers: {
           [name: string]: unknown;
         };

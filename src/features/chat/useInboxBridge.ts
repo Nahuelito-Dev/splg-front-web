@@ -19,7 +19,9 @@ import {
   type InboxConversationEvent,
   type InboxListEvent,
   type InboxMessageEvent,
+  type StaffTypingEvent,
 } from './socketEvents';
+import { staffTypingStore } from './staffTyping';
 import { toChatMessage } from './thread';
 import { typingStore } from './typing';
 
@@ -69,6 +71,10 @@ export const useInboxBridge = (enabled: boolean) => {
         if (!message || 'visibility' in message) return;
         // Una versión nueva de uno que ya estaba (el adjunto ya escaneado) no se avisa otra vez.
         const known = applyIncomingMessage(queryClient, message) === 'known';
+        // Alguien del equipo mandó su mensaje o su nota: se apaga su «está respondiendo…».
+        if (message.party === 'company' && message.sender?.userId) {
+          staffTypingStore.clear(message.conversationId, message.sender.userId);
+        }
         if (!fromPerson(message.party)) return;
         typingStore.clear(message.conversationId);
         // Con la conversación abierta en pantalla avisa éste (con el texto); si no, `chat:inbox` (sin el texto).
@@ -115,6 +121,10 @@ export const useInboxBridge = (enabled: boolean) => {
       }),
       subscribe<ChatTypingEvent>(CHAT_EVENTS.TYPING, ({ conversationId, party, until }) => {
         if (fromPerson(party)) typingStore.set(conversationId, party, until);
+      }),
+      // Otra persona del equipo escribe en la conversación (8b): «Ana está respondiendo…».
+      subscribe<StaffTypingEvent>(CHAT_EVENTS.STAFF_TYPING, (event) => {
+        if (event?.conversationId && event.userId) staffTypingStore.set(event);
       }),
       subscribe<InboxListEvent>(CHAT_EVENTS.INBOX, (event) => {
         if (!isInboxChannel(event.channel)) return;

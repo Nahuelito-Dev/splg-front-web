@@ -793,3 +793,17 @@ export const REGRESSION_OUTCOME: LabelMap<RegressionCaseResult['outcome']> = {
 
 /** Una pregunta frecuente sin respuesta todavía: no la usa el asistente hasta completarla. */
 export const FAQ_DRAFT: Label = { text: 'Borrador', tone: 'warn' };
+
+/**
+ * Cómo está alguien del equipo de la bandeja para la asignación automática (8b), deducido de `status`, `connected` y
+ * `available` (`features/chat/assignment/presence`).
+ */
+export const CHAT_AGENT_PRESENCE: LabelMap<'online' | 'away' | 'disconnected' | 'out_of_hours'> = {
+  online: { text: 'En línea', tone: 'success' },
+  away: { text: 'Ausente', tone: 'neutral' },
+  disconnected: { text: 'Desconectada', tone: 'warn' },
+  out_of_hours: { text: 'Fuera de horario', tone: 'info' },
+};
+
+/** La conversación se la dio la asignación automática y nadie la cambió desde entonces (8b). */
+export const AUTO_ASSIGNED: Label = { text: 'Asignada automáticamente', tone: 'info' };

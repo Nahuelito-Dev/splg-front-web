@@ -64,6 +64,10 @@ export const inboxKeys = {
   csat: () => [...root, 'csat'] as const,
   /** El catálogo de etiquetas de la empresa (7c). */
   labels: () => [...root, 'labels'] as const,
+  /** El estado propio de quien atiende (8b): lo mueve `chat:team`, no cada aviso de la bandeja. */
+  chatStatus: () => [...root, 'chat-status'] as const,
+  /** El equipo de la bandeja con su estado y su carga (8b). */
+  agents: () => [...root, 'agents'] as const,
 };
 
 /** Relee listas, fichas y contadores de la bandeja (los hilos se ponen al día por `seq`, no se releen). */
@@ -71,9 +75,17 @@ export const invalidateInbox = (queryClient: QueryClient) =>
   queryClient.invalidateQueries({
     queryKey: root,
     predicate: (query) =>
-      !['settings', 'hours', 'templates', 'suggestions', 'assignees', 'csat', 'labels'].includes(
-        String(query.queryKey[1]),
-      ),
+      ![
+        'settings',
+        'hours',
+        'templates',
+        'suggestions',
+        'assignees',
+        'csat',
+        'labels',
+        'chat-status',
+        'agents',
+      ].includes(String(query.queryKey[1])),
   });
 
 /** Cada cuánto se relee el resumen aunque el socket esté callado (red caída sin aviso). */
@@ -266,15 +278,20 @@ export const useConversationSuggestions = (conversationId: string, lastSeq: numb
 // ── Configuración ─────────────────────────────────────────────────────────────
 
 /** Configuración de la bandeja (también `openNow` / `nextOpenAt` para el indicador «Fuera de horario»). */
-export const useChatSettings = (enabled = true) =>
-  useQuery({ queryKey: inboxKeys.settings(), queryFn: getChatSettings, enabled, staleTime: 60_000 });
+export const useChatSettings = (enabled = true, refetchInterval?: number) =>
+  useQuery({ queryKey: inboxKeys.settings(), queryFn: getChatSettings, enabled, staleTime: 60_000, refetchInterval });
 
 export const useUpdateChatSettings = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: UpdateChatSettingsBody) => updateChatSettings(body),
-    onSuccess: (settings) => {
+    onSuccess: (settings, body) => {
       queryClient.setQueryData(inboxKeys.settings(), settings);
+      // El tope de la empresa es el de quien no tiene uno propio (8b).
+      if (body.autoAssignMaxOpen !== undefined || body.autoAssignEnabled !== undefined) {
+        void queryClient.invalidateQueries({ queryKey: inboxKeys.chatStatus() });
+        void queryClient.invalidateQueries({ queryKey: inboxKeys.agents() });
+      }
     },
   });
 };

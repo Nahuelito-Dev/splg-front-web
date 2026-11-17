@@ -33,6 +33,19 @@ const api = vi.hoisted(() => ({
 }));
 
 vi.mock('../../features/chat/useInboxAccess', () => ({ useInboxAccess: () => access.value }));
+vi.mock('../../services/api/chatAssignment', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  getMyChatStatus: () =>
+    Promise.resolve({
+      status: 'away',
+      connected: true,
+      available: false,
+      maxOpen: 5,
+      maxOpenOverride: null,
+      openAssigned: 0,
+      channels: ['staff_customer', 'staff_driver'],
+    }),
+}));
 vi.mock('../../services/api/inbox', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   ...api,

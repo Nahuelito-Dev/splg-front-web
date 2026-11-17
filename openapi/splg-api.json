@@ -30375,7 +30375,8 @@
                                 "support_housekeeping",
                                 "assistant_ai_sweep",
                                 "chat_attachment_scan",
-                                "chat_inactivity_close"
+                                "chat_inactivity_close",
+                                "chat_auto_assign"
                             ]
                         }
                     },
@@ -43189,7 +43190,7 @@
                 ]
             },
             "put": {
-                "description": "Lo que no viene queda como estaba; `null` en un texto o en el nombre del asistente vuelve al de omisión. `assistantAiEnabled` prende o apaga el asistente con IA. `inactivityCloseMinutes` y `inactivityWarningMinutes` prenden el cierre por inactividad (`null` lo apaga, y apagar el cierre apaga el aviso); `expectedReplyEnabled` muestra u oculta el tiempo de respuesta esperado a los clientes y choferes. Queda en la auditoría.",
+                "description": "Lo que no viene queda como estaba; `null` en un texto o en el nombre del asistente vuelve al de omisión. `assistantAiEnabled` prende o apaga el asistente con IA. `inactivityCloseMinutes` y `inactivityWarningMinutes` prenden el cierre por inactividad (`null` lo apaga, y apagar el cierre apaga el aviso); `expectedReplyEnabled` muestra u oculta el tiempo de respuesta esperado a los clientes y choferes. `autoAssignEnabled` y `autoAssignMaxOpen` prenden la asignación automática y fijan el tope por persona (prenderla o cambiar el tope reparte enseguida lo que espera). Queda en la auditoría.",
                 "operationId": "CompanyChatConfigController_actualizar",
                 "parameters": [],
                 "requestBody": {
@@ -43214,7 +43215,7 @@
                         }
                     },
                     "400": {
-                        "description": "Valor fuera de rango, texto vacío o de más de 500, nombre del asistente de menos de 2 o más de 60 caracteres o en más de una línea, variable desconocida o que no corresponde (`TEMPLATE_VARIABLE_UNKNOWN`), cierre por inactividad fuera de 30–10080 minutos, aviso fuera de 5–1440 minutos, aviso sin cierre o no anterior al cierre (contra lo ya guardado)"
+                        "description": "Valor fuera de rango, texto vacío o de más de 500, nombre del asistente de menos de 2 o más de 60 caracteres o en más de una línea, variable desconocida o que no corresponde (`TEMPLATE_VARIABLE_UNKNOWN`), cierre por inactividad fuera de 30–10080 minutos, aviso fuera de 5–1440 minutos, aviso sin cierre o no anterior al cierre (contra lo ya guardado), `autoAssignEnabled` nulo o no booleano, `autoAssignMaxOpen` nulo, no entero o fuera de 1–50"
                     },
                     "401": {
                         "description": "Sin token o token inválido"
@@ -43698,6 +43699,178 @@
                     }
                 ],
                 "summary": "Dar de baja una etiqueta",
+                "tags": [
+                    "Inbox settings (company)"
+                ]
+            }
+        },
+        "/api/v2/me/chat-status": {
+            "get": {
+                "description": "`available` = `online`, conectada al panel (o desconectada hace menos de 2 minutos: se conserva el estado elegido) y dentro del horario de atención de la empresa. `maxOpen` es el tope que rige (el propio o el de la empresa); `openAssigned`, las abiertas asignadas de los dos canales.",
+                "operationId": "MyChatStatusController_leer",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ChatStatusResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no es del personal de una empresa, el rol no atiende ningún canal de mensajes (`PERMISSION_DENIED`) o la empresa no tiene habilitados los mensajes (`MODULE_DISABLED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Mi estado en la bandeja",
+                "tags": [
+                    "Inbox (company)"
+                ]
+            },
+            "put": {
+                "description": "Ponerse `online` dispara el reparto de lo que espera a una persona (si la asignación automática está prendida) sin esperarlo: lo que reciba llega por el socket (`chat:conversation`, `chat:inbox`, `chat:team`) y lo cuenta el próximo `GET`. Avisa `chat:team` al equipo. Queda en la auditoría.",
+                "operationId": "MyChatStatusController_cambiar",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateMyChatStatusDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ChatStatusResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "`status` falta o no es `online` ni `away`"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no es del personal de una empresa, el rol no atiende ningún canal de mensajes (`PERMISSION_DENIED`) o la empresa no tiene habilitados los mensajes (`MODULE_DISABLED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ponerme en línea o ausente",
+                "tags": [
+                    "Inbox (company)"
+                ]
+            }
+        },
+        "/api/v2/chat/agents": {
+            "get": {
+                "description": "Las personas del personal de la empresa que atienden algún canal (`mensajes.clientes` o `mensajes.choferes`), por nombre, con su estado, conexión, disponibilidad, tope, abiertas asignadas, canales y la última vez que recibieron una sola. Sin email ni teléfono. En vivo: `chat:team` por el socket.",
+                "operationId": "CompanyChatAgentsController_listar",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ChatAgentListResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no es del personal de una empresa, el rol no tiene `mensajes.supervisar` ni `mensajes.configurar` (`PERMISSION_DENIED`) o la empresa no tiene habilitados los mensajes (`MODULE_DISABLED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "El equipo de la bandeja",
+                "tags": [
+                    "Inbox settings (company)"
+                ]
+            }
+        },
+        "/api/v2/chat/agents/{userId}": {
+            "put": {
+                "description": "`maxOpenOverride` de 1 a 50, o `null` para volver al de la empresa. Cambiarlo dispara el reparto de lo que espera a una persona (no lo espera: lo asignado llega por el socket). Avisa `chat:team`. Queda en la auditoría.",
+                "operationId": "CompanyChatAgentsController_cambiarTope",
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateChatAgentDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ChatAgentDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "`userId` que no es uuid (`INVALID_ID`), o `maxOpenOverride` que falta, no es entero o está fuera de 1–50"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para configurar los mensajes (`mensajes.configurar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`)"
+                    },
+                    "404": {
+                        "description": "La persona no es del equipo de la bandeja de la empresa: de otra empresa, dada de baja o bloqueada, o sin permiso de ningún canal"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "El tope propio de una persona del equipo",
                 "tags": [
                     "Inbox settings (company)"
                 ]
@@ -71224,7 +71397,8 @@
                             "support_housekeeping",
                             "assistant_ai_sweep",
                             "chat_attachment_scan",
-                            "chat_inactivity_close"
+                            "chat_inactivity_close",
+                            "chat_auto_assign"
                         ]
                     },
                     "title": {
@@ -71347,7 +71521,8 @@
                             "support_housekeeping",
                             "assistant_ai_sweep",
                             "chat_attachment_scan",
-                            "chat_inactivity_close"
+                            "chat_inactivity_close",
+                            "chat_auto_assign"
                         ]
                     },
                     "title": {
@@ -71546,7 +71721,8 @@
                             "support_housekeeping",
                             "assistant_ai_sweep",
                             "chat_attachment_scan",
-                            "chat_inactivity_close"
+                            "chat_inactivity_close",
+                            "chat_auto_assign"
                         ]
                     },
                     "title": {
@@ -81076,6 +81252,10 @@
                             }
                         ]
                     },
+                    "assignedAutomatically": {
+                        "type": "boolean",
+                        "description": "Sólo para el personal: la asignó la asignación automática (8b) y nadie la cambió desde entonces; una asignación a mano o devolverla a la cola la vuelve a `false`"
+                    },
                     "linkedClaimId": {
                         "type": "string",
                         "format": "uuid",
@@ -81092,7 +81272,7 @@
                         "type": "string",
                         "format": "date-time",
                         "nullable": true,
-                        "description": "Sólo para el personal: desde cuándo espera a una persona porque el asistente con IA se la pasó (C3); `null` si no espera. Se limpia cuando alguien la toma."
+                        "description": "Sólo para el personal: desde cuándo espera a una persona (el asistente con IA se la pasó, el cliente pidió una persona o, con la asignación automática prendida, el cliente o el chofer escribió y nadie la atiende); `null` si no espera. Se limpia cuando alguien la toma."
                     },
                     "firstResponseBusinessMinutes": {
                         "type": "number",
@@ -82148,6 +82328,16 @@
                         "nullable": true,
                         "description": "Desde cuándo rigen los plazos de inactividad (se prendió o se cambió el cierre o el aviso): lo anterior no cuenta; `null` si está apagado"
                     },
+                    "autoAssignEnabled": {
+                        "type": "boolean",
+                        "description": "Asignación automática (8b): la conversación que queda esperando a una persona se le da sola a alguien del equipo en línea con lugar (apagada por omisión)"
+                    },
+                    "autoAssignMaxOpen": {
+                        "type": "number",
+                        "minimum": 1,
+                        "maximum": 50,
+                        "description": "Tope de conversaciones abiertas por persona para la asignación automática (5 por omisión); cada persona puede tener el suyo"
+                    },
                     "openNow": {
                         "type": "boolean",
                         "description": "Si la empresa atiende ahora (horario y días sin atención)"
@@ -82182,6 +82372,8 @@
                     "inactivityCloseMinutes",
                     "inactivityWarningMinutes",
                     "inactivityEnabledAt",
+                    "autoAssignEnabled",
+                    "autoAssignMaxOpen",
                     "openNow",
                     "nextOpenAt"
                 ]
@@ -82278,6 +82470,16 @@
                         "minimum": 5,
                         "maximum": 1440,
                         "description": "Minutos antes del cierre en que se avisa «Si no tenés más consultas, cerramos la conversación en N min» (5 a 1440 y menos que `inactivityCloseMinutes`). `null`: cierra sin avisar."
+                    },
+                    "autoAssignEnabled": {
+                        "type": "boolean",
+                        "description": "Asignación automática (8b): la conversación que queda esperando a una persona se le da sola a alguien del equipo en línea con lugar. Prenderla reparte enseguida lo que esté esperando."
+                    },
+                    "autoAssignMaxOpen": {
+                        "type": "number",
+                        "minimum": 1,
+                        "maximum": 50,
+                        "description": "Tope de conversaciones abiertas por persona para la asignación automática (1 a 50); cada persona puede tener el suyo. Subirlo reparte enseguida lo que esté esperando."
                     }
                 }
             },
@@ -82627,6 +82829,184 @@
                         "example": "orange"
                     }
                 }
+            },
+            "ChatStatusResponseDto": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "online",
+                            "away"
+                        ],
+                        "description": "Lo que eligió la persona: `online` (recibe conversaciones) o `away`. Sin elegir nunca, `away`."
+                    },
+                    "connected": {
+                        "type": "boolean",
+                        "description": "Tiene el panel abierto ahora (alguna pestaña conectada al tiempo real)"
+                    },
+                    "available": {
+                        "type": "boolean",
+                        "description": "Puede recibir conversaciones ahora: `online`, conectada al panel (o desconectada hace menos de 2 minutos) y dentro del horario de atención de la empresa"
+                    },
+                    "maxOpen": {
+                        "type": "number",
+                        "minimum": 1,
+                        "maximum": 50,
+                        "description": "El tope que le rige: el propio o, si no tiene, el de la empresa"
+                    },
+                    "maxOpenOverride": {
+                        "type": "number",
+                        "nullable": true,
+                        "minimum": 1,
+                        "maximum": 50,
+                        "description": "El tope propio; `null`: el de la empresa"
+                    },
+                    "openAssigned": {
+                        "type": "number",
+                        "description": "Conversaciones abiertas asignadas a la persona, de los dos canales (a mano o solas)"
+                    },
+                    "channels": {
+                        "type": "array",
+                        "description": "Los canales que atiende (por los permisos de su rol)",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "staff_customer",
+                                "staff_driver"
+                            ]
+                        }
+                    }
+                },
+                "required": [
+                    "status",
+                    "connected",
+                    "available",
+                    "maxOpen",
+                    "maxOpenOverride",
+                    "openAssigned",
+                    "channels"
+                ]
+            },
+            "UpdateMyChatStatusDto": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "online",
+                            "away"
+                        ],
+                        "description": "`online`: recibe conversaciones por asignación automática (si está conectada al panel y la empresa atiende); `away`: no recibe."
+                    }
+                },
+                "required": [
+                    "status"
+                ]
+            },
+            "ChatAgentDto": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "online",
+                            "away"
+                        ],
+                        "description": "Lo que eligió la persona: `online` (recibe conversaciones) o `away`. Sin elegir nunca, `away`."
+                    },
+                    "connected": {
+                        "type": "boolean",
+                        "description": "Tiene el panel abierto ahora (alguna pestaña conectada al tiempo real)"
+                    },
+                    "available": {
+                        "type": "boolean",
+                        "description": "Puede recibir conversaciones ahora: `online`, conectada al panel (o desconectada hace menos de 2 minutos) y dentro del horario de atención de la empresa"
+                    },
+                    "maxOpen": {
+                        "type": "number",
+                        "minimum": 1,
+                        "maximum": 50,
+                        "description": "El tope que le rige: el propio o, si no tiene, el de la empresa"
+                    },
+                    "maxOpenOverride": {
+                        "type": "number",
+                        "nullable": true,
+                        "minimum": 1,
+                        "maximum": 50,
+                        "description": "El tope propio; `null`: el de la empresa"
+                    },
+                    "openAssigned": {
+                        "type": "number",
+                        "description": "Conversaciones abiertas asignadas a la persona, de los dos canales (a mano o solas)"
+                    },
+                    "channels": {
+                        "type": "array",
+                        "description": "Los canales que atiende (por los permisos de su rol)",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "staff_customer",
+                                "staff_driver"
+                            ]
+                        }
+                    },
+                    "userId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Ana Pérez"
+                    },
+                    "lastAssignedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "La última vez que recibió una conversación por asignación automática; `null` si nunca"
+                    }
+                },
+                "required": [
+                    "status",
+                    "connected",
+                    "available",
+                    "maxOpen",
+                    "maxOpenOverride",
+                    "openAssigned",
+                    "channels",
+                    "userId",
+                    "name",
+                    "lastAssignedAt"
+                ]
+            },
+            "ChatAgentListResponseDto": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ChatAgentDto"
+                        }
+                    }
+                },
+                "required": [
+                    "items"
+                ]
+            },
+            "UpdateChatAgentDto": {
+                "type": "object",
+                "properties": {
+                    "maxOpenOverride": {
+                        "type": "number",
+                        "nullable": true,
+                        "minimum": 1,
+                        "maximum": 50,
+                        "description": "Tope propio de conversaciones abiertas (1 a 50); `null` vuelve al de la empresa. Es obligatorio mandarlo."
+                    }
+                },
+                "required": [
+                    "maxOpenOverride"
+                ]
             },
             "MyConversationListResponseDto": {
                 "type": "object",
@@ -84144,7 +84524,8 @@
                             "support_housekeeping",
                             "assistant_ai_sweep",
                             "chat_attachment_scan",
-                            "chat_inactivity_close"
+                            "chat_inactivity_close",
+                            "chat_auto_assign"
                         ]
                     },
                     "title": {
@@ -84438,7 +84819,8 @@
                             "support_housekeeping",
                             "assistant_ai_sweep",
                             "chat_attachment_scan",
-                            "chat_inactivity_close"
+                            "chat_inactivity_close",
+                            "chat_auto_assign"
                         ]
                     },
                     "title": {

@@ -59,6 +59,8 @@ export interface ChatThreadProps {
    * chofer (cambia cuando escribe otro) y `pick`, que pega un texto en el compositor para editarlo: nunca lo envía.
    */
   renderSuggestions?: (args: { lastCounterpartSeq: number; pick: (text: string) => void }) => ReactNode;
+  /** Un aviso en su propio renglón entre el hilo y el compositor (bandeja: «Ana está respondiendo…»); no lo tapa. */
+  composerNotice?: ReactNode;
 }
 
 const useVisible = () => {
@@ -90,6 +92,7 @@ export const ChatThread = ({
   allowReply = false,
   variables,
   renderSuggestions,
+  composerNotice,
 }: ChatThreadProps) => {
   const { conversationId } = source;
   const draftKey = conversationId ?? `${side}:new`;
@@ -336,6 +339,7 @@ export const ChatThread = ({
         onAtBottomChange={setAtBottom}
         empty={empty}
       />
+      {composerNotice}
       {canWrite ? (
         <Composer
           draftKey={draftKey}
