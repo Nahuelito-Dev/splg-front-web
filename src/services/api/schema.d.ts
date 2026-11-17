@@ -12440,6 +12440,41 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    DispatchMetricsResponseDto: {
+      /** Format: date-time */
+      from: string;
+      /** Format: date-time */
+      to: string;
+      /** @description Pedidos con al menos una oferta en el período */
+      pedidosDespachados: number;
+      ofertasPorPedido: number | null;
+      /** @description Sobre las ofertas resueltas, 0 a 100 */
+      porcentajeAceptadas: number | null;
+      porcentajeRechazadas: number | null;
+      porcentajeVencidas: number | null;
+      /** @description Sólo ofertas con respuesta registrada, en segundos */
+      respuestaDelChofer: components['schemas']['TiempoEnSegundosDto'];
+      /** @description Desde que el pedido quedó pendiente hasta que un chofer lo aceptó, en segundos */
+      hastaAsignar: components['schemas']['TiempoEnSegundosDto'];
+      /** @description Pedidos que el sistema canceló porque ningún chofer los tomó */
+      pedidosSinChofer: number;
+      topChoferes: components['schemas']['ChoferEnElTopDto'][];
+    };
+    TiempoEnSegundosDto: {
+      mediana: number | null;
+      p90: number | null;
+    };
+    ChoferEnElTopDto: {
+      /** Format: uuid */
+      driverId: string;
+      nombre: string;
+      /** @description Ofertas ya resueltas del período */
+      ofertas: number;
+      aceptadas: number;
+      /** @description 0 a 100 */
+      tasaAceptacion: number;
+      medianaRespuestaSegundos: number | null;
+    };
     RunDocumentReadingsDto: {
       /** @description Con true sólo cuenta los adjuntos que leería, sin descargar ni leer archivos */
       dryRun?: boolean;

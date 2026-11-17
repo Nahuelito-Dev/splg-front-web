@@ -54,6 +54,7 @@ export const queryKeys = {
   attachments: resource('attachments'),
   chatAttachments: resource('chatAttachments'),
   chatMetrics: resource('chatMetrics'),
+  dispatchMetrics: resource('dispatchMetrics'),
   cashBoxes: resource('cashBoxes'),
   cashCategories: resource('cashCategories'),
   cashSettings: resource('cashSettings'),

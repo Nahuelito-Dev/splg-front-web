@@ -19,6 +19,7 @@ import { usePermissions } from '../../hooks';
 import { errorMessage } from '../../services/api/errors';
 import { useDispatchConfig, useUpdateDispatchConfig } from '../../services/queries/moduleConfig';
 import { confirm, notify } from '../../utils/notifications';
+import { DispatchMetricsSection } from './components/DispatchMetricsSection';
 import { DistributorRequired } from './components/DistributorRequired';
 import { SettingsMeta } from './components/SettingsMeta';
 import { StaleConfigNotice } from './components/StaleConfigNotice';
@@ -289,7 +290,10 @@ export const DispatchSettings = () => {
       ) : isPending ? (
         <Skeleton className="h-64 w-full" />
       ) : (
-        <DispatchForm config={data} canWrite={canWrite} writeHint={writeHint} />
+        <div className="space-y-6">
+          <DispatchMetricsSection />
+          <DispatchForm config={data} canWrite={canWrite} writeHint={writeHint} />
+        </div>
       )}
     </PageContainer>
   );
