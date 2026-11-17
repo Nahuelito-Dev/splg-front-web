@@ -114,7 +114,7 @@ export const formatElapsed = (isoDate: string, now: number): string => {
   return `hace ${Math.floor(minutes / 60)}h`;
 };
 
-/** Iniciales para un avatar: "Jeny Gas" → "JG". */
+/** Iniciales para un avatar: "Gas del Litoral" → "GL". */
 export const initialsOf = (name: string): string =>
   name
     .trim()

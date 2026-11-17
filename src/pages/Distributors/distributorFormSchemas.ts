@@ -29,7 +29,7 @@ export const distributorCreateSchema = z.object({
     .trim()
     .min(2, 'Mínimo 2 caracteres')
     .max(60, 'Hasta 60 caracteres')
-    .regex(SLUG_RE, 'Minúsculas, números y guiones (ej: jeny-gas)'),
+    .regex(SLUG_RE, 'Minúsculas, números y guiones (ej: gas-del-litoral)'),
 });
 
 /** Edición: todo menos el slug. */

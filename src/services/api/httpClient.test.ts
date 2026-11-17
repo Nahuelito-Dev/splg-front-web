@@ -100,7 +100,7 @@ describe('attachAuthHeaders', () => {
 
   it('sin sesión de soporte no manda el header, ni el viejo X-Distributor de «Ver como»', async () => {
     localStorage.setItem('token', 'el-token');
-    localStorage.setItem('selectedDistributor', 'jeny-gas');
+    localStorage.setItem('selectedDistributor', 'gas-del-litoral');
     const result = await attachAuthHeaders(config());
     expect(result.headers['X-Support-Session']).toBeUndefined();
     expect(result.headers['X-Distributor']).toBeUndefined();

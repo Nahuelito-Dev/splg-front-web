@@ -120,12 +120,12 @@ const CreateDistributorForm = () => {
       />
       <Form methods={methods} onSubmit={onSubmit} id="distributor-create" className="space-y-6">
         <FormSection title="Datos de la empresa">
-          <FormInput name="name" label="Nombre" required placeholder="Jeny Gas" />
+          <FormInput name="name" label="Nombre" required placeholder="Gas del Litoral" />
           <FormInput
             name="slug"
             label="Slug"
             required
-            placeholder="jeny-gas"
+            placeholder="gas-del-litoral"
             hint="Minúsculas, números y guiones. No se cambia después."
           />
           <BusinessFields />

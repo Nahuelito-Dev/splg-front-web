@@ -9,7 +9,7 @@ const ENTRY = {
   auditId: 'a-1',
   actionType: { id: 2, name: 'Modificación' },
   userId: 'u-1',
-  user: { userId: 'u-1', fullName: 'Admin Jeny', email: 'admin@splg.com', deleted: false },
+  user: { userId: 'u-1', fullName: 'Admin Litoral', email: 'admin@splg.com', deleted: false },
   distributorId: 'd-1',
   entity: 'Cylinder',
   recordId: 'c-1',
@@ -33,7 +33,7 @@ describe('DataAuditDrawer', () => {
     expect(within(row).getByText('in_depot')).toBeInTheDocument();
     expect(within(row).getByText('retired')).toBeInTheDocument();
     expect(screen.getByText('Envase físico', { selector: 'dd' })).toBeInTheDocument();
-    expect(screen.getByText('Admin Jeny')).toBeInTheDocument();
+    expect(screen.getByText('Admin Litoral')).toBeInTheDocument();
   });
 
   it('un valor nulo se ve como raya y lo oculto se muestra tal cual', () => {

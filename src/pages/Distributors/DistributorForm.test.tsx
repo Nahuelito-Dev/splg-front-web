@@ -95,8 +95,8 @@ describe('DistributorForm', () => {
   it('el slug y los largos se validan como en el DTO del back', async () => {
     const { create } = setup();
     renderAt('/distributors/new');
-    fireEvent.change(screen.getByLabelText(/^Nombre/), { target: { value: 'Jeny Gas' } });
-    fireEvent.change(screen.getByLabelText(/^Slug/), { target: { value: 'Jeny Gas' } });
+    fireEvent.change(screen.getByLabelText(/^Nombre/), { target: { value: 'Gas del Litoral' } });
+    fireEvent.change(screen.getByLabelText(/^Slug/), { target: { value: 'Gas del Litoral' } });
     fireEvent.change(screen.getByLabelText(/^CUIT/), { target: { value: '3'.repeat(21) } });
     fireEvent.click(screen.getByRole('button', { name: 'Crear empresa' }));
     expect(await screen.findByText(/Minúsculas, números y guiones \(ej/)).toBeInTheDocument();
@@ -107,17 +107,17 @@ describe('DistributorForm', () => {
   it('manda el mismo cuerpo que el modal (vacíos sin enviar) y va a la ficha de la empresa creada', async () => {
     const { create } = setup();
     renderAt('/distributors/new');
-    fireEvent.change(screen.getByLabelText(/^Nombre/), { target: { value: 'Jeny Gas' } });
-    fireEvent.change(screen.getByLabelText(/^Slug/), { target: { value: 'jeny-gas' } });
-    fireEvent.change(screen.getByLabelText(/^Email/), { target: { value: 'hola@jeny.com' } });
+    fireEvent.change(screen.getByLabelText(/^Nombre/), { target: { value: 'Gas del Litoral' } });
+    fireEvent.change(screen.getByLabelText(/^Slug/), { target: { value: 'gas-del-litoral' } });
+    fireEvent.change(screen.getByLabelText(/^Email/), { target: { value: 'hola@gasdellitoral.com' } });
     fireEvent.click(screen.getByRole('button', { name: 'Crear empresa' }));
     await waitFor(() => expect(create.mutate).toHaveBeenCalled());
     expect(create.mutate.mock.calls[0][0]).toEqual({
-      name: 'Jeny Gas',
-      slug: 'jeny-gas',
+      name: 'Gas del Litoral',
+      slug: 'gas-del-litoral',
       legal_name: undefined,
       tax_id: undefined,
-      email: 'hola@jeny.com',
+      email: 'hola@gasdellitoral.com',
       phone: undefined,
     });
     expect(await screen.findByText('ficha de la empresa')).toBeInTheDocument();

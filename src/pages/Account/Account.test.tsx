@@ -16,7 +16,7 @@ vi.mock('../../services/queries/users', () => ({
   useMyAccount: () => ({
     data: {
       user_id: 'u-real-1',
-      full_name: 'Admin Jeny',
+      full_name: 'Admin Litoral',
       email: 'admin@splg.com',
       photoUrl: 'https://splg.s3.amazonaws.com/users/u.jpg?X-Amz-Signature=abc',
       role: { type: 'admin' },
