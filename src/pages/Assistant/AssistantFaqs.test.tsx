@@ -5,8 +5,10 @@ import { ApiError } from '../../services/api/errors';
 import { describeListStates, failed, loading, mutation, ok, renderPage } from '../../test/pageTest';
 
 const state = vi.hoisted(() => ({
-  perms: { canWrite: true, writeHint: undefined as string | undefined },
+  perms: { canWrite: true, writeHint: undefined as string | undefined, inSupport: false },
   permiso: { allowed: true, known: true },
+  /** Los permisos que difieren de `permiso` (por código). */
+  permisos: {} as Record<string, { allowed: boolean; known: boolean }>,
   list: undefined as unknown,
   copy: undefined as unknown,
   remove: undefined as unknown,
@@ -22,7 +24,14 @@ const state = vi.hoisted(() => ({
 vi.mock('../../hooks', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   usePermissions: () => state.perms,
-  usePermiso: () => state.permiso,
+  usePermiso: (code: string) => state.permisos[code] ?? state.permiso,
+}));
+vi.mock('./lab/CompanyPreviewTab', () => ({
+  CompanyPreviewTab: ({ blockedReason }: { blockedReason?: string }) => <p>{`Probador ${blockedReason ?? 'libre'}`}</p>,
+}));
+vi.mock('./lab/CompanyUnansweredTab', () => ({ CompanyUnansweredTab: () => <p>Preguntas sin respuesta</p> }));
+vi.mock('./lab/RegressionTab', () => ({
+  RegressionTab: ({ mayManage }: { mayManage: boolean }) => <p>{`Lote ${mayManage ? 'con' : 'sin'} gestión`}</p>,
 }));
 vi.mock('../../services/queries/assistant', () => ({
   useCompanyFaqs: () => state.list,
@@ -87,8 +96,9 @@ const callbacks = (m: unknown) =>
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
-  state.perms = { canWrite: true, writeHint: undefined };
+  state.perms = { canWrite: true, writeHint: undefined, inSupport: false };
   state.permiso = { allowed: true, known: true };
+  state.permisos = {};
 });
 
 describeListStates({
@@ -314,7 +324,7 @@ describe('AssistantFaqs', () => {
   });
 
   it('en modo soporte (sólo lectura) el alta y la copia se ven apagadas con el motivo y no hacen nada', () => {
-    state.perms = { canWrite: false, writeHint: 'Modo soporte: sólo lectura' };
+    state.perms = { canWrite: false, writeHint: 'Modo soporte: sólo lectura', inSupport: true };
     draw();
     const create = screen.getByRole('button', { name: 'Nueva pregunta' });
     const copy = screen.getByRole('button', { name: 'Cargar preguntas de ejemplo' });
@@ -329,7 +339,7 @@ describe('AssistantFaqs', () => {
   });
 
   it('en modo soporte con la base vacía, la copia del vacío tampoco llama a la API', () => {
-    state.perms = { canWrite: false, writeHint: 'Modo soporte: sólo lectura' };
+    state.perms = { canWrite: false, writeHint: 'Modo soporte: sólo lectura', inSupport: true };
     draw(base([]));
     fireEvent.click(screen.getByRole('button', { name: 'Cargar preguntas de ejemplo' }));
     expect((state.copy as Mut).mutate).not.toHaveBeenCalled();
@@ -455,5 +465,103 @@ describe('AssistantFaqs: el formulario', () => {
         expect.anything(),
       ),
     );
+  });
+});
+
+describe('AssistantFaqs: pestañas del asistente', () => {
+  it('con `asistente.gestionar`, las cuatro pestañas; cada una muestra lo suyo y las acciones de la base sólo en la base', () => {
+    draw();
+    const tabs = screen.getByRole('tablist', { name: 'Secciones del asistente' });
+    expect(
+      within(tabs)
+        .getAllByRole('tab')
+        .map((tab) => tab.textContent),
+    ).toEqual(['Preguntas frecuentes', 'Probar', 'Sin respuesta', 'Lote de pruebas']);
+    expect(screen.getByRole('button', { name: 'Nueva pregunta' })).toBeInTheDocument();
+    fireEvent.click(within(tabs).getByRole('tab', { name: 'Probar' }));
+    expect(screen.getByText('Probador libre')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Nueva pregunta' })).not.toBeInTheDocument();
+    fireEvent.click(within(tabs).getByRole('tab', { name: 'Sin respuesta' }));
+    expect(screen.getByText('Preguntas sin respuesta')).toBeInTheDocument();
+    fireEvent.click(within(tabs).getByRole('tab', { name: 'Lote de pruebas' }));
+    expect(screen.getByText('Lote con gestión')).toBeInTheDocument();
+  });
+
+  it('sólo con `asistente.ver`: la base y el lote (sin gestión); sin probar ni preguntas sin respuesta', () => {
+    state.permisos = { 'asistente.gestionar': { allowed: false, known: true } };
+    draw(base(), '/settings/assistant?tab=unanswered');
+    expect(screen.queryByRole('tab', { name: 'Probar' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Sin respuesta' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Preguntas sin respuesta')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: 'Lote de pruebas' }));
+    expect(screen.getByText('Lote sin gestión')).toBeInTheDocument();
+  });
+
+  it('en modo soporte no aparecen las preguntas sin respuesta (traen texto de los clientes) y probar queda apagado', () => {
+    state.perms = { canWrite: false, writeHint: 'Modo soporte: sólo lectura', inSupport: true };
+    draw(base(), '/settings/assistant?tab=test');
+    expect(screen.queryByRole('tab', { name: 'Sin respuesta' })).not.toBeInTheDocument();
+    expect(screen.getByText('Probador Modo soporte: sólo lectura')).toBeInTheDocument();
+  });
+
+  it('sin `asistente.ver` no hay lote; con un solo permiso de lectura no se dibujan pestañas', () => {
+    state.permiso = { allowed: false, known: true };
+    draw();
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+    expect(screen.getByText('¿Qué medios de pago aceptan?')).toBeInTheDocument();
+  });
+});
+
+describe('AssistantFaqs: borradores', () => {
+  const withDraft = () =>
+    base([faq(), faq({ id: 'f-2', key: null, question: '¿Llegan a Garupá?', answer: '', isDraft: true, position: 2 })]);
+
+  it('el borrador lleva «Borrador», no muestra respuesta como publicada y el aviso lo cuenta aparte', () => {
+    draw(withDraft());
+    const items = screen.getAllByRole('listitem');
+    const draft = items.find((item) => item.textContent?.includes('¿Llegan a Garupá?'));
+    expect(draft).toBeDefined();
+    expect(within(draft as HTMLElement).getByText('Borrador')).toBeInTheDocument();
+    expect(draft).toHaveTextContent('el asistente no la usa hasta que la completes');
+    const published = items.find((item) => item.textContent?.includes('¿Qué medios de pago aceptan?'));
+    expect(within(published as HTMLElement).queryByText('Borrador')).not.toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Sobre esta base de conocimiento' })).toHaveTextContent(
+      '1 está en borrador',
+    );
+  });
+
+  it('el filtro de estado deja sólo los borradores o sólo las publicadas, con su chip', () => {
+    draw(withDraft());
+    fireEvent.change(screen.getByLabelText('Estado'), { target: { value: 'draft' } });
+    expect(screen.getByText('¿Llegan a Garupá?')).toBeInTheDocument();
+    expect(screen.queryByText('¿Qué medios de pago aceptan?')).not.toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Filtros activos' })).toHaveTextContent('Estado: Borradores');
+    fireEvent.change(screen.getByLabelText('Estado'), { target: { value: 'published' } });
+    expect(screen.queryByText('¿Llegan a Garupá?')).not.toBeInTheDocument();
+    expect(screen.getByText('¿Qué medios de pago aceptan?')).toBeInTheDocument();
+  });
+
+  it('completar la respuesta de un borrador lo publica (PATCH con la respuesta)', async () => {
+    draw(withDraft());
+    fireEvent.click(screen.getByRole('button', { name: 'Editar la pregunta «¿Llegan a Garupá?»' }));
+    const dialog = screen.getByRole('dialog', { name: 'Completar el borrador' });
+    fireEvent.change(within(dialog).getByLabelText(/^Respuesta/), { target: { value: 'Sí, todos los días.' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Publicar' }));
+    await waitFor(() => expect((state.update as Mut).mutate).toHaveBeenCalledTimes(1));
+    expect((state.update as Mut).mutate.mock.calls[0][0]).toEqual({
+      id: 'f-2',
+      body: { question: '¿Llegan a Garupá?', answer: 'Sí, todos los días.' },
+    });
+    callbacks(state.update).onSuccess?.();
+    expect(state.success).toHaveBeenCalledWith('Pregunta publicada');
+  });
+
+  it('un borrador sin respuesta no se publica vacío: zod pide la respuesta', async () => {
+    draw(withDraft());
+    fireEvent.click(screen.getByRole('button', { name: 'Editar la pregunta «¿Llegan a Garupá?»' }));
+    const dialog = screen.getByRole('dialog', { name: 'Completar el borrador' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Publicar' }));
+    expect(await within(dialog).findByText('Escribí la respuesta')).toBeInTheDocument();
+    expect((state.update as Mut).mutate).not.toHaveBeenCalled();
   });
 });

@@ -68,6 +68,16 @@ const NO_SON_PLATA: Excepcion[] = [
     motivo: 'porción de un gráfico: cuenta casos, no pesos',
   },
   {
+    ruta: 'src/pages/Assistant/lab/labRules.ts',
+    fragmento: 'run.total) *',
+    motivo: 'avance del lote de pruebas: casos corridos sobre casos totales',
+  },
+  {
+    ruta: 'src/pages/Assistant/lab/labRules.ts',
+    fragmento: '/ run.total',
+    motivo: 'avance del lote de pruebas: casos corridos sobre casos totales',
+  },
+  {
     ruta: 'src/common/components/ui/analyticShare.ts',
     fragmento: '/ total',
     motivo: 'porción de un conteo sobre su total',

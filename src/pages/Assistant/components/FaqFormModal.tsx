@@ -38,7 +38,7 @@ export const FaqFormModal = ({ open, onClose, faq }: Props) => {
     clear();
     const options = {
       onSuccess: () => {
-        notify.success(faq ? 'Pregunta actualizada' : 'Pregunta agregada');
+        notify.success(faq?.isDraft ? 'Pregunta publicada' : faq ? 'Pregunta actualizada' : 'Pregunta agregada');
         onClose();
       },
       onError: apply,
@@ -54,15 +54,19 @@ export const FaqFormModal = ({ open, onClose, faq }: Props) => {
       onClose={onClose}
       closeBlocked={pending}
       size="md"
-      title={faq ? 'Editar pregunta frecuente' : 'Nueva pregunta frecuente'}
-      description="El asistente responde con este texto, identificándose como respuesta automática."
+      title={faq?.isDraft ? 'Completar el borrador' : faq ? 'Editar pregunta frecuente' : 'Nueva pregunta frecuente'}
+      description={
+        faq?.isDraft
+          ? 'Escribí la respuesta: al guardarla se publica y el asistente empieza a usarla.'
+          : 'El asistente responde con este texto, identificándose como respuesta automática.'
+      }
       footer={
         <>
           <Button variant="secondary" onClick={onClose} disabled={pending}>
             Cancelar
           </Button>
           <Button type="submit" form="assistant-faq-form" loading={pending}>
-            {faq ? 'Guardar cambios' : 'Agregar pregunta'}
+            {faq?.isDraft ? 'Publicar' : faq ? 'Guardar cambios' : 'Agregar pregunta'}
           </Button>
         </>
       }

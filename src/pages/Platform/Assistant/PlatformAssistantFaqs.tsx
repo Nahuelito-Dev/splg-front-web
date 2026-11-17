@@ -1,5 +1,5 @@
 import { PageContainer, PageHeader, Tabs, tabPanelProps } from '../../../common/components/ui';
-import { useUrlParams } from '../../../hooks';
+import { usePermiso, useUrlParams } from '../../../hooks';
 import {
   useCreatePlatformFaq,
   useCreatePlatformTemplate,
@@ -12,11 +12,16 @@ import {
 } from '../../../services/queries/assistant';
 import { notify } from '../../../utils/notifications';
 import { KnowledgeBaseNotice } from '../../Assistant/components/KnowledgeBaseNotice';
+import { draftCount } from '../../Assistant/faqRules';
 import { KeyedFaqPanel } from './KeyedFaqPanel';
+import { PlatformPreviewTab } from './PlatformPreviewTab';
+import { PlatformUnansweredTab } from './PlatformUnansweredTab';
 import { SupportAssistantCard } from './SupportAssistantCard';
 
 const TABS_ID = 'assistant-tabs';
-type Tab = 'orixtech' | 'examples';
+type Tab = 'orixtech' | 'examples' | 'test' | 'unanswered';
+/** Lo que se limpia al cambiar de pestaña: la búsqueda, el estado y el período son de cada una. */
+const TAB_RESET = { q: '', status: '', from: '', to: '' };
 
 const deleteNotices = { onSuccess: () => notify.success('Pregunta dada de baja'), onError: notify.error };
 
@@ -39,6 +44,7 @@ const OrixTechFaqsTab = () => {
             count={data.items.length}
             limit={data.limit}
             audience="las distribuidoras, en el chat de soporte de OrixTech. Son sólo de OrixTech: las distribuidoras nunca las ven ni las copian"
+            drafts={draftCount(data.items)}
           />
         ) : (
           <p className="text-sm text-muted">
@@ -57,6 +63,7 @@ const OrixTechFaqsTab = () => {
       create={create}
       update={update}
       remove={remove.mutate}
+      withDrafts
     />
   );
 };
@@ -106,13 +113,23 @@ const ExampleFaqsTab = () => {
  * de OrixTech y el catálogo de preguntas de ejemplo.
  */
 export const PlatformAssistantFaqs = () => {
-  const [params, setParams] = useUrlParams({ tab: 'orixtech', q: '' });
-  const tab: Tab = params.tab === 'examples' ? 'examples' : 'orixtech';
+  const [params, setParams] = useUrlParams({ tab: 'orixtech', ...TAB_RESET });
+  // Probar y resolver las preguntas sin respuesta piden `plataforma.tickets.configurar`; verlas, `plataforma.tickets.ver`.
+  const configure = usePermiso('plataforma.tickets.configurar');
+  const view = usePermiso('plataforma.tickets.ver');
+  const canConfigure = configure.known && configure.allowed;
+  const tabs = [
+    { id: 'orixtech', label: 'Preguntas de OrixTech' },
+    { id: 'examples', label: 'Preguntas de ejemplo para distribuidoras' },
+    ...(canConfigure ? [{ id: 'test', label: 'Probar' }] : []),
+    ...(view.known && view.allowed ? [{ id: 'unanswered', label: 'Sin respuesta' }] : []),
+  ];
+  const tab = (tabs.find((item) => item.id === params.tab)?.id ?? 'orixtech') as Tab;
   return (
     <PageContainer size="md" stack>
       <PageHeader
         title="Asistente"
-        description="Si el asistente del soporte contesta solo, sus topes, las preguntas con las que responde y las de ejemplo que copian las distribuidoras."
+        description="Si el asistente del soporte contesta solo, sus topes, las preguntas con las que responde y las de ejemplo que copian las distribuidoras y cómo contestaría."
       />
       <SupportAssistantCard />
       <div className="-mx-4 md:mx-0">
@@ -120,15 +137,17 @@ export const PlatformAssistantFaqs = () => {
           idPrefix={TABS_ID}
           label="Preguntas del asistente"
           value={tab}
-          // Cada lista tiene su búsqueda: al cambiar de pestaña se limpia.
-          onChange={(id) => setParams({ tab: id, q: '' })}
-          items={[
-            { id: 'orixtech', label: 'Preguntas de OrixTech' },
-            { id: 'examples', label: 'Preguntas de ejemplo para distribuidoras' },
-          ]}
+          // Cada pestaña tiene sus filtros: al cambiar de pestaña se limpian.
+          onChange={(id) => setParams({ tab: id, ...TAB_RESET })}
+          items={tabs}
         />
       </div>
-      <div {...tabPanelProps(TABS_ID, tab)}>{tab === 'orixtech' ? <OrixTechFaqsTab /> : <ExampleFaqsTab />}</div>
+      <div {...tabPanelProps(TABS_ID, tab)}>
+        {tab === 'orixtech' && <OrixTechFaqsTab />}
+        {tab === 'examples' && <ExampleFaqsTab />}
+        {tab === 'test' && <PlatformPreviewTab />}
+        {tab === 'unanswered' && <PlatformUnansweredTab canManage={canConfigure} />}
+      </div>
     </PageContainer>
   );
 };

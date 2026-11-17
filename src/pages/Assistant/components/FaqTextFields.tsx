@@ -6,6 +6,8 @@ import { CharCounter } from './CharCounter';
 
 interface Props {
   disabled?: boolean;
+  /** La respuesta se puede dejar vacía (la pregunta queda como borrador). */
+  answerOptional?: boolean;
 }
 
 interface FaqText {
@@ -16,7 +18,7 @@ interface FaqText {
 const lengthOf = (value: unknown) => textLength(typeof value === 'string' ? value : '');
 
 /** Pregunta y respuesta, con su contador. Las comparten la base de la distribuidora y la de OrixTech. */
-export const FaqTextFields = ({ disabled }: Props) => {
+export const FaqTextFields = ({ disabled, answerOptional = false }: Props) => {
   const prefix = useId();
   const { control, getFieldState, formState } = useFormContext<FaqText>();
   const [question, answer] = useWatch({ control, name: ['question', 'answer'] });
@@ -44,7 +46,8 @@ export const FaqTextFields = ({ disabled }: Props) => {
         name="answer"
         id={a.field}
         label="Respuesta"
-        required
+        required={!answerOptional}
+        hint={answerOptional ? 'Si la dejás vacía, queda como borrador y la completás después' : undefined}
         rows={6}
         disabled={disabled}
         placeholder="De lunes a sábado, de 8 a 20. Los pedidos fuera de horario se entregan al día siguiente."

@@ -28,6 +28,8 @@ interface Props<T extends KeyedFaq & { position: number }> {
   update: Parameters<typeof KeyedFaqFormModal>[0]['update'];
   /** Baja: los avisos los da la mutación (ver `useDelete`). */
   remove: (id: string) => void;
+  /** La lista puede tener borradores (las de OrixTech): se filtran por estado. */
+  withDrafts?: boolean;
 }
 
 /** Una lista de preguntas con clave de la plataforma (las de OrixTech o las de ejemplo), con su alta, edición y baja. */
@@ -41,6 +43,7 @@ export const KeyedFaqPanel = <T extends KeyedFaq & { position: number }>({
   create,
   update,
   remove,
+  withDrafts = false,
 }: Props<T>) => {
   const [editing, setEditing] = useState<T | null>(null);
   const [creating, setCreating] = useState(false);
@@ -95,6 +98,7 @@ export const KeyedFaqPanel = <T extends KeyedFaq & { position: number }>({
           )}
           onEdit={setEditing}
           onDelete={(faq) => void askDelete(faq)}
+          withDrafts={withDrafts}
         />
       </FaqListArea>
       <KeyedFaqFormModal
